@@ -12,6 +12,7 @@
 		DA71C8412AD787AC00081ED0 /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA71C8402AD787AC00081ED0 /* Item.swift */; };
 		DA71C8432AD787AD00081ED0 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DA71C8422AD787AD00081ED0 /* Assets.xcassets */; };
 		DA71C8462AD787AD00081ED0 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DA71C8452AD787AD00081ED0 /* Preview Assets.xcassets */; };
+		DA933BA22AD7ECF50029856C /* Location in Resources */ = {isa = PBXBuildFile; fileRef = DA933BA12AD7ECF50029856C /* Location */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -21,6 +22,7 @@
 		DA71C8402AD787AC00081ED0 /* Item.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Item.swift; sourceTree = "<group>"; };
 		DA71C8422AD787AD00081ED0 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		DA71C8452AD787AD00081ED0 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		DA933BA12AD7ECF50029856C /* Location */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Location; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -53,6 +55,7 @@
 		DA71C83B2AD787AC00081ED0 /* dogArea */ = {
 			isa = PBXGroup;
 			children = (
+				DA933BA12AD7ECF50029856C /* Location */,
 				DA71C83C2AD787AC00081ED0 /* dogAreaApp.swift */,
 				DA71C83E2AD787AC00081ED0 /* ContentView.swift */,
 				DA71C8402AD787AC00081ED0 /* Item.swift */,
@@ -130,6 +133,7 @@
 			files = (
 				DA71C8462AD787AD00081ED0 /* Preview Assets.xcassets in Resources */,
 				DA71C8432AD787AD00081ED0 /* Assets.xcassets in Resources */,
+				DA933BA22AD7ECF50029856C /* Location in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
