@@ -7,12 +7,18 @@
 
 import Foundation
 import SwiftData
-
+import MapKit
 @Model
 final class Item {
     var timestamp: Date
-    
-    init(timestamp: Date) {
+    var polygons: MKPolygon
+    init(timestamp: Date, polygons: MKPolygon) {
         self.timestamp = timestamp
+        self.polygons = polygons
+    }
+}
+extension Optional {
+    var isNil: Bool {
+        return self == nil
     }
 }

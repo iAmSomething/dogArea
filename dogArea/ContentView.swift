@@ -7,32 +7,26 @@
 
 import SwiftUI
 import SwiftData
-
+import CoreLocation
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var items: [Item]
-
+    @ObservedObject var loc: LocationManager = .init()
     var body: some View {
         NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
-                    }
-                }
-                .onDelete(perform: deleteItems)
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
-                }
+            VStack {
+                MapView(locationManager: loc)
+                    .frame(maxWidth: .infinity)
+                Text("\(self.loc.location.0) , \(self.loc.location.1)")
+                Button(action: {
+                    loc.callLocation()
+                },label: {Text("위치 정보 찾아보기")})
+                Button(action: {
+                    print(items)
+                    loc.clear()
+                }, label: {
+                    Text("초기화")
+                })
             }
         } detail: {
             Text("Select an item")
@@ -41,7 +35,8 @@ struct ContentView: View {
 
     private func addItem() {
         withAnimation {
-            let newItem = Item(timestamp: Date())
+            guard let polygon = loc.area else {return}
+            let newItem = Item(timestamp: Date() , polygons: polygon)
             modelContext.insert(newItem)
         }
     }
