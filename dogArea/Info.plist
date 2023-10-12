@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>UIBackgroundModes</key>
+	<array/>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>사용자의 위치 정보를 가져오기 위함입니다.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>사용자의 위치 정보를 가져오기 위함입니다.</string>
+</dict>
+</plist>
