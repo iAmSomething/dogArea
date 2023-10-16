@@ -11,10 +11,8 @@ import MapKit
 @Model
 final class Item {
     var timestamp: Date
-    var polygons: MKPolygon
-    init(timestamp: Date, polygons: MKPolygon) {
+    init(timestamp: Date) {
         self.timestamp = timestamp
-        self.polygons = polygons
     }
 }
 extension Optional {
