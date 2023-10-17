@@ -19,7 +19,9 @@
    1. SwiftData로 써보기
 3. Location 권한 허용해서 가져오기, 날짜 별로 영역 DTO 만들어서 저장하기
    1. 외부 DB를 사용할지? 한다면 firebase? AWS?
-
+4. User에 대한 고민 : 프로필 이미지를 캐릭터화 하고 싶다..
+   1.OpenAI로 image generate하기
+   
 ### 고도화에 대한 고민
 
 1. 디자인의 영역
