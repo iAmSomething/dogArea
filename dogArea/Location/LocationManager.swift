@@ -59,11 +59,26 @@ extension LocationManager{
         case .notDetermined, .restricted, .denied:
             print("권한 재설정 요청")
             locationManager.requestAlwaysAuthorization()
-
+            
         case .authorizedAlways, .authorizedWhenInUse:
             self.currentCoordinate = manager.location?.coordinate
         }
     }
+    func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+      if overlay is MKPolygon {
+        let polygonView = MKPolygonRenderer(overlay: overlay)
+          polygonView.strokeColor = .black
+          polygonView.lineWidth = 1.0
+          polygonView.fillColor = .blue.withAlphaComponent(0.25)
+          return polygonView
+      }
+      return MKOverlayRenderer()
+    }
+    func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
+        print(view.annotation?.coordinate)
+    }
+}
+extension LocationManager {
     func callLocation() {
         var an = MKPointAnnotation()
         
@@ -89,22 +104,11 @@ extension LocationManager{
         print(area!.pointCount)
         mapView.addOverlay(area!)
     }
-    func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
-      if overlay is MKPolygon {
-        let polygonView = MKPolygonRenderer(overlay: overlay)
-          polygonView.strokeColor = .black
-          polygonView.lineWidth = 1.0
-          polygonView.fillColor = .blue.withAlphaComponent(0.25)
-          return polygonView
-      }
-      return MKOverlayRenderer()
-    }
+
     func clear() {
         self.mapView.removeAnnotations(self.mapView.annotations)
         self.coordinates = []
         updatePolygon()
     }
-    func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
-        
-    }
+
 }
