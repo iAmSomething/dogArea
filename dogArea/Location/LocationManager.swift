@@ -12,10 +12,8 @@ import UIKit
 final class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate, MKMapViewDelegate{
     @Published var location:(Double, Double) = (0.0,0.0)
     @Published var mapView: MKMapView = .init()
-    @Published var selectedAnotation: MKAnnotation?
-    @Published var isnil = true
-    private var coordinates: [CLLocationCoordinate2D] = []
-    @Published var area: MKPolygon?
+    @Published var polygon = Polygon()
+    @Published var alertId: String = ""
     private var locationManager = CLLocationManager()
     private var currentCoordinate: CLLocationCoordinate2D?
     override init() {
@@ -31,18 +29,28 @@ final class LocationManager: NSObject, ObservableObject, CLLocationManagerDelega
         case .denied, .restricted, .notDetermined:
             locationManager.requestAlwaysAuthorization()
         case .authorizedAlways:
-            mapView.showsUserLocation = true
-            mapView.showsCompass = true
-            mapView.showsUserTrackingButton = true
-            
+            mapViewConfigure()
             locationManager.requestLocation()
         case .authorizedWhenInUse:
             //팝업 불러와서 설정 해주기
             locationManager.requestAlwaysAuthorization()
         }
     }
+    private func mapViewConfigure() {
+        mapView.showsUserLocation = true
+        mapView.showsCompass = true
+        mapView.showsUserTrackingButton = true
+        mapView.isRotateEnabled = true
+        mapView.showsScale = true
+        mapView.contentScaleFactor = 0.5
+        mapView.showsUserTrackingButton = true
+        mapView.setUserTrackingMode(.followWithHeading, animated: true)
+        
+        let an = MKPointAnnotation(__coordinate: mapView.camera.centerCoordinate)
+    }
    
 }
+// MARK: CLLocatioinManager Extentions
 extension LocationManager{
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         self.currentCoordinate = locations.last?.coordinate
@@ -59,36 +67,14 @@ extension LocationManager{
         case .notDetermined, .restricted, .denied:
             print("권한 재설정 요청")
             locationManager.requestAlwaysAuthorization()
-
+            
         case .authorizedAlways, .authorizedWhenInUse:
             self.currentCoordinate = manager.location?.coordinate
         }
     }
-    func callLocation() {
-        var an = MKPointAnnotation()
-        
-        an.coordinate = self.mapView.region.center
-        self.coordinates.append(an.coordinate)
-        if let first = self.mapView.annotations.first {
-            self.mapView.deselectAnnotation(first, animated: true)
-            //self.mapView.removeAnnotation(first)
-        }
-        self.mapView.addAnnotation(an)
-        self.mapView.selectAnnotation(an, animated: true)
-        self.locationManager.requestLocation()
-        updatePolygon()
-    }
-    func updatePolygon() {
-        if self.area != nil {
-            self.mapView.removeOverlay(area!)
-        }
-        var mkpoints = self.coordinates.map{MKMapPoint($0)}
-        self.area = MKPolygon(points: mkpoints, count: mkpoints.count)
-        print(mkpoints.map{($0.coordinate.latitude, $0.coordinate.longitude)})
-        print("")
-        print(area!.pointCount)
-        mapView.addOverlay(area!)
-    }
+}
+// MARK: mapView Extentions
+extension LocationManager {
     func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
       if overlay is MKPolygon {
         let polygonView = MKPolygonRenderer(overlay: overlay)
@@ -99,12 +85,37 @@ extension LocationManager{
       }
       return MKOverlayRenderer()
     }
-    func clear() {
-        self.mapView.removeAnnotations(self.mapView.annotations)
-        self.coordinates = []
-        updatePolygon()
-    }
     func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
         
+        print("알림 띄워주는 로직 필요 합니다.")
+    }
+}
+// MARK: custom functions
+extension LocationManager {
+    func callLocation() {
+        let an = MKPointAnnotation(__coordinate: self.mapView.region.center)
+        self.polygon.addPoint(.init(annotation: an))
+        if self.mapView.annotations.count > 1 {
+            self.mapView.deselectAnnotation(self.mapView.annotations.last!, animated: true)
+        }
+        self.mapView.addAnnotation(an)
+        self.mapView.selectAnnotation(an, animated: true)
+        self.locationManager.requestLocation()
+        updatePolygon()
+    }
+    private func updatePolygon() {
+        self.mapView.removeOverlay(self.polygon.polygon)
+        mapView.addOverlay(self.polygon.polygon)
+        print(self.mapView.annotations.description)
+    }
+
+    func clear() {
+        self.mapView.removeAnnotations(self.mapView.annotations)
+        self.polygon.clear()
+        updatePolygon()
+    }
+    func removePoint(loc: Location) {
+        self.polygon.removeAt(loc)
+        updatePolygon()
     }
 }
