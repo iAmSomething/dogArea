@@ -9,27 +9,26 @@ import SwiftUI
 import SwiftData
 import CoreLocation
 struct ContentView: View {
+    var AlertVM: CustomAlertViewModel = .init()
+    @State var presentAlert = false
+
     @Environment(\.modelContext) private var modelContext
     @Query private var items: [Item]
-    @ObservedObject var loc: LocationManager = .init()
-    @State var isp = true
-    @State var presentAlert = false
-    
     var body: some View {
         NavigationSplitView {
             ZStack{
                 VStack {
-                    MapView(locationManager: loc)
+                    MapView(locationManager: AlertVM.loc)
                         .frame(maxWidth: .infinity)
-                    Text("\(self.loc.location.0) , \(self.loc.location.1)")
+                        .ignoresSafeArea()
+                    Text("\(self.AlertVM.loc.location.0) , \(self.AlertVM.loc.location.1)")
                     HStack {
                         Button(action: {
-                            loc.callLocation()
+                            AlertVM.toggleTest()
                         },label: {Text("위치 정보 찾아보기")})
-                        .alert("", isPresented: $isp, actions: {})
                         Button(action: {
                             print(items)
-                            loc.clear()
+                            AlertVM.loc.clear()
                         }, label: {
                             Text("초기화")
                         })
@@ -47,17 +46,9 @@ struct ContentView: View {
                         presentAlert.toggle()
                     }
                 if presentAlert {
-                    CustomAlert(presentAlert: $presentAlert,
-                                alertType: .customValue(title: "오줌 누기", message: "오줌 눴나요?", configure: .oneButton(buttonMsg: "네 맞아요"))
-                                )
-                    {
-                        loc.callLocation()
-                    } rightButtonAction: {
-                        withAnimation{
-                        }
-                    }
+                    AlertVM.callAlert(type: .addPoint,state: $presentAlert)
                 }
-            }
+            }.modifier(AlertViewModifier())
         } detail: {
             Text("Select an item")
         }
@@ -65,7 +56,6 @@ struct ContentView: View {
     
     private func addItem() {
         withAnimation {
-            guard let polygon = loc.area else {return}
             let newItem = Item(timestamp: Date() )
             modelContext.insert(newItem)
         }

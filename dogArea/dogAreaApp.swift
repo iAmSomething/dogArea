@@ -25,7 +25,7 @@ struct dogAreaApp: App {
 
     var body: some Scene {
         WindowGroup {
-            TextToImageView()
+            ContentView()
         }
         .modelContainer(sharedModelContainer)
     }
