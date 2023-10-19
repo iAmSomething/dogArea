@@ -25,7 +25,9 @@ struct CustomTabBar: View {
         .frame(maxWidth: .infinity)
       
       // Center Big Map Button
-      CircleButton(iconName:"map.fill", action:{
+      CircleButton(iconName:"map.fill",
+                   isSelected: self.selectedTab == 2 ,
+                   action:{
         self.selectedTab=2
       })
       .frame(maxWidth: .infinity)
@@ -52,13 +54,17 @@ struct CustomTabBar: View {
 
 struct CircleButton : View{
   let iconName : String
+  let isSelected: Bool
   let action : ()->Void
-  
   var body:some View{
     ZStack{
-      Circle().foregroundColor(Color.blue).frame(width :60,height :60)
-        .shadow(radius :5)
-      
+      if isSelected {
+        Circle().foregroundColor(Color.blue).frame(width :60,height :60)
+          .shadow(radius :5)
+      }
+      else {
+        Circle().foregroundColor(Color.gray).frame(width :60,height :60)
+      }
       VStack{
         Image(systemName:self.iconName).resizable().frame(width :25,height :25).foregroundColor(Color.white)
         Text("지도").font(.system(size:12)).foregroundColor(Color.white)

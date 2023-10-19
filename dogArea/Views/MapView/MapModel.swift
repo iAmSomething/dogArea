@@ -52,6 +52,9 @@ extension Polygon {
       self.locations = []
       refreshPolygon()
   }
+  func save() {
+    print("폴리곤 저장")
+  }
   private mutating func refreshPolygon() {
       let points = locations.map{MKMapPoint($0.coordinate)}
       self.polygon = MKPolygon(points: points, count: points.count)

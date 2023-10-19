@@ -13,15 +13,9 @@ struct MapView : View{
   @ObservedObject private var myAlert: CustomAlertViewModel = .init()
   @ObservedObject private var viewModel = MapViewModel()
   @State private var camera: MapCamera = .init(.init())
-  @State private var cameraPosition =
-  MapCameraPosition.userLocation(fallback: .automatic)
-  //    .region(
-  //    MKCoordinateRegion(
-  //      center: CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194),
-  //      span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)
-  //    ))
-  // Marker 선택 상태 저장
+  @State private var cameraPosition = MapCameraPosition.userLocation( followsHeading: true,fallback: .automatic)
   @State private var selectedMarker: Location? = nil
+  
   var body : some View {
     ZStack{
       Map(position: $cameraPosition,
@@ -45,41 +39,48 @@ struct MapView : View{
             .stroke(.blue, lineWidth: 0.5)
             .foregroundStyle(.cyan)
         }
+      }.safeAreaPadding(.top, 50)
+          .mapControls {
+        mapControls
       }
           .onAppear{
             //        setRegion(viewModel.location)
           }
       alertView
-      Image(.addPointBtn)
+      if viewModel.isWalking {
+        Text("산책 한 지 \(viewModel.time.walkingTimeInterval) 지났습니다")
+        Image(.addPointBtn)
+          .resizable()
+          .frame(width: 55, height: 55)
+          .position(x:screenSize.width * 0.90,
+                    y:screenSize.height * 0.85)
+          .onTapGesture {
+            myAlert.alertType = .addPoint
+            myAlert.callAlert(type: .addPoint)}
+      }
+      Image(viewModel.isWalking ? .stopIcon : .startIcon)
         .resizable()
-        .frame(width: 55, height: 55)
-        .position(x:screenSize.width * 0.90,
+        .aspectRatio(contentMode: .fit)
+        .frame(width: 64, height: 64)
+        .position(x:screenSize.width * 0.5,
                   y:screenSize.height * 0.85)
         .onTapGesture {
-          myAlert.alertType = .addPoint
-          myAlert.callAlert(type: .addPoint)}
-      Button(action:{
-        viewModel.endWalk()
-      }){
-        Text("산책 종료")
-      }
-      
+          viewModel.endWalk()
+        }
     }
-    //    .alert(item:$selectedMarker){ marker -> Alert in // 마커 선택에 따른 알림창 처리
-    //      Alert(title : Text("마커 삭제"),
-    //            message : Text("선택한 마커를 삭제하시겠습니까?"),
-    //            primaryButton:.destructive(Text("확인")){
-    //        viewModel.removeLocation(marker.id)
-    //      },
-    //            secondaryButton:.cancel(Text("취소"))
-    //      )
-    //    }
     .onMapCameraChange {context in
       camera = context.camera
       //      setRegion(viewModel.location)
       
     }
-    
+  }
+  var mapControls: some View {
+    VStack{
+      MapUserLocationButton()
+      MapScaleView()
+      MapPitchToggle()
+    }
+    .mapControlVisibility(.visible)
   }
   var alertView: some View {
     if myAlert.isAlert {
@@ -89,6 +90,9 @@ struct MapView : View{
         ca = CustomAlert(presentAlert: $myAlert.isAlert,
                          alertModel: myAlert.alertType.model,
                          leftButtonAction: {
+          if let cam = cameraPosition.camera {
+            print("\(cam.centerCoordinate.latitude), \(cam.centerCoordinate.longitude)")
+          }
           viewModel.location = .init(latitude: camera.centerCoordinate.latitude,
                                      longitude: camera.centerCoordinate.longitude)
           viewModel.addLocation()

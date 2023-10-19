@@ -19,3 +19,19 @@ public struct TabStyle: LabelStyle {
 public var screenSize: CGSize {
   UIScreen.main.bounds.size
 }
+extension TimeInterval {
+  var walkingTimeInterval: String {
+      let formatter = DateComponentsFormatter()
+    formatter.allowedUnits = [.hour, .minute, .second, .nanosecond]
+      formatter.unitsStyle = .positional
+      formatter.zeroFormattingBehavior = [.pad]
+
+      if let formattedString = formatter.string(from: self) {
+          return formattedString.replacingOccurrences(of: " hours", with: "시간")
+                                  .replacingOccurrences(of: " minutes", with: "분")
+                                  .replacingOccurrences(of: " seconds", with: "초")
+      } else {
+          return "Invalid time interval"
+      }
+  }
+}
