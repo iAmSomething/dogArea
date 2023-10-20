@@ -34,4 +34,12 @@ extension TimeInterval {
           return "Invalid time interval"
       }
   }
+  var createdAtTimeDescription: String {
+    let date = Date(timeIntervalSince1970: self)
+    let dateFormatter = DateFormatter()
+    dateFormatter.dateFormat = "MM월dd일HH시mm분SS초"
+    let formattedDate = dateFormatter.string(from: date)
+    return formattedDate
+  }
+
 }

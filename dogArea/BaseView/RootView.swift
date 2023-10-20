@@ -10,7 +10,7 @@ import SwiftUI
 
 struct RootView: View {
   @Environment(\.managedObjectContext) private var viewContext
-  @StateObject var myAlert: CustomAlertViewModel = .init()
+  @EnvironmentObject var myAlert: CustomAlertViewModel
   @State private var selectedTab = 2
   var body: some View {
     GeometryReader { geometry in

@@ -10,7 +10,7 @@ import SwiftUI
 import _MapKit_SwiftUI
 
 struct MapView : View{
-  @ObservedObject private var myAlert: CustomAlertViewModel = .init()
+  @ObservedObject var myAlert: CustomAlertViewModel = .init()
   @ObservedObject private var viewModel = MapViewModel()
   @State private var camera: MapCamera = .init(.init())
   @State private var cameraPosition = MapCameraPosition.userLocation( followsHeading: true,fallback: .automatic)
@@ -34,10 +34,13 @@ struct MapView : View{
             }
           }
         }
-        if viewModel.polygon.locations.count >= 3 {
-          MapPolygon(viewModel.polygon.polygon)
+        if let walkArea = viewModel.polygon.polygon{
+          MapPolygon(walkArea)
             .stroke(.blue, lineWidth: 0.5)
             .foregroundStyle(.cyan)
+        }
+        else {
+          
         }
       }.safeAreaPadding(.top, 50)
           .mapControls {
@@ -47,32 +50,48 @@ struct MapView : View{
             //        setRegion(viewModel.location)
           }
       alertView
+      PolygonListView(viewModel: viewModel)
+        .frame(maxWidth: screenSize.width * 0.4, maxHeight: 150)
+        .position(x:screenSize.width * 0.20,
+                  y:screenSize.height * 0.20)
+      
       if viewModel.isWalking {
         Text("산책 한 지 \(viewModel.time.walkingTimeInterval) 지났습니다")
-        Image(.addPointBtn)
-          .resizable()
-          .frame(width: 55, height: 55)
+        addPointBtn
+        #if DEBUG
+        Button("전부삭제", action: viewModel.deleteAllPolygons)
           .position(x:screenSize.width * 0.90,
-                    y:screenSize.height * 0.85)
-          .onTapGesture {
-            myAlert.alertType = .addPoint
-            myAlert.callAlert(type: .addPoint)}
+                    y:screenSize.height * 0.65)
+        #endif
       }
-      Image(viewModel.isWalking ? .stopIcon : .startIcon)
-        .resizable()
-        .aspectRatio(contentMode: .fit)
-        .frame(width: 64, height: 64)
-        .position(x:screenSize.width * 0.5,
-                  y:screenSize.height * 0.85)
-        .onTapGesture {
-          viewModel.endWalk()
-        }
+      startBtn
     }
     .onMapCameraChange {context in
       camera = context.camera
       //      setRegion(viewModel.location)
       
     }
+  }
+  var addPointBtn: some View {
+    Image(.addPointBtn)
+      .resizable()
+      .frame(width: 55, height: 55)
+      .position(x:screenSize.width * 0.90,
+                y:screenSize.height * 0.85)
+      .onTapGesture {
+        myAlert.alertType = .addPoint
+        myAlert.callAlert(type: .addPoint)}
+  }
+  var startBtn: some View {
+    Image(viewModel.isWalking ? .stopIcon : .startIcon)
+      .resizable()
+      .aspectRatio(contentMode: .fit)
+      .frame(width: 64, height: 64)
+      .position(x:screenSize.width * 0.5,
+                y:screenSize.height * 0.85)
+      .onTapGesture {
+        viewModel.endWalk()
+      }
   }
   var mapControls: some View {
     VStack{

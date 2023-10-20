@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		DA0214742AE23B7900B5410A /* PolygonListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA0214732AE23B7900B5410A /* PolygonListView.swift */; };
+		DA1731712AE200C100EF10C8 /* dogArea.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = DA17316F2AE200C100EF10C8 /* dogArea.xcdatamodeld */; };
+		DA1731732AE2017500EF10C8 /* PersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1731722AE2017500EF10C8 /* PersistenceController.swift */; };
+		DA1731762AE20A4D00EF10C8 /* CoreDataDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1731752AE20A4D00EF10C8 /* CoreDataDTO.swift */; };
 		DA38B8DB2AD7BCD000148347 /* KakaoMapsSDK_SPM in Frameworks */ = {isa = PBXBuildFile; productRef = DA38B8DA2AD7BCD000148347 /* KakaoMapsSDK_SPM */; };
 		DA3F9B362ADE7C100048550C /* CustomAlertViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9B352ADE7C100048550C /* CustomAlertViewModel.swift */; };
 		DA3F9B392ADE813A0048550C /* CustomAlertConfigure.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9B382ADE813A0048550C /* CustomAlertConfigure.swift */; };
@@ -62,7 +66,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		DA0214732AE23B7900B5410A /* PolygonListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolygonListView.swift; sourceTree = "<group>"; };
 		DA0FB2082AD7B21C00B235CF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		DA1731702AE200C100EF10C8 /* dogArea.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = dogArea.xcdatamodel; sourceTree = "<group>"; };
+		DA1731722AE2017500EF10C8 /* PersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceController.swift; sourceTree = "<group>"; };
+		DA1731752AE20A4D00EF10C8 /* CoreDataDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataDTO.swift; sourceTree = "<group>"; };
 		DA3F9B352ADE7C100048550C /* CustomAlertViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomAlertViewModel.swift; sourceTree = "<group>"; };
 		DA3F9B382ADE813A0048550C /* CustomAlertConfigure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomAlertConfigure.swift; sourceTree = "<group>"; };
 		DA3F9B972AE0F14F0048550C /* ProfileSettingsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ProfileSettingsView.swift; sourceTree = "<group>"; };
@@ -112,6 +120,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		DA1731742AE20A3600EF10C8 /* Resource */ = {
+			isa = PBXGroup;
+			children = (
+				DA1731752AE20A4D00EF10C8 /* CoreDataDTO.swift */,
+			);
+			path = Resource;
+			sourceTree = "<group>";
+		};
 		DA3F9B962AE0F14F0048550C /* Views */ = {
 			isa = PBXGroup;
 			children = (
@@ -129,6 +145,7 @@
 		DA3F9B9A2AE0F14F0048550C /* MapView */ = {
 			isa = PBXGroup;
 			children = (
+				DA56FFE52AE28EB00040855B /* MapSubViews */,
 				DA3F9B9B2AE0F14F0048550C /* MapView.swift */,
 				DA3F9B9C2AE0F14F0048550C /* MapViewModel.swift */,
 				DA3F9B9D2AE0F14F0048550C /* MapModel.swift */,
@@ -171,6 +188,14 @@
 			path = BaseView;
 			sourceTree = "<group>";
 		};
+		DA56FFE52AE28EB00040855B /* MapSubViews */ = {
+			isa = PBXGroup;
+			children = (
+				DA0214732AE23B7900B5410A /* PolygonListView.swift */,
+			);
+			path = MapSubViews;
+			sourceTree = "<group>";
+		};
 		DA71C8302AD787AC00081ED0 = {
 			isa = PBXGroup;
 			children = (
@@ -193,8 +218,11 @@
 		DA71C83B2AD787AC00081ED0 /* dogArea */ = {
 			isa = PBXGroup;
 			children = (
-				DA3F9BD12AE0FF7B0048550C /* BaseView */,
 				DA71C83C2AD787AC00081ED0 /* dogAreaApp.swift */,
+				DA1731722AE2017500EF10C8 /* PersistenceController.swift */,
+				DA17316F2AE200C100EF10C8 /* dogArea.xcdatamodeld */,
+				DA3F9BD12AE0FF7B0048550C /* BaseView */,
+				DA1731742AE20A3600EF10C8 /* Resource */,
 				DA3F9BAC2AE0F2410048550C /* Source */,
 				DA3F9B962AE0F14F0048550C /* Views */,
 				DA95CC892ADE144D004AD94D /* View */,
@@ -379,9 +407,11 @@
 			files = (
 				DA3F9BA62AE0F14F0048550C /* RankingView.swift in Sources */,
 				DA3F9BD52AE0FF9B0048550C /* CustomTabBar.swift in Sources */,
+				DA0214742AE23B7900B5410A /* PolygonListView.swift in Sources */,
 				DA3F9BA22AE0F14F0048550C /* HomeView.swift in Sources */,
 				DA95CC8D2ADE1736004AD94D /* ImageGenerateViewModel.swift in Sources */,
 				DA3F9BA12AE0F14F0048550C /* NotificationCenterView.swift in Sources */,
+				DA1731712AE200C100EF10C8 /* dogArea.xcdatamodeld in Sources */,
 				DA933BE92ADD04E70029856C /* CustomAlertView.swift in Sources */,
 				DA3F9BAE2AE0F2410048550C /* ViewUtility.swift in Sources */,
 				DA3F9BA42AE0F14F0048550C /* MapViewModel.swift in Sources */,
@@ -389,10 +419,12 @@
 				DA71C8412AD787AC00081ED0 /* Item.swift in Sources */,
 				DA3F9B392ADE813A0048550C /* CustomAlertConfigure.swift in Sources */,
 				DA71C83D2AD787AC00081ED0 /* dogAreaApp.swift in Sources */,
+				DA1731732AE2017500EF10C8 /* PersistenceController.swift in Sources */,
 				DA3F9BA52AE0F14F0048550C /* MapModel.swift in Sources */,
 				DA3F9BD32AE0FF8A0048550C /* RootView.swift in Sources */,
 				DA3F9B362ADE7C100048550C /* CustomAlertViewModel.swift in Sources */,
 				DA3F9BA02AE0F14F0048550C /* ProfileSettingsView.swift in Sources */,
+				DA1731762AE20A4D00EF10C8 /* CoreDataDTO.swift in Sources */,
 				DA95CC8B2ADE1475004AD94D /* TextToImageView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -761,6 +793,19 @@
 			productName = "plugin:OpenAPIGenerator";
 		};
 /* End XCSwiftPackageProductDependency section */
+
+/* Begin XCVersionGroup section */
+		DA17316F2AE200C100EF10C8 /* dogArea.xcdatamodeld */ = {
+			isa = XCVersionGroup;
+			children = (
+				DA1731702AE200C100EF10C8 /* dogArea.xcdatamodel */,
+			);
+			currentVersion = DA1731702AE200C100EF10C8 /* dogArea.xcdatamodel */;
+			path = dogArea.xcdatamodeld;
+			sourceTree = "<group>";
+			versionGroupType = wrapper.xcdatamodel;
+		};
+/* End XCVersionGroup section */
 	};
 	rootObject = DA71C8312AD787AC00081ED0 /* Project object */;
 }
