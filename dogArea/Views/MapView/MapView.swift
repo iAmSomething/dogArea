@@ -12,13 +12,11 @@ import _MapKit_SwiftUI
 struct MapView : View{
   @ObservedObject var myAlert: CustomAlertViewModel = .init()
   @ObservedObject private var viewModel = MapViewModel()
-  @State private var camera: MapCamera = .init(.init())
-  @State private var cameraPosition = MapCameraPosition.userLocation( followsHeading: true,fallback: .automatic)
-  @State private var selectedMarker: Location? = nil
   
   var body : some View {
     ZStack{
-      Map(position: $cameraPosition,
+      
+      Map(position: $viewModel.cameraPosition,
           interactionModes: .all){
         ForEach(viewModel.polygon.locations) { location in
           Annotation("", coordinate: location.coordinate) {
@@ -29,47 +27,71 @@ struct MapView : View{
                 .padding(5)
             }
             .onTapGesture {
-              selectedMarker = location
+              viewModel.selectedMarker = location
               myAlert.callAlert(type: .annotationSelected(location))
             }
           }
         }
         if let walkArea = viewModel.polygon.polygon{
-          MapPolygon(walkArea)
-            .stroke(.blue, lineWidth: 0.5)
-            .foregroundStyle(.cyan)
+          if viewModel.showOnlyOne {
+            MapPolygon(walkArea)
+              .stroke(.blue, lineWidth: 0.5)
+              .foregroundStyle(.cyan.opacity(0.3))
+              .annotationTitles(.visible)
+          }
+          else {
+            ForEach(viewModel.polygonList) { item in
+              if let p  = item.polygon {
+                MapPolygon(p)
+                  .stroke(.blue, lineWidth: 0.5)
+                  .foregroundStyle(.cyan.opacity(0.3))              .annotationTitles(.visible)
+              }
+            }
+          }
         }
-        else {
-          
-        }
+        else { }
       }.safeAreaPadding(.top, 50)
           .mapControls {
-        mapControls
-      }
+            mapControls
+          }
           .onAppear{
             //        setRegion(viewModel.location)
           }
-      alertView
-      PolygonListView(viewModel: viewModel)
+      MapAlertSubView(viewModel: viewModel, myAlert: myAlert)
+      PolygonListView(viewModel: viewModel, myAlert: myAlert)
         .frame(maxWidth: screenSize.width * 0.4, maxHeight: 150)
         .position(x:screenSize.width * 0.20,
                   y:screenSize.height * 0.20)
       
       if viewModel.isWalking {
         Text("산책 한 지 \(viewModel.time.walkingTimeInterval) 지났습니다")
+          .font(.customFont(size: 13))
+          .aspectRatio(contentMode: .fit)
+          .padding(.horizontal, 5)
+          .padding(.vertical, 2)
+          .background(.white)
+          .cornerRadius(3)
+          .position(x:screenSize.width * 0.50,
+                    y:screenSize.height * 0.75)
         addPointBtn
-        #if DEBUG
+      }
+      else {
+        Button("전부 보여주기", action:{viewModel.showOnlyOne.toggle()
+          viewModel.setTrackingMode()})
+        
+        .position(x:screenSize.width * 0.90,
+                  y:screenSize.height * 0.65)
+      }
+#if DEBUG
         Button("전부삭제", action: viewModel.deleteAllPolygons)
           .position(x:screenSize.width * 0.90,
                     y:screenSize.height * 0.65)
-        #endif
-      }
+#endif
       startBtn
-    }
-    .onMapCameraChange {context in
-      camera = context.camera
-      //      setRegion(viewModel.location)
-      
+    }.onMapCameraChange(frequency: .onEnd) {context in
+      //      print(viewModel.location)
+      //      print(viewModel.cameraPosition.region?.center)
+      //      print()
     }
   }
   var addPointBtn: some View {
@@ -79,6 +101,7 @@ struct MapView : View{
       .position(x:screenSize.width * 0.90,
                 y:screenSize.height * 0.85)
       .onTapGesture {
+        viewModel.setTrackingMode()
         myAlert.alertType = .addPoint
         myAlert.callAlert(type: .addPoint)}
   }
@@ -98,49 +121,7 @@ struct MapView : View{
       MapUserLocationButton()
       MapScaleView()
       MapPitchToggle()
-    }
-    .mapControlVisibility(.visible)
-  }
-  var alertView: some View {
-    if myAlert.isAlert {
-      var ca : CustomAlert
-      switch myAlert.alertType {
-      case .addPoint :
-        ca = CustomAlert(presentAlert: $myAlert.isAlert,
-                         alertModel: myAlert.alertType.model,
-                         leftButtonAction: {
-          if let cam = cameraPosition.camera {
-            print("\(cam.centerCoordinate.latitude), \(cam.centerCoordinate.longitude)")
-          }
-          viewModel.location = .init(latitude: camera.centerCoordinate.latitude,
-                                     longitude: camera.centerCoordinate.longitude)
-          viewModel.addLocation()
-        },rightButtonAction: {print("right")})
-      case .annotationSelected(let loc) :
-        ca = CustomAlert(presentAlert: $myAlert.isAlert,
-                         alertModel: myAlert.alertType.model,
-                         leftButtonAction: {
-        },rightButtonAction: {
-          if let marker = selectedMarker {
-            viewModel.removeLocation(marker.id)
-          }})
-      case .custom(_), .logOut:
-        ca = CustomAlert(presentAlert: $myAlert.isAlert,
-                         alertModel: myAlert.alertType.model)
-      }
-      return AnyView(ca)
-    }
-    else {
-      return AnyView(EmptyView())
-    }
-  }
-  func setRegion(_ location : CLLocation?){
-    guard let coordinate=location?.coordinate else {return}
-    camera.centerCoordinate.latitude=coordinate.latitude - 0.01
-    camera.centerCoordinate.longitude=coordinate.longitude - 0.01
-  }
-  func seeCurrentLocation(){
-    MapCameraPosition.userLocation(followsHeading: true, fallback: self.cameraPosition)
+    }.mapControlVisibility(.visible)
   }
 }
 #Preview {

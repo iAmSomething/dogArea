@@ -39,12 +39,14 @@ struct Polygon: Identifiable {
     self.locations = locations
     self.id = UUID()
     self.polygon = MKPolygon(coordinates: locations.map{$0.coordinate}, count: locations.count)
+    self.polygon?.title = "🐶"
     self.createdAt = Date().timeIntervalSince1970
   }
   init(locations: [Location] = [], createdAt: Double,id: UUID) {
     self.locations = locations
     self.id = id
     self.polygon = MKPolygon(coordinates: locations.map{$0.coordinate}, count: locations.count)
+    self.polygon?.title = "🐶"
     self.createdAt = createdAt
   }
 }
@@ -86,5 +88,7 @@ extension Polygon {
     self.id = UUID()
     let points = locations.map{MKMapPoint($0.coordinate)}
     self.polygon = MKPolygon(points: points, count: points.count)
+    self.polygon?.title = "🐶"
+
   }
 }

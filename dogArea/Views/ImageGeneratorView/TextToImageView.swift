@@ -9,7 +9,7 @@ import Foundation
 import Observation
 struct TextToImageView: View {
     
-    @Bindable var vm = ImageGenerateViewModel(apiKey: "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")
+    @Bindable var vm = ImageGenerateViewModel()
     var body: some View {
         VStack {
             switch vm.fetchPhase {

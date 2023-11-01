@@ -21,18 +21,12 @@ public var screenSize: CGSize {
 }
 extension TimeInterval {
   var walkingTimeInterval: String {
-      let formatter = DateComponentsFormatter()
-    formatter.allowedUnits = [.hour, .minute, .second, .nanosecond]
-      formatter.unitsStyle = .positional
-      formatter.zeroFormattingBehavior = [.pad]
+    let hours = Int(self) / 3600
+    let minutes = (Int(self) % 3600) / 60
+    let seconds = Int(self) % 60 / 1
+    
+    return String(format: "%02d시간 %02d분 %02d초", hours, minutes, seconds)
 
-      if let formattedString = formatter.string(from: self) {
-          return formattedString.replacingOccurrences(of: " hours", with: "시간")
-                                  .replacingOccurrences(of: " minutes", with: "분")
-                                  .replacingOccurrences(of: " seconds", with: "초")
-      } else {
-          return "Invalid time interval"
-      }
   }
   var createdAtTimeDescription: String {
     let date = Date(timeIntervalSince1970: self)
@@ -41,5 +35,24 @@ extension TimeInterval {
     let formattedDate = dateFormatter.string(from: date)
     return formattedDate
   }
+  
+}
+import CoreLocation
+extension CLLocationCoordinate2D {
+  var clLocation : CLLocation {
+    CLLocation(latitude: self.latitude, longitude: self.longitude)
+  }
+}
+extension Font {
+  public static func customFont(size: CGFloat = 13) -> Font {
+    Font.custom("KCC-Ganpan.otf", size: size)
+  }
+}
 
+
+import BackgroundTasks
+actor registerBackground{
+  let base: String = "com.th.dogArea"
+  func register() {
+  }
 }

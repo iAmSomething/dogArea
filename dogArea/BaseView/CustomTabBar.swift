@@ -23,6 +23,7 @@ struct CustomTabBar: View {
         .onTapGesture {self.selectedTab=1}
         .labelStyle(TabStyle())
         .frame(maxWidth: .infinity)
+        
       
       // Center Big Map Button
       CircleButton(iconName:"map.fill",
@@ -33,7 +34,7 @@ struct CustomTabBar: View {
       .frame(maxWidth: .infinity)
       
       // Ranking button
-      Label("프로필",systemImage: self.selectedTab==3 ? "gearshape.fill" : "gearshape")
+      Label("프로필",systemImage: self.selectedTab==3 ? "bolt.circle.fill" : "bolt.circle")
         .onTapGesture {self.selectedTab=3}
         .labelStyle(TabStyle())
         .frame(maxWidth: .infinity)

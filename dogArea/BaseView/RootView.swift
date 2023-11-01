@@ -15,11 +15,11 @@ struct RootView: View {
   var body: some View {
     GeometryReader { geometry in
       VStack(spacing: 0) {
-        if self.selectedTab == 0 { HomeView() }
-        else if self.selectedTab == 1 { RankingView() }
+        if self.selectedTab == 0 { HomeView().frame(maxWidth: .infinity,maxHeight: .infinity) }
+        else if self.selectedTab == 1 { RankingView().frame(maxWidth: .infinity,maxHeight: .infinity) }
         else if self.selectedTab == 2 { MapView() }
-        else if self.selectedTab == 3 { ProfileSettingsView() }
-        else if self.selectedTab == 4 { NotificationCenterView() }
+        else if self.selectedTab == 3 { TextToImageView().frame(maxWidth: .infinity,maxHeight: .infinity) }
+        else if self.selectedTab == 4 { NotificationCenterView().frame(maxWidth: .infinity,maxHeight: .infinity) }
         
         CustomTabBar(selectedTab: $selectedTab)
       }.edgesIgnoringSafeArea(.all)

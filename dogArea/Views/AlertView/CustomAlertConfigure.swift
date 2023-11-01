@@ -11,6 +11,7 @@ enum AlertActionType{
   case addPoint
   case logOut
   case annotationSelected(Location)
+  case deletePolygon(UUID)
   var model: AlertModel {
     switch self {
     case .custom(let model):
@@ -21,6 +22,8 @@ enum AlertActionType{
       return AlertModel(title: "계정 오류", message: "로그아웃 되었습니다.", configure: .oneButton(buttonMsg: "로그인 하기"))
     case .annotationSelected(let location):
       return AlertModel(title: "선택된 포인트", message: "\(location.coordinate)", configure: .twoButtonChoice(isVertical: false, first: "확인", second: "삭제"))
+    case .deletePolygon(_):
+      return AlertModel(title: "영역 선택", message: "선택한 영역을 삭제하시겠습니까?", configure: .twoButtonChoice(isVertical: false, first: "삭제", second: "취소"))
     }
   }
 }

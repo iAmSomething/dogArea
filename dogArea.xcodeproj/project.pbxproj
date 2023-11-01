@@ -24,6 +24,7 @@
 		DA3F9BAE2AE0F2410048550C /* ViewUtility.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9BAD2AE0F2410048550C /* ViewUtility.swift */; };
 		DA3F9BD32AE0FF8A0048550C /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9BD22AE0FF8A0048550C /* RootView.swift */; };
 		DA3F9BD52AE0FF9B0048550C /* CustomTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9BD42AE0FF9B0048550C /* CustomTabBar.swift */; };
+		DA56FFE82AE2B9890040855B /* MapAlertSubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA56FFE72AE2B9890040855B /* MapAlertSubView.swift */; };
 		DA71C83D2AD787AC00081ED0 /* dogAreaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA71C83C2AD787AC00081ED0 /* dogAreaApp.swift */; };
 		DA71C8412AD787AC00081ED0 /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA71C8402AD787AC00081ED0 /* Item.swift */; };
 		DA71C8432AD787AD00081ED0 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DA71C8422AD787AD00081ED0 /* Assets.xcassets */; };
@@ -52,6 +53,16 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		DA3C141C2AF0847600324A14 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		DA95CC742ADE0682004AD94D /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -71,6 +82,9 @@
 		DA1731702AE200C100EF10C8 /* dogArea.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = dogArea.xcdatamodel; sourceTree = "<group>"; };
 		DA1731722AE2017500EF10C8 /* PersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceController.swift; sourceTree = "<group>"; };
 		DA1731752AE20A4D00EF10C8 /* CoreDataDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataDTO.swift; sourceTree = "<group>"; };
+		DA3C140D2AF0847600324A14 /* ManagedSettings.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ManagedSettings.framework; path = System/Library/Frameworks/ManagedSettings.framework; sourceTree = SDKROOT; };
+		DA3C140F2AF0847600324A14 /* ManagedSettingsUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ManagedSettingsUI.framework; path = System/Library/Frameworks/ManagedSettingsUI.framework; sourceTree = SDKROOT; };
+		DA3C14412AF2091800324A14 /* OpenAIConfiguration.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = OpenAIConfiguration.xcconfig; sourceTree = "<group>"; };
 		DA3F9B352ADE7C100048550C /* CustomAlertViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomAlertViewModel.swift; sourceTree = "<group>"; };
 		DA3F9B382ADE813A0048550C /* CustomAlertConfigure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomAlertConfigure.swift; sourceTree = "<group>"; };
 		DA3F9B972AE0F14F0048550C /* ProfileSettingsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ProfileSettingsView.swift; sourceTree = "<group>"; };
@@ -83,6 +97,8 @@
 		DA3F9BAD2AE0F2410048550C /* ViewUtility.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ViewUtility.swift; sourceTree = "<group>"; };
 		DA3F9BD22AE0FF8A0048550C /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		DA3F9BD42AE0FF9B0048550C /* CustomTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTabBar.swift; sourceTree = "<group>"; };
+		DA56FFE72AE2B9890040855B /* MapAlertSubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapAlertSubView.swift; sourceTree = "<group>"; };
+		DA56FFEA2AE361FB0040855B /* KCC-Ganpan.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "KCC-Ganpan.otf"; sourceTree = "<group>"; };
 		DA71C8392AD787AC00081ED0 /* dogArea.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = dogArea.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DA71C83C2AD787AC00081ED0 /* dogAreaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = dogAreaApp.swift; sourceTree = "<group>"; };
 		DA71C8402AD787AC00081ED0 /* Item.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Item.swift; sourceTree = "<group>"; };
@@ -123,9 +139,19 @@
 		DA1731742AE20A3600EF10C8 /* Resource */ = {
 			isa = PBXGroup;
 			children = (
+				DA56FFED2AE362000040855B /* Font */,
 				DA1731752AE20A4D00EF10C8 /* CoreDataDTO.swift */,
 			);
 			path = Resource;
+			sourceTree = "<group>";
+		};
+		DA3C140C2AF0847600324A14 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				DA3C140D2AF0847600324A14 /* ManagedSettings.framework */,
+				DA3C140F2AF0847600324A14 /* ManagedSettingsUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		DA3F9B962AE0F14F0048550C /* Views */ = {
@@ -192,15 +218,26 @@
 			isa = PBXGroup;
 			children = (
 				DA0214732AE23B7900B5410A /* PolygonListView.swift */,
+				DA56FFE72AE2B9890040855B /* MapAlertSubView.swift */,
 			);
 			path = MapSubViews;
+			sourceTree = "<group>";
+		};
+		DA56FFED2AE362000040855B /* Font */ = {
+			isa = PBXGroup;
+			children = (
+				DA56FFEA2AE361FB0040855B /* KCC-Ganpan.otf */,
+			);
+			path = Font;
 			sourceTree = "<group>";
 		};
 		DA71C8302AD787AC00081ED0 = {
 			isa = PBXGroup;
 			children = (
+				DA3C14412AF2091800324A14 /* OpenAIConfiguration.xcconfig */,
 				DA71C83B2AD787AC00081ED0 /* dogArea */,
 				DA95CC6A2ADE0682004AD94D /* OpenAIClient */,
+				DA3C140C2AF0847600324A14 /* Frameworks */,
 				DA71C83A2AD787AC00081ED0 /* Products */,
 				DA933BC12AD7F0150029856C /* Recovered References */,
 			);
@@ -225,7 +262,6 @@
 				DA1731742AE20A3600EF10C8 /* Resource */,
 				DA3F9BAC2AE0F2410048550C /* Source */,
 				DA3F9B962AE0F14F0048550C /* Views */,
-				DA95CC892ADE144D004AD94D /* View */,
 				DA0FB2082AD7B21C00B235CF /* Info.plist */,
 				DA71C8402AD787AC00081ED0 /* Item.swift */,
 				DA71C8422AD787AD00081ED0 /* Assets.xcassets */,
@@ -269,13 +305,6 @@
 			path = ImageGeneratorView;
 			sourceTree = "<group>";
 		};
-		DA95CC892ADE144D004AD94D /* View */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = View;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -298,6 +327,7 @@
 				DA71C8362AD787AC00081ED0 /* Frameworks */,
 				DA71C8372AD787AC00081ED0 /* Resources */,
 				DA95CC742ADE0682004AD94D /* Embed Frameworks */,
+				DA3C141C2AF0847600324A14 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
@@ -416,6 +446,7 @@
 				DA3F9BAE2AE0F2410048550C /* ViewUtility.swift in Sources */,
 				DA3F9BA42AE0F14F0048550C /* MapViewModel.swift in Sources */,
 				DA3F9BA32AE0F14F0048550C /* MapView.swift in Sources */,
+				DA56FFE82AE2B9890040855B /* MapAlertSubView.swift in Sources */,
 				DA71C8412AD787AC00081ED0 /* Item.swift in Sources */,
 				DA3F9B392ADE813A0048550C /* CustomAlertConfigure.swift in Sources */,
 				DA71C83D2AD787AC00081ED0 /* dogAreaApp.swift in Sources */,
@@ -454,6 +485,7 @@
 /* Begin XCBuildConfiguration section */
 		DA71C8472AD787AD00081ED0 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = DA3C14412AF2091800324A14 /* OpenAIConfiguration.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -517,6 +549,7 @@
 		};
 		DA71C8482AD787AD00081ED0 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = DA3C14412AF2091800324A14 /* OpenAIConfiguration.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -573,10 +606,12 @@
 		};
 		DA71C84A2AD787AD00081ED0 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = DA3C14412AF2091800324A14 /* OpenAIConfiguration.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"dogArea/Preview Content\"";
@@ -584,7 +619,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = dogArea/Info.plist;
-				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "사용자의 위치 정보를 사용하기 위함입니다.";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "사용자의 위치 정보를 가져오기 위함입니다.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "사용자의 위치 정보를 가져오기 위함입니다.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -595,8 +631,10 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				OpenAIKey = "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";
 				PRODUCT_BUNDLE_IDENTIFIER = com.th.dogArea;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -605,10 +643,12 @@
 		};
 		DA71C84B2AD787AD00081ED0 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = DA3C14412AF2091800324A14 /* OpenAIConfiguration.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"dogArea/Preview Content\"";
@@ -616,7 +656,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = dogArea/Info.plist;
-				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "사용자의 위치 정보를 사용하기 위함입니다.";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "사용자의 위치 정보를 가져오기 위함입니다.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "사용자의 위치 정보를 가져오기 위함입니다.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -627,8 +668,10 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				OpenAIKey = "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";
 				PRODUCT_BUNDLE_IDENTIFIER = com.th.dogArea;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -637,6 +680,7 @@
 		};
 		DA95CC722ADE0682004AD94D /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = DA3C14412AF2091800324A14 /* OpenAIConfiguration.xcconfig */;
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
@@ -672,6 +716,7 @@
 		};
 		DA95CC732ADE0682004AD94D /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = DA3C14412AF2091800324A14 /* OpenAIConfiguration.xcconfig */;
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
