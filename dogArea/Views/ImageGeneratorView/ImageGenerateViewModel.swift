@@ -15,9 +15,9 @@ class ImageGenerateViewModel {
   let client: OpenAIClient
   var prompt = ""
   var fetchPhase = FetchPhase.initial
-  init(apiKey: String) {
-    self.client = .init(apikey: apiKey)
-  }
+//  init(apiKey: String) {
+//    self.client = .init(apikey: apiKey)
+//  }
   init() {
     let apiKey = Bundle.main.object(forInfoDictionaryKey: "OpenAI") as? String ?? ""
     self.client = .init(apikey: apiKey)
