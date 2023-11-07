@@ -120,7 +120,7 @@
 		DA3F9BAD2AE0F2410048550C /* ViewUtility.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ViewUtility.swift; sourceTree = "<group>"; };
 		DA3F9BD22AE0FF8A0048550C /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		DA3F9BD42AE0FF9B0048550C /* CustomTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTabBar.swift; sourceTree = "<group>"; };
-		DA45137C2AFA6CDF007AD69B /* OpenAIConfiguration.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = OpenAIConfiguration.xcconfig; sourceTree = "<group>"; };
+		DA45137D2AFA6DC1007AD69B /* OpenAIConfiguration.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = OpenAIConfiguration.xcconfig; sourceTree = "<group>"; };
 		DA56FFE72AE2B9890040855B /* MapAlertSubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapAlertSubView.swift; sourceTree = "<group>"; };
 		DA71C8392AD787AC00081ED0 /* dogArea.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = dogArea.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DA71C83C2AD787AC00081ED0 /* dogAreaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = dogAreaApp.swift; sourceTree = "<group>"; };
@@ -284,7 +284,7 @@
 		DA71C8302AD787AC00081ED0 = {
 			isa = PBXGroup;
 			children = (
-				DA45137C2AFA6CDF007AD69B /* OpenAIConfiguration.xcconfig */,
+				DA45137D2AFA6DC1007AD69B /* OpenAIConfiguration.xcconfig */,
 				DA71C83B2AD787AC00081ED0 /* dogArea */,
 				DA95CC6A2ADE0682004AD94D /* OpenAIClient */,
 				DA3C140C2AF0847600324A14 /* Frameworks */,
