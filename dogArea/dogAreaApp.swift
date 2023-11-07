@@ -11,6 +11,7 @@ import CoreData
 
 @main
 struct dogAreaApp: App {
+  @State var splash = true
   let persistenceController = PersistenceController.shared
   var sharedModelContainer: ModelContainer = {
     let schema = Schema([
@@ -27,8 +28,18 @@ struct dogAreaApp: App {
   
   var body: some Scene {
     WindowGroup {
-      RootView()
-        .environmentObject(CustomAlertViewModel())
+      if splash {
+        SplashView().onAppear{
+          DispatchQueue.main.asyncAfter(deadline: .now() + 2.7) {
+            withAnimation {
+              splash = false
+            }
+          }
+        }
+      } else {
+        RootView()
+          .environmentObject(CustomAlertViewModel())
+      }
     }
     .modelContainer(sharedModelContainer)
   }

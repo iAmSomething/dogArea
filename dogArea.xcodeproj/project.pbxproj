@@ -40,6 +40,10 @@
 		DA95CC832ADE0B8C004AD94D /* OpenAIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA95CC822ADE0B8C004AD94D /* OpenAIClient.swift */; };
 		DA95CC8B2ADE1475004AD94D /* TextToImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA95CC8A2ADE1475004AD94D /* TextToImageView.swift */; };
 		DA95CC8D2ADE1736004AD94D /* ImageGenerateViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA95CC862ADE1209004AD94D /* ImageGenerateViewModel.swift */; };
+		DA99F9B12AFA1EAB00B1483F /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = DA99F9B02AFA1EAB00B1483F /* Lottie */; };
+		DA99F9E12AFA343F00B1483F /* dogAreaSplash.json in Resources */ = {isa = PBXBuildFile; fileRef = DA99F9E02AFA343F00B1483F /* dogAreaSplash.json */; };
+		DAED24FB2AFA1C980044715A /* LottieView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAED24FA2AFA1C980044715A /* LottieView.swift */; };
+		DAED25022AFA1D430044715A /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAED25012AFA1D430044715A /* SplashView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -112,6 +116,9 @@
 		DA95CC822ADE0B8C004AD94D /* OpenAIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenAIClient.swift; sourceTree = "<group>"; };
 		DA95CC862ADE1209004AD94D /* ImageGenerateViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageGenerateViewModel.swift; sourceTree = "<group>"; };
 		DA95CC8A2ADE1475004AD94D /* TextToImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextToImageView.swift; sourceTree = "<group>"; };
+		DA99F9E02AFA343F00B1483F /* dogAreaSplash.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; name = dogAreaSplash.json; path = ../../../../dogAreaSplash.json; sourceTree = "<group>"; };
+		DAED24FA2AFA1C980044715A /* LottieView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LottieView.swift; sourceTree = "<group>"; };
+		DAED25012AFA1D430044715A /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -121,6 +128,7 @@
 			files = (
 				DA38B8DB2AD7BCD000148347 /* KakaoMapsSDK_SPM in Frameworks */,
 				DA95CC6F2ADE0682004AD94D /* OpenAIClient.framework in Frameworks */,
+				DA99F9B12AFA1EAB00B1483F /* Lottie in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -139,6 +147,7 @@
 		DA1731742AE20A3600EF10C8 /* Resource */ = {
 			isa = PBXGroup;
 			children = (
+				DAED24F92AFA1C8A0044715A /* Animations */,
 				DA56FFED2AE362000040855B /* Font */,
 				DA1731752AE20A4D00EF10C8 /* CoreDataDTO.swift */,
 			);
@@ -164,6 +173,7 @@
 				DA3F9B9E2AE0F14F0048550C /* RankingView */,
 				DA95CC852ADE11F7004AD94D /* ImageGeneratorView */,
 				DA3F9BAF2AE0F24C0048550C /* AlertView */,
+				DAED25012AFA1D430044715A /* SplashView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -305,6 +315,15 @@
 			path = ImageGeneratorView;
 			sourceTree = "<group>";
 		};
+		DAED24F92AFA1C8A0044715A /* Animations */ = {
+			isa = PBXGroup;
+			children = (
+				DA99F9E02AFA343F00B1483F /* dogAreaSplash.json */,
+				DAED24FA2AFA1C980044715A /* LottieView.swift */,
+			);
+			path = Animations;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -337,6 +356,7 @@
 			name = dogArea;
 			packageProductDependencies = (
 				DA38B8DA2AD7BCD000148347 /* KakaoMapsSDK_SPM */,
+				DA99F9B02AFA1EAB00B1483F /* Lottie */,
 			);
 			productName = dogArea;
 			productReference = DA71C8392AD787AC00081ED0 /* dogArea.app */;
@@ -398,6 +418,7 @@
 				DA95CC752ADE09AF004AD94D /* XCRemoteSwiftPackageReference "swift-openapi-generator" */,
 				DA95CC762ADE09D6004AD94D /* XCRemoteSwiftPackageReference "swift-openapi-runtime" */,
 				DA95CC792ADE0A07004AD94D /* XCRemoteSwiftPackageReference "swift-openapi-urlsession" */,
+				DAED24F82AFA1C7A0044715A /* XCRemoteSwiftPackageReference "lottie-ios" */,
 			);
 			productRefGroup = DA71C83A2AD787AC00081ED0 /* Products */;
 			projectDirPath = "";
@@ -416,6 +437,7 @@
 			files = (
 				DA71C8462AD787AD00081ED0 /* Preview Assets.xcassets in Resources */,
 				DA71C8432AD787AD00081ED0 /* Assets.xcassets in Resources */,
+				DA99F9E12AFA343F00B1483F /* dogAreaSplash.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -452,9 +474,11 @@
 				DA71C83D2AD787AC00081ED0 /* dogAreaApp.swift in Sources */,
 				DA1731732AE2017500EF10C8 /* PersistenceController.swift in Sources */,
 				DA3F9BA52AE0F14F0048550C /* MapModel.swift in Sources */,
+				DAED25022AFA1D430044715A /* SplashView.swift in Sources */,
 				DA3F9BD32AE0FF8A0048550C /* RootView.swift in Sources */,
 				DA3F9B362ADE7C100048550C /* CustomAlertViewModel.swift in Sources */,
 				DA3F9BA02AE0F14F0048550C /* ProfileSettingsView.swift in Sources */,
+				DAED24FB2AFA1C980044715A /* LottieView.swift in Sources */,
 				DA1731762AE20A4D00EF10C8 /* CoreDataDTO.swift in Sources */,
 				DA95CC8B2ADE1475004AD94D /* TextToImageView.swift in Sources */,
 			);
@@ -814,6 +838,14 @@
 				minimumVersion = 0.3.0;
 			};
 		};
+		DAED24F82AFA1C7A0044715A /* XCRemoteSwiftPackageReference "lottie-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/airbnb/lottie-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.3.3;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -836,6 +868,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = DA95CC752ADE09AF004AD94D /* XCRemoteSwiftPackageReference "swift-openapi-generator" */;
 			productName = "plugin:OpenAPIGenerator";
+		};
+		DA99F9B02AFA1EAB00B1483F /* Lottie */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DAED24F82AFA1C7A0044715A /* XCRemoteSwiftPackageReference "lottie-ios" */;
+			productName = Lottie;
 		};
 /* End XCSwiftPackageProductDependency section */
 

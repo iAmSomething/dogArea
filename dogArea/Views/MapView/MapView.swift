@@ -95,7 +95,7 @@ struct MapView : View{
     }
   }
   var addPointBtn: some View {
-    Image(.addPointBtn)
+    Image("plusButton")
       .resizable()
       .frame(width: 55, height: 55)
       .position(x:screenSize.width * 0.90,
