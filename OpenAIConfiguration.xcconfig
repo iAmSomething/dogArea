@@ -1,0 +1,10 @@
+//
+//  OpenAIConfiguration.xcconfig
+//  dogArea
+//
+//  Created by 김태훈 on 11/7/23.
+//
+
+// Configuration settings file format documentation can be found at:
+// https://help.apple.com/xcode/#/dev745c5c974
+API_KEY = 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
