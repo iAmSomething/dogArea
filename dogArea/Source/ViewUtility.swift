@@ -43,11 +43,6 @@ extension CLLocationCoordinate2D {
     CLLocation(latitude: self.latitude, longitude: self.longitude)
   }
 }
-extension Font {
-  public static func customFont(size: CGFloat = 13) -> Font {
-    Font.custom("KCC-Ganpan.otf", size: size)
-  }
-}
 
 
 import BackgroundTasks

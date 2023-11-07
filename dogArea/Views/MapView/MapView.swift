@@ -22,8 +22,8 @@ struct MapView : View{
           Annotation("", coordinate: location.coordinate) {
             ZStack {
               RoundedRectangle(cornerRadius: 5)
-                .fill(Color.yellow)
-              Text("💦")
+                .fill(Color.appYellowPale)
+              Text("💦").font(.appFont(for: .Bold, size: 10))
                 .padding(5)
             }
             .onTapGesture {
@@ -65,10 +65,9 @@ struct MapView : View{
       
       if viewModel.isWalking {
         Text("산책 한 지 \(viewModel.time.walkingTimeInterval) 지났습니다")
-          .font(.customFont(size: 13))
+          .font(.appFont(for: .ExtraLight, size: 20))
           .aspectRatio(contentMode: .fit)
-          .padding(.horizontal, 5)
-          .padding(.vertical, 2)
+          .padding(5)
           .background(.white)
           .cornerRadius(3)
           .position(x:screenSize.width * 0.50,
@@ -76,16 +75,24 @@ struct MapView : View{
         addPointBtn
       }
       else {
-        Button("전부 보여주기", action:{viewModel.showOnlyOne.toggle()
-          viewModel.setTrackingMode()})
+        Button(action:{viewModel.showOnlyOne.toggle()
+          viewModel.setTrackingMode()}, label: {
+            Text("전부 보여주기")
+              .font(.appFont(for: .Bold, size: 16))
+              .foregroundStyle(Color.appTextDarkGray)
+              .padding(7)
+              .background(Color.appYellow)
+              .cornerRadius(10)
+          })
         
-        .position(x:screenSize.width * 0.90,
-                  y:screenSize.height * 0.65)
+        .position(x:screenSize.width * 0.85,
+                  y:screenSize.height * 0.21)
       }
 #if DEBUG
         Button("전부삭제", action: viewModel.deleteAllPolygons)
           .position(x:screenSize.width * 0.90,
                     y:screenSize.height * 0.65)
+          .hidden()
 #endif
       startBtn
     }.onMapCameraChange(frequency: .onEnd) {context in

@@ -85,9 +85,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { t in
       self.time += t.timeInterval
       #if DEBUG
-      if Int(self.time) % 10 == 0 {
-        self.addLocation()
-      }
+//      if Int(self.time) % 10 == 0 {
+//        self.addLocation()
+//      }
       #endif
     }
   }
