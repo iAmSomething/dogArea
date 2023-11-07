@@ -51,3 +51,16 @@ actor registerBackground{
   func register() {
   }
 }
+extension CGFloat {
+  static func screenX(by: CGFloat = 100) -> CGFloat {
+    screenSize.width * (by / 100)
+  }
+  static func screenY(by: CGFloat = 100) -> CGFloat {
+    screenSize.height * (by / 100)
+  }
+}
+extension CGSize {
+  static var screenSize: CGSize {
+    UIScreen.main.bounds.size
+  }
+}

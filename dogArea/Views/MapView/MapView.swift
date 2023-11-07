@@ -106,7 +106,7 @@ struct MapView : View{
       .resizable()
       .frame(width: 55, height: 55)
       .position(x:screenSize.width * 0.90,
-                y:screenSize.height * 0.85)
+                y:screenSize.height * 0.80)
       .onTapGesture {
         viewModel.setTrackingMode()
         myAlert.alertType = .addPoint
@@ -118,7 +118,7 @@ struct MapView : View{
       .aspectRatio(contentMode: .fit)
       .frame(width: 64, height: 64)
       .position(x:screenSize.width * 0.5,
-                y:screenSize.height * 0.85)
+                y:screenSize.height * 0.8)
       .onTapGesture {
         viewModel.endWalk()
       }

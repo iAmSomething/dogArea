@@ -20,3 +20,25 @@ extension Color {
   static let appHotPink: Color = Color(red: 1, green: 187.0/255, blue: 204.0/255.0)
 
 }
+// 색 보기
+struct ColorListView: View {
+  var body: some View {
+    NavigationStack {
+      List {
+        Rectangle().foregroundStyle(Color.appRed)
+        Rectangle().foregroundStyle(Color.appYellow)
+        Rectangle().foregroundStyle(Color.appYellowPale)
+        Rectangle().foregroundStyle(Color.appGreen)
+        Rectangle().foregroundStyle(Color.appTextLightGray)
+        Rectangle().foregroundStyle(Color.appTextDarkGray)
+        Rectangle().foregroundStyle(Color.appPinkYello)
+        Rectangle().foregroundStyle(Color.appPeach)
+        Rectangle().foregroundStyle(Color.appPink)
+        Rectangle().foregroundStyle(Color.appHotPink)
+      }
+    }
+  }
+}
+#Preview {
+  ColorListView()
+}
