@@ -59,6 +59,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
       }
     }
   }
+  func fetchPolygonList() {
+    self.polygonList = self.fetchPolygons()
+  }
   
   func endWalk(){
     if isWalking {
@@ -75,24 +78,50 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
       timerSet()
       polygon.clear()
     }
-    isWalking.toggle()
-    
+    withAnimation{
+      isWalking.toggle()
+    }
   }
   func timerSet() {
-    
     timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { t in
       self.time += t.timeInterval
-      #if DEBUG
-//      if Int(self.time) % 10 == 0 {
-//        self.addLocation()
-//      }
-      #endif
+#if DEBUG
+      //      if Int(self.time) % 10 == 0 {
+      //        self.addLocation()
+      //      }
+#endif
     }
+  }
+  func calculateArea() -> Double {
+      let points = self.polygon.locations
+      guard points.count >= 3 else {
+          // At least 3 points are needed.
+          return 0
+      }
+      let earthRadius = 6371000.0  // in meters
+      var area: Double = 0
+      for i in 0..<points.count {
+          let currentPoint = points[i]
+          let nextPoint = points[(i + 1) % points.count]
+
+          let latitude1 = currentPoint.coordinate.latitude * .pi / 180
+          let longitude1 = currentPoint.coordinate.longitude * .pi / 180
+          let latitude2 = nextPoint.coordinate.latitude * .pi / 180
+          let longitude2 = nextPoint.coordinate.longitude * .pi / 180
+
+          let x1 = earthRadius * cos(latitude1) * cos(longitude1)
+          let y1 = earthRadius * cos(latitude1) * sin(longitude1)
+          let x2 = earthRadius * cos(latitude2) * cos(longitude2)
+          let y2 = earthRadius * cos(latitude2) * sin(longitude2)
+
+          area += (x1 * y2 - x2 * y1) / 2
+      }
+      return abs(area)
   }
   func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
     guard let location = locations.last else { return }
     DispatchQueue.main.async { [weak self] in
-        self?.location = location
+      self?.location = location
     }
   }
   func setTrackingMode() {

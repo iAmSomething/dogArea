@@ -24,6 +24,8 @@ struct CustomAlert: View {
     ZStack {
       // faded background
       Color.black.opacity(0.75)
+        .frame(width: screenSize.width, height: screenSize.height)
+        .position(x: screenSize.width / 2, y: screenSize.height / 2)
         .edgesIgnoringSafeArea(.all)
         .onTapGesture {
           self.presentAlert.toggle()

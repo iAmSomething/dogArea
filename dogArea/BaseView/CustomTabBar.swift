@@ -11,21 +11,18 @@ struct CustomTabBar: View {
   @Binding var selectedTab: Int
   
   var body: some View {
-    HStack(spacing:25){
+    HStack{
       // Home Button
-      Label("홈",systemImage: self.selectedTab==0 ? "house.fill" : "house")
-        .font(.regular14)
-        .onTapGesture {self.selectedTab=0}
-        .labelStyle(TabStyle())
-        .frame(maxWidth: .infinity)
+      TabButtonView(selectedTab: $selectedTab,
+                    imageName: ("homeBtn","homeBtnGray"), tabId: 0,
+                    titleName: "홈")
       
       // Ranking Button
-      Label("랭킹",systemImage: self.selectedTab==1 ? "star.fill" : "star")
-        .font(.regular14)
-        .onTapGesture {self.selectedTab=1}
-        .labelStyle(TabStyle())
-        .frame(maxWidth: .infinity)
-        
+      TabButtonView(selectedTab: $selectedTab,
+                    imageName: ("listBtn","listBtnGray"),
+                    tabId: 1,
+                    titleName: "산책 목록")
+      
       
       // Center Big Map Button
       CircleButton(iconName:"map.fill",
@@ -33,27 +30,25 @@ struct CustomTabBar: View {
                    action:{
         self.selectedTab=2
       })
-      .padding(.bottom, 20)
       .frame(maxWidth: .infinity)
       
       // Ranking button
-      Label("이미지",systemImage: self.selectedTab==3 ? "bolt.circle.fill" : "bolt.circle")
-        .font(.regular14)
-        .onTapGesture {self.selectedTab=3}
-        .labelStyle(TabStyle())
-        .frame(maxWidth: .infinity)
+      TabButtonView(selectedTab: $selectedTab,
+                    imageName: ("imageBtn","imageBtnGray"),
+                    tabId: 3,
+                    titleName: "이미지")
       
       // Settings button
-      Label("설정",systemImage: self.selectedTab==4 ? "gearshape.fill" : "gearshape")
-        .font(.regular14)
-        .onTapGesture {self.selectedTab=4}
-        .labelStyle(TabStyle())
-        .frame(maxWidth: .infinity)
+      TabButtonView(selectedTab: $selectedTab,
+                    imageName: ("settingBtn","settingBtnGray"),
+                    tabId: 4,
+                    titleName: "설정")
       
     }.padding(.horizontal,30)
-      .padding(.top,-5)
-      .padding(.bottom, 20)
+      .padding(.vertical, 10)
+      .padding(.bottom, 10)
       .background(Color.white.edgesIgnoringSafeArea(.bottom))
+      .border(Color.appTextDarkGray, width: 0.3)
   }
 }
 
@@ -83,5 +78,27 @@ struct CircleButton : View{
           .foregroundColor(isSelected ? Color.appPinkYello : Color.appTextDarkGray)
       }
     }.onTapGesture(perform:self.action)
+  }
+}
+
+struct TabButtonView: View {
+  @Binding var selectedTab: Int
+  var imageName: (String, String)
+  var tabId: Int
+  var titleName: String
+  var body: some View {
+    Label(
+      title: { Text(titleName) },
+      icon: {
+        Image(self.selectedTab==tabId ? imageName.0 : imageName.1)
+          .resizable()
+          .frame(width: 30, height: 30)
+          .aspectRatio(contentMode: .fit)
+      }
+    ).padding(.horizontal, 5)
+      .font(.regular12)
+      .onTapGesture {selectedTab=tabId}
+      .labelStyle(TabStyle())
+      .frame(maxWidth: .infinity)
   }
 }

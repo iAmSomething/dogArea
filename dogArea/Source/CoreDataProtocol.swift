@@ -1,5 +1,5 @@
 //
-//  CoreDataViewModel.swift
+//  CoreDataProtocol.swift
 //  dogArea
 //
 //  Created by 김태훈 on 11/8/23.

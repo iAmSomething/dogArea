@@ -8,8 +8,22 @@
 import SwiftUI
 
 struct HomeView: View {
+  @State private var showModal = false
+  @State private var settingsDetent = PresentationDetent.medium
+  init() {
+    print("홈뷰 이닛")
+  }
     var body: some View {
-      Text("Hello, World!")
+        Button("Show Modal") {
+            withAnimation {
+                self.showModal = true
+            }
+        }
+        .sheet(isPresented: $showModal) {
+          ProfileSettingsView()
+            .presentationDetents([.medium],
+                                 selection: $settingsDetent)
+        }
     }
 }
 

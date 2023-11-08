@@ -1,5 +1,5 @@
 //
-//  RankingListCell.swift
+//  WalkListCell.swift
 //  dogArea
 //
 //  Created by 김태훈 on 11/8/23.
@@ -7,14 +7,14 @@
 
 import SwiftUI
 
-struct RankingListCell: View {
+struct WalkListCell: View {
   @State var walkData: WalkDataModel
     var body: some View {
       HStack {
         VStack(alignment: .leading) {
           HStack {
-            Text(walkData.createdAt.createdAtTimeDescription)
-              .font(.regular18)
+            Text(walkData.createdAt.createdAtTimeYYMMDD)
+              .font(.regular14)
               .padding(.leading, 10)
             Spacer()
           }
@@ -54,6 +54,6 @@ struct ThumnailImageView: View {
           .stroke(Color(red: 0.85, green: 0.85, blue: 0.85), lineWidth: 1)
       )
     
-      .padding(.trailing, 40)
+      .padding(.trailing, 10)
   }
 }
