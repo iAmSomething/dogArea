@@ -26,6 +26,8 @@ extension Font {
   // Regular
   static let regular14: Font = .custom(FontType.Regular.rawValue, size: 14)
   static let regular16: Font = .custom(FontType.Regular.rawValue, size: 16)
+  static let regular18: Font = .custom(FontType.Regular.rawValue, size: 18)
+
   
   //appFont
   static func appFont(for type : FontType, size: CGFloat) -> Font? {

@@ -20,13 +20,8 @@ struct MapView : View{
           interactionModes: .all){
         ForEach(viewModel.polygon.locations) { location in
           Annotation("", coordinate: location.coordinate) {
-            ZStack {
-              RoundedRectangle(cornerRadius: 5)
-                .fill(Color.appYellowPale)
-              Text("💦").font(.appFont(for: .Bold, size: 10))
-                .padding(5)
-            }
-            .onTapGesture {
+            PositionMarkerView()
+              .onTapGesture {
               viewModel.selectedMarker = location
               myAlert.callAlert(type: .annotationSelected(location))
             }

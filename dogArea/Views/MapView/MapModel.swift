@@ -29,6 +29,7 @@ struct Location: Identifiable {
 extension Location : Equatable {
   static func == (lhs: Location, rhs: Location) -> Bool { lhs.id == rhs.id }
 }
+
 struct Polygon: Identifiable {
   var id: UUID
   var locations: [Location]

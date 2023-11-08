@@ -18,14 +18,10 @@ struct SplashView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear{
           DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            withAnimation {
-              firstText = true
-            }
+            withAnimation {firstText = true}
           }
           DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            withAnimation {
-              secondText = true
-            }
+            withAnimation {secondText = true}
           }
         }
       VStack(alignment: .leading, spacing: 0) {
@@ -37,7 +33,7 @@ struct SplashView: View {
               .frame(maxHeight: .infinity)
               .aspectRatio(contentMode: .fit)
             Spacer()
-          }
+          }.padding(.bottom, -25)
         }
         if secondText {
           HStack (spacing: 0){

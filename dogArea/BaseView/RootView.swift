@@ -29,12 +29,12 @@ struct RootView: View {
             .onEnded({ value in
               if selectedTab != 2{
                 // Swipe up to go to the next tab
-                if value.startLocation.y > value.predictedEndLocation.y {
+                if value.startLocation.x > value.predictedEndLocation.x {
                   selectedTab = (selectedTab + 1) % 5
                 }
                 
                 // Swipe down to go to the previous tab
-                if value.startLocation.y < value.predictedEndLocation.y {
+                if value.startLocation.x < value.predictedEndLocation.x {
                   selectedTab = (selectedTab - 1 + 5) % 5
                 }
               }

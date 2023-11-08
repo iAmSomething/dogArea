@@ -24,6 +24,11 @@
 		DA3F9BAE2AE0F2410048550C /* ViewUtility.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9BAD2AE0F2410048550C /* ViewUtility.swift */; };
 		DA3F9BD32AE0FF8A0048550C /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9BD22AE0FF8A0048550C /* RootView.swift */; };
 		DA3F9BD52AE0FF9B0048550C /* CustomTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9BD42AE0FF9B0048550C /* CustomTabBar.swift */; };
+		DA4513802AFB1EC1007AD69B /* RankingListCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA45137F2AFB1EC1007AD69B /* RankingListCell.swift */; };
+		DA4513832AFB25C2007AD69B /* CustomView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA4513822AFB25C2007AD69B /* CustomView.swift */; };
+		DA4513862AFB2CFC007AD69B /* RankingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA4513852AFB2CFC007AD69B /* RankingViewModel.swift */; };
+		DA4513892AFB2D68007AD69B /* CoreDataViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA4513882AFB2D68007AD69B /* CoreDataViewModel.swift */; };
+		DA45138C2AFB36D4007AD69B /* RankingModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA45138B2AFB36D4007AD69B /* RankingModel.swift */; };
 		DA56FFE82AE2B9890040855B /* MapAlertSubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA56FFE72AE2B9890040855B /* MapAlertSubView.swift */; };
 		DA71C83D2AD787AC00081ED0 /* dogAreaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA71C83C2AD787AC00081ED0 /* dogAreaApp.swift */; };
 		DA71C8412AD787AC00081ED0 /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA71C8402AD787AC00081ED0 /* Item.swift */; };
@@ -121,6 +126,11 @@
 		DA3F9BD22AE0FF8A0048550C /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		DA3F9BD42AE0FF9B0048550C /* CustomTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTabBar.swift; sourceTree = "<group>"; };
 		DA45137D2AFA6DC1007AD69B /* OpenAIConfiguration.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = OpenAIConfiguration.xcconfig; sourceTree = "<group>"; };
+		DA45137F2AFB1EC1007AD69B /* RankingListCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RankingListCell.swift; sourceTree = "<group>"; };
+		DA4513822AFB25C2007AD69B /* CustomView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomView.swift; sourceTree = "<group>"; };
+		DA4513852AFB2CFC007AD69B /* RankingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RankingViewModel.swift; sourceTree = "<group>"; };
+		DA4513882AFB2D68007AD69B /* CoreDataViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataViewModel.swift; sourceTree = "<group>"; };
+		DA45138B2AFB36D4007AD69B /* RankingModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RankingModel.swift; sourceTree = "<group>"; };
 		DA56FFE72AE2B9890040855B /* MapAlertSubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapAlertSubView.swift; sourceTree = "<group>"; };
 		DA71C8392AD787AC00081ED0 /* dogArea.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = dogArea.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DA71C83C2AD787AC00081ED0 /* dogAreaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = dogAreaApp.swift; sourceTree = "<group>"; };
@@ -224,6 +234,9 @@
 			isa = PBXGroup;
 			children = (
 				DA3F9B9F2AE0F14F0048550C /* RankingView.swift */,
+				DA45137F2AFB1EC1007AD69B /* RankingListCell.swift */,
+				DA4513852AFB2CFC007AD69B /* RankingViewModel.swift */,
+				DA45138B2AFB36D4007AD69B /* RankingModel.swift */,
 			);
 			path = RankingView;
 			sourceTree = "<group>";
@@ -232,6 +245,8 @@
 			isa = PBXGroup;
 			children = (
 				DA3F9BAD2AE0F2410048550C /* ViewUtility.swift */,
+				DA4513822AFB25C2007AD69B /* CustomView.swift */,
+				DA4513882AFB2D68007AD69B /* CoreDataViewModel.swift */,
 			);
 			path = Source;
 			sourceTree = "<group>";
@@ -520,9 +535,11 @@
 				DA0214742AE23B7900B5410A /* PolygonListView.swift in Sources */,
 				DA3F9BA22AE0F14F0048550C /* HomeView.swift in Sources */,
 				DA95CC8D2ADE1736004AD94D /* ImageGenerateViewModel.swift in Sources */,
+				DA45138C2AFB36D4007AD69B /* RankingModel.swift in Sources */,
 				DA3F9BA12AE0F14F0048550C /* NotificationCenterView.swift in Sources */,
 				DA1731712AE200C100EF10C8 /* dogArea.xcdatamodeld in Sources */,
 				DA933BE92ADD04E70029856C /* CustomAlertView.swift in Sources */,
+				DA4513862AFB2CFC007AD69B /* RankingViewModel.swift in Sources */,
 				DA3F9BAE2AE0F2410048550C /* ViewUtility.swift in Sources */,
 				DA3F9BA42AE0F14F0048550C /* MapViewModel.swift in Sources */,
 				DA3F9BA32AE0F14F0048550C /* MapView.swift in Sources */,
@@ -532,14 +549,17 @@
 				DA71C83D2AD787AC00081ED0 /* dogAreaApp.swift in Sources */,
 				DA1731732AE2017500EF10C8 /* PersistenceController.swift in Sources */,
 				DA3F9BA52AE0F14F0048550C /* MapModel.swift in Sources */,
+				DA4513832AFB25C2007AD69B /* CustomView.swift in Sources */,
 				DAED25022AFA1D430044715A /* SplashView.swift in Sources */,
 				DA99F9E62AFA4F3E00B1483F /* Color.swift in Sources */,
 				DA3F9BD32AE0FF8A0048550C /* RootView.swift in Sources */,
 				DA99F9E82AFA4F9000B1483F /* Font.swift in Sources */,
 				DA3F9B362ADE7C100048550C /* CustomAlertViewModel.swift in Sources */,
 				DA3F9BA02AE0F14F0048550C /* ProfileSettingsView.swift in Sources */,
+				DA4513892AFB2D68007AD69B /* CoreDataViewModel.swift in Sources */,
 				DAED24FB2AFA1C980044715A /* LottieView.swift in Sources */,
 				DA1731762AE20A4D00EF10C8 /* CoreDataDTO.swift in Sources */,
+				DA4513802AFB1EC1007AD69B /* RankingListCell.swift in Sources */,
 				DA95CC8B2ADE1475004AD94D /* TextToImageView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
