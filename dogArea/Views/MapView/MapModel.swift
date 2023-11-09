@@ -50,6 +50,28 @@ struct Polygon: Identifiable {
     self.polygon?.title = "🐶"
     self.createdAt = createdAt
   }
+    func center() -> CLLocationCoordinate2D? {
+        guard !self.locations.isEmpty else {
+            return nil
+        }
+        
+        var minX = locations[0].coordinate.latitude
+        var minY = locations[0].coordinate.longitude
+        var maxX = locations[0].coordinate.latitude
+        var maxY = locations[0].coordinate.longitude
+        
+        for location in locations {
+            minX = min(minX, location.coordinate.latitude)
+            minY = min(minY, location.coordinate.longitude)
+            maxX = max(maxX, location.coordinate.latitude)
+            maxY = max(maxY, location.coordinate.longitude)
+        }
+        
+        let centerLatitude = (minX + maxX) / 2
+        let centerLongitude = (minY + maxY) / 2
+        
+        return CLLocationCoordinate2D(latitude: centerLatitude, longitude: centerLongitude)
+    }
 }
 extension Polygon {
   mutating func addPoint(_ loc : Location) {

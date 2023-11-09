@@ -31,7 +31,6 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
   @Published var camera: MapCamera = .init(.init())
   @Published var cameraPosition = MapCameraPosition.userLocation(followsHeading: false,fallback: .automatic)
   @Published var selectedMarker: Location? = nil
-  
   @Published var showOnlyOne: Bool = true
   override init() {
     super.init()
@@ -62,7 +61,28 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
   func fetchPolygonList() {
     self.polygonList = self.fetchPolygons()
   }
-  
+    func renderToImage() -> UIImage? {
+        var img: UIImage? = nil
+        if let center = self.polygon.center() {
+            let region = MKCoordinateRegion(center: center,
+                                            span: .init(latitudeDelta: 0.01,
+                                                        longitudeDelta: 0.01))
+            let mapOptions = MKMapSnapshotter.Options()
+            mapOptions.region = region
+            mapOptions.size = CGSize(width: 500, height: 500)
+            let snapshotter = MKMapSnapshotter(options: mapOptions)
+            snapshotter.start { (snapshotOrNil, errorOrNil) in
+              if let error = errorOrNil {
+                print(error)
+                return
+              }
+              if let snapshot = snapshotOrNil {
+                  img = snapshot.image
+              }
+            }
+        }
+        return img
+    }
   func endWalk(){
     if isWalking {
       timer?.invalidate()
@@ -118,6 +138,17 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
       }
       return abs(area)
   }
+    func calculatedAreaString(isPyong: Bool = false) -> String {
+        let area = calculateArea()
+        var str = String(format: "%.2f" , area) + "㎡"
+        if area > 10000.0 {
+            str = String(format: "%.2f" , area/1000) + "k㎡"
+        }
+        if isPyong {
+            str = String(format: "%.1f" , area/3.3) + "평"
+        }
+        return str
+    }
   func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
     guard let location = locations.last else { return }
     DispatchQueue.main.async { [weak self] in

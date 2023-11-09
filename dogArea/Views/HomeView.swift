@@ -23,6 +23,8 @@ struct HomeView: View {
           ProfileSettingsView()
             .presentationDetents([.medium],
                                  selection: $settingsDetent)
+            .interactiveDismissDisabled(true)
+            
         }
     }
 }

@@ -22,6 +22,10 @@ extension CustomAlertViewModel {
     self.alertType = type
     isAlert.toggle()
   }
+    func callCustomAlert(model: AlertModel,leftAction: @escaping () -> (),rightAction: @escaping () -> () = {}) {
+        self.alertType = .custom(model, leftAction, rightAction)
+        isAlert.toggle()
+    }
 }
 
 struct AlertViewModifier: ViewModifier {

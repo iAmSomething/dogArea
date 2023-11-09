@@ -68,6 +68,8 @@
 		DA99FA022AFA50D700B1483F /* Pretendard-Light.otf in Resources */ = {isa = PBXBuildFile; fileRef = DA99F9F12AFA50D700B1483F /* Pretendard-Light.otf */; };
 		DA99FA032AFA50D700B1483F /* Pretendard-Black.otf in Resources */ = {isa = PBXBuildFile; fileRef = DA99F9F22AFA50D700B1483F /* Pretendard-Black.otf */; };
 		DA99FA042AFA50D700B1483F /* Pretendard-Black.otf in Resources */ = {isa = PBXBuildFile; fileRef = DA99F9F22AFA50D700B1483F /* Pretendard-Black.otf */; };
+		DAAE221F2AFCBDC4005FD096 /* StartModalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAAE221E2AFCBDC4005FD096 /* StartModalView.swift */; };
+		DAAE22232AFCC225005FD096 /* WalkDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAAE22222AFCC225005FD096 /* WalkDetailView.swift */; };
 		DAED24FB2AFA1C980044715A /* LottieView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAED24FA2AFA1C980044715A /* LottieView.swift */; };
 		DAED25022AFA1D430044715A /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAED25012AFA1D430044715A /* SplashView.swift */; };
 /* End PBXBuildFile section */
@@ -159,6 +161,8 @@
 		DA99F9F02AFA50D700B1483F /* Pretendard-Bold.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Pretendard-Bold.otf"; sourceTree = "<group>"; };
 		DA99F9F12AFA50D700B1483F /* Pretendard-Light.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Pretendard-Light.otf"; sourceTree = "<group>"; };
 		DA99F9F22AFA50D700B1483F /* Pretendard-Black.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Pretendard-Black.otf"; sourceTree = "<group>"; };
+		DAAE221E2AFCBDC4005FD096 /* StartModalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartModalView.swift; sourceTree = "<group>"; };
+		DAAE22222AFCC225005FD096 /* WalkDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkDetailView.swift; sourceTree = "<group>"; };
 		DAED24FA2AFA1C980044715A /* LottieView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LottieView.swift; sourceTree = "<group>"; };
 		DAED25012AFA1D430044715A /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -276,7 +280,9 @@
 			children = (
 				DA56FFE72AE2B9890040855B /* MapAlertSubView.swift */,
 				DA822CD52AFB5E21001EC94D /* StartButtonView.swift */,
+				DAAE221E2AFCBDC4005FD096 /* StartModalView.swift */,
 				DA822CDC2AFB60B6001EC94D /* MapSettingView.swift */,
+				DAAE22222AFCC225005FD096 /* WalkDetailView.swift */,
 			);
 			path = MapSubViews;
 			sourceTree = "<group>";
@@ -549,6 +555,7 @@
 				DA3F9BA12AE0F14F0048550C /* NotificationCenterView.swift in Sources */,
 				DA1731712AE200C100EF10C8 /* dogArea.xcdatamodeld in Sources */,
 				DA933BE92ADD04E70029856C /* CustomAlertView.swift in Sources */,
+				DAAE22232AFCC225005FD096 /* WalkDetailView.swift in Sources */,
 				DA4513862AFB2CFC007AD69B /* WalkListViewModel.swift in Sources */,
 				DA3F9BAE2AE0F2410048550C /* ViewUtility.swift in Sources */,
 				DA3F9BA42AE0F14F0048550C /* MapViewModel.swift in Sources */,
@@ -571,6 +578,7 @@
 				DAED24FB2AFA1C980044715A /* LottieView.swift in Sources */,
 				DA1731762AE20A4D00EF10C8 /* CoreDataDTO.swift in Sources */,
 				DA822CD62AFB5E21001EC94D /* StartButtonView.swift in Sources */,
+				DAAE221F2AFCBDC4005FD096 /* StartModalView.swift in Sources */,
 				DA4513802AFB1EC1007AD69B /* WalkListCell.swift in Sources */,
 				DA95CC8B2ADE1475004AD94D /* TextToImageView.swift in Sources */,
 			);

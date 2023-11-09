@@ -13,6 +13,8 @@ struct MapView : View{
   @ObservedObject var myAlert: CustomAlertViewModel = .init()
   @ObservedObject var viewModel: MapViewModel = .init()
   @State private var isModalPresented = false
+    @State private var isWalkingViewPresented = false
+    @State private var endWalkingViewPresented = false
   init() {
     print("맵뷰 이닛")
   }
@@ -68,16 +70,17 @@ struct MapView : View{
               .cornerRadius(10)
           })
         }
-
         Spacer()
-        
         if viewModel.isWalking {
           HStack {
             Spacer()
             addPointBtn
           }
         }
-        StartButtonView(viewModel: viewModel)
+          StartButtonView(viewModel: viewModel,
+                          myAlert: myAlert,
+                          isModalPresented: $isWalkingViewPresented,
+                          endWalkingViewPresented: $endWalkingViewPresented)
       }.onMapCameraChange(frequency: .onEnd) {context in
         //      print(viewModel.location)
         //      print(viewModel.cameraPosition.region?.center)
@@ -87,6 +90,11 @@ struct MapView : View{
     .sheet(isPresented: $isModalPresented){
       MapSettingView(viewModel: viewModel, myAlert: myAlert)
         .presentationDetents([.oneThird])
+    }.fullScreenCover(isPresented: $isWalkingViewPresented) {
+        StartModalView()
+            .interactiveDismissDisabled(true)
+    }.sheet(isPresented: $endWalkingViewPresented) {
+        WalkDetailView(viewModel: viewModel).interactiveDismissDisabled(true)
     }
 
   }
@@ -98,7 +106,6 @@ struct MapView : View{
         viewModel.setTrackingMode()
         myAlert.alertType = .addPoint
         myAlert.callAlert(type: .addPoint)}
-    
   }
   var mapControls: some View {
     VStack{

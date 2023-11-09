@@ -31,8 +31,8 @@ struct MapAlertSubView: View {
           if let marker = viewModel.selectedMarker {
             viewModel.removeLocation(marker.id)
           }})
-      case .custom(let alert) :
-        ca = CustomAlert(presentAlert: $myAlert.isAlert, alertModel: alert)
+      case .custom(let alert, let leftAction, let rightAction) :
+          ca = CustomAlert(presentAlert: $myAlert.isAlert, alertModel: alert , leftButtonAction: leftAction, rightButtonAction: rightAction)
       case .logOut:
         ca = CustomAlert(presentAlert: $myAlert.isAlert,
                          alertModel: myAlert.alertType.model)
