@@ -6,33 +6,36 @@
 //
 
 import SwiftUI
-
 struct WalkDetailView: View {
     @Environment(\.dismiss) var dismiss
     @ObservedObject var viewModel: MapViewModel
     @State private var snsCircles: [String] = ["instagram", "twitter"]
+    @StateObject var mapImageProvider = MapImageProvider()
+    
     @State private var isMeter: Bool = true
     @State private var image: UIImage? = nil
     @State private var showSaveMessage = false
-    
     var body: some View {
         VStack {
-            if image == nil {
-                MapCaptureView(captureImage: $image, polygon: viewModel.polygon)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .cornerRadius(5)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 60)
-                    .padding(.bottom,20)
-            } else {
-                Image(uiImage: image!)
-                    .resizable()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .cornerRadius(5)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 60)
-                    .padding(.bottom,20)
-            }
+            Image(uiImage: mapImageProvider.capturedImage ?? UIImage.emptyImg)
+                .resizable()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .cornerRadius(5)
+                .padding(.horizontal, 20)
+                .padding(.top, 60)
+                .padding(.bottom,20)
+                .onAppear {
+                    guard let polygon = viewModel.polygon.polygon else { return }
+                    Task {
+                        do {
+                            try await mapImageProvider.captureMapImage(for: polygon)
+                        } catch {
+                            print("Error capturing map image: \(error.localizedDescription)")
+
+                        }
+                    }
+
+                }
             HStack {
                 SimpleKeyValueView(value: ("영역 넓이", viewModel.calculatedAreaString(areaSize: viewModel.polygon.walkingArea,isPyong: !isMeter)))
                     .onTapGesture {isMeter.toggle()}
@@ -64,7 +67,8 @@ struct WalkDetailView: View {
             }
             Spacer()
             Button(action: {
-                guard let image = image else { return }
+                guard let image = mapImageProvider.capturedImage else {return}
+//                guard let image = image else { return }
                 print("이미지 캡쳐됨")
                 UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
                 showSaveMessage.toggle()
@@ -76,7 +80,7 @@ struct WalkDetailView: View {
                 Text("저장하기")
                     .foregroundStyle(.black)
                     .frame(maxWidth: .infinity)
-
+                
             }).frame(maxWidth: .infinity, maxHeight: 50)
                 .background(Color(red: 0.99, green: 0.73, blue: 0.73))
                 .cornerRadius(15)
@@ -100,7 +104,7 @@ struct WalkDetailView: View {
                         .transition(.opacity)
                     
                 }
-            }.animation(.easeInOut(duration: 0.2))
+            }.animation(.easeInOut(duration: 0.2), value: showSaveMessage)
         )
     }
 }

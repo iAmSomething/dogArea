@@ -40,6 +40,8 @@
 		DA71C8462AD787AD00081ED0 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DA71C8452AD787AD00081ED0 /* Preview Assets.xcassets */; };
 		DA822CD62AFB5E21001EC94D /* StartButtonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA822CD52AFB5E21001EC94D /* StartButtonView.swift */; };
 		DA822CDD2AFB60B6001EC94D /* MapSettingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA822CDC2AFB60B6001EC94D /* MapSettingView.swift */; };
+		DA8BB9E52B024B1900E350C4 /* MapCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA8BB9E42B024B1900E350C4 /* MapCapture.swift */; };
+		DA8BB9E82B0255B700E350C4 /* SettingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA8BB9E72B0255B700E350C4 /* SettingViewModel.swift */; };
 		DA933BE92ADD04E70029856C /* CustomAlertView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA933BE82ADD04E70029856C /* CustomAlertView.swift */; };
 		DA95CC6C2ADE0682004AD94D /* OpenAIClient.h in Headers */ = {isa = PBXBuildFile; fileRef = DA95CC6B2ADE0682004AD94D /* OpenAIClient.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		DA95CC6F2ADE0682004AD94D /* OpenAIClient.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DA95CC692ADE0682004AD94D /* OpenAIClient.framework */; };
@@ -154,6 +156,8 @@
 		DA71C8452AD787AD00081ED0 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		DA822CD52AFB5E21001EC94D /* StartButtonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartButtonView.swift; sourceTree = "<group>"; };
 		DA822CDC2AFB60B6001EC94D /* MapSettingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapSettingView.swift; sourceTree = "<group>"; };
+		DA8BB9E42B024B1900E350C4 /* MapCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapCapture.swift; sourceTree = "<group>"; };
+		DA8BB9E72B0255B700E350C4 /* SettingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingViewModel.swift; sourceTree = "<group>"; };
 		DA933BE82ADD04E70029856C /* CustomAlertView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomAlertView.swift; sourceTree = "<group>"; };
 		DA95CC692ADE0682004AD94D /* OpenAIClient.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = OpenAIClient.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		DA95CC6B2ADE0682004AD94D /* OpenAIClient.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = OpenAIClient.h; sourceTree = "<group>"; };
@@ -330,6 +334,7 @@
 				DA822CDC2AFB60B6001EC94D /* MapSettingView.swift */,
 				DA390A6E2AFE027C00BACF2B /* MapSubView.swift */,
 				DA390A772AFE1E1200BACF2B /* MapCaptureView.swift */,
+				DA8BB9E42B024B1900E350C4 /* MapCapture.swift */,
 			);
 			path = MapSubViews;
 			sourceTree = "<group>";
@@ -402,6 +407,7 @@
 			children = (
 				DA3F9B972AE0F14F0048550C /* ProfileSettingsView.swift */,
 				DA3F9B982AE0F14F0048550C /* NotificationCenterView.swift */,
+				DA8BB9E72B0255B700E350C4 /* SettingViewModel.swift */,
 			);
 			path = ProfileSettingView;
 			sourceTree = "<group>";
@@ -592,6 +598,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DA8BB9E52B024B1900E350C4 /* MapCapture.swift in Sources */,
 				DA3F9BA62AE0F14F0048550C /* WalkListView.swift in Sources */,
 				DA3F9BD52AE0FF9B0048550C /* CustomTabBar.swift in Sources */,
 				DA3F9BA22AE0F14F0048550C /* HomeView.swift in Sources */,
@@ -610,6 +617,7 @@
 				DA3F9BA32AE0F14F0048550C /* MapView.swift in Sources */,
 				DA56FFE82AE2B9890040855B /* MapAlertSubView.swift in Sources */,
 				DA390A782AFE1E1200BACF2B /* MapCaptureView.swift in Sources */,
+				DA8BB9E82B0255B700E350C4 /* SettingViewModel.swift in Sources */,
 				DA71C8412AD787AC00081ED0 /* Item.swift in Sources */,
 				DA3F9B392ADE813A0048550C /* CustomAlertConfigure.swift in Sources */,
 				DA822CDD2AFB60B6001EC94D /* MapSettingView.swift in Sources */,

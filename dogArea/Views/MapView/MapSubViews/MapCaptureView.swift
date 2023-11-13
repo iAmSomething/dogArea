@@ -92,46 +92,6 @@ struct MapCaptureView: UIViewRepresentable {
             UIGraphicsEndImageContext()
             completion(drawnImage)
 
-//            print("스냅샷 이미지 사진 크기")
-//            print(snapshot.image.size)
-//            print("스냅샷이 보는 지도 중심")
-//            print(options.camera.centerCoordinate)
-//            print("스냅샷이 보는 지도 거리 (미터)")
-//            print(options.camera.centerCoordinateDistance)
-//
-//            print("폴리곤 렌더러의 바운딩박스")
-//            print(polygonRenderer.path.boundingBox)
-//            print("스냅샷이 보는 지도 리전")
-//            print(options.region)
-//            print("스냅샷이 보는 지도 맵랙트")
-//            print(options.mapRect)
-//            print("폴리곤의 바운딩맵렉트")
-//            print(polygon.boundingMapRect)
-//            print("폴리곤의 오버레이 바운딩")
-//            print(polygonRenderer.overlay.boundingMapRect)
-//            print("폴리곤 로케이션")
-//            print(polygonRenderer.polygon.coordinate)
-//            if let zoom = mapView.cameraZoomRange {
-//                print("맵")
-//                print(mapView.region)
-//                print("맵줌레벨")
-//                print(zoom)
-//
-//            }
-//            print("폴리곤 오리진의 위치")
-//            print(snapshot.point(for: polygonRenderer.overlay.boundingMapRect.origin.coordinate))
-//            for l in self.polygon.locations {
-//                print(snapshot.point(for: l.coordinate))
-//            }
-//            let rect = MKMapRect(x:  options.mapRect.origin.x,
-//                                 y:  options.mapRect.origin.y,
-//                                 width: options.mapRect.width,
-//                                 height: options.mapRect.width)
-//            polygonRenderer.draw(rect, zoomScale: 1, in: context)
-//            
-//            let image = UIGraphicsGetImageFromCurrentImageContext()
-//            UIGraphicsEndImageContext()
-//            completion(image)
         }
     }
 }
