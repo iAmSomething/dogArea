@@ -18,7 +18,7 @@ struct WalkDetailView: View {
     var body: some View {
         VStack {
             if image == nil {
-                MapCaptureView(captureImage: $image, polygon: viewModel.polygon.polygon!)
+                MapCaptureView(captureImage: $image, polygon: viewModel.polygon)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .cornerRadius(5)
                     .padding(.horizontal, 20)
@@ -26,6 +26,7 @@ struct WalkDetailView: View {
                     .padding(.bottom,20)
             } else {
                 Image(uiImage: image!)
+                    .resizable()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .cornerRadius(5)
                     .padding(.horizontal, 20)

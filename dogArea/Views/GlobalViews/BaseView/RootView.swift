@@ -56,22 +56,6 @@ struct RootView: View {
             }
         }.edgesIgnoringSafeArea(.all)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-        //                .gesture(
-        //                    DragGesture(minimumDistance: geometry.size.width / 10, coordinateSpace: .global)
-        //                        .onEnded({ value in
-        //                            if selectedTab != 2{
-        //                                // Swipe right to go to the next tab
-        //                                if value.startLocation.x > value.predictedEndLocation.x {
-        //                                    selectedTab = (selectedTab + 1) % 5
-        //                                }
-        //
-        //                                // Swipe left to go to the previous tab
-        //                                if value.startLocation.x < value.predictedEndLocation.x {
-        //                                    selectedTab = (selectedTab - 1 + 5) % 5
-        //                                }
-        //                            }
-        //                        })
-        //                )
     }
 }
 

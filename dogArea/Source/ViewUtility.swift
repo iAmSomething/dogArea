@@ -96,11 +96,3 @@ extension UIImage {
         .init(named: "emptyImg")!
     }
 }
-//MARK: - Frame 확장
-extension View {
-    @inlinable public func frame(minWidth: CGFloat? = nil, maxWidth: CGFloat? = nil, width: CGFloat? = nil, minHeight: CGFloat? = nil, height: CGFloat? = nil, maxHeight: CGFloat? = nil) -> some View {
-        self.frame(width: width, height: height)
-            .frame(minWidth: minWidth,maxWidth:maxWidth,minHeight:minHeight,maxHeight:maxHeight)
-    }
-}
-

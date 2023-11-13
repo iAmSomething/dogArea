@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import UIKit
 extension Color {
   static let appRed: Color = Color(red: 1, green: 0.43, blue: 0.38)
   static let appYellow: Color = Color(red: 0.97, green: 0.82, blue: 0.38)

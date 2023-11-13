@@ -315,6 +315,9 @@
 		DA3F9BD12AE0FF7B0048550C /* BaseView */ = {
 			isa = PBXGroup;
 			children = (
+				DA3F9BD22AE0FF8A0048550C /* RootView.swift */,
+				DAED25012AFA1D430044715A /* SplashView.swift */,
+				DA3F9BD42AE0FF9B0048550C /* CustomTabBar.swift */,
 			);
 			path = BaseView;
 			sourceTree = "<group>";
@@ -372,9 +375,6 @@
 		DA71C83B2AD787AC00081ED0 /* dogArea */ = {
 			isa = PBXGroup;
 			children = (
-				DA3F9BD22AE0FF8A0048550C /* RootView.swift */,
-				DAED25012AFA1D430044715A /* SplashView.swift */,
-				DA3F9BD42AE0FF9B0048550C /* CustomTabBar.swift */,
 				DA71C83C2AD787AC00081ED0 /* dogAreaApp.swift */,
 				DA1731722AE2017500EF10C8 /* PersistenceController.swift */,
 				DA17316F2AE200C100EF10C8 /* dogArea.xcdatamodeld */,

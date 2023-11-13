@@ -15,6 +15,14 @@ struct MapSubView: View {
     var body: some View {
         Map(position: $viewModel.cameraPosition,
             interactionModes: .all){
+            if let currentLoc = viewModel.location {
+                Annotation("", coordinate: currentLoc.coordinate) {
+                    Circle().foregroundStyle(Color.appHotPink)
+                        .frame(width: 20, height: 20)
+                        .animation(.linear(duration: 1), value: currentLoc.coordinate)
+                        .shadow(radius: 5)
+                }
+            }
             ForEach(viewModel.polygon.locations) { location in
                 Annotation("", coordinate: location.coordinate) {
                     PositionMarkerView()
@@ -27,7 +35,7 @@ struct MapSubView: View {
             if let walkArea = viewModel.polygon.polygon{
                 if viewModel.showOnlyOne {
                     MapPolygon(walkArea)
-                        .stroke(.blue, lineWidth: 0.5)
+                        .stroke(Color.appYellow, lineWidth: 0.5)
                         .foregroundStyle(Color.appYellow.opacity(0.3))
                         .annotationTitles(.visible)
                 }
@@ -35,8 +43,8 @@ struct MapSubView: View {
                     ForEach(viewModel.polygonList) { item in
                         if let p  = item.polygon {
                             MapPolygon(p)
-                                .stroke(.blue, lineWidth: 0.5)
-                                .foregroundStyle(.cyan.opacity(0.3))              .annotationTitles(.visible)
+                                .stroke(Color.appYellow, lineWidth: 0.5)
+                                .foregroundStyle(Color.appYellow.opacity(0.3))              .annotationTitles(.visible)
                         }
                     }
                 }
