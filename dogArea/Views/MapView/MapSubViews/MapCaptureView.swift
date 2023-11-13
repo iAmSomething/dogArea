@@ -18,10 +18,7 @@ struct MapCaptureView: UIViewRepresentable {
         }
         return MKMapView()
     }
-    
-    func updateUIView(_ uiView: MKMapView, context: Context) {
-
-    }
+    func updateUIView(_ uiView: MKMapView, context: Context) {}
     
     func makeCoordinator() -> Coordinator {
         return Coordinator()
@@ -31,9 +28,9 @@ struct MapCaptureView: UIViewRepresentable {
         func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
             if let polygonOverlay = overlay as? MKPolygon {
                 let renderer = MKPolygonRenderer(polygon: polygonOverlay)
-                renderer.fillColor = UIColor.red.withAlphaComponent(0.5)
+                renderer.fillColor = UIColor.red.withAlphaComponent(0.3)
                 renderer.strokeColor = UIColor.red
-                renderer.lineWidth = 2
+                renderer.lineWidth = 0.5
                 return renderer
             }
             return MKOverlayRenderer()
@@ -46,6 +43,12 @@ struct MapCaptureView: UIViewRepresentable {
         mapView.addOverlay(polygon)
         mapView.setVisibleMapRect(polygon.boundingMapRect, edgePadding: UIEdgeInsets(top: 20, left: 20, bottom: 20, right: 20), animated: false)
         mapView.setCameraBoundary(mapView.cameraBoundary, animated: false)
+        print("맵뷰 사이즈\(mapView.frame.size)")
+        print("맵뷰 오버레이 개수\(mapView.overlays.count)")
+        print("폴리곤 바운딩\(polygon.boundingMapRect)")
+        print("카메라 바운더리 \(mapView.cameraBoundary)")
+
+
         options.region = mapView.region
         if mapView.frame.size == CGSize(width: 0, height: 0) {
             options.size = CGSize(width: 300, height: 300)

@@ -7,6 +7,10 @@
 
 import Foundation
 import SwiftUI
+import BackgroundTasks
+import CoreLocation
+
+//MARK: - 커스텀탭바 탭 스타일
 public struct TabStyle: LabelStyle {
     public func makeBody(configuration: TabStyle.Configuration) -> some View {
         VStack {
@@ -16,57 +20,19 @@ public struct TabStyle: LabelStyle {
         }
     }
 }
-public var screenSize: CGSize {
-    UIScreen.main.bounds.size
-}
-extension TimeInterval {
-    var walkingTimeInterval: String {
-        let hours = Int(self) / 3600
-        let minutes = (Int(self) % 3600) / 60
-        let seconds = Int(self) % 60 / 1
-        
-        return String(format: "%02d시간 %02d분 %02d초", hours, minutes, seconds)
-        
-    }
-    var simpleWalkingTimeInterval: String {
-        let hours = Int(self) / 3600
-        let minutes = (Int(self) % 3600) / 60
-        let seconds = Int(self) % 60 / 1
-        if hours == 0 {
-            return String(format: "%02d:%02d", minutes, seconds)
-        }
-        return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
-    }
-    var createdAtTimeDescription: String {
-        let date = Date(timeIntervalSince1970: self)
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MM월dd일HH시mm분SS초"
-        let formattedDate = dateFormatter.string(from: date)
-        return formattedDate
-    }
-    var createdAtTimeYYMMDD: String {
-        let date = Date(timeIntervalSince1970: self)
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "YYYY년 MM월 dd일\nHH시 mm분 SS초"
-        let formattedDate = dateFormatter.string(from: date)
-        return formattedDate
-    }
-    
-}
-import CoreLocation
+//MARK: - CLLocation관련 extensions
 extension CLLocationCoordinate2D {
     var clLocation : CLLocation {
         CLLocation(latitude: self.latitude, longitude: self.longitude)
     }
 }
-
-
-import BackgroundTasks
 actor registerBackground{
     let base: String = "com.th.dogArea"
     func register() {
     }
 }
+
+//MARK: - ScreenSize
 extension CGFloat {
     static func screenX(by: CGFloat = 100) -> CGFloat {
         screenSize.width * (by / 100)
@@ -80,11 +46,17 @@ extension CGSize {
         UIScreen.main.bounds.size
     }
 }
+public var screenSize: CGSize {
+    UIScreen.main.bounds.size
+}
+//MARK: - sheet 높이 설정
 extension PresentationDetent {
     public static var oneThird: PresentationDetent {
         return self.height(screenSize.height * 0.3)
     }
 }
+
+//MARK: - View to UIImage
 struct RenderImageModifier: ViewModifier {
     let rendered: (UIImage) -> ()
     func body(content: Content) -> some View {
@@ -97,7 +69,6 @@ struct RenderImageModifier: ViewModifier {
             }
     }
 }
-
 extension View {
     func renderImage(_ rendered: @escaping (UIImage) -> ()) -> some View {
         self.modifier(RenderImageModifier(rendered: rendered))
@@ -119,3 +90,17 @@ extension View {
         return uiImage
     }
 }
+//MARK: - default empty image
+extension UIImage {
+    static var emptyImage: UIImage {
+        .init(named: "emptyImg")!
+    }
+}
+//MARK: - Frame 확장
+extension View {
+    @inlinable public func frame(minWidth: CGFloat? = nil, maxWidth: CGFloat? = nil, width: CGFloat? = nil, minHeight: CGFloat? = nil, height: CGFloat? = nil, maxHeight: CGFloat? = nil) -> some View {
+        self.frame(width: width, height: height)
+            .frame(minWidth: minWidth,maxWidth:maxWidth,minHeight:minHeight,maxHeight:maxHeight)
+    }
+}
+

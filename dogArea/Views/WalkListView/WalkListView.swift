@@ -9,6 +9,8 @@ import SwiftUI
 
 struct WalkListView: View {
     @ObservedObject private var viewModel = WalkListViewModel()
+    @State private var scrollPosition: CGFloat = 0
+
     var body: some View {
         NavigationStack {
             List {
@@ -27,11 +29,11 @@ struct WalkListView: View {
             }.onAppear{
                 viewModel.fetchModel()
             }
-            .navigationDestination(for: WalkDataModel.self) { _ in
-                ProfileSettingsView()
-                    .ignoresSafeArea()
+            .navigationDestination(for: WalkDataModel.self) { model in
+                WalkListDetailView(viewModel: viewModel, model: model)
             }.navigationTitle("산책 목록")
                 .font(.appFont(for: .ExtraBold, size: 36))
+
         }
         
     }

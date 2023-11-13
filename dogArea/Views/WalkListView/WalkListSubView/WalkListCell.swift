@@ -41,7 +41,7 @@ struct ThumnailImageView: View {
       .foregroundColor(.clear)
       .frame(width: 60, height: 60)
       .background(
-        Image(uiImage: image ?? UIImage(systemName: "car.fill")!)
+        Image(uiImage: image ?? .emptyImage)
           .resizable()
           .aspectRatio(contentMode: .fit)
           .frame(width: 60, height: 60)

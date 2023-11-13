@@ -28,7 +28,7 @@ struct MapSubView: View {
                 if viewModel.showOnlyOne {
                     MapPolygon(walkArea)
                         .stroke(.blue, lineWidth: 0.5)
-                        .foregroundStyle(.cyan.opacity(0.3))
+                        .foregroundStyle(Color.appYellow.opacity(0.3))
                         .annotationTitles(.visible)
                 }
                 else {

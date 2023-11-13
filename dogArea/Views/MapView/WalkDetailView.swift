@@ -14,7 +14,7 @@ struct WalkDetailView: View {
     @State private var isMeter: Bool = true
     @State private var image: UIImage? = nil
     @State private var showSaveMessage = false
-
+    
     var body: some View {
         VStack {
             if image == nil {
@@ -34,11 +34,11 @@ struct WalkDetailView: View {
             }
             HStack {
                 SimpleKeyValueView(value: ("영역 넓이", viewModel.calculatedAreaString(areaSize: viewModel.polygon.walkingArea,isPyong: !isMeter)))
-                    .padding(.trailing,15)
                     .onTapGesture {isMeter.toggle()}
+                Spacer()
                 SimpleKeyValueView(value: ("산책 시간", "\(viewModel.polygon.walkingTime .simpleWalkingTimeInterval)"))
-                    .padding(.leading,15)
-            }.padding(.horizontal, 30) 
+            }.frame(maxWidth: .infinity)
+                .padding(.horizontal, 30)
                 .padding(.bottom, 20)
             VStack{
                 HStack {
@@ -74,6 +74,8 @@ struct WalkDetailView: View {
                    label:  {
                 Text("저장하기")
                     .foregroundStyle(.black)
+                    .frame(maxWidth: .infinity)
+
             }).frame(maxWidth: .infinity, maxHeight: 50)
                 .background(Color(red: 0.99, green: 0.73, blue: 0.73))
                 .cornerRadius(15)
@@ -85,6 +87,7 @@ struct WalkDetailView: View {
                    label:  {
                 Text("확인")
                     .foregroundStyle(.black)
+                    .frame(maxWidth: .infinity)
             }).frame(maxWidth: .infinity, maxHeight: 50)
                 .background(Color(red: 0.99, green: 0.73, blue: 0.73))
                 .cornerRadius(15)
@@ -94,7 +97,7 @@ struct WalkDetailView: View {
                 if showSaveMessage {
                     SimpleMessageView(message: "저장이 완료되었습니다")
                         .transition(.opacity)
-
+                    
                 }
             }.animation(.easeInOut(duration: 0.2))
         )
@@ -110,22 +113,23 @@ struct SimpleKeyValueView: View {
     var body: some View {
         VStack {
             Text(value.0)
-                .font(Font.custom("Inter", size: 18))
+                .font(.appFont(for: .Regular, size: 20))
                 .multilineTextAlignment(.center)
                 .foregroundColor(.black)
+                .padding(.horizontal, 30)
             Text(value.1)
-                .font(Font.custom("Inter", size: 18))
+                .font(.appFont(for: .Regular, size: 20))
                 .multilineTextAlignment(.center)
                 .foregroundColor(.black)
         }.foregroundColor(.clear)
-            .frame(maxWidth: .infinity, maxHeight:.infinity)
-            .aspectRatio(contentMode: .fit)
+            .frame(maxWidth: .infinity)
+            .frame(height: 100)
             .background(.white)
             .cornerRadius(20)
             .overlay(
                 RoundedRectangle(cornerRadius: 20)
                     .inset(by: 0.5)
-                    .stroke(.black, lineWidth: 1)
+                    .stroke(Color.appTextLightGray, lineWidth: 0.5)
             )
             .aspectRatio(contentMode: .fit)
     }

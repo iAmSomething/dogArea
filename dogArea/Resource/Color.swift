@@ -20,6 +20,9 @@ extension Color {
   static let appHotPink: Color = Color(red: 1, green: 187.0/255, blue: 204.0/255.0)
 
 }
+extension UIColor {
+    static let appYelloww: UIColor = UIColor(red: 0.97, green: 0.82, blue: 0.38, alpha: 1)
+}
 // 색 보기
 struct ColorListView: View {
   var body: some View {

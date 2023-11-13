@@ -10,7 +10,8 @@
 		DA1731712AE200C100EF10C8 /* dogArea.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = DA17316F2AE200C100EF10C8 /* dogArea.xcdatamodeld */; };
 		DA1731732AE2017500EF10C8 /* PersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1731722AE2017500EF10C8 /* PersistenceController.swift */; };
 		DA1731762AE20A4D00EF10C8 /* CoreDataDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1731752AE20A4D00EF10C8 /* CoreDataDTO.swift */; };
-		DA38B8DB2AD7BCD000148347 /* KakaoMapsSDK_SPM in Frameworks */ = {isa = PBXBuildFile; productRef = DA38B8DA2AD7BCD000148347 /* KakaoMapsSDK_SPM */; };
+		DA354FFD2B01DF1F00E4094A /* TimeIntervalExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA354FFC2B01DF1F00E4094A /* TimeIntervalExtensions.swift */; };
+		DA3550022B01E0F900E4094A /* UnderLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3550012B01E0F900E4094A /* UnderLine.swift */; };
 		DA390A6F2AFE027C00BACF2B /* MapSubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA390A6E2AFE027C00BACF2B /* MapSubView.swift */; };
 		DA390A722AFE168500BACF2B /* SimpleMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA390A712AFE168500BACF2B /* SimpleMapView.swift */; };
 		DA390A752AFE1AFC00BACF2B /* SimpleMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA390A742AFE1AFC00BACF2B /* SimpleMessageView.swift */; };
@@ -28,7 +29,7 @@
 		DA3F9BD32AE0FF8A0048550C /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9BD22AE0FF8A0048550C /* RootView.swift */; };
 		DA3F9BD52AE0FF9B0048550C /* CustomTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9BD42AE0FF9B0048550C /* CustomTabBar.swift */; };
 		DA4513802AFB1EC1007AD69B /* WalkListCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA45137F2AFB1EC1007AD69B /* WalkListCell.swift */; };
-		DA4513832AFB25C2007AD69B /* CustomView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA4513822AFB25C2007AD69B /* CustomView.swift */; };
+		DA4513832AFB25C2007AD69B /* PositionMarkerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA4513822AFB25C2007AD69B /* PositionMarkerView.swift */; };
 		DA4513862AFB2CFC007AD69B /* WalkListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA4513852AFB2CFC007AD69B /* WalkListViewModel.swift */; };
 		DA4513892AFB2D68007AD69B /* CoreDataProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA4513882AFB2D68007AD69B /* CoreDataProtocol.swift */; };
 		DA45138C2AFB36D4007AD69B /* WalkListModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA45138B2AFB36D4007AD69B /* WalkListModel.swift */; };
@@ -72,6 +73,8 @@
 		DA99FA022AFA50D700B1483F /* Pretendard-Light.otf in Resources */ = {isa = PBXBuildFile; fileRef = DA99F9F12AFA50D700B1483F /* Pretendard-Light.otf */; };
 		DA99FA032AFA50D700B1483F /* Pretendard-Black.otf in Resources */ = {isa = PBXBuildFile; fileRef = DA99F9F22AFA50D700B1483F /* Pretendard-Black.otf */; };
 		DA99FA042AFA50D700B1483F /* Pretendard-Black.otf in Resources */ = {isa = PBXBuildFile; fileRef = DA99F9F22AFA50D700B1483F /* Pretendard-Black.otf */; };
+		DAA8E4D62B01A03700F9190B /* WalkListDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAA8E4D52B01A03700F9190B /* WalkListDetailView.swift */; };
+		DAA8E4F92B01A80C00F9190B /* TabAppear.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAA8E4F82B01A80C00F9190B /* TabAppear.swift */; };
 		DAAE221F2AFCBDC4005FD096 /* StartModalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAAE221E2AFCBDC4005FD096 /* StartModalView.swift */; };
 		DAAE22232AFCC225005FD096 /* WalkDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAAE22222AFCC225005FD096 /* WalkDetailView.swift */; };
 		DAED24FB2AFA1C980044715A /* LottieView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAED24FA2AFA1C980044715A /* LottieView.swift */; };
@@ -117,6 +120,8 @@
 		DA1731702AE200C100EF10C8 /* dogArea.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = dogArea.xcdatamodel; sourceTree = "<group>"; };
 		DA1731722AE2017500EF10C8 /* PersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceController.swift; sourceTree = "<group>"; };
 		DA1731752AE20A4D00EF10C8 /* CoreDataDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataDTO.swift; sourceTree = "<group>"; };
+		DA354FFC2B01DF1F00E4094A /* TimeIntervalExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeIntervalExtensions.swift; sourceTree = "<group>"; };
+		DA3550012B01E0F900E4094A /* UnderLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnderLine.swift; sourceTree = "<group>"; };
 		DA390A6E2AFE027C00BACF2B /* MapSubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapSubView.swift; sourceTree = "<group>"; };
 		DA390A712AFE168500BACF2B /* SimpleMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleMapView.swift; sourceTree = "<group>"; };
 		DA390A742AFE1AFC00BACF2B /* SimpleMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleMessageView.swift; sourceTree = "<group>"; };
@@ -137,7 +142,7 @@
 		DA3F9BD42AE0FF9B0048550C /* CustomTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTabBar.swift; sourceTree = "<group>"; };
 		DA45137D2AFA6DC1007AD69B /* OpenAIConfiguration.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = OpenAIConfiguration.xcconfig; sourceTree = "<group>"; };
 		DA45137F2AFB1EC1007AD69B /* WalkListCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkListCell.swift; sourceTree = "<group>"; };
-		DA4513822AFB25C2007AD69B /* CustomView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomView.swift; sourceTree = "<group>"; };
+		DA4513822AFB25C2007AD69B /* PositionMarkerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PositionMarkerView.swift; sourceTree = "<group>"; };
 		DA4513852AFB2CFC007AD69B /* WalkListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkListViewModel.swift; sourceTree = "<group>"; };
 		DA4513882AFB2D68007AD69B /* CoreDataProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataProtocol.swift; sourceTree = "<group>"; };
 		DA45138B2AFB36D4007AD69B /* WalkListModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkListModel.swift; sourceTree = "<group>"; };
@@ -169,6 +174,8 @@
 		DA99F9F02AFA50D700B1483F /* Pretendard-Bold.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Pretendard-Bold.otf"; sourceTree = "<group>"; };
 		DA99F9F12AFA50D700B1483F /* Pretendard-Light.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Pretendard-Light.otf"; sourceTree = "<group>"; };
 		DA99F9F22AFA50D700B1483F /* Pretendard-Black.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Pretendard-Black.otf"; sourceTree = "<group>"; };
+		DAA8E4D52B01A03700F9190B /* WalkListDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkListDetailView.swift; sourceTree = "<group>"; };
+		DAA8E4F82B01A80C00F9190B /* TabAppear.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabAppear.swift; sourceTree = "<group>"; };
 		DAAE221E2AFCBDC4005FD096 /* StartModalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartModalView.swift; sourceTree = "<group>"; };
 		DAAE22222AFCC225005FD096 /* WalkDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkDetailView.swift; sourceTree = "<group>"; };
 		DAED24FA2AFA1C980044715A /* LottieView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LottieView.swift; sourceTree = "<group>"; };
@@ -180,7 +187,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				DA38B8DB2AD7BCD000148347 /* KakaoMapsSDK_SPM in Frameworks */,
 				DA95CC6F2ADE0682004AD94D /* OpenAIClient.framework in Frameworks */,
 				DA99F9B12AFA1EAB00B1483F /* Lottie in Frameworks */,
 			);
@@ -203,15 +209,35 @@
 			children = (
 				DAED24F92AFA1C8A0044715A /* Animations */,
 				DA56FFED2AE362000040855B /* Font */,
-				DA1731752AE20A4D00EF10C8 /* CoreDataDTO.swift */,
 				DA99F9E52AFA4F3E00B1483F /* Color.swift */,
 			);
 			path = Resource;
 			sourceTree = "<group>";
 		};
+		DA354FFF2B01DF8C00E4094A /* GlobalViews */ = {
+			isa = PBXGroup;
+			children = (
+				DA3F9BD12AE0FF7B0048550C /* BaseView */,
+				DA3F9BAF2AE0F24C0048550C /* AlertView */,
+				DA390A742AFE1AFC00BACF2B /* SimpleMessageView.swift */,
+				DA4513822AFB25C2007AD69B /* PositionMarkerView.swift */,
+				DA3550012B01E0F900E4094A /* UnderLine.swift */,
+			);
+			path = GlobalViews;
+			sourceTree = "<group>";
+		};
+		DA3550002B01DFE400E4094A /* HomeView */ = {
+			isa = PBXGroup;
+			children = (
+				DA3F9B992AE0F14F0048550C /* HomeView.swift */,
+			);
+			path = HomeView;
+			sourceTree = "<group>";
+		};
 		DA390A6C2AFDEAB900BACF2B /* WalkListSubView */ = {
 			isa = PBXGroup;
 			children = (
+				DA390A712AFE168500BACF2B /* SimpleMapView.swift */,
 				DA45137F2AFB1EC1007AD69B /* WalkListCell.swift */,
 			);
 			path = WalkListSubView;
@@ -229,7 +255,8 @@
 		DA3F9B962AE0F14F0048550C /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				DA3F9B992AE0F14F0048550C /* HomeView.swift */,
+				DA354FFF2B01DF8C00E4094A /* GlobalViews */,
+				DA3550002B01DFE400E4094A /* HomeView */,
 				DA3F9B9E2AE0F14F0048550C /* WalkListView */,
 				DA3F9B9A2AE0F14F0048550C /* MapView */,
 				DA95CC852ADE11F7004AD94D /* ImageGeneratorView */,
@@ -243,6 +270,8 @@
 			children = (
 				DA56FFE52AE28EB00040855B /* MapSubViews */,
 				DA3F9B9B2AE0F14F0048550C /* MapView.swift */,
+				DAAE221E2AFCBDC4005FD096 /* StartModalView.swift */,
+				DAAE22222AFCC225005FD096 /* WalkDetailView.swift */,
 				DA3F9B9C2AE0F14F0048550C /* MapViewModel.swift */,
 				DA3F9B9D2AE0F14F0048550C /* MapModel.swift */,
 			);
@@ -256,6 +285,7 @@
 				DA3F9B9F2AE0F14F0048550C /* WalkListView.swift */,
 				DA4513852AFB2CFC007AD69B /* WalkListViewModel.swift */,
 				DA45138B2AFB36D4007AD69B /* WalkListModel.swift */,
+				DAA8E4D52B01A03700F9190B /* WalkListDetailView.swift */,
 			);
 			path = WalkListView;
 			sourceTree = "<group>";
@@ -263,11 +293,11 @@
 		DA3F9BAC2AE0F2410048550C /* Source */ = {
 			isa = PBXGroup;
 			children = (
+				DA354FFC2B01DF1F00E4094A /* TimeIntervalExtensions.swift */,
 				DA3F9BAD2AE0F2410048550C /* ViewUtility.swift */,
-				DA4513822AFB25C2007AD69B /* CustomView.swift */,
+				DAA8E4F82B01A80C00F9190B /* TabAppear.swift */,
 				DA4513882AFB2D68007AD69B /* CoreDataProtocol.swift */,
-				DA3F9BAF2AE0F24C0048550C /* AlertView */,
-				DA390A742AFE1AFC00BACF2B /* SimpleMessageView.swift */,
+				DA1731752AE20A4D00EF10C8 /* CoreDataDTO.swift */,
 			);
 			path = Source;
 			sourceTree = "<group>";
@@ -285,9 +315,6 @@
 		DA3F9BD12AE0FF7B0048550C /* BaseView */ = {
 			isa = PBXGroup;
 			children = (
-				DAED25012AFA1D430044715A /* SplashView.swift */,
-				DA3F9BD22AE0FF8A0048550C /* RootView.swift */,
-				DA3F9BD42AE0FF9B0048550C /* CustomTabBar.swift */,
 			);
 			path = BaseView;
 			sourceTree = "<group>";
@@ -297,11 +324,8 @@
 			children = (
 				DA56FFE72AE2B9890040855B /* MapAlertSubView.swift */,
 				DA822CD52AFB5E21001EC94D /* StartButtonView.swift */,
-				DAAE221E2AFCBDC4005FD096 /* StartModalView.swift */,
 				DA822CDC2AFB60B6001EC94D /* MapSettingView.swift */,
-				DAAE22222AFCC225005FD096 /* WalkDetailView.swift */,
 				DA390A6E2AFE027C00BACF2B /* MapSubView.swift */,
-				DA390A712AFE168500BACF2B /* SimpleMapView.swift */,
 				DA390A772AFE1E1200BACF2B /* MapCaptureView.swift */,
 			);
 			path = MapSubViews;
@@ -348,10 +372,12 @@
 		DA71C83B2AD787AC00081ED0 /* dogArea */ = {
 			isa = PBXGroup;
 			children = (
+				DA3F9BD22AE0FF8A0048550C /* RootView.swift */,
+				DAED25012AFA1D430044715A /* SplashView.swift */,
+				DA3F9BD42AE0FF9B0048550C /* CustomTabBar.swift */,
 				DA71C83C2AD787AC00081ED0 /* dogAreaApp.swift */,
 				DA1731722AE2017500EF10C8 /* PersistenceController.swift */,
 				DA17316F2AE200C100EF10C8 /* dogArea.xcdatamodeld */,
-				DA3F9BD12AE0FF7B0048550C /* BaseView */,
 				DA1731742AE20A3600EF10C8 /* Resource */,
 				DA3F9BAC2AE0F2410048550C /* Source */,
 				DA3F9B962AE0F14F0048550C /* Views */,
@@ -447,7 +473,6 @@
 			);
 			name = dogArea;
 			packageProductDependencies = (
-				DA38B8DA2AD7BCD000148347 /* KakaoMapsSDK_SPM */,
 				DA99F9B02AFA1EAB00B1483F /* Lottie */,
 			);
 			productName = dogArea;
@@ -571,6 +596,7 @@
 				DA3F9BD52AE0FF9B0048550C /* CustomTabBar.swift in Sources */,
 				DA3F9BA22AE0F14F0048550C /* HomeView.swift in Sources */,
 				DA95CC8D2ADE1736004AD94D /* ImageGenerateViewModel.swift in Sources */,
+				DA354FFD2B01DF1F00E4094A /* TimeIntervalExtensions.swift in Sources */,
 				DA45138C2AFB36D4007AD69B /* WalkListModel.swift in Sources */,
 				DA3F9BA12AE0F14F0048550C /* NotificationCenterView.swift in Sources */,
 				DA1731712AE200C100EF10C8 /* dogArea.xcdatamodeld in Sources */,
@@ -589,13 +615,15 @@
 				DA822CDD2AFB60B6001EC94D /* MapSettingView.swift in Sources */,
 				DA71C83D2AD787AC00081ED0 /* dogAreaApp.swift in Sources */,
 				DA1731732AE2017500EF10C8 /* PersistenceController.swift in Sources */,
+				DAA8E4F92B01A80C00F9190B /* TabAppear.swift in Sources */,
 				DA3F9BA52AE0F14F0048550C /* MapModel.swift in Sources */,
-				DA4513832AFB25C2007AD69B /* CustomView.swift in Sources */,
+				DA4513832AFB25C2007AD69B /* PositionMarkerView.swift in Sources */,
 				DAED25022AFA1D430044715A /* SplashView.swift in Sources */,
 				DA99F9E62AFA4F3E00B1483F /* Color.swift in Sources */,
 				DA3F9BD32AE0FF8A0048550C /* RootView.swift in Sources */,
 				DA99F9E82AFA4F9000B1483F /* Font.swift in Sources */,
 				DA3F9B362ADE7C100048550C /* CustomAlertViewModel.swift in Sources */,
+				DAA8E4D62B01A03700F9190B /* WalkListDetailView.swift in Sources */,
 				DA3F9BA02AE0F14F0048550C /* ProfileSettingsView.swift in Sources */,
 				DA4513892AFB2D68007AD69B /* CoreDataProtocol.swift in Sources */,
 				DAED24FB2AFA1C980044715A /* LottieView.swift in Sources */,
@@ -604,6 +632,7 @@
 				DA390A752AFE1AFC00BACF2B /* SimpleMessageView.swift in Sources */,
 				DAAE221F2AFCBDC4005FD096 /* StartModalView.swift in Sources */,
 				DA4513802AFB1EC1007AD69B /* WalkListCell.swift in Sources */,
+				DA3550022B01E0F900E4094A /* UnderLine.swift in Sources */,
 				DA95CC8B2ADE1475004AD94D /* TextToImageView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -983,11 +1012,6 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		DA38B8DA2AD7BCD000148347 /* KakaoMapsSDK_SPM */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = DA38B8D92AD7BCD000148347 /* XCRemoteSwiftPackageReference "KakaoMapsSDK-SPM" */;
-			productName = KakaoMapsSDK_SPM;
-		};
 		DA95CC772ADE09D6004AD94D /* OpenAPIRuntime */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = DA95CC762ADE09D6004AD94D /* XCRemoteSwiftPackageReference "swift-openapi-runtime" */;
