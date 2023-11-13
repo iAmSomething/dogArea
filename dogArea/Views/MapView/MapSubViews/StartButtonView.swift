@@ -40,8 +40,14 @@ struct StartButtonView: View {
                         myAlert.callAlert(
                             type: .custom(.simpleAlert(title: "산책 종료", message: "정말 산책을 마치겠습니까?") ,
                                           {
-                            viewModel.endWalk()
-                            endWalkingViewPresented.toggle()},
+                                              viewModel.timerStop()
+                                              if viewModel.polygon.locations.count > 2 {
+                                                  viewModel.makePolygon()
+                                                  endWalkingViewPresented.toggle()
+                                              } else {
+                                                  viewModel.endWalk()
+                                              }
+                                          },
                                           {})
                         )
                     }

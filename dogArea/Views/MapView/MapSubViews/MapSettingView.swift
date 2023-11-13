@@ -41,13 +41,12 @@ struct MapSettingView: View {
                     print(distance)
                     viewModel.setRegion(polygonCenter, distance: distance)
                   }
-                  dismiss()
                 }
               Image(systemName: "trash.circle")
                 .resizable()
                 .frame(width: 20,height: 20)
                 .onTapGesture {
-                  dismiss()
+                    dismiss()
                   myAlert.callAlert(type: .deletePolygon(item.id))
                 }
             }

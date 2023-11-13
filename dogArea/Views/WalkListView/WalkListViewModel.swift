@@ -12,6 +12,8 @@ final class WalkListViewModel: ObservableObject, CoreDataProtocol {
     @Environment(\.managedObjectContext) private var viewContext
     @Published var walkingDatas: [WalkDataModel] = []
     func fetchModel() {
-        self.walkingDatas = self.fetchPolygons().map{.init(polygon: $0)}
+        self.walkingDatas = self.fetchPolygons().map{
+            .init(polygon: $0, image: $0.binaryImage == nil ? nil : UIImage(data: $0.binaryImage!))
+        }
     }
 }

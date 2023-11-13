@@ -8,7 +8,10 @@
     </entity>
     <entity name="PolygonEntity" representedClassName="PolygonEntity" syncable="YES" codeGenerationType="class">
         <attribute name="createdAt" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="mapImage" optional="YES" attributeType="Binary"/>
         <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="YES"/>
+        <attribute name="walkingArea" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="walkingTime" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <relationship name="locations" optional="YES" toMany="YES" deletionRule="Nullify" ordered="YES" destinationEntity="LocationEntity"/>
     </entity>
 </model>

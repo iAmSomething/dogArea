@@ -10,28 +10,35 @@ import SwiftUI
 struct WalkDetailView: View {
     @Environment(\.dismiss) var dismiss
     @ObservedObject var viewModel: MapViewModel
-    @State var snsCircles: [String] = ["instagram", "twitter"]
-    @State var isMeter: Bool = true
-    @State var image: UIImage? = nil
+    @State private var snsCircles: [String] = ["instagram", "twitter"]
+    @State private var isMeter: Bool = true
+    @State private var image: UIImage? = nil
+    @State private var showSaveMessage = false
+
     var body: some View {
         VStack {
-            Image(uiImage: image ?? UIImage(systemName: "car.fill")!)
-                .resizable()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .cornerRadius(5)
-                .padding(.horizontal, 20)
-                .padding(.top, 60)
-                .padding(.bottom,20)
-                .onAppear() {
-                    self.image = viewModel.renderToImage()
-                }
+            if image == nil {
+                MapCaptureView(captureImage: $image, polygon: viewModel.polygon.polygon!)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .cornerRadius(5)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 60)
+                    .padding(.bottom,20)
+            } else {
+                Image(uiImage: image!)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .cornerRadius(5)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 60)
+                    .padding(.bottom,20)
+            }
             HStack {
-                SimpleKeyValueView(value: ("영역 넓이", viewModel.calculatedAreaString(isPyong: !isMeter)))
+                SimpleKeyValueView(value: ("영역 넓이", viewModel.calculatedAreaString(areaSize: viewModel.polygon.walkingArea,isPyong: !isMeter)))
                     .padding(.trailing,15)
                     .onTapGesture {isMeter.toggle()}
-                SimpleKeyValueView(value: ("산책 시간", "\(viewModel.time.simpleWalkingTimeInterval)"))
+                SimpleKeyValueView(value: ("산책 시간", "\(viewModel.polygon.walkingTime .simpleWalkingTimeInterval)"))
                     .padding(.leading,15)
-            }.padding(.horizontal, 30)
+            }.padding(.horizontal, 30) 
                 .padding(.bottom, 20)
             VStack{
                 HStack {
@@ -55,7 +62,15 @@ struct WalkDetailView: View {
                     .padding(.horizontal, 20)
             }
             Spacer()
-            Button(action: {dismiss()},
+            Button(action: {
+                guard let image = image else { return }
+                print("이미지 캡쳐됨")
+                UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+                showSaveMessage.toggle()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    self.showSaveMessage = false
+                }
+            },
                    label:  {
                 Text("저장하기")
                     .foregroundStyle(.black)
@@ -63,7 +78,10 @@ struct WalkDetailView: View {
                 .background(Color(red: 0.99, green: 0.73, blue: 0.73))
                 .cornerRadius(15)
                 .padding(.horizontal, 70)
-            Button(action: {dismiss()},
+            Button(action: {
+                viewModel.endWalk(img: image)
+                dismiss()
+            },
                    label:  {
                 Text("확인")
                     .foregroundStyle(.black)
@@ -71,13 +89,21 @@ struct WalkDetailView: View {
                 .background(Color(red: 0.99, green: 0.73, blue: 0.73))
                 .cornerRadius(15)
                 .padding(.horizontal, 70)
-        }
+        }.overlay(
+            Group {
+                if showSaveMessage {
+                    SimpleMessageView(message: "저장이 완료되었습니다")
+                        .transition(.opacity)
+
+                }
+            }.animation(.easeInOut(duration: 0.2))
+        )
     }
 }
-
-#Preview {
-    WalkDetailView(viewModel: .init())
-}
+//
+//#Preview {
+//    WalkDetailView(viewModel: .init())
+//}
 
 struct SimpleKeyValueView: View {
     var value: (String,String)

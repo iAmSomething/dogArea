@@ -11,6 +11,10 @@
 		DA1731732AE2017500EF10C8 /* PersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1731722AE2017500EF10C8 /* PersistenceController.swift */; };
 		DA1731762AE20A4D00EF10C8 /* CoreDataDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1731752AE20A4D00EF10C8 /* CoreDataDTO.swift */; };
 		DA38B8DB2AD7BCD000148347 /* KakaoMapsSDK_SPM in Frameworks */ = {isa = PBXBuildFile; productRef = DA38B8DA2AD7BCD000148347 /* KakaoMapsSDK_SPM */; };
+		DA390A6F2AFE027C00BACF2B /* MapSubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA390A6E2AFE027C00BACF2B /* MapSubView.swift */; };
+		DA390A722AFE168500BACF2B /* SimpleMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA390A712AFE168500BACF2B /* SimpleMapView.swift */; };
+		DA390A752AFE1AFC00BACF2B /* SimpleMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA390A742AFE1AFC00BACF2B /* SimpleMessageView.swift */; };
+		DA390A782AFE1E1200BACF2B /* MapCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA390A772AFE1E1200BACF2B /* MapCaptureView.swift */; };
 		DA3F9B362ADE7C100048550C /* CustomAlertViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9B352ADE7C100048550C /* CustomAlertViewModel.swift */; };
 		DA3F9B392ADE813A0048550C /* CustomAlertConfigure.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9B382ADE813A0048550C /* CustomAlertConfigure.swift */; };
 		DA3F9BA02AE0F14F0048550C /* ProfileSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9B972AE0F14F0048550C /* ProfileSettingsView.swift */; };
@@ -113,6 +117,10 @@
 		DA1731702AE200C100EF10C8 /* dogArea.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = dogArea.xcdatamodel; sourceTree = "<group>"; };
 		DA1731722AE2017500EF10C8 /* PersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceController.swift; sourceTree = "<group>"; };
 		DA1731752AE20A4D00EF10C8 /* CoreDataDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataDTO.swift; sourceTree = "<group>"; };
+		DA390A6E2AFE027C00BACF2B /* MapSubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapSubView.swift; sourceTree = "<group>"; };
+		DA390A712AFE168500BACF2B /* SimpleMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleMapView.swift; sourceTree = "<group>"; };
+		DA390A742AFE1AFC00BACF2B /* SimpleMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleMessageView.swift; sourceTree = "<group>"; };
+		DA390A772AFE1E1200BACF2B /* MapCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapCaptureView.swift; sourceTree = "<group>"; };
 		DA3C140D2AF0847600324A14 /* ManagedSettings.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ManagedSettings.framework; path = System/Library/Frameworks/ManagedSettings.framework; sourceTree = SDKROOT; };
 		DA3C140F2AF0847600324A14 /* ManagedSettingsUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ManagedSettingsUI.framework; path = System/Library/Frameworks/ManagedSettingsUI.framework; sourceTree = SDKROOT; };
 		DA3F9B352ADE7C100048550C /* CustomAlertViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomAlertViewModel.swift; sourceTree = "<group>"; };
@@ -201,6 +209,14 @@
 			path = Resource;
 			sourceTree = "<group>";
 		};
+		DA390A6C2AFDEAB900BACF2B /* WalkListSubView */ = {
+			isa = PBXGroup;
+			children = (
+				DA45137F2AFB1EC1007AD69B /* WalkListCell.swift */,
+			);
+			path = WalkListSubView;
+			sourceTree = "<group>";
+		};
 		DA3C140C2AF0847600324A14 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -236,8 +252,8 @@
 		DA3F9B9E2AE0F14F0048550C /* WalkListView */ = {
 			isa = PBXGroup;
 			children = (
+				DA390A6C2AFDEAB900BACF2B /* WalkListSubView */,
 				DA3F9B9F2AE0F14F0048550C /* WalkListView.swift */,
-				DA45137F2AFB1EC1007AD69B /* WalkListCell.swift */,
 				DA4513852AFB2CFC007AD69B /* WalkListViewModel.swift */,
 				DA45138B2AFB36D4007AD69B /* WalkListModel.swift */,
 			);
@@ -251,6 +267,7 @@
 				DA4513822AFB25C2007AD69B /* CustomView.swift */,
 				DA4513882AFB2D68007AD69B /* CoreDataProtocol.swift */,
 				DA3F9BAF2AE0F24C0048550C /* AlertView */,
+				DA390A742AFE1AFC00BACF2B /* SimpleMessageView.swift */,
 			);
 			path = Source;
 			sourceTree = "<group>";
@@ -283,6 +300,9 @@
 				DAAE221E2AFCBDC4005FD096 /* StartModalView.swift */,
 				DA822CDC2AFB60B6001EC94D /* MapSettingView.swift */,
 				DAAE22222AFCC225005FD096 /* WalkDetailView.swift */,
+				DA390A6E2AFE027C00BACF2B /* MapSubView.swift */,
+				DA390A712AFE168500BACF2B /* SimpleMapView.swift */,
+				DA390A772AFE1E1200BACF2B /* MapCaptureView.swift */,
 			);
 			path = MapSubViews;
 			sourceTree = "<group>";
@@ -559,8 +579,11 @@
 				DA4513862AFB2CFC007AD69B /* WalkListViewModel.swift in Sources */,
 				DA3F9BAE2AE0F2410048550C /* ViewUtility.swift in Sources */,
 				DA3F9BA42AE0F14F0048550C /* MapViewModel.swift in Sources */,
+				DA390A6F2AFE027C00BACF2B /* MapSubView.swift in Sources */,
+				DA390A722AFE168500BACF2B /* SimpleMapView.swift in Sources */,
 				DA3F9BA32AE0F14F0048550C /* MapView.swift in Sources */,
 				DA56FFE82AE2B9890040855B /* MapAlertSubView.swift in Sources */,
+				DA390A782AFE1E1200BACF2B /* MapCaptureView.swift in Sources */,
 				DA71C8412AD787AC00081ED0 /* Item.swift in Sources */,
 				DA3F9B392ADE813A0048550C /* CustomAlertConfigure.swift in Sources */,
 				DA822CDD2AFB60B6001EC94D /* MapSettingView.swift in Sources */,
@@ -578,6 +601,7 @@
 				DAED24FB2AFA1C980044715A /* LottieView.swift in Sources */,
 				DA1731762AE20A4D00EF10C8 /* CoreDataDTO.swift in Sources */,
 				DA822CD62AFB5E21001EC94D /* StartButtonView.swift in Sources */,
+				DA390A752AFE1AFC00BACF2B /* SimpleMessageView.swift in Sources */,
 				DAAE221F2AFCBDC4005FD096 /* StartModalView.swift in Sources */,
 				DA4513802AFB1EC1007AD69B /* WalkListCell.swift in Sources */,
 				DA95CC8B2ADE1475004AD94D /* TextToImageView.swift in Sources */,

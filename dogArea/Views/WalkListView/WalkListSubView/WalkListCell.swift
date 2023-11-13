@@ -18,17 +18,17 @@ struct WalkListCell: View {
               .padding(.leading, 10)
             Spacer()
           }
-          HStack(alignment:.center) {
-              ForEach(
-                walkData.locations.count < 6 ? [0..<walkData.locations.count] : [0..<5], id: \.self
-              ){ _ in
-                PositionMarkerView()
-                  .frame(width: 25, height: 25)
+            ScrollView(.horizontal) {
+                HStack {
+                  ForEach(0..<self.walkData.locations.count, id: \.self){ _ in
+                      PositionMarkerView()
+                          .frame(width: 25, height: 25)
+                  }
               }
           }.padding(.leading, 10)
             
         }.frame(maxWidth: .infinity)
-        ThumnailImageView(image: nil)
+          ThumnailImageView(image: walkData.image)
       }.frame(height: 80)
     }
 }

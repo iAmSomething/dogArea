@@ -10,18 +10,26 @@ import Foundation
 extension PolygonEntity {
   func toPolygon() -> Polygon? {
     var locations = [Location]()
+      let walkingTime = self.walkingTime
+      let walkingArea = self.walkingArea
     guard
       let id = self.uuid,
       let locationEntities = self.locations?.array as? [LocationEntity]
     else {
       return nil
     }
+      let data = self.mapImage
     for entity in locationEntities {
       if let location = entity.toLocation() {
         locations.append(location)
       }
     }
-    return Polygon(locations: locations, createdAt: Double(self.createdAt), id:id)
+      return Polygon(locations: locations,
+                     createdAt: Double(self.createdAt),
+                     id:id,
+                     walkingTime: walkingTime,
+                     walkingArea: walkingArea,
+                     imgData: data)
   }
 }
 

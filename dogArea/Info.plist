@@ -41,5 +41,9 @@
 	</array>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>사진 저장하기 위한 권한 설정</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>사진 접근하기 위한 권한 설정</string>
 </dict>
 </plist>
