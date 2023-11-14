@@ -56,6 +56,7 @@ struct RootView: View {
             }
         }.edgesIgnoringSafeArea(.all)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+
     }
 }
 

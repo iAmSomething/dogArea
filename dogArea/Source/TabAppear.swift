@@ -20,4 +20,6 @@ public class TabAppear: ObservableObject {
     public func appear() {
             isTabAppear = true
     }
+    public var tabId: Int = 2
 }
+

@@ -15,7 +15,6 @@
 		DA390A6F2AFE027C00BACF2B /* MapSubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA390A6E2AFE027C00BACF2B /* MapSubView.swift */; };
 		DA390A722AFE168500BACF2B /* SimpleMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA390A712AFE168500BACF2B /* SimpleMapView.swift */; };
 		DA390A752AFE1AFC00BACF2B /* SimpleMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA390A742AFE1AFC00BACF2B /* SimpleMessageView.swift */; };
-		DA390A782AFE1E1200BACF2B /* MapCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA390A772AFE1E1200BACF2B /* MapCaptureView.swift */; };
 		DA3F9B362ADE7C100048550C /* CustomAlertViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9B352ADE7C100048550C /* CustomAlertViewModel.swift */; };
 		DA3F9B392ADE813A0048550C /* CustomAlertConfigure.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9B382ADE813A0048550C /* CustomAlertConfigure.swift */; };
 		DA3F9BA02AE0F14F0048550C /* ProfileSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9B972AE0F14F0048550C /* ProfileSettingsView.swift */; };
@@ -42,6 +41,8 @@
 		DA822CDD2AFB60B6001EC94D /* MapSettingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA822CDC2AFB60B6001EC94D /* MapSettingView.swift */; };
 		DA8BB9E52B024B1900E350C4 /* MapCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA8BB9E42B024B1900E350C4 /* MapCapture.swift */; };
 		DA8BB9E82B0255B700E350C4 /* SettingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA8BB9E72B0255B700E350C4 /* SettingViewModel.swift */; };
+		DA8BB9EE2B02F0CD00E350C4 /* AreaMeters.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA8BB9ED2B02F0CD00E350C4 /* AreaMeters.swift */; };
+		DA8BB9F22B02FE3A00E350C4 /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA8BB9F12B02FE3A00E350C4 /* HomeViewModel.swift */; };
 		DA933BE92ADD04E70029856C /* CustomAlertView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA933BE82ADD04E70029856C /* CustomAlertView.swift */; };
 		DA95CC6C2ADE0682004AD94D /* OpenAIClient.h in Headers */ = {isa = PBXBuildFile; fileRef = DA95CC6B2ADE0682004AD94D /* OpenAIClient.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		DA95CC6F2ADE0682004AD94D /* OpenAIClient.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DA95CC692ADE0682004AD94D /* OpenAIClient.framework */; };
@@ -127,7 +128,6 @@
 		DA390A6E2AFE027C00BACF2B /* MapSubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapSubView.swift; sourceTree = "<group>"; };
 		DA390A712AFE168500BACF2B /* SimpleMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleMapView.swift; sourceTree = "<group>"; };
 		DA390A742AFE1AFC00BACF2B /* SimpleMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleMessageView.swift; sourceTree = "<group>"; };
-		DA390A772AFE1E1200BACF2B /* MapCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapCaptureView.swift; sourceTree = "<group>"; };
 		DA3C140D2AF0847600324A14 /* ManagedSettings.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ManagedSettings.framework; path = System/Library/Frameworks/ManagedSettings.framework; sourceTree = SDKROOT; };
 		DA3C140F2AF0847600324A14 /* ManagedSettingsUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ManagedSettingsUI.framework; path = System/Library/Frameworks/ManagedSettingsUI.framework; sourceTree = SDKROOT; };
 		DA3F9B352ADE7C100048550C /* CustomAlertViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomAlertViewModel.swift; sourceTree = "<group>"; };
@@ -158,6 +158,8 @@
 		DA822CDC2AFB60B6001EC94D /* MapSettingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapSettingView.swift; sourceTree = "<group>"; };
 		DA8BB9E42B024B1900E350C4 /* MapCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapCapture.swift; sourceTree = "<group>"; };
 		DA8BB9E72B0255B700E350C4 /* SettingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingViewModel.swift; sourceTree = "<group>"; };
+		DA8BB9ED2B02F0CD00E350C4 /* AreaMeters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMeters.swift; sourceTree = "<group>"; };
+		DA8BB9F12B02FE3A00E350C4 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
 		DA933BE82ADD04E70029856C /* CustomAlertView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomAlertView.swift; sourceTree = "<group>"; };
 		DA95CC692ADE0682004AD94D /* OpenAIClient.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = OpenAIClient.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		DA95CC6B2ADE0682004AD94D /* OpenAIClient.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = OpenAIClient.h; sourceTree = "<group>"; };
@@ -214,6 +216,7 @@
 				DAED24F92AFA1C8A0044715A /* Animations */,
 				DA56FFED2AE362000040855B /* Font */,
 				DA99F9E52AFA4F3E00B1483F /* Color.swift */,
+				DA8BB9ED2B02F0CD00E350C4 /* AreaMeters.swift */,
 			);
 			path = Resource;
 			sourceTree = "<group>";
@@ -234,6 +237,7 @@
 			isa = PBXGroup;
 			children = (
 				DA3F9B992AE0F14F0048550C /* HomeView.swift */,
+				DA8BB9F12B02FE3A00E350C4 /* HomeViewModel.swift */,
 			);
 			path = HomeView;
 			sourceTree = "<group>";
@@ -333,7 +337,6 @@
 				DA822CD52AFB5E21001EC94D /* StartButtonView.swift */,
 				DA822CDC2AFB60B6001EC94D /* MapSettingView.swift */,
 				DA390A6E2AFE027C00BACF2B /* MapSubView.swift */,
-				DA390A772AFE1E1200BACF2B /* MapCaptureView.swift */,
 				DA8BB9E42B024B1900E350C4 /* MapCapture.swift */,
 			);
 			path = MapSubViews;
@@ -600,6 +603,7 @@
 			files = (
 				DA8BB9E52B024B1900E350C4 /* MapCapture.swift in Sources */,
 				DA3F9BA62AE0F14F0048550C /* WalkListView.swift in Sources */,
+				DA8BB9EE2B02F0CD00E350C4 /* AreaMeters.swift in Sources */,
 				DA3F9BD52AE0FF9B0048550C /* CustomTabBar.swift in Sources */,
 				DA3F9BA22AE0F14F0048550C /* HomeView.swift in Sources */,
 				DA95CC8D2ADE1736004AD94D /* ImageGenerateViewModel.swift in Sources */,
@@ -616,7 +620,6 @@
 				DA390A722AFE168500BACF2B /* SimpleMapView.swift in Sources */,
 				DA3F9BA32AE0F14F0048550C /* MapView.swift in Sources */,
 				DA56FFE82AE2B9890040855B /* MapAlertSubView.swift in Sources */,
-				DA390A782AFE1E1200BACF2B /* MapCaptureView.swift in Sources */,
 				DA8BB9E82B0255B700E350C4 /* SettingViewModel.swift in Sources */,
 				DA71C8412AD787AC00081ED0 /* Item.swift in Sources */,
 				DA3F9B392ADE813A0048550C /* CustomAlertConfigure.swift in Sources */,
@@ -626,6 +629,7 @@
 				DAA8E4F92B01A80C00F9190B /* TabAppear.swift in Sources */,
 				DA3F9BA52AE0F14F0048550C /* MapModel.swift in Sources */,
 				DA4513832AFB25C2007AD69B /* PositionMarkerView.swift in Sources */,
+				DA8BB9F22B02FE3A00E350C4 /* HomeViewModel.swift in Sources */,
 				DAED25022AFA1D430044715A /* SplashView.swift in Sources */,
 				DA99F9E62AFA4F3E00B1483F /* Color.swift in Sources */,
 				DA3F9BD32AE0FF8A0048550C /* RootView.swift in Sources */,
@@ -799,7 +803,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_ASSET_PATHS = "\"dogArea/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = 7Y3Y9M4N4F;
@@ -841,7 +845,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_ASSET_PATHS = "\"dogArea/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = 7Y3Y9M4N4F;

@@ -15,7 +15,7 @@ struct WalkListDetailView: View {
     @State private var showSaveMessage = false
     @State private var selectedLoc: UUID? = nil
     @ObservedObject var tabStatus = TabAppear.shared
-    
+    @StateObject var imageRenderer = MapImageProvider()
     var body: some View {
         let tempPolygon = model.toPolygon()
         ScrollView{
@@ -66,10 +66,25 @@ struct WalkListDetailView: View {
                     }.frame(height: 60)
                         .padding(.horizontal, 20)
                 }
+                Button(action: {
+                    imageRenderer.captureMapImage(for: model.toPolygon().polygon!)
+                    if let img = imageRenderer.capturedImage {
+                        showSaveMessage = true
+                    } else {
+                        
+                    }
+                },
+                       label:  {
+                    Text("사진으로 저장하기")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .foregroundStyle(.black)
+                }).frame(maxWidth: .infinity, minHeight: 50)
+                    .background(Color(red: 0.99, green: 0.73, blue: 0.73))
+                    .cornerRadius(15)
+                    .padding(.horizontal, 70)
                 Spacer()
                 Button(action: {
                     tabStatus.appear()
-
                     dismiss()
                 },
                        label:  {

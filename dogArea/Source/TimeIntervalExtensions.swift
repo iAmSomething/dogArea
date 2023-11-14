@@ -46,5 +46,12 @@ extension TimeInterval {
         let formattedDate = dateFormatter.string(from: date)
         return formattedDate
     }
-    
+    var calculatedAreaString: String {
+        let area = self
+        var str = String(format: "%.2f" , area) + "㎡"
+        if area > 100000.0 {
+            str = String(format: "%.2f" , area/1000000) + "k㎡"
+        }
+        return str
+    }
 }

@@ -96,3 +96,6 @@ extension UIImage {
         .init(named: "emptyImg")!
     }
 }
+extension Double {
+
+}
