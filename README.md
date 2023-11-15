@@ -40,18 +40,18 @@
 
 - 로티 애니메이션을 추가
 
-  <img src="https://p.ipic.vip/2pwx2f.gif" alt="스플래시" style="zoom:50%;" />
+  <img src="https://p.ipic.vip/2pwx2f.gif" alt="스플래시"  width="200" height="432" />
 
 ### 홈
 
 1. 메인 화면
-   1. <img src="https://p.ipic.vip/47rvyp.png" alt="IMG_0357" style="zoom: 25%;" /><img src="https://p.ipic.vip/9cm520.png" alt="IMG_0358" style="zoom: 25%;" />
+   1. <img src="https://p.ipic.vip/47rvyp.png" alt="IMG_0357"  width="200" height="432" /><img src="https://p.ipic.vip/9cm520.png" alt="IMG_0358"  width="200" height="432" />
    2. 산책한 날에 강아지 아이콘을 추가하였습니다.
    3. 주별로(해당 주 일요일부터 토요일까지) 산책한 영역의 넓이와 산책 횟수를 산출하여 보여주었습니다.
    4. 누적된 산책 영역을 합산하여 대한민국 지자체 및 기타 유명한 지역의 넓이와 비교하여 보았습니다.
    5. 점차 넓은 영역을 넘어서도록 동기 부여용으로 제작하였습니다.
 2. 더보기 눌렀을 때 뷰
-   1. <img src="https://p.ipic.vip/ccc70a.png" alt="IMG_0359" style="zoom:33%;" />
+   1. <img src="https://p.ipic.vip/ccc70a.png" alt="IMG_0359"  width="200" height="432" />
    2. 여태까지 정복한 영역을 최신순으로 정렬하여 보여줍니다.
 
 #### Todo
@@ -61,13 +61,13 @@
 ### 산책 목록
 
 1. 메인 뷰
-   1. <img src="https://p.ipic.vip/md9o07.png" alt="IMG_0360" style="zoom:33%;" /><img src="https://p.ipic.vip/3ttd2o.png" alt="IMG_0361" style="zoom:33%;" />
+   1. <img src="https://p.ipic.vip/md9o07.png" alt="IMG_0360"  width="200" height="432" /><img src="https://p.ipic.vip/3ttd2o.png" alt="IMG_0361"  width="200" height="432" />
       1. 산책 기록을 리스트로 보여줍니다.
       2. 셀 눌렀을 때는 영역을 지도에서 폴리곤으로 보여주고, 산책 정보를 보여주며, 사진으로 저장하는 기능을 추가하였습니다.
 
 ### 지도
 
-<img src="https://p.ipic.vip/0co6bk.png" alt="IMG_0362" style="zoom:25%;" /><img src="https://p.ipic.vip/ovfa5s.png" alt="IMG_0364" style="zoom:25%;" /><img src="https://p.ipic.vip/sad2io.png" alt="IMG_0365" style="zoom:25%;" /><img src="https://p.ipic.vip/q5dscv.png" alt="IMG_0366" style="zoom:25%;" />
+<img src="https://p.ipic.vip/0co6bk.png" alt="IMG_0362"  width="200" height="432" /><img src="https://p.ipic.vip/ovfa5s.png" alt="IMG_0364"  width="200" height="432" /><img src="https://p.ipic.vip/sad2io.png" alt="IMG_0365"  width="200" height="432" /><img src="https://p.ipic.vip/q5dscv.png" alt="IMG_0366"  width="200" height="432" />
 
 1. 메인 뷰입니다. 앱을 켜면 바로 등장합니다.
 2. 산책을 시작하면 실시간으로 산책 시간과 영역 넓이를 계산하여 보여줍니다.
