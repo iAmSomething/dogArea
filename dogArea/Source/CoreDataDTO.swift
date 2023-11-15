@@ -46,3 +46,11 @@ extension LocationEntity {
     return Location.init(coordinate: .init(latitude: Double(truncating: x), longitude: Double(truncating: y)), id: id, createdAt: Double(truncating: createdAt))
   }
 }
+extension AreaEntity {
+    func toArea() -> AreaMeterDTO? {
+        guard
+            let areaName = self.areaName
+        else {return nil}
+        return AreaMeterDTO(areaName: areaName, area: self.areaSize, createdAt: self.createdAt)
+    }
+}

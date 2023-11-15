@@ -16,7 +16,16 @@ struct AreaMeter: Hashable, Identifiable {
         self.area = area
     }
 }
-
+struct AreaMeterBinding: Hashable{
+    let areaName: String
+    let area: Double
+    let createdAt: Double
+}
+struct AreaMeterDTO: Hashable {
+    let areaName: String
+    let area: Double
+    let createdAt: Double
+}
 struct AreaMeterCollection {
     var areas: [AreaMeter] {
       var area: [AreaMeter] = [.init("강원특별자치도 홍천군" , 1820.58),
@@ -262,6 +271,13 @@ struct AreaMeterCollection {
    }
     func nearistArea(of myarea: Double) -> AreaMeter? {
         return areas.first{$0.area < myarea}
+    }
+    func nearistArea(since: AreaMeterDTO? = nil, from myarea: Double) -> [AreaMeter] {
+        if since.isNil {
+            return areas.filter{$0.area < myarea}
+        } else {
+            return areas.filter{$0.area < myarea && $0.area > since!.area}
+        }
     }
     func closeArea(of myarea: Double) -> AreaMeter? {
         return areas.last{$0.area > myarea}

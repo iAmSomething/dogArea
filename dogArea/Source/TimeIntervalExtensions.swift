@@ -28,14 +28,21 @@ extension TimeInterval {
     var createdAtTimeDescription: String {
         let date = Date(timeIntervalSince1970: self)
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MM월dd일HH시mm분SS초"
+        dateFormatter.dateFormat = "MM월dd일HH시mm분ss초"
+        let formattedDate = dateFormatter.string(from: date)
+        return formattedDate
+    }
+    var createdAtTimeDescriptionSimple: String {
+        let date = Date(timeIntervalSince1970: self)
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MM월dd일HH시"
         let formattedDate = dateFormatter.string(from: date)
         return formattedDate
     }
     var createdAtTimeYYMMDD: String {
         let date = Date(timeIntervalSince1970: self)
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "YYYY년 MM월 dd일\nHH시 mm분 SS초"
+        dateFormatter.dateFormat = "YYYY년 MM월 dd일\nHH시 mm분 ss초"
         let formattedDate = dateFormatter.string(from: date)
         return formattedDate
     }
@@ -49,6 +56,9 @@ extension TimeInterval {
     var calculatedAreaString: String {
         let area = self
         var str = String(format: "%.2f" , area) + "㎡"
+        if area > 10000.0 {
+            str = String(format: "%.2f" , area/10000) + "만 ㎡"
+        }
         if area > 100000.0 {
             str = String(format: "%.2f" , area/1000000) + "k㎡"
         }

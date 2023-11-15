@@ -19,9 +19,6 @@ struct NotificationCenterView: View {
                    .border(Color.black)
 
                // Button to trigger image capture
-               Button("Capture Image") {
-                   mapImageProvider.captureMapImage(for: viewModel.polygonList.last!.polygon!)
-               }
                .padding()
            }
        }
@@ -35,7 +32,7 @@ struct ImageView: View {
                 .resizable()
                 .scaledToFit()
         } else {
-            Text("No Image Captured")
+            Text("프로필 이미지")
                 .foregroundColor(.gray)
         }
     }

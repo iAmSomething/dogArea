@@ -17,9 +17,12 @@ struct SimpleMapView: View {
                 interactionModes: .all){
                             ForEach(polygon.locations) { location in
                                 Annotation("", coordinate: location.coordinate) {
-                                    selectedLocation == nil ?
-                                    PositionMarkerViewWithSelection(selected: false) :
-                                    PositionMarkerViewWithSelection(selected: location.id == selectedLocation!)
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 5)
+                                            .fill(location.id == selectedLocation ? Color.appPeach : Color.appYellowPale)
+                                        Text("💦").font(.appFont(for: .Bold, size: 10))
+                                            .padding(5)
+                                    }
                                 }
                             }
                 if let walkArea = polygon.polygon{

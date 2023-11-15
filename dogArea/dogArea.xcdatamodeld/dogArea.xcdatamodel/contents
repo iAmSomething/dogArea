@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="22225" systemVersion="23B5046f" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
+    <entity name="AreaEntity" representedClassName="AreaEntity" syncable="YES" codeGenerationType="class">
+        <attribute name="areaName" optional="YES" attributeType="String"/>
+        <attribute name="areaSize" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="createdAt" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+    </entity>
     <entity name="LocationEntity" representedClassName="LocationEntity" syncable="YES" codeGenerationType="class">
         <attribute name="createdAt" attributeType="Double" defaultValueString="0" usesScalarValueType="NO"/>
         <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="YES"/>
@@ -13,5 +18,11 @@
         <attribute name="walkingArea" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="walkingTime" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <relationship name="locations" optional="YES" toMany="YES" deletionRule="Nullify" ordered="YES" destinationEntity="LocationEntity"/>
+    </entity>
+    <entity name="UserEntity" representedClassName="UserEntity" syncable="YES" codeGenerationType="class">
+        <attribute name="petImage" optional="YES" attributeType="Binary"/>
+        <attribute name="petName" optional="YES" attributeType="String"/>
+        <attribute name="userID" optional="YES" attributeType="String"/>
+        <attribute name="userName" optional="YES" attributeType="String"/>
     </entity>
 </model>

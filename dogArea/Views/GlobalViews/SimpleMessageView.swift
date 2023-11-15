@@ -15,6 +15,7 @@ struct SimpleMessageView: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: 30)
                 .padding(.horizontal, 50)
+                .cornerRadius(5)
             Text(message)
                 .foregroundColor(.white)
                 .font(.appFont(for: .Light, size: 20))

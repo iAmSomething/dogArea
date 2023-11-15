@@ -15,6 +15,7 @@ struct MapView : View{
     @State private var isWalkingViewPresented = false
     @State private var endWalkingViewPresented = false
     @State private var image: UIImage? = nil
+    @State private var isCameraSeeingSomewhere: Bool = false
     var body : some View {
         ZStack{
             MapSubView(myAlert: myAlert, viewModel: viewModel)
@@ -38,10 +39,27 @@ struct MapView : View{
                     })
                 }
                 Spacer()
+
                 if viewModel.isWalking {
                     HStack {
+                        if isCameraSeeingSomewhere,
+                           let loc = viewModel.location{
+                            Button(action: {viewModel.setRegion(loc,distance: 2000)}, label: {Text("내 위치 보기")})
+                                .buttonStyle(.borderedProminent)
+                                .padding(.leading)
+                        }
                         Spacer()
                         addPointBtn
+                    }
+                } else {
+                    HStack {
+                        if isCameraSeeingSomewhere,
+                           let loc = viewModel.location{
+                            Button(action: {viewModel.setRegion(loc,distance: 2000)}, label: {Text("내 위치 보기")})
+                                .buttonStyle(.borderedProminent)
+                                .padding(.leading)
+                        }
+                        Spacer()
                     }
                 }
                 StartButtonView(viewModel: viewModel,
@@ -58,13 +76,17 @@ struct MapView : View{
                 .interactiveDismissDisabled(true)
         }.sheet(isPresented: $endWalkingViewPresented) {
             WalkDetailView(viewModel: viewModel).interactiveDismissDisabled(true)
+        }.onMapCameraChange{ context in
+            if let loc = viewModel.location {
+                self.isCameraSeeingSomewhere =  context.camera.centerCoordinate.clLocation.distance(from: loc) > 300
+            }
         }
         
     }
     var addPointBtn: some View {
         Image("plusButton")
             .resizable()
-            .frame(width: 55, height: 55)
+            .frame(width: 70, height: 70)
             .onTapGesture {
                 viewModel.setTrackingMode()
                 myAlert.alertType = .addPoint

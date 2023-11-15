@@ -12,7 +12,7 @@ struct WalkListDetailView: View {
     @ObservedObject var viewModel: WalkListViewModel
     @State var model: WalkDataModel
     @State private var isMeter: Bool = true
-    @State private var showSaveMessage = false
+    @State private var showSaveMessage: String? = nil
     @State private var selectedLoc: UUID? = nil
     @ObservedObject var tabStatus = TabAppear.shared
     @StateObject var imageRenderer = MapImageProvider()
@@ -67,11 +67,14 @@ struct WalkListDetailView: View {
                         .padding(.horizontal, 20)
                 }
                 Button(action: {
-                    imageRenderer.captureMapImage(for: model.toPolygon().polygon!)
                     if let img = imageRenderer.capturedImage {
-                        showSaveMessage = true
+                        UIImageWriteToSavedPhotosAlbum(img, nil, nil, nil)
+                        showSaveMessage = "사진을 저장했어요!"
                     } else {
-                        
+                        showSaveMessage = "사진 저장에 실패했어요"
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        showSaveMessage = nil
                     }
                 },
                        label:  {
@@ -97,16 +100,18 @@ struct WalkListDetailView: View {
                     .padding(.horizontal, 70)
             }.overlay(
                 Group {
-                    if showSaveMessage {
-                        SimpleMessageView(message: "저장이 완료되었습니다")
+                    if let msg = showSaveMessage {
+                        SimpleMessageView(message: msg)
                             .transition(.opacity)
-                        
                     }
                 }.animation(.easeInOut(duration: 0.2))
             ).navigationBarBackButtonHidden()
         }.padding(.top, 20)
         .onAppear {
+            imageRenderer.captureMapImage(for: model.toPolygon().polygon!)
+
             tabStatus.hide()
         }.safeAreaPadding(.top, 20)
+
     }
 }

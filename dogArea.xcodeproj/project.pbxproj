@@ -15,6 +15,12 @@
 		DA390A6F2AFE027C00BACF2B /* MapSubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA390A6E2AFE027C00BACF2B /* MapSubView.swift */; };
 		DA390A722AFE168500BACF2B /* SimpleMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA390A712AFE168500BACF2B /* SimpleMapView.swift */; };
 		DA390A752AFE1AFC00BACF2B /* SimpleMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA390A742AFE1AFC00BACF2B /* SimpleMessageView.swift */; };
+		DA3EB07A2B0344CD00AEA65D /* AreaDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3EB0792B0344CD00AEA65D /* AreaDetailView.swift */; };
+		DA3EB07E2B03545E00AEA65D /* Launch Screen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = DA3EB07D2B03545E00AEA65D /* Launch Screen.storyboard */; };
+		DA3EB0A52B0384E900AEA65D /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = DA3EB0A42B0384E900AEA65D /* FirebaseAnalytics */; };
+		DA3EB0A72B0384F100AEA65D /* FirebaseAppDistribution-Beta in Frameworks */ = {isa = PBXBuildFile; productRef = DA3EB0A62B0384F100AEA65D /* FirebaseAppDistribution-Beta */; };
+		DA3EB0A92B0384FA00AEA65D /* FirebaseAppCheck in Frameworks */ = {isa = PBXBuildFile; productRef = DA3EB0A82B0384FA00AEA65D /* FirebaseAppCheck */; };
+		DA3EB0AB2B03850400AEA65D /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = DA3EB0AA2B03850400AEA65D /* FirebaseMessaging */; };
 		DA3F9B362ADE7C100048550C /* CustomAlertViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9B352ADE7C100048550C /* CustomAlertViewModel.swift */; };
 		DA3F9B392ADE813A0048550C /* CustomAlertConfigure.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9B382ADE813A0048550C /* CustomAlertConfigure.swift */; };
 		DA3F9BA02AE0F14F0048550C /* ProfileSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9B972AE0F14F0048550C /* ProfileSettingsView.swift */; };
@@ -43,6 +49,7 @@
 		DA8BB9E82B0255B700E350C4 /* SettingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA8BB9E72B0255B700E350C4 /* SettingViewModel.swift */; };
 		DA8BB9EE2B02F0CD00E350C4 /* AreaMeters.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA8BB9ED2B02F0CD00E350C4 /* AreaMeters.swift */; };
 		DA8BB9F22B02FE3A00E350C4 /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA8BB9F12B02FE3A00E350C4 /* HomeViewModel.swift */; };
+		DA8BB9F52B032AB000E350C4 /* Calender.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA8BB9F42B032AB000E350C4 /* Calender.swift */; };
 		DA933BE92ADD04E70029856C /* CustomAlertView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA933BE82ADD04E70029856C /* CustomAlertView.swift */; };
 		DA95CC6C2ADE0682004AD94D /* OpenAIClient.h in Headers */ = {isa = PBXBuildFile; fileRef = DA95CC6B2ADE0682004AD94D /* OpenAIClient.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		DA95CC6F2ADE0682004AD94D /* OpenAIClient.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DA95CC692ADE0682004AD94D /* OpenAIClient.framework */; };
@@ -130,6 +137,9 @@
 		DA390A742AFE1AFC00BACF2B /* SimpleMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleMessageView.swift; sourceTree = "<group>"; };
 		DA3C140D2AF0847600324A14 /* ManagedSettings.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ManagedSettings.framework; path = System/Library/Frameworks/ManagedSettings.framework; sourceTree = SDKROOT; };
 		DA3C140F2AF0847600324A14 /* ManagedSettingsUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ManagedSettingsUI.framework; path = System/Library/Frameworks/ManagedSettingsUI.framework; sourceTree = SDKROOT; };
+		DA3EB0792B0344CD00AEA65D /* AreaDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaDetailView.swift; sourceTree = "<group>"; };
+		DA3EB07D2B03545E00AEA65D /* Launch Screen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = "Launch Screen.storyboard"; sourceTree = "<group>"; };
+		DA3EB0A22B0383FD00AEA65D /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		DA3F9B352ADE7C100048550C /* CustomAlertViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomAlertViewModel.swift; sourceTree = "<group>"; };
 		DA3F9B382ADE813A0048550C /* CustomAlertConfigure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomAlertConfigure.swift; sourceTree = "<group>"; };
 		DA3F9B972AE0F14F0048550C /* ProfileSettingsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ProfileSettingsView.swift; sourceTree = "<group>"; };
@@ -160,6 +170,7 @@
 		DA8BB9E72B0255B700E350C4 /* SettingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingViewModel.swift; sourceTree = "<group>"; };
 		DA8BB9ED2B02F0CD00E350C4 /* AreaMeters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMeters.swift; sourceTree = "<group>"; };
 		DA8BB9F12B02FE3A00E350C4 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
+		DA8BB9F42B032AB000E350C4 /* Calender.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Calender.swift; sourceTree = "<group>"; };
 		DA933BE82ADD04E70029856C /* CustomAlertView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomAlertView.swift; sourceTree = "<group>"; };
 		DA95CC692ADE0682004AD94D /* OpenAIClient.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = OpenAIClient.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		DA95CC6B2ADE0682004AD94D /* OpenAIClient.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = OpenAIClient.h; sourceTree = "<group>"; };
@@ -193,8 +204,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DA3EB0AB2B03850400AEA65D /* FirebaseMessaging in Frameworks */,
 				DA95CC6F2ADE0682004AD94D /* OpenAIClient.framework in Frameworks */,
 				DA99F9B12AFA1EAB00B1483F /* Lottie in Frameworks */,
+				DA3EB0A52B0384E900AEA65D /* FirebaseAnalytics in Frameworks */,
+				DA3EB0A92B0384FA00AEA65D /* FirebaseAppCheck in Frameworks */,
+				DA3EB0A72B0384F100AEA65D /* FirebaseAppDistribution-Beta in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -216,7 +231,7 @@
 				DAED24F92AFA1C8A0044715A /* Animations */,
 				DA56FFED2AE362000040855B /* Font */,
 				DA99F9E52AFA4F3E00B1483F /* Color.swift */,
-				DA8BB9ED2B02F0CD00E350C4 /* AreaMeters.swift */,
+				DA3EB07D2B03545E00AEA65D /* Launch Screen.storyboard */,
 			);
 			path = Resource;
 			sourceTree = "<group>";
@@ -236,7 +251,10 @@
 		DA3550002B01DFE400E4094A /* HomeView */ = {
 			isa = PBXGroup;
 			children = (
+				DA8BB9FA2B03341000E350C4 /* HomeSubView */,
 				DA3F9B992AE0F14F0048550C /* HomeView.swift */,
+				DA8BB9ED2B02F0CD00E350C4 /* AreaMeters.swift */,
+				DA3EB0792B0344CD00AEA65D /* AreaDetailView.swift */,
 				DA8BB9F12B02FE3A00E350C4 /* HomeViewModel.swift */,
 			);
 			path = HomeView;
@@ -363,6 +381,7 @@
 			isa = PBXGroup;
 			children = (
 				DA45137D2AFA6DC1007AD69B /* OpenAIConfiguration.xcconfig */,
+				DA3EB0A22B0383FD00AEA65D /* GoogleService-Info.plist */,
 				DA71C83B2AD787AC00081ED0 /* dogArea */,
 				DA95CC6A2ADE0682004AD94D /* OpenAIClient */,
 				DA3C140C2AF0847600324A14 /* Frameworks */,
@@ -413,6 +432,14 @@
 				DA8BB9E72B0255B700E350C4 /* SettingViewModel.swift */,
 			);
 			path = ProfileSettingView;
+			sourceTree = "<group>";
+		};
+		DA8BB9FA2B03341000E350C4 /* HomeSubView */ = {
+			isa = PBXGroup;
+			children = (
+				DA8BB9F42B032AB000E350C4 /* Calender.swift */,
+			);
+			path = HomeSubView;
 			sourceTree = "<group>";
 		};
 		DA933BC12AD7F0150029856C /* Recovered References */ = {
@@ -483,6 +510,10 @@
 			name = dogArea;
 			packageProductDependencies = (
 				DA99F9B02AFA1EAB00B1483F /* Lottie */,
+				DA3EB0A42B0384E900AEA65D /* FirebaseAnalytics */,
+				DA3EB0A62B0384F100AEA65D /* FirebaseAppDistribution-Beta */,
+				DA3EB0A82B0384FA00AEA65D /* FirebaseAppCheck */,
+				DA3EB0AA2B03850400AEA65D /* FirebaseMessaging */,
 			);
 			productName = dogArea;
 			productReference = DA71C8392AD787AC00081ED0 /* dogArea.app */;
@@ -532,11 +563,12 @@
 			};
 			buildConfigurationList = DA71C8342AD787AC00081ED0 /* Build configuration list for PBXProject "dogArea" */;
 			compatibilityVersion = "Xcode 14.0";
-			developmentRegion = en;
+			developmentRegion = ko;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
 				Base,
+				ko,
 			);
 			mainGroup = DA71C8302AD787AC00081ED0;
 			packageReferences = (
@@ -545,6 +577,7 @@
 				DA95CC762ADE09D6004AD94D /* XCRemoteSwiftPackageReference "swift-openapi-runtime" */,
 				DA95CC792ADE0A07004AD94D /* XCRemoteSwiftPackageReference "swift-openapi-urlsession" */,
 				DAED24F82AFA1C7A0044715A /* XCRemoteSwiftPackageReference "lottie-ios" */,
+				DA3EB0A12B0383EF00AEA65D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			productRefGroup = DA71C83A2AD787AC00081ED0 /* Products */;
 			projectDirPath = "";
@@ -565,6 +598,7 @@
 				DA99F9FF2AFA50D700B1483F /* Pretendard-Bold.otf in Resources */,
 				DA99F9F92AFA50D700B1483F /* Pretendard-Medium.otf in Resources */,
 				DA71C8462AD787AD00081ED0 /* Preview Assets.xcassets in Resources */,
+				DA3EB07E2B03545E00AEA65D /* Launch Screen.storyboard in Resources */,
 				DA99F9FB2AFA50D700B1483F /* Pretendard-ExtraBold.otf in Resources */,
 				DA99FA012AFA50D700B1483F /* Pretendard-Light.otf in Resources */,
 				DA71C8432AD787AD00081ED0 /* Assets.xcassets in Resources */,
@@ -611,11 +645,13 @@
 				DA45138C2AFB36D4007AD69B /* WalkListModel.swift in Sources */,
 				DA3F9BA12AE0F14F0048550C /* NotificationCenterView.swift in Sources */,
 				DA1731712AE200C100EF10C8 /* dogArea.xcdatamodeld in Sources */,
+				DA3EB07A2B0344CD00AEA65D /* AreaDetailView.swift in Sources */,
 				DA933BE92ADD04E70029856C /* CustomAlertView.swift in Sources */,
 				DAAE22232AFCC225005FD096 /* WalkDetailView.swift in Sources */,
 				DA4513862AFB2CFC007AD69B /* WalkListViewModel.swift in Sources */,
 				DA3F9BAE2AE0F2410048550C /* ViewUtility.swift in Sources */,
 				DA3F9BA42AE0F14F0048550C /* MapViewModel.swift in Sources */,
+				DA8BB9F52B032AB000E350C4 /* Calender.swift in Sources */,
 				DA390A6F2AFE027C00BACF2B /* MapSubView.swift in Sources */,
 				DA390A722AFE168500BACF2B /* SimpleMapView.swift in Sources */,
 				DA3F9BA32AE0F14F0048550C /* MapView.swift in Sources */,
@@ -814,9 +850,12 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "사용자의 위치 정보를 가져오기 위함입니다.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "사용자의 위치 정보를 가져오기 위함입니다.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "사진 저장하기 위한 권한 설정";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "사진 접근하기 위한 권한 설정";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen.storyboard";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -856,9 +895,12 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "사용자의 위치 정보를 가져오기 위함입니다.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "사용자의 위치 정보를 가져오기 위함입니다.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "사진 저장하기 위한 권한 설정";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "사진 접근하기 위한 권한 설정";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen.storyboard";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -989,6 +1031,14 @@
 				minimumVersion = 2.6.2;
 			};
 		};
+		DA3EB0A12B0383EF00AEA65D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 10.17.0;
+			};
+		};
 		DA95CC752ADE09AF004AD94D /* XCRemoteSwiftPackageReference "swift-openapi-generator" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/apple/swift-openapi-generator";
@@ -1024,6 +1074,26 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		DA3EB0A42B0384E900AEA65D /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DA3EB0A12B0383EF00AEA65D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		DA3EB0A62B0384F100AEA65D /* FirebaseAppDistribution-Beta */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DA3EB0A12B0383EF00AEA65D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = "FirebaseAppDistribution-Beta";
+		};
+		DA3EB0A82B0384FA00AEA65D /* FirebaseAppCheck */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DA3EB0A12B0383EF00AEA65D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAppCheck;
+		};
+		DA3EB0AA2B03850400AEA65D /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DA3EB0A12B0383EF00AEA65D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
+		};
 		DA95CC772ADE09D6004AD94D /* OpenAPIRuntime */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = DA95CC762ADE09D6004AD94D /* XCRemoteSwiftPackageReference "swift-openapi-runtime" */;

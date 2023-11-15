@@ -163,7 +163,7 @@ extension MapViewModel {
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
         DispatchQueue.main.async { [weak self] in
-            withAnimation{
+            withAnimation(){
                 self?.location = location
             }
         }

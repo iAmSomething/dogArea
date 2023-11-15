@@ -23,35 +23,71 @@ struct MapSubView: View {
                         .shadow(radius: 5)
                 }
             }
-            ForEach(viewModel.polygon.locations) { location in
-                Annotation("", coordinate: location.coordinate) {
-                    PositionMarkerView()
-                        .onTapGesture {
-                            viewModel.selectedMarker = location
-                            myAlert.callAlert(type: .annotationSelected(location))
-                        }
-                }
-            }
             if let walkArea = viewModel.polygon.polygon{
                 if viewModel.showOnlyOne {
+                    ForEach(viewModel.polygon.locations) { location in
+                        Annotation("", coordinate: location.coordinate) {
+                            PositionMarkerView()
+                        }
+                    }
                     MapPolygon(walkArea)
                         .stroke(Color.appYellow, lineWidth: 0.5)
                         .foregroundStyle(Color.appYellow.opacity(0.3))
                         .annotationTitles(.visible)
+                    Annotation("", coordinate: walkArea.coordinate) {
+                        VStack {
+                            Image(.dogPrint)
+                                .resizable()
+                                .frame(width: 20, height: 20)
+                                .background(Color.appGreen)
+                                .cornerRadius(10)
+                                .shadow(radius: 5)
+                            Text("\(viewModel.polygon.createdAt.createdAtTimeYYMMDD)")
+                                .font(.appFont(for: .Regular, size: 12))
+                                .foregroundColor(.appTextDarkGray)
+                        }
+                    }
                 }
                 else {
                     ForEach(viewModel.polygonList) { item in
                         if let p  = item.polygon {
                             MapPolygon(p)
                                 .stroke(Color.appYellow, lineWidth: 0.5)
-                                .foregroundStyle(Color.appYellow.opacity(0.3))              .annotationTitles(.visible)
+                                .foregroundStyle(Color.appYellow.opacity(0.3))
+                                .annotationTitles(.visible)
+                            Annotation("", coordinate: p.coordinate) {
+                                VStack {
+                                    Image(.dogPrint)
+                                        .resizable()
+                                        .frame(width: 20, height: 20)
+                                        .background(Color.appGreen)
+                                        .cornerRadius(10)
+                                        .shadow(radius: 5)
+                                    Text("\(item.createdAt.createdAtTimeYYMMDD)")
+                                        .font(.appFont(for: .Regular, size: 12))
+                                        .foregroundColor(.appTextDarkGray)
+                                }.onTapGesture {
+                                    let distance = p.boundingMapRect.width
+                                    viewModel.setRegion(p.coordinate, distance: distance)
+                                }
+                            }
                         }
                     }
                 }
             }
-            else { }
+            else { 
+                ForEach(viewModel.polygon.locations) { location in
+                    Annotation("", coordinate: location.coordinate) {
+                        PositionMarkerView()
+                            .onTapGesture {
+                                viewModel.selectedMarker = location
+                                myAlert.callAlert(type: .annotationSelected(location))
+                            }
+                    }
+                }
+            }
         }.mapControls {
-            mapControls
+//            mapControls
         }
     }
     var mapControls: some View {
