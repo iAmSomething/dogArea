@@ -48,7 +48,6 @@ struct CustomTabBar: View {
       .padding(.vertical, 10)
       .padding(.bottom, 10)
       .background(Color.white.edgesIgnoringSafeArea(.bottom))
-      .border(Color.appTextDarkGray, width: 0.3)
   }
 }
 

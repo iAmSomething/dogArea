@@ -9,12 +9,11 @@ import SwiftUI
 import MapKit
 struct WalkListDetailView: View {
     @Environment(\.dismiss) var dismiss
-    @ObservedObject var viewModel: WalkListViewModel
     @State var model: WalkDataModel
     @State private var isMeter: Bool = true
     @State private var showSaveMessage: String? = nil
     @State private var selectedLoc: UUID? = nil
-    @ObservedObject var tabStatus = TabAppear.shared
+    @StateObject var tabStatus = TabAppear.shared
     @StateObject var imageRenderer = MapImageProvider()
     var body: some View {
         let tempPolygon = model.toPolygon()
@@ -33,7 +32,7 @@ struct WalkListDetailView: View {
                     .padding(.horizontal, 20)
                     .padding(.bottom,20)
                 HStack {
-                    SimpleKeyValueView(value: ("영역 넓이","\(viewModel.calculatedAreaString(areaSize: model.walkArea , isPyong : !isMeter))"))
+                    SimpleKeyValueView(value: ("영역 넓이","\(calculatedAreaString(areaSize: model.walkArea , isPyong : !isMeter))"))
                         .onTapGesture {isMeter.toggle()}
                     Spacer()
                     SimpleKeyValueView(value: ("산책 시간","\(model.walkDuration.simpleWalkingTimeInterval)"))
@@ -112,6 +111,27 @@ struct WalkListDetailView: View {
 
             tabStatus.hide()
         }.safeAreaPadding(.top, 20)
+            .onDisappear {
+                tabStatus.appear()
+            }
 
+    }
+    func calculatedAreaString(areaSize: Double , isPyong: Bool = false) -> String {
+        var str = String(format: "%.2f" , areaSize) + "㎡"
+        if areaSize > 10000.0 {
+            str = String(format: "%.2f" , areaSize/10000) + "만 ㎡"
+        }
+        if areaSize > 100000.0 {
+            str = String(format: "%.2f" , areaSize/1000000) + "k㎡"
+        }
+        if isPyong {
+            if areaSize/3.3 > 10000 {
+                str = String(format: "%.1f" , areaSize/33333) + "만 평"
+
+            } else {
+                str = String(format: "%.1f" , areaSize/3.3) + "평"
+            }
+        }
+        return str
     }
 }

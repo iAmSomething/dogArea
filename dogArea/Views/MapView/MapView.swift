@@ -14,13 +14,14 @@ struct MapView : View{
     @State private var isModalPresented = false
     @State private var isWalkingViewPresented = false
     @State private var endWalkingViewPresented = false
-    @State private var image: UIImage? = nil
     @State private var isCameraSeeingSomewhere: Bool = false
     @State private var distance = 0.0
+    @State private var selectedPolygonData: WalkDataModel? = nil
+    @ObservedObject var tabStatus = TabAppear.shared
+    
     var body : some View {
         ZStack{
             MapSubView(myAlert: myAlert, viewModel: viewModel)
-//                .renderImage($image)
             MapAlertSubView(viewModel: viewModel, myAlert: myAlert)
             
             VStack {
@@ -40,7 +41,7 @@ struct MapView : View{
                     })
                 }
                 Spacer()
-
+                
                 if viewModel.isWalking {
                     HStack {
                         if isCameraSeeingSomewhere,
@@ -62,25 +63,61 @@ struct MapView : View{
                         }
                         Spacer()
                     }
+                    
                 }
                 StartButtonView(viewModel: viewModel,
                                 myAlert: myAlert,
                                 isModalPresented: $isWalkingViewPresented,
                                 endWalkingViewPresented: $endWalkingViewPresented)
+                if !viewModel.selectedPolygonList.isEmpty && !viewModel.isWalking {
+                    VStack {
+                        Text("닫기")
+                            .frame(maxWidth: .infinity, maxHeight: 20)
+                            .onTapGesture {
+                                viewModel.selectedPolygonList = []
+                            }.padding()
+                            .aspectRatio(contentMode: .fit)
+                        UnderLine()
+                        ScrollView(.horizontal) {
+                            HStack{
+                                ForEach(viewModel.selectedPolygonList) { item in
+                                    SelectedPolygonCell(walkData: .init(polygon: item))
+                                        .onTapGesture {
+                                            self.selectedPolygonData = WalkDataModel(polygon: item)
+                                        }
+                                        .padding()
+                                        .myCornerRadius(radius: 15)
+                                        .overlay(                                        RoundedRectangle(cornerRadius: 15)
+                                            .stroke(Color.appTextDarkGray, lineWidth: 0.3))
+                                }.padding(10)
+                            }.frame(maxHeight: .infinity)
+                                .aspectRatio(contentMode: .fit)
+                        }.frame(width: screenSize.width)
+                        .aspectRatio(contentMode: .fit)
+                    }.frame(maxHeight: .infinity)
+                        .aspectRatio(contentMode: .fit)
+                        .background(.white)
+                        .clipShape(RoundedCornersShape(radius: 20,corners: [.topLeft,.topRight]))
+                }
             }
         }
         .onAppear {
             viewModel.updateAnnotations(cameraDistance: self.distance)
+            tabStatus.appear()
         }
         .sheet(isPresented: $isModalPresented){
-            MapSettingView(viewModel: viewModel, myAlert: myAlert)
+            MapSettingView(viewModel: self.viewModel, myAlert: self.myAlert)
                 .presentationDetents([.oneThird])
+            
         }.fullScreenCover(isPresented: $isWalkingViewPresented) {
             StartModalView()
                 .interactiveDismissDisabled(true)
         }.sheet(isPresented: $endWalkingViewPresented) {
             WalkDetailView(viewModel: viewModel).interactiveDismissDisabled(true)
-        }.onMapCameraChange{ context in
+        }.fullScreenCover(item: $selectedPolygonData, onDismiss: {self.selectedPolygonData = nil}, content: {model in
+            WalkListDetailView(model: model)
+        })
+        .onMapCameraChange{ context in
             if let loc = viewModel.location {
                 self.isCameraSeeingSomewhere =  context.camera.centerCoordinate.clLocation.distance(from: loc) > 300
                 if !viewModel.showOnlyOne {
@@ -91,7 +128,6 @@ struct MapView : View{
                 }
             }
         }
-        
     }
     var addPointBtn: some View {
         Image("plusButton")
@@ -102,7 +138,7 @@ struct MapView : View{
                 myAlert.alertType = .addPoint
                 myAlert.callAlert(type: .addPoint)}
     }
-
+    
 }
 #Preview {
     MapView()

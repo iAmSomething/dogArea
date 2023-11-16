@@ -16,7 +16,6 @@ public struct TabStyle: LabelStyle {
         VStack {
             configuration.icon
             configuration.title
-            
         }
     }
 }
@@ -89,13 +88,13 @@ extension View {
         }
         return uiImage
     }
+    func myCornerRadius(radius: Double) -> some View {
+        return self.clipShape(RoundedCornersShape(radius: radius))
+    }
 }
 //MARK: - default empty image
 extension UIImage {
     static var emptyImage: UIImage {
         .init(named: "emptyImg")!
     }
-}
-extension Double {
-
 }

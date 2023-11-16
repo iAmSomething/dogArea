@@ -11,8 +11,8 @@ import SwiftUI
 import MapKit
 import _MapKit_SwiftUI
 
-struct Location: Identifiable {
-    let createdAt: Double
+struct Location: Identifiable, TimeCheckable {
+    var createdAt: Double
     let id: UUID
     let coordinate: CLLocationCoordinate2D
     init(coordinate: CLLocationCoordinate2D, id: UUID, createdAt: Double) {
@@ -29,7 +29,7 @@ struct Location: Identifiable {
 extension Location : Equatable {
     static func == (lhs: Location, rhs: Location) -> Bool { lhs.id == rhs.id }
 }
-struct Polygon: Identifiable {
+struct Polygon: Identifiable, TimeCheckable {
     var id: UUID
     var locations: [Location]
     var createdAt: Double
@@ -125,3 +125,8 @@ extension Polygon {
     }
 }
 
+extension Array where Element == Polygon {
+    func polygon(at id: UUID) -> Polygon? {
+        self.first(where: {$0.id == id})
+    }
+}

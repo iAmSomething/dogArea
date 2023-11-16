@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		DA16C1D92B05DCC8008FC133 /* CornerShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA16C1D82B05DCC8008FC133 /* CornerShape.swift */; };
+		DA16C1DC2B05E4DF008FC133 /* TimeCheckable.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA16C1DB2B05E4DF008FC133 /* TimeCheckable.swift */; };
+		DA16C1E12B060C7B008FC133 /* SelectedPolygonCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA16C1E02B060C7B008FC133 /* SelectedPolygonCell.swift */; };
 		DA1731712AE200C100EF10C8 /* dogArea.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = DA17316F2AE200C100EF10C8 /* dogArea.xcdatamodeld */; };
 		DA1731732AE2017500EF10C8 /* PersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1731722AE2017500EF10C8 /* PersistenceController.swift */; };
 		DA1731762AE20A4D00EF10C8 /* CoreDataDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1731752AE20A4D00EF10C8 /* CoreDataDTO.swift */; };
@@ -128,6 +131,9 @@
 
 /* Begin PBXFileReference section */
 		DA0FB2082AD7B21C00B235CF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		DA16C1D82B05DCC8008FC133 /* CornerShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CornerShape.swift; sourceTree = "<group>"; };
+		DA16C1DB2B05E4DF008FC133 /* TimeCheckable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeCheckable.swift; sourceTree = "<group>"; };
+		DA16C1E02B060C7B008FC133 /* SelectedPolygonCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectedPolygonCell.swift; sourceTree = "<group>"; };
 		DA1731702AE200C100EF10C8 /* dogArea.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = dogArea.xcdatamodel; sourceTree = "<group>"; };
 		DA1731722AE2017500EF10C8 /* PersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceController.swift; sourceTree = "<group>"; };
 		DA1731752AE20A4D00EF10C8 /* CoreDataDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataDTO.swift; sourceTree = "<group>"; };
@@ -327,6 +333,8 @@
 				DA4513882AFB2D68007AD69B /* CoreDataProtocol.swift */,
 				DA1731752AE20A4D00EF10C8 /* CoreDataDTO.swift */,
 				DA3EB0AC2B04A1E100AEA65D /* Cluster.swift */,
+				DA16C1D82B05DCC8008FC133 /* CornerShape.swift */,
+				DA16C1DB2B05E4DF008FC133 /* TimeCheckable.swift */,
 			);
 			path = Source;
 			sourceTree = "<group>";
@@ -359,6 +367,7 @@
 				DA822CDC2AFB60B6001EC94D /* MapSettingView.swift */,
 				DA390A6E2AFE027C00BACF2B /* MapSubView.swift */,
 				DA8BB9E42B024B1900E350C4 /* MapCapture.swift */,
+				DA16C1E02B060C7B008FC133 /* SelectedPolygonCell.swift */,
 			);
 			path = MapSubViews;
 			sourceTree = "<group>";
@@ -647,6 +656,7 @@
 				DA354FFD2B01DF1F00E4094A /* TimeIntervalExtensions.swift in Sources */,
 				DA45138C2AFB36D4007AD69B /* WalkListModel.swift in Sources */,
 				DA3F9BA12AE0F14F0048550C /* NotificationCenterView.swift in Sources */,
+				DA16C1DC2B05E4DF008FC133 /* TimeCheckable.swift in Sources */,
 				DA1731712AE200C100EF10C8 /* dogArea.xcdatamodeld in Sources */,
 				DA3EB07A2B0344CD00AEA65D /* AreaDetailView.swift in Sources */,
 				DA933BE92ADD04E70029856C /* CustomAlertView.swift in Sources */,
@@ -678,6 +688,7 @@
 				DAA8E4D62B01A03700F9190B /* WalkListDetailView.swift in Sources */,
 				DA3F9BA02AE0F14F0048550C /* ProfileSettingsView.swift in Sources */,
 				DA4513892AFB2D68007AD69B /* CoreDataProtocol.swift in Sources */,
+				DA16C1E12B060C7B008FC133 /* SelectedPolygonCell.swift in Sources */,
 				DAED24FB2AFA1C980044715A /* LottieView.swift in Sources */,
 				DA1731762AE20A4D00EF10C8 /* CoreDataDTO.swift in Sources */,
 				DA822CD62AFB5E21001EC94D /* StartButtonView.swift in Sources */,
@@ -686,6 +697,7 @@
 				DA4513802AFB1EC1007AD69B /* WalkListCell.swift in Sources */,
 				DA3550022B01E0F900E4094A /* UnderLine.swift in Sources */,
 				DA95CC8B2ADE1475004AD94D /* TextToImageView.swift in Sources */,
+				DA16C1D92B05DCC8008FC133 /* CornerShape.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -843,7 +855,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 9;
 				DEVELOPMENT_ASSET_PATHS = "\"dogArea/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = 7Y3Y9M4N4F;
@@ -888,7 +900,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 9;
 				DEVELOPMENT_ASSET_PATHS = "\"dogArea/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = 7Y3Y9M4N4F;

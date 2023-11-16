@@ -27,14 +27,8 @@ struct WalkDetailView: View {
                 .onAppear {
                     guard let polygon = viewModel.polygon.polygon else { return }
                     Task {
-                        do {
-                            try await mapImageProvider.captureMapImage(for: polygon)
-                        } catch {
-                            print("Error capturing map image: \(error.localizedDescription)")
-
-                        }
+                        mapImageProvider.captureMapImage(for: polygon)
                     }
-
                 }
             HStack {
                 SimpleKeyValueView(value: ("영역 넓이", viewModel.calculatedAreaString(areaSize: viewModel.polygon.walkingArea,isPyong: !isMeter)))
@@ -86,6 +80,7 @@ struct WalkDetailView: View {
                 .cornerRadius(15)
                 .padding(.horizontal, 70)
             Button(action: {
+                guard let image = mapImageProvider.capturedImage else {return}
                 viewModel.endWalk(img: image)
                 dismiss()
             },

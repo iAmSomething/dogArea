@@ -8,8 +8,8 @@
 import Foundation
 import UIKit
 import MapKit
-struct WalkPosition: Identifiable, Hashable {
-    let createdAt: Double
+struct WalkPosition: Identifiable, Hashable, TimeCheckable {
+    var createdAt: Double
     let id: UUID
     let coordinateX: Double
     let coordinateY: Double
@@ -26,10 +26,10 @@ struct WalkPosition: Identifiable, Hashable {
         return .init(latitude: self.coordinateX, longitude: self.coordinateY)
     }
 }
-struct WalkDataModel: Identifiable, Hashable {
+struct WalkDataModel: Identifiable, Hashable, TimeCheckable {
     let id: UUID
     let locations: [WalkPosition]
-    let createdAt: Double
+    var createdAt: Double
     let image: UIImage?
     let walkDuration: Double
     let walkArea: Double

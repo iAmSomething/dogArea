@@ -8,6 +8,7 @@
 import Foundation
 
 extension TimeInterval {
+
     var walkingTimeInterval: String {
         let hours = Int(self) / 3600
         let minutes = (Int(self) % 3600) / 60
@@ -16,6 +17,9 @@ extension TimeInterval {
         return String(format: "%02d시간 %02d분 %02d초", hours, minutes, seconds)
         
     }
+    /**시간이 0 이면 "%02d:%02d", minutes, seconds
+     시간이 0보다 크면 "%02d:%02d:%02d", hours, minutes, seconds
+     */
     var simpleWalkingTimeInterval: String {
         let hours = Int(self) / 3600
         let minutes = (Int(self) % 3600) / 60
@@ -25,6 +29,7 @@ extension TimeInterval {
         }
         return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
     }
+    /**"MM월dd일HH시mm분ss초"*/
     var createdAtTimeDescription: String {
         let date = Date(timeIntervalSince1970: self)
         let dateFormatter = DateFormatter()
@@ -32,6 +37,7 @@ extension TimeInterval {
         let formattedDate = dateFormatter.string(from: date)
         return formattedDate
     }
+    /**"MM월dd일HH시"*/
     var createdAtTimeDescriptionSimple: String {
         let date = Date(timeIntervalSince1970: self)
         let dateFormatter = DateFormatter()
@@ -39,6 +45,7 @@ extension TimeInterval {
         let formattedDate = dateFormatter.string(from: date)
         return formattedDate
     }
+    /**"YYYY년 MM월 dd일\nHH시 mm분 ss초"*/
     var createdAtTimeYYMMDD: String {
         let date = Date(timeIntervalSince1970: self)
         let dateFormatter = DateFormatter()
@@ -46,10 +53,18 @@ extension TimeInterval {
         let formattedDate = dateFormatter.string(from: date)
         return formattedDate
     }
+    /**"💦 HH시 mm분 ss"*/
     var createdAtTimeHHMM: String {
         let date = Date(timeIntervalSince1970: self)
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "💦 HH시 mm분 ss"
+        let formattedDate = dateFormatter.string(from: date)
+        return formattedDate
+    }
+    func createdAtTimeCustom(format: String) -> String {
+        let date = Date(timeIntervalSince1970: self)
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = format
         let formattedDate = dateFormatter.string(from: date)
         return formattedDate
     }

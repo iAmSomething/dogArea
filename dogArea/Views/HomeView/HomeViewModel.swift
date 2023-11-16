@@ -76,38 +76,12 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
         return Set(dateArr)
     }
     func walkedAreaforWeek() -> Double {
-        let currentDate = Date()
-        let calendar = Calendar.current
-        let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: currentDate)
-        guard let startOfWeek = calendar.date(from: components) else {
-            fatalError("Failed to calculate the start of the week.")
-        }
-        guard let endOfWeek = calendar.date(byAdding: .weekOfYear, value: 1, to: startOfWeek) else {
-            fatalError("Failed to calculate the end of the week.")
-        }
-        let polygonListWeek = polygonList.filter{p in
-            let date = Date(timeIntervalSince1970: p.createdAt)
-            let roundedDate = Calendar.current.date(bySettingHour: 0, minute: 0, second: 0, of: date)!
-            return roundedDate > startOfWeek
-        }
+        let polygonListWeek = polygonList.thisWeekList
         let areaWeek = polygonListWeek.map{$0.walkingArea}.reduce(0.0){$0 + $1}
         return areaWeek
     }
     func walkedCountforWeek() -> Int {
-        let currentDate = Date()
-        let calendar = Calendar.current
-        let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: currentDate)
-        guard let startOfWeek = calendar.date(from: components) else {
-            fatalError("Failed to calculate the start of the week.")
-        }
-        guard let endOfWeek = calendar.date(byAdding: .weekOfYear, value: 1, to: startOfWeek) else {
-            fatalError("Failed to calculate the end of the week.")
-        }
-        let polygonListWeek = polygonList.filter{p in
-            let date = Date(timeIntervalSince1970: p.createdAt)
-            let roundedDate = Calendar.current.date(bySettingHour: 0, minute: 0, second: 0, of: date)!
-            return roundedDate > startOfWeek
-        }
+        let polygonListWeek = polygonList.thisWeekList
         return polygonListWeek.count
     }
 #if DEBUG

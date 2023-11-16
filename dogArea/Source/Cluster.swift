@@ -11,7 +11,6 @@ struct Cluster: Equatable, CustomStringConvertible {
     var description: String {
         return "센터 : \(self.center)\n 하위 클러스터 : \(sumLocs.count)개"
     }
-    
     static func == (lhs: Cluster, rhs: Cluster) -> Bool {
         lhs.center == rhs.center
     }

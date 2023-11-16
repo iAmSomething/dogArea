@@ -13,7 +13,7 @@ struct RootView: View {
     @EnvironmentObject var myAlert: CustomAlertViewModel
     @State private var selectedTab = 2
     @State private var tabbarHidden = false
-    @ObservedObject var tabStatus = TabAppear.shared
+    @StateObject var tabStatus = TabAppear.shared
     private var homeView = HomeView()
     private var walkListView: WalkListView = WalkListView()
     private var mapView = MapView()
@@ -53,6 +53,9 @@ struct RootView: View {
             }
             if tabStatus.isTabAppear {
                 CustomTabBar(selectedTab: $selectedTab)
+                    .frame(maxHeight: .infinity)
+                    .border(Color.appTextDarkGray, width: 0.3)
+                    .aspectRatio(contentMode: .fit)
             }
         }.edgesIgnoringSafeArea(.all)
             .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -16,6 +16,7 @@ struct WalkListCell: View {
             Text(walkData.createdAt.createdAtTimeYYMMDD)
               .font(.regular14)
               .padding(.leading, 10)
+              .foregroundStyle(Color.black)
             Spacer()
           }
             ScrollView(.horizontal) {

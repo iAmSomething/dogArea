@@ -21,6 +21,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     @Published var location: CLLocation?
     @Published var polygon : Polygon = Polygon(walkingTime: 0.0, walkingArea: 0.0)
     @Published var polygonList: [Polygon] = []
+    @Published var selectedPolygonList: [Polygon] = []
     @Published var isWalking: Bool = false{
         didSet {
             //산책 시작 버튼 눌렀을 때
@@ -46,6 +47,23 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     }
     func fetchPolygonList() {
         self.polygonList = self.fetchPolygons()
+    }
+    func fetchSelectedPolygonList(for clusters: Cluster) {
+        if clusters.sumLocs.count == self.selectedPolygonList.count {
+            var isSame = true
+            for i in selectedPolygonList.indices {
+                isSame = isSame && clusters.sumLocs[i].1 == self.selectedPolygonList[i].id
+            }
+            if isSame {
+                self.selectedPolygonList = []
+                return }
+        }
+        self.selectedPolygonList = []
+        for loc in clusters.sumLocs {
+            if let p = self.polygonList.polygon(at: loc.1) {
+                self.selectedPolygonList.append(p)
+            }
+        }
     }
     private func lastPolygon() -> Polygon? {
         return polygonList.last
@@ -82,16 +100,20 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
             timerSet()
             polygon.clear()
         }
-        withAnimation{
-            isWalking.toggle()
+        withAnimation{ [weak self] in
+            self?.isWalking.toggle()
         }
     }
     func setTrackingMode() {
-        if let location = self.location{
-            withAnimation(.easeInOut(duration: 0.3)){
-                cameraPosition=MapCameraPosition.userLocation(followsHeading: true,fallback: .automatic)
+        guard let location = self.location else {
+            withAnimation(.easeInOut(duration: 0.3)){ [weak self] in
+                self?.cameraPosition = MapCameraPosition.userLocation(followsHeading: true, fallback: .automatic)
             }
+            return }
+        withAnimation(.easeInOut(duration: 0.3)){ [weak self] in
+            self?.cameraPosition = MapCameraPosition.userLocation(followsHeading: true, fallback: MapCameraPosition.camera(.init(centerCoordinate: location.coordinate, distance: 2000)))
         }
+
     }
 
 }
@@ -184,34 +206,36 @@ extension MapViewModel {
         }
     }
     private func seeCurrentLocation(){
-        cameraPosition = MapCameraPosition.userLocation(followsHeading: true, fallback: cameraPosition)
+        guard let location = self.location else {
+            cameraPosition = MapCameraPosition.userLocation(followsHeading: true, fallback: .automatic)
+            return }
+        cameraPosition = MapCameraPosition.userLocation(followsHeading: true, fallback: MapCameraPosition.camera(.init(centerCoordinate: location.coordinate, distance: 2000)))
     }
 
 }
 //MARK: - 클러스터링 관련 내용
 extension MapViewModel {
     func updateAnnotations(cameraDistance: Double){
-        let clustering = Hiarachical(polygons: self.polygonList, distance: cameraDistance)
-        let opQueue = OperationQueue()
-        if clustering.isExecuting {
-            print("아직 실행중인데 들어왔어!")
-        }
-        opQueue.addOperation(clustering)
-        print("오퍼레이션 큐 활용: \(clustering.clusters)")
         Task { @MainActor in
             do {
                 centerLocations = await cluster(distance: cameraDistance)
-                    
             }
         }
     }
-    private func cluster(distance: Double) async  -> [Cluster] {
-        let startCluster = self.polygonList
+    private func hotspots() async { // 핫스팟 로직 고민해보기
+
+    }
+    private func initialClusterByPolygon() async -> [Cluster] {
+        return self.polygonList
             .filter{!$0.polygon.isNil}
             .map{Cluster(center: $0.polygon!.coordinate, id: $0.id)}
+    }
+    private func cluster(distance: Double) async -> [Cluster] {
+        let startCluster = await initialClusterByPolygon()
         let result = await calculateDistance(from: startCluster, threshold: distance)
         return result
     }
+    
     private func calculateDistance(from clusters: [Cluster], threshold: Double) async -> [Cluster] {
         var tempClusters = clusters
         var i = 0, j = 0
@@ -222,6 +246,7 @@ extension MapViewModel {
                 if distance < threshold {
                     tempClusters[i].updateCenter(with: tempClusters[j])
                     tempClusters.remove(at: j)
+                    j -= 1
                 }
                 j += 1
             }

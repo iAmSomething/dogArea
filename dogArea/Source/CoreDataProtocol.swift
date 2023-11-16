@@ -88,7 +88,6 @@ extension CoreDataProtocol {
             let polygons = try context.fetch(fetchRequest)
             let temp = polygons.map{$0.toPolygon()}.filter{!$0.isNil}.map{$0!}
             polygonList = temp
-            print(temp.map{$0.id.uuidString})
             return polygonList
         } catch let error as NSError {
             print("Could not fetch. \(error), \(error.userInfo)")

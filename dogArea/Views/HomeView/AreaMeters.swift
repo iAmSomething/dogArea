@@ -16,15 +16,15 @@ struct AreaMeter: Hashable, Identifiable {
         self.area = area
     }
 }
-struct AreaMeterBinding: Hashable{
+struct AreaMeterBinding: Hashable, TimeCheckable{
     let areaName: String
     let area: Double
-    let createdAt: Double
+    var createdAt: Double
 }
-struct AreaMeterDTO: Hashable {
+struct AreaMeterDTO: Hashable, TimeCheckable {
     let areaName: String
     let area: Double
-    let createdAt: Double
+    var createdAt: Double
 }
 struct AreaMeterCollection {
     var areas: [AreaMeter] {

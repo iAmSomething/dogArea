@@ -131,8 +131,10 @@ private struct CellView: View {
                     .frame(height: 15)
                 
             }
-        }.background(today ? Color.appPink : .clear)
-        .frame(height: 30)
+        }.frame(width: 40, height: 40)
+        .background(today ? Color.appPink : .clear)
+        .clipShape(RoundedCornersShape(radius: 20))
+            
     }
 }
 

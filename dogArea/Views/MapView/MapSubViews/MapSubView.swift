@@ -65,6 +65,8 @@ struct MapSubView: View {
                                         .font(.appFont(for: .Regular, size: 12))
                                         .foregroundColor(.appTextDarkGray)
                                 }
+                            }.onTapGesture {
+                                viewModel.fetchSelectedPolygonList(for: viewModel.centerLocations[index])
                             }
                         }
                     }
