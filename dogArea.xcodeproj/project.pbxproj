@@ -21,6 +21,7 @@
 		DA3EB0A72B0384F100AEA65D /* FirebaseAppDistribution-Beta in Frameworks */ = {isa = PBXBuildFile; productRef = DA3EB0A62B0384F100AEA65D /* FirebaseAppDistribution-Beta */; };
 		DA3EB0A92B0384FA00AEA65D /* FirebaseAppCheck in Frameworks */ = {isa = PBXBuildFile; productRef = DA3EB0A82B0384FA00AEA65D /* FirebaseAppCheck */; };
 		DA3EB0AB2B03850400AEA65D /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = DA3EB0AA2B03850400AEA65D /* FirebaseMessaging */; };
+		DA3EB0AD2B04A1E100AEA65D /* Cluster.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3EB0AC2B04A1E100AEA65D /* Cluster.swift */; };
 		DA3F9B362ADE7C100048550C /* CustomAlertViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9B352ADE7C100048550C /* CustomAlertViewModel.swift */; };
 		DA3F9B392ADE813A0048550C /* CustomAlertConfigure.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9B382ADE813A0048550C /* CustomAlertConfigure.swift */; };
 		DA3F9BA02AE0F14F0048550C /* ProfileSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9B972AE0F14F0048550C /* ProfileSettingsView.swift */; };
@@ -140,6 +141,7 @@
 		DA3EB0792B0344CD00AEA65D /* AreaDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaDetailView.swift; sourceTree = "<group>"; };
 		DA3EB07D2B03545E00AEA65D /* Launch Screen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = "Launch Screen.storyboard"; sourceTree = "<group>"; };
 		DA3EB0A22B0383FD00AEA65D /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		DA3EB0AC2B04A1E100AEA65D /* Cluster.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cluster.swift; sourceTree = "<group>"; };
 		DA3F9B352ADE7C100048550C /* CustomAlertViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomAlertViewModel.swift; sourceTree = "<group>"; };
 		DA3F9B382ADE813A0048550C /* CustomAlertConfigure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomAlertConfigure.swift; sourceTree = "<group>"; };
 		DA3F9B972AE0F14F0048550C /* ProfileSettingsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ProfileSettingsView.swift; sourceTree = "<group>"; };
@@ -324,6 +326,7 @@
 				DAA8E4F82B01A80C00F9190B /* TabAppear.swift */,
 				DA4513882AFB2D68007AD69B /* CoreDataProtocol.swift */,
 				DA1731752AE20A4D00EF10C8 /* CoreDataDTO.swift */,
+				DA3EB0AC2B04A1E100AEA65D /* Cluster.swift */,
 			);
 			path = Source;
 			sourceTree = "<group>";
@@ -655,6 +658,7 @@
 				DA390A6F2AFE027C00BACF2B /* MapSubView.swift in Sources */,
 				DA390A722AFE168500BACF2B /* SimpleMapView.swift in Sources */,
 				DA3F9BA32AE0F14F0048550C /* MapView.swift in Sources */,
+				DA3EB0AD2B04A1E100AEA65D /* Cluster.swift in Sources */,
 				DA56FFE82AE2B9890040855B /* MapAlertSubView.swift in Sources */,
 				DA8BB9E82B0255B700E350C4 /* SettingViewModel.swift in Sources */,
 				DA71C8412AD787AC00081ED0 /* Item.swift in Sources */,

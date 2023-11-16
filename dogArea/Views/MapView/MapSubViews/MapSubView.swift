@@ -49,28 +49,47 @@ struct MapSubView: View {
                     }
                 }
                 else {
+                    ForEach(viewModel.centerLocations.indices, id:\.self) { index in
+                        Annotation("", coordinate: viewModel.centerLocations[index].center) {
+                            VStack {
+                                Image(.dogPrint)
+                                    .resizable()
+                                    .frame(width: 20, height: 20)
+                                    .background(Color.appGreen)
+                                    .cornerRadius(10)
+                                    .shadow(radius: 5)
+                                if viewModel.centerLocations[index].sumLocs.count == 1 {
+                                    
+                                } else {
+                                    Text("\(viewModel.centerLocations[index].sumLocs.count)")
+                                        .font(.appFont(for: .Regular, size: 12))
+                                        .foregroundColor(.appTextDarkGray)
+                                }
+                            }
+                        }
+                    }
                     ForEach(viewModel.polygonList) { item in
                         if let p  = item.polygon {
                             MapPolygon(p)
                                 .stroke(Color.appYellow, lineWidth: 0.5)
                                 .foregroundStyle(Color.appYellow.opacity(0.3))
                                 .annotationTitles(.visible)
-                            Annotation("", coordinate: p.coordinate) {
-                                VStack {
-                                    Image(.dogPrint)
-                                        .resizable()
-                                        .frame(width: 20, height: 20)
-                                        .background(Color.appGreen)
-                                        .cornerRadius(10)
-                                        .shadow(radius: 5)
-                                    Text("\(item.createdAt.createdAtTimeYYMMDD)")
-                                        .font(.appFont(for: .Regular, size: 12))
-                                        .foregroundColor(.appTextDarkGray)
-                                }.onTapGesture {
-                                    let distance = p.boundingMapRect.width
-                                    viewModel.setRegion(p.coordinate, distance: distance)
-                                }
-                            }
+//                            Annotation("", coordinate: p.coordinate) {
+//                                VStack {
+//                                    Image(.dogPrint)
+//                                        .resizable()
+//                                        .frame(width: 20, height: 20)
+//                                        .background(Color.appGreen)
+//                                        .cornerRadius(10)
+//                                        .shadow(radius: 5)
+//                                    Text("\(item.createdAt.createdAtTimeYYMMDD)")
+//                                        .font(.appFont(for: .Regular, size: 12))
+//                                        .foregroundColor(.appTextDarkGray)
+//                                }.onTapGesture {
+//                                    let distance = p.boundingMapRect.width
+//                                    viewModel.setRegion(p.coordinate, distance: distance)
+//                                }
+//                            }
                         }
                     }
                 }

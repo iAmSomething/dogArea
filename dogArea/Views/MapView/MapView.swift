@@ -16,6 +16,7 @@ struct MapView : View{
     @State private var endWalkingViewPresented = false
     @State private var image: UIImage? = nil
     @State private var isCameraSeeingSomewhere: Bool = false
+    @State private var distance = 0.0
     var body : some View {
         ZStack{
             MapSubView(myAlert: myAlert, viewModel: viewModel)
@@ -68,6 +69,9 @@ struct MapView : View{
                                 endWalkingViewPresented: $endWalkingViewPresented)
             }
         }
+        .onAppear {
+            viewModel.updateAnnotations(cameraDistance: self.distance)
+        }
         .sheet(isPresented: $isModalPresented){
             MapSettingView(viewModel: viewModel, myAlert: myAlert)
                 .presentationDetents([.oneThird])
@@ -79,6 +83,12 @@ struct MapView : View{
         }.onMapCameraChange{ context in
             if let loc = viewModel.location {
                 self.isCameraSeeingSomewhere =  context.camera.centerCoordinate.clLocation.distance(from: loc) > 300
+                if !viewModel.showOnlyOne {
+                    if Int(context.camera.distance) != Int(self.distance) {
+                        self.distance = context.camera.distance
+                        viewModel.updateAnnotations(cameraDistance: context.camera.distance)
+                    }
+                }
             }
         }
         

@@ -10,6 +10,7 @@ import SwiftUI
 import MapKit
 import CoreLocation
 import CoreData
+import Combine
 class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreDataProtocol{
     @Environment(\.managedObjectContext) private var viewContext
     
@@ -28,6 +29,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
             }
         }
     }
+    @Published var centerLocations: [Cluster] = []
     @Published var camera: MapCamera = .init(.init())
     @Published var cameraPosition = MapCameraPosition.userLocation(followsHeading: false,fallback: .automatic)
     @Published var selectedMarker: Location? = nil
@@ -184,9 +186,47 @@ extension MapViewModel {
     private func seeCurrentLocation(){
         cameraPosition = MapCameraPosition.userLocation(followsHeading: true, fallback: cameraPosition)
     }
+
 }
+//MARK: - 클러스터링 관련 내용
 extension MapViewModel {
-    func mapImg(view: some View) -> UIImage {
-        view.asUiImage()
+    func updateAnnotations(cameraDistance: Double){
+        let clustering = Hiarachical(polygons: self.polygonList, distance: cameraDistance)
+        let opQueue = OperationQueue()
+        if clustering.isExecuting {
+            print("아직 실행중인데 들어왔어!")
+        }
+        opQueue.addOperation(clustering)
+        print("오퍼레이션 큐 활용: \(clustering.clusters)")
+        Task { @MainActor in
+            do {
+                centerLocations = await cluster(distance: cameraDistance)
+                    
+            }
+        }
+    }
+    private func cluster(distance: Double) async  -> [Cluster] {
+        let startCluster = self.polygonList
+            .filter{!$0.polygon.isNil}
+            .map{Cluster(center: $0.polygon!.coordinate, id: $0.id)}
+        let result = await calculateDistance(from: startCluster, threshold: distance)
+        return result
+    }
+    private func calculateDistance(from clusters: [Cluster], threshold: Double) async -> [Cluster] {
+        var tempClusters = clusters
+        var i = 0, j = 0
+        while(i < tempClusters.count) {
+            j = i + 1
+            while(j < tempClusters.count) {
+                let distance = tempClusters[i].center.distance(to: tempClusters[j].center) * 5000000
+                if distance < threshold {
+                    tempClusters[i].updateCenter(with: tempClusters[j])
+                    tempClusters.remove(at: j)
+                }
+                j += 1
+            }
+            i += 1
+        }
+        return tempClusters
     }
 }

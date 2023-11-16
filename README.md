@@ -69,6 +69,7 @@
 
 <img src="https://p.ipic.vip/0co6bk.png" alt="IMG_0362"  width="200" height="432" /><img src="https://p.ipic.vip/ovfa5s.png" alt="IMG_0364"  width="200" height="432" /><img src="https://p.ipic.vip/sad2io.png" alt="IMG_0365"  width="200" height="432" /><img src="https://p.ipic.vip/q5dscv.png" alt="IMG_0366"  width="200" height="432" />
 
+
 1. 메인 뷰입니다. 앱을 켜면 바로 등장합니다.
 2. 산책을 시작하면 실시간으로 산책 시간과 영역 넓이를 계산하여 보여줍니다.
 3. 영역 추가 버튼을 통해 영역을 추가할 수 있고, 추가된 영역을 클릭하여 삭제할 수 있습니다.

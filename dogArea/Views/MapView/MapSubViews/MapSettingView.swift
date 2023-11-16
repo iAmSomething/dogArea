@@ -15,6 +15,16 @@ struct MapSettingView: View {
   var body: some View {
     VStack {
       HStack{
+          ScrollView(.horizontal) {
+              Text("모든 폴리곤 보기")
+                  .font(.bold14)
+                  .onTapGesture {
+                      viewModel.showOnlyOne.toggle()
+                  }.padding(.horizontal, 10)
+                  .padding(.vertical,5)
+                  .background(viewModel.showOnlyOne ? Color.appPeach : Color.appGreen)
+                  .cornerRadius(5)
+          }.padding(.horizontal)
         Spacer()
         Image(systemName: "clear")
           .resizable()
@@ -22,12 +32,6 @@ struct MapSettingView: View {
           .padding()
           .onTapGesture {dismiss()}
       }
-     Text("모든 폴리곤 보기")
-        .font(.bold14)
-        .onTapGesture {
-          viewModel.showOnlyOne = false
-          dismiss()
-        }
       List {
         Section(content: {
           ForEach(viewModel.polygonList) { item in

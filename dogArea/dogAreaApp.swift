@@ -20,7 +20,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 @main
 struct dogAreaApp: App {
     // register app delegate for Firebase setup
-    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+//    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
 
   @State var splash = true
   let persistenceController = PersistenceController.shared
