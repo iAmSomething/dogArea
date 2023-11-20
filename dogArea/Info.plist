@@ -41,5 +41,9 @@
 		<string>location</string>
 		<string>processing</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>프로필 사진 촬영 용도</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>프로필 사진 선택 용도</string>
 </dict>
 </plist>

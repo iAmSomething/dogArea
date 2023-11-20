@@ -8,7 +8,6 @@ import SwiftUI
 import Foundation
 import Observation
 struct TextToImageView: View {
-    
     @Bindable var vm = ImageGenerateViewModel()
     var body: some View {
         VStack {

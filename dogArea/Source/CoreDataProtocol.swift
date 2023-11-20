@@ -31,6 +31,7 @@ extension CoreDataProtocol {
         let request = NSFetchRequest<AreaEntity>(entityName: "AreaEntity")
         return request
     }
+
     func saveArea(area: AreaMeterDTO) -> Bool {
         let areas = AreaEntity(context: context)
         areas.areaName = area.areaName

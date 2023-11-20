@@ -8,7 +8,8 @@
 import SwiftUI
 struct WalkDetailView: View {
     @Environment(\.dismiss) var dismiss
-    @ObservedObject var viewModel: MapViewModel
+    @EnvironmentObject var loading: LoadingViewModel
+    @EnvironmentObject var viewModel: MapViewModel
     @State private var snsCircles: [String] = ["instagram", "twitter"]
     @StateObject var mapImageProvider = MapImageProvider()
     
@@ -61,10 +62,13 @@ struct WalkDetailView: View {
             }
             Spacer()
             Button(action: {
-                guard let image = mapImageProvider.capturedImage else {return}
+                loading.loading()
+                guard let image = mapImageProvider.capturedImage else {
+                    loading.failed(msg: "이미지 가져오기 실패")
+                    return}
 //                guard let image = image else { return }
-                print("이미지 캡쳐됨")
                 UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+                loading.success()
                 showSaveMessage.toggle()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                     self.showSaveMessage = false

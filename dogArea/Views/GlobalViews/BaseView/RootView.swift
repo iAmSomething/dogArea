@@ -11,14 +11,22 @@ import SwiftUI
 struct RootView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject var myAlert: CustomAlertViewModel
+    @StateObject var loading: LoadingViewModel = LoadingViewModel()
     @State private var selectedTab = 2
     @State private var tabbarHidden = false
     @StateObject var tabStatus = TabAppear.shared
-    private var homeView = HomeView()
-    private var walkListView: WalkListView = WalkListView()
-    private var mapView = MapView()
-    private var textToImageView = TextToImageView()
-    private var notificationCenterView = NotificationCenterView()
+    private var homeView: HomeView
+    private var walkListView: WalkListView    
+    private var mapView: MapView
+    private var textToImageView: TextToImageView
+    private var notificationCenterView: NotificationCenterView
+    init() {
+        self.homeView = HomeView()
+        self.walkListView = WalkListView()
+        self.mapView = MapView()
+        self.textToImageView = TextToImageView()
+        self.notificationCenterView = NotificationCenterView()
+    }
     var body: some View {
         VStack(spacing: 0) {
             if self.selectedTab == 0 {
@@ -36,6 +44,7 @@ struct RootView: View {
             else if self.selectedTab == 2 {
                 NavigationView {
                     mapView
+                        .environmentObject(loading)
                         .navigationBarHidden(selectedTab == 2)
                 }
             }
@@ -59,6 +68,11 @@ struct RootView: View {
             }
         }.edgesIgnoringSafeArea(.all)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .overlay(content: {
+                if loading.phase == .loading {
+                    LoadingView()
+                }
+            })
 
     }
 }

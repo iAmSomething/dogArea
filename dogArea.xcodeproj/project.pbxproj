@@ -91,6 +91,19 @@
 		DAA8E4F92B01A80C00F9190B /* TabAppear.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAA8E4F82B01A80C00F9190B /* TabAppear.swift */; };
 		DAAE221F2AFCBDC4005FD096 /* StartModalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAAE221E2AFCBDC4005FD096 /* StartModalView.swift */; };
 		DAAE22232AFCC225005FD096 /* WalkDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAAE22222AFCC225005FD096 /* WalkDetailView.swift */; };
+		DAC19F042B0ADED6002FE2E8 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = DAC19F032B0ADED6002FE2E8 /* GoogleService-Info.plist */; };
+		DAC19F072B0AE2B6002FE2E8 /* FirebaseFirestoreSwift in Frameworks */ = {isa = PBXBuildFile; productRef = DAC19F062B0AE2B6002FE2E8 /* FirebaseFirestoreSwift */; };
+		DAC19F092B0AE2BF002FE2E8 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = DAC19F082B0AE2BF002FE2E8 /* FirebaseFirestore */; };
+		DAC19F0C2B0AE561002FE2E8 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = DAC19F0B2B0AE561002FE2E8 /* FirebaseStorage */; };
+		DAC19F0E2B0AE5AC002FE2E8 /* ImagePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F0D2B0AE5AC002FE2E8 /* ImagePicker.swift */; };
+		DAC19F102B0AF661002FE2E8 /* TitleTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F0F2B0AF661002FE2E8 /* TitleTextView.swift */; };
+		DAC19F132B0AFCAC002FE2E8 /* UserdefaultSetting.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F122B0AFCAC002FE2E8 /* UserdefaultSetting.swift */; };
+		DAC19F162B0B3246002FE2E8 /* PetProfileSettingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F152B0B3246002FE2E8 /* PetProfileSettingView.swift */; };
+		DAC19F1E2B0B331A002FE2E8 /* SigningViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F1D2B0B331A002FE2E8 /* SigningViewModel.swift */; };
+		DAC19F202B0B3798002FE2E8 /* LoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F1F2B0B3798002FE2E8 /* LoadingView.swift */; };
+		DAC19F252B0B37B1002FE2E8 /* LoadingPhase.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F242B0B37B1002FE2E8 /* LoadingPhase.swift */; };
+		DAC19F282B0B37DA002FE2E8 /* LoadingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F272B0B37DA002FE2E8 /* LoadingViewModel.swift */; };
+		DAC19F2C2B0B43BB002FE2E8 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F2B2B0B43BB002FE2E8 /* SignInView.swift */; };
 		DAED24FB2AFA1C980044715A /* LottieView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAED24FA2AFA1C980044715A /* LottieView.swift */; };
 		DAED25022AFA1D430044715A /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAED25012AFA1D430044715A /* SplashView.swift */; };
 /* End PBXBuildFile section */
@@ -137,6 +150,8 @@
 		DA1731702AE200C100EF10C8 /* dogArea.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = dogArea.xcdatamodel; sourceTree = "<group>"; };
 		DA1731722AE2017500EF10C8 /* PersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceController.swift; sourceTree = "<group>"; };
 		DA1731752AE20A4D00EF10C8 /* CoreDataDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataDTO.swift; sourceTree = "<group>"; };
+		DA27AD832B061A1B001283D4 /* dogAreaRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = dogAreaRelease.entitlements; sourceTree = "<group>"; };
+		DA27AD842B061AC5001283D4 /* dogAreaDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = dogAreaDebug.entitlements; sourceTree = "<group>"; };
 		DA354FFC2B01DF1F00E4094A /* TimeIntervalExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeIntervalExtensions.swift; sourceTree = "<group>"; };
 		DA3550012B01E0F900E4094A /* UnderLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnderLine.swift; sourceTree = "<group>"; };
 		DA390A6E2AFE027C00BACF2B /* MapSubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapSubView.swift; sourceTree = "<group>"; };
@@ -203,6 +218,16 @@
 		DAA8E4F82B01A80C00F9190B /* TabAppear.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabAppear.swift; sourceTree = "<group>"; };
 		DAAE221E2AFCBDC4005FD096 /* StartModalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartModalView.swift; sourceTree = "<group>"; };
 		DAAE22222AFCC225005FD096 /* WalkDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkDetailView.swift; sourceTree = "<group>"; };
+		DAC19F032B0ADED6002FE2E8 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		DAC19F0D2B0AE5AC002FE2E8 /* ImagePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePicker.swift; sourceTree = "<group>"; };
+		DAC19F0F2B0AF661002FE2E8 /* TitleTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitleTextView.swift; sourceTree = "<group>"; };
+		DAC19F122B0AFCAC002FE2E8 /* UserdefaultSetting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserdefaultSetting.swift; sourceTree = "<group>"; };
+		DAC19F152B0B3246002FE2E8 /* PetProfileSettingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetProfileSettingView.swift; sourceTree = "<group>"; };
+		DAC19F1D2B0B331A002FE2E8 /* SigningViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SigningViewModel.swift; sourceTree = "<group>"; };
+		DAC19F1F2B0B3798002FE2E8 /* LoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingView.swift; sourceTree = "<group>"; };
+		DAC19F242B0B37B1002FE2E8 /* LoadingPhase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingPhase.swift; sourceTree = "<group>"; };
+		DAC19F272B0B37DA002FE2E8 /* LoadingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingViewModel.swift; sourceTree = "<group>"; };
+		DAC19F2B2B0B43BB002FE2E8 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
 		DAED24FA2AFA1C980044715A /* LottieView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LottieView.swift; sourceTree = "<group>"; };
 		DAED25012AFA1D430044715A /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -214,8 +239,11 @@
 			files = (
 				DA3EB0AB2B03850400AEA65D /* FirebaseMessaging in Frameworks */,
 				DA95CC6F2ADE0682004AD94D /* OpenAIClient.framework in Frameworks */,
+				DAC19F0C2B0AE561002FE2E8 /* FirebaseStorage in Frameworks */,
 				DA99F9B12AFA1EAB00B1483F /* Lottie in Frameworks */,
+				DAC19F072B0AE2B6002FE2E8 /* FirebaseFirestoreSwift in Frameworks */,
 				DA3EB0A52B0384E900AEA65D /* FirebaseAnalytics in Frameworks */,
+				DAC19F092B0AE2BF002FE2E8 /* FirebaseFirestore in Frameworks */,
 				DA3EB0A92B0384FA00AEA65D /* FirebaseAppCheck in Frameworks */,
 				DA3EB0A72B0384F100AEA65D /* FirebaseAppDistribution-Beta in Frameworks */,
 			);
@@ -249,9 +277,11 @@
 			children = (
 				DA3F9BD12AE0FF7B0048550C /* BaseView */,
 				DA3F9BAF2AE0F24C0048550C /* AlertView */,
+				DAC19F222B0B379C002FE2E8 /* Loading */,
 				DA390A742AFE1AFC00BACF2B /* SimpleMessageView.swift */,
 				DA4513822AFB25C2007AD69B /* PositionMarkerView.swift */,
 				DA3550012B01E0F900E4094A /* UnderLine.swift */,
+				DAC19F0F2B0AF661002FE2E8 /* TitleTextView.swift */,
 			);
 			path = GlobalViews;
 			sourceTree = "<group>";
@@ -289,6 +319,7 @@
 		DA3F9B962AE0F14F0048550C /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				DAC19F192B0B32EA002FE2E8 /* SigningView */,
 				DA354FFF2B01DF8C00E4094A /* GlobalViews */,
 				DA3550002B01DFE400E4094A /* HomeView */,
 				DA3F9B9E2AE0F14F0048550C /* WalkListView */,
@@ -335,6 +366,7 @@
 				DA3EB0AC2B04A1E100AEA65D /* Cluster.swift */,
 				DA16C1D82B05DCC8008FC133 /* CornerShape.swift */,
 				DA16C1DB2B05E4DF008FC133 /* TimeCheckable.swift */,
+				DAC19F122B0AFCAC002FE2E8 /* UserdefaultSetting.swift */,
 			);
 			path = Source;
 			sourceTree = "<group>";
@@ -393,7 +425,6 @@
 			isa = PBXGroup;
 			children = (
 				DA45137D2AFA6DC1007AD69B /* OpenAIConfiguration.xcconfig */,
-				DA3EB0A22B0383FD00AEA65D /* GoogleService-Info.plist */,
 				DA71C83B2AD787AC00081ED0 /* dogArea */,
 				DA95CC6A2ADE0682004AD94D /* OpenAIClient */,
 				DA3C140C2AF0847600324A14 /* Frameworks */,
@@ -414,6 +445,10 @@
 		DA71C83B2AD787AC00081ED0 /* dogArea */ = {
 			isa = PBXGroup;
 			children = (
+				DA3EB0A22B0383FD00AEA65D /* GoogleService-Info.plist */,
+				DAC19F032B0ADED6002FE2E8 /* GoogleService-Info.plist */,
+				DA27AD842B061AC5001283D4 /* dogAreaDebug.entitlements */,
+				DA27AD832B061A1B001283D4 /* dogAreaRelease.entitlements */,
 				DA71C83C2AD787AC00081ED0 /* dogAreaApp.swift */,
 				DA1731722AE2017500EF10C8 /* PersistenceController.swift */,
 				DA17316F2AE200C100EF10C8 /* dogArea.xcdatamodeld */,
@@ -439,9 +474,9 @@
 		DA822CDA2AFB6056001EC94D /* ProfileSettingView */ = {
 			isa = PBXGroup;
 			children = (
-				DA3F9B972AE0F14F0048550C /* ProfileSettingsView.swift */,
 				DA3F9B982AE0F14F0048550C /* NotificationCenterView.swift */,
 				DA8BB9E72B0255B700E350C4 /* SettingViewModel.swift */,
+				DAC19F0D2B0AE5AC002FE2E8 /* ImagePicker.swift */,
 			);
 			path = ProfileSettingView;
 			sourceTree = "<group>";
@@ -479,6 +514,27 @@
 				DA95CC862ADE1209004AD94D /* ImageGenerateViewModel.swift */,
 			);
 			path = ImageGeneratorView;
+			sourceTree = "<group>";
+		};
+		DAC19F192B0B32EA002FE2E8 /* SigningView */ = {
+			isa = PBXGroup;
+			children = (
+				DA3F9B972AE0F14F0048550C /* ProfileSettingsView.swift */,
+				DAC19F152B0B3246002FE2E8 /* PetProfileSettingView.swift */,
+				DAC19F1D2B0B331A002FE2E8 /* SigningViewModel.swift */,
+				DAC19F2B2B0B43BB002FE2E8 /* SignInView.swift */,
+			);
+			path = SigningView;
+			sourceTree = "<group>";
+		};
+		DAC19F222B0B379C002FE2E8 /* Loading */ = {
+			isa = PBXGroup;
+			children = (
+				DAC19F1F2B0B3798002FE2E8 /* LoadingView.swift */,
+				DAC19F242B0B37B1002FE2E8 /* LoadingPhase.swift */,
+				DAC19F272B0B37DA002FE2E8 /* LoadingViewModel.swift */,
+			);
+			path = Loading;
 			sourceTree = "<group>";
 		};
 		DAED24F92AFA1C8A0044715A /* Animations */ = {
@@ -526,6 +582,9 @@
 				DA3EB0A62B0384F100AEA65D /* FirebaseAppDistribution-Beta */,
 				DA3EB0A82B0384FA00AEA65D /* FirebaseAppCheck */,
 				DA3EB0AA2B03850400AEA65D /* FirebaseMessaging */,
+				DAC19F062B0AE2B6002FE2E8 /* FirebaseFirestoreSwift */,
+				DAC19F082B0AE2BF002FE2E8 /* FirebaseFirestore */,
+				DAC19F0B2B0AE561002FE2E8 /* FirebaseStorage */,
 			);
 			productName = dogArea;
 			productReference = DA71C8392AD787AC00081ED0 /* dogArea.app */;
@@ -619,6 +678,7 @@
 				DA99F9E12AFA343F00B1483F /* dogAreaSplash.json in Resources */,
 				DA99FA032AFA50D700B1483F /* Pretendard-Black.otf in Resources */,
 				DA99F9F32AFA50D700B1483F /* Pretendard-SemiBold.otf in Resources */,
+				DAC19F042B0ADED6002FE2E8 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -651,15 +711,22 @@
 				DA3F9BA62AE0F14F0048550C /* WalkListView.swift in Sources */,
 				DA8BB9EE2B02F0CD00E350C4 /* AreaMeters.swift in Sources */,
 				DA3F9BD52AE0FF9B0048550C /* CustomTabBar.swift in Sources */,
+				DAC19F1E2B0B331A002FE2E8 /* SigningViewModel.swift in Sources */,
+				DAC19F102B0AF661002FE2E8 /* TitleTextView.swift in Sources */,
+				DAC19F282B0B37DA002FE2E8 /* LoadingViewModel.swift in Sources */,
 				DA3F9BA22AE0F14F0048550C /* HomeView.swift in Sources */,
 				DA95CC8D2ADE1736004AD94D /* ImageGenerateViewModel.swift in Sources */,
 				DA354FFD2B01DF1F00E4094A /* TimeIntervalExtensions.swift in Sources */,
 				DA45138C2AFB36D4007AD69B /* WalkListModel.swift in Sources */,
 				DA3F9BA12AE0F14F0048550C /* NotificationCenterView.swift in Sources */,
+				DAC19F162B0B3246002FE2E8 /* PetProfileSettingView.swift in Sources */,
 				DA16C1DC2B05E4DF008FC133 /* TimeCheckable.swift in Sources */,
+				DAC19F132B0AFCAC002FE2E8 /* UserdefaultSetting.swift in Sources */,
 				DA1731712AE200C100EF10C8 /* dogArea.xcdatamodeld in Sources */,
 				DA3EB07A2B0344CD00AEA65D /* AreaDetailView.swift in Sources */,
 				DA933BE92ADD04E70029856C /* CustomAlertView.swift in Sources */,
+				DAC19F202B0B3798002FE2E8 /* LoadingView.swift in Sources */,
+				DAC19F0E2B0AE5AC002FE2E8 /* ImagePicker.swift in Sources */,
 				DAAE22232AFCC225005FD096 /* WalkDetailView.swift in Sources */,
 				DA4513862AFB2CFC007AD69B /* WalkListViewModel.swift in Sources */,
 				DA3F9BAE2AE0F2410048550C /* ViewUtility.swift in Sources */,
@@ -673,6 +740,7 @@
 				DA8BB9E82B0255B700E350C4 /* SettingViewModel.swift in Sources */,
 				DA71C8412AD787AC00081ED0 /* Item.swift in Sources */,
 				DA3F9B392ADE813A0048550C /* CustomAlertConfigure.swift in Sources */,
+				DAC19F252B0B37B1002FE2E8 /* LoadingPhase.swift in Sources */,
 				DA822CDD2AFB60B6001EC94D /* MapSettingView.swift in Sources */,
 				DA71C83D2AD787AC00081ED0 /* dogAreaApp.swift in Sources */,
 				DA1731732AE2017500EF10C8 /* PersistenceController.swift in Sources */,
@@ -693,6 +761,7 @@
 				DA1731762AE20A4D00EF10C8 /* CoreDataDTO.swift in Sources */,
 				DA822CD62AFB5E21001EC94D /* StartButtonView.swift in Sources */,
 				DA390A752AFE1AFC00BACF2B /* SimpleMessageView.swift in Sources */,
+				DAC19F2C2B0B43BB002FE2E8 /* SignInView.swift in Sources */,
 				DAAE221F2AFCBDC4005FD096 /* StartModalView.swift in Sources */,
 				DA4513802AFB1EC1007AD69B /* WalkListCell.swift in Sources */,
 				DA3550022B01E0F900E4094A /* UnderLine.swift in Sources */,
@@ -852,6 +921,7 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = dogArea/dogAreaDebug.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_STYLE = Manual;
@@ -897,6 +967,7 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = dogArea/dogAreaRelease.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
 				CODE_SIGN_STYLE = Manual;
@@ -1129,6 +1200,21 @@
 			isa = XCSwiftPackageProductDependency;
 			package = DAED24F82AFA1C7A0044715A /* XCRemoteSwiftPackageReference "lottie-ios" */;
 			productName = Lottie;
+		};
+		DAC19F062B0AE2B6002FE2E8 /* FirebaseFirestoreSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DA3EB0A12B0383EF00AEA65D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestoreSwift;
+		};
+		DAC19F082B0AE2BF002FE2E8 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DA3EB0A12B0383EF00AEA65D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		DAC19F0B2B0AE561002FE2E8 /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DA3EB0A12B0383EF00AEA65D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
 		};
 /* End XCSwiftPackageProductDependency section */
 

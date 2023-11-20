@@ -20,9 +20,6 @@
         <relationship name="locations" optional="YES" toMany="YES" deletionRule="Nullify" ordered="YES" destinationEntity="LocationEntity"/>
     </entity>
     <entity name="UserEntity" representedClassName="UserEntity" syncable="YES" codeGenerationType="class">
-        <attribute name="petImage" optional="YES" attributeType="Binary"/>
-        <attribute name="petName" optional="YES" attributeType="String"/>
-        <attribute name="userID" optional="YES" attributeType="String"/>
-        <attribute name="userName" optional="YES" attributeType="String"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
     </entity>
 </model>

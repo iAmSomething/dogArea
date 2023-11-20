@@ -13,7 +13,6 @@ import CoreData
 import Combine
 class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreDataProtocol{
     @Environment(\.managedObjectContext) private var viewContext
-    
     private let locationManager = CLLocationManager()
     private var timer: Timer? = nil
     @Published var time: TimeInterval = 0.0

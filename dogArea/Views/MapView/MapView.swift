@@ -9,6 +9,7 @@ import Foundation
 import SwiftUI
 import _MapKit_SwiftUI
 struct MapView : View{
+    @EnvironmentObject var loading: LoadingViewModel
     @ObservedObject var myAlert: CustomAlertViewModel = .init()
     @ObservedObject var viewModel: MapViewModel = .init()
     @State private var isModalPresented = false
@@ -113,7 +114,9 @@ struct MapView : View{
             StartModalView()
                 .interactiveDismissDisabled(true)
         }.sheet(isPresented: $endWalkingViewPresented) {
-            WalkDetailView(viewModel: viewModel).interactiveDismissDisabled(true)
+            WalkDetailView()
+                .environmentObject(loading)
+                .environmentObject(viewModel).interactiveDismissDisabled(true)
         }.fullScreenCover(item: $selectedPolygonData, onDismiss: {self.selectedPolygonData = nil}, content: {model in
             WalkListDetailView(model: model)
         })
