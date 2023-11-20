@@ -52,14 +52,11 @@ struct dogAreaApp: App {
             } else {
                 RootView()
                     .environmentObject(CustomAlertViewModel())
-                #if DEBUG
                     .fullScreenCover(isPresented: .constant(
-//                        UserdefaultSetting().getValue() == nil
-                        true
+                        UserdefaultSetting().getValue() == nil
                     ), content: {
                         SignInView()
                     })
-                #endif
             }
         }
         .modelContainer(sharedModelContainer)

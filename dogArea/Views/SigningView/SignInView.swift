@@ -36,9 +36,6 @@ struct AppleSigninButton : View{
             onCompletion: { result in
                 switch result {
                 case .success(let authResults):
-                    #if DEBUG
-                    UserdefaultSetting().removeAll()
-                    #endif
                     print("Apple Login Successful")
                     switch authResults.credential{
                     case let appleIDCredential as ASAuthorizationAppleIDCredential:

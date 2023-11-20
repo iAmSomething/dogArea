@@ -10,6 +10,7 @@ import SwiftUI
 struct PetProfileSettingView: View {
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var viewModel: SigningViewModel
+    @State var rootViewAppear: Bool = false
     @Binding var path: NavigationPath
     @State var imageSelect: Bool = false
     var body: some View {
@@ -43,7 +44,9 @@ struct PetProfileSettingView: View {
             Spacer()
             Button(action: {
                 viewModel.setValue()
-                path = .init()
+                if viewModel.loading == .success {
+                    rootViewAppear.toggle()
+                }
             }, label: {
                 Text("회원 가입하기")
             })
@@ -57,6 +60,9 @@ struct PetProfileSettingView: View {
             if viewModel.loading == .loading {
                 LoadingView()
             }
+        })
+        .fullScreenCover(isPresented: .constant(viewModel.loading == .success), content: {
+            RootView()
         })
     }
 }
