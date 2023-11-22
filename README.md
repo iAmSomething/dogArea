@@ -1,5 +1,7 @@
 # dogArea : 우리 댕댕이 영역 표시하기
 
+**TestFlight**
+> [체험하기](https://testflight.apple.com/join/61E3OBmk)
 <div align="left">
 	<img src="https://img.shields.io/badge/Swift-F05138?style=flat&logo=swift&logoColor=white"/>
   <img src="https://img.shields.io/badge/Swift-F05138?style=flat&logo=swift&logoColor=white"/>

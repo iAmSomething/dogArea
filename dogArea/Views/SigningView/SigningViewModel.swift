@@ -23,12 +23,14 @@ class SigningViewModel: ObservableObject {
     private var userId:String = ""
     private var petURL: String? = nil
     private var profileURL: String? = nil
+    private var createdAt: Double
     private var storage = Storage.storage().reference()
     private let userdefaluts = UserdefaultSetting()
     init(info: AppleUserInfo) {
         self.appleInfo = info
         self.userName = info.name ?? ""
         self.userId = info.id
+        self.createdAt = info.createdAt
     }
     func setValue(){
         loading = .loading
@@ -40,7 +42,7 @@ class SigningViewModel: ObservableObject {
                 if let img = petProfile {
                     petURL = try await uploadImage(img: img, isPet: true)
                 }
-                userdefaluts.save(id: userId, name: userName, profile: profileURL, pet: [.init(petName: petName, petProfile: petURL)])
+                userdefaluts.save(id: userId, name: userName, profile: profileURL, pet: [.init(petName: petName, petProfile: petURL)], createdAt: createdAt)
                 loading = .success
             }
         }
