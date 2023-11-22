@@ -12,23 +12,27 @@ class UserdefaultSetting {
         case userName = "userName"
         case userProfile = "userProfile"
         case petInfo = "petInfo"
+        case createdAt = "createdAt"
     }
     static var shared = UserdefaultSetting()
-    func save(id: String, name: String, profile: String?, pet: [PetInfo]) {
+    func save(id: String, name: String, profile: String?, pet: [PetInfo], createdAt: Double) {
         UserDefaults.standard.setValue(id, forKey: keyValue.userId.rawValue)
         UserDefaults.standard.setValue(name, forKey: keyValue.userName.rawValue)
         UserDefaults.standard.setValue(profile, forKey: keyValue.userProfile.rawValue)
         UserDefaults.standard.setStructArray(pet, forKey: keyValue.petInfo.rawValue)
+        UserDefaults.standard.setValue(createdAt, forKey: keyValue.createdAt.rawValue)
     }
     func getValue() -> UserInfo? {
         guard let id = UserDefaults.standard.string(forKey: keyValue.userId.rawValue) ,
               let name = UserDefaults.standard.string(forKey: keyValue.userName.rawValue)
+             
                else {return nil}
         let pets = UserDefaults.standard.structArrayData(PetInfo.self, forKey: keyValue.petInfo.rawValue)
+        let createdAt = UserDefaults.standard.double(forKey: keyValue.createdAt.rawValue)
         if let profile = UserDefaults.standard.string(forKey: keyValue.userProfile.rawValue){
-            return .init(id: id, name: name, profile: profile, pet: pets)
+            return .init(id: id, name: name, profile: profile, pet: pets, createdAt: createdAt)
         } else {
-            return .init(id: id, name: name, profile: nil, pet: pets)
+            return .init(id: id, name: name, profile: nil, pet: pets, createdAt: createdAt)
         }
     }
     #if DEBUG
@@ -40,11 +44,12 @@ class UserdefaultSetting {
     }
     #endif
 }
-struct UserInfo {
+struct UserInfo: TimeCheckable {
     let id: String
     let name: String
     let profile: String?
     let pet: [PetInfo]
+    var createdAt: TimeInterval
 }
 struct PetInfo: Codable {
     let petName: String

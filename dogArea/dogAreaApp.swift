@@ -53,7 +53,8 @@ struct dogAreaApp: App {
                 RootView()
                     .environmentObject(CustomAlertViewModel())
                     .fullScreenCover(isPresented: .constant(
-                        UserdefaultSetting().getValue() == nil
+                        UserdefaultSetting().getValue()?.id == nil
+//                        true
                     ), content: {
                         SignInView()
                     })

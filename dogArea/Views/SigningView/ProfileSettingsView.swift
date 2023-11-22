@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct ProfileSettingsView: View {
+    @Environment(\.colorScheme) var scheme
     @Binding var path: NavigationPath
     @StateObject var viewModel: SigningViewModel
     @State var imageSelect: Bool = false
@@ -21,7 +22,7 @@ struct ProfileSettingsView: View {
                 .myCornerRadius(radius: 30)
                 .overlay(
                     RoundedRectangle(cornerRadius: 30)
-                        .stroke(!viewModel.userProfile.isNil ? Color.appGreen : Color.appRed, lineWidth: 0.8)
+                        .stroke(!viewModel.userProfile.isNil ? Color.appColor(type: .appGreen, scheme: scheme) : Color.appColor(type: .appRed, scheme: scheme), lineWidth: 0.8)
                         .foregroundStyle(Color.clear)
                     
                 ).onTapGesture {
@@ -36,7 +37,7 @@ struct ProfileSettingsView: View {
                     .padding(.vertical, 4)
                     .overlay(
                         RoundedRectangle(cornerRadius: 5)
-                            .stroke(viewModel.userName != "" ? Color.appGreen : Color.appRed, lineWidth: 0.8)
+                            .stroke(viewModel.userName != "" ? Color.appColor(type: .appGreen, scheme: scheme) : Color.appColor(type: .appRed, scheme: scheme), lineWidth: 0.8)
                     )
                     .padding(.horizontal)
             }
@@ -46,7 +47,7 @@ struct ProfileSettingsView: View {
                            , label: {Text("다음 단계로")})
             .disabled(viewModel.userName.isEmpty)
             .padding()
-            .background(viewModel.userName.isEmpty ? Color.appTextLightGray :Color.appGreen)
+            .background(viewModel.userName.isEmpty ? Color.appColor(type: .appTextDarkGray, scheme: scheme) : Color.appColor(type: .appGreen, scheme: scheme))
             .myCornerRadius(radius: 15)
         }.fullScreenCover(isPresented: $imageSelect, content: {
             ImagePicker(image: $viewModel.userProfile, type: .photoLibrary)

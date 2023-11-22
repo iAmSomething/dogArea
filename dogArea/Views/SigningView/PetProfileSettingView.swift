@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct PetProfileSettingView: View {
+    @Environment(\.colorScheme) var scheme
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var viewModel: SigningViewModel
     @State var rootViewAppear: Bool = false
@@ -23,7 +24,7 @@ struct PetProfileSettingView: View {
                 .myCornerRadius(radius: 30)
                 .overlay(
                     RoundedRectangle(cornerRadius: 30)
-                        .stroke(!viewModel.petProfile.isNil ? Color.appGreen : Color.appRed, lineWidth: 0.8)
+                        .stroke(!viewModel.petProfile.isNil ? Color.appColor(type: .appGreen, scheme: scheme) : Color.appColor(type: .appRed, scheme: scheme), lineWidth: 0.8)
                         .foregroundStyle(Color.clear)
                     
                 ).onTapGesture {
@@ -37,7 +38,7 @@ struct PetProfileSettingView: View {
                     .padding(.vertical, 4)
                     .overlay(
                         RoundedRectangle(cornerRadius: 5)
-                            .stroke(viewModel.petName != "" ? Color.appGreen : Color.appRed, lineWidth: 0.8)
+                            .stroke(viewModel.petName != "" ? Color.appColor(type: .appGreen, scheme: scheme) : Color.appColor(type: .appRed, scheme: scheme), lineWidth: 0.8)
                     )
                     .padding(.horizontal)
             }
@@ -52,7 +53,7 @@ struct PetProfileSettingView: View {
             })
             .disabled(viewModel.petName.isEmpty)
                 .padding()
-                .background(viewModel.petName.isEmpty ? Color.appTextLightGray :Color.appGreen)
+                .background(viewModel.petName.isEmpty ? Color.appColor(type: .appTextDarkGray, scheme: scheme) :Color.appColor(type: .appGreen, scheme: scheme))
                 .myCornerRadius(radius: 15)
         }.fullScreenCover(isPresented: $imageSelect, content: {
             ImagePicker(image: $viewModel.petProfile, type: .photoLibrary)

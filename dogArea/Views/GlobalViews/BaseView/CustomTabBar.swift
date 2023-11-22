@@ -82,12 +82,14 @@ struct CircleButton : View{
 
 struct TabButtonView: View {
   @Binding var selectedTab: Int
+    @Environment(\.colorScheme) var scheme
   var imageName: (String, String)
   var tabId: Int
   var titleName: String
   var body: some View {
     Label(
-      title: { Text(titleName) },
+        title: { Text(titleName)
+            .foregroundStyle(Color.black) },
       icon: {
         Image(self.selectedTab==tabId ? imageName.0 : imageName.1)
           .resizable()

@@ -6,35 +6,40 @@
 //
 
 import SwiftUI
-import FirebaseStorage
+import Kingfisher
 struct NotificationCenterView: View {
-    @ObservedObject var viewModel = SettingViewModel()
+    @StateObject var viewModel = SettingViewModel()
     @EnvironmentObject var loading: LoadingViewModel
-    @State var profile: UIImage? = nil
-    @State var pickerAppear: Bool = false
-    @State var imgURL: String? = nil
-    private var storage = Storage.storage().reference()
        var body: some View {
            VStack {
-               // Display the captured image
-               ImageView(image: profile)
-                   .frame(width: 300, height: 300)
-                   .border(Color.black)
-                   .onTapGesture {
-                       pickerAppear.toggle()
+               TitleTextView(title: "사용자 정보", subTitle: "사용자의 정보를 알려드립니다.")
+               HStack {
+                   UserProfileImageView()
+                       .environmentObject(viewModel)
+                       .padding(.trailing, 20)
+                   VStack(alignment: .leading) {
+                       Text("\(viewModel.userInfo?.name ?? "산책꾼")")
+                           .font(.appFont(for: .SemiBold, size: 20))
+                       Text("가입 정보: \(viewModel.userInfo?.createdAt.createdAtTimeYYMMDD ?? "")")
+                           .font(.appFont(for: .Light, size: 11))
+                           .foregroundStyle(Color.appTextDarkGray)
                    }
-               .padding()
-               Button(action: {
-                   loading.loading()
-                   guard let img = self.profile else {return}
-                   viewModel.uploadImg(img: img)
-                                     
-               }, label: {
-                   Text("업로드 하기")
-               })
-           }.sheet(isPresented: $pickerAppear, content: {
-               ImagePicker(image: $profile, type: .photoLibrary)
-           })
+                   Spacer()
+               }
+               UnderLine()
+               TitleTextView(title: "강아지 정보",type: .MediumTitle, subTitle: "강아지를 소개할게요")
+               HStack {
+                   PetProfileImageView()
+                       .environmentObject(viewModel)
+                       .padding(.trailing, 20)
+                   VStack(alignment: .leading) {
+                       Text("\(viewModel.userInfo?.pet.first?.petName ?? "강아지")")
+                           .font(.appFont(for: .SemiBold, size: 20))
+                   }
+                   Spacer()
+               }
+               Spacer()
+           }
        }
 }
 struct ImageView: View {
@@ -53,4 +58,39 @@ struct ImageView: View {
 
 #Preview {
   NotificationCenterView()
+}
+
+struct UserProfileImageView: View {
+    @EnvironmentObject var viewModel: SettingViewModel
+    var body: some View {
+        KFImage(URL(string: viewModel.userInfo!.profile!))
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(maxWidth: 100, maxHeight: 100)
+            .myCornerRadius(radius: 15)
+            .overlay(
+                RoundedRectangle(cornerRadius: 15)
+                    .stroke(Color.appTextDarkGray, lineWidth: 0.8)
+                    .foregroundStyle(Color.clear)
+                
+            )
+        .padding()
+    }
+}
+struct PetProfileImageView: View {
+    @EnvironmentObject var viewModel: SettingViewModel
+    var body: some View {
+        KFImage(URL(string: viewModel.userInfo!.pet.first!.petProfile!))
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(maxWidth: 100, maxHeight: 100)
+            .myCornerRadius(radius: 15)
+            .overlay(
+                RoundedRectangle(cornerRadius: 15)
+                    .stroke(Color.appTextDarkGray, lineWidth: 0.8)
+                    .foregroundStyle(Color.clear)
+                
+            )
+        .padding()
+    }
 }

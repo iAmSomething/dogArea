@@ -10,8 +10,8 @@ import SwiftUI
 struct CalenderView: View {
     @State var month: Date = Date()
     @State var offset: CGSize = CGSize()
-    @State var clickedDates: Set<Date>
-    
+    @State var clickedDates: Array<Date>
+    @Environment(\.colorScheme) var scheme
     var body: some View {
         VStack {
             headerView
@@ -39,7 +39,7 @@ struct CalenderView: View {
             HStack(alignment: .bottom){
                 Button(action: {changeMonth(by: -1)}, label: {
                     Text("이전 달")
-                        .foregroundStyle(Color.black)
+                        .foregroundStyle(Color.appColor(type: .appTextBlack, scheme: scheme))
                         .font(.appFont(for: .Regular, size: 14))
                         .padding(.leading, 20)
                 })
@@ -51,7 +51,7 @@ struct CalenderView: View {
                 Button(action: {changeMonth(by: 1)}, label: {
                     Text("다음 달")
                         .padding(.trailing, 20)
-                        .foregroundStyle(Color.black)
+                        .foregroundStyle(Color.appColor(type: .appTextBlack, scheme: scheme))
                         .font(.appFont(for: .Regular, size: 14))
 
 
@@ -61,7 +61,8 @@ struct CalenderView: View {
             HStack {
                 ForEach(Self.weekdaySymbols, id: \.self) { symbol in
                     Text(symbol)
-                        .foregroundStyle((symbol == "Sun" || symbol == "일") ? Color.red : (symbol == "Sat" || symbol == "토") ? Color.blue : Color.black)
+                        .font(.appFont(for: .Regular, size: 15))
+                        .foregroundStyle((symbol == "Sun" || symbol == "일") ? Color.red : (symbol == "Sat" || symbol == "토") ? Color.blue : Color.appColor(type: .appTextBlack, scheme: scheme))
                         .frame(maxWidth: .infinity)
                 }
             }
@@ -85,9 +86,9 @@ struct CalenderView: View {
                         let day = index - firstWeekday + 1
                         let sunday = index % 7 == 0
                         let saturday = index % 7 == 6
-                        let clicked = clickedDates.contains(date)
+                        let clicked = clickedDates.filter{$0 == date}
                         let today = Calendar.current.date(bySettingHour: 0, minute: 0, second: 0, of: Date())!
-                        CellView(day: day, clicked: clicked, sun: sunday, sat: saturday, today: today == date)
+                        CellView(day: day, clickedCount: clicked.count, sun: sunday, sat: saturday, today: today == date)
                     }
                 }
             }
@@ -100,12 +101,12 @@ private struct CellView: View {
     var sunday: Bool
     var saturday: Bool
     var day: Int
-    var clicked: Bool = false
+    var clickedCount: Int = 0
     var today: Bool
-    
-    init(day: Int, clicked: Bool, sun: Bool, sat: Bool, today: Bool) {
+    @Environment(\.colorScheme) var scheme
+    init(day: Int, clickedCount: Int, sun: Bool, sat: Bool, today: Bool) {
         self.day = day
-        self.clicked = clicked
+        self.clickedCount = clickedCount
         self.sunday = sun
         self.saturday = sat
         self.today = today
@@ -117,23 +118,24 @@ private struct CellView: View {
                 .opacity(0)
                 .overlay(
                     Text(String(day))
-                        .foregroundStyle(sunday ? Color.red : saturday ? Color.blue : Color.black)
+                        .font(.appFont(for: .Regular, size: 15))
+                        .foregroundStyle(sunday ? Color.red : saturday ? Color.blue : Color.appColor(type: .appTextBlack, scheme: scheme))
                 )
                 .foregroundColor(.blue)
             
-            if clicked {
-                Text("🐶")
-                    .font(.caption)
-                    .foregroundColor(.red)
+            if clickedCount != 0 {
+                Text(clickedCount == 1 ? "🐶" : "🐶x\(clickedCount)")
+                    .font(.appFont(for: .Regular, size: 8))
+                    .foregroundColor(Color.appColor(type: .appTextBlack, scheme: scheme))
                     .frame(height: 15)
             } else {
                 Spacer()
                     .frame(height: 15)
                 
             }
-        }.frame(width: 40, height: 40)
+        }.frame(width: 46, height: 46)
         .background(today ? Color.appPink : .clear)
-        .clipShape(RoundedCornersShape(radius: 20))
+        .clipShape(RoundedCornersShape(radius: 23))
             
     }
 }

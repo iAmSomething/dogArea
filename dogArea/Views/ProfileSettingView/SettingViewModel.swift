@@ -13,11 +13,13 @@ final class SettingViewModel: ObservableObject, CoreDataProtocol {
     @Published var polygonList: [Polygon] = []
     @Published var userName: String? = nil
     @Published var petName: String? = nil
+    @Published var userInfo: UserInfo? = nil
     private var petURL: String? = nil
     private var profileURL: String? = nil
     private var storage = Storage.storage().reference()
     init() {
         fetchModel()
+        self.userInfo = UserdefaultSetting().getValue()
     }
     func fetchModel() {
         self.polygonList = self.fetchPolygons()

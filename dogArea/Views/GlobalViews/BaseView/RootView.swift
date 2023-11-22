@@ -63,6 +63,7 @@ struct RootView: View {
             if tabStatus.isTabAppear {
                 CustomTabBar(selectedTab: $selectedTab)
                     .frame(maxHeight: .infinity)
+                    .background(Color.white)
                     .border(Color.appTextDarkGray, width: 0.3)
                     .aspectRatio(contentMode: .fit)
             }

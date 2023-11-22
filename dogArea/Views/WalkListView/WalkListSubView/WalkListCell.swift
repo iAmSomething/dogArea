@@ -9,6 +9,7 @@ import SwiftUI
 
 struct WalkListCell: View {
   @State var walkData: WalkDataModel
+    @Environment(\.colorScheme) var scheme
     var body: some View {
       HStack {
         VStack(alignment: .leading) {
@@ -16,7 +17,7 @@ struct WalkListCell: View {
             Text(walkData.createdAt.createdAtTimeYYMMDD)
               .font(.regular14)
               .padding(.leading, 10)
-              .foregroundStyle(Color.black)
+              .foregroundStyle(Color.appColor(type: .appTextBlack, scheme: scheme))
             Spacer()
           }
             ScrollView(.horizontal) {

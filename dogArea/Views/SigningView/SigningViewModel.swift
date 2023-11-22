@@ -46,11 +46,11 @@ class SigningViewModel: ObservableObject {
         }
     }
     private func uploadImage(img: UIImage, isPet: Bool) async throws -> String?{
-        guard let data = img.pngData() else { return nil}
+        guard let data = img.jpegData(compressionQuality: 0.3) else { return nil}
         var finished: Bool = false
         var urlString: String? = nil
         do {
-            try await self.storage.child("images/\(userName)/" + (isPet ? "petProfile.png" : "userProfile.png")).putDataAsync(data) { p in
+            try await self.storage.child("images/\(userName)/" + (isPet ? "petProfile.jpeg" : "userProfile.jpeg")).putDataAsync(data) { p in
                 if p?.isFinished == true {
                     finished = true
                     return
@@ -66,7 +66,7 @@ class SigningViewModel: ObservableObject {
         return str
     }
     private func getURL(isPet: Bool) async throws -> String{
-        try await self.storage.child("images/\(userName)/" + (isPet ? "petProfile.png" : "userProfile.png"))
+        try await self.storage.child("images/\(userName)/" + (isPet ? "petProfile.jpeg" : "userProfile.jpeg"))
             .downloadURL()
             .absoluteString
     }

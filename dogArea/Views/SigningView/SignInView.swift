@@ -8,7 +8,9 @@
 import Foundation
 import AuthenticationServices
 import SwiftUI
+import FirebaseAuth
 struct SignInView: View {
+    @Environment(\.colorScheme) var scheme
     @State var userId: AppleUserInfo? = nil
     @State var path = NavigationPath()
     var body: some View {
@@ -22,18 +24,22 @@ struct SignInView: View {
                 ProfileSettingsView(path: $path,viewModel: .init(info: info))
             })
             .frame(maxHeight: .infinity)
-            .background(Color.appYellowPale)
+            .background(Color.appColor(type: .appYellowPale, scheme: scheme))
         }
     }
 }
 struct AppleSigninButton : View{
     @Binding var userId: AppleUserInfo?
+    @State var isLogined: Bool = false
     var body: some View{
         SignInWithAppleButton(
             onRequest: { request in
-                request.requestedScopes = [.fullName]
+                request.requestedScopes = [.fullName, .email]
             },
             onCompletion: { result in
+//                #if DEBUG
+//                UserdefaultSetting().removeAll()
+//                #endif
                 switch result {
                 case .success(let authResults):
                     print("Apple Login Successful")
@@ -47,11 +53,22 @@ struct AppleSigninButton : View{
                         let IdentityToken = String(data: appleIDCredential.identityToken!, encoding: .utf8)
                         let AuthorizationCode = String(data: appleIDCredential.authorizationCode!, encoding: .utf8)
                         if userInfo?.name == UserIdentifier {
+                            guard let info = userInfo else { return }
+                            isLogined.toggle()
                             // 첫 가입 아님(이미 가입함)
-                            
                         } else {
-                            userId = .init(id: appleIDCredential.user, name: name)
+                            let credential = OAuthProvider.credential(withProviderID: "apple.com",
+                                                                      idToken: IdentityToken!,
+                                                                      rawNonce: nil)
+                            Auth.auth().signIn(with: credential){ result, error in
+                                guard error == nil else {
+                                    print(error?.localizedDescription)
+                                    return
+                                }
+                                userId = .init(createdAt: Date().timeIntervalSince1970, id: appleIDCredential.user, name: name)
+                            }
                         }
+
                     default:
                         break
                     }
@@ -63,13 +80,17 @@ struct AppleSigninButton : View{
         )
         .frame(width : UIScreen.main.bounds.width * 0.9, height:50)
         .cornerRadius(5)
+        .fullScreenCover(isPresented: $isLogined, content: {
+            RootView()
+        })
 
     }
 }
 #Preview{
     SignInView()
 }
-struct AppleUserInfo: Identifiable, Hashable {
+struct AppleUserInfo: Identifiable, Hashable, TimeCheckable {
+    var createdAt: TimeInterval
     let id: String
     let name: String?
 }

@@ -8,8 +8,7 @@
 import SwiftUI
 
 struct HomeView: View {
-    @ObservedObject var viewModel = HomeViewModel()
-    
+    @StateObject var viewModel = HomeViewModel()
     var body: some View {
         ScrollView {
             VStack{
@@ -57,9 +56,9 @@ struct HomeView: View {
                 }
                 HStack {
                     VStack(alignment: .leading, spacing: 0) {
-                        Text("강아지의 영역")
+                        Text("\(viewModel.userInfo!.pet.first!.petName.addYi())의 영역")
                             .font(.appFont(for: .SemiBold, size: 40))
-                        Text("강아지가 정복한 영역을 확인해보세요!")
+                        Text("\(viewModel.userInfo!.pet.first!.petName.addYi())가 정복한 영역을 확인해보세요!")
                             .font(.appFont(for: .Light, size: 15))
                             .foregroundStyle(Color.appTextDarkGray)
                     }.padding()
@@ -148,14 +147,14 @@ struct HomeView: View {
                 UnderLine()
                 
                 Spacer()
-#if DEBUG
-                Button("영역 올리기") {
-                    viewModel.makeitup()
-                }
-                Button("초기화") {
-                    viewModel.reset()
-                }
-#endif
+//#if DEBUG
+//                Button("영역 올리기") {
+//                    viewModel.makeitup()
+//                }
+//                Button("초기화") {
+//                    viewModel.reset()
+//                }
+//#endif
             }
         }.refreshable {
             viewModel.fetchData()

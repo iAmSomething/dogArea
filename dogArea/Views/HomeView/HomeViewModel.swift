@@ -14,12 +14,18 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     @Published var krAreas: AreaMeterCollection = .init()
     @Published var myArea: AreaMeter = .init("", 0.0)
     @Published var myAreaList: [AreaMeterDTO] = []
+    @Published var userInfo: UserInfo? = nil
     init() {
         fetchData()
         totalArea = polygonList.map{$0.walkingArea}.reduce(0.0){$0 + $1}
         totalTime = polygonList.map{$0.walkingTime}.reduce(0.0){$0 + $1}
-        myArea = .init("강아지의 영역", totalArea)
+        myArea = .init("\(UserdefaultSetting().getValue()?.pet.first?.petName.addYi() ?? "강아지")의 영역", totalArea)
         myAreaList = fetchArea()
+        if let info = UserdefaultSetting().getValue() {
+            userInfo = info
+        } else {
+            //로그아웃 액션
+        }
     }
     func fetchData() {
         polygonList = fetchPolygons()
@@ -70,10 +76,10 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
             }
         }
     }
-    func walkedDates() -> Set<Date> {
+    func walkedDates() -> Array<Date> {
         let dateArr = polygonList.map{Date(timeIntervalSince1970:$0.createdAt)}
             .map{Calendar.current.date(bySettingHour: 0, minute: 0, second: 0, of: $0)!}
-        return Set(dateArr)
+        return dateArr
     }
     func walkedAreaforWeek() -> Double {
         let polygonListWeek = polygonList.thisWeekList
@@ -84,20 +90,20 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
         let polygonListWeek = polygonList.thisWeekList
         return polygonListWeek.count
     }
-#if DEBUG
-    func makeitup() {
-        withAnimation{
-            myArea.area += 1000000.0
-        }
-    }
-    func reset() {
-        withAnimation{
-            myArea = .init("강아지의 영역", totalArea)
-            clear()
-        }
-    }
-    func clear() {
-        deleteArea()
-    }
-#endif
+//#if DEBUG
+//    func makeitup() {
+//        withAnimation{
+//            myArea.area += 1000000.0
+//        }
+//    }
+//    func reset() {
+//        withAnimation{
+//            myArea = .init("강아지의 영역", totalArea)
+//            clear()
+//        }
+//    }
+//    func clear() {
+//        deleteArea()
+//    }
+//#endif
 }

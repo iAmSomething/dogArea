@@ -11,7 +11,7 @@ struct WalkListView: View {
     @StateObject var tabStatus = TabAppear.shared
     @ObservedObject private var viewModel = WalkListViewModel()
     @State private var scrollPosition: CGFloat = 0
-
+    @Environment(\.colorScheme) var scheme
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -35,13 +35,14 @@ struct WalkListView: View {
                             .font(.appFont(for: .SemiBold, size: 20))
                             .padding()
                         Spacer()
-                    }.background(Color.white)
+                    }.background(scheme == .dark ? Color.black : Color.white)
                     })
                     Section(content: {
                         VStack {
                             ForEach(viewModel.walkingDatas.exceptThisWeek.reversed(), id:\.self) { walk in
                                 NavigationLink(value: walk) {
                                     WalkListCell(walkData: walk)
+                                        
                                 }.padding()
                                     .cornerRadius(15)
                                     .overlay(
@@ -58,8 +59,8 @@ struct WalkListView: View {
                             .font(.appFont(for: .SemiBold, size: 20))
                             .padding()
                         Spacer()
-                        Spacer()
-                    }})
+                    }.background(scheme == .dark ? Color.black : Color.white)
+                    })
                     
                 }
             }.refreshable {

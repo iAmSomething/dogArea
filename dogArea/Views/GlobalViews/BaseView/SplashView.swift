@@ -28,6 +28,7 @@ struct SplashView: View {
         if firstText {
           HStack {
             Text("우리집 강아지의")
+                  .foregroundStyle(Color.black)
               .font(.appFont(for: .Thin, size: 40))
               .padding(.leading, 20)
               .frame(maxHeight: .infinity)
@@ -38,6 +39,7 @@ struct SplashView: View {
         if secondText {
           HStack (spacing: 0){
             Text("영역을 표시해요")
+                  .foregroundStyle(Color.black)
               .font(.appFont(for: .Thin, size: 40))
               .padding(.leading, 20)
               .frame(maxHeight: .infinity)
