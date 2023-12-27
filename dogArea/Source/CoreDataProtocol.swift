@@ -74,7 +74,7 @@ extension CoreDataProtocol {
         do {
             try context.save()
             polygonList.append(polygon)
-            print("Saved successfully!")
+//            print("Saved successfully!")
             return polygonList
             
         } catch let error as NSError {
@@ -146,7 +146,7 @@ extension CoreDataProtocol {
             }
             // Save changes in the context
             try context.save()
-            print("All polygons deleted successfully!")
+//            print("All polygons deleted successfully!")
         } catch let error as NSError {
             print("Could not delete. \(error), \(error.userInfo)")
         }

@@ -11,6 +11,7 @@ import MapKit
 import CoreLocation
 import CoreData
 import Combine
+import WatchConnectivity
 class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreDataProtocol{
     @Environment(\.managedObjectContext) private var viewContext
     private let locationManager = CLLocationManager()
@@ -114,13 +115,26 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         }
 
     }
+    private func forceQuit() {
+        if !isWalking {
+            guard let lastTime = self.polygon.locations.last?.createdAt else {return}
+            let duration = Date().timeIntervalSince1970 - lastTime
+            if duration > 1800 {
+                self.endWalk()
+            }
+        }
+    }
 
 }
 //MARK: - 넓이와 시간로직
 extension MapViewModel {
     func timerSet() {
-        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { t in
+        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) {[weak self] t in
+            guard let self = self else {return}
             self.time += t.timeInterval
+            if self.time > 3600 {
+                self.forceQuit()
+            }
         }
     }
     func timerStop() {
@@ -158,11 +172,18 @@ extension MapViewModel {
             area = areaSize!
         }
         var str = String(format: "%.2f" , area) + "㎡"
+        if area > 10000.0 {
+            str = String(format: "%.2f" , area/10000) + "만 ㎡"
+        }
         if area > 100000.0 {
             str = String(format: "%.2f" , area/1000000) + "k㎡"
         }
         if isPyong {
-            str = String(format: "%.1f" , area/3.3) + "평"
+            if area/3.3 > 10000 {
+                str = String(format: "%.1f" , area/33333) + "만 평"
+            } else {
+                str = String(format: "%.1f" , area/3.3) + "평"
+            }
         }
         return str
     }
@@ -181,7 +202,7 @@ extension MapViewModel {
         }
     }
     func locationManager(_ manager: CLLocationManager, didStartMonitoringFor region: CLRegion) {
-        print(manager.location?.description)
+//        print(manager.location?.description)
     }
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }

@@ -42,11 +42,11 @@ final class SettingViewModel: ObservableObject, CoreDataProtocol {
         var urlString: String? = nil
         do { try await self.storage.child("images/" + (isPet ? "petProfile.png" : "userProfile.png")).putDataAsync(data) { p in
             if p?.isFinished == true {
-                print("업로드 성공?")
+//                print("업로드 성공?")
                 finished = true
                 return
             } else if p?.isCancelled == true{
-                print("업로드 실패")
+//                print("업로드 실패")
             }
         }
         }

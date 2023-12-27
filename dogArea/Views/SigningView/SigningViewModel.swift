@@ -13,11 +13,7 @@ class SigningViewModel: ObservableObject {
     @Published var loading: LoadingPhase = .initial
     @Published var userName: String = ""
     @Published var petName: String = ""
-    @Published var userProfile: UIImage? = nil {
-        didSet {
-            print("새 이미지 선택됨")
-        }
-    }
+    @Published var userProfile: UIImage? = nil
     @Published var petProfile: UIImage? = nil
     var appleInfo: AppleUserInfo
     private var userId:String = ""

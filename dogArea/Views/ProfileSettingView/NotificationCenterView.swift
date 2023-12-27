@@ -63,34 +63,64 @@ struct ImageView: View {
 struct UserProfileImageView: View {
     @EnvironmentObject var viewModel: SettingViewModel
     var body: some View {
-        KFImage(URL(string: viewModel.userInfo!.profile!))
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .frame(maxWidth: 100, maxHeight: 100)
-            .myCornerRadius(radius: 15)
-            .overlay(
-                RoundedRectangle(cornerRadius: 15)
-                    .stroke(Color.appTextDarkGray, lineWidth: 0.8)
-                    .foregroundStyle(Color.clear)
-                
-            )
-        .padding()
+        if let url = viewModel.userInfo?.profile {
+            KFImage(URL(string: url))
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(maxWidth: 100, maxHeight: 100)
+                .myCornerRadius(radius: 15)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 15)
+                        .stroke(Color.appTextDarkGray, lineWidth: 0.8)
+                        .foregroundStyle(Color.clear)
+                    
+                )
+                .padding()
+        } else {
+            Image(uiImage: .emptyImg)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(maxWidth: 100, maxHeight: 100)
+                .myCornerRadius(radius: 15)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 15)
+                        .stroke(Color.appTextDarkGray, lineWidth: 0.8)
+                        .foregroundStyle(Color.clear)
+                    
+                )
+                .padding()
+        }
     }
 }
 struct PetProfileImageView: View {
     @EnvironmentObject var viewModel: SettingViewModel
     var body: some View {
-        KFImage(URL(string: viewModel.userInfo!.pet.first!.petProfile!))
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .frame(maxWidth: 100, maxHeight: 100)
-            .myCornerRadius(radius: 15)
-            .overlay(
-                RoundedRectangle(cornerRadius: 15)
-                    .stroke(Color.appTextDarkGray, lineWidth: 0.8)
-                    .foregroundStyle(Color.clear)
-                
-            )
-        .padding()
+        if let url = viewModel.userInfo?.pet.first?.petProfile {
+            KFImage(URL(string: url))
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(maxWidth: 100, maxHeight: 100)
+                .myCornerRadius(radius: 15)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 15)
+                        .stroke(Color.appTextDarkGray, lineWidth: 0.8)
+                        .foregroundStyle(Color.clear)
+                    
+                )
+                .padding()
+        } else {
+            Image(uiImage: .emptyImg)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(maxWidth: 100, maxHeight: 100)
+                .myCornerRadius(radius: 15)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 15)
+                        .stroke(Color.appTextDarkGray, lineWidth: 0.8)
+                        .foregroundStyle(Color.clear)
+                    
+                )
+                .padding()
+        }
     }
 }

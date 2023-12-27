@@ -32,7 +32,7 @@ class MapImageProvider: ObservableObject {
 
     private func captureMapImage(for polygon: MKPolygon) -> Future<UIImage?, Error> {
         return Future { promise in
-            print(polygon.coordinate)
+//            print(polygon.coordinate)
             let mapView = MKMapView()
             mapView.camera.centerCoordinate = polygon.coordinate
 

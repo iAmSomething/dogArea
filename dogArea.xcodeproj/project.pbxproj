@@ -92,6 +92,12 @@
 		DAA8E4F92B01A80C00F9190B /* TabAppear.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAA8E4F82B01A80C00F9190B /* TabAppear.swift */; };
 		DAAE221F2AFCBDC4005FD096 /* StartModalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAAE221E2AFCBDC4005FD096 /* StartModalView.swift */; };
 		DAAE22232AFCC225005FD096 /* WalkDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAAE22222AFCC225005FD096 /* WalkDetailView.swift */; };
+		DAB314B22B3C1B4A000357C7 /* dogAreaWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB314B12B3C1B4A000357C7 /* dogAreaWatchApp.swift */; };
+		DAB314B42B3C1B4A000357C7 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB314B32B3C1B4A000357C7 /* ContentView.swift */; };
+		DAB314B62B3C1B4B000357C7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DAB314B52B3C1B4B000357C7 /* Assets.xcassets */; };
+		DAB314B92B3C1B4B000357C7 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DAB314B82B3C1B4B000357C7 /* Preview Assets.xcassets */; };
+		DAB314BC2B3C1B4B000357C7 /* dogAreaWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = DAB314AF2B3C1B4A000357C7 /* dogAreaWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		DAB314C22B3C1D71000357C7 /* ContentsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB314C12B3C1D71000357C7 /* ContentsViewModel.swift */; };
 		DAC19F042B0ADED6002FE2E8 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = DAC19F032B0ADED6002FE2E8 /* GoogleService-Info.plist */; };
 		DAC19F072B0AE2B6002FE2E8 /* FirebaseFirestoreSwift in Frameworks */ = {isa = PBXBuildFile; productRef = DAC19F062B0AE2B6002FE2E8 /* FirebaseFirestoreSwift */; };
 		DAC19F092B0AE2BF002FE2E8 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = DAC19F082B0AE2BF002FE2E8 /* FirebaseFirestore */; };
@@ -119,6 +125,13 @@
 			remoteGlobalIDString = DA95CC682ADE0682004AD94D;
 			remoteInfo = OpenAIClient;
 		};
+		DAB314BA2B3C1B4B000357C7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = DA71C8312AD787AC00081ED0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DAB314AE2B3C1B4A000357C7;
+			remoteInfo = "dogAreaWatch Watch App";
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -141,6 +154,17 @@
 				DA95CC702ADE0682004AD94D /* OpenAIClient.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DAB314C02B3C1B4B000357C7 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				DAB314BC2B3C1B4B000357C7 /* dogAreaWatch Watch App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -221,6 +245,12 @@
 		DAA8E4F82B01A80C00F9190B /* TabAppear.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabAppear.swift; sourceTree = "<group>"; };
 		DAAE221E2AFCBDC4005FD096 /* StartModalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartModalView.swift; sourceTree = "<group>"; };
 		DAAE22222AFCC225005FD096 /* WalkDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkDetailView.swift; sourceTree = "<group>"; };
+		DAB314AF2B3C1B4A000357C7 /* dogAreaWatch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "dogAreaWatch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		DAB314B12B3C1B4A000357C7 /* dogAreaWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = dogAreaWatchApp.swift; sourceTree = "<group>"; };
+		DAB314B32B3C1B4A000357C7 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		DAB314B52B3C1B4B000357C7 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		DAB314B82B3C1B4B000357C7 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		DAB314C12B3C1D71000357C7 /* ContentsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentsViewModel.swift; sourceTree = "<group>"; };
 		DAC19F032B0ADED6002FE2E8 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		DAC19F0D2B0AE5AC002FE2E8 /* ImagePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePicker.swift; sourceTree = "<group>"; };
 		DAC19F0F2B0AF661002FE2E8 /* TitleTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitleTextView.swift; sourceTree = "<group>"; };
@@ -261,6 +291,13 @@
 			files = (
 				DA95CC7B2ADE0A07004AD94D /* OpenAPIURLSession in Frameworks */,
 				DA95CC782ADE09D6004AD94D /* OpenAPIRuntime in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DAB314AC2B3C1B4A000357C7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -435,6 +472,7 @@
 				DA45137D2AFA6DC1007AD69B /* OpenAIConfiguration.xcconfig */,
 				DA71C83B2AD787AC00081ED0 /* dogArea */,
 				DA95CC6A2ADE0682004AD94D /* OpenAIClient */,
+				DAB314B02B3C1B4A000357C7 /* dogAreaWatch Watch App */,
 				DA3C140C2AF0847600324A14 /* Frameworks */,
 				DA71C83A2AD787AC00081ED0 /* Products */,
 				DA933BC12AD7F0150029856C /* Recovered References */,
@@ -446,6 +484,7 @@
 			children = (
 				DA71C8392AD787AC00081ED0 /* dogArea.app */,
 				DA95CC692ADE0682004AD94D /* OpenAIClient.framework */,
+				DAB314AF2B3C1B4A000357C7 /* dogAreaWatch Watch App.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -523,6 +562,26 @@
 			path = ImageGeneratorView;
 			sourceTree = "<group>";
 		};
+		DAB314B02B3C1B4A000357C7 /* dogAreaWatch Watch App */ = {
+			isa = PBXGroup;
+			children = (
+				DAB314B12B3C1B4A000357C7 /* dogAreaWatchApp.swift */,
+				DAB314B32B3C1B4A000357C7 /* ContentView.swift */,
+				DAB314C12B3C1D71000357C7 /* ContentsViewModel.swift */,
+				DAB314B52B3C1B4B000357C7 /* Assets.xcassets */,
+				DAB314B72B3C1B4B000357C7 /* Preview Content */,
+			);
+			path = "dogAreaWatch Watch App";
+			sourceTree = "<group>";
+		};
+		DAB314B72B3C1B4B000357C7 /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				DAB314B82B3C1B4B000357C7 /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
 		DAC19F192B0B32EA002FE2E8 /* SigningView */ = {
 			isa = PBXGroup;
 			children = (
@@ -576,11 +635,13 @@
 				DA71C8372AD787AC00081ED0 /* Resources */,
 				DA95CC742ADE0682004AD94D /* Embed Frameworks */,
 				DA3C141C2AF0847600324A14 /* Embed Foundation Extensions */,
+				DAB314C02B3C1B4B000357C7 /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				DA95CC6E2ADE0682004AD94D /* PBXTargetDependency */,
+				DAB314BB2B3C1B4B000357C7 /* PBXTargetDependency */,
 			);
 			name = dogArea;
 			packageProductDependencies = (
@@ -622,6 +683,23 @@
 			productReference = DA95CC692ADE0682004AD94D /* OpenAIClient.framework */;
 			productType = "com.apple.product-type.framework";
 		};
+		DAB314AE2B3C1B4A000357C7 /* dogAreaWatch Watch App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DAB314BD2B3C1B4B000357C7 /* Build configuration list for PBXNativeTarget "dogAreaWatch Watch App" */;
+			buildPhases = (
+				DAB314AB2B3C1B4A000357C7 /* Sources */,
+				DAB314AC2B3C1B4A000357C7 /* Frameworks */,
+				DAB314AD2B3C1B4A000357C7 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "dogAreaWatch Watch App";
+			productName = "dogAreaWatch Watch App";
+			productReference = DAB314AF2B3C1B4A000357C7 /* dogAreaWatch Watch App.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -629,7 +707,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1500;
+				LastSwiftUpdateCheck = 1510;
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
 					DA71C8382AD787AC00081ED0 = {
@@ -638,6 +716,9 @@
 					DA95CC682ADE0682004AD94D = {
 						CreatedOnToolsVersion = 15.0;
 						LastSwiftMigration = 1500;
+					};
+					DAB314AE2B3C1B4A000357C7 = {
+						CreatedOnToolsVersion = 15.1;
 					};
 				};
 			};
@@ -666,6 +747,7 @@
 			targets = (
 				DA71C8382AD787AC00081ED0 /* dogArea */,
 				DA95CC682ADE0682004AD94D /* OpenAIClient */,
+				DAB314AE2B3C1B4A000357C7 /* dogAreaWatch Watch App */,
 			);
 		};
 /* End PBXProject section */
@@ -707,6 +789,15 @@
 				DA95CC812ADE0ADA004AD94D /* openapi-generator-config.yaml in Resources */,
 				DA99FA002AFA50D700B1483F /* Pretendard-Bold.otf in Resources */,
 				DA99F9FA2AFA50D700B1483F /* Pretendard-Medium.otf in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DAB314AD2B3C1B4A000357C7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DAB314B92B3C1B4B000357C7 /* Preview Assets.xcassets in Resources */,
+				DAB314B62B3C1B4B000357C7 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -789,6 +880,16 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		DAB314AB2B3C1B4A000357C7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DAB314B42B3C1B4A000357C7 /* ContentView.swift in Sources */,
+				DAB314B22B3C1B4A000357C7 /* dogAreaWatchApp.swift in Sources */,
+				DAB314C22B3C1D71000357C7 /* ContentsViewModel.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -800,6 +901,11 @@
 		DA95CC7D2ADE0A28004AD94D /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			productRef = DA95CC7C2ADE0A28004AD94D /* OpenAPIGenerator */;
+		};
+		DAB314BB2B3C1B4B000357C7 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DAB314AE2B3C1B4A000357C7 /* dogAreaWatch Watch App */;
+			targetProxy = DAB314BA2B3C1B4B000357C7 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -955,6 +1061,7 @@
 				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen.storyboard";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1001,6 +1108,7 @@
 				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen.storyboard";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1088,6 +1196,70 @@
 			};
 			name = Release;
 		};
+		DAB314BE2B3C1B4B000357C7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"dogAreaWatch Watch App/Preview Content\"";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = dogAreaWatch;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.th.dogArea;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.th.dogArea.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.2;
+			};
+			name = Debug;
+		};
+		DAB314BF2B3C1B4B000357C7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"dogAreaWatch Watch App/Preview Content\"";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = dogAreaWatch;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.th.dogArea;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.th.dogArea.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.2;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -1114,6 +1286,15 @@
 			buildConfigurations = (
 				DA95CC722ADE0682004AD94D /* Debug */,
 				DA95CC732ADE0682004AD94D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		DAB314BD2B3C1B4B000357C7 /* Build configuration list for PBXNativeTarget "dogAreaWatch Watch App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DAB314BE2B3C1B4B000357C7 /* Debug */,
+				DAB314BF2B3C1B4B000357C7 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

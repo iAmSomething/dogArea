@@ -71,7 +71,7 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
             var currents = krAreas.nearistArea(since: fetchArea().last, from: myArea.area)
             for c in currents.reversed() {
                 if saveArea(area: .init(areaName: c.areaName, area: c.area, createdAt: Date().timeIntervalSince1970)) {
-                    print("저장 성공")
+//                    print("저장 성공")
                 }
             }
         }

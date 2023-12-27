@@ -42,7 +42,7 @@ struct MapSettingView: View {
                   viewModel.polygon = item
                   if let polygonCenter = item.polygon?.coordinate,
                      let distance = item.polygon?.boundingMapRect.width {
-                    print(distance)
+//                    print(distance)
                     viewModel.setRegion(polygonCenter, distance: distance)
                   }
                 }

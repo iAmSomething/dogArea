@@ -13,8 +13,12 @@ class UserdefaultSetting {
         case userProfile = "userProfile"
         case petInfo = "petInfo"
         case createdAt = "createdAt"
+        case nonce = "nonce"
     }
     static var shared = UserdefaultSetting()
+    func savenonce(nonce: Double) {
+        UserDefaults.standard.setValue(nonce, forKey: keyValue.nonce.rawValue)
+    }
     func save(id: String, name: String, profile: String?, pet: [PetInfo], createdAt: Double) {
         UserDefaults.standard.setValue(id, forKey: keyValue.userId.rawValue)
         UserDefaults.standard.setValue(name, forKey: keyValue.userName.rawValue)

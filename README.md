@@ -4,9 +4,8 @@
 > [체험하기](https://testflight.apple.com/join/61E3OBmk)
 <div align="left">
 	<img src="https://img.shields.io/badge/Swift-F05138?style=flat&logo=swift&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Swift-F05138?style=flat&logo=swift&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Swift-F05138?style=flat&logo=swift&logoColor=white"/>
-</div>
+  <img src="https://img.shields.io/badge/Firebase-FFCA28?style=flat&logo=firebase&logoColor=white"/>
+  <img src="https://img.shields.io/badge/OpenAI-412991?style=flat&logo=openai&logoColor=white"/>
 
 ## Idea : 강아지들이 산책 할 때 영역 표시를 하는데, 이걸 실제 지도 위에 표현해보자!
 
@@ -31,10 +30,14 @@
 3. User에 대한 고민 : 프로필 이미지를 캐릭터화 하고 싶다..
    1. OpenAI로 image generate하기 < 바라는 이미지로는 안나옴,, 그냥 이미지 입력 받아야 할듯
    2. Apple 로그인을 통해 User 정보 확보하기
-      1. 처음 사용자의 경우 프로필을 만드는 기능을 추가
+      1. 처음 사용자의 경우 프로필을 만드는 기능을 추가 > 완료
       2. 필요한 정보는 Identifiable한 랜덤 정보면 된다.
+         1. 이메일, 이름으로 결정
       3. 사용자의 프로필 이미지의 필요 여부를 결정해야 한다.
+         1. 없을 경우 empty image넣어주기로 결정
       4. 강아지의 정보를 필수값으로 저장해야 한다. 이름은 필수 이미지는 옵셔널
+   3. 입력받은 UIImage를 URL화 하기
+      1. Firebase storage를 활용해서 해결하였다.
 
 ## 화면
 
@@ -84,3 +87,4 @@
 
 ### 설정
 
+유저 정보와 설정값, 회원 탈퇴 등의 기능이 필요

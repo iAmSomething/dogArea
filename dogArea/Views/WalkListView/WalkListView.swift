@@ -47,7 +47,7 @@ struct WalkListView: View {
                                     .cornerRadius(15)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 15)
-                                            .stroke(Color.appTextDarkGray, lineWidth: 0.3)
+                                        /Users/gimtaehun/멋사/dogArea/dogArea/Views/WalkListView/WalkListSubView                   .stroke(Color.appTextDarkGray, lineWidth: 0.3)
                                     )
                                     .padding(.horizontal, 15)
 

@@ -42,7 +42,7 @@ struct AppleSigninButton : View{
 //                #endif
                 switch result {
                 case .success(let authResults):
-                    print("Apple Login Successful")
+//                    print("Apple Login Successful")
                     switch authResults.credential{
                     case let appleIDCredential as ASAuthorizationAppleIDCredential:
                         // 계정 정보 가져오기
@@ -74,7 +74,6 @@ struct AppleSigninButton : View{
                     }
                 case .failure(let error):
                     print(error.localizedDescription)
-                    print("error")
                 }
             }
         )
