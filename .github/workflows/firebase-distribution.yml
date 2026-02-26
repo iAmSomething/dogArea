@@ -5,11 +5,6 @@ on:
     branches:
       - main
   workflow_dispatch:
-    inputs:
-      release_notes:
-        description: "Firebase release notes (optional)"
-        required: false
-        default: ""
 
 concurrency:
   group: firebase-distribution-${{ github.ref }}
@@ -207,7 +202,6 @@ CONFIG
           FIREBASE_APP_ID: ${{ env.FIREBASE_APP_ID }}
           FIREBASE_TESTER_GROUP: ${{ env.FIREBASE_TESTER_GROUP }}
           IPA_PATH: ${{ steps.export_ipa.outputs.ipa_path }}
-          RELEASE_NOTES_INPUT: ${{ github.event.inputs.release_notes }}
         run: |
           set -euo pipefail
           SA_PATH="$RUNNER_TEMP/firebase-sa.json"
@@ -220,10 +214,7 @@ CONFIG
 
           APP_ID="${FIREBASE_APP_ID:-1:326179558500:ios:c8404bae2adc65046dbb71}"
           GROUPS="${FIREBASE_TESTER_GROUP:-tester}"
-          NOTES="${RELEASE_NOTES_INPUT:-}"
-          if [[ -z "$NOTES" ]]; then
-            NOTES="dogArea CI build ${GITHUB_SHA::7}"
-          fi
+          NOTES="dogArea CI build ${GITHUB_SHA::7}"
 
           npm i -g firebase-tools
           firebase appdistribution:distribute "$IPA_PATH" \
