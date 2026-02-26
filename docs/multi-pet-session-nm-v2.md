@@ -1,148 +1,183 @@
 # Multi-Pet Walk Session N:M Design v2
 
 ## 1. 목적
-`walk_session_pets`를 실제 운영 경로에 활성화하기 위한 2차 설계를 확정한다.
-본 문서는 #27 구현 착수 전 단일 기준 문서다.
+`walk_session_pets` 기반 N:M 모델을 2차 구현 기준으로 확정한다.
+본 문서는 다중 반려견 동시 산책 구현 전의 단일 기준 문서다.
 
 연결 이슈:
-- 선행: #26 (다견 1차 UX)
-- 본 설계: #27 (N:M 2차)
+- 선행: #69 (전역 반려견 컨텍스트 동기화)
+- 본 설계: #64 (N:M 2차 설계)
 
 ## 2. 현재 상태
-- `walk_sessions.pet_id` 단일 귀속이 기준 경로다.
-- `walk_session_pets`는 스키마상 존재하지만, 읽기/쓰기 주 경로에 아직 미적용이다.
-- 집계(홈/목록/주간 통계)는 사실상 `walk_sessions.pet_id` 전제다.
+- `walk_sessions.pet_id` 단일 귀속이 운영 기준 경로다.
+- `walk_session_pets` 브릿지 테이블은 계약만 있고 운영 경로 미적용 상태다.
+- 홈/목록/통계/상세는 단일 귀속 전제를 기본으로 렌더링한다.
 
-## 3. walk_session_pets 활성화 전략
+## 3. N:M 도메인 규칙
 
-## 3.1 활성화 목표
-- 산책 1건에 복수 반려견 연결 가능
-- 1차 호환성 유지를 위해 `walk_sessions.pet_id`(primary pet)는 유지
-- 읽기/쓰기 전환을 단계적으로 수행
+### 3.1 핵심 엔티티
+- `walk_sessions`
+  - 산책 세션 원장
+  - `pet_id`는 호환성 유지용 `primary_pet_id` 역할
+- `walk_session_pets`
+  - 다중 반려견 귀속 브릿지
+  - 1세션-복수반려견 연결의 정본
 
-## 3.2 단계별 전환
-1. 단계 A: 스키마 보강
-- `walk_session_pets` 제약/인덱스 확정
-  - PK/UNIQUE: `(walk_session_id, pet_id)`
-  - index: `(pet_id, walk_session_id)`
-- FK cascade 정책 명시
+### 3.2 규칙
+1. 주 반려견(primary pet)
+- 세션 생성 시 반드시 1마리 지정
+- `primary_pet_id ∈ assigned_pet_ids`
 
-2. 단계 B: 백필 (idempotent)
-- 기존 `walk_sessions` 행을 `walk_session_pets`로 백필
-- 규칙:
-  - insert source: `(walk_sessions.id, walk_sessions.pet_id)`
-  - `ON CONFLICT DO NOTHING`
-- 검증:
-  - `walk_sessions` 행 수 <= `walk_session_pets` distinct session 수
-  - 누락 session 0건
+2. 복수 귀속
+- 최소 1마리, 최대 5마리(v2 정책)
+- 중복 pet id 금지
 
-3. 단계 C: Dual write
-- 신규 산책 저장 시
-  - `walk_sessions.pet_id = primaryPetId`
-  - `walk_session_pets`에 `petIds[]` 전량 insert
-- 트랜잭션 단위로 처리(둘 중 하나만 성공 금지)
+3. 통계 중복 방지
+- `ALL pets` 모드에서는 세션을 `walk_session_id`로 dedupe해 1회만 집계
+- `Selected pet` 모드에서는 해당 pet에 연결된 세션만 포함
 
-4. 단계 D: Read path 전환
-- pet 기준 조회는 `walk_session_pets` 우선
-- fallback은 `walk_sessions.pet_id` (플래그 off 시)
-- feature flag:
-  - `ff_walk_session_pets_read_v2`
-  - `ff_walk_session_pets_write_v2`
+4. 삭제/비활성
+- 세션 삭제 시 브릿지 row cascade 삭제
+- pet 비활성화는 세션 보존, 신규 선택만 차단
 
-5. 단계 E: 안정화
-- 오류율/지연/정합성 모니터링
-- fallback 제거 시점 결정
+### 3.3 결정 테이블
+| 케이스 | primary pet | assigned pets | 저장 허용 | 집계 규칙 |
+|---|---|---|---|---|
+| 단일 산책 | A | [A] | 허용 | 기존과 동일 |
+| 다중 산책 | A | [A,B] | 허용 | all 모드 dedupe |
+| primary 불포함 | A | [B,C] | 거부 | N/A |
+| 중복 pet | A | [A,A,B] | 거부 | N/A |
 
-## 3.3 쓰기 계약 (Repository)
+## 4. 저장/조회 API 스펙
+
+### 4.1 저장 계약 (App Repository)
 - v1:
   - `saveWalk(session, points, petId)`
 - v2:
-  - `saveWalk(session, points, primaryPetId, petIds)`
-- 제약:
-  - `petIds`는 1개 이상
-  - `primaryPetId ∈ petIds`
-  - 중복 pet id 제거 후 저장
+  - `saveWalk(session, points, primaryPetId, assignedPetIds)`
+- 검증:
+  - `assignedPetIds.count >= 1`
+  - `assignedPetIds` dedupe 후 `primaryPetId` 포함
 
-## 4. 집계 변경 영향 분석
+### 4.2 서버 계약 (Supabase Function/RPC 초안)
+1. `rpc_upsert_walk_session_with_pets`
+- 입력:
+```json
+{
+  "walk_session_id": "uuid",
+  "owner_user_id": "uuid",
+  "primary_pet_id": "uuid",
+  "assigned_pet_ids": ["uuid","uuid"],
+  "duration_sec": 1800,
+  "area_m2": 3200.5
+}
+```
+- 출력:
+```json
+{
+  "walk_session_id": "uuid",
+  "assigned_count": 2,
+  "status": "ok"
+}
+```
 
-## 4.1 영향 대상
-- 홈: 총 면적/총 시간, 주간 통계
-- 목록: 반려견 필터 결과
-- 히트맵/좌표 기반 집계
-- 명소 달성/마일스톤
+2. `rpc_get_walk_sessions_by_pet`
+- 입력:
+```json
+{
+  "owner_user_id": "uuid",
+  "pet_id": "uuid",
+  "date_from": "2026-01-01",
+  "date_to": "2026-02-01"
+}
+```
+- 출력: 세션 목록 + `assigned_pet_ids`
 
-## 4.2 집계 규칙
-1. Selected pet 모드
-- `walk_session_pets.pet_id = selectedPetId`인 session만 포함
-- 면적/시간은 session 원값 그대로 사용
+3. `rpc_get_walk_stats`
+- 입력:
+```json
+{
+  "owner_user_id": "uuid",
+  "mode": "selected|all",
+  "pet_id": "uuid|null",
+  "period": "week|month|all"
+}
+```
+- 출력: `total_area_m2`, `total_duration_sec`, `session_count`
 
-2. All pets 모드
-- session 중복 합산 금지
-- key: `walk_session_id`로 dedupe 후 1회만 합산
-- 이유: 다중 반려견 산책 1건이 총량에서 2배 집계되는 오류 방지
+## 5. 홈/목록/상세 다견 표시 규칙
 
-3. 포인트/히트맵
-- pet 필터 시 `walk_session_pets` join
-- all 모드에서 point 중복 제거(`walk_points.id` 기준)
+### 5.1 홈
+- `Selected pet` 기본 모드 유지
+- `ALL` 토글 시 집계는 dedupe 규칙 적용
+- 카드/통계 하단에 기준 배지:
+  - `기준: 코코(선택)`
+  - `기준: 전체 반려견(중복제외)`
 
-4. 마일스톤
-- pet별 마일스톤은 selected pet 기준 유지
-- all 모드 마일스톤은 별도 aggregate milestone로 분리(혼합 금지)
+### 5.2 목록
+- 세션 카드에 태그형 뱃지:
+  - `대표: 코코`
+  - `함께: 모카, 루루`
+- pet 필터 적용 시 브릿지 join 결과 기준으로 노출
 
-## 4.3 쿼리 변경 포인트
-- 기존:
-  - `from walk_sessions where pet_id = :petId`
-- 변경:
-  - `from walk_sessions ws join walk_session_pets wsp on ws.id = wsp.walk_session_id where wsp.pet_id = :petId`
-- all 모드:
-  - `select distinct ws.id ...`
+### 5.3 상세
+- 상단 메타에 `함께 산책한 반려견` 섹션 고정
+- 대표 pet는 별도 badge(`대표`)
 
-## 5. 마이그레이션 리스크 정리
+## 6. 활성화/마이그레이션 전략
 
-## 5.1 데이터 리스크
-1. 백필 누락
-- 원인: 중단/부분 실행
-- 대응: idempotent 백필 + 검증 쿼리 반복
+### 6.1 단계별 전환
+1. 단계 A: 스키마 보강
+- `walk_session_pets` unique/index/FK 확정
 
-2. 중복 row
-- 원인: 재실행/중복 입력
-- 대응: `(walk_session_id, pet_id)` unique
+2. 단계 B: 백필(idempotent)
+- source: `walk_sessions(id, pet_id)`
+- target: `walk_session_pets(walk_session_id, pet_id)`
+- `ON CONFLICT DO NOTHING`
 
-3. 고아 row
-- 원인: pet/session 삭제 순서 문제
-- 대응: FK + on delete cascade 정책 확정
+3. 단계 C: Dual write
+- 신규 저장 시 `walk_sessions` + `walk_session_pets` 동시 저장
+- 트랜잭션 실패 시 전체 rollback
 
-## 5.2 애플리케이션 리스크
-1. Dual write 불일치
-- 원인: partial failure
-- 대응: DB 트랜잭션 + 실패 시 전부 rollback
+4. 단계 D: Read path 전환
+- 조회 우선순위:
+  - flag on: `walk_session_pets` join
+  - flag off: 기존 `walk_sessions.pet_id`
+- flags:
+  - `ff_walk_session_pets_write_v2`
+  - `ff_walk_session_pets_read_v2`
 
-2. 집계 과대 계산
-- 원인: all 모드 dedupe 누락
-- 대응: 집계 쿼리 강제 `distinct walk_session_id`
+5. 단계 E: 안정화
+- 정합성/쿼리 지연/오류율 모니터링 후 fallback 축소
 
-3. 성능 저하
-- 원인: join 증가
-- 대응: 인덱스 + 쿼리 계획 점검 + 캐시
+### 6.2 영향도 분석
+1. 데이터 모델
+- 세션당 pet 귀속 cardinality 1 -> N
+- 정합성 키 `(walk_session_id, pet_id)` 필요
 
-## 5.3 운영 리스크
-1. 플래그 전환 오류
-- 대응: read/write 플래그 분리, 점진 활성화
-2. 롤백 시 데이터 분기
-- 대응: rollback 시 read 경로만 v1로 즉시 복귀, write는 dual 유지
+2. 통계 로직
+- all 모드 dedupe 미적용 시 과대집계 리스크
+- selected/all 두 모드의 쿼리 경로 분리 필요
 
-## 6. 검증 쿼리/체크리스트
+3. UI
+- 세션 카드 높이 증가(뱃지 영역)
+- 작은 화면에서 태그 줄바꿈 정책 필요
 
-## 6.1 백필 검증
-- session 누락 검증
+4. 마이그레이션/백필
+- 대량 백필 시 잠금/성능 이슈 가능
+- 배치형 백필 + 검증 쿼리 반복 필요
+
+## 7. 검증 쿼리
+
+### 7.1 백필 누락/중복
 ```sql
 select count(*) as missing
 from walk_sessions ws
 left join walk_session_pets wsp on ws.id = wsp.walk_session_id
-where wsp.walk_session_id is null;
+where ws.pet_id is not null
+  and wsp.walk_session_id is null;
 ```
 
-- 중복 검증
 ```sql
 select walk_session_id, pet_id, count(*)
 from walk_session_pets
@@ -150,12 +185,40 @@ group by walk_session_id, pet_id
 having count(*) > 1;
 ```
 
-## 6.2 집계 정합 검증
-- selected pet 모드/기존 v1 결과 비교(샘플 사용자)
-- all 모드에서 다중 pet session 중복 없는지 검증
+### 7.2 all 모드 dedupe 검증
+```sql
+select
+  sum(ws.area_m2) as naive_sum,
+  sum(distinct_ws.area_m2) as deduped_sum
+from walk_sessions ws
+join walk_session_pets wsp on ws.id = wsp.walk_session_id
+join (
+  select distinct ws2.id, ws2.area_m2
+  from walk_sessions ws2
+  join walk_session_pets wsp2 on ws2.id = wsp2.walk_session_id
+  where ws2.owner_user_id = :owner_user_id
+) as distinct_ws on distinct_ws.id = ws.id
+where ws.owner_user_id = :owner_user_id;
+```
 
-## 7. 구현 착수 조건
-- [ ] write/read 플래그 정의 완료
-- [ ] backfill SQL 초안 작성 완료
-- [ ] repository 계약(v2 시그니처) 확정
-- [ ] QA 케이스(단일/다중/ALL 모드) 작성 완료
+## 8. 2차 구현 이슈 분해 (초안)
+1. `write path`:
+- 저장 계약 v2/dual write 트랜잭션
+
+2. `read path`:
+- pet별/ALL 통계 조회 분기 및 dedupe 쿼리
+
+3. `ui`:
+- 목록/상세 태그형 반려견 뱃지
+
+4. `migration`:
+- 백필 배치 + 검증 쿼리 자동화
+
+5. `qa`:
+- 단일/복수/ALL 모드 정합성 회귀 테스트 세트
+
+## 9. 구현 착수 조건
+- [ ] `supabase/migrations` N:M draft SQL 준비
+- [ ] 저장/조회 RPC 시그니처 확정
+- [ ] UI 표시 규칙(홈/목록/상세) 리뷰 승인
+- [ ] 이슈 분해(쓰기/읽기/UI/마이그레이션/QA) 등록
