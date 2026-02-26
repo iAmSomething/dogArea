@@ -54,6 +54,24 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         let savedAt: TimeInterval
     }
 
+    private enum MapOverlayLODTuning {
+        static let overlayMaxCameraDistanceKey = "map.lod.overlay.maxCameraDistance"
+        static let overlayClusterThresholdKey = "map.lod.overlay.clusterThreshold"
+        static let overlayPolygonCountThresholdKey = "map.lod.overlay.polygonCountThreshold"
+        static let singleClusterOverlayLimitKey = "map.lod.overlay.singleClusterLimit"
+        static let clusterCellDistanceRatioKey = "map.lod.cluster.cellDistanceRatio"
+        static let clusterCellMinMetersKey = "map.lod.cluster.cellMinMeters"
+        static let clusterCellMaxMetersKey = "map.lod.cluster.cellMaxMeters"
+
+        static let overlayMaxCameraDistanceDefault = 4_500.0
+        static let overlayClusterThresholdDefault = 24
+        static let overlayPolygonCountThresholdDefault = 900
+        static let singleClusterOverlayLimitDefault = 160
+        static let clusterCellDistanceRatioDefault = 0.08
+        static let clusterCellMinMetersDefault = 80.0
+        static let clusterCellMaxMetersDefault = 500.0
+    }
+
     private let locationManager = CLLocationManager()
     private var timer: Timer? = nil
     @Published var time: TimeInterval = 0.0
@@ -71,6 +89,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         }
     }
     @Published var centerLocations: [Cluster] = []
+    @Published private(set) var currentCameraDistance: Double = 2_000
     @Published var camera: MapCamera = .init(.init())
     @Published var cameraPosition = MapCameraPosition.userLocation(followsHeading: false,fallback: .automatic)
     @Published var selectedMarker: Location? = nil
@@ -895,6 +914,87 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         featureFlags.isEnabled(.nearbyHotspotV1) && isNearbySocialAvailableForSession
     }
 
+    private func lodIntValue(key: String, defaultValue: Int) -> Int {
+        let value = UserDefaults.standard.integer(forKey: key)
+        return value > 0 ? value : defaultValue
+    }
+
+    private func lodDoubleValue(key: String, defaultValue: Double) -> Double {
+        let value = UserDefaults.standard.double(forKey: key)
+        return value > 0 ? value : defaultValue
+    }
+
+    private var overlayMaxCameraDistance: Double {
+        lodDoubleValue(
+            key: MapOverlayLODTuning.overlayMaxCameraDistanceKey,
+            defaultValue: MapOverlayLODTuning.overlayMaxCameraDistanceDefault
+        )
+    }
+
+    private var overlayClusterThreshold: Int {
+        lodIntValue(
+            key: MapOverlayLODTuning.overlayClusterThresholdKey,
+            defaultValue: MapOverlayLODTuning.overlayClusterThresholdDefault
+        )
+    }
+
+    private var overlayPolygonCountThreshold: Int {
+        lodIntValue(
+            key: MapOverlayLODTuning.overlayPolygonCountThresholdKey,
+            defaultValue: MapOverlayLODTuning.overlayPolygonCountThresholdDefault
+        )
+    }
+
+    private var singleClusterOverlayLimit: Int {
+        lodIntValue(
+            key: MapOverlayLODTuning.singleClusterOverlayLimitKey,
+            defaultValue: MapOverlayLODTuning.singleClusterOverlayLimitDefault
+        )
+    }
+
+    private var clusterCellDistanceRatio: Double {
+        lodDoubleValue(
+            key: MapOverlayLODTuning.clusterCellDistanceRatioKey,
+            defaultValue: MapOverlayLODTuning.clusterCellDistanceRatioDefault
+        )
+    }
+
+    private var clusterCellMinMeters: Double {
+        lodDoubleValue(
+            key: MapOverlayLODTuning.clusterCellMinMetersKey,
+            defaultValue: MapOverlayLODTuning.clusterCellMinMetersDefault
+        )
+    }
+
+    private var clusterCellMaxMeters: Double {
+        lodDoubleValue(
+            key: MapOverlayLODTuning.clusterCellMaxMetersKey,
+            defaultValue: MapOverlayLODTuning.clusterCellMaxMetersDefault
+        )
+    }
+
+    var shouldRenderFullPolygonOverlays: Bool {
+        guard showOnlyOne == false else { return true }
+        guard currentCameraDistance <= overlayMaxCameraDistance else { return false }
+        guard centerLocations.count <= overlayClusterThreshold else { return false }
+        guard polygonList.count <= overlayPolygonCountThreshold else { return false }
+        return true
+    }
+
+    var renderablePolygonOverlays: [Polygon] {
+        guard showOnlyOne == false else { return polygonList }
+        guard shouldRenderFullPolygonOverlays == false else { return polygonList }
+
+        let singleClusterIds = centerLocations.compactMap { cluster in
+            guard cluster.sumLocs.count == 1 else { return nil }
+            return cluster.sumLocs.first?.1
+        }
+
+        guard singleClusterIds.isEmpty == false else { return [] }
+        let allowedIds = Set(singleClusterIds.prefix(singleClusterOverlayLimit))
+        return polygonList.filter { allowedIds.contains($0.id) }
+    }
+
     func heatmapColor(for score: Double) -> Color {
         switch HeatmapCellDTO.intensityLevel(for: score) {
         case 0: return Color.appGreen
@@ -1387,44 +1487,70 @@ extension MapViewModel {
 //MARK: - 클러스터링 관련 내용
 extension MapViewModel {
     func updateAnnotations(cameraDistance: Double){
-        Task { @MainActor in
-            do {
-                centerLocations = await cluster(distance: cameraDistance)
-            }
-        }
+        let safeDistance = max(120.0, cameraDistance)
+        currentCameraDistance = safeDistance
+        centerLocations = cluster(distance: safeDistance)
     }
     private func hotspots() async { // 핫스팟 로직 고민해보기
 
     }
-    private func initialClusterByPolygon() async -> [Cluster] {
+    private struct ClusterBucketKey: Hashable {
+        let x: Int
+        let y: Int
+    }
+
+    private func clusterCellSizeMeters(for distance: Double) -> Double {
+        let raw = distance * clusterCellDistanceRatio
+        return min(clusterCellMaxMeters, max(clusterCellMinMeters, raw))
+    }
+
+    private func initialClusterByPolygon() -> [Cluster] {
         return self.polygonList.compactMap { polygon in
             guard let mapPolygon = polygon.polygon else { return nil }
             return Cluster(center: mapPolygon.coordinate, id: polygon.id)
         }
     }
-    private func cluster(distance: Double) async -> [Cluster] {
-        let startCluster = await initialClusterByPolygon()
-        let result = await calculateDistance(from: startCluster, threshold: distance)
+    private func cluster(distance: Double) -> [Cluster] {
+        let startCluster = initialClusterByPolygon()
+        let result = calculateDistance(from: startCluster, threshold: distance)
         return result
     }
     
-    private func calculateDistance(from clusters: [Cluster], threshold: Double) async -> [Cluster] {
-        var tempClusters = clusters
-        var i = 0, j = 0
-        while(i < tempClusters.count) {
-            j = i + 1
-            while(j < tempClusters.count) {
-                let distance = tempClusters[i].center.distance(to: tempClusters[j].center) * 5000000
-                if distance < threshold {
-                    tempClusters[i].updateCenter(with: tempClusters[j])
-                    tempClusters.remove(at: j)
-                    j -= 1
-                }
-                j += 1
+    private func calculateDistance(from clusters: [Cluster], threshold: Double) -> [Cluster] {
+        guard clusters.count > 1 else { return clusters }
+
+        let referenceLatitude = clusters.map(\.center.latitude).reduce(0.0, +) / Double(clusters.count)
+        let cellMeters = clusterCellSizeMeters(for: threshold)
+        let metersPerMapPoint = MKMetersPerMapPointAtLatitude(referenceLatitude)
+        let cellMapPoints = max(1.0, cellMeters / max(0.0001, metersPerMapPoint))
+
+        var buckets: [ClusterBucketKey: Cluster] = [:]
+        buckets.reserveCapacity(clusters.count)
+
+        for cluster in clusters {
+            let point = MKMapPoint(cluster.center)
+            let key = ClusterBucketKey(
+                x: Int(floor(point.x / cellMapPoints)),
+                y: Int(floor(point.y / cellMapPoints))
+            )
+
+            if var existing = buckets[key] {
+                existing.updateCenter(with: cluster)
+                buckets[key] = existing
+            } else {
+                buckets[key] = cluster
             }
-            i += 1
         }
-        return tempClusters
+
+        return buckets.values.sorted { lhs, rhs in
+            if lhs.sumLocs.count != rhs.sumLocs.count {
+                return lhs.sumLocs.count > rhs.sumLocs.count
+            }
+            if lhs.center.latitude != rhs.center.latitude {
+                return lhs.center.latitude < rhs.center.latitude
+            }
+            return lhs.center.longitude < rhs.center.longitude
+        }
     }
 }
 

@@ -88,7 +88,7 @@ struct MapSubView: View {
                             }
                         }
                     }
-                    ForEach(viewModel.polygonList) { item in
+                    ForEach(viewModel.renderablePolygonOverlays) { item in
                         if let p  = item.polygon {
                             MapPolygon(p)
                                 .stroke(Color.appYellow, lineWidth: 0.5)
