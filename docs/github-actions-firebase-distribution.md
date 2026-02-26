@@ -80,3 +80,7 @@ gh workflow run firebase-app-distribution.yml --ref main
 - [ ] workflow_dispatch 1회 실행
 - [ ] artifact 생성 확인
 - [ ] tester 그룹 배포 확인
+
+## 10. YAML 안정성 가드
+- `Ensure CI config placeholders` 단계는 heredoc 대신 `printf`로 `supabaseConfig.xcconfig`를 생성한다.
+- 이유: 들여쓰기 실수로 workflow 전체 YAML 파싱이 깨지는 회귀를 방지하기 위함.
