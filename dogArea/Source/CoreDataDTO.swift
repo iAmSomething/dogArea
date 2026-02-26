@@ -7,6 +7,105 @@
 
 import Foundation
 
+struct WalkPointBackfillDTO: Codable, Equatable {
+    let seqNo: Int
+    let lat: Double
+    let lng: Double
+    let recordedAt: TimeInterval
+}
+
+struct WalkSessionBackfillDTO: Codable, Equatable {
+    let walkSessionId: String
+    let ownerUserId: String?
+    let petId: String?
+    let createdAt: TimeInterval
+    let startedAt: TimeInterval
+    let endedAt: TimeInterval
+    let durationSec: TimeInterval
+    let areaM2: Double
+    let sourceDevice: String
+    let hasImage: Bool
+    let mapImageURL: String?
+    let points: [WalkPointBackfillDTO]
+
+    var pointCount: Int { points.count }
+
+    var pointsJSONString: String {
+        guard let data = try? JSONEncoder().encode(points),
+              let string = String(data: data, encoding: .utf8) else {
+            return "[]"
+        }
+        return string
+    }
+}
+
+enum CoreDataSupabaseBackfillDTOConverter {
+    static func makeSessionDTO(
+        from polygon: Polygon,
+        ownerUserId: String?,
+        petId: String?,
+        sourceDevice: String = "ios",
+        hasImage: Bool? = nil
+    ) -> WalkSessionBackfillDTO? {
+        let walkSessionId = polygon.id.uuidString.lowercased()
+        guard walkSessionId.isEmpty == false else { return nil }
+
+        let endedAt = max(0, polygon.createdAt)
+        let durationSec = max(0, polygon.walkingTime)
+        let startedAt = max(0, endedAt - durationSec)
+
+        let points = polygon.locations
+            .enumerated()
+            .map { index, point in
+                WalkPointBackfillDTO(
+                    seqNo: index,
+                    lat: point.coordinate.latitude,
+                    lng: point.coordinate.longitude,
+                    recordedAt: max(0, point.createdAt)
+                )
+            }
+
+        return WalkSessionBackfillDTO(
+            walkSessionId: walkSessionId,
+            ownerUserId: ownerUserId,
+            petId: normalizedUUIDString(petId),
+            createdAt: endedAt,
+            startedAt: startedAt,
+            endedAt: endedAt,
+            durationSec: durationSec,
+            areaM2: max(0, polygon.walkingArea),
+            sourceDevice: sourceDevice,
+            hasImage: hasImage ?? (polygon.binaryImage != nil),
+            mapImageURL: nil,
+            points: points
+        )
+    }
+
+    static func makeSessionDTO(
+        from entity: PolygonEntity,
+        ownerUserId: String?,
+        petId: String?,
+        sourceDevice: String = "ios"
+    ) -> WalkSessionBackfillDTO? {
+        guard let polygon = entity.toPolygon() else { return nil }
+        return makeSessionDTO(
+            from: polygon,
+            ownerUserId: ownerUserId,
+            petId: petId,
+            sourceDevice: sourceDevice,
+            hasImage: entity.mapImage != nil
+        )
+    }
+
+    private static func normalizedUUIDString(_ raw: String?) -> String? {
+        guard let raw, raw.isEmpty == false,
+              let parsed = UUID(uuidString: raw) else {
+            return nil
+        }
+        return parsed.uuidString.lowercased()
+    }
+}
+
 extension PolygonEntity {
   func toPolygon() -> Polygon? {
     var locations = [Location]()

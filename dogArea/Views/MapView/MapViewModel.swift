@@ -292,13 +292,13 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
                         payload: ["pointCount": "\(completedPolygon.locations.count)"]
                     )
                     if saved {
-                        enqueueSyncOutbox(for: completedPolygon, hasImage: img != nil)
                         let endedAt = (endedAtOverride ?? Date()).timeIntervalSince1970
                         WalkSessionMetadataStore.shared.set(
                             sessionId: completedPolygon.id,
                             reason: .init(rawValue: reason.rawValue) ?? .manual,
                             endedAt: endedAt
                         )
+                        enqueueSyncOutbox(for: completedPolygon, hasImage: img != nil)
                     } else {
                         walkStatusMessage = "로컬 저장에 실패해 동기화 큐 적재를 건너뛰었습니다."
                     }
@@ -437,15 +437,14 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
 
     private func enqueueSyncOutbox(for polygon: Polygon, hasImage: Bool) {
         guard isCloudSyncAvailableForSession else { return }
-        syncOutbox.enqueueWalkStages(
-            walkSessionId: polygon.id,
-            userId: currentMetricUserId(),
-            pointCount: polygon.locations.count,
-            durationSec: polygon.walkingTime,
-            areaM2: polygon.walkingArea,
-            hasImage: hasImage,
-            createdAt: polygon.createdAt
-        )
+        guard let sessionDTO = CoreDataSupabaseBackfillDTOConverter.makeSessionDTO(
+            from: polygon,
+            ownerUserId: currentMetricUserId(),
+            petId: selectedPetId,
+            sourceDevice: "ios",
+            hasImage: hasImage
+        ) else { return }
+        syncOutbox.enqueueWalkStages(sessionDTO: sessionDTO)
         refreshSyncOutboxSummary()
         flushSyncOutboxIfNeeded(force: true)
     }

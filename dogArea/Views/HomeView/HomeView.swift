@@ -114,6 +114,10 @@ struct HomeView: View {
 
     @ViewBuilder
     private func guestDataUpgradeCard(report: GuestDataUpgradeReport) -> some View {
+        let validationText: String? = {
+            guard let passed = report.validationPassed else { return nil }
+            return passed ? "원격 검증 통과" : "원격 검증 실패: \(report.validationMessage ?? "mismatch")"
+        }()
         VStack(alignment: .leading, spacing: 6) {
             Text(report.hasOutstandingWork ? "데이터 이관 재시도 필요" : "게스트 데이터 이관 완료")
                 .font(.appFont(for: .SemiBold, size: 13))
@@ -122,6 +126,11 @@ struct HomeView: View {
             )
             .font(.appFont(for: .Light, size: 11))
             .foregroundStyle(Color.appTextDarkGray)
+            if let validationText {
+                Text(validationText)
+                    .font(.appFont(for: .Light, size: 11))
+                    .foregroundStyle(report.validationPassed == true ? Color.appGreen : Color.appRed)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(10)
