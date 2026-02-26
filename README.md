@@ -31,6 +31,7 @@
 - 산책 시작/종료 UX 단순화 v1: `docs/walk-start-stop-ux-v1.md`
 - 영역 포인트 자동 기록 모드 v1: `docs/walk-point-auto-record-v1.md`
 - 산책 세션 자동 복구/자동 종료 정책 v1: `docs/walk-session-recovery-auto-end-v1.md`
+- 산책 런타임 예외 방어 가드레일 v1: `docs/walk-runtime-guardrails-v1.md`
 
 ## 강아지들의 영역 표시
 

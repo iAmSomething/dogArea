@@ -26,6 +26,7 @@ enum WatchActionType: String {
     case startWalk = "startWalk"
     case addPoint = "addPoint"
     case endWalk = "endWalk"
+    case syncState = "syncState"
 }
 
 final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
@@ -124,6 +125,7 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
         }
         applyContext(session.receivedApplicationContext)
         if session.isReachable {
+            sendAction(.syncState)
             flushPendingActions()
         }
     }
@@ -133,6 +135,7 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
             self?.isReachable = session.isReachable
         }
         if session.isReachable {
+            sendAction(.syncState)
             flushPendingActions()
         }
     }
