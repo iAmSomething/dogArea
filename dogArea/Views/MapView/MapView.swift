@@ -8,6 +8,9 @@
 import Foundation
 import SwiftUI
 import _MapKit_SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 struct MapView : View{
     @EnvironmentObject var loading: LoadingViewModel
     @EnvironmentObject var authFlow: AuthFlowCoordinator
@@ -19,6 +22,7 @@ struct MapView : View{
     @State private var isCameraSeeingSomewhere: Bool = false
     @State private var distance = 2000.0
     @State private var selectedPolygonData: WalkDataModel? = nil
+    @State private var recoveryIssue: RecoveryIssue? = nil
     @ObservedObject var tabStatus = TabAppear.shared
     
     var body : some View {
@@ -53,6 +57,9 @@ struct MapView : View{
                 }
                 if viewModel.hasSyncOutboxStatus {
                     syncOutboxBanner
+                }
+                if viewModel.isOfflineRecoveryMode {
+                    offlineModeBadge
                 }
                 if !authFlow.canAccess(.cloudSync) && !viewModel.isWalking && !viewModel.polygonList.isEmpty {
                     guestBackupBanner
@@ -121,6 +128,7 @@ struct MapView : View{
         .onAppear {
             viewModel.reloadSelectedPetContext()
             viewModel.updateAnnotations(cameraDistance: self.distance)
+            evaluateRecoveryIssue()
             tabStatus.appear()
         }
         .onChange(of: viewModel.walkStatusMessage) { newValue in
@@ -131,9 +139,26 @@ struct MapView : View{
         }
         .onChange(of: viewModel.runtimeGuardStatusText) { newValue in
             guard newValue.isEmpty == false else { return }
+            evaluateRecoveryIssue()
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                 viewModel.clearRuntimeGuardStatus()
             }
+        }
+        .onChange(of: viewModel.syncOutboxLastErrorCodeText) { _ in
+            evaluateRecoveryIssue()
+        }
+        .onChange(of: viewModel.syncOutboxPendingCount) { _ in
+            evaluateRecoveryIssue()
+        }
+        .onChange(of: viewModel.syncRecoveryToastMessage) { message in
+            guard let message else { return }
+            viewModel.walkStatusMessage = message
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                viewModel.clearSyncRecoveryToastMessage()
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            evaluateRecoveryIssue()
         }
         .sheet(isPresented: $isModalPresented){
             MapSettingView(viewModel: self.viewModel, myAlert: self.myAlert)
@@ -164,17 +189,31 @@ struct MapView : View{
             }
         }
         .overlay(alignment: .top) {
-            if let message = viewModel.walkStatusMessage {
-                Text(message)
-                    .font(.appFont(for: .SemiBold, size: 13))
-                    .foregroundStyle(Color.black)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(Color.appYellow)
-                    .cornerRadius(10)
+            VStack(spacing: 6) {
+                if let issue = recoveryIssue {
+                    RecoveryActionBanner(
+                        issue: issue,
+                        onPrimary: { handleRecoveryPrimaryAction(issue) },
+                        onDismiss: { recoveryIssue = nil }
+                    )
                     .padding(.top, 12)
+                }
+                if let message = viewModel.walkStatusMessage {
+                    Text(message)
+                        .font(.appFont(for: .SemiBold, size: 13))
+                        .foregroundStyle(Color.black)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(Color.appYellow)
+                        .cornerRadius(10)
+                        .padding(.top, issueTopPadding)
+                }
             }
         }
+    }
+
+    private var issueTopPadding: CGFloat {
+        recoveryIssue == nil ? 12 : 0
     }
 
     var recoverableSessionBanner: some View {
@@ -250,6 +289,23 @@ struct MapView : View{
             .padding(.top, 2)
     }
 
+    var offlineModeBadge: some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(Color.appRed)
+                .frame(width: 8, height: 8)
+            Text("오프라인 모드 · 온라인 복귀 시 자동 동기화")
+                .font(.appFont(for: .Light, size: 11))
+                .foregroundStyle(Color.appTextDarkGray)
+            Spacer()
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(Color.white.opacity(0.9))
+        .cornerRadius(8)
+        .padding(.top, 2)
+    }
+
     var guestBackupBanner: some View {
         HStack(spacing: 8) {
             Text("게스트 기록은 이 기기에만 저장돼요.")
@@ -293,7 +349,29 @@ struct MapView : View{
                 }
         }
     }
-    
+
+    private func evaluateRecoveryIssue() {
+        if viewModel.isLocationPermissionDenied {
+            recoveryIssue = RecoveryIssue(kind: .locationPermissionDenied, detail: nil)
+            return
+        }
+        if let syncIssue = RecoveryIssueClassifier.fromSyncErrorCode(viewModel.syncOutboxLastErrorCodeText) {
+            recoveryIssue = syncIssue
+            return
+        }
+        recoveryIssue = nil
+    }
+
+    private func handleRecoveryPrimaryAction(_ issue: RecoveryIssue) {
+        switch issue.kind {
+        case .locationPermissionDenied:
+            RecoverySystemAction.openAppSettings()
+        case .networkOffline:
+            viewModel.retrySyncNow()
+        case .authExpired:
+            authFlow.startReauthenticationFlow()
+        }
+    }
 }
 #Preview {
     MapView()
