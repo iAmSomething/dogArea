@@ -694,6 +694,116 @@ private struct FeatureControlService {
     }
 }
 
+struct CaricatureEdgeClient {
+    static let schemaVersion = "2026-02-26.v1"
+
+    struct ResponseDTO: Decodable {
+        let version: String?
+        let requestId: String?
+        let jobId: String
+        let provider: String?
+        let caricatureUrl: String?
+        let status: String?
+        let errorCode: String?
+        let message: String?
+
+        var caricatureURL: String? { caricatureUrl }
+    }
+
+    private struct ErrorDTO: Decodable {
+        let errorCode: String?
+        let message: String?
+    }
+
+    struct RequestDTO: Encodable {
+        let version: String
+        let petId: String
+        let userId: String?
+        let sourceImagePath: String?
+        let sourceImageUrl: String?
+        let style: String
+        let providerHint: String
+        let requestId: String
+    }
+
+    enum RequestError: LocalizedError {
+        case notConfigured
+        case invalidURL
+        case invalidResponse
+        case requestFailed(code: Int, message: String)
+
+        var errorDescription: String? {
+            switch self {
+            case .notConfigured:
+                return "Supabase 설정이 누락되어 캐리커처 요청을 보낼 수 없습니다."
+            case .invalidURL:
+                return "캐리커처 요청 URL이 올바르지 않습니다."
+            case .invalidResponse:
+                return "캐리커처 응답을 해석할 수 없습니다."
+            case .requestFailed(_, let message):
+                return message
+            }
+        }
+    }
+
+    func requestCaricature(
+        petId: String,
+        userId: String?,
+        sourceImagePath: String? = nil,
+        sourceImageURL: String? = nil,
+        style: String = "cute_cartoon",
+        providerHint: String = "auto",
+        requestId: String
+    ) async throws -> ResponseDTO {
+        let env = ProcessInfo.processInfo.environment
+        let supabaseURL = env["SUPABASE_URL"] ?? ""
+        let anonKey = env["SUPABASE_ANON_KEY"] ?? ""
+        guard supabaseURL.isEmpty == false, anonKey.isEmpty == false else {
+            throw RequestError.notConfigured
+        }
+        guard let url = URL(string: "\(supabaseURL)/functions/v1/caricature") else {
+            throw RequestError.invalidURL
+        }
+
+        let payload = RequestDTO(
+            version: Self.schemaVersion,
+            petId: petId,
+            userId: userId,
+            sourceImagePath: sourceImagePath,
+            sourceImageUrl: sourceImageURL,
+            style: style,
+            providerHint: providerHint,
+            requestId: requestId
+        )
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.timeoutInterval = 35
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(anonKey)", forHTTPHeaderField: "Authorization")
+        request.httpBody = try JSONEncoder().encode(payload)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let statusCode = (response as? HTTPURLResponse)?.statusCode else {
+            throw RequestError.invalidResponse
+        }
+        guard (200..<300).contains(statusCode) else {
+            if let err = try? JSONDecoder().decode(ErrorDTO.self, from: data) {
+                let message = err.message ?? "캐리커처 생성에 실패했습니다. 잠시 후 다시 시도해주세요."
+                throw RequestError.requestFailed(code: statusCode, message: message)
+            }
+            throw RequestError.requestFailed(
+                code: statusCode,
+                message: "캐리커처 생성 실패(\(statusCode)). 네트워크/권한을 확인해주세요."
+            )
+        }
+        guard let decoded = try? JSONDecoder().decode(ResponseDTO.self, from: data) else {
+            throw RequestError.invalidResponse
+        }
+        return decoded
+    }
+}
+
 enum SyncOutboxStage: String, Codable, CaseIterable {
     case session
     case points

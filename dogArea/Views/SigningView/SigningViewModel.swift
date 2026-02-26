@@ -59,8 +59,12 @@ class SigningViewModel: ObservableObject {
                     createdAt: createdAt
                 )
                 loading = .success
-                if caricatureEnabled {
-                    enqueueCaricatureJobIfPossible()
+                if caricatureEnabled, let currentPetURL = petURL {
+                    enqueueCaricatureJobIfPossible(
+                        petId: petInfo.petId,
+                        userId: userId,
+                        petImageURL: currentPetURL
+                    )
                 }
             } catch {
                 loading = .fail(msg: error.localizedDescription)
@@ -68,15 +72,18 @@ class SigningViewModel: ObservableObject {
         }
     }
 
-    private func enqueueCaricatureJobIfPossible() {
-        guard let petImageURL = self.petURL else { return }
-
-        Task(priority: .background) { [userId, petName, petImageURL] in
+    private func enqueueCaricatureJobIfPossible(
+        petId: String,
+        userId: String,
+        petImageURL: String
+    ) {
+        Task(priority: .background) { [petName, petId, userId, petImageURL] in
             let client = CaricatureEdgeClient()
             UserdefaultSetting.shared.updateFirstPetCaricature(status: .processing)
             do {
                 let response = try await client.requestCaricature(
-                    petId: UUID().uuidString,
+                    petId: petId,
+                    userId: userId,
                     sourceImageURL: petImageURL,
                     requestId: UUID().uuidString
                 )
@@ -129,67 +136,5 @@ class SigningViewModel: ObservableObject {
         try await self.storage.child("images/\(userName)/" + (isPet ? "petProfile.jpeg" : "userProfile.jpeg"))
             .downloadURL()
             .absoluteString
-    }
-}
-
-private struct CaricatureEdgeClient {
-    struct ResponseDTO: Decodable {
-        let jobId: String
-        let provider: String?
-        let caricatureUrl: String?
-
-        var caricatureURL: String? { caricatureUrl }
-    }
-
-    struct RequestDTO: Encodable {
-        let petId: String
-        let sourceImagePath: String?
-        let sourceImageUrl: String?
-        let style: String
-        let providerHint: String
-        let requestId: String
-    }
-
-    enum RequestError: Error {
-        case notConfigured
-        case invalidURL
-        case requestFailed
-    }
-
-    func requestCaricature(
-        petId: String,
-        sourceImageURL: String,
-        requestId: String
-    ) async throws -> ResponseDTO {
-        let env = ProcessInfo.processInfo.environment
-        let supabaseURL = env["SUPABASE_URL"] ?? ""
-        let anonKey = env["SUPABASE_ANON_KEY"] ?? ""
-        guard supabaseURL.isEmpty == false, anonKey.isEmpty == false else {
-            throw RequestError.notConfigured
-        }
-        guard let url = URL(string: "\(supabaseURL)/functions/v1/caricature") else {
-            throw RequestError.invalidURL
-        }
-
-        let payload = RequestDTO(
-            petId: petId,
-            sourceImagePath: nil,
-            sourceImageUrl: sourceImageURL,
-            style: "cute_cartoon",
-            providerHint: "auto",
-            requestId: requestId
-        )
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(anonKey)", forHTTPHeaderField: "Authorization")
-        request.httpBody = try JSONEncoder().encode(payload)
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard let statusCode = (response as? HTTPURLResponse)?.statusCode,
-              (200..<300).contains(statusCode) else {
-            throw RequestError.requestFailed
-        }
-        return try JSONDecoder().decode(ResponseDTO.self, from: data)
     }
 }
