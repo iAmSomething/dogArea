@@ -52,11 +52,18 @@ assertTrue(mapView.contains("walkStatusMessage"), "map view must render walk sta
 
 assertTrue(mapSetting.contains("자동 종료 정책 v1(고정)"), "map setting must expose fixed auto-end policy label")
 assertTrue(mapSetting.contains("toggleWalkAutoEndPolicy") == false, "map setting must not expose auto-end toggle")
+assertTrue(mapSetting.contains("autoEndPolicySummaryText"), "map setting should show policy summary text")
+assertTrue(mapSetting.contains("autoEndPolicyHintText"), "map setting should show policy hint text")
+assertTrue(mapViewModel.contains("autoEndPolicySummaryText"), "view model should expose policy summary text")
+assertTrue(mapViewModel.contains("autoEndPolicyHintText"), "view model should expose policy hint text")
+assertTrue(userDefaultsSetting.contains("setWalkAutoEndPolicyEnabled") == false, "user defaults should not expose auto-end toggle setter")
+assertTrue(userDefaultsSetting.contains("walkAutoEndPolicyEnabled()") == false, "user defaults should not expose auto-end toggle getter")
 
 assertTrue(userDefaultsSetting.contains("WalkSessionMetadataStore"), "session metadata store must persist end reason/time")
 assertTrue(userDefaultsSetting.contains("WalkSessionEndReason"), "session end reason enum must exist")
 
 assertTrue(checklist.contains("미종료 세션 복구 배너"), "checklist must include recovery banner scenario")
 assertTrue(checklist.contains("무이동 5분/12분/15분"), "checklist must include staged inactivity scenario")
+assertTrue(checklist.contains("단계/판정 기준 문구"), "checklist should include policy copy visibility check")
 
 print("PASS: walk session recovery/auto-end unit checks")

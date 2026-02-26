@@ -83,6 +83,17 @@ struct MapSettingView: View {
           .padding()
           .onTapGesture {dismiss()}
       }
+      VStack(alignment: .leading, spacing: 4) {
+          Text(viewModel.autoEndPolicySummaryText)
+              .font(.appFont(for: .Medium, size: 12))
+              .foregroundStyle(Color.appTextDarkGray)
+          Text(viewModel.autoEndPolicyHintText)
+              .font(.appFont(for: .Light, size: 11))
+              .foregroundStyle(Color.appTextLightGray)
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .padding(.horizontal, 16)
+      .padding(.bottom, 8)
       List {
         Section(content: {
           ForEach(viewModel.polygonList) { item in

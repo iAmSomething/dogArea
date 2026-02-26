@@ -22,7 +22,6 @@ class UserdefaultSetting {
         case petSelectionEvents = "petSelectionEvents"
         case walkStartCountdownEnabled = "walkStartCountdownEnabled"
         case walkPointRecordMode = "walkPointRecordMode"
-        case walkAutoEndPolicyEnabled = "walkAutoEndPolicyEnabled"
         case createdAt = "createdAt"
         case nonce = "nonce"
     }
@@ -110,7 +109,6 @@ class UserdefaultSetting {
         UserDefaults.standard.removeObject(forKey: keyValue.selectedPetId.rawValue)
         UserDefaults.standard.removeObject(forKey: keyValue.walkStartCountdownEnabled.rawValue)
         UserDefaults.standard.removeObject(forKey: keyValue.walkPointRecordMode.rawValue)
-        UserDefaults.standard.removeObject(forKey: keyValue.walkAutoEndPolicyEnabled.rawValue)
     }
     #endif
 
@@ -512,13 +510,6 @@ extension UserdefaultSetting {
         UserDefaults.standard.set(rawValue, forKey: keyValue.walkPointRecordMode.rawValue)
     }
 
-    func walkAutoEndPolicyEnabled() -> Bool {
-        UserDefaults.standard.object(forKey: keyValue.walkAutoEndPolicyEnabled.rawValue) as? Bool ?? true
-    }
-
-    func setWalkAutoEndPolicyEnabled(_ enabled: Bool) {
-        UserDefaults.standard.set(enabled, forKey: keyValue.walkAutoEndPolicyEnabled.rawValue)
-    }
 }
 
 enum AppFeatureFlagKey: String, CaseIterable {
