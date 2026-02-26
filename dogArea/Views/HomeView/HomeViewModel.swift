@@ -19,6 +19,8 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     @Published var selectedPetId: String = ""
     @Published var selectedPet: PetInfo? = nil
     @Published var guestDataUpgradeReport: GuestDataUpgradeReport? = nil
+    private var allPolygons: [Polygon] = []
+    private let sessionMetadataStore = WalkSessionMetadataStore.shared
     private var cancellables: Set<AnyCancellable> = []
 
     var pets: [PetInfo] {
@@ -51,11 +53,8 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
 
     func fetchData() {
         reloadUserInfo()
-        polygonList = fetchPolygons()
-        totalArea = polygonList.map { $0.walkingArea }.reduce(0.0) { $0 + $1 }
-        totalTime = polygonList.map { $0.walkingTime }.reduce(0.0) { $0 + $1 }
-        myArea = .init("\(selectedPetNameWithYi)의 영역", totalArea)
-        updateCurrentMeter()
+        allPolygons = fetchPolygons()
+        applySelectedPetStatistics(shouldUpdateMeter: true)
         myAreaList = fetchArea()
         refreshGuestDataUpgradeReport()
     }
@@ -70,7 +69,7 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
         guard pets.contains(where: { $0.petId == petId }) else { return }
         UserdefaultSetting.shared.setSelectedPetId(petId, source: "home")
         reloadUserInfo()
-        myArea = .init("\(selectedPetNameWithYi)의 영역", totalArea)
+        applySelectedPetStatistics()
     }
 
     private func bindSelectedPetSync() {
@@ -79,9 +78,34 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
             .sink { [weak self] _ in
                 guard let self else { return }
                 self.reloadUserInfo()
-                self.myArea = .init("\(self.selectedPetNameWithYi)의 영역", self.totalArea)
+                self.applySelectedPetStatistics()
             }
             .store(in: &cancellables)
+    }
+
+    private func applySelectedPetStatistics(shouldUpdateMeter: Bool = false) {
+        polygonList = filteredPolygons(from: allPolygons)
+        totalArea = polygonList.map(\.walkingArea).reduce(0.0, +)
+        totalTime = polygonList.map(\.walkingTime).reduce(0.0, +)
+        myArea = .init("\(selectedPetNameWithYi)의 영역", totalArea)
+        if shouldUpdateMeter {
+            updateCurrentMeter()
+        }
+    }
+
+    private func filteredPolygons(from polygons: [Polygon]) -> [Polygon] {
+        guard let selectedPetId = selectedPet?.petId, selectedPetId.isEmpty == false else {
+            return polygons
+        }
+
+        let taggedPolygons = polygons.filter { sessionMetadataStore.petId(sessionId: $0.id) != nil }
+        let selectedPetPolygons = polygons.filter { sessionMetadataStore.petId(sessionId: $0.id) == selectedPetId }
+
+        // Legacy records created before session->pet tagging should remain visible.
+        if selectedPetPolygons.isEmpty && taggedPolygons.isEmpty {
+            return polygons
+        }
+        return selectedPetPolygons
     }
 
     func refreshGuestDataUpgradeReport() {

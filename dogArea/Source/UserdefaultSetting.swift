@@ -244,6 +244,7 @@ enum WalkSessionEndReason: String, Codable {
 struct WalkSessionMetadata: Codable, Equatable {
     let endReason: WalkSessionEndReason
     let endedAt: TimeInterval
+    let petId: String?
     let updatedAt: TimeInterval
 }
 
@@ -263,11 +264,17 @@ final class WalkSessionMetadataStore {
         cache = decoded
     }
 
-    func set(sessionId: UUID, reason: WalkSessionEndReason, endedAt: TimeInterval) {
+    func set(
+        sessionId: UUID,
+        reason: WalkSessionEndReason,
+        endedAt: TimeInterval,
+        petId: String? = nil
+    ) {
         lock.lock()
         cache[sessionId.uuidString.lowercased()] = WalkSessionMetadata(
             endReason: reason,
             endedAt: endedAt,
+            petId: petId,
             updatedAt: Date().timeIntervalSince1970
         )
         persistLocked()
@@ -278,6 +285,12 @@ final class WalkSessionMetadataStore {
         lock.lock()
         defer { lock.unlock() }
         return cache[sessionId.uuidString.lowercased()]
+    }
+
+    func petId(sessionId: UUID) -> String? {
+        lock.lock()
+        defer { lock.unlock() }
+        return cache[sessionId.uuidString.lowercased()]?.petId
     }
 
     func clear(sessionId: UUID) {

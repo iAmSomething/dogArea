@@ -310,7 +310,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
                         WalkSessionMetadataStore.shared.set(
                             sessionId: completedPolygon.id,
                             reason: .init(rawValue: reason.rawValue) ?? .manual,
-                            endedAt: endedAt
+                            endedAt: endedAt,
+                            petId: selectedPetId
                         )
                         enqueueSyncOutbox(for: completedPolygon, hasImage: img != nil)
                     } else {
@@ -648,7 +649,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
             WalkSessionMetadataStore.shared.set(
                 sessionId: finalized.id,
                 reason: .autoInactive,
-                endedAt: endedAt
+                endedAt: endedAt,
+                petId: snapshot.selectedPetId
             )
             enqueueSyncOutbox(for: finalized, hasImage: finalized.binaryImage != nil)
             walkStatusMessage = "15분 무이동으로 이전 산책을 자동 종료했습니다."
@@ -759,7 +761,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
             WalkSessionMetadataStore.shared.set(
                 sessionId: finalized.id,
                 reason: .manual,
-                endedAt: nowTs
+                endedAt: nowTs,
+                petId: snapshot.selectedPetId
             )
             enqueueSyncOutbox(for: finalized, hasImage: finalized.binaryImage != nil)
             walkStatusMessage = "미종료 산책을 지금 종료로 저장했습니다."
