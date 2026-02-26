@@ -24,6 +24,7 @@
 - ViewModel 현대화 리팩토링 명세 v1: `docs/viewmodel-modernization-v1.md`
 - CoreData 반환 계약 정리 v1: `docs/coredata-return-contract-v1.md`
 - Swift 안정화(강제 언래핑/타이머 수명) v1: `docs/swift-stability-hardening-v1.md`
+- 프로젝트 설정/의존성 안정화 v1: `docs/project-settings-dependency-stability-v1.md`
 - 릴리즈 회귀 체크리스트 v1: `docs/release-regression-checklist-v1.md`
 - 릴리즈 회귀 실행 리포트(2026-02-26): `docs/release-regression-report-2026-02-26.md`
 - 다중 반려견 산책 N:M 2차 설계 v2: `docs/multi-pet-session-nm-v2.md`
@@ -39,6 +40,11 @@
 - 예외처리 결과 템플릿 v1: `docs/fault-injection-result-template-v1.md`
 - Cycle #81 결과 보고서(2026-02-26): `docs/cycle-81-fault-injection-report-2026-02-26.md`
 - Cycle #78 결과 보고서(2026-02-26): `docs/cycle-78-auto-end-policy-report-2026-02-26.md`
+
+## 로컬 PR 체크
+
+- 전체 체크(iOS/watchOS build 포함): `bash scripts/ios_pr_check.sh`
+- 문서/유닛만 빠르게 체크: `DOGAREA_SKIP_BUILD=1 bash scripts/ios_pr_check.sh`
 
 ## 강아지들의 영역 표시
 

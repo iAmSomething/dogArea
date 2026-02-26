@@ -229,7 +229,7 @@
 		DA95CC822ADE0B8C004AD94D /* OpenAIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenAIClient.swift; sourceTree = "<group>"; };
 		DA95CC862ADE1209004AD94D /* ImageGenerateViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageGenerateViewModel.swift; sourceTree = "<group>"; };
 		DA95CC8A2ADE1475004AD94D /* TextToImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextToImageView.swift; sourceTree = "<group>"; };
-		DA99F9E02AFA343F00B1483F /* dogAreaSplash.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; name = dogAreaSplash.json; path = ../../../../dogAreaSplash.json; sourceTree = "<group>"; };
+		DA99F9E02AFA343F00B1483F /* dogAreaSplash.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = dogAreaSplash.json; sourceTree = "<group>"; };
 		DA99F9E52AFA4F3E00B1483F /* Color.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Color.swift; sourceTree = "<group>"; };
 		DA99F9E72AFA4F9000B1483F /* Font.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Font.swift; sourceTree = "<group>"; };
 		DA99F9E92AFA50D500B1483F /* Pretendard-SemiBold.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Pretendard-SemiBold.otf"; sourceTree = "<group>"; };

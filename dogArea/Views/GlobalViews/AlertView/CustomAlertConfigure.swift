@@ -58,13 +58,13 @@ enum AlertConfigureType {
     var rightString: String? {
         switch self {
         case .defaultType :
-            "취소"
+            return "취소"
         case .twoButtonChoice(_, _, let second):
-            second ?? "취소"
+            return second ?? "취소"
         case .threeButtonChoice(_, _, let third):
             return third ?? "취소"
         case .oneButton(buttonMsg: _):
-            nil
+            return nil
         }
     }
 }
