@@ -748,6 +748,13 @@ struct SyncOutboxSummary: Equatable {
     let lastErrorCode: SyncOutboxErrorCode?
 }
 
+struct SyncBackfillValidationSummary: Codable, Equatable {
+    let sessionCount: Int
+    let pointCount: Int
+    let totalAreaM2: Double
+    let totalDurationSec: Double
+}
+
 enum SyncOutboxSendResult: Equatable {
     case success
     case retryable(SyncOutboxErrorCode)
@@ -770,22 +777,18 @@ final class SyncOutboxStore {
         load()
     }
 
-    func enqueueWalkStages(
-        walkSessionId: UUID,
-        userId: String?,
-        pointCount: Int,
-        durationSec: TimeInterval,
-        areaM2: Double,
-        hasImage: Bool,
-        createdAt: TimeInterval
-    ) {
-        let sessionId = walkSessionId.uuidString.lowercased()
+    func enqueueWalkStages(sessionDTO: WalkSessionBackfillDTO) {
+        let sessionId = sessionDTO.walkSessionId
         let baseKey = "walk-\(sessionId)"
         let now = Date().timeIntervalSince1970
         let basePayload: [String: String] = [
             "walk_session_id": sessionId,
-            "user_id": userId ?? "",
-            "created_at": String(createdAt),
+            "user_id": sessionDTO.ownerUserId ?? "",
+            "pet_id": sessionDTO.petId ?? "",
+            "created_at": String(sessionDTO.createdAt),
+            "started_at": String(sessionDTO.startedAt),
+            "ended_at": String(sessionDTO.endedAt),
+            "source_device": sessionDTO.sourceDevice
         ]
 
         let stagePayloads: [(SyncOutboxStage, [String: String])] = [
@@ -793,8 +796,8 @@ final class SyncOutboxStore {
                 .session,
                 basePayload.merging(
                     [
-                        "duration_sec": String(durationSec),
-                        "area_m2": String(areaM2),
+                        "duration_sec": String(sessionDTO.durationSec),
+                        "area_m2": String(sessionDTO.areaM2),
                     ],
                     uniquingKeysWith: { _, latest in latest }
                 )
@@ -802,14 +805,20 @@ final class SyncOutboxStore {
             (
                 .points,
                 basePayload.merging(
-                    ["point_count": String(pointCount)],
+                    [
+                        "point_count": String(sessionDTO.pointCount),
+                        "points_json": sessionDTO.pointsJSONString
+                    ],
                     uniquingKeysWith: { _, latest in latest }
                 )
             ),
             (
                 .meta,
                 basePayload.merging(
-                    ["has_image": hasImage ? "true" : "false"],
+                    [
+                        "has_image": sessionDTO.hasImage ? "true" : "false",
+                        "map_image_url": sessionDTO.mapImageURL ?? ""
+                    ],
                     uniquingKeysWith: { _, latest in latest }
                 )
             ),
@@ -967,19 +976,43 @@ final class SyncOutboxStore {
 }
 
 struct SupabaseSyncOutboxTransport: SyncOutboxTransporting {
+    private struct BackfillSummaryResponseDTO: Decodable {
+        let summary: SummaryDTO?
+
+        struct SummaryDTO: Decodable {
+            let sessionCount: Int
+            let pointCount: Int
+            let totalAreaM2: Double
+            let totalDurationSec: Double
+
+            enum CodingKeys: String, CodingKey {
+                case sessionCount = "session_count"
+                case pointCount = "point_count"
+                case totalAreaM2 = "total_area_m2"
+                case totalDurationSec = "total_duration_sec"
+            }
+        }
+    }
+
+    private func endpointURL(from env: [String: String]) -> URL? {
+        guard let rawURL = env["SUPABASE_URL"], rawURL.isEmpty == false else { return nil }
+        return URL(string: rawURL + "/functions/v1/sync-walk")
+    }
+
+    private func bearerToken(from env: [String: String]) -> String {
+        env["SUPABASE_ANON_KEY"] ?? ""
+    }
+
     func send(item: SyncOutboxItem) async -> SyncOutboxSendResult {
         guard AppFeatureGate.isAllowed(.cloudSync, session: AppFeatureGate.currentSession()) else {
             return .retryable(.unauthorized)
         }
         let env = ProcessInfo.processInfo.environment
-        guard let rawURL = env["SUPABASE_URL"], rawURL.isEmpty == false else {
-            return .retryable(.notConfigured)
-        }
-        guard let url = URL(string: rawURL + "/functions/v1/sync-walk") else {
+        guard let url = endpointURL(from: env) else {
             return .retryable(.notConfigured)
         }
 
-        let token = env["SUPABASE_ANON_KEY"] ?? ""
+        let token = bearerToken(from: env)
         guard token.isEmpty == false else {
             return .retryable(.tokenExpired)
         }
@@ -1032,6 +1065,44 @@ struct SupabaseSyncOutboxTransport: SyncOutboxTransporting {
             }
         } catch {
             return .retryable(.unknown)
+        }
+    }
+
+    func fetchBackfillValidationSummary(sessionIds: [String]) async -> SyncBackfillValidationSummary? {
+        guard AppFeatureGate.isAllowed(.cloudSync, session: AppFeatureGate.currentSession()) else {
+            return nil
+        }
+        let env = ProcessInfo.processInfo.environment
+        guard let url = endpointURL(from: env) else { return nil }
+        let token = bearerToken(from: env)
+        guard token.isEmpty == false else { return nil }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        let body: [String: Any] = [
+            "action": "get_backfill_summary",
+            "session_ids": sessionIds
+        ]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let statusCode = (response as? HTTPURLResponse)?.statusCode,
+                  (200..<300).contains(statusCode) else {
+                return nil
+            }
+            let decoded = try JSONDecoder().decode(BackfillSummaryResponseDTO.self, from: data)
+            guard let summary = decoded.summary else { return nil }
+            return SyncBackfillValidationSummary(
+                sessionCount: summary.sessionCount,
+                pointCount: summary.pointCount,
+                totalAreaM2: summary.totalAreaM2,
+                totalDurationSec: summary.totalDurationSec
+            )
+        } catch {
+            return nil
         }
     }
 }
@@ -1158,6 +1229,12 @@ struct GuestDataUpgradeReport: Codable, Equatable, Identifiable {
     let pendingCount: Int
     let permanentFailureCount: Int
     let lastErrorCode: String?
+    let remoteSessionCount: Int?
+    let remotePointCount: Int?
+    let remoteTotalAreaM2: Double?
+    let remoteTotalDurationSec: Double?
+    let validationPassed: Bool?
+    let validationMessage: String?
     let executedAt: TimeInterval
 
     var hasOutstandingWork: Bool {
@@ -1210,18 +1287,18 @@ final class GuestDataUpgradeService: CoreDataProtocol {
         }
 
         for polygon in fetchPolygons() {
-            syncOutbox.enqueueWalkStages(
-                walkSessionId: polygon.id,
-                userId: userId,
-                pointCount: polygon.locations.count,
-                durationSec: polygon.walkingTime,
-                areaM2: polygon.walkingArea,
-                hasImage: polygon.binaryImage != nil,
-                createdAt: polygon.createdAt
-            )
+            guard let sessionDTO = CoreDataSupabaseBackfillDTOConverter.makeSessionDTO(
+                from: polygon,
+                ownerUserId: userId,
+                petId: nil,
+                sourceDevice: "ios"
+            ) else { continue }
+            syncOutbox.enqueueWalkStages(sessionDTO: sessionDTO)
         }
 
         let summary = await syncOutbox.flush(using: syncTransport, now: Date())
+        let remoteSummary = await syncTransport.fetchBackfillValidationSummary(sessionIds: snapshot.sessionIds)
+        let validation = validate(local: snapshot, remote: remoteSummary)
         let report = GuestDataUpgradeReport(
             userId: userId,
             signature: snapshot.signature,
@@ -1232,6 +1309,12 @@ final class GuestDataUpgradeService: CoreDataProtocol {
             pendingCount: summary.pendingCount,
             permanentFailureCount: summary.permanentFailureCount,
             lastErrorCode: summary.lastErrorCode?.rawValue,
+            remoteSessionCount: remoteSummary?.sessionCount,
+            remotePointCount: remoteSummary?.pointCount,
+            remoteTotalAreaM2: remoteSummary?.totalAreaM2,
+            remoteTotalDurationSec: remoteSummary?.totalDurationSec,
+            validationPassed: validation.passed,
+            validationMessage: validation.message,
             executedAt: Date().timeIntervalSince1970
         )
 
@@ -1269,6 +1352,34 @@ final class GuestDataUpgradeService: CoreDataProtocol {
     private func persist(report: GuestDataUpgradeReport, for userId: String) {
         guard let data = try? JSONEncoder().encode(report) else { return }
         UserDefaults.standard.set(data, forKey: reportKey(for: userId))
+    }
+
+    private func validate(
+        local: GuestDataUpgradeSnapshot,
+        remote: SyncBackfillValidationSummary?
+    ) -> (passed: Bool?, message: String?) {
+        guard let remote else {
+            return (nil, "remote_summary_unavailable")
+        }
+        let areaTolerance = max(1.0, local.totalAreaM2 * 0.01)
+        let durationTolerance = max(3.0, local.totalDurationSec * 0.01)
+
+        let sessionMatched = local.sessionCount == remote.sessionCount
+        let pointMatched = local.pointCount == remote.pointCount
+        let areaMatched = abs(local.totalAreaM2 - remote.totalAreaM2) <= areaTolerance
+        let durationMatched = abs(local.totalDurationSec - remote.totalDurationSec) <= durationTolerance
+        let passed = sessionMatched && pointMatched && areaMatched && durationMatched
+
+        let message = passed
+        ? "validated"
+        : [
+            sessionMatched ? nil : "session_mismatch",
+            pointMatched ? nil : "point_mismatch",
+            areaMatched ? nil : "area_mismatch",
+            durationMatched ? nil : "duration_mismatch"
+        ].compactMap { $0 }.joined(separator: ",")
+
+        return (passed, message)
     }
 
     private func reportKey(for userId: String) -> String {

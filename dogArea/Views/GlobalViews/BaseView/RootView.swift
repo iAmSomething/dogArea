@@ -122,6 +122,11 @@ private struct GuestDataUpgradeResultBanner: View {
     let onRetry: () -> Void
     let onDismiss: () -> Void
 
+    private var validationText: String? {
+        guard let passed = report.validationPassed else { return nil }
+        return passed ? "원격 검증 통과" : "원격 검증 실패: \(report.validationMessage ?? "mismatch")"
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(report.hasOutstandingWork ? "데이터 이관 진행 중" : "데이터 이관 완료")
@@ -131,6 +136,11 @@ private struct GuestDataUpgradeResultBanner: View {
             )
             .font(.appFont(for: .Light, size: 11))
             .foregroundStyle(Color.appTextDarkGray)
+            if let validationText {
+                Text(validationText)
+                    .font(.appFont(for: .Light, size: 11))
+                    .foregroundStyle(report.validationPassed == true ? Color.appGreen : Color.appRed)
+            }
             HStack(spacing: 10) {
                 if report.hasOutstandingWork {
                     Button("재시도") {
