@@ -273,11 +273,10 @@ struct AreaMeterCollection {
         return areas.first{$0.area < myarea}
     }
     func nearistArea(since: AreaMeterDTO? = nil, from myarea: Double) -> [AreaMeter] {
-        if since.isNil {
-            return areas.filter{$0.area < myarea}
-        } else {
-            return areas.filter{$0.area < myarea && $0.area > since!.area}
+        guard let since else {
+            return areas.filter { $0.area < myarea }
         }
+        return areas.filter { $0.area < myarea && $0.area > since.area }
     }
     func closeArea(of myarea: Double) -> AreaMeter? {
         return areas.last{$0.area > myarea}

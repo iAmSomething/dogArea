@@ -63,7 +63,12 @@ class MapImageProvider: ObservableObject {
                     UIGraphicsBeginImageContextWithOptions(snapshotImage.size, true, snapshotImage.scale)
                     snapshotImage.draw(at: .zero)
 
-                    let context = UIGraphicsGetCurrentContext()!
+                    guard let context = UIGraphicsGetCurrentContext() else {
+                        let drawnImage = UIGraphicsGetImageFromCurrentImageContext()
+                        UIGraphicsEndImageContext()
+                        promise(.success(drawnImage))
+                        return
+                    }
 
                     let pointCount = polygon.pointCount
                     let points = polygon.points()
@@ -94,4 +99,3 @@ class MapImageProvider: ObservableObject {
         }
     }
 }
-

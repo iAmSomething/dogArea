@@ -37,8 +37,10 @@ final class Hiarachical: Operation {
     init(polygons: [Polygon], distance: Double) {
         self.polygons = polygons
         self.distance = distance
-        self.clusters = polygons.filter{!$0.polygon.isNil}
-            .map{Cluster(center: $0.polygon!.coordinate, id: $0.id)}
+        self.clusters = polygons.compactMap { polygon in
+            guard let mapPolygon = polygon.polygon else { return nil }
+            return Cluster(center: mapPolygon.coordinate, id: polygon.id)
+        }
     }
     override var isAsynchronous: Bool {
         return true

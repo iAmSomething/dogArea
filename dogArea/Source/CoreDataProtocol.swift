@@ -49,7 +49,7 @@ extension CoreDataProtocol {
     func fetchArea() -> [AreaMeterDTO] {
         do {
             let areaList = try context.fetch(fetchAreaRequest)
-            let temp = areaList.map{$0.toArea()}.filter{!$0.isNil}.map{$0!}
+            let temp = areaList.compactMap { $0.toArea() }
             return temp
         } catch let error as NSError {
             print("Could not fetch. \(error), \(error.userInfo)")
@@ -84,7 +84,7 @@ extension CoreDataProtocol {
         do {
             // Perform the fetch request
             let polygons = try context.fetch(fetchRequest)
-            let temp = polygons.map{$0.toPolygon()}.filter{!$0.isNil}.map{$0!}
+            let temp = polygons.compactMap { $0.toPolygon() }
             polygonList = temp
             return polygonList
         } catch let error as NSError {
