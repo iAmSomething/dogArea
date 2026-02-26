@@ -30,6 +30,7 @@ Check.assertTrue(workflow.contains("xcodebuild \\"), "workflow should archive wi
 Check.assertTrue(workflow.contains("-exportArchive"), "workflow should export IPA")
 Check.assertTrue(workflow.contains("firebase appdistribution:distribute"), "workflow should upload to Firebase App Distribution")
 Check.assertTrue(workflow.contains("Failure classification guide"), "workflow should contain failure classification step")
+Check.assertTrue(!workflow.contains("<<'CONFIG'"), "workflow should avoid heredoc placeholders that can break YAML indentation")
 
 Check.assertTrue(doc.contains("GitHub Actions Firebase Distribution Runbook"), "runbook doc should exist")
 Check.assertTrue(doc.contains("시크릿/변수"), "runbook should describe required secrets")

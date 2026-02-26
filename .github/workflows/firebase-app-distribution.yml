@@ -62,16 +62,17 @@ jobs:
           set -euo pipefail
           [[ -f OpenAIConfiguration.xcconfig ]] || printf 'OPENAI_API_KEY=\n' > OpenAIConfiguration.xcconfig
           mkdir -p supabase
-          [[ -f supabase/supabaseConfig.xcconfig ]] || cat > supabase/supabaseConfig.xcconfig <<'CONFIG'
-          SUPABASE_URL=
-          SUPABASE_ANON_KEY=
-          SUPABASE_SERVICE_ROLE_KEY=
-          PROJECT_REF=
-          STORAGE_BUCKETS=
-          AUTH_REDIRECT_URL=
-          DB_CONN_STRING=
-          EXISTING_SCHEMA=
-CONFIG
+          if [[ ! -f supabase/supabaseConfig.xcconfig ]]; then
+            printf '%s\n' \
+              'SUPABASE_URL=' \
+              'SUPABASE_ANON_KEY=' \
+              'SUPABASE_SERVICE_ROLE_KEY=' \
+              'PROJECT_REF=' \
+              'STORAGE_BUCKETS=' \
+              'AUTH_REDIRECT_URL=' \
+              'DB_CONN_STRING=' \
+              'EXISTING_SCHEMA=' > supabase/supabaseConfig.xcconfig
+          fi
 
       - name: Prepare signing assets
         id: signing_assets
