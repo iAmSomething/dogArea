@@ -30,6 +30,7 @@ erDiagram
   WALK_SESSIONS ||--o{ WALK_SESSION_PETS : "n:m bridge"
   PETS ||--o{ WALK_SESSION_PETS : "n:m bridge"
   AUTH_USERS ||--o{ AREA_MILESTONES : "achieves"
+  AREA_REFERENCE_CATALOGS ||--o{ AREA_REFERENCES : "groups"
   PETS ||--o{ AREA_MILESTONES : "optional"
   PETS ||--o{ CARICATURE_JOBS : "queued jobs"
   AUTH_USERS ||--|| USER_VISIBILITY_SETTINGS : "privacy"
@@ -101,14 +102,28 @@ erDiagram
     timestamptz created_at
   }
 
+  AREA_REFERENCE_CATALOGS {
+    uuid id PK
+    text code
+    text name
+    text description
+    int sort_order
+    boolean is_active
+    timestamptz created_at
+    timestamptz updated_at
+  }
+
   AREA_REFERENCES {
     uuid id PK
+    uuid catalog_id FK
     text reference_name
     float area_m2
     text category
     text country_code
     text source_label
     text source_url
+    int display_order
+    boolean is_featured
     boolean is_active
     jsonb metadata
     timestamptz created_at
@@ -163,7 +178,10 @@ erDiagram
   - `caricature_status` 허용값: `queued`, `processing`, `ready`, `failed`
 
 ### 4.3 비교군
+- `area_reference_catalogs`: 비교군 카탈로그(큐레이션/정렬/활성 관리)
 - `area_references`: 지자체/명소 넓이 비교 데이터
+  - `catalog_id` 기반 그룹화
+  - `display_order`, `is_featured` 기반 홈/상세 노출 순서 제어
 - `area_milestones`: 사용자(또는 반려견) 달성 이력
 
 ### 4.4 캐리커처 비동기
@@ -190,6 +208,9 @@ erDiagram
   - `select/insert/update/delete`: 소유자만
 - `area_references`
   - `select`: 전체 공개
+  - `insert/update/delete`: `service_role`
+- `area_reference_catalogs`
+  - `select`: 전체 공개(활성 카탈로그)
   - `insert/update/delete`: `service_role`
 - `caricature_jobs`
   - `select`: 소유자
@@ -219,7 +240,7 @@ erDiagram
 ## 7. 마이그레이션 순서
 1. 확장/기본 함수 생성(`set_updated_at`)
 2. 핵심 테이블 생성(`profiles`, `pets`, `walk_sessions`, `walk_points`, `area_milestones`, `walk_session_pets`)
-3. 비교군 테이블 생성(`area_references`) 및 seed
+3. 비교군 테이블 생성(`area_reference_catalogs`, `area_references`) 및 seed
 4. 캐리커처/근처 기능 테이블 생성(`caricature_jobs`, `user_visibility_settings`, `nearby_presence`)
 5. 인덱스 생성
 6. RLS enable + 정책 적용
