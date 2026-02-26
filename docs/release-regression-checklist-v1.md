@@ -67,32 +67,74 @@
 - [ ] 신규 migration 파일 존재 확인
 - [ ] DDL/RLS/함수 변경사항 문서와 일치
 
-## 6. 결과 기록 템플릿
+## 6. 배포 파이프라인 검증 시나리오
+### 6.1 Workflow 정의/활성 상태
+- 명령: `gh workflow list --all`
+- 기대 결과:
+  - `fault-injection-gate`가 `active`
+  - 릴리스 배포용 workflow(`firebase-distribution*` 또는 동등 파일)가 없으면 `BLOCKED`로 기록하고 사유(계정/서명/시크릿) 명시
+
+### 6.2 최근 실행 상태
+- 명령: `gh run list --workflow fault-injection-gate.yml --limit 5`
+- 기대 결과: 최신 5회 기준 `completed/success` 유지
+
+## 7. 결과 기록 템플릿
 - 실행 일시:
 - 실행자:
 - 대상 브랜치/커밋:
 
-### 6.1 빌드
+### 7.1 빌드
 - iOS: `PASS | FAIL | BLOCKED`
 - watchOS: `PASS | FAIL | BLOCKED`
 - 근거 로그:
 
-### 6.2 핵심 시나리오
+### 7.2 핵심 시나리오
 - 로그인: `PASS | FAIL | BLOCKED`
 - 산책/저장: `PASS | FAIL | BLOCKED`
 - 목록/상세: `PASS | FAIL | BLOCKED`
 - 근거:
 
-### 6.3 마이그레이션
+### 7.3 마이그레이션
 - migration list: `PASS | FAIL | BLOCKED`
 - SQL 검토: `PASS | FAIL | BLOCKED`
 - 근거:
 
-### 6.4 종합 판단
+### 7.4 배포 파이프라인
+- workflow 정의: `PASS | FAIL | BLOCKED`
+- 최근 실행 상태: `PASS | FAIL | BLOCKED`
+- 근거:
+
+### 7.5 P0/P1 예외 게이트
+- P0 fail count:
+- P1 fail count:
+- P1 대응 계획(담당자/일정):
+
+### 7.6 종합 판단
 - 릴리즈 가능 여부: `GO | NO-GO`
 - 잔여 이슈/액션:
 
-## 7. 예외 시나리오 게이트 (P0/P1)
+## 8. 배포 전/후 핵심 지표 비교
+- 기준 뷰: `public.view_rollout_kpis_24h`
+- 스냅샷 수집 규칙:
+  - 배포 직전 24h: `T-24h ~ T0`
+  - 배포 후 24h: `T0 ~ T+24h`
+- 비교 테이블:
+  - `walk_save_success_rate` (목표: `>= 0.98`)
+  - `watch_action_loss_rate` (목표: `<= 0.01`)
+  - `caricature_success_rate` (목표: `>= 0.90`)
+  - `nearby_opt_in_ratio` (관측 지표, 목표 없음)
+- SQL 예시:
+```sql
+select
+  calculated_at,
+  walk_save_success_rate,
+  watch_action_loss_rate,
+  caricature_success_rate,
+  nearby_opt_in_ratio
+from public.view_rollout_kpis_24h;
+```
+
+## 9. 예외 시나리오 게이트 (P0/P1)
 - 참조 매트릭스: `docs/fault-injection-matrix-v1.md`
 - 실행 런북: `docs/fault-injection-runbook-v1.md`
 - 결과 템플릿: `docs/fault-injection-result-template-v1.md`
@@ -102,6 +144,6 @@
 - 자동 차단 규칙:
   - `P0 FAIL >= 1` -> `NO-GO`
 
-## 8. 스크린샷 증적 (UI 변경 필수)
+## 10. 스크린샷 증적 (UI 변경 필수)
 - [ ] iPhone SE 홈 스크린샷 첨부 (목표 카드 줄바꿈/겹침 없음)
 - [ ] iPhone Pro Max 홈 스크린샷 첨부 (목표 카드 정보 밀도 균형 확인)
