@@ -18,6 +18,7 @@ func load(_ relativePath: String) -> String {
 let migration = load("supabase/migrations/20260227000000_user_pet_profile_fields_sync.sql")
 let edgeFunction = load("supabase/functions/sync-profile/index.ts")
 let userdefaultSetting = load("dogArea/Source/UserdefaultSetting.swift")
+let profileRepository = load("dogArea/Source/ProfileRepository.swift")
 let settingViewModel = load("dogArea/Views/ProfileSettingView/SettingViewModel.swift")
 let signingViewModel = load("dogArea/Views/SigningView/SigningViewModel.swift")
 let syncSpec = load("docs/userinfo-supabase-sync-v1.md")
@@ -36,9 +37,13 @@ assertTrue(userdefaultSetting.contains("ProfileSyncOutboxStore"), "app must defi
 assertTrue(userdefaultSetting.contains("sync.profile.outbox.items.v1"), "profile sync outbox key must be fixed")
 assertTrue(userdefaultSetting.contains("SupabaseProfileSyncTransport"), "app must define profile sync transport")
 assertTrue(userdefaultSetting.contains("ProfileSyncCoordinator"), "app must define profile sync coordinator")
+assertTrue(profileRepository.contains("protocol ProfileRepository"), "app must define profile repository protocol")
+assertTrue(profileRepository.contains("DefaultProfileRepository"), "app must define default profile repository implementation")
+assertTrue(profileRepository.contains("enqueueSnapshot"), "repository should enqueue profile sync")
+assertTrue(profileRepository.contains("flushIfNeeded"), "repository should flush profile sync")
 
-assertTrue(settingViewModel.contains("ProfileSyncCoordinator.shared.enqueueSnapshot"), "profile edit save must enqueue profile sync")
-assertTrue(signingViewModel.contains("ProfileSyncCoordinator.shared.enqueueSnapshot"), "signup save must enqueue profile sync")
+assertTrue(settingViewModel.contains("profileRepository.save"), "profile edit save should use profile repository")
+assertTrue(signingViewModel.contains("profileRepository.save"), "signup save should use profile repository")
 
 assertTrue(syncSpec.contains("#114"), "sync spec must reference issue #114")
 assertTrue(syncSpec.contains("sync.profile.outbox.items.v1"), "sync spec must document outbox storage key")

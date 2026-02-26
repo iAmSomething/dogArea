@@ -25,14 +25,18 @@ class SigningViewModel: ObservableObject {
     private var profileURL: String? = nil
     private var createdAt: Double
     private var storage = Storage.storage().reference()
-    private let userdefaluts = UserdefaultSetting()
+    private let profileRepository: ProfileRepository
     private let featureFlags = FeatureFlagStore.shared
     private let metricTracker = AppMetricTracker.shared
-    init(info: AppleUserInfo) {
+    init(
+        info: AppleUserInfo,
+        profileRepository: ProfileRepository = DefaultProfileRepository.shared
+    ) {
         self.appleInfo = info
         self.userName = info.name ?? ""
         self.userId = info.id
         self.createdAt = info.createdAt
+        self.profileRepository = profileRepository
         Task {
             _ = await FeatureFlagStore.shared.refresh()
         }
@@ -58,18 +62,15 @@ class SigningViewModel: ObservableObject {
                     caricatureStatus: (caricatureEnabled && petURL != nil) ? .queued : nil,
                     caricatureProvider: nil
                 )
-                userdefaluts.save(
+                _ = profileRepository.save(
                     id: userId,
                     name: userName.trimmingCharacters(in: .whitespacesAndNewlines),
                     profile: profileURL,
                     profileMessage: normalizedProfileMessage,
                     pet: [petInfo],
-                    createdAt: createdAt
+                    createdAt: createdAt,
+                    selectedPetId: nil
                 )
-                if let savedSnapshot = UserdefaultSetting.shared.getValue() {
-                    ProfileSyncCoordinator.shared.enqueueSnapshot(userInfo: savedSnapshot)
-                    ProfileSyncCoordinator.shared.flushIfNeeded(force: true)
-                }
                 loading = .success
                 if caricatureEnabled, let currentPetURL = petURL {
                     enqueueCaricatureJobIfPossible(

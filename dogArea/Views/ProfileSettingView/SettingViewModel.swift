@@ -33,13 +33,15 @@ final class SettingViewModel: ObservableObject, CoreDataProtocol {
     private var petURL: String? = nil
     private var profileURL: String? = nil
     private var storage = Storage.storage().reference()
+    private let profileRepository: ProfileRepository
     private var cancellables: Set<AnyCancellable> = []
 
     var pets: [PetInfo] {
         userInfo?.pet ?? []
     }
 
-    init() {
+    init(profileRepository: ProfileRepository = DefaultProfileRepository.shared) {
+        self.profileRepository = profileRepository
         bindSelectedPetSync()
         fetchModel()
         reloadUserInfo()
@@ -49,14 +51,14 @@ final class SettingViewModel: ObservableObject, CoreDataProtocol {
     }
 
     func reloadUserInfo() {
-        self.userInfo = UserdefaultSetting.shared.getValue()
-        self.selectedPet = UserdefaultSetting.shared.selectedPet(from: userInfo)
+        self.userInfo = profileRepository.fetchUserInfo()
+        self.selectedPet = profileRepository.selectedPet(from: userInfo)
         self.selectedPetId = selectedPet?.petId ?? ""
     }
 
     func selectPet(_ petId: String) {
         guard pets.contains(where: { $0.petId == petId }) else { return }
-        UserdefaultSetting.shared.setSelectedPetId(petId, source: "setting")
+        profileRepository.setSelectedPetId(petId, source: "setting")
         reloadUserInfo()
     }
 
@@ -66,7 +68,7 @@ final class SettingViewModel: ObservableObject, CoreDataProtocol {
         ageYearsText: String,
         gender: PetGender
     ) -> Result<Void, ProfileEditValidationError> {
-        guard let current = UserdefaultSetting.shared.getValue() else {
+        guard let current = profileRepository.fetchUserInfo() else {
             return .failure(.userNotFound)
         }
 
@@ -92,7 +94,7 @@ final class SettingViewModel: ObservableObject, CoreDataProtocol {
             pets[index].gender = gender
         }
 
-        UserdefaultSetting.shared.save(
+        _ = profileRepository.save(
             id: current.id,
             name: current.name,
             profile: current.profile,
@@ -103,13 +105,9 @@ final class SettingViewModel: ObservableObject, CoreDataProtocol {
         )
 
         if let targetPetId {
-            UserdefaultSetting.shared.setSelectedPetId(targetPetId, source: "profile_edit_save")
+            profileRepository.setSelectedPetId(targetPetId, source: "profile_edit_save")
         } else {
             NotificationCenter.default.post(name: UserdefaultSetting.selectedPetDidChangeNotification, object: nil)
-        }
-        if let updatedSnapshot = UserdefaultSetting.shared.getValue() {
-            ProfileSyncCoordinator.shared.enqueueSnapshot(userInfo: updatedSnapshot)
-            ProfileSyncCoordinator.shared.flushIfNeeded(force: true)
         }
         reloadUserInfo()
         return .success(())
