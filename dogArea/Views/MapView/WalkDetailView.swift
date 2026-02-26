@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 struct WalkDetailView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var loading: LoadingViewModel
@@ -13,13 +14,16 @@ struct WalkDetailView: View {
     @StateObject var mapImageProvider = MapImageProvider()
 
     @State private var isMeter: Bool = true
+    @State private var capturedWalkPhoto: UIImage? = nil
     @State private var shareItems: [Any] = []
     @State private var showShareSheet = false
+    @State private var showCameraPicker = false
+    @State private var showPhotoLibraryPicker = false
     @State private var toastMessage: String? = nil
 
     var body: some View {
         VStack {
-            Image(uiImage: mapImageProvider.capturedImage ?? UIImage.emptyImg)
+            Image(uiImage: previewImage ?? UIImage.emptyImg)
                 .resizable()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .cornerRadius(5)
@@ -53,6 +57,21 @@ struct WalkDetailView: View {
                     .background(Color(red: 0.19, green: 0.19, blue: 0.19))
                     .padding(.horizontal, 20)
                 Button(action: {
+                    openCameraOrFallback()
+                }, label: {
+                    HStack {
+                        Image(systemName: "camera.fill")
+                        Text("사진 찍기")
+                    }
+                    .font(.appFont(for: .Medium, size: 16))
+                    .foregroundStyle(Color.appTextDarkGray)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .background(Color.appPeach)
+                    .cornerRadius(10)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 10)
+                })
+                Button(action: {
                     shareItems = prepareShareItems()
                     if shareItems.isEmpty == false {
                         showShareSheet = true
@@ -68,13 +87,14 @@ struct WalkDetailView: View {
                     .background(Color.appYellowPale)
                     .cornerRadius(10)
                     .padding(.horizontal, 20)
-                    .padding(.vertical, 10)
+                    .padding(.top, 8)
+                    .padding(.bottom, 10)
                 })
             }
             Spacer()
             Button(action: {
                 loading.loading()
-                guard let image = mapImageProvider.capturedImage else {
+                guard let image = buildShareCardImage() else {
                     loading.failed(msg: "이미지 가져오기 실패")
                     return
                 }
@@ -124,6 +144,28 @@ struct WalkDetailView: View {
                 }
             }
         }
+        .fullScreenCover(isPresented: $showCameraPicker) {
+            ImagePicker(image: $capturedWalkPhoto, type: .camera)
+        }
+        .fullScreenCover(isPresented: $showPhotoLibraryPicker) {
+            ImagePicker(image: $capturedWalkPhoto, type: .photoLibrary)
+        }
+    }
+
+    private var previewImage: UIImage? {
+        capturedWalkPhoto ?? mapImageProvider.capturedImage
+    }
+
+    private func buildShareCardImage() -> UIImage? {
+        guard let baseImage = previewImage else { return nil }
+        return WalkShareCardTemplateBuilder.build(
+            baseImage: baseImage,
+            createdAt: viewModel.polygon.createdAt,
+            duration: viewModel.polygon.walkingTime,
+            areaM2: viewModel.polygon.walkingArea,
+            pointCount: viewModel.polygon.locations.count,
+            petName: viewModel.currentWalkingPetName
+        )
     }
 
     private func prepareShareItems() -> [Any] {
@@ -134,18 +176,23 @@ struct WalkDetailView: View {
             pointCount: viewModel.polygon.locations.count,
             petName: viewModel.currentWalkingPetName
         )
-        if let capturedImage = mapImageProvider.capturedImage {
-            let shareCard = WalkShareCardTemplateBuilder.build(
-                baseImage: capturedImage,
-                createdAt: viewModel.polygon.createdAt,
-                duration: viewModel.polygon.walkingTime,
-                areaM2: viewModel.polygon.walkingArea,
-                pointCount: viewModel.polygon.locations.count,
-                petName: viewModel.currentWalkingPetName
-            )
+        if let shareCard = buildShareCardImage() {
             return [summary, shareCard]
         }
         return [summary]
+    }
+
+    private func openCameraOrFallback() {
+        if UIImagePickerController.isSourceTypeAvailable(.camera) {
+            showCameraPicker = true
+            return
+        }
+        if UIImagePickerController.isSourceTypeAvailable(.photoLibrary) {
+            toastMessage = "카메라 미지원 환경이라 앨범 선택으로 전환했어요."
+            showPhotoLibraryPicker = true
+            return
+        }
+        toastMessage = "이미지 입력을 사용할 수 없는 환경입니다."
     }
 }
 //

@@ -22,9 +22,11 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSCameraUsageDescription</key>
-	<string>프로필 사진 촬영 용도</string>
+	<string>산책 완료 사진 촬영 및 프로필 설정을 위해 카메라 접근이 필요합니다.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>산책 완료 카드 이미지를 사진 앱에 저장하기 위해 접근이 필요합니다.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>프로필 사진 선택 용도</string>
+	<string>산책 완료 사진 선택 및 프로필 설정을 위해 접근이 필요합니다.</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Pretendard-Black.otf</string>
