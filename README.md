@@ -24,6 +24,8 @@
 - ViewModel 현대화 리팩토링 명세 v1: `docs/viewmodel-modernization-v1.md`
 - CoreData 반환 계약 정리 v1: `docs/coredata-return-contract-v1.md`
 - Swift 안정화(강제 언래핑/타이머 수명) v1: `docs/swift-stability-hardening-v1.md`
+- 릴리즈 회귀 체크리스트 v1: `docs/release-regression-checklist-v1.md`
+- 릴리즈 회귀 실행 리포트(2026-02-26): `docs/release-regression-report-2026-02-26.md`
 
 ## 강아지들의 영역 표시
 
