@@ -13,6 +13,7 @@ struct WalkListDetailView: View {
     @State private var isMeter: Bool = true
     @State private var showSaveMessage: String? = nil
     @State private var selectedLoc: UUID? = nil
+    @State private var sessionMetadata: WalkSessionMetadata? = nil
     @StateObject var tabStatus = TabAppear.shared
     @StateObject var imageRenderer = MapImageProvider()
     var body: some View {
@@ -39,6 +40,16 @@ struct WalkListDetailView: View {
                 }.frame(maxWidth: .infinity)
                     .padding(.horizontal, 30)
                     .padding(.bottom, 20)
+                if let sessionMetadata {
+                    HStack {
+                        Text("종료 사유: \(endReasonText(sessionMetadata.endReason)) · 종료 시각: \(sessionMetadata.endedAt.createdAtTimeDescription)")
+                            .font(.appFont(for: .Light, size: 12))
+                            .foregroundStyle(Color.appTextDarkGray)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 12)
+                }
                 VStack{
                     HStack {
                         Text("영역 표시한 곳")
@@ -110,7 +121,7 @@ struct WalkListDetailView: View {
             if let polygon = model.toPolygon().polygon {
                 imageRenderer.captureMapImage(for: polygon)
             }
-
+            sessionMetadata = WalkSessionMetadataStore.shared.metadata(sessionId: model.id)
             tabStatus.hide()
         }.safeAreaPadding(.top, 20)
             .onDisappear {
@@ -118,6 +129,14 @@ struct WalkListDetailView: View {
             }
 
     }
+    private func endReasonText(_ reason: WalkSessionEndReason) -> String {
+        switch reason {
+        case .manual: return "수동 종료"
+        case .autoInactive: return "무이동 자동 종료"
+        case .autoTimeout: return "시간 제한 자동 종료"
+        }
+    }
+
     func calculatedAreaString(areaSize: Double , isPyong: Bool = false) -> String {
         var str = String(format: "%.2f" , areaSize) + "㎡"
         if areaSize > 10000.0 {

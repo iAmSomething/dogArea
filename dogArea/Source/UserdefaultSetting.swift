@@ -172,6 +172,64 @@ struct PetInfo: Codable, Identifiable, Equatable {
     }
 }
 
+enum WalkSessionEndReason: String, Codable {
+    case manual = "manual"
+    case autoInactive = "auto_inactive"
+    case autoTimeout = "auto_timeout"
+}
+
+struct WalkSessionMetadata: Codable, Equatable {
+    let endReason: WalkSessionEndReason
+    let endedAt: TimeInterval
+    let updatedAt: TimeInterval
+}
+
+final class WalkSessionMetadataStore {
+    static let shared = WalkSessionMetadataStore()
+
+    private let storageKey = "walk.session.metadata.v1"
+    private let lock = NSLock()
+    private var cache: [String: WalkSessionMetadata] = [:]
+
+    private init() {
+        guard let data = UserDefaults.standard.data(forKey: storageKey),
+              let decoded = try? JSONDecoder().decode([String: WalkSessionMetadata].self, from: data) else {
+            cache = [:]
+            return
+        }
+        cache = decoded
+    }
+
+    func set(sessionId: UUID, reason: WalkSessionEndReason, endedAt: TimeInterval) {
+        lock.lock()
+        cache[sessionId.uuidString.lowercased()] = WalkSessionMetadata(
+            endReason: reason,
+            endedAt: endedAt,
+            updatedAt: Date().timeIntervalSince1970
+        )
+        persistLocked()
+        lock.unlock()
+    }
+
+    func metadata(sessionId: UUID) -> WalkSessionMetadata? {
+        lock.lock()
+        defer { lock.unlock() }
+        return cache[sessionId.uuidString.lowercased()]
+    }
+
+    func clear(sessionId: UUID) {
+        lock.lock()
+        cache.removeValue(forKey: sessionId.uuidString.lowercased())
+        persistLocked()
+        lock.unlock()
+    }
+
+    private func persistLocked() {
+        guard let data = try? JSONEncoder().encode(cache) else { return }
+        UserDefaults.standard.set(data, forKey: storageKey)
+    }
+}
+
 extension UserDefaults {
     public func setStruct<T: Codable>(_ value: T?, forKey defaultName: String){
         let data = try? JSONEncoder().encode(value)
