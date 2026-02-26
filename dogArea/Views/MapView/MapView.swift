@@ -41,6 +41,12 @@ struct MapView : View{
                             .cornerRadius(10)
                     })
                 }
+                if viewModel.hasRecoverableWalkSession && !viewModel.isWalking {
+                    recoverableSessionBanner
+                }
+                if viewModel.shouldShowWatchStatus {
+                    watchStatusBanner
+                }
                 Spacer()
                 
                 if viewModel.isWalking {
@@ -107,6 +113,12 @@ struct MapView : View{
             viewModel.updateAnnotations(cameraDistance: self.distance)
             tabStatus.appear()
         }
+        .onChange(of: viewModel.walkStatusMessage) { newValue in
+            guard newValue != nil else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                viewModel.clearWalkStatusMessage()
+            }
+        }
         .sheet(isPresented: $isModalPresented){
             MapSettingView(viewModel: self.viewModel, myAlert: self.myAlert)
                 .presentationDetents([.oneThird])
@@ -135,7 +147,71 @@ struct MapView : View{
                 }
             }
         }
+        .overlay(alignment: .top) {
+            if let message = viewModel.walkStatusMessage {
+                Text(message)
+                    .font(.appFont(for: .SemiBold, size: 13))
+                    .foregroundStyle(Color.black)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(Color.appYellow)
+                    .cornerRadius(10)
+                    .padding(.top, 12)
+            }
+        }
     }
+
+    var recoverableSessionBanner: some View {
+        HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("미종료 산책 감지")
+                    .font(.appFont(for: .SemiBold, size: 13))
+                Text(viewModel.recoverableWalkSummaryText)
+                    .font(.appFont(for: .Light, size: 11))
+                    .foregroundStyle(Color.appTextDarkGray)
+            }
+            Spacer()
+            Button("복구") {
+                viewModel.resumeRecoverableWalkSession()
+            }
+            .font(.appFont(for: .SemiBold, size: 12))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(Color.appGreen)
+            .cornerRadius(8)
+            Button("폐기") {
+                viewModel.discardRecoverableWalkSession()
+            }
+            .font(.appFont(for: .SemiBold, size: 12))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(Color.appTextLightGray)
+            .cornerRadius(8)
+        }
+        .padding(10)
+        .background(Color.white.opacity(0.95))
+        .cornerRadius(12)
+        .padding(.horizontal, 12)
+    }
+
+    var watchStatusBanner: some View {
+        VStack(spacing: 3) {
+            Text(viewModel.watchSyncStatusText)
+                .font(.appFont(for: .Light, size: 11))
+                .foregroundStyle(Color.appTextDarkGray)
+            if viewModel.latestWatchActionText.isEmpty == false {
+                Text(viewModel.latestWatchActionText)
+                    .font(.appFont(for: .Light, size: 11))
+                    .foregroundStyle(Color.appTextDarkGray)
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(Color.white.opacity(0.9))
+        .cornerRadius(8)
+        .padding(.top, 4)
+    }
+
     var addPointBtn: some View {
         VStack(spacing: 6) {
             if viewModel.isAutoPointRecordMode {
