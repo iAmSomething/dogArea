@@ -82,7 +82,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         }
     }
     func removeLocation(_ locationID : UUID){
-        if let first = polygon.locations.firstIndex(where:{ $0.id == locationID}){
+        if polygon.locations.contains(where: { $0.id == locationID }) {
             polygon.removeAt(locationID)
             if polygon.locations.count<3 {
                 self.polygonList = deletePolygon(id: self.polygon.id)
@@ -125,7 +125,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 
     }
     private func forceQuit() {
-        if !isWalking {
+        if isWalking {
             guard let lastTime = self.polygon.locations.last?.createdAt else {return}
             let duration = Date().timeIntervalSince1970 - lastTime
             if duration > 1800 {
