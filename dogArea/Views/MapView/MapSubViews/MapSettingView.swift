@@ -33,6 +33,24 @@ struct MapSettingView: View {
                   .padding(.vertical, 5)
                   .background(viewModel.heatmapEnabled ? Color.appYellow : Color.appTextLightGray)
                   .cornerRadius(5)
+              Text("근처 핫스팟")
+                  .font(.bold14)
+                  .onTapGesture {
+                      viewModel.toggleNearbyHotspotEnabled()
+                  }
+                  .padding(.horizontal, 10)
+                  .padding(.vertical, 5)
+                  .background(viewModel.nearbyHotspotEnabled ? Color.appYellowPale : Color.appTextLightGray)
+                  .cornerRadius(5)
+              Text("위치 공유")
+                  .font(.bold14)
+                  .onTapGesture {
+                      viewModel.toggleLocationSharing()
+                  }
+                  .padding(.horizontal, 10)
+                  .padding(.vertical, 5)
+                  .background(viewModel.locationSharingEnabled ? Color.appGreen : Color.appTextLightGray)
+                  .cornerRadius(5)
           }.padding(.horizontal)
         Spacer()
         Image(systemName: "clear")

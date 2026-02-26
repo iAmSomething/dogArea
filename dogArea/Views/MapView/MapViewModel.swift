@@ -12,6 +12,7 @@ import CoreLocation
 import CoreData
 import Combine
 import WatchConnectivity
+import CryptoKit
 class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreDataProtocol, WCSessionDelegate {
     @Environment(\.managedObjectContext) private var viewContext
     private let locationManager = CLLocationManager()
@@ -37,12 +38,22 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     @Published var showOnlyOne: Bool = true
     @Published var heatmapEnabled: Bool = true
     @Published var heatmapCells: [HeatmapCellDTO] = []
+    @Published var nearbyHotspotEnabled: Bool = true
+    @Published var locationSharingEnabled: Bool = false
+    @Published var nearbyHotspots: [NearbyHotspotDTO] = []
     private let watchSession = WCSession.isSupported() ? WCSession.default : nil
+    private let nearbyService = NearbyPresenceService()
+    private var nearbyTickTimer: Timer? = nil
+    private var lastPresenceSentAt: Date = .distantPast
+    private var lastNearbyFetchedAt: Date = .distantPast
     private var processedWatchActionIds: Set<String> = []
     private var processedWatchActionOrder: [String] = []
     private let maxProcessedWatchActions = 500
     private var lastWatchContextSyncAt: Date = .distantPast
     private let processedWatchActionStorageKey = "watch.processedActionIds"
+    private let locationSharingKey = "nearby.locationSharingEnabled"
+    private let nearbyHotspotEnabledKey = "nearby.hotspotEnabled"
+    private let nearbyPresenceUserIdKey = "nearby.presenceUserId"
     override init() {
         super.init()
         self.locationManager.delegate = self
@@ -54,7 +65,16 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         self.polygon = lastPolygon() ?? Polygon(walkingTime: 0.0, walkingArea: 0.0)
         self.refreshHeatmap()
         self.loadProcessedWatchActions()
+        self.locationSharingEnabled = UserDefaults.standard.bool(forKey: locationSharingKey)
+        self.nearbyHotspotEnabled = UserDefaults.standard.object(forKey: nearbyHotspotEnabledKey) as? Bool ?? true
         self.setupWatchConnectivity()
+        self.startNearbyTicker()
+        self.syncVisibilitySettingIfNeeded()
+    }
+
+    deinit {
+        timer?.invalidate()
+        nearbyTickTimer?.invalidate()
     }
     func fetchPolygonList() {
         self.polygonList = self.fetchPolygons()
@@ -170,6 +190,127 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         case 3: return 0.55
         default: return 0.65
         }
+    }
+
+    func nearbyHotspotColor(for intensity: Double) -> Color {
+        switch intensity {
+        case ..<0.2: return Color.appGreen
+        case ..<0.4: return Color.appYellowPale
+        case ..<0.6: return Color.appYellow
+        case ..<0.8: return Color.appPeach
+        default: return Color.appRed
+        }
+    }
+
+    func nearbyHotspotOpacity(for intensity: Double) -> Double {
+        switch intensity {
+        case ..<0.2: return 0.22
+        case ..<0.4: return 0.30
+        case ..<0.6: return 0.40
+        case ..<0.8: return 0.50
+        default: return 0.60
+        }
+    }
+
+    func toggleLocationSharing() {
+        self.locationSharingEnabled.toggle()
+        UserDefaults.standard.set(self.locationSharingEnabled, forKey: locationSharingKey)
+        self.syncVisibilitySettingIfNeeded()
+    }
+
+    func toggleNearbyHotspotEnabled() {
+        self.nearbyHotspotEnabled.toggle()
+        UserDefaults.standard.set(self.nearbyHotspotEnabled, forKey: nearbyHotspotEnabledKey)
+        if nearbyHotspotEnabled == false {
+            self.nearbyHotspots = []
+        }
+    }
+
+    private func startNearbyTicker() {
+        nearbyTickTimer?.invalidate()
+        nearbyTickTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
+            self?.nearbyTick()
+        }
+    }
+
+    private func nearbyTick() {
+        guard let location else { return }
+        let now = Date()
+
+        if locationSharingEnabled && isWalking && now.timeIntervalSince(lastPresenceSentAt) >= 30 {
+            lastPresenceSentAt = now
+            sendPresence(location: location.coordinate)
+        }
+
+        if nearbyHotspotEnabled && now.timeIntervalSince(lastNearbyFetchedAt) >= 10 {
+            lastNearbyFetchedAt = now
+            fetchNearbyHotspots(center: location.coordinate)
+        }
+    }
+
+    private func sendPresence(location: CLLocationCoordinate2D) {
+        guard let userId = currentPresenceUserId() else { return }
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                try await self.nearbyService.upsertPresence(
+                    userId: userId,
+                    latitude: location.latitude,
+                    longitude: location.longitude
+                )
+            } catch {
+                print("presence upsert failed: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    private func fetchNearbyHotspots(center: CLLocationCoordinate2D) {
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let hotspots = try await nearbyService.getHotspots(
+                    centerLatitude: center.latitude,
+                    centerLongitude: center.longitude,
+                    radiusKm: 1.0
+                )
+                await MainActor.run {
+                    self.nearbyHotspots = hotspots
+                }
+            } catch {
+                print("nearby hotspot fetch failed: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    private func syncVisibilitySettingIfNeeded() {
+        guard let userId = currentPresenceUserId() else { return }
+        let enabled = self.locationSharingEnabled
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                try await self.nearbyService.setVisibility(userId: userId, enabled: enabled)
+                if enabled == false {
+                    await MainActor.run {
+                        self.nearbyHotspots = []
+                    }
+                }
+            } catch {
+                print("visibility sync failed: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    private func currentPresenceUserId() -> String? {
+        if let existing = UserDefaults.standard.string(forKey: nearbyPresenceUserIdKey) {
+            return existing
+        }
+        guard let raw = UserdefaultSetting.shared.getValue()?.id,
+              raw.isEmpty == false else {
+            return nil
+        }
+        let stable = raw.stableUUIDString
+        UserDefaults.standard.set(stable, forKey: nearbyPresenceUserIdKey)
+        return stable
     }
 
     private func setupWatchConnectivity() {
@@ -338,6 +479,7 @@ extension MapViewModel {
             withAnimation(){
                 self?.location = location
             }
+            self?.nearbyTick()
         }
     }
 
@@ -435,5 +577,116 @@ extension MapViewModel {
 
     func session(_ session: WCSession, didReceiveUserInfo userInfo: [String : Any]) {
         self.handleWatchPayload(userInfo)
+    }
+}
+
+private extension String {
+    var stableUUIDString: String {
+        let digest = SHA256.hash(data: Data(self.utf8))
+        let bytes = Array(digest.prefix(16))
+        let uuid = UUID(
+            uuid: (
+                bytes[0], bytes[1], bytes[2], bytes[3],
+                bytes[4], bytes[5], bytes[6], bytes[7],
+                bytes[8], bytes[9], bytes[10], bytes[11],
+                bytes[12], bytes[13], bytes[14], bytes[15]
+            )
+        )
+        return uuid.uuidString.lowercased()
+    }
+}
+
+private struct NearbyPresenceService {
+    private enum ServiceError: Error {
+        case notConfigured
+        case invalidURL
+        case badResponse
+    }
+
+    private struct ResponseHotspotDTO: Decodable {
+        let geohash7: String
+        let count: Int
+        let intensity: Double
+        let center_lat: Double
+        let center_lng: Double
+    }
+
+    private struct HotspotEnvelope: Decodable {
+        let hotspots: [ResponseHotspotDTO]
+    }
+
+    private func endpointURL() throws -> URL {
+        let env = ProcessInfo.processInfo.environment
+        guard let raw = env["SUPABASE_URL"], raw.isEmpty == false else {
+            throw ServiceError.notConfigured
+        }
+        guard let url = URL(string: raw + "/functions/v1/nearby-presence") else {
+            throw ServiceError.invalidURL
+        }
+        return url
+    }
+
+    private func bearerToken() -> String {
+        ProcessInfo.processInfo.environment["SUPABASE_ANON_KEY"] ?? ""
+    }
+
+    private func requestBody(_ payload: [String: Any]) throws -> Data {
+        try JSONSerialization.data(withJSONObject: payload)
+    }
+
+    private func post(payload: [String: Any]) async throws -> Data {
+        let url = try endpointURL()
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let token = bearerToken()
+        if token.isEmpty == false {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        request.httpBody = try requestBody(payload)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let code = (response as? HTTPURLResponse)?.statusCode, (200..<300).contains(code) else {
+            throw ServiceError.badResponse
+        }
+        return data
+    }
+
+    func setVisibility(userId: String, enabled: Bool) async throws {
+        _ = try await post(payload: [
+            "action": "set_visibility",
+            "userId": userId,
+            "enabled": enabled
+        ])
+    }
+
+    func upsertPresence(userId: String, latitude: Double, longitude: Double) async throws {
+        _ = try await post(payload: [
+            "action": "upsert_presence",
+            "userId": userId,
+            "lat": latitude,
+            "lng": longitude
+        ])
+    }
+
+    func getHotspots(
+        centerLatitude: Double,
+        centerLongitude: Double,
+        radiusKm: Double
+    ) async throws -> [NearbyHotspotDTO] {
+        let data = try await post(payload: [
+            "action": "get_hotspots",
+            "centerLat": centerLatitude,
+            "centerLng": centerLongitude,
+            "radiusKm": radiusKm
+        ])
+        let decoded = try JSONDecoder().decode(HotspotEnvelope.self, from: data)
+        return decoded.hotspots.map {
+            NearbyHotspotDTO(
+                geohash: $0.geohash7,
+                count: $0.count,
+                intensity: max(0.0, min(1.0, $0.intensity)),
+                centerCoordinate: CLLocationCoordinate2D(latitude: $0.center_lat, longitude: $0.center_lng)
+            )
+        }
     }
 }
