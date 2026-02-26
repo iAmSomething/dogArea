@@ -19,12 +19,14 @@ final class SettingViewModel: ObservableObject, CoreDataProtocol {
     private var petURL: String? = nil
     private var profileURL: String? = nil
     private var storage = Storage.storage().reference()
+    private var cancellables: Set<AnyCancellable> = []
 
     var pets: [PetInfo] {
         userInfo?.pet ?? []
     }
 
     init() {
+        bindSelectedPetSync()
         fetchModel()
         reloadUserInfo()
     }
@@ -40,8 +42,17 @@ final class SettingViewModel: ObservableObject, CoreDataProtocol {
 
     func selectPet(_ petId: String) {
         guard pets.contains(where: { $0.petId == petId }) else { return }
-        UserdefaultSetting.shared.setSelectedPetId(petId)
+        UserdefaultSetting.shared.setSelectedPetId(petId, source: "setting")
         reloadUserInfo()
+    }
+
+    private func bindSelectedPetSync() {
+        NotificationCenter.default.publisher(for: UserdefaultSetting.selectedPetDidChangeNotification)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.reloadUserInfo()
+            }
+            .store(in: &cancellables)
     }
     func uploadImg(img: UIImage, isPet:Bool = false){
         Task{ @MainActor in

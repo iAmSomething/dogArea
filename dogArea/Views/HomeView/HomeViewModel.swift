@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import Combine
 final class HomeViewModel: ObservableObject, CoreDataProtocol {
     @Published var polygonList: [Polygon] = []
     @Published var totalArea: Double = 0.0
@@ -18,6 +19,7 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     @Published var selectedPetId: String = ""
     @Published var selectedPet: PetInfo? = nil
     @Published var guestDataUpgradeReport: GuestDataUpgradeReport? = nil
+    private var cancellables: Set<AnyCancellable> = []
 
     var pets: [PetInfo] {
         userInfo?.pet ?? []
@@ -28,6 +30,7 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     }
 
     init() {
+        bindSelectedPetSync()
         reloadUserInfo()
         fetchData()
     }
@@ -51,9 +54,20 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
 
     func selectPet(_ petId: String) {
         guard pets.contains(where: { $0.petId == petId }) else { return }
-        UserdefaultSetting.shared.setSelectedPetId(petId)
+        UserdefaultSetting.shared.setSelectedPetId(petId, source: "home")
         reloadUserInfo()
         myArea = .init("\(selectedPetNameWithYi)의 영역", totalArea)
+    }
+
+    private func bindSelectedPetSync() {
+        NotificationCenter.default.publisher(for: UserdefaultSetting.selectedPetDidChangeNotification)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                self.reloadUserInfo()
+                self.myArea = .init("\(self.selectedPetNameWithYi)의 영역", self.totalArea)
+            }
+            .store(in: &cancellables)
     }
 
     func refreshGuestDataUpgradeReport() {
