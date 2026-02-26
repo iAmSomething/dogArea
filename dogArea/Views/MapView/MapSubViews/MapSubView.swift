@@ -23,7 +23,7 @@ struct MapSubView: View {
                         .shadow(radius: 5)
                 }
             }
-            if !viewModel.isWalking && !viewModel.showOnlyOne && viewModel.heatmapEnabled {
+            if !viewModel.isWalking && !viewModel.showOnlyOne && viewModel.isHeatmapFeatureAvailable && viewModel.heatmapEnabled {
                 ForEach(viewModel.heatmapCells) { cell in
                     MapCircle(center: cell.centerCoordinate, radius: 75)
                         .foregroundStyle(
@@ -32,7 +32,7 @@ struct MapSubView: View {
                         )
                 }
             }
-            if viewModel.nearbyHotspotEnabled {
+            if viewModel.isNearbyHotspotFeatureAvailable && viewModel.nearbyHotspotEnabled {
                 ForEach(viewModel.nearbyHotspots) { spot in
                     MapCircle(center: spot.centerCoordinate, radius: 100)
                         .foregroundStyle(

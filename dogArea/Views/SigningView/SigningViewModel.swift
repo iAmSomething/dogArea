@@ -22,11 +22,16 @@ class SigningViewModel: ObservableObject {
     private var createdAt: Double
     private var storage = Storage.storage().reference()
     private let userdefaluts = UserdefaultSetting()
+    private let featureFlags = FeatureFlagStore.shared
+    private let metricTracker = AppMetricTracker.shared
     init(info: AppleUserInfo) {
         self.appleInfo = info
         self.userName = info.name ?? ""
         self.userId = info.id
         self.createdAt = info.createdAt
+        Task {
+            _ = await FeatureFlagStore.shared.refresh()
+        }
     }
     func setValue(){
         loading = .loading
@@ -38,11 +43,12 @@ class SigningViewModel: ObservableObject {
                 if let img = petProfile {
                     petURL = try await uploadImage(img: img, isPet: true)
                 }
+                let caricatureEnabled = featureFlags.isEnabled(.caricatureAsyncV1)
                 let petInfo = PetInfo(
                     petName: petName,
                     petProfile: petURL,
                     caricatureURL: nil,
-                    caricatureStatus: petURL == nil ? nil : .queued,
+                    caricatureStatus: (caricatureEnabled && petURL != nil) ? .queued : nil,
                     caricatureProvider: nil
                 )
                 userdefaluts.save(
@@ -53,7 +59,9 @@ class SigningViewModel: ObservableObject {
                     createdAt: createdAt
                 )
                 loading = .success
-                enqueueCaricatureJobIfPossible()
+                if caricatureEnabled {
+                    enqueueCaricatureJobIfPossible()
+                }
             } catch {
                 loading = .fail(msg: error.localizedDescription)
             }
@@ -77,9 +85,21 @@ class SigningViewModel: ObservableObject {
                     caricatureURL: response.caricatureURL,
                     provider: response.provider
                 )
+                self.metricTracker.track(
+                    .caricatureSuccess,
+                    userKey: userId,
+                    featureKey: .caricatureAsyncV1,
+                    payload: ["provider": response.provider ?? "unknown"]
+                )
                 print("caricature ready for user=\(userId), pet=\(petName), job=\(response.jobId)")
             } catch {
                 UserdefaultSetting.shared.updateFirstPetCaricature(status: .failed)
+                self.metricTracker.track(
+                    .caricatureFailed,
+                    userKey: userId,
+                    featureKey: .caricatureAsyncV1,
+                    payload: ["error": error.localizedDescription]
+                )
                 print("caricature failed for user=\(userId), pet=\(petName): \(error.localizedDescription)")
             }
         }
