@@ -83,6 +83,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     @Published var watchSyncStatusText: String = "워치 동기화 대기"
     @Published var latestWatchActionText: String = ""
     @Published var walkStatusMessage: String? = nil
+    @Published var runtimeGuardStatusText: String = ""
     private let watchSession = WCSession.isSupported() ? WCSession.default : nil
     private let featureFlags = FeatureFlagStore.shared
     private let metricTracker = AppMetricTracker.shared
@@ -105,17 +106,23 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     private let autoRecordMinDistance: CLLocationDistance = 12.0
     private let autoRecordMinInterval: TimeInterval = 8.0
     private let autoRecordNoiseDistance: CLLocationDistance = 4.0
+    private let locationAccuracyThreshold: CLLocationAccuracy = 65.0
+    private let jumpSpeedThreshold: CLLocationSpeed = 12.0
+    private let jumpDistanceThreshold: CLLocationDistance = 150.0
+    private let jumpTimeWindow: TimeInterval = 10.0
     private let autoEndInactivityInterval: TimeInterval = 1800.0
     private let recoverableSessionMaxAge: TimeInterval = 43_200.0
     private var lastPointEventAt: Date?
     private var lastSnapshotPersistAt: Date = .distantPast
     private var pendingRecoverableSession: ActiveWalkSessionSnapshot?
     private var lifecycleObservers: [NSObjectProtocol] = []
+    private var lastAcceptedWalkLocation: CLLocation?
 
     private enum WatchIncomingAction: String {
         case startWalk
         case addPoint
         case endWalk
+        case syncState
     }
 
     private enum PointAppendSource {
@@ -241,6 +248,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
             polygon.clear()
             self.currentWalkingPetName = self.selectedPetName
             self.resetAutoPointRecordState()
+            self.lastAcceptedWalkLocation = nil
             self.lastPointEventAt = Date()
             self.persistActiveWalkSession(force: true)
         }
@@ -263,6 +271,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         selectedPolygonList = []
         currentWalkingPetName = selectedPetName
         resetAutoPointRecordState()
+        lastAcceptedWalkLocation = nil
         clearActiveWalkSession()
         withAnimation { [weak self] in
             self?.isWalking = false
@@ -294,8 +303,16 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         isWalking || latestWatchActionText.isEmpty == false
     }
 
+    var hasRuntimeGuardStatus: Bool {
+        runtimeGuardStatusText.isEmpty == false
+    }
+
     func clearWalkStatusMessage() {
         walkStatusMessage = nil
+    }
+
+    func clearRuntimeGuardStatus() {
+        runtimeGuardStatusText = ""
     }
 
     private static let statusTimeFormatter: DateFormatter = {
@@ -307,6 +324,46 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
 
     private static func statusTimeString(from date: Date) -> String {
         statusTimeFormatter.string(from: date)
+    }
+
+    private func setRuntimeGuardStatus(_ message: String) {
+        runtimeGuardStatusText = "\(Self.statusTimeString(from: Date())) \(message)"
+    }
+
+    private func validateWalkLocationSample(_ location: CLLocation) -> Bool {
+        guard location.horizontalAccuracy > 0,
+              location.horizontalAccuracy <= locationAccuracyThreshold else {
+            setRuntimeGuardStatus("저정확도 GPS 샘플 폐기")
+            return false
+        }
+
+        if let last = lastAcceptedWalkLocation {
+            let delta = max(0.001, location.timestamp.timeIntervalSince(last.timestamp))
+            let distance = location.distance(from: last)
+            let speed = distance / delta
+            let isJumpBySpeed = speed > jumpSpeedThreshold && distance > autoRecordNoiseDistance
+            let isJumpByDistance = distance > jumpDistanceThreshold && delta <= jumpTimeWindow
+            if isJumpBySpeed || isJumpByDistance {
+                setRuntimeGuardStatus("비정상 점프 포인트 폐기")
+                return false
+            }
+        }
+
+        lastAcceptedWalkLocation = location
+        return true
+    }
+
+    private func pauseWalkForAuthorizationDowngrade() {
+        guard isWalking else { return }
+        timerStop()
+        persistActiveWalkSession(force: true)
+        prepareRecoverableSessionIfNeeded()
+        withAnimation { [weak self] in
+            self?.isWalking = false
+        }
+        syncWatchContext(force: true)
+        walkStatusMessage = "위치 권한이 해제되어 산책을 안전 일시중지했습니다."
+        setRuntimeGuardStatus("권한 강등 감지로 세션 일시중지")
     }
 
     private func prepareRecoverableSessionIfNeeded() {
@@ -354,6 +411,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         lastAutoRecordedLocation = snapshot.points.last.map {
             CLLocation(latitude: $0.latitude, longitude: $0.longitude)
         }
+        lastAcceptedWalkLocation = lastAutoRecordedLocation
         lastAutoRecordedAt = lastPointEventAt ?? Date()
 
         hasRecoverableWalkSession = false
@@ -366,6 +424,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         timerSet()
         persistActiveWalkSession(force: true)
         walkStatusMessage = "이전 산책 세션을 복구했습니다."
+        setRuntimeGuardStatus("세션 복구 완료")
         syncWatchContext(force: true)
     }
 
@@ -419,6 +478,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         hasRecoverableWalkSession = false
         recoverableWalkSummaryText = ""
         lastPointEventAt = nil
+        lastAcceptedWalkLocation = nil
     }
 
     private func handleAutoEndIfNeeded(now: Date = Date()) {
@@ -834,7 +894,15 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
             userKey: currentMetricUserId(),
             payload: ["action": actionName]
         )
-        let actionId = payload["action_id"] as? String ?? UUID().uuidString
+        let actionId: String = {
+            if let id = payload["action_id"] as? String, id.isEmpty == false {
+                return id
+            }
+            if let sentAt = payload["sent_at"] as? TimeInterval {
+                return "\(actionName):\(Int(sentAt * 1000.0))"
+            }
+            return UUID().uuidString
+        }()
         if shouldProcessWatchAction(actionId: actionId) == false {
             metricTracker.track(
                 .watchActionDuplicate,
@@ -866,6 +934,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
                 self.startWalkNow()
                 self.latestWatchActionText = "워치 시작 반영 \(Self.statusTimeString(from: Date()))"
                 self.metricTracker.track(.watchActionApplied, userKey: self.currentMetricUserId(), payload: ["action": action.rawValue])
+            } else {
+                self.syncWatchContext(force: true)
             }
         case .addPoint:
             if self.isWalking {
@@ -874,13 +944,20 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
                     self.syncWatchContext(force: true)
                     self.metricTracker.track(.watchActionApplied, userKey: self.currentMetricUserId(), payload: ["action": action.rawValue])
                 }
+            } else {
+                self.syncWatchContext(force: true)
             }
         case .endWalk:
             if self.isWalking {
                 self.endWalk()
                 self.latestWatchActionText = "워치 종료 반영 \(Self.statusTimeString(from: Date()))"
                 self.metricTracker.track(.watchActionApplied, userKey: self.currentMetricUserId(), payload: ["action": action.rawValue])
+            } else {
+                self.syncWatchContext(force: true)
             }
+        case .syncState:
+            self.latestWatchActionText = "워치 상태 재동기화 \(Self.statusTimeString(from: Date()))"
+            self.syncWatchContext(force: true)
         }
     }
 
@@ -889,9 +966,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
 extension MapViewModel {
     func timerSet() {
         timerStop()
-        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) {[weak self] t in
+        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) {[weak self] _ in
             guard let self = self else {return}
-            self.time += t.timeInterval
+            self.time = max(0, Date().timeIntervalSince(self.startTime))
             self.persistActiveWalkSession()
             self.syncWatchContext()
             if self.time > 3600 {
@@ -950,10 +1027,14 @@ extension MapViewModel {
 extension MapViewModel {
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         switch manager.authorizationStatus {
-        case .notDetermined, .restricted, .denied:
+        case .notDetermined:
             locationManager.requestAlwaysAuthorization()
+        case .restricted, .denied:
+            pauseWalkForAuthorizationDowngrade()
         case .authorizedAlways, .authorizedWhenInUse:
-            print("")
+            if isWalking {
+                syncWatchContext(force: true)
+            }
             
         @unknown default:
             locationManager.requestAlwaysAuthorization()
@@ -965,13 +1046,17 @@ extension MapViewModel {
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
         DispatchQueue.main.async { [weak self] in
-            withAnimation(){
-                self?.location = location
+            guard let self else { return }
+            if self.isWalking {
+                guard self.validateWalkLocationSample(location) else { return }
             }
-            self?.nearbyTick()
-            self?.handleAutoPointRecord(with: location)
-            self?.persistActiveWalkSession()
-            self?.handleAutoEndIfNeeded()
+            withAnimation() {
+                self.location = location
+            }
+            self.nearbyTick()
+            self.handleAutoPointRecord(with: location)
+            self.persistActiveWalkSession()
+            self.handleAutoEndIfNeeded()
         }
     }
 

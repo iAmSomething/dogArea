@@ -47,6 +47,9 @@ struct MapView : View{
                 if viewModel.shouldShowWatchStatus {
                     watchStatusBanner
                 }
+                if viewModel.hasRuntimeGuardStatus {
+                    runtimeGuardBanner
+                }
                 Spacer()
                 
                 if viewModel.isWalking {
@@ -117,6 +120,12 @@ struct MapView : View{
             guard newValue != nil else { return }
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
                 viewModel.clearWalkStatusMessage()
+            }
+        }
+        .onChange(of: viewModel.runtimeGuardStatusText) { newValue in
+            guard newValue.isEmpty == false else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                viewModel.clearRuntimeGuardStatus()
             }
         }
         .sheet(isPresented: $isModalPresented){
@@ -210,6 +219,17 @@ struct MapView : View{
         .background(Color.white.opacity(0.9))
         .cornerRadius(8)
         .padding(.top, 4)
+    }
+
+    var runtimeGuardBanner: some View {
+        Text(viewModel.runtimeGuardStatusText)
+            .font(.appFont(for: .Light, size: 11))
+            .foregroundStyle(Color.appRed)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Color.white.opacity(0.9))
+            .cornerRadius(8)
+            .padding(.top, 2)
     }
 
     var addPointBtn: some View {
