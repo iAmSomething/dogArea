@@ -122,8 +122,29 @@ where ws.pet_id is not null
   and wsp.walk_session_id is null;
 ```
 
+### 5.5 User/Pet 확장 필드 정합성 확인 (#114)
+```sql
+select
+  p.id as user_id,
+  p.profile_message,
+  pet.id as pet_id,
+  pet.breed,
+  pet.age_years,
+  pet.gender
+from public.profiles p
+left join public.pets pet on pet.owner_user_id = p.id
+where p.id = ':user_uuid'::uuid
+order by pet.created_at asc;
+```
+
+기대값:
+- `gender`는 `unknown|male|female` 중 하나
+- `age_years`는 `null` 또는 `0..30`
+- 로컬 UserDefaults 저장값과 조회 결과가 동일
+
 ## 6. 운영 체크리스트
 - [ ] `migration list --local` / `migration list --linked` 결과 저장
 - [ ] User A/B 교차 접근 차단 SQL 결과 저장
 - [ ] Storage 버킷 정책/경로 규칙 검증
 - [ ] 핵심 통계 SQL 결과를 릴리스 문서에 첨부
+- [ ] User/Pet 확장 필드 정합성 SQL 결과 첨부
