@@ -14,6 +14,18 @@ import Combine
 import WatchConnectivity
 import CryptoKit
 class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreDataProtocol, WCSessionDelegate {
+    enum WalkPointRecordMode: String {
+        case manual
+        case auto
+
+        var title: String {
+            switch self {
+            case .manual: return "포인트 수동 기록"
+            case .auto: return "포인트 자동 기록"
+            }
+        }
+    }
+
     private let locationManager = CLLocationManager()
     private var timer: Timer? = nil
     @Published var time: TimeInterval = 0.0
@@ -44,6 +56,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     @Published var selectedPetName: String = "강아지"
     @Published var currentWalkingPetName: String = "강아지"
     @Published var walkStartCountdownEnabled: Bool = false
+    @Published var walkPointRecordMode: WalkPointRecordMode = .manual
     private let watchSession = WCSession.isSupported() ? WCSession.default : nil
     private let featureFlags = FeatureFlagStore.shared
     private let metricTracker = AppMetricTracker.shared
@@ -60,6 +73,11 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     private let locationSharingKey = "nearby.locationSharingEnabled"
     private let nearbyHotspotEnabledKey = "nearby.hotspotEnabled"
     private let nearbyPresenceUserIdKey = "nearby.presenceUserId"
+    private var lastAutoRecordedLocation: CLLocation?
+    private var lastAutoRecordedAt: Date = .distantPast
+    private let autoRecordMinDistance: CLLocationDistance = 12.0
+    private let autoRecordMinInterval: TimeInterval = 8.0
+    private let autoRecordNoiseDistance: CLLocationDistance = 4.0
 
     private enum WatchIncomingAction: String {
         case startWalk
@@ -86,6 +104,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         self.nearbyHotspotEnabled = nearbyFeatureOn ? storedNearbyHotspotEnabled : false
         self.locationSharingEnabled = nearbyFeatureOn ? storedLocationSharingEnabled : false
         self.walkStartCountdownEnabled = UserdefaultSetting.shared.walkStartCountdownEnabled()
+        self.walkPointRecordMode = WalkPointRecordMode(
+            rawValue: UserdefaultSetting.shared.walkPointRecordModeRawValue()
+        ) ?? .manual
         self.reloadSelectedPetContext()
         self.setupWatchConnectivity()
         self.startNearbyTicker()
@@ -132,10 +153,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         }
     }
     func addLocation(){
-        if let location = self.location{
-            polygon.addPoint(.init(coordinate: location.coordinate))
-            self.syncWatchContext(force: true)
-        }
+        guard let location = self.location else { return }
+        appendWalkPoint(from: location, recordedAt: Date())
     }
     func removeLocation(_ locationID : UUID){
         if polygon.locations.firstIndex(where:{ $0.id == locationID}) != nil {
@@ -167,6 +186,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
                 }
             time = 0.0
             self.currentWalkingPetName = self.selectedPetName
+            self.resetAutoPointRecordState()
         }
         else {
             self.reloadSelectedPetContext()
@@ -174,6 +194,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
             timerSet()
             polygon.clear()
             self.currentWalkingPetName = self.selectedPetName
+            self.resetAutoPointRecordState()
         }
         withAnimation{ [weak self] in
             self?.isWalking.toggle()
@@ -193,6 +214,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         time = 0.0
         selectedPolygonList = []
         currentWalkingPetName = selectedPetName
+        resetAutoPointRecordState()
         withAnimation { [weak self] in
             self?.isWalking = false
         }
@@ -202,6 +224,58 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     func toggleWalkStartCountdown() {
         walkStartCountdownEnabled.toggle()
         UserdefaultSetting.shared.setWalkStartCountdownEnabled(walkStartCountdownEnabled)
+    }
+
+    func toggleWalkPointRecordMode() {
+        walkPointRecordMode = walkPointRecordMode == .manual ? .auto : .manual
+        UserdefaultSetting.shared.setWalkPointRecordModeRawValue(walkPointRecordMode.rawValue)
+        resetAutoPointRecordState()
+    }
+
+    var isAutoPointRecordMode: Bool {
+        walkPointRecordMode == .auto
+    }
+
+    private func appendWalkPoint(from location: CLLocation, recordedAt: Date) {
+        polygon.addPoint(.init(coordinate: location.coordinate))
+        lastAutoRecordedLocation = location
+        lastAutoRecordedAt = recordedAt
+        syncWatchContext(force: true)
+    }
+
+    private func resetAutoPointRecordState() {
+        lastAutoRecordedLocation = nil
+        lastAutoRecordedAt = .distantPast
+    }
+
+    private func handleAutoPointRecord(with location: CLLocation) {
+        guard isWalking, walkPointRecordMode == .auto else { return }
+        let now = Date()
+
+        if polygon.locations.isEmpty {
+            appendWalkPoint(from: location, recordedAt: now)
+            return
+        }
+
+        if let lastPoint = polygon.locations.last {
+            let lastPointLocation = CLLocation(
+                latitude: lastPoint.coordinate.latitude,
+                longitude: lastPoint.coordinate.longitude
+            )
+            if location.distance(from: lastPointLocation) < autoRecordNoiseDistance {
+                return
+            }
+        }
+
+        if let lastAutoRecordedLocation {
+            let moved = location.distance(from: lastAutoRecordedLocation)
+            let elapsed = now.timeIntervalSince(lastAutoRecordedAt)
+            guard moved >= autoRecordMinDistance, elapsed >= autoRecordMinInterval else {
+                return
+            }
+        }
+
+        appendWalkPoint(from: location, recordedAt: now)
     }
     func setTrackingMode() {
         guard let location = self.location else {
@@ -665,6 +739,7 @@ extension MapViewModel {
                 self?.location = location
             }
             self?.nearbyTick()
+            self?.handleAutoPointRecord(with: location)
         }
     }
 

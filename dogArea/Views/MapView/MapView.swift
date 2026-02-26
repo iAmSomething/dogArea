@@ -137,13 +137,25 @@ struct MapView : View{
         }
     }
     var addPointBtn: some View {
-        Image("plusButton")
-            .resizable()
-            .frame(width: 70, height: 70)
-            .onTapGesture {
-                viewModel.setTrackingMode()
-                myAlert.alertType = .addPoint
-                myAlert.callAlert(type: .addPoint)}
+        VStack(spacing: 6) {
+            if viewModel.isAutoPointRecordMode {
+                Text("AUTO")
+                    .font(.appFont(for: .SemiBold, size: 11))
+                    .foregroundStyle(Color.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.appGreen)
+                    .cornerRadius(6)
+            }
+            Image("plusButton")
+                .resizable()
+                .frame(width: 70, height: 70)
+                .onTapGesture {
+                    viewModel.setTrackingMode()
+                    myAlert.alertType = .addPoint
+                    myAlert.callAlert(type: .addPoint)
+                }
+        }
     }
     
 }

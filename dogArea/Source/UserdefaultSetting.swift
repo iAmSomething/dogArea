@@ -15,6 +15,7 @@ class UserdefaultSetting {
         case petInfo = "petInfo"
         case selectedPetId = "selectedPetId"
         case walkStartCountdownEnabled = "walkStartCountdownEnabled"
+        case walkPointRecordMode = "walkPointRecordMode"
         case createdAt = "createdAt"
         case nonce = "nonce"
     }
@@ -81,6 +82,7 @@ class UserdefaultSetting {
         UserDefaults.standard.removeObject(forKey: keyValue.petInfo.rawValue)
         UserDefaults.standard.removeObject(forKey: keyValue.selectedPetId.rawValue)
         UserDefaults.standard.removeObject(forKey: keyValue.walkStartCountdownEnabled.rawValue)
+        UserDefaults.standard.removeObject(forKey: keyValue.walkPointRecordMode.rawValue)
     }
     #endif
 
@@ -258,6 +260,14 @@ extension UserdefaultSetting {
 
     func setWalkStartCountdownEnabled(_ enabled: Bool) {
         UserDefaults.standard.set(enabled, forKey: keyValue.walkStartCountdownEnabled.rawValue)
+    }
+
+    func walkPointRecordModeRawValue() -> String {
+        UserDefaults.standard.string(forKey: keyValue.walkPointRecordMode.rawValue) ?? "manual"
+    }
+
+    func setWalkPointRecordModeRawValue(_ rawValue: String) {
+        UserDefaults.standard.set(rawValue, forKey: keyValue.walkPointRecordMode.rawValue)
     }
 }
 
