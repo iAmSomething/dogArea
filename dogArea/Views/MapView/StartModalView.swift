@@ -9,21 +9,23 @@ import SwiftUI
 struct StartModalView: View {
     @Environment(\.dismiss) var dismiss
     let petName: String
-    @State var time: TimeInterval = 3
+    let onCompleted: () -> Void
+    var onCanceled: () -> Void = {}
+    @State private var time: TimeInterval = 3
     @State private var countdownTimer: Timer? = nil
+    @State private var hasCompleted = false
     var body: some View {
         VStack {
-            if Int(time) < 1 {
-                Text("산책을 시작합니다.")
-                    .font(.extraBold28)
-                Text("\(petName)와 함께 출발해요!")
-                    .font(.appFont(for: .Regular, size: 16))
-                    .foregroundStyle(Color.appTextDarkGray)
+            Text("\(Int(max(0, time)))")
+                .font(.appFont(for: .Black, size: 72))
+            Text("\(petName)와 함께 출발 준비중")
+                .font(.appFont(for: .Regular, size: 16))
+                .foregroundStyle(Color.appTextDarkGray)
+            Button("취소") {
+                cancelCountdown()
             }
-            else {
-                Text("\(Int(time))")
-                    .font(.appFont(for: .Black, size: 72))
-            }
+            .font(.appFont(for: .SemiBold, size: 18))
+            .padding(.top, 20)
         }
         .onAppear {
             startCountdown()
@@ -35,14 +37,29 @@ struct StartModalView: View {
 
     private func startCountdown() {
         invalidateCountdown()
+        hasCompleted = false
+        time = 3
         countdownTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
             self.time = max(0, self.time - timer.timeInterval)
             if self.time <= 0 {
-                timer.invalidate()
-                self.countdownTimer = nil
-                dismiss()
+                completeCountdown()
             }
         }
+    }
+
+    private func completeCountdown() {
+        guard hasCompleted == false else { return }
+        hasCompleted = true
+        invalidateCountdown()
+        onCompleted()
+        dismiss()
+    }
+
+    private func cancelCountdown() {
+        guard hasCompleted == false else { return }
+        invalidateCountdown()
+        onCanceled()
+        dismiss()
     }
 
     private func invalidateCountdown() {
@@ -52,5 +69,5 @@ struct StartModalView: View {
 }
 
 #Preview {
-    StartModalView(petName: "강아지")
+    StartModalView(petName: "강아지", onCompleted: {})
 }

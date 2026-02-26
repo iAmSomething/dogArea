@@ -41,25 +41,36 @@ struct StartButtonView: View {
                             )
                             return
                         }
-                        isModalPresented.toggle()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
-                            isModalPresented = false
-                            viewModel.endWalk()
+                        if viewModel.walkStartCountdownEnabled {
+                            isModalPresented = true
+                        } else {
+                            viewModel.startWalkNow()
                         }
                     }
                     else {
                         myAlert.callAlert(
-                            type: .custom(.simpleAlert(title: "산책 종료", message: "정말 산책을 마치겠습니까?") ,
-                                          {
-                                              viewModel.timerStop()
-                                              if viewModel.polygon.locations.count > 2 {
-                                                  viewModel.makePolygon()
-                                                  endWalkingViewPresented.toggle()
-                                              } else {
-                                                  viewModel.endWalk()
-                                              }
-                                          },
-                                          {})
+                            type: .customThreeButton(
+                                .threeChoiceAlert(
+                                    title: "산책 종료",
+                                    message: "현재 산책 기록을 어떻게 처리할까요?",
+                                    first: "저장하고 종료",
+                                    second: "계속 걷기",
+                                    third: "기록 폐기"
+                                ),
+                                {
+                                    viewModel.timerStop()
+                                    if viewModel.polygon.locations.count > 2 {
+                                        viewModel.makePolygon()
+                                        endWalkingViewPresented.toggle()
+                                    } else {
+                                        viewModel.endWalk()
+                                    }
+                                },
+                                {},
+                                {
+                                    viewModel.discardCurrentWalk()
+                                }
+                            )
                         )
                     }
                 }

@@ -43,6 +43,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     @Published var selectedPetId: String? = nil
     @Published var selectedPetName: String = "강아지"
     @Published var currentWalkingPetName: String = "강아지"
+    @Published var walkStartCountdownEnabled: Bool = false
     private let watchSession = WCSession.isSupported() ? WCSession.default : nil
     private let featureFlags = FeatureFlagStore.shared
     private let metricTracker = AppMetricTracker.shared
@@ -84,6 +85,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         let nearbyFeatureOn = featureFlags.isEnabled(.nearbyHotspotV1)
         self.nearbyHotspotEnabled = nearbyFeatureOn ? storedNearbyHotspotEnabled : false
         self.locationSharingEnabled = nearbyFeatureOn ? storedLocationSharingEnabled : false
+        self.walkStartCountdownEnabled = UserdefaultSetting.shared.walkStartCountdownEnabled()
         self.reloadSelectedPetContext()
         self.setupWatchConnectivity()
         self.startNearbyTicker()
@@ -177,6 +179,29 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
             self?.isWalking.toggle()
         }
         self.syncWatchContext(force: true)
+    }
+
+    func startWalkNow() {
+        guard isWalking == false else { return }
+        endWalk()
+    }
+
+    func discardCurrentWalk() {
+        guard isWalking else { return }
+        timerStop()
+        polygon.clear()
+        time = 0.0
+        selectedPolygonList = []
+        currentWalkingPetName = selectedPetName
+        withAnimation { [weak self] in
+            self?.isWalking = false
+        }
+        syncWatchContext(force: true)
+    }
+
+    func toggleWalkStartCountdown() {
+        walkStartCountdownEnabled.toggle()
+        UserdefaultSetting.shared.setWalkStartCountdownEnabled(walkStartCountdownEnabled)
     }
     func setTrackingMode() {
         guard let location = self.location else {
@@ -541,7 +566,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         switch action {
         case .startWalk:
             if self.isWalking == false {
-                self.endWalk()
+                self.startWalkNow()
                 self.metricTracker.track(.watchActionApplied, userKey: self.currentMetricUserId(), payload: ["action": action.rawValue])
             }
         case .addPoint:

@@ -25,7 +25,7 @@ struct MapAlertSubView: View {
         },rightButtonAction: {
 //            print("right")
         })
-      case .annotationSelected(let loc) :
+      case .annotationSelected(_) :
         ca = CustomAlert(presentAlert: $myAlert.isAlert,
                          alertModel: myAlert.alertType.model,
                          leftButtonAction: {
@@ -35,6 +35,14 @@ struct MapAlertSubView: View {
           }})
       case .custom(let alert, let leftAction, let rightAction) :
           ca = CustomAlert(presentAlert: $myAlert.isAlert, alertModel: alert , leftButtonAction: leftAction, rightButtonAction: rightAction)
+      case .customThreeButton(let alert, let leftAction, let middleAction, let rightAction):
+        ca = CustomAlert(
+            presentAlert: $myAlert.isAlert,
+            alertModel: alert,
+            leftButtonAction: leftAction,
+            middleButtonAction: middleAction,
+            rightButtonAction: rightAction
+        )
       case .logOut:
         ca = CustomAlert(presentAlert: $myAlert.isAlert,
                          alertModel: myAlert.alertType.model)

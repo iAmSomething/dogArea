@@ -112,8 +112,11 @@ struct MapView : View{
                 .presentationDetents([.oneThird])
             
         }.fullScreenCover(isPresented: $isWalkingViewPresented) {
-            StartModalView(petName: viewModel.selectedPetName)
-                .interactiveDismissDisabled(true)
+            StartModalView(
+                petName: viewModel.selectedPetName,
+                onCompleted: { viewModel.startWalkNow() }
+            )
+            .interactiveDismissDisabled(true)
         }.sheet(isPresented: $endWalkingViewPresented) {
             WalkDetailView()
                 .environmentObject(loading)
@@ -147,4 +150,3 @@ struct MapView : View{
 #Preview {
     MapView()
 }
-
