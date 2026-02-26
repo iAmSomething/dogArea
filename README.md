@@ -13,6 +13,7 @@
 
 - Supabase 스키마/마이그레이션 v1 명세: `docs/supabase-schema-v1.md`
 - 데이터 레이어 전환 설계 v1: `docs/data-layer-transition-v1.md`
+- 다견가정 도메인/UX 명세 v1: `docs/multi-dog-domain-v1.md`
 
 ## 강아지들의 영역 표시
 
