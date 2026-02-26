@@ -17,6 +17,7 @@ export SUPABASE_DB_PASSWORD='<REMOTE_DB_PASSWORD>'
 - `supabase/migrations/20260226152000_create_storage_buckets.sql`
 - `supabase/migrations/20260226153000_create_dogarea_schema.sql`
 - `supabase/migrations/20260226154000_storage_policies.sql`
+- `supabase/migrations/20260226173000_create_area_references_seed.sql`
 
 ## 적용 순서
 1. dry run
@@ -35,9 +36,13 @@ npx --yes supabase migration list --linked
 ```
 
 ## 생성 리소스
-- 테이블: `profiles`, `pets`, `walk_sessions`, `walk_points`, `area_milestones`, `walk_session_pets`
+- 테이블: `profiles`, `pets`, `walk_sessions`, `walk_points`, `area_milestones`, `walk_session_pets`, `area_references`
 - 버킷: `profiles`, `caricatures`, `walk-maps`
 - RLS/정책: 사용자 소유 데이터만 접근 가능
+
+## 비교군 데이터
+- `area_references`에 레거시 비교군(기존 `AreaMeters.swift`) 전체를 시드한다.
+- 추가 명소 비교군(예: 센트럴 파크, 그리피스 파크, 골든게이트 파크 등)은 `source_url/source_note`를 포함해 관리한다.
 
 ## 보안 주의
 - `SUPABASE_SERVICE_ROLE_KEY`는 앱(xcconfig/Info.plist)에 넣지 않는다.
