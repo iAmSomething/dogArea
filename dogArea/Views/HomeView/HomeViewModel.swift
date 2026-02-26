@@ -15,20 +15,22 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     @Published var myArea: AreaMeter = .init("", 0.0)
     @Published var myAreaList: [AreaMeterDTO] = []
     @Published var userInfo: UserInfo? = nil
+    var selectedPetName: String {
+        userInfo?.selectedPet?.petName ?? "강아지"
+    }
+    var selectedPetNameWithYi: String {
+        selectedPetName.addYi()
+    }
     init() {
+        userInfo = UserdefaultSetting().getValue()
         fetchData()
-        totalArea = polygonList.map{$0.walkingArea}.reduce(0.0){$0 + $1}
-        totalTime = polygonList.map{$0.walkingTime}.reduce(0.0){$0 + $1}
-        myArea = .init("\(UserdefaultSetting().getValue()?.pet.first?.petName.addYi() ?? "강아지")의 영역", totalArea)
         myAreaList = fetchArea()
-        if let info = UserdefaultSetting().getValue() {
-            userInfo = info
-        } else {
-            //로그아웃 액션
-        }
     }
     func fetchData() {
         polygonList = fetchPolygons()
+        totalArea = polygonList.map{$0.walkingArea}.reduce(0.0){$0 + $1}
+        totalTime = polygonList.map{$0.walkingTime}.reduce(0.0){$0 + $1}
+        myArea = .init("\(selectedPetNameWithYi)의 영역", totalArea)
         updateCurrentMeter()
         
     }

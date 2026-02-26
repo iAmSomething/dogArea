@@ -33,7 +33,7 @@ struct NotificationCenterView: View {
                        .environmentObject(viewModel)
                        .padding(.trailing, 20)
                    VStack(alignment: .leading) {
-                       Text("\(viewModel.userInfo?.pet.first?.petName ?? "강아지")")
+                       Text("\(viewModel.userInfo?.selectedPet?.petName ?? "강아지")")
                            .font(.appFont(for: .SemiBold, size: 20))
                    }
                    Spacer()
@@ -95,7 +95,7 @@ struct UserProfileImageView: View {
 struct PetProfileImageView: View {
     @EnvironmentObject var viewModel: SettingViewModel
     var body: some View {
-        if let url = viewModel.userInfo?.pet.first?.petProfile {
+        if let url = viewModel.userInfo?.selectedPet?.petProfile {
             KFImage(URL(string: url))
                 .resizable()
                 .aspectRatio(contentMode: .fit)

@@ -56,9 +56,9 @@ struct HomeView: View {
                 }
                 HStack {
                     VStack(alignment: .leading, spacing: 0) {
-                        Text("\(viewModel.userInfo!.pet.first!.petName.addYi())의 영역")
+                        Text("\(viewModel.selectedPetNameWithYi)의 영역")
                             .font(.appFont(for: .SemiBold, size: 40))
-                        Text("\(viewModel.userInfo!.pet.first!.petName.addYi())가 정복한 영역을 확인해보세요!")
+                        Text("\(viewModel.selectedPetNameWithYi)가 정복한 영역을 확인해보세요!")
                             .font(.appFont(for: .Light, size: 15))
                             .foregroundStyle(Color.appTextDarkGray)
                     }.padding()
@@ -167,4 +167,3 @@ struct HomeView: View {
 #Preview {
     HomeView()
 }
-

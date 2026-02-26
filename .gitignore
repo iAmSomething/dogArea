@@ -4,6 +4,7 @@
 
 ## User settings
 OpenAIConfiguration.xcconfig
+supabaseConfig.xcconfig
 */*.xcconfig
 GoogleService-Info.plist
 xcuserdata/
