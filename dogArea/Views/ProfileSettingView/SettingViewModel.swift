@@ -107,6 +107,10 @@ final class SettingViewModel: ObservableObject, CoreDataProtocol {
         } else {
             NotificationCenter.default.post(name: UserdefaultSetting.selectedPetDidChangeNotification, object: nil)
         }
+        if let updatedSnapshot = UserdefaultSetting.shared.getValue() {
+            ProfileSyncCoordinator.shared.enqueueSnapshot(userInfo: updatedSnapshot)
+            ProfileSyncCoordinator.shared.flushIfNeeded(force: true)
+        }
         reloadUserInfo()
         return .success(())
     }

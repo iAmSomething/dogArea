@@ -66,6 +66,10 @@ class SigningViewModel: ObservableObject {
                     pet: [petInfo],
                     createdAt: createdAt
                 )
+                if let savedSnapshot = UserdefaultSetting.shared.getValue() {
+                    ProfileSyncCoordinator.shared.enqueueSnapshot(userInfo: savedSnapshot)
+                    ProfileSyncCoordinator.shared.flushIfNeeded(force: true)
+                }
                 loading = .success
                 if caricatureEnabled, let currentPetURL = petURL {
                     enqueueCaricatureJobIfPossible(

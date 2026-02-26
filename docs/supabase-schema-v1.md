@@ -39,6 +39,7 @@ erDiagram
     uuid id PK
     text display_name
     text profile_image_url
+    text profile_message
     timestamptz created_at
     timestamptz updated_at
   }
@@ -48,6 +49,9 @@ erDiagram
     uuid owner_user_id FK
     text name
     text photo_url
+    text breed
+    int age_years
+    text gender
     text caricature_url
     text caricature_status
     text caricature_provider
@@ -153,6 +157,9 @@ erDiagram
 ### 4.2 반려견/프로필
 - `profiles`: 사용자 프로필
 - `pets`: 반려견 기본 정보 + 캐리커처 상태
+  - 확장 필드: `profile_message`, `breed`, `age_years`, `gender`
+  - `age_years` 허용값: `0..30` (nullable)
+  - `gender` 허용값: `unknown`, `male`, `female`
   - `caricature_status` 허용값: `queued`, `processing`, `ready`, `failed`
 
 ### 4.3 비교군
