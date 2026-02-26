@@ -14,7 +14,6 @@ import Combine
 import WatchConnectivity
 import CryptoKit
 class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreDataProtocol, WCSessionDelegate {
-    @Environment(\.managedObjectContext) private var viewContext
     private let locationManager = CLLocationManager()
     private var timer: Timer? = nil
     @Published var time: TimeInterval = 0.0
@@ -57,6 +56,13 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     private let locationSharingKey = "nearby.locationSharingEnabled"
     private let nearbyHotspotEnabledKey = "nearby.hotspotEnabled"
     private let nearbyPresenceUserIdKey = "nearby.presenceUserId"
+
+    private enum WatchIncomingAction: String {
+        case startWalk
+        case addPoint
+        case endWalk
+    }
+
     override init() {
         super.init()
         self.locationManager.delegate = self
@@ -64,9 +70,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         self.locationManager.desiredAccuracy = kCLLocationAccuracyBest // 정확도 설정
         self.locationManager.requestWhenInUseAuthorization() // 권한 요청
         self.locationManager.startUpdatingLocation() // 위치 업데이트 시작
-        self.polygonList = self.fetchPolygons()
-        self.polygon = lastPolygon() ?? Polygon(walkingTime: 0.0, walkingArea: 0.0)
-        self.refreshHeatmap()
+        self.reloadPolygonState(restoreLatestPolygon: true)
         self.loadProcessedWatchActions()
 
         let storedHeatmapEnabled = UserDefaults.standard.object(forKey: heatmapEnabledKey) as? Bool ?? true
@@ -87,9 +91,17 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         timer?.invalidate()
         nearbyTickTimer?.invalidate()
     }
-    func fetchPolygonList() {
+
+    private func reloadPolygonState(restoreLatestPolygon: Bool = false) {
         self.polygonList = self.fetchPolygons()
+        if restoreLatestPolygon {
+            self.polygon = lastPolygon() ?? Polygon(walkingTime: 0.0, walkingArea: 0.0)
+        }
         self.refreshHeatmap()
+    }
+
+    func fetchPolygonList() {
+        self.reloadPolygonState()
     }
     func fetchSelectedPolygonList(for clusters: Cluster) {
         if clusters.sumLocs.count == self.selectedPolygonList.count {
@@ -122,8 +134,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
             polygon.removeAt(locationID)
             if polygon.locations.count<3 {
                 _ = deletePolygon(id: self.polygon.id)
-                self.polygonList = self.fetchPolygons()
-                self.refreshHeatmap()
+                self.reloadPolygonState()
             }
         }
     }
@@ -143,8 +154,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
                         featureKey: .heatmapV1,
                         payload: ["pointCount": "\(self.polygon.locations.count)"]
                     )
-                    self.polygonList = self.fetchPolygons()
-                    self.refreshHeatmap()
+                    self.reloadPolygonState()
                 }
             time = 0.0
         }
@@ -181,7 +191,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
 
     func deletePolygonAndRefresh(_ id: UUID) {
         _ = deletePolygon(id: id)
-        self.fetchPolygonList()
+        self.reloadPolygonState()
     }
 
     func refreshHeatmap(now: Date = Date()) {
@@ -472,47 +482,55 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     }
 
     private func handleWatchPayload(_ payload: [String: Any]) {
-        guard let action = payload["action"] as? String else { return }
+        guard let action = parseWatchAction(from: payload) else { return }
+        let actionName = action.rawValue
         metricTracker.track(
             .watchActionReceived,
             userKey: currentMetricUserId(),
-            payload: ["action": action]
+            payload: ["action": actionName]
         )
         let actionId = payload["action_id"] as? String ?? UUID().uuidString
         if shouldProcessWatchAction(actionId: actionId) == false {
             metricTracker.track(
                 .watchActionDuplicate,
                 userKey: currentMetricUserId(),
-                payload: ["action": action]
+                payload: ["action": actionName]
             )
             return
         }
         metricTracker.track(
             .watchActionProcessed,
             userKey: currentMetricUserId(),
-            payload: ["action": action]
+            payload: ["action": actionName]
         )
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
-            switch action {
-            case "startWalk":
-                if self.isWalking == false {
-                    self.endWalk()
-                    self.metricTracker.track(.watchActionApplied, userKey: self.currentMetricUserId(), payload: ["action": action])
-                }
-            case "addPoint":
-                if self.isWalking {
-                    self.addLocation()
-                    self.syncWatchContext(force: true)
-                    self.metricTracker.track(.watchActionApplied, userKey: self.currentMetricUserId(), payload: ["action": action])
-                }
-            case "endWalk":
-                if self.isWalking {
-                    self.endWalk()
-                    self.metricTracker.track(.watchActionApplied, userKey: self.currentMetricUserId(), payload: ["action": action])
-                }
-            default:
-                break
+            self.applyWatchAction(action)
+        }
+    }
+
+    private func parseWatchAction(from payload: [String: Any]) -> WatchIncomingAction? {
+        guard let rawAction = payload["action"] as? String else { return nil }
+        return WatchIncomingAction(rawValue: rawAction)
+    }
+
+    private func applyWatchAction(_ action: WatchIncomingAction) {
+        switch action {
+        case .startWalk:
+            if self.isWalking == false {
+                self.endWalk()
+                self.metricTracker.track(.watchActionApplied, userKey: self.currentMetricUserId(), payload: ["action": action.rawValue])
+            }
+        case .addPoint:
+            if self.isWalking {
+                self.addLocation()
+                self.syncWatchContext(force: true)
+                self.metricTracker.track(.watchActionApplied, userKey: self.currentMetricUserId(), payload: ["action": action.rawValue])
+            }
+        case .endWalk:
+            if self.isWalking {
+                self.endWalk()
+                self.metricTracker.track(.watchActionApplied, userKey: self.currentMetricUserId(), payload: ["action": action.rawValue])
             }
         }
     }
