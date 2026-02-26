@@ -11,7 +11,7 @@
 
 ## 2. 트리거
 - 자동: `push` to `main`
-- 수동: `workflow_dispatch` (옵션 `release_notes`)
+- 수동: `workflow_dispatch`
 
 ## 3. 시크릿/변수
 필수 GitHub Secrets:
