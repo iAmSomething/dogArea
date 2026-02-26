@@ -82,8 +82,7 @@ extension UserDefaults {
         guard let encodedData = data(forKey: defaultName) else {
             return nil
         }
-        
-        return try! JSONDecoder().decode(type, from: encodedData)
+        return try? JSONDecoder().decode(type, from: encodedData)
     }
     
     public func setStructArray<T: Codable>(_ value: [T], forKey defaultName: String){
@@ -96,7 +95,7 @@ extension UserDefaults {
         guard let encodedData = array(forKey: defaultName) as? [Data] else {
             return []
         }
-        return encodedData.map { try! JSONDecoder().decode(type, from: $0) }
+        return encodedData.compactMap { try? JSONDecoder().decode(type, from: $0) }
     }
 }
 

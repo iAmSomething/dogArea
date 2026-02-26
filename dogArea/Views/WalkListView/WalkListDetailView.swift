@@ -107,7 +107,9 @@ struct WalkListDetailView: View {
             ).navigationBarBackButtonHidden()
         }.padding(.top, 20)
         .onAppear {
-            imageRenderer.captureMapImage(for: model.toPolygon().polygon!)
+            if let polygon = model.toPolygon().polygon {
+                imageRenderer.captureMapImage(for: polygon)
+            }
 
             tabStatus.hide()
         }.safeAreaPadding(.top, 20)

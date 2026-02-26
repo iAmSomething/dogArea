@@ -579,12 +579,7 @@ extension MapViewModel {
         return abs(area)
     }
     func calculatedAreaString(areaSize: Double? = nil , isPyong: Bool = false) -> String {
-        var area = 0.0
-        if areaSize == nil {
-            area = calculateArea()
-        } else {
-            area = areaSize!
-        }
+        let area = areaSize ?? calculateArea()
         var str = String(format: "%.2f" , area) + "㎡"
         if area > 10000.0 {
             str = String(format: "%.2f" , area/10000) + "만 ㎡"
@@ -661,9 +656,10 @@ extension MapViewModel {
 
     }
     private func initialClusterByPolygon() async -> [Cluster] {
-        return self.polygonList
-            .filter{!$0.polygon.isNil}
-            .map{Cluster(center: $0.polygon!.coordinate, id: $0.id)}
+        return self.polygonList.compactMap { polygon in
+            guard let mapPolygon = polygon.polygon else { return nil }
+            return Cluster(center: mapPolygon.coordinate, id: polygon.id)
+        }
     }
     private func cluster(distance: Double) async -> [Cluster] {
         let startCluster = await initialClusterByPolygon()

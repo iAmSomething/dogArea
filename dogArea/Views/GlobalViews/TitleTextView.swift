@@ -18,8 +18,8 @@ struct TitleTextView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     Text(title)
                         .font(.appFont(for: .SemiBold, size: 40))
-                    if subTitle != nil {
-                        Text(subTitle!)
+                    if let subTitle {
+                        Text(subTitle)
                             .font(.appFont(for: .Light, size: 15))
                             .foregroundStyle(Color.appTextDarkGray)
                     }
@@ -28,8 +28,8 @@ struct TitleTextView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     Text(title)
                         .font(.appFont(for: .SemiBold, size: 25))
-                    if subTitle != nil {
-                        Text(subTitle!)
+                    if let subTitle {
+                        Text(subTitle)
                             .font(.appFont(for: .Light, size: 11))
                             .foregroundStyle(Color.appTextDarkGray)
                     }

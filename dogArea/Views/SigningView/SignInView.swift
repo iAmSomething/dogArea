@@ -46,21 +46,27 @@ struct AppleSigninButton : View{
                     switch authResults.credential{
                     case let appleIDCredential as ASAuthorizationAppleIDCredential:
                         // 계정 정보 가져오기
-                        var userInfo = UserdefaultSetting().getValue()
+                        let userInfo = UserdefaultSetting().getValue()
                         let UserIdentifier = appleIDCredential.user
                         let fullName = appleIDCredential.fullName
                         let name =  (fullName?.familyName ?? "") + (fullName?.givenName ?? "")
-                        let IdentityToken = String(data: appleIDCredential.identityToken!, encoding: .utf8)
-                        let AuthorizationCode = String(data: appleIDCredential.authorizationCode!, encoding: .utf8)
                         if userInfo?.name == UserIdentifier {
-                            guard let info = userInfo else { return }
+                            guard userInfo != nil else { return }
                             isLogined.toggle()
                             // 첫 가입 아님(이미 가입함)
                         } else {
+                            guard let identityTokenData = appleIDCredential.identityToken,
+                                  let identityToken = String(data: identityTokenData, encoding: .utf8) else {
+                                print("identity token missing")
+                                return
+                            }
+                            if appleIDCredential.authorizationCode == nil {
+                                print("authorization code missing")
+                            }
                             let credential = OAuthProvider.credential(withProviderID: "apple.com",
-                                                                      idToken: IdentityToken!,
+                                                                      idToken: identityToken,
                                                                       rawNonce: nil)
-                            Auth.auth().signIn(with: credential){ result, error in
+                            Auth.auth().signIn(with: credential){ _, error in
                                 guard error == nil else {
                                     print(error?.localizedDescription)
                                     return

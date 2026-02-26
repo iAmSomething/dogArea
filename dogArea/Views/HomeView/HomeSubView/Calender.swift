@@ -87,7 +87,7 @@ struct CalenderView: View {
                         let sunday = index % 7 == 0
                         let saturday = index % 7 == 6
                         let clicked = clickedDates.filter{$0 == date}
-                        let today = Calendar.current.date(bySettingHour: 0, minute: 0, second: 0, of: Date())!
+                        let today = Calendar.current.date(bySettingHour: 0, minute: 0, second: 0, of: Date()) ?? Date()
                         CellView(day: day, clickedCount: clicked.count, sun: sunday, sat: saturday, today: today == date)
                     }
                 }
@@ -144,14 +144,14 @@ private struct CellView: View {
 private extension CalenderView {
     /// 특정 해당 날짜
     private func getDate(for day: Int) -> Date {
-        var date = Calendar.current.date(byAdding: .day, value: day, to: startOfMonth())!
-        return Calendar.current.date(bySettingHour: 0, minute: 0, second: 0, of: date)!
+        let date = Calendar.current.date(byAdding: .day, value: day, to: startOfMonth()) ?? startOfMonth()
+        return Calendar.current.date(bySettingHour: 0, minute: 0, second: 0, of: date) ?? date
     }
     
     /// 해당 월의 시작 날짜
     func startOfMonth() -> Date {
         let components = Calendar.current.dateComponents([.year, .month], from: month)
-        return Calendar.current.date(from: components)!
+        return Calendar.current.date(from: components) ?? month
     }
     
     /// 해당 월에 존재하는 일자 수
@@ -162,7 +162,7 @@ private extension CalenderView {
     /// 해당 월의 첫 날짜가 갖는 해당 주의 몇번째 요일
     func firstWeekdayOfMonth(in date: Date) -> Int {
         let components = Calendar.current.dateComponents([.year, .month], from: date)
-        let firstDayOfMonth = Calendar.current.date(from: components)!
+        let firstDayOfMonth = Calendar.current.date(from: components) ?? date
         
         return Calendar.current.component(.weekday, from: firstDayOfMonth)
     }

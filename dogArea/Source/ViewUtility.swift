@@ -73,7 +73,7 @@ extension View {
         self.modifier(RenderImageModifier(rendered: rendered))
     }
     func asUiImage() -> UIImage {
-        var uiImage = UIImage(systemName: "exclamationmark.triangle.fill")!
+        var uiImage = UIImage(systemName: "exclamationmark.triangle.fill") ?? UIImage()
         let controller = UIHostingController(rootView: self)
        
         if let view = controller.view {
@@ -95,6 +95,6 @@ extension View {
 //MARK: - default empty image
 extension UIImage {
     static var emptyImage: UIImage {
-        .init(named: "emptyImg")!
+        .init(named: "emptyImg") ?? UIImage()
     }
 }

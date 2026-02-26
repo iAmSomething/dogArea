@@ -78,7 +78,7 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     }
     func walkedDates() -> Array<Date> {
         let dateArr = polygonList.map{Date(timeIntervalSince1970:$0.createdAt)}
-            .map{Calendar.current.date(bySettingHour: 0, minute: 0, second: 0, of: $0)!}
+            .compactMap { Calendar.current.date(bySettingHour: 0, minute: 0, second: 0, of: $0) }
         return dateArr
     }
     func walkedAreaforWeek() -> Double {

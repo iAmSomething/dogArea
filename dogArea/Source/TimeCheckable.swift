@@ -45,7 +45,9 @@ extension Array where Element: TimeCheckable {
         }
         let thisWeek = self.filter{e in
             let date = Date(timeIntervalSince1970: e.createdAt)
-            let roundedDate = Calendar.current.date(bySettingHour: 0, minute: 0, second: 0, of: date)!
+            guard let roundedDate = Calendar.current.date(bySettingHour: 0, minute: 0, second: 0, of: date) else {
+                return false
+            }
             return roundedDate > startOfWeek
         }
         return thisWeek
@@ -57,4 +59,3 @@ extension Array where Element: TimeCheckable {
         return result
     }
 }
-

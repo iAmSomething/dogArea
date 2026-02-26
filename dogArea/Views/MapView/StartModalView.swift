@@ -9,6 +9,7 @@ import SwiftUI
 struct StartModalView: View {
     @Environment(\.dismiss) var dismiss
     @State var time: TimeInterval = 3
+    @State private var countdownTimer: Timer? = nil
     var body: some View {
         VStack {
             if Int(time) < 1 {
@@ -19,11 +20,30 @@ struct StartModalView: View {
                 Text("\(Int(time))")
                     .font(.appFont(for: .Black, size: 72))
             }
-        }.onAppear() {
-            Timer.scheduledTimer(withTimeInterval: 1, repeats: true, block: { t in
-                self.time -= t.timeInterval
-            })
         }
+        .onAppear {
+            startCountdown()
+        }
+        .onDisappear {
+            invalidateCountdown()
+        }
+    }
+
+    private func startCountdown() {
+        invalidateCountdown()
+        countdownTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
+            self.time = max(0, self.time - timer.timeInterval)
+            if self.time <= 0 {
+                timer.invalidate()
+                self.countdownTimer = nil
+                dismiss()
+            }
+        }
+    }
+
+    private func invalidateCountdown() {
+        countdownTimer?.invalidate()
+        countdownTimer = nil
     }
 }
 
