@@ -6,19 +6,40 @@
 //
 
 import SwiftUI
-import WatchConnectivity
 
 struct ContentView: View {
+    @StateObject private var viewModel = ContentsViewModel()
+
+    private var durationText: String {
+        let total = Int(viewModel.walkingTime)
+        let min = total / 60
+        let sec = total % 60
+        return String(format: "%02d:%02d", min, sec)
+    }
+
     var body: some View {
         VStack {
-            Text("산책 중")
-            Button(action: {},
-                   label: {
-                Text("영역 추가하기")
-                    
-            }).frame(maxWidth: .infinity,
-                     maxHeight: .infinity)
-            
+            Text(viewModel.isWalking ? "산책 중" : "대기 중")
+            Text("시간 \(durationText)")
+                .font(.footnote)
+            Text(String(format: "넓이 %.1f㎡", viewModel.walkingArea))
+                .font(.footnote)
+            Text(viewModel.isReachable ? "연결됨" : "오프라인 큐")
+                .font(.caption2)
+                .foregroundStyle(viewModel.isReachable ? .green : .orange)
+
+            if viewModel.isWalking {
+                Button("영역 표시하기") {
+                    viewModel.sendAction(.addPoint)
+                }
+                Button("산책 종료") {
+                    viewModel.sendAction(.endWalk)
+                }
+            } else {
+                Button("산책 시작") {
+                    viewModel.sendAction(.startWalk)
+                }
+            }
         }
         .padding()
     }
