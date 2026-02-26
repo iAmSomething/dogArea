@@ -36,6 +36,7 @@ fi
 
 echo "[dogArea] building iOS target"
 xcodebuild \
+  -skipPackagePluginValidation \
   -project dogArea.xcodeproj \
   -scheme dogArea \
   -configuration Debug \
@@ -45,6 +46,7 @@ xcodebuild \
 
 echo "[dogArea] building watchOS target"
 xcodebuild \
+  -skipPackagePluginValidation \
   -project dogArea.xcodeproj \
   -scheme "dogAreaWatch Watch App" \
   -configuration Debug \
