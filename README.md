@@ -21,6 +21,7 @@
 - 캐리커처 비동기 파이프라인 명세 v1: `docs/caricature-async-pipeline-v1.md`
 - 근처 사용자 익명 핫스팟 명세 v1: `docs/nearby-anonymous-hotspot-v1.md`
 - Feature Flag/롤아웃 모니터링 명세 v1: `docs/feature-flag-rollout-monitoring-v1.md`
+- ViewModel 현대화 리팩토링 명세 v1: `docs/viewmodel-modernization-v1.md`
 
 ## 강아지들의 영역 표시
 
