@@ -10,7 +10,6 @@ on:
         description: "Firebase release notes (optional)"
         required: false
         default: ""
-        type: string
 
 concurrency:
   group: firebase-distribution-${{ github.ref }}
