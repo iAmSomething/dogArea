@@ -29,6 +29,20 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
         (selectedPet?.petName ?? "강아지").addYi()
     }
 
+    var nextGoalArea: AreaMeter? {
+        nearlistMore()
+    }
+
+    var remainingAreaToGoal: Double {
+        guard let nextGoalArea else { return 0 }
+        return max(0, nextGoalArea.area - myArea.area)
+    }
+
+    var goalProgressRatio: Double {
+        guard let nextGoalArea, nextGoalArea.area > 0 else { return 1.0 }
+        return min(1.0, max(0.0, myArea.area / nextGoalArea.area))
+    }
+
     init() {
         bindSelectedPetSync()
         reloadUserInfo()

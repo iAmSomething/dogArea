@@ -89,86 +89,9 @@ struct HomeView: View {
                     }.padding()
                     Spacer()
                 }
-                Picker("도시들",selection: $viewModel.myArea) {
-                    ForEach(viewModel.combinedAreas(), id: \.self) { item in
-                        HStack {
-                            Text(item.areaName)
-                                .font(.appFont(for: .Medium, size: 20))
-                            Text(item.area.calculatedAreaString).font(.appFont(for: .Medium, size: 20))
-                        }
-                    }
-                }.pickerStyle(.inline)
-                    .frame(height: 120)
-                    .background(Color.appPeach)
-                    .padding(.horizontal, 30)
-                    .padding(.bottom, 10)
-                    .shadow(radius: 5)
-                    .disabled(true)
+                goalTrackerCard
                 UnderLine()
-                VStack {
-                    HStack {
-                        Text("다음 목표는")
-                            .font(.medium16)
-                            .padding([.leading, .bottom], 20)
-                        Spacer()
-                        if let area = viewModel.nearlistMore() {
-                            Text("\((area.area - viewModel.myArea.area).calculatedAreaString) 남았습니다.")
-                                .font(.appFont(for: .Light, size: 15))
-                                .padding(.trailing, 20)
-                                
-                        }
-                    }
-                    HStack(alignment: .bottom) {
-                        if let area = viewModel.nearlistMore() {
-                            Text("\(area.areaName)")
-                                .font(.appFont(for: .Bold, size: 40))
-                            Text("입니다.")
-                        } else {
-                            Text("더 정복할 곳이 없어요!")
-                                .font(.appFont(for: .Medium, size: 20))
-                                .onTapGesture {
-                                }
-                        }
-                    }.padding()
-                        .background(Color.appPinkYello)
-                        .cornerRadius(10)
-                        .shadow(radius: 5)
-                        .padding(.bottom)
-                    
-                }
-                UnderLine()
-                VStack {
-                    HStack(alignment:.top) {
-                        Text("가장 최근에 정복한 곳은")
-                            .font(.medium16)
-                            .padding([.leading, .bottom], 20)
-                        Spacer()
-                        NavigationLink(destination: {AreaDetailView(viewModel: viewModel)}, label: {                        Text("더 보기 >")
-                                .font(.appFont(for: .Light, size: 14))
-                                .foregroundStyle(Color.appTextDarkGray)
-                                .padding([.trailing, .bottom], 20)
-                                })
-
-                        
-                    }
-                    HStack(alignment: .bottom) {
-                        if let area = viewModel.nearlistLess() {
-                            Text("\(area.areaName)")
-                                .font(.appFont(for: .Bold, size: 40))
-                            Text("입니다.")
-                        } else {
-                            Text("산책을 통해 영역을 넓혀봐요!")
-                                .font(.appFont(for: .Medium, size: 20))
-                                .onTapGesture {
-                                }
-                        }
-                    }.padding()
-                        .background(Color.appPinkYello)
-                        .cornerRadius(10)
-                        .shadow(radius: 5)
-                        .padding(.bottom)
-                    
-                }
+                recentConqueredCard
                 UnderLine()
                 
                 Spacer()
@@ -208,6 +131,103 @@ struct HomeView: View {
             RoundedRectangle(cornerRadius: 10)
                 .stroke(report.hasOutstandingWork ? Color.appRed : Color.appGreen, lineWidth: 0.4)
         )
+    }
+
+    private var goalTrackerCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top) {
+                Text("영역 목표 트래커")
+                    .font(.appFont(for: .SemiBold, size: 20))
+                Spacer()
+                NavigationLink(destination: AreaDetailView(viewModel: viewModel)) {
+                    Text("비교군 더보기 >")
+                        .font(.appFont(for: .Light, size: 13))
+                        .foregroundStyle(Color.appTextDarkGray)
+                }
+            }
+
+            goalMetricRow(
+                title: "현재 영역",
+                value: viewModel.myArea.area.calculatedAreaString,
+                detail: viewModel.myArea.areaName
+            )
+
+            goalMetricRow(
+                title: "다음 목표",
+                value: viewModel.nextGoalArea?.areaName ?? "더 정복할 곳이 없어요!",
+                detail: viewModel.nextGoalArea?.area.calculatedAreaString ?? "목표 완료"
+            )
+
+            goalMetricRow(
+                title: "남은 면적",
+                value: viewModel.remainingAreaToGoal.calculatedAreaString,
+                detail: viewModel.nextGoalArea == nil ? "다음 목표 없음" : "목표까지 남은 면적"
+            )
+
+            ProgressView(value: viewModel.goalProgressRatio)
+                .tint(Color.appGreen)
+                .accessibilityLabel("목표 진행률")
+                .accessibilityValue("\(Int(viewModel.goalProgressRatio * 100)) 퍼센트")
+        }
+        .padding(14)
+        .background(Color.appPeach)
+        .cornerRadius(12)
+        .shadow(radius: 3)
+        .padding(.horizontal, 16)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            "영역 목표 트래커. 현재 영역 \(viewModel.myArea.area.calculatedAreaString), 다음 목표 \(viewModel.nextGoalArea?.areaName ?? "없음"), 남은 면적 \(viewModel.remainingAreaToGoal.calculatedAreaString)"
+        )
+    }
+
+    private func goalMetricRow(title: String, value: String, detail: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Text(title)
+                .font(.appFont(for: .SemiBold, size: 13))
+                .foregroundStyle(Color.appTextDarkGray)
+                .frame(width: 66, alignment: .leading)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(value)
+                    .font(.appFont(for: .SemiBold, size: 17))
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.82)
+                Text(detail)
+                    .font(.appFont(for: .Light, size: 12))
+                    .foregroundStyle(Color.appTextDarkGray)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.85)
+            }
+            Spacer(minLength: 0)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(title) \(value) \(detail)")
+    }
+
+    private var recentConqueredCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("최근 정복")
+                .font(.appFont(for: .SemiBold, size: 20))
+                .padding(.horizontal, 4)
+            HStack(alignment: .bottom) {
+                if let area = viewModel.nearlistLess() {
+                    Text(area.areaName)
+                        .font(.appFont(for: .Bold, size: 32))
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.8)
+                } else {
+                    Text("산책을 통해 영역을 넓혀봐요!")
+                        .font(.appFont(for: .Medium, size: 20))
+                }
+                Spacer()
+            }
+        }
+        .padding()
+        .background(Color.appPinkYello)
+        .cornerRadius(10)
+        .shadow(radius: 3)
+        .padding(.horizontal, 16)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("최근 정복 영역 \(viewModel.nearlistLess()?.areaName ?? "없음")")
     }
 }
 
