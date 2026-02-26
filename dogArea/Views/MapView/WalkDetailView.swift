@@ -10,12 +10,13 @@ struct WalkDetailView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var loading: LoadingViewModel
     @EnvironmentObject var viewModel: MapViewModel
-    @State private var snsCircles: [String] = ["instagram", "twitter"]
     @StateObject var mapImageProvider = MapImageProvider()
-    
+
     @State private var isMeter: Bool = true
-    @State private var image: UIImage? = nil
-    @State private var showSaveMessage = false
+    @State private var shareItems: [Any] = []
+    @State private var showShareSheet = false
+    @State private var toastMessage: String? = nil
+
     var body: some View {
         VStack {
             Image(uiImage: mapImageProvider.capturedImage ?? UIImage.emptyImg)
@@ -51,27 +52,37 @@ struct WalkDetailView: View {
                     .frame(maxWidth: .infinity)
                     .background(Color(red: 0.19, green: 0.19, blue: 0.19))
                     .padding(.horizontal, 20)
-                ScrollView(.horizontal) {
-                    LazyHGrid(rows: [GridItem(.fixed(32))] , alignment: .top){
-                        ForEach(snsCircles.indices) { sns in
-                            Circle().foregroundStyle(.gray)
-                        }
+                Button(action: {
+                    shareItems = prepareShareItems()
+                    if shareItems.isEmpty == false {
+                        showShareSheet = true
                     }
-                }.frame(height: 60)
+                }, label: {
+                    HStack {
+                        Image(systemName: "square.and.arrow.up")
+                        Text("공유 시트 열기")
+                    }
+                    .font(.appFont(for: .Medium, size: 16))
+                    .foregroundStyle(Color.appTextDarkGray)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .background(Color.appYellowPale)
+                    .cornerRadius(10)
                     .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                })
             }
             Spacer()
             Button(action: {
                 loading.loading()
                 guard let image = mapImageProvider.capturedImage else {
                     loading.failed(msg: "이미지 가져오기 실패")
-                    return}
-//                guard let image = image else { return }
+                    return
+                }
                 UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
                 loading.success()
-                showSaveMessage.toggle()
+                toastMessage = "저장이 완료되었습니다"
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                    self.showSaveMessage = false
+                    self.toastMessage = nil
                 }
             },
                    label:  {
@@ -100,13 +111,33 @@ struct WalkDetailView: View {
                 .padding(.horizontal, 70)
         }.overlay(
             Group {
-                if showSaveMessage {
-                    SimpleMessageView(message: "저장이 완료되었습니다")
+                if let toastMessage {
+                    SimpleMessageView(message: toastMessage)
                         .transition(.opacity)
-                    
                 }
-            }.animation(.easeInOut(duration: 0.2), value: showSaveMessage)
+            }.animation(.easeInOut(duration: 0.2), value: toastMessage)
         )
+        .sheet(isPresented: $showShareSheet) {
+            ActivityShareSheet(items: shareItems) { _, completed, _, _ in
+                if completed {
+                    toastMessage = "공유를 완료했습니다"
+                }
+            }
+        }
+    }
+
+    private func prepareShareItems() -> [Any] {
+        let summary = WalkShareSummaryBuilder.build(
+            createdAt: viewModel.polygon.createdAt,
+            duration: viewModel.polygon.walkingTime,
+            areaM2: viewModel.polygon.walkingArea,
+            pointCount: viewModel.polygon.locations.count,
+            petName: viewModel.currentWalkingPetName
+        )
+        if let capturedImage = mapImageProvider.capturedImage {
+            return [summary, capturedImage]
+        }
+        return [summary]
     }
 }
 //
