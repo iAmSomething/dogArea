@@ -60,6 +60,15 @@ struct MapSettingView: View {
                   .padding(.vertical, 5)
                   .background(viewModel.walkStartCountdownEnabled ? Color.appYellow : Color.appTextLightGray)
                   .cornerRadius(5)
+              Text(viewModel.walkPointRecordMode.title)
+                  .font(.bold14)
+                  .onTapGesture {
+                      viewModel.toggleWalkPointRecordMode()
+                  }
+                  .padding(.horizontal, 10)
+                  .padding(.vertical, 5)
+                  .background(viewModel.isAutoPointRecordMode ? Color.appGreen : Color.appTextLightGray)
+                  .cornerRadius(5)
           }.padding(.horizontal)
         Spacer()
         Image(systemName: "clear")
