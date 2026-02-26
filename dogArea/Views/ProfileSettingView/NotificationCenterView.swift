@@ -35,10 +35,18 @@ struct NotificationCenterView: View {
                    VStack(alignment: .leading) {
                        Text("\(viewModel.userInfo?.pet.first?.petName ?? "강아지")")
                            .font(.appFont(for: .SemiBold, size: 20))
+                       if let status = viewModel.userInfo?.pet.first?.caricatureStatus {
+                           Text("캐리커처 상태: \(status.rawValue)")
+                               .font(.appFont(for: .Light, size: 11))
+                               .foregroundStyle(Color.appTextDarkGray)
+                       }
                    }
                    Spacer()
                }
                Spacer()
+           }
+           .onAppear {
+               viewModel.reloadUserInfo()
            }
        }
 }
@@ -95,7 +103,7 @@ struct UserProfileImageView: View {
 struct PetProfileImageView: View {
     @EnvironmentObject var viewModel: SettingViewModel
     var body: some View {
-        if let url = viewModel.userInfo?.pet.first?.petProfile {
+        if let url = viewModel.userInfo?.pet.first?.caricatureURL ?? viewModel.userInfo?.pet.first?.petProfile {
             KFImage(URL(string: url))
                 .resizable()
                 .aspectRatio(contentMode: .fit)

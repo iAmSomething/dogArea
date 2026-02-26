@@ -55,10 +55,22 @@ struct UserInfo: TimeCheckable {
     let pet: [PetInfo]
     var createdAt: TimeInterval
 }
-struct PetInfo: Codable {
-    let petName: String
-    let petProfile: String?
+
+enum CaricatureStatus: String, Codable {
+    case queued
+    case processing
+    case ready
+    case failed
 }
+
+struct PetInfo: Codable {
+    var petName: String
+    var petProfile: String?
+    var caricatureURL: String? = nil
+    var caricatureStatus: CaricatureStatus? = nil
+    var caricatureProvider: String? = nil
+}
+
 extension UserDefaults {
     public func setStruct<T: Codable>(_ value: T?, forKey defaultName: String){
         let data = try? JSONEncoder().encode(value)
@@ -84,5 +96,32 @@ extension UserDefaults {
             return []
         }
         return encodedData.map { try! JSONDecoder().decode(type, from: $0) }
+    }
+}
+
+extension UserdefaultSetting {
+    func updateFirstPetCaricature(
+        status: CaricatureStatus,
+        caricatureURL: String? = nil,
+        provider: String? = nil
+    ) {
+        guard let current = getValue(), current.pet.isEmpty == false else { return }
+        var pets = current.pet
+        pets[0].caricatureStatus = status
+        if let caricatureURL {
+            pets[0].caricatureURL = caricatureURL
+            // Display generated profile first after it is ready.
+            pets[0].petProfile = caricatureURL
+        }
+        if let provider {
+            pets[0].caricatureProvider = provider
+        }
+        save(
+            id: current.id,
+            name: current.name,
+            profile: current.profile,
+            pet: pets,
+            createdAt: current.createdAt
+        )
     }
 }
