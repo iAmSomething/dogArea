@@ -79,3 +79,13 @@
 ### 6.4 종합 판단
 - 릴리즈 가능 여부: `GO | NO-GO`
 - 잔여 이슈/액션:
+
+## 7. 예외 시나리오 게이트 (P0/P1)
+- 참조 매트릭스: `docs/fault-injection-matrix-v1.md`
+- 실행 런북: `docs/fault-injection-runbook-v1.md`
+- 결과 템플릿: `docs/fault-injection-result-template-v1.md`
+- [ ] P0 전 항목 PASS 확인
+- [ ] P1 실패 항목은 우회/복구 전략 및 담당자/일정 명시
+- [ ] 릴리즈 PR 본문에 매트릭스 링크 + 실행 결과 링크 첨부
+- 자동 차단 규칙:
+  - `P0 FAIL >= 1` -> `NO-GO`
