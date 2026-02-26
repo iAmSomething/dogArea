@@ -8,6 +8,7 @@
 import Foundation
 enum AlertActionType{
     case custom(AlertModel , () -> () , () -> ())
+    case customThreeButton(AlertModel, () -> (), () -> (), () -> ())
     case addPoint
     case logOut
     case annotationSelected(Location)
@@ -15,6 +16,8 @@ enum AlertActionType{
     var model: AlertModel {
         switch self {
         case .custom(let model, let leftAction, let rightAction):
+            return model
+        case .customThreeButton(let model, let leftAction, let middleAction, let rightAction):
             return model
         case .addPoint:
             return AlertModel(title: "영역 표시", message: "영역을 표시하겠습니까?", configure: .defaultType)
@@ -30,6 +33,7 @@ enum AlertActionType{
 enum AlertConfigureType {
     case defaultType
     case twoButtonChoice(isVertical: Bool = false, first: String?, second: String?)
+    case threeButtonChoice(first: String?, second: String?, third: String?)
     case oneButton(buttonMsg: String?)
     var leftString: String {
         switch self {
@@ -37,8 +41,18 @@ enum AlertConfigureType {
             "확인"
         case .twoButtonChoice(_, first: let first, _):
             first ?? "확인"
+        case .threeButtonChoice(let first, _, _):
+            first ?? "확인"
         case .oneButton(buttonMsg: let buttonMsg):
             buttonMsg ?? "확인"
+        }
+    }
+    var middleString: String? {
+        switch self {
+        case .threeButtonChoice(_, let second, _):
+            return second ?? "취소"
+        default:
+            return nil
         }
     }
     var rightString: String? {
@@ -47,6 +61,8 @@ enum AlertConfigureType {
             "취소"
         case .twoButtonChoice(_, _, let second):
             second ?? "취소"
+        case .threeButtonChoice(_, _, let third):
+            return third ?? "취소"
         case .oneButton(buttonMsg: _):
             nil
         }
@@ -70,6 +86,19 @@ struct AlertModel {
             AlertModel(title: title, message: message, configure: .twoButtonChoice(isVertical: true, first: "예", second: "아니오"))
         }
     }
+    static func threeChoiceAlert(
+        title: String,
+        message: String,
+        first: String,
+        second: String,
+        third: String
+    ) -> AlertModel {
+        AlertModel(
+            title: title,
+            message: message,
+            configure: .threeButtonChoice(first: first, second: second, third: third)
+        )
+    }
     func titleStr() -> String {
         return self.title
     }
@@ -78,6 +107,9 @@ struct AlertModel {
     }
     func leftActionText() -> String {
         return self.configure.leftString
+    }
+    func middleActionText() -> String? {
+        return self.configure.middleString
     }
     func rightActionText() -> String? {
         return self.configure.rightString
@@ -92,4 +124,3 @@ struct AlertModel {
         return setHeight
     }
 }
-

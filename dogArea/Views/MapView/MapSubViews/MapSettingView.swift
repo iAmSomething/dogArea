@@ -51,6 +51,15 @@ struct MapSettingView: View {
                   .padding(.vertical, 5)
                   .background((viewModel.isNearbyHotspotFeatureAvailable && viewModel.locationSharingEnabled) ? Color.appGreen : Color.appTextLightGray)
                   .cornerRadius(5)
+              Text("시작 카운트다운")
+                  .font(.bold14)
+                  .onTapGesture {
+                      viewModel.toggleWalkStartCountdown()
+                  }
+                  .padding(.horizontal, 10)
+                  .padding(.vertical, 5)
+                  .background(viewModel.walkStartCountdownEnabled ? Color.appYellow : Color.appTextLightGray)
+                  .cornerRadius(5)
           }.padding(.horizontal)
         Spacer()
         Image(systemName: "clear")

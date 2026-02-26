@@ -16,6 +16,7 @@ struct CustomAlert: View {
   var isShowVerticalButtons = false
   
   var leftButtonAction: (() -> ())?
+  var middleButtonAction: (() -> ())?
   var rightButtonAction: (() -> ())?
   
   var verticalButtonsHeight: CGFloat = 80
@@ -41,7 +42,9 @@ struct CustomAlert: View {
         Divider()
           .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: 0.5)
           .padding(.all, 0)
-        if !isShowVerticalButtons {
+        if alertModel.middleActionText() != nil {
+          tripleBtn
+        } else if !isShowVerticalButtons {
           verticalBtn
         } else {
           horizontalBtn
@@ -121,6 +124,54 @@ extension CustomAlert {
       
     }
     .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: 55)
+    .padding([.horizontal, .bottom], 0)
+  }
+  var tripleBtn: some View {
+    VStack(spacing: 0) {
+      Button {
+        withAnimation {
+          leftButtonAction?()
+          presentAlert.toggle()
+        }
+      } label: {
+        Text(alertModel.leftActionText())
+          .font(.system(size: 16, weight: .bold))
+          .foregroundColor(.black)
+          .multilineTextAlignment(.center)
+          .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+      }
+      Divider()
+      if let middleTxt = alertModel.middleActionText() {
+        Button {
+          withAnimation {
+            middleButtonAction?()
+            presentAlert.toggle()
+          }
+        } label: {
+          Text(middleTxt)
+            .font(.system(size: 16, weight: .bold))
+            .foregroundColor(.black)
+            .multilineTextAlignment(.center)
+            .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+        }
+      }
+      Divider()
+      if let rightTxt = alertModel.rightActionText() {
+        Button {
+          withAnimation {
+            rightButtonAction?()
+            presentAlert.toggle()
+          }
+        } label: {
+          Text(rightTxt)
+            .font(.system(size: 16, weight: .bold))
+            .foregroundColor(.pink)
+            .multilineTextAlignment(.center)
+            .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+        }
+      }
+    }
+    .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: 132)
     .padding([.horizontal, .bottom], 0)
   }
   var horizontalBtn: some View {

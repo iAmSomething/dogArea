@@ -14,6 +14,7 @@ class UserdefaultSetting {
         case userProfile = "userProfile"
         case petInfo = "petInfo"
         case selectedPetId = "selectedPetId"
+        case walkStartCountdownEnabled = "walkStartCountdownEnabled"
         case createdAt = "createdAt"
         case nonce = "nonce"
     }
@@ -79,6 +80,7 @@ class UserdefaultSetting {
         UserDefaults.standard.removeObject(forKey: keyValue.userProfile.rawValue)
         UserDefaults.standard.removeObject(forKey: keyValue.petInfo.rawValue)
         UserDefaults.standard.removeObject(forKey: keyValue.selectedPetId.rawValue)
+        UserDefaults.standard.removeObject(forKey: keyValue.walkStartCountdownEnabled.rawValue)
     }
     #endif
 
@@ -248,6 +250,14 @@ extension UserdefaultSetting {
             createdAt: current.createdAt,
             selectedPetId: targetPetId
         )
+    }
+
+    func walkStartCountdownEnabled() -> Bool {
+        UserDefaults.standard.object(forKey: keyValue.walkStartCountdownEnabled.rawValue) as? Bool ?? false
+    }
+
+    func setWalkStartCountdownEnabled(_ enabled: Bool) {
+        UserDefaults.standard.set(enabled, forKey: keyValue.walkStartCountdownEnabled.rawValue)
     }
 }
 
