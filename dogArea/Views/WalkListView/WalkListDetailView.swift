@@ -168,7 +168,15 @@ struct WalkListDetailView: View {
             petName: nil
         )
         if let image = imageRenderer.capturedImage ?? model.image {
-            return [summary, image]
+            let shareCard = WalkShareCardTemplateBuilder.build(
+                baseImage: image,
+                createdAt: model.createdAt,
+                duration: model.walkDuration,
+                areaM2: model.walkArea,
+                pointCount: model.locations.count,
+                petName: nil
+            )
+            return [summary, shareCard]
         }
         return [summary]
     }
