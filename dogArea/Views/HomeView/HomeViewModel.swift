@@ -27,6 +27,7 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
         myAreaList = fetchArea()
     }
     func fetchData() {
+        userInfo = UserdefaultSetting().getValue()
         polygonList = fetchPolygons()
         totalArea = polygonList.map{$0.walkingArea}.reduce(0.0){$0 + $1}
         totalTime = polygonList.map{$0.walkingTime}.reduce(0.0){$0 + $1}

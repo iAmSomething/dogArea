@@ -11,11 +11,60 @@ import CoreData
 import FirebaseCore
 import FirebaseFirestore
 
+struct SupabaseConfiguration {
+    let url: URL
+    let anonKey: String
+    let projectRef: String
+    let storageBuckets: [String]
+    let authRedirectURL: URL?
+
+    static func load(from bundle: Bundle = .main) -> SupabaseConfiguration? {
+        guard
+            let urlString = bundle.stringValue(forInfoDictionaryKey: "SUPABASE_URL"),
+            let url = URL(string: urlString),
+            let anonKey = bundle.stringValue(forInfoDictionaryKey: "SUPABASE_ANON_KEY"),
+            let projectRef = bundle.stringValue(forInfoDictionaryKey: "PROJECT_REF")
+        else {
+            return nil
+        }
+
+        let bucketsString = bundle.stringValue(forInfoDictionaryKey: "STORAGE_BUCKETS") ?? ""
+        let buckets = bucketsString
+            .split(separator: ",")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        let redirect = bundle
+            .stringValue(forInfoDictionaryKey: "AUTH_REDIRECT_URL")
+            .flatMap(URL.init(string:))
+
+        return .init(
+            url: url,
+            anonKey: anonKey,
+            projectRef: projectRef,
+            storageBuckets: buckets,
+            authRedirectURL: redirect
+        )
+    }
+}
+
+private extension Bundle {
+    func stringValue(forInfoDictionaryKey key: String) -> String? {
+        guard let value = object(forInfoDictionaryKey: key) as? String else {
+            return nil
+        }
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+}
+
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         FirebaseApp.configure()
         let db = Firestore.firestore()
+        if SupabaseConfiguration.load() == nil {
+            print("Supabase configuration is missing required values.")
+        }
         return true
     }
 }

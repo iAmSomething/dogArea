@@ -14,12 +14,27 @@ final class SettingViewModel: ObservableObject, CoreDataProtocol {
     @Published var userName: String? = nil
     @Published var petName: String? = nil
     @Published var userInfo: UserInfo? = nil
+    @Published var selectedPetId: UUID? = nil
     private var petURL: String? = nil
     private var profileURL: String? = nil
     private var storage = Storage.storage().reference()
     init() {
         fetchModel()
+        refreshUserInfo()
+    }
+    var pets: [PetInfo] {
+        userInfo?.pet ?? []
+    }
+    var selectedPet: PetInfo? {
+        userInfo?.selectedPet
+    }
+    func refreshUserInfo() {
         self.userInfo = UserdefaultSetting().getValue()
+        self.selectedPetId = userInfo?.selectedPet?.id
+    }
+    func updateSelectedPet(_ id: UUID) {
+        UserdefaultSetting().setSelectedPet(id)
+        refreshUserInfo()
     }
     func fetchModel() {
         self.polygonList = self.fetchPolygons()

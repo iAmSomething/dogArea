@@ -33,12 +33,32 @@ struct NotificationCenterView: View {
                        .environmentObject(viewModel)
                        .padding(.trailing, 20)
                    VStack(alignment: .leading) {
-                       Text("\(viewModel.userInfo?.selectedPet?.petName ?? "강아지")")
+                       Text("\(viewModel.selectedPet?.petName ?? "강아지")")
                            .font(.appFont(for: .SemiBold, size: 20))
                    }
                    Spacer()
                }
+               if viewModel.pets.count > 1 {
+                   HStack {
+                       Text("현재 함께 사는 강아지")
+                           .font(.appFont(for: .Light, size: 12))
+                           .foregroundStyle(Color.appTextDarkGray)
+                       Spacer()
+                   }
+                   Picker("대표 강아지", selection: Binding<UUID>(
+                    get: { viewModel.selectedPetId ?? viewModel.pets.first?.id ?? UUID() },
+                    set: { viewModel.updateSelectedPet($0) }
+                   )) {
+                       ForEach(viewModel.pets, id: \.id) { pet in
+                           Text(pet.petName).tag(pet.id)
+                       }
+                   }
+                   .pickerStyle(.menu)
+               }
                Spacer()
+           }
+           .onAppear {
+               viewModel.refreshUserInfo()
            }
        }
 }
@@ -95,7 +115,7 @@ struct UserProfileImageView: View {
 struct PetProfileImageView: View {
     @EnvironmentObject var viewModel: SettingViewModel
     var body: some View {
-        if let url = viewModel.userInfo?.selectedPet?.petProfile {
+        if let url = viewModel.selectedPet?.petProfile {
             KFImage(URL(string: url))
                 .resizable()
                 .aspectRatio(contentMode: .fit)
