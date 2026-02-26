@@ -191,8 +191,8 @@ struct MapView : View{
             .padding(.vertical, 6)
             .background(Color.appGreen)
             .cornerRadius(8)
-            Button("폐기") {
-                viewModel.discardRecoverableWalkSession()
+            Button("지금 종료") {
+                viewModel.finalizeRecoverableWalkSessionNow()
             }
             .font(.appFont(for: .SemiBold, size: 12))
             .padding(.horizontal, 8)

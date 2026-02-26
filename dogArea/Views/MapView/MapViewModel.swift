@@ -17,6 +17,12 @@ import CryptoKit
 import UIKit
 #endif
 class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreDataProtocol, WCSessionDelegate {
+    enum WalkEndReason: String {
+        case manual = "manual"
+        case autoInactive = "auto_inactive"
+        case autoTimeout = "auto_timeout"
+    }
+
     enum WalkPointRecordMode: String {
         case manual
         case auto
@@ -36,12 +42,14 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     }
 
     private struct ActiveWalkSessionSnapshot: Codable {
+        let sessionId: String?
         let startedAt: TimeInterval
         let elapsedTime: TimeInterval
         let selectedPetId: String?
         let selectedPetName: String
         let currentWalkingPetName: String
         let pointRecordMode: String
+        let lastMovementAt: TimeInterval?
         let points: [ActiveWalkPointSnapshot]
         let savedAt: TimeInterval
     }
@@ -77,7 +85,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     @Published var currentWalkingPetName: String = "강아지"
     @Published var walkStartCountdownEnabled: Bool = false
     @Published var walkPointRecordMode: WalkPointRecordMode = .manual
-    @Published var walkAutoEndPolicyEnabled: Bool = true
+    @Published private(set) var walkAutoEndPolicyEnabled: Bool = true
     @Published var hasRecoverableWalkSession: Bool = false
     @Published var recoverableWalkSummaryText: String = ""
     @Published var watchSyncStatusText: String = "워치 동기화 대기"
@@ -110,12 +118,22 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     private let autoRecordMinInterval: TimeInterval = 8.0
     private let autoRecordNoiseDistance: CLLocationDistance = 4.0
     private let locationAccuracyThreshold: CLLocationAccuracy = 65.0
+    private let inactivityAccuracyThreshold: CLLocationAccuracy = 40.0
+    private let inactivitySpeedThreshold: CLLocationSpeed = 0.3
+    private let inactivityDistanceThreshold: CLLocationDistance = 25.0
     private let jumpSpeedThreshold: CLLocationSpeed = 12.0
     private let jumpDistanceThreshold: CLLocationDistance = 150.0
     private let jumpTimeWindow: TimeInterval = 10.0
-    private let autoEndInactivityInterval: TimeInterval = 1800.0
+    private let restCandidateInterval: TimeInterval = 300.0
+    private let inactivityWarningInterval: TimeInterval = 720.0
+    private let inactivityFinalizeInterval: TimeInterval = 900.0
+    private let walkAutoTimeoutInterval: TimeInterval = 3600.0
     private let recoverableSessionMaxAge: TimeInterval = 43_200.0
     private var lastPointEventAt: Date?
+    private var lastMovementAt: Date?
+    private var movementAnchorLocation: CLLocation?
+    private var didNotifyRestCandidate: Bool = false
+    private var didNotifyInactivityWarning: Bool = false
     private var lastSnapshotPersistAt: Date = .distantPast
     private var pendingRecoverableSession: ActiveWalkSessionSnapshot?
     private var lifecycleObservers: [NSObjectProtocol] = []
@@ -157,7 +175,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         self.nearbyHotspotEnabled = nearbyFeatureOn ? storedNearbyHotspotEnabled : false
         self.locationSharingEnabled = nearbyFeatureOn ? storedLocationSharingEnabled : false
         self.walkStartCountdownEnabled = UserdefaultSetting.shared.walkStartCountdownEnabled()
-        self.walkAutoEndPolicyEnabled = UserdefaultSetting.shared.walkAutoEndPolicyEnabled()
+        self.walkAutoEndPolicyEnabled = true
         self.walkPointRecordMode = WalkPointRecordMode(
             rawValue: UserdefaultSetting.shared.walkPointRecordModeRawValue()
         ) ?? .manual
@@ -230,9 +248,17 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
             polygon.makePolygon(walkArea: calculateArea(), walkTime: self.time)
         }
     }
-    func endWalk(img: UIImage? = nil){
+    func endWalk(
+        img: UIImage? = nil,
+        reason: WalkEndReason = .manual,
+        endedAtOverride: Date? = nil
+    ) {
         if isWalking {
+                timerStop()
                 if self.polygon.locations.count > 2{
+                    if let endedAtOverride {
+                        self.time = max(0, endedAtOverride.timeIntervalSince(self.startTime))
+                    }
                     polygon.makePolygon(walkArea: calculateArea(), walkTime: self.time, img: img)
                     let completedPolygon = self.polygon
                     let updated = savePolygon(polygon: completedPolygon)
@@ -245,6 +271,12 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
                     )
                     if saved {
                         enqueueSyncOutbox(for: completedPolygon, hasImage: img != nil)
+                        let endedAt = (endedAtOverride ?? Date()).timeIntervalSince1970
+                        WalkSessionMetadataStore.shared.set(
+                            sessionId: completedPolygon.id,
+                            reason: .init(rawValue: reason.rawValue) ?? .manual,
+                            endedAt: endedAt
+                        )
                     } else {
                         walkStatusMessage = "로컬 저장에 실패해 동기화 큐 적재를 건너뛰었습니다."
                     }
@@ -253,6 +285,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
             time = 0.0
             self.currentWalkingPetName = self.selectedPetName
             self.resetAutoPointRecordState()
+            self.resetInactivityTracking(now: Date(), clearAnchor: true)
             self.clearActiveWalkSession()
         }
         else {
@@ -266,6 +299,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
             self.resetAutoPointRecordState()
             self.lastAcceptedWalkLocation = nil
             self.lastPointEventAt = Date()
+            self.resetInactivityTracking(now: Date(), clearAnchor: true)
             self.persistActiveWalkSession(force: true)
         }
         withAnimation{ [weak self] in
@@ -287,6 +321,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         selectedPolygonList = []
         currentWalkingPetName = selectedPetName
         resetAutoPointRecordState()
+        resetInactivityTracking(now: Date(), clearAnchor: true)
         lastAcceptedWalkLocation = nil
         clearActiveWalkSession()
         withAnimation { [weak self] in
@@ -304,11 +339,6 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         walkPointRecordMode = walkPointRecordMode == .manual ? .auto : .manual
         UserdefaultSetting.shared.setWalkPointRecordModeRawValue(walkPointRecordMode.rawValue)
         resetAutoPointRecordState()
-    }
-
-    func toggleWalkAutoEndPolicy() {
-        walkAutoEndPolicyEnabled.toggle()
-        UserdefaultSetting.shared.setWalkAutoEndPolicyEnabled(walkAutoEndPolicyEnabled)
     }
 
     var isAutoPointRecordMode: Bool {
@@ -426,6 +456,34 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         return true
     }
 
+    private func resetInactivityTracking(now: Date, clearAnchor: Bool) {
+        lastMovementAt = now
+        if clearAnchor {
+            movementAnchorLocation = nil
+        }
+        didNotifyRestCandidate = false
+        didNotifyInactivityWarning = false
+    }
+
+    private func updateMovementState(with location: CLLocation) {
+        guard location.horizontalAccuracy > 0,
+              location.horizontalAccuracy <= inactivityAccuracyThreshold else {
+            return
+        }
+        guard let anchor = movementAnchorLocation else {
+            movementAnchorLocation = location
+            lastMovementAt = location.timestamp
+            return
+        }
+        let distance = location.distance(from: anchor)
+        let speedCandidate = location.speed >= 0 ? location.speed : max(0, distance / max(1, location.timestamp.timeIntervalSince(anchor.timestamp)))
+        let isMoving = speedCandidate >= inactivitySpeedThreshold || distance >= inactivityDistanceThreshold
+        if isMoving {
+            movementAnchorLocation = location
+            resetInactivityTracking(now: location.timestamp, clearAnchor: false)
+        }
+    }
+
     private func pauseWalkForAuthorizationDowngrade() {
         guard isWalking else { return }
         timerStop()
@@ -449,12 +507,82 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
             clearActiveWalkSession()
             return
         }
+        let now = Date()
+        let lastMovementAt = snapshotLastMovementTime(snapshot)
+        let inactivity = now.timeIntervalSince(lastMovementAt)
+        if inactivity >= inactivityFinalizeInterval {
+            autoFinalizeRecoverableSession(snapshot, now: now, lastMovementAt: lastMovementAt)
+            return
+        }
         pendingRecoverableSession = snapshot
         hasRecoverableWalkSession = true
         recoverableWalkSummaryText = "미종료 산책 \(Int(snapshot.elapsedTime))초 · 포인트 \(snapshot.points.count)개"
+        if inactivity < restCandidateInterval {
+            resumeRecoverableWalkSession(autoRecovered: true)
+        }
+    }
+
+    private func snapshotLastMovementTime(_ snapshot: ActiveWalkSessionSnapshot) -> Date {
+        if let lastMovementAt = snapshot.lastMovementAt {
+            return Date(timeIntervalSince1970: lastMovementAt)
+        }
+        if let lastPointAt = snapshot.points.last?.createdAt {
+            return Date(timeIntervalSince1970: lastPointAt)
+        }
+        return Date(timeIntervalSince1970: snapshot.startedAt + snapshot.elapsedTime)
+    }
+
+    private func autoFinalizeRecoverableSession(
+        _ snapshot: ActiveWalkSessionSnapshot,
+        now: Date,
+        lastMovementAt: Date
+    ) {
+        let restoredPoints = snapshot.points.map {
+            Location(
+                coordinate: CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude),
+                id: UUID(),
+                createdAt: $0.createdAt
+            )
+        }
+        guard restoredPoints.count > 2 else {
+            clearActiveWalkSession()
+            walkStatusMessage = "15분 무이동으로 미종료 산책 임시기록을 폐기했습니다."
+            return
+        }
+        let endedAt = min(now.timeIntervalSince1970, lastMovementAt.timeIntervalSince1970 + inactivityFinalizeInterval)
+        let walkTime = max(0, endedAt - snapshot.startedAt)
+        let restoredSessionId = snapshot.sessionId.flatMap(UUID.init(uuidString:))
+        let completed = Polygon(
+            locations: restoredPoints,
+            createdAt: snapshot.startedAt,
+            id: restoredSessionId ?? UUID(),
+            walkingTime: walkTime,
+            walkingArea: 0.0,
+            imgData: nil
+        )
+        var finalized = completed
+        finalized.makePolygon(walkArea: calculateArea(points: restoredPoints), walkTime: walkTime)
+        let updated = savePolygon(polygon: finalized)
+        if updated.contains(where: { $0.id == finalized.id }) {
+            WalkSessionMetadataStore.shared.set(
+                sessionId: finalized.id,
+                reason: .autoInactive,
+                endedAt: endedAt
+            )
+            enqueueSyncOutbox(for: finalized, hasImage: finalized.binaryImage != nil)
+            walkStatusMessage = "15분 무이동으로 이전 산책을 자동 종료했습니다."
+        } else {
+            walkStatusMessage = "이전 산책 자동 종료 저장에 실패했습니다."
+        }
+        applyPolygonList(updated)
+        clearActiveWalkSession()
     }
 
     func resumeRecoverableWalkSession() {
+        resumeRecoverableWalkSession(autoRecovered: false)
+    }
+
+    private func resumeRecoverableWalkSession(autoRecovered: Bool) {
         guard let snapshot = pendingRecoverableSession, isWalking == false else { return }
 
         let restoredPoints = snapshot.points.map {
@@ -466,6 +594,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         }
 
         polygon = Polygon(locations: restoredPoints, walkingTime: snapshot.elapsedTime, walkingArea: 0.0)
+        if let sessionId = snapshot.sessionId, let restoredId = UUID(uuidString: sessionId) {
+            polygon.id = restoredId
+        }
         time = snapshot.elapsedTime
         startTime = Date().addingTimeInterval(-snapshot.elapsedTime)
         if restoredPoints.count > 2 {
@@ -481,11 +612,15 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         UserdefaultSetting.shared.setWalkPointRecordModeRawValue(walkPointRecordMode.rawValue)
 
         lastPointEventAt = snapshot.points.last.map { Date(timeIntervalSince1970: $0.createdAt) } ?? Date()
+        lastMovementAt = snapshot.lastMovementAt.map { Date(timeIntervalSince1970: $0) } ?? lastPointEventAt
         lastAutoRecordedLocation = snapshot.points.last.map {
             CLLocation(latitude: $0.latitude, longitude: $0.longitude)
         }
         lastAcceptedWalkLocation = lastAutoRecordedLocation
+        movementAnchorLocation = lastAutoRecordedLocation
         lastAutoRecordedAt = lastPointEventAt ?? Date()
+        didNotifyRestCandidate = false
+        didNotifyInactivityWarning = false
 
         hasRecoverableWalkSession = false
         recoverableWalkSummaryText = ""
@@ -496,7 +631,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         }
         timerSet()
         persistActiveWalkSession(force: true)
-        walkStatusMessage = "이전 산책 세션을 복구했습니다."
+        walkStatusMessage = autoRecovered ? "산책 세션을 자동 복구했습니다." : "이전 산책 세션을 복구했습니다."
         setRuntimeGuardStatus("세션 복구 완료")
         syncWatchContext(force: true)
     }
@@ -505,6 +640,52 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         pendingRecoverableSession = nil
         hasRecoverableWalkSession = false
         recoverableWalkSummaryText = ""
+        clearActiveWalkSession()
+    }
+
+    func finalizeRecoverableWalkSessionNow() {
+        guard let snapshot = pendingRecoverableSession else {
+            clearActiveWalkSession()
+            return
+        }
+        let restoredPoints = snapshot.points.map {
+            Location(
+                coordinate: CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude),
+                id: UUID(),
+                createdAt: $0.createdAt
+            )
+        }
+        guard restoredPoints.count > 2 else {
+            clearActiveWalkSession()
+            walkStatusMessage = "미종료 산책 임시기록을 폐기했습니다."
+            return
+        }
+        let nowTs = Date().timeIntervalSince1970
+        let walkTime = max(0, nowTs - snapshot.startedAt)
+        let restoredSessionId = snapshot.sessionId.flatMap(UUID.init(uuidString:))
+        let completed = Polygon(
+            locations: restoredPoints,
+            createdAt: snapshot.startedAt,
+            id: restoredSessionId ?? UUID(),
+            walkingTime: walkTime,
+            walkingArea: 0.0,
+            imgData: nil
+        )
+        var finalized = completed
+        finalized.makePolygon(walkArea: calculateArea(points: restoredPoints), walkTime: walkTime)
+        let updated = savePolygon(polygon: finalized)
+        if updated.contains(where: { $0.id == finalized.id }) {
+            WalkSessionMetadataStore.shared.set(
+                sessionId: finalized.id,
+                reason: .manual,
+                endedAt: nowTs
+            )
+            enqueueSyncOutbox(for: finalized, hasImage: finalized.binaryImage != nil)
+            walkStatusMessage = "미종료 산책을 지금 종료로 저장했습니다."
+        } else {
+            walkStatusMessage = "미종료 산책 종료 저장에 실패했습니다."
+        }
+        applyPolygonList(updated)
         clearActiveWalkSession()
     }
 
@@ -518,17 +699,19 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     private func persistActiveWalkSession(force: Bool = false) {
         guard isWalking else { return }
         let now = Date()
-        if force == false, now.timeIntervalSince(lastSnapshotPersistAt) < 1.5 {
+        if force == false, now.timeIntervalSince(lastSnapshotPersistAt) < 10.0 {
             return
         }
 
         let snapshot = ActiveWalkSessionSnapshot(
+            sessionId: polygon.id.uuidString.lowercased(),
             startedAt: startTime.timeIntervalSince1970,
             elapsedTime: time,
             selectedPetId: selectedPetId,
             selectedPetName: selectedPetName,
             currentWalkingPetName: currentWalkingPetName,
             pointRecordMode: walkPointRecordMode.rawValue,
+            lastMovementAt: lastMovementAt?.timeIntervalSince1970,
             points: polygon.locations.map {
                 ActiveWalkPointSnapshot(
                     latitude: $0.coordinate.latitude,
@@ -551,21 +734,39 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         hasRecoverableWalkSession = false
         recoverableWalkSummaryText = ""
         lastPointEventAt = nil
+        lastMovementAt = nil
+        movementAnchorLocation = nil
+        didNotifyRestCandidate = false
+        didNotifyInactivityWarning = false
         lastAcceptedWalkLocation = nil
     }
 
     private func handleAutoEndIfNeeded(now: Date = Date()) {
-        guard isWalking, walkAutoEndPolicyEnabled else { return }
-        let baseline = lastPointEventAt ?? startTime
+        guard isWalking else { return }
+        let baseline = lastMovementAt ?? lastPointEventAt ?? startTime
         let inactivity = now.timeIntervalSince(baseline)
-        guard inactivity >= autoEndInactivityInterval else { return }
 
-        if polygon.locations.count > 2 {
-            endWalk()
-            walkStatusMessage = "장시간 무활동으로 산책을 자동 종료했습니다."
-        } else {
-            discardCurrentWalk()
-            walkStatusMessage = "장시간 무활동으로 산책 임시기록을 폐기했습니다."
+        if inactivity >= inactivityFinalizeInterval {
+            let endedAt = min(now.timeIntervalSince1970, baseline.timeIntervalSince1970 + inactivityFinalizeInterval)
+            if polygon.locations.count > 2 {
+                endWalk(reason: .autoInactive, endedAtOverride: Date(timeIntervalSince1970: endedAt))
+                walkStatusMessage = "15분 무이동으로 산책을 자동 종료했습니다."
+            } else {
+                discardCurrentWalk()
+                walkStatusMessage = "15분 무이동으로 산책 임시기록을 폐기했습니다."
+            }
+            return
+        }
+
+        if inactivity >= inactivityWarningInterval, didNotifyInactivityWarning == false {
+            didNotifyInactivityWarning = true
+            walkStatusMessage = "12분 무이동: 3분 후 자동 종료 예정입니다."
+            return
+        }
+
+        if inactivity >= restCandidateInterval, didNotifyRestCandidate == false {
+            didNotifyRestCandidate = true
+            walkStatusMessage = "5분 무이동: 휴식 상태로 감지했습니다."
         }
     }
 
@@ -603,6 +804,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         lastAutoRecordedLocation = location
         lastAutoRecordedAt = recordedAt
         lastPointEventAt = recordedAt
+        movementAnchorLocation = location
+        resetInactivityTracking(now: recordedAt, clearAnchor: false)
         if source == .watch {
             latestWatchActionText = "워치 포인트 반영 \(Self.statusTimeString(from: recordedAt))"
         }
@@ -656,10 +859,12 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
 
     }
     private func forceQuit() {
-        handleAutoEndIfNeeded(now: Date())
+        endWalk(reason: .autoTimeout)
+        walkStatusMessage = "최대 산책 시간 도달로 자동 종료했습니다."
     }
 
     func deletePolygonAndRefresh(_ id: UUID) {
+        WalkSessionMetadataStore.shared.clear(sessionId: id)
         let updated = deletePolygon(id: id)
         self.applyPolygonList(updated)
     }
@@ -1050,11 +1255,13 @@ extension MapViewModel {
         timerStop()
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) {[weak self] _ in
             guard let self = self else {return}
+            guard self.isWalking else { return }
             self.time = max(0, Date().timeIntervalSince(self.startTime))
             self.persistActiveWalkSession()
             self.syncWatchContext()
-            if self.time > 3600 {
+            if self.time >= self.walkAutoTimeoutInterval {
                 self.forceQuit()
+                return
             }
             self.handleAutoEndIfNeeded()
         }
@@ -1065,6 +1272,10 @@ extension MapViewModel {
     }
     func calculateArea() -> Double {
          let points = self.polygon.locations
+        return calculateArea(points: points)
+    }
+
+    func calculateArea(points: [Location]) -> Double {
         guard points.count >= 3 else {return 0}
         let earthRadius = 6371000.0  // in meters
         var area: Double = 0
@@ -1131,6 +1342,7 @@ extension MapViewModel {
             guard let self else { return }
             if self.isWalking {
                 guard self.validateWalkLocationSample(location) else { return }
+                self.updateMovementState(with: location)
             }
             withAnimation() {
                 self.location = location

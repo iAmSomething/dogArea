@@ -69,14 +69,11 @@ struct MapSettingView: View {
                   .padding(.vertical, 5)
                   .background(viewModel.isAutoPointRecordMode ? Color.appGreen : Color.appTextLightGray)
                   .cornerRadius(5)
-              Text("자동 종료 정책")
+              Text("자동 종료 정책 v1(고정)")
                   .font(.bold14)
-                  .onTapGesture {
-                      viewModel.toggleWalkAutoEndPolicy()
-                  }
                   .padding(.horizontal, 10)
                   .padding(.vertical, 5)
-                  .background(viewModel.walkAutoEndPolicyEnabled ? Color.appYellowPale : Color.appTextLightGray)
+                  .background(Color.appYellowPale)
                   .cornerRadius(5)
           }.padding(.horizontal)
         Spacer()
