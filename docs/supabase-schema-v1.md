@@ -250,3 +250,6 @@ erDiagram
 - CoreData -> Supabase 이중쓰기/백필: #23
 - 다견 1차 UX: #26
 - 다중 반려견 N:M 2차: #27
+
+운영 실행 문서:
+- `docs/supabase-migration.md`
