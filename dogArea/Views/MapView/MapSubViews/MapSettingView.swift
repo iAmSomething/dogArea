@@ -27,11 +27,11 @@ struct MapSettingView: View {
               Text("Heatmap")
                   .font(.bold14)
                   .onTapGesture {
-                      viewModel.heatmapEnabled.toggle()
+                      viewModel.toggleHeatmapEnabled()
                   }
                   .padding(.horizontal, 10)
                   .padding(.vertical, 5)
-                  .background(viewModel.heatmapEnabled ? Color.appYellow : Color.appTextLightGray)
+                  .background((viewModel.isHeatmapFeatureAvailable && viewModel.heatmapEnabled) ? Color.appYellow : Color.appTextLightGray)
                   .cornerRadius(5)
               Text("근처 핫스팟")
                   .font(.bold14)
@@ -40,7 +40,7 @@ struct MapSettingView: View {
                   }
                   .padding(.horizontal, 10)
                   .padding(.vertical, 5)
-                  .background(viewModel.nearbyHotspotEnabled ? Color.appYellowPale : Color.appTextLightGray)
+                  .background((viewModel.isNearbyHotspotFeatureAvailable && viewModel.nearbyHotspotEnabled) ? Color.appYellowPale : Color.appTextLightGray)
                   .cornerRadius(5)
               Text("위치 공유")
                   .font(.bold14)
@@ -49,7 +49,7 @@ struct MapSettingView: View {
                   }
                   .padding(.horizontal, 10)
                   .padding(.vertical, 5)
-                  .background(viewModel.locationSharingEnabled ? Color.appGreen : Color.appTextLightGray)
+                  .background((viewModel.isNearbyHotspotFeatureAvailable && viewModel.locationSharingEnabled) ? Color.appGreen : Color.appTextLightGray)
                   .cornerRadius(5)
           }.padding(.horizontal)
         Spacer()

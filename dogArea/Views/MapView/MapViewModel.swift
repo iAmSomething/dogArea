@@ -42,6 +42,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     @Published var locationSharingEnabled: Bool = false
     @Published var nearbyHotspots: [NearbyHotspotDTO] = []
     private let watchSession = WCSession.isSupported() ? WCSession.default : nil
+    private let featureFlags = FeatureFlagStore.shared
+    private let metricTracker = AppMetricTracker.shared
     private let nearbyService = NearbyPresenceService()
     private var nearbyTickTimer: Timer? = nil
     private var lastPresenceSentAt: Date = .distantPast
@@ -51,6 +53,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     private let maxProcessedWatchActions = 500
     private var lastWatchContextSyncAt: Date = .distantPast
     private let processedWatchActionStorageKey = "watch.processedActionIds"
+    private let heatmapEnabledKey = "heatmap.enabled"
     private let locationSharingKey = "nearby.locationSharingEnabled"
     private let nearbyHotspotEnabledKey = "nearby.hotspotEnabled"
     private let nearbyPresenceUserIdKey = "nearby.presenceUserId"
@@ -65,11 +68,19 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         self.polygon = lastPolygon() ?? Polygon(walkingTime: 0.0, walkingArea: 0.0)
         self.refreshHeatmap()
         self.loadProcessedWatchActions()
-        self.locationSharingEnabled = UserDefaults.standard.bool(forKey: locationSharingKey)
-        self.nearbyHotspotEnabled = UserDefaults.standard.object(forKey: nearbyHotspotEnabledKey) as? Bool ?? true
+
+        let storedHeatmapEnabled = UserDefaults.standard.object(forKey: heatmapEnabledKey) as? Bool ?? true
+        let storedNearbyHotspotEnabled = UserDefaults.standard.object(forKey: nearbyHotspotEnabledKey) as? Bool ?? true
+        let storedLocationSharingEnabled = UserDefaults.standard.bool(forKey: locationSharingKey)
+
+        self.heatmapEnabled = featureFlags.isEnabled(.heatmapV1) ? storedHeatmapEnabled : false
+        let nearbyFeatureOn = featureFlags.isEnabled(.nearbyHotspotV1)
+        self.nearbyHotspotEnabled = nearbyFeatureOn ? storedNearbyHotspotEnabled : false
+        self.locationSharingEnabled = nearbyFeatureOn ? storedLocationSharingEnabled : false
         self.setupWatchConnectivity()
         self.startNearbyTicker()
         self.syncVisibilitySettingIfNeeded()
+        self.refreshFeatureFlagsFromRemote()
     }
 
     deinit {
@@ -125,7 +136,13 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         if isWalking {
                 if self.polygon.locations.count > 2{
                     polygon.makePolygon(walkArea: calculateArea(), walkTime: self.time, img: img)
-                    _ = savePolygon(polygon: self.polygon)
+                    let saved = savePolygon(polygon: self.polygon).isEmpty == false
+                    metricTracker.track(
+                        saved ? .walkSaveSuccess : .walkSaveFailed,
+                        userKey: currentMetricUserId(),
+                        featureKey: .heatmapV1,
+                        payload: ["pointCount": "\(self.polygon.locations.count)"]
+                    )
                     self.polygonList = self.fetchPolygons()
                     self.refreshHeatmap()
                 }
@@ -168,8 +185,20 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     }
 
     func refreshHeatmap(now: Date = Date()) {
+        guard isHeatmapFeatureAvailable else {
+            self.heatmapCells = []
+            return
+        }
         let points = self.polygonList.flatMap { $0.locations }
         self.heatmapCells = HeatmapEngine.aggregate(points: points, now: now, precision: 7)
+    }
+
+    var isHeatmapFeatureAvailable: Bool {
+        featureFlags.isEnabled(.heatmapV1)
+    }
+
+    var isNearbyHotspotFeatureAvailable: Bool {
+        featureFlags.isEnabled(.nearbyHotspotV1)
     }
 
     func heatmapColor(for score: Double) -> Color {
@@ -212,13 +241,45 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         }
     }
 
+    func toggleHeatmapEnabled() {
+        guard isHeatmapFeatureAvailable else {
+            self.heatmapEnabled = false
+            self.heatmapCells = []
+            return
+        }
+        self.heatmapEnabled.toggle()
+        UserDefaults.standard.set(self.heatmapEnabled, forKey: heatmapEnabledKey)
+        if self.heatmapEnabled {
+            refreshHeatmap()
+        } else {
+            self.heatmapCells = []
+        }
+    }
+
     func toggleLocationSharing() {
+        guard isNearbyHotspotFeatureAvailable else {
+            self.locationSharingEnabled = false
+            UserDefaults.standard.set(false, forKey: locationSharingKey)
+            self.syncVisibilitySettingIfNeeded()
+            return
+        }
         self.locationSharingEnabled.toggle()
         UserDefaults.standard.set(self.locationSharingEnabled, forKey: locationSharingKey)
+        metricTracker.track(
+            self.locationSharingEnabled ? .nearbyOptInEnabled : .nearbyOptInDisabled,
+            userKey: currentMetricUserId(),
+            featureKey: .nearbyHotspotV1
+        )
         self.syncVisibilitySettingIfNeeded()
     }
 
     func toggleNearbyHotspotEnabled() {
+        guard isNearbyHotspotFeatureAvailable else {
+            self.nearbyHotspotEnabled = false
+            self.nearbyHotspots = []
+            UserDefaults.standard.set(false, forKey: nearbyHotspotEnabledKey)
+            return
+        }
         self.nearbyHotspotEnabled.toggle()
         UserDefaults.standard.set(self.nearbyHotspotEnabled, forKey: nearbyHotspotEnabledKey)
         if nearbyHotspotEnabled == false {
@@ -237,12 +298,12 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         guard let location else { return }
         let now = Date()
 
-        if locationSharingEnabled && isWalking && now.timeIntervalSince(lastPresenceSentAt) >= 30 {
+        if isNearbyHotspotFeatureAvailable && locationSharingEnabled && isWalking && now.timeIntervalSince(lastPresenceSentAt) >= 30 {
             lastPresenceSentAt = now
             sendPresence(location: location.coordinate)
         }
 
-        if nearbyHotspotEnabled && now.timeIntervalSince(lastNearbyFetchedAt) >= 10 {
+        if isNearbyHotspotFeatureAvailable && nearbyHotspotEnabled && now.timeIntervalSince(lastNearbyFetchedAt) >= 10 {
             lastNearbyFetchedAt = now
             fetchNearbyHotspots(center: location.coordinate)
         }
@@ -284,7 +345,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
 
     private func syncVisibilitySettingIfNeeded() {
         guard let userId = currentPresenceUserId() else { return }
-        let enabled = self.locationSharingEnabled
+        let enabled = isNearbyHotspotFeatureAvailable ? self.locationSharingEnabled : false
         Task { [weak self] in
             guard let self else { return }
             do {
@@ -300,6 +361,40 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         }
     }
 
+    private func refreshFeatureFlagsFromRemote() {
+        Task { [weak self] in
+            guard let self else { return }
+            _ = await self.featureFlags.refresh()
+            await MainActor.run {
+                self.applyFeatureFlags()
+            }
+        }
+    }
+
+    private func applyFeatureFlags() {
+        let heatmapAllowed = featureFlags.isEnabled(.heatmapV1)
+        let nearbyAllowed = featureFlags.isEnabled(.nearbyHotspotV1)
+        let heatmapPreference = UserDefaults.standard.object(forKey: heatmapEnabledKey) as? Bool ?? true
+        let nearbyPreference = UserDefaults.standard.object(forKey: nearbyHotspotEnabledKey) as? Bool ?? true
+        let sharingPreference = UserDefaults.standard.bool(forKey: locationSharingKey)
+
+        self.heatmapEnabled = heatmapAllowed ? heatmapPreference : false
+        self.nearbyHotspotEnabled = nearbyAllowed ? nearbyPreference : false
+        self.locationSharingEnabled = nearbyAllowed ? sharingPreference : false
+
+        if heatmapAllowed {
+            self.refreshHeatmap()
+        } else {
+            self.heatmapCells = []
+        }
+
+        if nearbyAllowed == false {
+            self.nearbyHotspots = []
+            UserDefaults.standard.set(false, forKey: locationSharingKey)
+            self.syncVisibilitySettingIfNeeded()
+        }
+    }
+
     private func currentPresenceUserId() -> String? {
         if let existing = UserDefaults.standard.string(forKey: nearbyPresenceUserIdKey) {
             return existing
@@ -311,6 +406,13 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         let stable = raw.stableUUIDString
         UserDefaults.standard.set(stable, forKey: nearbyPresenceUserIdKey)
         return stable
+    }
+
+    private func currentMetricUserId() -> String? {
+        guard let raw = UserdefaultSetting.shared.getValue()?.id, raw.isEmpty == false else {
+            return nil
+        }
+        return raw
     }
 
     private func setupWatchConnectivity() {
@@ -371,22 +473,44 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
 
     private func handleWatchPayload(_ payload: [String: Any]) {
         guard let action = payload["action"] as? String else { return }
+        metricTracker.track(
+            .watchActionReceived,
+            userKey: currentMetricUserId(),
+            payload: ["action": action]
+        )
         let actionId = payload["action_id"] as? String ?? UUID().uuidString
         if shouldProcessWatchAction(actionId: actionId) == false {
+            metricTracker.track(
+                .watchActionDuplicate,
+                userKey: currentMetricUserId(),
+                payload: ["action": action]
+            )
             return
         }
+        metricTracker.track(
+            .watchActionProcessed,
+            userKey: currentMetricUserId(),
+            payload: ["action": action]
+        )
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             switch action {
             case "startWalk":
-                if self.isWalking == false { self.endWalk() }
+                if self.isWalking == false {
+                    self.endWalk()
+                    self.metricTracker.track(.watchActionApplied, userKey: self.currentMetricUserId(), payload: ["action": action])
+                }
             case "addPoint":
                 if self.isWalking {
                     self.addLocation()
                     self.syncWatchContext(force: true)
+                    self.metricTracker.track(.watchActionApplied, userKey: self.currentMetricUserId(), payload: ["action": action])
                 }
             case "endWalk":
-                if self.isWalking { self.endWalk() }
+                if self.isWalking {
+                    self.endWalk()
+                    self.metricTracker.track(.watchActionApplied, userKey: self.currentMetricUserId(), payload: ["action": action])
+                }
             default:
                 break
             }
