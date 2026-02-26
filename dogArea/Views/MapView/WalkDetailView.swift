@@ -84,8 +84,10 @@ struct WalkDetailView: View {
                 .cornerRadius(15)
                 .padding(.horizontal, 70)
             Button(action: {
-                guard let image = mapImageProvider.capturedImage else {return}
-                viewModel.endWalk(img: image)
+                if mapImageProvider.capturedImage == nil {
+                    viewModel.walkStatusMessage = "지도 이미지 없이 산책 기록만 저장했습니다."
+                }
+                viewModel.endWalk(img: mapImageProvider.capturedImage)
                 dismiss()
             },
                    label:  {

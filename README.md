@@ -32,6 +32,8 @@
 - 영역 포인트 자동 기록 모드 v1: `docs/walk-point-auto-record-v1.md`
 - 산책 세션 자동 복구/자동 종료 정책 v1: `docs/walk-session-recovery-auto-end-v1.md`
 - 산책 런타임 예외 방어 가드레일 v1: `docs/walk-runtime-guardrails-v1.md`
+- 산책 저장/동기화 정합성 아웃박스 v1: `docs/walk-sync-consistency-outbox-v1.md`
+- Cycle #80 결과 보고서(2026-02-26): `docs/cycle-80-sync-consistency-report-2026-02-26.md`
 
 ## 강아지들의 영역 표시
 

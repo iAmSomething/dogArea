@@ -501,3 +501,324 @@ private struct FeatureControlService {
         URLSession.shared.dataTask(with: request).resume()
     }
 }
+
+enum SyncOutboxStage: String, Codable, CaseIterable {
+    case session
+    case points
+    case meta
+
+    var order: Int {
+        switch self {
+        case .session: return 0
+        case .points: return 1
+        case .meta: return 2
+        }
+    }
+}
+
+enum SyncOutboxStatus: String, Codable {
+    case queued
+    case retrying
+    case processing
+    case permanentFailed
+    case completed
+}
+
+enum SyncOutboxErrorCode: String, Codable {
+    case offline = "offline"
+    case tokenExpired = "token_expired"
+    case unauthorized = "unauthorized"
+    case serverError = "server_error"
+    case conflict = "conflict"
+    case schemaMismatch = "schema_mismatch"
+    case storageQuota = "storage_quota"
+    case notConfigured = "not_configured"
+    case unknown = "unknown"
+}
+
+struct SyncOutboxItem: Codable, Identifiable, Equatable {
+    let id: String
+    let walkSessionId: String
+    let stage: SyncOutboxStage
+    let idempotencyKey: String
+    let payload: [String: String]
+    var status: SyncOutboxStatus
+    var retryCount: Int
+    var nextRetryAt: TimeInterval
+    var lastErrorCode: SyncOutboxErrorCode?
+    let createdAt: TimeInterval
+    var updatedAt: TimeInterval
+}
+
+struct SyncOutboxSummary: Equatable {
+    let pendingCount: Int
+    let permanentFailureCount: Int
+    let lastErrorCode: SyncOutboxErrorCode?
+}
+
+enum SyncOutboxSendResult: Equatable {
+    case success
+    case retryable(SyncOutboxErrorCode)
+    case permanent(SyncOutboxErrorCode)
+}
+
+protocol SyncOutboxTransporting {
+    func send(item: SyncOutboxItem) async -> SyncOutboxSendResult
+}
+
+final class SyncOutboxStore {
+    static let shared = SyncOutboxStore()
+
+    private let lock = NSLock()
+    private let storageKey = "sync.outbox.items.v1"
+    private var items: [SyncOutboxItem] = []
+    private let maxItems = 500
+
+    private init() {
+        load()
+    }
+
+    func enqueueWalkStages(
+        walkSessionId: UUID,
+        userId: String?,
+        pointCount: Int,
+        durationSec: TimeInterval,
+        areaM2: Double,
+        hasImage: Bool,
+        createdAt: TimeInterval
+    ) {
+        let sessionId = walkSessionId.uuidString.lowercased()
+        let baseKey = "walk-\(sessionId)"
+        let now = Date().timeIntervalSince1970
+        let basePayload: [String: String] = [
+            "walk_session_id": sessionId,
+            "user_id": userId ?? "",
+            "created_at": String(createdAt),
+        ]
+
+        let stagePayloads: [(SyncOutboxStage, [String: String])] = [
+            (
+                .session,
+                basePayload.merging(
+                    [
+                        "duration_sec": String(durationSec),
+                        "area_m2": String(areaM2),
+                    ],
+                    uniquingKeysWith: { _, latest in latest }
+                )
+            ),
+            (
+                .points,
+                basePayload.merging(
+                    ["point_count": String(pointCount)],
+                    uniquingKeysWith: { _, latest in latest }
+                )
+            ),
+            (
+                .meta,
+                basePayload.merging(
+                    ["has_image": hasImage ? "true" : "false"],
+                    uniquingKeysWith: { _, latest in latest }
+                )
+            ),
+        ]
+
+        lock.lock()
+        var mutableItems = items
+        stagePayloads.forEach { stage, payload in
+            let idempotencyKey = "\(baseKey)-\(stage.rawValue)"
+            let exists = mutableItems.contains(where: { $0.idempotencyKey == idempotencyKey && $0.status != .completed })
+            guard exists == false else { return }
+            mutableItems.append(
+                SyncOutboxItem(
+                    id: UUID().uuidString.lowercased(),
+                    walkSessionId: sessionId,
+                    stage: stage,
+                    idempotencyKey: idempotencyKey,
+                    payload: payload,
+                    status: .queued,
+                    retryCount: 0,
+                    nextRetryAt: now,
+                    lastErrorCode: nil,
+                    createdAt: now,
+                    updatedAt: now
+                )
+            )
+        }
+        if mutableItems.count > maxItems {
+            let overflow = mutableItems.count - maxItems
+            let removable = mutableItems
+                .enumerated()
+                .filter { _, item in item.status == .completed || item.status == .permanentFailed }
+                .prefix(overflow)
+                .map(\.offset)
+            removable.reversed().forEach { mutableItems.remove(at: $0) }
+        }
+        items = mutableItems
+        persistLocked()
+        lock.unlock()
+    }
+
+    func summary() -> SyncOutboxSummary {
+        lock.lock()
+        defer { lock.unlock() }
+        let pending = items.filter { $0.status == .queued || $0.status == .retrying || $0.status == .processing }.count
+        let permanent = items.filter { $0.status == .permanentFailed }.count
+        let lastError = items.reversed().compactMap(\.lastErrorCode).first
+        return SyncOutboxSummary(pendingCount: pending, permanentFailureCount: permanent, lastErrorCode: lastError)
+    }
+
+    @discardableResult
+    func flush(using transport: SyncOutboxTransporting, now: Date = Date()) async -> SyncOutboxSummary {
+        let nowTs = now.timeIntervalSince1970
+        while let next = nextDispatchableItem(now: nowTs) {
+            updateItem(id: next.id) { item in
+                item.status = .processing
+                item.updatedAt = Date().timeIntervalSince1970
+            }
+
+            let result = await transport.send(item: next)
+            let currentNow = Date().timeIntervalSince1970
+            switch result {
+            case .success:
+                updateItem(id: next.id) { item in
+                    item.status = .completed
+                    item.lastErrorCode = nil
+                    item.updatedAt = currentNow
+                }
+            case .retryable(let code):
+                let delay = Self.retryDelay(retryCount: next.retryCount + 1)
+                updateItem(id: next.id) { item in
+                    item.status = .retrying
+                    item.retryCount += 1
+                    item.lastErrorCode = code
+                    item.nextRetryAt = currentNow + delay
+                    item.updatedAt = currentNow
+                }
+                return summary()
+            case .permanent(let code):
+                updateItem(id: next.id) { item in
+                    item.status = .permanentFailed
+                    item.lastErrorCode = code
+                    item.updatedAt = currentNow
+                }
+                return summary()
+            }
+        }
+        return summary()
+    }
+
+    private static func retryDelay(retryCount: Int) -> TimeInterval {
+        let exp = pow(2.0, Double(max(0, retryCount)))
+        return min(900.0, 5.0 * exp)
+    }
+
+    private func nextDispatchableItem(now: TimeInterval) -> SyncOutboxItem? {
+        lock.lock()
+        defer { lock.unlock() }
+        return items
+            .sorted { lhs, rhs in
+                if lhs.createdAt == rhs.createdAt {
+                    if lhs.stage.order == rhs.stage.order {
+                        return lhs.id < rhs.id
+                    }
+                    return lhs.stage.order < rhs.stage.order
+                }
+                return lhs.createdAt < rhs.createdAt
+            }
+            .first(where: {
+                ($0.status == .queued || $0.status == .retrying || $0.status == .processing) &&
+                $0.nextRetryAt <= now
+            })
+    }
+
+    private func updateItem(id: String, _ block: (inout SyncOutboxItem) -> Void) {
+        lock.lock()
+        if let idx = items.firstIndex(where: { $0.id == id }) {
+            block(&items[idx])
+            persistLocked()
+        }
+        lock.unlock()
+    }
+
+    private func load() {
+        guard let data = UserDefaults.standard.data(forKey: storageKey),
+              let decoded = try? JSONDecoder().decode([SyncOutboxItem].self, from: data) else {
+            items = []
+            return
+        }
+        items = decoded
+    }
+
+    private func persistLocked() {
+        guard let data = try? JSONEncoder().encode(items) else { return }
+        UserDefaults.standard.set(data, forKey: storageKey)
+    }
+}
+
+struct SupabaseSyncOutboxTransport: SyncOutboxTransporting {
+    func send(item: SyncOutboxItem) async -> SyncOutboxSendResult {
+        let env = ProcessInfo.processInfo.environment
+        guard let rawURL = env["SUPABASE_URL"], rawURL.isEmpty == false else {
+            return .retryable(.notConfigured)
+        }
+        guard let url = URL(string: rawURL + "/functions/v1/sync-walk") else {
+            return .retryable(.notConfigured)
+        }
+
+        let token = env["SUPABASE_ANON_KEY"] ?? ""
+        guard token.isEmpty == false else {
+            return .retryable(.tokenExpired)
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let body: [String: Any] = [
+            "action": "sync_walk_stage",
+            "walk_session_id": item.walkSessionId,
+            "stage": item.stage.rawValue,
+            "idempotency_key": item.idempotencyKey,
+            "payload": item.payload
+        ]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            guard let statusCode = (response as? HTTPURLResponse)?.statusCode else {
+                return .retryable(.unknown)
+            }
+            switch statusCode {
+            case 200..<300:
+                return .success
+            case 401, 403:
+                return .retryable(.tokenExpired)
+            case 409:
+                return .success
+            case 429, 500..<600:
+                return .retryable(.serverError)
+            case 404:
+                return .retryable(.notConfigured)
+            case 400, 422:
+                return .permanent(.schemaMismatch)
+            case 507:
+                return .permanent(.storageQuota)
+            default:
+                return .retryable(.unknown)
+            }
+        } catch let error as URLError {
+            switch error.code {
+            case .notConnectedToInternet, .networkConnectionLost, .timedOut, .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed:
+                return .retryable(.offline)
+            case .userAuthenticationRequired:
+                return .retryable(.tokenExpired)
+            default:
+                return .retryable(.unknown)
+            }
+        } catch {
+            return .retryable(.unknown)
+        }
+    }
+}
