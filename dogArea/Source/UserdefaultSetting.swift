@@ -836,6 +836,9 @@ final class SyncOutboxStore {
 
 struct SupabaseSyncOutboxTransport: SyncOutboxTransporting {
     func send(item: SyncOutboxItem) async -> SyncOutboxSendResult {
+        guard AppFeatureGate.isAllowed(.cloudSync, session: AppFeatureGate.currentSession()) else {
+            return .retryable(.unauthorized)
+        }
         let env = ProcessInfo.processInfo.environment
         guard let rawURL = env["SUPABASE_URL"], rawURL.isEmpty == false else {
             return .retryable(.notConfigured)
@@ -898,6 +901,70 @@ struct SupabaseSyncOutboxTransport: SyncOutboxTransporting {
         } catch {
             return .retryable(.unknown)
         }
+    }
+}
+
+enum AppSessionState: Equatable {
+    case guest
+    case member(userId: String)
+
+    var isMember: Bool {
+        if case .member = self { return true }
+        return false
+    }
+}
+
+enum FeatureCapability: String, CaseIterable {
+    case walkRead = "walk_read"
+    case walkWrite = "walk_write"
+    case cloudSync = "cloud_sync"
+    case aiGeneration = "ai_generation"
+    case nearbySocial = "nearby_social"
+}
+
+enum FeatureGateDecision: Equatable {
+    case allowed
+    case requiresMember(MemberUpgradeTrigger)
+}
+
+enum AppFeatureGate {
+    private enum AccessPolicy {
+        case guestAllowed
+        case memberOnly(trigger: MemberUpgradeTrigger)
+    }
+
+    private static let matrix: [FeatureCapability: AccessPolicy] = [
+        .walkRead: .guestAllowed,
+        .walkWrite: .guestAllowed,
+        .cloudSync: .memberOnly(trigger: .walkHistory),
+        .aiGeneration: .memberOnly(trigger: .imageGenerator),
+        .nearbySocial: .memberOnly(trigger: .walkHistory),
+    ]
+
+    static func currentSession() -> AppSessionState {
+        guard let id = UserdefaultSetting.shared.getValue()?.id, id.isEmpty == false else {
+            return .guest
+        }
+        return .member(userId: id)
+    }
+
+    static func decision(for capability: FeatureCapability, session: AppSessionState) -> FeatureGateDecision {
+        guard let policy = matrix[capability] else {
+            return .allowed
+        }
+        switch policy {
+        case .guestAllowed:
+            return .allowed
+        case .memberOnly(let trigger):
+            return session.isMember ? .allowed : .requiresMember(trigger)
+        }
+    }
+
+    static func isAllowed(_ capability: FeatureCapability, session: AppSessionState = currentSession()) -> Bool {
+        if case .allowed = decision(for: capability, session: session) {
+            return true
+        }
+        return false
     }
 }
 
@@ -1113,9 +1180,12 @@ final class AuthFlowCoordinator: ObservableObject {
     private let guestDataUpgradeService = GuestDataUpgradeService.shared
     private var onAuthenticated: (() -> Void)?
 
+    var sessionState: AppSessionState {
+        AppFeatureGate.currentSession()
+    }
+
     var isLoggedIn: Bool {
-        guard let id = UserdefaultSetting.shared.getValue()?.id else { return false }
-        return id.isEmpty == false
+        sessionState.isMember
     }
 
     var isGuestMode: Bool {
@@ -1148,6 +1218,22 @@ final class AuthFlowCoordinator: ObservableObject {
         UserDefaults.standard.set(true, forKey: entryChoiceCompletedKey)
         shouldShowEntryChoice = false
         shouldShowSignIn = true
+    }
+
+    func canAccess(_ feature: FeatureCapability) -> Bool {
+        AppFeatureGate.isAllowed(feature, session: sessionState)
+    }
+
+    @discardableResult
+    func requestAccess(feature: FeatureCapability, onAllowed: (() -> Void)? = nil) -> Bool {
+        let decision = AppFeatureGate.decision(for: feature, session: sessionState)
+        switch decision {
+        case .allowed:
+            onAllowed?()
+            return true
+        case .requiresMember(let trigger):
+            return requireMember(trigger: trigger, onAuthenticated: onAllowed)
+        }
     }
 
     @discardableResult

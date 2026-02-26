@@ -31,7 +31,7 @@ struct StartButtonView: View {
                 .frame(width: 64, height: 64)
                 .onTapGesture {
                     if !viewModel.isWalking {
-                        guard authFlow.requireMember(trigger: .walkStart) else {
+                        guard authFlow.requestAccess(feature: .walkWrite) else {
                             return
                         }
                         viewModel.reloadSelectedPetContext()

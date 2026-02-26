@@ -24,6 +24,10 @@ class ImageGenerateViewModel {
   }
   @MainActor
   func generateImage() async {
+    guard AppFeatureGate.isAllowed(.aiGeneration, session: AppFeatureGate.currentSession()) else {
+      self.fetchPhase = .failure("회원 전용 기능입니다. 로그인 후 다시 시도해주세요.")
+      return
+    }
     self.fetchPhase = .loading
     do {
       let url = try await client.generateImage(prompt: prompt)

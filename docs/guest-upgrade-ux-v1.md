@@ -19,7 +19,7 @@
 - 콜백 기반(`onAuthenticated`)으로 현재 컨텍스트 복귀
 
 4. 적용 지점
-- 산책 시작 버튼(`walk_start`)
+- 산책 시작 버튼은 게스트 허용(FeatureGate `walkWrite`)으로 전환
 - 텍스트-이미지 생성(`image_generator`)
 - 산책 목록 동기화 유도(`walk_history`)
 - 지도 상 백업 유도 배너(`walk_backup`)
