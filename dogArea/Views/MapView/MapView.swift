@@ -17,7 +17,7 @@ struct MapView : View{
     @State private var isWalkingViewPresented = false
     @State private var endWalkingViewPresented = false
     @State private var isCameraSeeingSomewhere: Bool = false
-    @State private var distance = 0.0
+    @State private var distance = 2000.0
     @State private var selectedPolygonData: WalkDataModel? = nil
     @ObservedObject var tabStatus = TabAppear.shared
     
