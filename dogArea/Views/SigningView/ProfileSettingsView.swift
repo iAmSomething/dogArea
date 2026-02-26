@@ -53,6 +53,18 @@ struct ProfileSettingsView: View {
                     )
                     .padding(.horizontal)
             }
+            UnderLine()
+            TitleTextView(title: "프로필 메시지", type: .MediumTitle, subTitle: "산책 스타일을 한 줄로 소개해보세요! (선택)")
+            HStack {
+                TextField("예: 아침 산책을 좋아해요", text: $viewModel.userProfileMessage)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 4)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 5)
+                            .stroke(Color.appColor(type: .appTextDarkGray, scheme: scheme), lineWidth: 0.8)
+                    )
+                    .padding(.horizontal)
+            }
             Spacer()
             NavigationLink(destination: {
                 PetProfileSettingView(path: $path, onSignupCompleted: onSignupCompleted).environmentObject(viewModel)}
