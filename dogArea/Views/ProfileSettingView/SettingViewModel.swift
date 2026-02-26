@@ -10,6 +10,20 @@ import Combine
 import UIKit
 import FirebaseStorage
 final class SettingViewModel: ObservableObject, CoreDataProtocol {
+    enum ProfileEditValidationError: LocalizedError {
+        case userNotFound
+        case invalidAgeRange
+
+        var errorDescription: String? {
+            switch self {
+            case .userNotFound:
+                return "사용자 정보를 불러오지 못했습니다."
+            case .invalidAgeRange:
+                return "나이는 0~30 사이 숫자로 입력해주세요."
+            }
+        }
+    }
+
     @Published var polygonList: [Polygon] = []
     @Published var userName: String? = nil
     @Published var petName: String? = nil
@@ -44,6 +58,62 @@ final class SettingViewModel: ObservableObject, CoreDataProtocol {
         guard pets.contains(where: { $0.petId == petId }) else { return }
         UserdefaultSetting.shared.setSelectedPetId(petId, source: "setting")
         reloadUserInfo()
+    }
+
+    func updateProfileDetails(
+        profileMessage: String,
+        breed: String,
+        ageYearsText: String,
+        gender: PetGender
+    ) -> Result<Void, ProfileEditValidationError> {
+        guard let current = UserdefaultSetting.shared.getValue() else {
+            return .failure(.userNotFound)
+        }
+
+        let normalizedProfileMessage = normalizeOptionalText(profileMessage)
+        let normalizedBreed = normalizeOptionalText(breed)
+        let normalizedAgeYears: Int?
+
+        let trimmedAge = ageYearsText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmedAge.isEmpty {
+            normalizedAgeYears = nil
+        } else if let parsed = Int(trimmedAge), (0...30).contains(parsed) {
+            normalizedAgeYears = parsed
+        } else {
+            return .failure(.invalidAgeRange)
+        }
+
+        var pets = current.pet
+        let targetPetId = selectedPetId.isEmpty == false ? selectedPetId : pets.first?.petId
+        if let targetPetId,
+           let index = pets.firstIndex(where: { $0.petId == targetPetId }) {
+            pets[index].breed = normalizedBreed
+            pets[index].ageYears = normalizedAgeYears
+            pets[index].gender = gender
+        }
+
+        UserdefaultSetting.shared.save(
+            id: current.id,
+            name: current.name,
+            profile: current.profile,
+            profileMessage: normalizedProfileMessage,
+            pet: pets,
+            createdAt: current.createdAt,
+            selectedPetId: targetPetId
+        )
+
+        if let targetPetId {
+            UserdefaultSetting.shared.setSelectedPetId(targetPetId, source: "profile_edit_save")
+        } else {
+            NotificationCenter.default.post(name: UserdefaultSetting.selectedPetDidChangeNotification, object: nil)
+        }
+        reloadUserInfo()
+        return .success(())
+    }
+
+    private func normalizeOptionalText(_ value: String) -> String? {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
     }
 
     private func bindSelectedPetSync() {
