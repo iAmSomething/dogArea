@@ -27,6 +27,7 @@
 - 릴리즈 회귀 체크리스트 v1: `docs/release-regression-checklist-v1.md`
 - 릴리즈 회귀 실행 리포트(2026-02-26): `docs/release-regression-report-2026-02-26.md`
 - 다중 반려견 산책 N:M 2차 설계 v2: `docs/multi-pet-session-nm-v2.md`
+- 다견 1차 선택 반려견 UX v1: `docs/multi-dog-selection-ux-v1.md`
 
 ## 강아지들의 영역 표시
 

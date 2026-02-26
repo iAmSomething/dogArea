@@ -8,6 +8,7 @@
 import SwiftUI
 struct StartModalView: View {
     @Environment(\.dismiss) var dismiss
+    let petName: String
     @State var time: TimeInterval = 3
     @State private var countdownTimer: Timer? = nil
     var body: some View {
@@ -15,6 +16,9 @@ struct StartModalView: View {
             if Int(time) < 1 {
                 Text("산책을 시작합니다.")
                     .font(.extraBold28)
+                Text("\(petName)와 함께 출발해요!")
+                    .font(.appFont(for: .Regular, size: 16))
+                    .foregroundStyle(Color.appTextDarkGray)
             }
             else {
                 Text("\(Int(time))")
@@ -48,5 +52,5 @@ struct StartModalView: View {
 }
 
 #Preview {
-    StartModalView()
+    StartModalView(petName: "강아지")
 }

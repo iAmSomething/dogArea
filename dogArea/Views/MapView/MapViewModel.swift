@@ -40,6 +40,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     @Published var nearbyHotspotEnabled: Bool = true
     @Published var locationSharingEnabled: Bool = false
     @Published var nearbyHotspots: [NearbyHotspotDTO] = []
+    @Published var selectedPetId: String? = nil
+    @Published var selectedPetName: String = "강아지"
+    @Published var currentWalkingPetName: String = "강아지"
     private let watchSession = WCSession.isSupported() ? WCSession.default : nil
     private let featureFlags = FeatureFlagStore.shared
     private let metricTracker = AppMetricTracker.shared
@@ -81,6 +84,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         let nearbyFeatureOn = featureFlags.isEnabled(.nearbyHotspotV1)
         self.nearbyHotspotEnabled = nearbyFeatureOn ? storedNearbyHotspotEnabled : false
         self.locationSharingEnabled = nearbyFeatureOn ? storedLocationSharingEnabled : false
+        self.reloadSelectedPetContext()
         self.setupWatchConnectivity()
         self.startNearbyTicker()
         self.syncVisibilitySettingIfNeeded()
@@ -160,11 +164,14 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
                     self.applyPolygonList(updated)
                 }
             time = 0.0
+            self.currentWalkingPetName = self.selectedPetName
         }
         else {
+            self.reloadSelectedPetContext()
             setTrackingMode()
             timerSet()
             polygon.clear()
+            self.currentWalkingPetName = self.selectedPetName
         }
         withAnimation{ [weak self] in
             self?.isWalking.toggle()
@@ -426,6 +433,19 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
             return nil
         }
         return raw
+    }
+
+    func reloadSelectedPetContext() {
+        let selectedPet = UserdefaultSetting.shared.selectedPet()
+        self.selectedPetId = selectedPet?.petId
+        self.selectedPetName = selectedPet?.petName ?? "강아지"
+        if isWalking == false {
+            self.currentWalkingPetName = self.selectedPetName
+        }
+    }
+
+    var hasSelectedPet: Bool {
+        selectedPetId != nil
     }
 
     private func setupWatchConnectivity() {
