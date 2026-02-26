@@ -9,6 +9,12 @@
 
 ## Idea : 강아지들이 산책 할 때 영역 표시를 하는데, 이걸 실제 지도 위에 표현해보자!
 
+## CI/CD
+
+- PR to `main`: `.github/workflows/ios-pr-check.yml`
+- merge to `main`: `.github/workflows/firebase-distribution.yml` (Firebase App Distribution 배포)
+- 설정 가이드: `docs/github-actions-firebase-distribution.md`
+
 ## 강아지들의 영역 표시
 
 산책하다 보면 강아지들이 영역 표시를 하는 것을 아실 수 있습니다.
