@@ -25,7 +25,10 @@ let startButton = load("dogArea/Views/MapView/MapSubViews/StartButtonView.swift"
 let startModal = load("dogArea/Views/MapView/StartModalView.swift")
 
 assertTrue(userDefaults.contains("case selectedPetId = \"selectedPetId\""), "UserdefaultSetting should persist selectedPetId")
-assertTrue(userDefaults.contains("func setSelectedPetId(_ petId: String)"), "UserdefaultSetting should expose pet selection setter")
+assertTrue(
+    userDefaults.contains("func setSelectedPetId(_ petId: String, source: String = \"manual\")"),
+    "UserdefaultSetting should expose pet selection setter"
+)
 assertTrue(userDefaults.contains("func selectedPet(from userInfo: UserInfo? = nil) -> PetInfo?"), "UserdefaultSetting should expose selected pet resolver")
 
 assertTrue(homeVM.contains("@Published var selectedPetId"), "HomeViewModel should keep selectedPetId state")

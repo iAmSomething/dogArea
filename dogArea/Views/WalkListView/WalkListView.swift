@@ -22,6 +22,11 @@ struct WalkListView: View {
                             .padding(.horizontal, 16)
                             .padding(.top, 10)
                     }
+                    if viewModel.pets.isEmpty == false {
+                        petContextSwitcher
+                            .padding(.horizontal, 16)
+                            .padding(.top, 8)
+                    }
                     Section(content: {
                         VStack {
                             ForEach(viewModel.walkingDatas.thisWeekList.reversed(), id:\.self) { walk in
@@ -108,6 +113,31 @@ struct WalkListView: View {
             RoundedRectangle(cornerRadius: 12)
                 .stroke(Color.appTextDarkGray, lineWidth: 0.25)
         )
+    }
+
+    var petContextSwitcher: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("현재 반려견 컨텍스트: \(viewModel.selectedPetName)")
+                .font(.appFont(for: .SemiBold, size: 12))
+                .foregroundStyle(Color.appTextDarkGray)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(viewModel.pets, id: \.petId) { pet in
+                        Text(pet.petName)
+                            .font(.appFont(for: .Regular, size: 12))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(
+                                viewModel.selectedPetId == pet.petId ? Color.appYellow : Color.appYellowPale
+                            )
+                            .cornerRadius(8)
+                            .onTapGesture {
+                                viewModel.selectPet(pet.petId)
+                            }
+                    }
+                }
+            }
+        }
     }
 }
 

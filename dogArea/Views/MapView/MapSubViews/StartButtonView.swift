@@ -25,59 +25,73 @@ struct StartButtonView: View {
                     .onTapGesture {isMeter.toggle()}
                 Spacer()
             }
-            Image(viewModel.isWalking ? .stopIcon : .startIcon)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 64, height: 64)
-                .onTapGesture {
-                    if !viewModel.isWalking {
-                        guard authFlow.requestAccess(feature: .walkWrite) else {
-                            return
+            VStack(spacing: 6) {
+                if !viewModel.isWalking && viewModel.availablePets.count > 1 {
+                    Text("대상: \(viewModel.selectedPetName) · 1탭 변경")
+                        .font(.appFont(for: .SemiBold, size: 11))
+                        .foregroundStyle(Color.appTextDarkGray)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.white.opacity(0.9))
+                        .cornerRadius(6)
+                        .onTapGesture {
+                            viewModel.cycleSelectedPetForWalkStart()
                         }
-                        viewModel.reloadSelectedPetContext()
-                        guard viewModel.hasSelectedPet else {
+                }
+                Image(viewModel.isWalking ? .stopIcon : .startIcon)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 64, height: 64)
+                    .onTapGesture {
+                        if !viewModel.isWalking {
+                            guard authFlow.requestAccess(feature: .walkWrite) else {
+                                return
+                            }
+                            viewModel.prepareWalkPetSelectionSuggestion()
+                            guard viewModel.hasSelectedPet else {
+                                myAlert.callAlert(
+                                    type: .custom(
+                                        .simpleAlert(title: "반려견 선택 필요", message: "산책 시작 전에 반려견을 선택해주세요.", isOneButton: true),
+                                        {},
+                                        {}
+                                    )
+                                )
+                                return
+                            }
+                            if viewModel.walkStartCountdownEnabled {
+                                isModalPresented = true
+                            } else {
+                                viewModel.startWalkNow()
+                            }
+                        }
+                        else {
                             myAlert.callAlert(
-                                type: .custom(
-                                    .simpleAlert(title: "반려견 선택 필요", message: "산책 시작 전에 반려견을 선택해주세요.", isOneButton: true),
+                                type: .customThreeButton(
+                                    .threeChoiceAlert(
+                                        title: "산책 종료",
+                                        message: "현재 산책 기록을 어떻게 처리할까요?",
+                                        first: "저장하고 종료",
+                                        second: "계속 걷기",
+                                        third: "기록 폐기"
+                                    ),
+                                    {
+                                        viewModel.timerStop()
+                                        if viewModel.polygon.locations.count > 2 {
+                                            viewModel.makePolygon()
+                                            endWalkingViewPresented.toggle()
+                                        } else {
+                                            viewModel.endWalk()
+                                        }
+                                    },
                                     {},
-                                    {}
+                                    {
+                                        viewModel.discardCurrentWalk()
+                                    }
                                 )
                             )
-                            return
-                        }
-                        if viewModel.walkStartCountdownEnabled {
-                            isModalPresented = true
-                        } else {
-                            viewModel.startWalkNow()
                         }
                     }
-                    else {
-                        myAlert.callAlert(
-                            type: .customThreeButton(
-                                .threeChoiceAlert(
-                                    title: "산책 종료",
-                                    message: "현재 산책 기록을 어떻게 처리할까요?",
-                                    first: "저장하고 종료",
-                                    second: "계속 걷기",
-                                    third: "기록 폐기"
-                                ),
-                                {
-                                    viewModel.timerStop()
-                                    if viewModel.polygon.locations.count > 2 {
-                                        viewModel.makePolygon()
-                                        endWalkingViewPresented.toggle()
-                                    } else {
-                                        viewModel.endWalk()
-                                    }
-                                },
-                                {},
-                                {
-                                    viewModel.discardCurrentWalk()
-                                }
-                            )
-                        )
-                    }
-                }
+            }
             if viewModel.isWalking {
                 Spacer()
                 Text("\(viewModel.currentWalkingPetName)\n" + viewModel.time.simpleWalkingTimeInterval)

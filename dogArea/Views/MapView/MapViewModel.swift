@@ -101,6 +101,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     @Published var nearbyHotspots: [NearbyHotspotDTO] = []
     @Published var selectedPetId: String? = nil
     @Published var selectedPetName: String = "강아지"
+    @Published var availablePets: [PetInfo] = []
     @Published var currentWalkingPetName: String = "강아지"
     @Published var walkStartCountdownEnabled: Bool = false
     @Published var walkPointRecordMode: WalkPointRecordMode = .manual
@@ -854,7 +855,14 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         ) { [weak self] _ in
             self?.persistActiveWalkSession(force: true)
         }
-        lifecycleObservers = [didBecomeActive, willResign, willTerminate]
+        let petContextChanged = center.addObserver(
+            forName: UserdefaultSetting.selectedPetDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.reloadSelectedPetContext()
+        }
+        lifecycleObservers = [didBecomeActive, willResign, willTerminate, petContextChanged]
         #endif
     }
 
@@ -1251,7 +1259,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     }
 
     func reloadSelectedPetContext() {
-        let selectedPet = UserdefaultSetting.shared.selectedPet()
+        let userInfo = UserdefaultSetting.shared.getValue()
+        self.availablePets = userInfo?.pet ?? []
+        let selectedPet = UserdefaultSetting.shared.selectedPet(from: userInfo)
         self.selectedPetId = selectedPet?.petId
         self.selectedPetName = selectedPet?.petName ?? "강아지"
         if isWalking == false {
@@ -1261,6 +1271,40 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
 
     var hasSelectedPet: Bool {
         selectedPetId != nil
+    }
+
+    func prepareWalkPetSelectionSuggestion() {
+        guard isWalking == false else { return }
+        guard let userInfo = UserdefaultSetting.shared.getValue(), userInfo.pet.isEmpty == false else {
+            reloadSelectedPetContext()
+            return
+        }
+        if let suggested = UserdefaultSetting.shared.suggestedPetForWalkStart(from: userInfo),
+           suggested.petId != selectedPetId {
+            UserdefaultSetting.shared.setSelectedPetId(suggested.petId, source: "walk_start_suggestion")
+            metricTracker.track(
+                .petSelectionSuggested,
+                userKey: currentMetricUserId(),
+                payload: [
+                    "petId": suggested.petId,
+                    "petName": suggested.petName
+                ]
+            )
+            walkStatusMessage = "\(suggested.petName)을(를) 산책 대상으로 제안했어요."
+        }
+        reloadSelectedPetContext()
+    }
+
+    func cycleSelectedPetForWalkStart() {
+        guard isWalking == false else { return }
+        guard availablePets.count > 1 else { return }
+
+        let currentIndex = availablePets.firstIndex(where: { $0.petId == selectedPetId }) ?? -1
+        let nextIndex = (currentIndex + 1) % availablePets.count
+        let nextPet = availablePets[nextIndex]
+        UserdefaultSetting.shared.setSelectedPetId(nextPet.petId, source: "walk_start_switcher")
+        walkStatusMessage = "산책 대상: \(nextPet.petName)"
+        reloadSelectedPetContext()
     }
 
     private func setupWatchConnectivity() {

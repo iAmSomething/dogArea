@@ -16,6 +16,9 @@ class UserdefaultSetting {
         case userProfile = "userProfile"
         case petInfo = "petInfo"
         case selectedPetId = "selectedPetId"
+        case petSelectionScoreMap = "petSelectionScoreMap"
+        case petSelectionRecentPetId = "petSelectionRecentPetId"
+        case petSelectionEvents = "petSelectionEvents"
         case walkStartCountdownEnabled = "walkStartCountdownEnabled"
         case walkPointRecordMode = "walkPointRecordMode"
         case walkAutoEndPolicyEnabled = "walkAutoEndPolicyEnabled"
@@ -23,6 +26,7 @@ class UserdefaultSetting {
         case nonce = "nonce"
     }
     static var shared = UserdefaultSetting()
+    static let selectedPetDidChangeNotification = Notification.Name("userdefault.selectedPetDidChange")
     func savenonce(nonce: Double) {
         UserDefaults.standard.setValue(nonce, forKey: keyValue.nonce.rawValue)
     }
@@ -44,6 +48,7 @@ class UserdefaultSetting {
         UserDefaults.standard.setValue(profile, forKey: keyValue.userProfile.rawValue)
         UserDefaults.standard.setStructArray(normalizedPets, forKey: keyValue.petInfo.rawValue)
         UserDefaults.standard.setValue(resolvedSelectedPetId, forKey: keyValue.selectedPetId.rawValue)
+        UserDefaults.standard.setValue(resolvedSelectedPetId, forKey: keyValue.petSelectionRecentPetId.rawValue)
         UserDefaults.standard.setValue(createdAt, forKey: keyValue.createdAt.rawValue)
     }
     func getValue() -> UserInfo? {
@@ -174,6 +179,14 @@ struct PetInfo: Codable, Identifiable, Equatable {
     }
 }
 
+struct PetSelectionEvent: Codable, Equatable {
+    let petId: String
+    let source: String
+    let weekday: Int
+    let timeSlot: String
+    let recordedAt: TimeInterval
+}
+
 enum WalkSessionEndReason: String, Codable {
     case manual = "manual"
     case autoInactive = "auto_inactive"
@@ -260,14 +273,69 @@ extension UserDefaults {
 }
 
 extension UserdefaultSetting {
+    private enum PetSelectionTimeSlot: String {
+        case morning
+        case afternoon
+        case evening
+        case night
+    }
+
+    private func petSelectionTimeSlot(for date: Date) -> PetSelectionTimeSlot {
+        let hour = Calendar.current.component(.hour, from: date)
+        switch hour {
+        case 5...10: return .morning
+        case 11...16: return .afternoon
+        case 17...21: return .evening
+        default: return .night
+        }
+    }
+
+    private func petSelectionScoreKey(petId: String, weekday: Int, timeSlot: PetSelectionTimeSlot) -> String {
+        "\(weekday)|\(timeSlot.rawValue)|\(petId)"
+    }
+
+    private func loadPetSelectionScoreMap() -> [String: Int] {
+        UserDefaults.standard.dictionary(forKey: keyValue.petSelectionScoreMap.rawValue) as? [String: Int] ?? [:]
+    }
+
+    private func savePetSelectionScoreMap(_ map: [String: Int]) {
+        UserDefaults.standard.set(map, forKey: keyValue.petSelectionScoreMap.rawValue)
+    }
+
+    private func recordPetSelectionEvent(petId: String, source: String, at date: Date = Date()) {
+        let weekday = Calendar.current.component(.weekday, from: date)
+        let timeSlot = petSelectionTimeSlot(for: date)
+        let key = petSelectionScoreKey(petId: petId, weekday: weekday, timeSlot: timeSlot)
+        var scoreMap = loadPetSelectionScoreMap()
+        scoreMap[key, default: 0] += 1
+        savePetSelectionScoreMap(scoreMap)
+        UserDefaults.standard.set(petId, forKey: keyValue.petSelectionRecentPetId.rawValue)
+
+        var events = UserDefaults.standard.structArrayData(PetSelectionEvent.self, forKey: keyValue.petSelectionEvents.rawValue)
+        events.append(
+            PetSelectionEvent(
+                petId: petId,
+                source: source,
+                weekday: weekday,
+                timeSlot: timeSlot.rawValue,
+                recordedAt: date.timeIntervalSince1970
+            )
+        )
+        if events.count > 100 {
+            events.removeFirst(events.count - 100)
+        }
+        UserDefaults.standard.setStructArray(events, forKey: keyValue.petSelectionEvents.rawValue)
+    }
+
     func selectedPetId() -> String? {
         UserDefaults.standard.string(forKey: keyValue.selectedPetId.rawValue)
     }
 
-    func setSelectedPetId(_ petId: String) {
+    func setSelectedPetId(_ petId: String, source: String = "manual") {
         guard let current = getValue(), current.pet.contains(where: { $0.petId == petId }) else {
             return
         }
+        let previousId = UserDefaults.standard.string(forKey: keyValue.selectedPetId.rawValue)
         UserDefaults.standard.setValue(petId, forKey: keyValue.selectedPetId.rawValue)
         // Normalize persisted payload in case pet ids were migrated this session.
         save(
@@ -278,6 +346,31 @@ extension UserdefaultSetting {
             createdAt: current.createdAt,
             selectedPetId: petId
         )
+        recordPetSelectionEvent(petId: petId, source: source)
+
+        if previousId != petId {
+            let now = Date()
+            let weekday = Calendar.current.component(.weekday, from: now)
+            let timeSlot = petSelectionTimeSlot(for: now).rawValue
+            AppMetricTracker.shared.track(
+                .petSelectionChanged,
+                userKey: current.id,
+                payload: [
+                    "source": source,
+                    "petId": petId,
+                    "weekday": "\(weekday)",
+                    "timeSlot": timeSlot
+                ]
+            )
+            NotificationCenter.default.post(
+                name: UserdefaultSetting.selectedPetDidChangeNotification,
+                object: nil,
+                userInfo: [
+                    "petId": petId,
+                    "source": source
+                ]
+            )
+        }
     }
 
     func selectedPet(from userInfo: UserInfo? = nil) -> PetInfo? {
@@ -285,6 +378,43 @@ extension UserdefaultSetting {
         guard let info else { return nil }
         let selectedId = selectedPetId()
         return info.pet.first(where: { $0.petId == selectedId }) ?? info.pet.first
+    }
+
+    func suggestedPetForWalkStart(from userInfo: UserInfo? = nil, now: Date = Date()) -> PetInfo? {
+        let info = userInfo ?? getValue()
+        guard let info, info.pet.isEmpty == false else { return nil }
+        if info.pet.count == 1 {
+            return info.pet.first
+        }
+
+        let weekday = Calendar.current.component(.weekday, from: now)
+        let timeSlot = petSelectionTimeSlot(for: now)
+        let scoreMap = loadPetSelectionScoreMap()
+        let ranked = info.pet
+            .map { pet in
+                (pet, scoreMap[petSelectionScoreKey(petId: pet.petId, weekday: weekday, timeSlot: timeSlot)] ?? 0)
+            }
+            .sorted { lhs, rhs in
+                if lhs.1 == rhs.1 {
+                    return lhs.0.petName < rhs.0.petName
+                }
+                return lhs.1 > rhs.1
+            }
+
+        if let first = ranked.first, first.1 > 0 {
+            return first.0
+        }
+
+        if let recentPetId = UserDefaults.standard.string(forKey: keyValue.petSelectionRecentPetId.rawValue),
+           let recentPet = info.pet.first(where: { $0.petId == recentPetId }) {
+            return recentPet
+        }
+
+        return selectedPet(from: info) ?? info.pet.first
+    }
+
+    func recentPetSelectionEvents() -> [PetSelectionEvent] {
+        UserDefaults.standard.structArrayData(PetSelectionEvent.self, forKey: keyValue.petSelectionEvents.rawValue)
     }
 
     func updateFirstPetCaricature(
@@ -358,6 +488,8 @@ enum AppMetricEvent: String {
     case caricatureFailed = "caricature_failed"
     case nearbyOptInEnabled = "nearby_opt_in_enabled"
     case nearbyOptInDisabled = "nearby_opt_in_disabled"
+    case petSelectionChanged = "pet_selection_changed"
+    case petSelectionSuggested = "pet_selection_suggested"
 }
 
 final class FeatureFlagStore {
