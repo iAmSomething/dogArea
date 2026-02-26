@@ -18,6 +18,7 @@
 - 이미지 생성 공급자 라우터 명세 v1: `docs/image-provider-router-v1.md`
 - 시계열 Heatmap 명세 v1: `docs/heatmap-timeseries-v1.md`
 - Watch 액션 신뢰성 명세 v1: `docs/watch-connectivity-reliability-v1.md`
+- 캐리커처 비동기 파이프라인 명세 v1: `docs/caricature-async-pipeline-v1.md`
 
 ## 강아지들의 영역 표시
 

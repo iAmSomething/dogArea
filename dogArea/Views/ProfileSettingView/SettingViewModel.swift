@@ -19,10 +19,14 @@ final class SettingViewModel: ObservableObject, CoreDataProtocol {
     private var storage = Storage.storage().reference()
     init() {
         fetchModel()
-        self.userInfo = UserdefaultSetting().getValue()
+        reloadUserInfo()
     }
     func fetchModel() {
         self.polygonList = self.fetchPolygons()
+    }
+
+    func reloadUserInfo() {
+        self.userInfo = UserdefaultSetting().getValue()
     }
     func uploadImg(img: UIImage, isPet:Bool = false){
         Task{ @MainActor in
