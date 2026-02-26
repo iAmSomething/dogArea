@@ -6,7 +6,7 @@
 
 ## 2. 개발 완료
 1. Firebase Distribution 워크플로우 신규 추가
-- 파일: `.github/workflows/firebase-distribution.yml`
+- 파일: `.github/workflows/firebase-app-distribution.yml`
 - 트리거: `main` push + `workflow_dispatch`
 - 산출물: IPA artifact 업로드 + Firebase tester 배포
 
@@ -36,6 +36,6 @@
 - `swift scripts/swift_stability_unit_check.swift` -> PASS
 
 ## 4. 메모
-- 브랜치 상태에서는 `gh workflow run firebase-distribution.yml --ref <branch>`가
+- 브랜치 상태에서는 `gh workflow run firebase-app-distribution.yml --ref <branch>`가
   default branch 기준 제한으로 실행되지 않음(404).
 - 리허설 1회는 `main` 머지 후 workflow_dispatch로 수행.

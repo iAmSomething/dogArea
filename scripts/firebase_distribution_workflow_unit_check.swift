@@ -17,7 +17,7 @@ func read(_ path: String) -> String {
     (try? String(contentsOfFile: path, encoding: .utf8)) ?? ""
 }
 
-let workflow = read(".github/workflows/firebase-distribution.yml")
+let workflow = read(".github/workflows/firebase-app-distribution.yml")
 let doc = read("docs/github-actions-firebase-distribution.md")
 
 Check.assertTrue(workflow.contains("name: Firebase Distribution"), "workflow should exist with expected name")

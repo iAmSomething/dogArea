@@ -7,7 +7,7 @@
   를 자동 수행한다.
 
 워크플로우 파일:
-- `.github/workflows/firebase-distribution.yml`
+- `.github/workflows/firebase-app-distribution.yml`
 
 ## 2. 트리거
 - 자동: `push` to `main`
@@ -71,7 +71,7 @@ base64 -i firebase-service-account.json | pbcopy
 
 CLI 실행 예시:
 ```bash
-gh workflow run firebase-distribution.yml --ref main
+gh workflow run firebase-app-distribution.yml --ref main
 ```
 
 ## 9. 운영 체크리스트
