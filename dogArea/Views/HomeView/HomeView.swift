@@ -22,6 +22,11 @@ struct HomeView: View {
                     }.padding()
                     Spacer()
                 }
+                if let report = viewModel.guestDataUpgradeReport {
+                    guestDataUpgradeCard(report: report)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 8)
+                }
                 if viewModel.pets.isEmpty == false {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
@@ -182,6 +187,27 @@ struct HomeView: View {
             viewModel.reloadUserInfo()
             viewModel.fetchData()
         }.padding(.top,20)
+    }
+
+    @ViewBuilder
+    private func guestDataUpgradeCard(report: GuestDataUpgradeReport) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(report.hasOutstandingWork ? "데이터 이관 재시도 필요" : "게스트 데이터 이관 완료")
+                .font(.appFont(for: .SemiBold, size: 13))
+            Text(
+                "세션 \(report.sessionCount)건 · 포인트 \(report.pointCount)건 · 면적 \(report.totalAreaM2.calculatedAreaString)"
+            )
+            .font(.appFont(for: .Light, size: 11))
+            .foregroundStyle(Color.appTextDarkGray)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
+        .background(Color.white)
+        .cornerRadius(10)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(report.hasOutstandingWork ? Color.appRed : Color.appGreen, lineWidth: 0.4)
+        )
     }
 }
 

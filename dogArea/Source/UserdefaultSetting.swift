@@ -8,6 +8,7 @@
 import Foundation
 import CryptoKit
 import SwiftUI
+import CoreData
 class UserdefaultSetting {
     enum keyValue: String {
         case userId = "userId"
@@ -686,7 +687,7 @@ final class SyncOutboxStore {
         var mutableItems = items
         stagePayloads.forEach { stage, payload in
             let idempotencyKey = "\(baseKey)-\(stage.rawValue)"
-            let exists = mutableItems.contains(where: { $0.idempotencyKey == idempotencyKey && $0.status != .completed })
+            let exists = mutableItems.contains(where: { $0.idempotencyKey == idempotencyKey })
             guard exists == false else { return }
             mutableItems.append(
                 SyncOutboxItem(
@@ -765,6 +766,24 @@ final class SyncOutboxStore {
             }
         }
         return summary()
+    }
+
+    func requeuePermanentFailures(walkSessionIds: Set<String>? = nil) {
+        lock.lock()
+        let now = Date().timeIntervalSince1970
+        for index in items.indices {
+            guard items[index].status == .permanentFailed else { continue }
+            if let walkSessionIds, walkSessionIds.contains(items[index].walkSessionId) == false {
+                continue
+            }
+            items[index].status = .retrying
+            items[index].retryCount = 0
+            items[index].nextRetryAt = now
+            items[index].lastErrorCode = nil
+            items[index].updatedAt = now
+        }
+        persistLocked()
+        lock.unlock()
     }
 
     private static func retryDelay(retryCount: Int) -> TimeInterval {
@@ -920,14 +939,178 @@ struct MemberUpgradeRequest: Identifiable {
     let trigger: MemberUpgradeTrigger
 }
 
+struct GuestDataUpgradeSnapshot: Equatable {
+    let sessionCount: Int
+    let pointCount: Int
+    let totalAreaM2: Double
+    let totalDurationSec: Double
+    let sessionIds: [String]
+    let signature: String
+}
+
+struct GuestDataUpgradeReport: Codable, Equatable, Identifiable {
+    var id: String { userId + ":" + signature }
+    let userId: String
+    let signature: String
+    let sessionCount: Int
+    let pointCount: Int
+    let totalAreaM2: Double
+    let totalDurationSec: Double
+    let pendingCount: Int
+    let permanentFailureCount: Int
+    let lastErrorCode: String?
+    let executedAt: TimeInterval
+
+    var hasOutstandingWork: Bool {
+        pendingCount > 0 || permanentFailureCount > 0
+    }
+}
+
+struct GuestDataUpgradePrompt: Identifiable {
+    let id = UUID()
+    let snapshot: GuestDataUpgradeSnapshot
+    let shouldEmphasizeRetry: Bool
+}
+
+final class GuestDataUpgradeService: CoreDataProtocol {
+    static let shared = GuestDataUpgradeService()
+
+    private let syncOutbox = SyncOutboxStore.shared
+    private let syncTransport = SupabaseSyncOutboxTransport()
+    private let reportStoragePrefix = "guest.data.upgrade.report.v1."
+    private let acknowledgedSignaturePrefix = "guest.data.upgrade.signature.v1."
+
+    private init() {}
+
+    func pendingPrompt(for userId: String) -> GuestDataUpgradePrompt? {
+        guard let snapshot = localSnapshot(), snapshot.sessionCount > 0 else { return nil }
+        let report = latestReport(for: userId)
+        let acknowledgedSignature = UserDefaults.standard.string(forKey: signatureKey(for: userId))
+        if acknowledgedSignature == snapshot.signature, report?.hasOutstandingWork == false {
+            return nil
+        }
+        return GuestDataUpgradePrompt(
+            snapshot: snapshot,
+            shouldEmphasizeRetry: report?.hasOutstandingWork == true
+        )
+    }
+
+    func latestReport(for userId: String) -> GuestDataUpgradeReport? {
+        guard let data = UserDefaults.standard.data(forKey: reportKey(for: userId)),
+              let decoded = try? JSONDecoder().decode(GuestDataUpgradeReport.self, from: data) else {
+            return nil
+        }
+        return decoded
+    }
+
+    func runUpgrade(for userId: String, forceRetry: Bool = false) async -> GuestDataUpgradeReport? {
+        guard let snapshot = localSnapshot(), snapshot.sessionCount > 0 else { return nil }
+
+        if forceRetry {
+            syncOutbox.requeuePermanentFailures(walkSessionIds: Set(snapshot.sessionIds))
+        }
+
+        for polygon in fetchPolygons() {
+            syncOutbox.enqueueWalkStages(
+                walkSessionId: polygon.id,
+                userId: userId,
+                pointCount: polygon.locations.count,
+                durationSec: polygon.walkingTime,
+                areaM2: polygon.walkingArea,
+                hasImage: polygon.binaryImage != nil,
+                createdAt: polygon.createdAt
+            )
+        }
+
+        let summary = await syncOutbox.flush(using: syncTransport, now: Date())
+        let report = GuestDataUpgradeReport(
+            userId: userId,
+            signature: snapshot.signature,
+            sessionCount: snapshot.sessionCount,
+            pointCount: snapshot.pointCount,
+            totalAreaM2: snapshot.totalAreaM2,
+            totalDurationSec: snapshot.totalDurationSec,
+            pendingCount: summary.pendingCount,
+            permanentFailureCount: summary.permanentFailureCount,
+            lastErrorCode: summary.lastErrorCode?.rawValue,
+            executedAt: Date().timeIntervalSince1970
+        )
+
+        persist(report: report, for: userId)
+        if report.hasOutstandingWork == false {
+            UserDefaults.standard.set(snapshot.signature, forKey: signatureKey(for: userId))
+        }
+        return report
+    }
+
+    private func localSnapshot() -> GuestDataUpgradeSnapshot? {
+        let polygons = fetchPolygons()
+        guard polygons.isEmpty == false else { return nil }
+
+        let sessionIds = polygons.map { $0.id.uuidString.lowercased() }.sorted()
+        let pointCount = polygons.reduce(0) { $0 + $1.locations.count }
+        let totalArea = polygons.reduce(0.0) { $0 + $1.walkingArea }
+        let totalDuration = polygons.reduce(0.0) { $0 + $1.walkingTime }
+        let signature = signatureForSnapshot(
+            sessionIds: sessionIds,
+            pointCount: pointCount,
+            totalAreaM2: totalArea,
+            totalDurationSec: totalDuration
+        )
+        return GuestDataUpgradeSnapshot(
+            sessionCount: sessionIds.count,
+            pointCount: pointCount,
+            totalAreaM2: totalArea,
+            totalDurationSec: totalDuration,
+            sessionIds: sessionIds,
+            signature: signature
+        )
+    }
+
+    private func persist(report: GuestDataUpgradeReport, for userId: String) {
+        guard let data = try? JSONEncoder().encode(report) else { return }
+        UserDefaults.standard.set(data, forKey: reportKey(for: userId))
+    }
+
+    private func reportKey(for userId: String) -> String {
+        reportStoragePrefix + stableKey(from: userId)
+    }
+
+    private func signatureKey(for userId: String) -> String {
+        acknowledgedSignaturePrefix + stableKey(from: userId)
+    }
+
+    private func signatureForSnapshot(
+        sessionIds: [String],
+        pointCount: Int,
+        totalAreaM2: Double,
+        totalDurationSec: Double
+    ) -> String {
+        let payload = sessionIds.joined(separator: "|")
+        + "|p:\(pointCount)"
+        + "|a:\(totalAreaM2)"
+        + "|t:\(totalDurationSec)"
+        return stableKey(from: payload)
+    }
+
+    private func stableKey(from raw: String) -> String {
+        let digest = SHA256.hash(data: Data(raw.utf8))
+        return digest.map { String(format: "%02x", $0) }.joined()
+    }
+}
+
 @MainActor
 final class AuthFlowCoordinator: ObservableObject {
     @Published var shouldShowEntryChoice: Bool = false
     @Published var shouldShowSignIn: Bool = false
     @Published var pendingUpgradeRequest: MemberUpgradeRequest? = nil
+    @Published var pendingGuestDataUpgradePrompt: GuestDataUpgradePrompt? = nil
+    @Published var guestDataUpgradeInProgress: Bool = false
+    @Published var guestDataUpgradeResult: GuestDataUpgradeReport? = nil
 
     private let guestModeKey = "auth.guest_mode.v1"
     private let entryChoiceCompletedKey = "auth.entry_choice_completed.v1"
+    private let guestDataUpgradeService = GuestDataUpgradeService.shared
     private var onAuthenticated: (() -> Void)?
 
     var isLoggedIn: Bool {
@@ -948,6 +1131,9 @@ final class AuthFlowCoordinator: ObservableObject {
             pendingUpgradeRequest = nil
             return
         }
+        pendingGuestDataUpgradePrompt = nil
+        guestDataUpgradeInProgress = false
+        guestDataUpgradeResult = nil
         let didChooseEntryPath = UserDefaults.standard.bool(forKey: entryChoiceCompletedKey)
         shouldShowEntryChoice = !didChooseEntryPath
     }
@@ -993,12 +1179,46 @@ final class AuthFlowCoordinator: ObservableObject {
         onAuthenticated = nil
     }
 
+    func dismissGuestDataUpgradePrompt() {
+        pendingGuestDataUpgradePrompt = nil
+    }
+
+    func clearGuestDataUpgradeResult() {
+        guestDataUpgradeResult = nil
+    }
+
+    func startGuestDataUpgrade(forceRetry: Bool = false) {
+        guard let userId = UserdefaultSetting.shared.getValue()?.id, userId.isEmpty == false else {
+            return
+        }
+        pendingGuestDataUpgradePrompt = nil
+        guestDataUpgradeInProgress = true
+        Task {
+            let report = await guestDataUpgradeService.runUpgrade(for: userId, forceRetry: forceRetry)
+            await MainActor.run {
+                self.guestDataUpgradeInProgress = false
+                self.guestDataUpgradeResult = report
+            }
+        }
+    }
+
+    func latestGuestDataUpgradeReport() -> GuestDataUpgradeReport? {
+        guard let userId = UserdefaultSetting.shared.getValue()?.id, userId.isEmpty == false else {
+            return nil
+        }
+        return guestDataUpgradeService.latestReport(for: userId)
+    }
+
     func completeSignIn() {
         UserDefaults.standard.set(false, forKey: guestModeKey)
         UserDefaults.standard.set(true, forKey: entryChoiceCompletedKey)
         shouldShowSignIn = false
         shouldShowEntryChoice = false
         pendingUpgradeRequest = nil
+        if let userId = UserdefaultSetting.shared.getValue()?.id, userId.isEmpty == false {
+            pendingGuestDataUpgradePrompt = guestDataUpgradeService.pendingPrompt(for: userId)
+            guestDataUpgradeResult = guestDataUpgradeService.latestReport(for: userId)
+        }
         let completion = onAuthenticated
         onAuthenticated = nil
         completion?()
@@ -1037,6 +1257,52 @@ struct MemberUpgradeSheetView: View {
 
                 Button("로그인하고 계속") {
                     onUpgrade()
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(Color.appGreen)
+                .foregroundStyle(Color.white)
+                .cornerRadius(10)
+            }
+        }
+        .padding(20)
+        .background(Color.white)
+    }
+}
+
+struct GuestDataUpgradePromptSheetView: View {
+    let prompt: GuestDataUpgradePrompt
+    let onImport: () -> Void
+    let onLater: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(prompt.shouldEmphasizeRetry ? "산책 데이터 이관 재시도" : "게스트 산책 데이터 가져오기")
+                .font(.appFont(for: .Bold, size: 22))
+                .foregroundStyle(Color.appTextDarkGray)
+            Text("로그인 전에 기록한 산책 데이터를 계정으로 이관합니다. 중복 없이 안전하게 처리돼요.")
+                .font(.appFont(for: .Regular, size: 14))
+                .foregroundStyle(Color.appTextDarkGray)
+            VStack(alignment: .leading, spacing: 6) {
+                Text("세션 \(prompt.snapshot.sessionCount)건")
+                Text("포인트 \(prompt.snapshot.pointCount)건")
+                Text("누적 면적 \(prompt.snapshot.totalAreaM2.calculatedAreaString)")
+                Text("누적 시간 \(prompt.snapshot.totalDurationSec.walkingTimeInterval)")
+            }
+            .font(.appFont(for: .Regular, size: 13))
+            .foregroundStyle(Color.appTextDarkGray)
+            HStack(spacing: 10) {
+                Button("나중에") {
+                    onLater()
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(Color.appYellowPale)
+                .foregroundStyle(Color.appTextDarkGray)
+                .cornerRadius(10)
+
+                Button(prompt.shouldEmphasizeRetry ? "다시 가져오기" : "가져오기") {
+                    onImport()
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
