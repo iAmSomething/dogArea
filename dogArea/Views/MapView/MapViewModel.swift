@@ -114,6 +114,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     @Published var syncOutboxPendingCount: Int = 0
     @Published var syncOutboxPermanentFailureCount: Int = 0
     @Published var syncOutboxLastErrorCodeText: String = ""
+    @Published var syncRecoveryToastMessage: String? = nil
     private let watchSession = WCSession.isSupported() ? WCSession.default : nil
     private let featureFlags = FeatureFlagStore.shared
     private let metricTracker = AppMetricTracker.shared
@@ -158,6 +159,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     private var lifecycleObservers: [NSObjectProtocol] = []
     private var lastAcceptedWalkLocation: CLLocation?
     private var lastSyncFlushAt: Date = .distantPast
+    private var lastSyncSummarySnapshot: SyncOutboxSummary? = nil
     private var syncFlushTask: Task<Void, Never>? = nil
     private let syncOutbox = SyncOutboxStore.shared
     private let syncTransport = SupabaseSyncOutboxTransport()
@@ -376,6 +378,15 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         syncOutboxPendingCount > 0 || syncOutboxPermanentFailureCount > 0
     }
 
+    var isLocationPermissionDenied: Bool {
+        let status = locationManager.authorizationStatus
+        return status == .restricted || status == .denied
+    }
+
+    var isOfflineRecoveryMode: Bool {
+        syncOutboxPendingCount > 0 && syncOutboxLastErrorCodeText == SyncOutboxErrorCode.offline.rawValue
+    }
+
     var syncOutboxStatusText: String {
         if syncOutboxPermanentFailureCount > 0 {
             if syncOutboxLastErrorCodeText.isEmpty == false {
@@ -397,11 +408,30 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         runtimeGuardStatusText = ""
     }
 
+    func clearSyncRecoveryToastMessage() {
+        syncRecoveryToastMessage = nil
+    }
+
+    func retrySyncNow() {
+        walkStatusMessage = "동기화를 다시 시도합니다."
+        flushSyncOutboxIfNeeded(force: true)
+    }
+
     private func refreshSyncOutboxSummary() {
+        let previous = lastSyncSummarySnapshot
         let summary = syncOutbox.summary()
         syncOutboxPendingCount = summary.pendingCount
         syncOutboxPermanentFailureCount = summary.permanentFailureCount
         syncOutboxLastErrorCodeText = summary.lastErrorCode?.rawValue ?? ""
+
+        if let previous,
+           previous.pendingCount > 0,
+           previous.lastErrorCode == .offline,
+           summary.pendingCount == 0,
+           summary.lastErrorCode == nil {
+            syncRecoveryToastMessage = "온라인 복구: 대기 중 기록 동기화를 완료했어요."
+        }
+        lastSyncSummarySnapshot = summary
     }
 
     private func enqueueSyncOutbox(for polygon: Polygon, hasImage: Bool) {
@@ -430,9 +460,18 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
             guard let self else { return }
             let summary = await syncOutbox.flush(using: syncTransport, now: Date())
             await MainActor.run {
+                let previous = self.lastSyncSummarySnapshot
                 self.syncOutboxPendingCount = summary.pendingCount
                 self.syncOutboxPermanentFailureCount = summary.permanentFailureCount
                 self.syncOutboxLastErrorCodeText = summary.lastErrorCode?.rawValue ?? ""
+                if let previous,
+                   previous.pendingCount > 0,
+                   previous.lastErrorCode == .offline,
+                   summary.pendingCount == 0,
+                   summary.lastErrorCode == nil {
+                    self.syncRecoveryToastMessage = "온라인 복구: 대기 중 기록 동기화를 완료했어요."
+                }
+                self.lastSyncSummarySnapshot = summary
                 self.syncFlushTask = nil
             }
         }

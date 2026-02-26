@@ -10,10 +10,12 @@ import SwiftUI
 struct PetProfileSettingView: View {
     @Environment(\.colorScheme) var scheme
     @Environment(\.presentationMode) var presentationMode
+    @EnvironmentObject var authFlow: AuthFlowCoordinator
     @EnvironmentObject var viewModel: SigningViewModel
     @Binding var path: NavigationPath
     @State var imageSelect: Bool = false
     @State private var didCompleteSignup: Bool = false
+    @State private var recoveryIssue: RecoveryIssue? = nil
     let onSignupCompleted: () -> Void
 
     init(path: Binding<NavigationPath>, onSignupCompleted: @escaping () -> Void = {}) {
@@ -66,12 +68,36 @@ struct PetProfileSettingView: View {
                 LoadingView()
             }
         })
+        .overlay(alignment: .top) {
+            if let issue = recoveryIssue, viewModel.loading != .loading {
+                RecoveryActionBanner(
+                    issue: issue,
+                    onPrimary: { handleRecoveryPrimaryAction(issue) },
+                    onDismiss: { recoveryIssue = nil }
+                )
+                .padding(.top, 12)
+            }
+        }
         .onChange(of: viewModel.loading) { state in
             guard didCompleteSignup == false else { return }
             if state == .success {
+                recoveryIssue = nil
                 didCompleteSignup = true
                 onSignupCompleted()
+            } else if case let .fail(msg) = state {
+                recoveryIssue = RecoveryIssueClassifier.fromErrorMessage(msg)
             }
+        }
+    }
+
+    private func handleRecoveryPrimaryAction(_ issue: RecoveryIssue) {
+        switch issue.kind {
+        case .locationPermissionDenied:
+            RecoverySystemAction.openAppSettings()
+        case .networkOffline:
+            viewModel.setValue()
+        case .authExpired:
+            authFlow.startReauthenticationFlow()
         }
     }
 }

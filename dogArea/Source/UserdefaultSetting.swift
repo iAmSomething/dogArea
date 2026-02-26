@@ -1265,6 +1265,13 @@ final class AuthFlowCoordinator: ObservableObject {
         onAuthenticated = nil
     }
 
+    func startReauthenticationFlow() {
+        pendingUpgradeRequest = nil
+        pendingGuestDataUpgradePrompt = nil
+        shouldShowEntryChoice = false
+        shouldShowSignIn = true
+    }
+
     func dismissGuestDataUpgradePrompt() {
         pendingGuestDataUpgradePrompt = nil
     }
