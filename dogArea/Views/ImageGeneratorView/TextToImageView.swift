@@ -11,6 +11,12 @@ struct TextToImageView: View {
     @Bindable var vm = ImageGenerateViewModel()
     var body: some View {
         VStack {
+            HStack {
+                Text("Provider: \(vm.providerName)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
             switch vm.fetchPhase {
             case .loading: ProgressView("loading")
             case .success(let image):
@@ -28,10 +34,11 @@ struct TextToImageView: View {
                     Task { await vm.generateImage() }
                 }, label: {
                     Text("만들기")
-                }).disabled(vm.fetchPhase == .loading )
+                }).disabled(vm.fetchPhase == .loading || vm.prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty )
                 
             }
         }
+        .padding(.horizontal, 20)
         .navigationTitle("텍스트 투 이미지 테스트")
     }
 }

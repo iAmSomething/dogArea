@@ -23,6 +23,10 @@
 	<false/>
 	<key>OpenAI</key>
 	<string>$(API_KEY)</string>
+	<key>IMAGE_PROVIDER</key>
+	<string>$(IMAGE_PROVIDER)</string>
+	<key>IMAGE_PROXY_URL</key>
+	<string>$(IMAGE_PROXY_URL)</string>
 	<key>SUPABASE_URL</key>
 	<string>$(SUPABASE_URL)</string>
 	<key>SUPABASE_ANON_KEY</key>

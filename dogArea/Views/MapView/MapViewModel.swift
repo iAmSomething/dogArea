@@ -13,7 +13,6 @@ import CoreData
 import Combine
 import WatchConnectivity
 class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSessionDelegate, CoreDataProtocol{
-    @Environment(\.managedObjectContext) private var viewContext
     private let locationManager = CLLocationManager()
     private var timer: Timer? = nil
     private let watchSession = WCSession.isSupported() ? WCSession.default : nil
@@ -86,7 +85,6 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             polygon.removeAt(locationID)
             if polygon.locations.count<3 {
                 self.polygonList = deletePolygon(id: self.polygon.id)
-                polygonList.removeAll(where: {$0.id == self.polygon.id})
             }
         }
     }
@@ -204,12 +202,7 @@ extension MapViewModel {
         return abs(area)
     }
     func calculatedAreaString(areaSize: Double? = nil , isPyong: Bool = false) -> String {
-        var area = 0.0
-        if areaSize == nil {
-            area = calculateArea()
-        } else {
-            area = areaSize!
-        }
+        let area = areaSize ?? calculateArea()
         var str = String(format: "%.2f" , area) + "㎡"
         if area > 10000.0 {
             str = String(format: "%.2f" , area/10000) + "만 ㎡"
@@ -318,8 +311,10 @@ extension MapViewModel {
     }
     private func initialClusterByPolygon() async -> [Cluster] {
         return self.polygonList
-            .filter{!$0.polygon.isNil}
-            .map{Cluster(center: $0.polygon!.coordinate, id: $0.id)}
+            .compactMap { polygon in
+                guard let mapPolygon = polygon.polygon else { return nil }
+                return Cluster(center: mapPolygon.coordinate, id: polygon.id)
+            }
     }
     private func cluster(distance: Double) async -> [Cluster] {
         let startCluster = await initialClusterByPolygon()

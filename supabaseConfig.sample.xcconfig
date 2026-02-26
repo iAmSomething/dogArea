@@ -6,3 +6,5 @@ STORAGE_BUCKETS = <profiles,caricatures,walk-maps>
 AUTH_REDIRECT_URL = http://localhost:3000
 DB_CONN_STRING = <optional>
 EXISTING_SCHEMA = no
+IMAGE_PROVIDER = openai
+IMAGE_PROXY_URL = <optional-edge-function-url>

@@ -57,7 +57,6 @@ extension CoreDataProtocol {
     }
     func savePolygon (polygon : Polygon) -> [Polygon] {
         let polygons = PolygonEntity(context: context)
-        var polygonList = [Polygon]()
         polygons.uuid = polygon.id
         polygons.walkingArea = polygon.walkingArea
         polygons.walkingTime = polygon.walkingTime
@@ -73,13 +72,10 @@ extension CoreDataProtocol {
         }
         do {
             try context.save()
-            polygonList.append(polygon)
-//            print("Saved successfully!")
-            return polygonList
-            
+            return fetchPolygons()
         } catch let error as NSError {
             print("Could not save. \(error), \(error.userInfo)")
-            return polygonList
+            return fetchPolygons()
         }
     }
     func fetchPolygons() -> [Polygon] {
@@ -97,29 +93,22 @@ extension CoreDataProtocol {
         }
     }
     func deletePolygon(id: UUID) -> [Polygon] {
-        // Set the predicate to filter by id
-        var polygonList = [Polygon]()
-        let predicate = NSPredicate(format: "uuid == %@", id as CVarArg)
-        fetchRequest.predicate = predicate
+        let request = fetchRequest
+        request.predicate = NSPredicate(format: "uuid == %@", id as CVarArg)
         do {
-            // Perform the fetch request
-            let polygons = try context.fetch(fetchRequest)
+            let polygons = try context.fetch(request)
             
             if let polygonToDelete = polygons.first {
-                // Delete the found PolygonEntity from the context
                 context.delete(polygonToDelete)
-                
-                // Save changes in the context
                 try context.save()
                 print("Deleted successfully!")
-                polygonList.removeAll(where: {$0.id == id})
             } else {
                 print("No PolygonEntity found with createdAt \(id)")
             }
-            return polygonList
+            return fetchPolygons()
         } catch let error as NSError {
             print("Could not delete. \(error), \(error.userInfo)")
-            return polygonList
+            return fetchPolygons()
         }
     }
 

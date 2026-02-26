@@ -50,13 +50,19 @@ struct AppleSigninButton : View{
                         let UserIdentifier = appleIDCredential.user
                         let fullName = appleIDCredential.fullName
                         let name =  (fullName?.familyName ?? "") + (fullName?.givenName ?? "")
-                        let IdentityToken = String(data: appleIDCredential.identityToken!, encoding: .utf8)
+                        guard
+                            let identityTokenData = appleIDCredential.identityToken,
+                            let identityToken = String(data: identityTokenData, encoding: .utf8)
+                        else {
+                            print("Apple identity token is missing.")
+                            return
+                        }
                         if userInfo?.id == UserIdentifier {
                             isLogined.toggle()
                             // 첫 가입 아님(이미 가입함)
                         } else {
                             let credential = OAuthProvider.credential(withProviderID: "apple.com",
-                                                                      idToken: IdentityToken!,
+                                                                      idToken: identityToken,
                                                                       rawNonce: nil)
                             Auth.auth().signIn(with: credential){ result, error in
                                 guard error == nil else {

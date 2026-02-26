@@ -55,7 +55,6 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
         }
     }
 
-    #if os(watchOS)
     func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: (any Error)?) {
         DispatchQueue.main.async {
             if activationState == .activated {
@@ -65,5 +64,9 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
             }
         }
     }
+    #if os(iOS)
+    func sessionDidBecomeInactive(_ session: WCSession) {}
+
+    func sessionDidDeactivate(_ session: WCSession) {}
     #endif
 }

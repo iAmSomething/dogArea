@@ -9,7 +9,6 @@ import Foundation
 import SwiftUI
 import FirebaseStorage
 final class SettingViewModel: ObservableObject, CoreDataProtocol {
-    @Environment(\.managedObjectContext) private var viewContext
     @Published var polygonList: [Polygon] = []
     @Published var userName: String? = nil
     @Published var petName: String? = nil
