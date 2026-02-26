@@ -12,6 +12,8 @@ final class WalkListViewModel: ObservableObject, CoreDataProtocol {
     @Published var userInfo: UserInfo? = nil
     @Published var selectedPetId: String = ""
     @Published var selectedPetName: String = "강아지"
+    private var allWalkingDatas: [WalkDataModel] = []
+    private let sessionMetadataStore = WalkSessionMetadataStore.shared
     private var cancellables: Set<AnyCancellable> = []
 
     var pets: [PetInfo] {
@@ -24,10 +26,11 @@ final class WalkListViewModel: ObservableObject, CoreDataProtocol {
     }
 
     func fetchModel() {
-        self.walkingDatas = self.fetchPolygons().map{
+        self.allWalkingDatas = self.fetchPolygons().map{
             .init(polygon: $0)
         }
         reloadSelectedPetContext()
+        applySelectedPetFilter()
     }
 
     func selectPet(_ petId: String) {
@@ -40,6 +43,7 @@ final class WalkListViewModel: ObservableObject, CoreDataProtocol {
         let selected = UserdefaultSetting.shared.selectedPet(from: userInfo)
         selectedPetId = selected?.petId ?? ""
         selectedPetName = selected?.petName ?? "강아지"
+        applySelectedPetFilter()
     }
 
     private func bindSelectedPetSync() {
@@ -49,5 +53,20 @@ final class WalkListViewModel: ObservableObject, CoreDataProtocol {
                 self?.reloadSelectedPetContext()
             }
             .store(in: &cancellables)
+    }
+
+    private func applySelectedPetFilter() {
+        guard selectedPetId.isEmpty == false else {
+            walkingDatas = allWalkingDatas
+            return
+        }
+
+        let tagged = allWalkingDatas.filter { sessionMetadataStore.petId(sessionId: $0.id) != nil }
+        let selected = allWalkingDatas.filter { sessionMetadataStore.petId(sessionId: $0.id) == selectedPetId }
+        if selected.isEmpty && tagged.isEmpty {
+            walkingDatas = allWalkingDatas
+            return
+        }
+        walkingDatas = selected
     }
 }
