@@ -10,9 +10,25 @@ import Kingfisher
 struct NotificationCenterView: View {
     @StateObject var viewModel = SettingViewModel()
     @EnvironmentObject var loading: LoadingViewModel
+    @State private var isProfileEditPresented: Bool = false
+    @State private var toastMessage: String? = nil
        var body: some View {
            VStack {
                TitleTextView(title: "사용자 정보", subTitle: "사용자의 정보를 알려드립니다.")
+               HStack {
+                   Spacer()
+                   Button(action: {
+                       isProfileEditPresented = true
+                   }, label: {
+                       Text("프로필 편집")
+                           .font(.appFont(for: .Regular, size: 13))
+                           .padding(.horizontal, 10)
+                           .padding(.vertical, 6)
+                           .background(Color.appYellowPale)
+                           .cornerRadius(8)
+                   })
+                   .padding(.horizontal, 16)
+               }
                HStack {
                    UserProfileImageView()
                        .environmentObject(viewModel)
@@ -74,6 +90,20 @@ struct NotificationCenterView: View {
            .onAppear {
                viewModel.reloadUserInfo()
            }
+           .sheet(isPresented: $isProfileEditPresented) {
+               ProfileFieldEditSheet(viewModel: viewModel) { message in
+                   toastMessage = message
+                   DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                       toastMessage = nil
+                   }
+               }
+           }
+           .overlay {
+               if let toastMessage {
+                   SimpleMessageView(message: toastMessage)
+                       .transition(.opacity)
+               }
+           }
        }
 
     private func petDetailsText(_ pet: PetInfo?) -> String {
@@ -84,6 +114,81 @@ struct NotificationCenterView: View {
         return "\(breed) · \(age) · \(gender)"
     }
 }
+
+struct ProfileFieldEditSheet: View {
+    @Environment(\.dismiss) var dismiss
+    @ObservedObject var viewModel: SettingViewModel
+    let onSaved: (String) -> Void
+
+    @State private var profileMessage: String
+    @State private var breed: String
+    @State private var ageYearsText: String
+    @State private var gender: PetGender
+    @State private var errorMessage: String? = nil
+
+    init(viewModel: SettingViewModel, onSaved: @escaping (String) -> Void) {
+        self.viewModel = viewModel
+        self.onSaved = onSaved
+        _profileMessage = State(initialValue: viewModel.userInfo?.profileMessage ?? "")
+        _breed = State(initialValue: viewModel.selectedPet?.breed ?? "")
+        _ageYearsText = State(initialValue: viewModel.selectedPet?.ageYears.map(String.init) ?? "")
+        _gender = State(initialValue: viewModel.selectedPet?.gender ?? .unknown)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("사용자") {
+                    TextField("프로필 메시지", text: $profileMessage)
+                }
+                Section("반려견 (선택된 반려견 기준)") {
+                    TextField("품종", text: $breed)
+                    TextField("나이 (0~30)", text: $ageYearsText)
+                        .keyboardType(.numberPad)
+                    Picker("성별", selection: $gender) {
+                        ForEach(PetGender.allCases, id: \.rawValue) { item in
+                            Text(item.title).tag(item)
+                        }
+                    }
+                }
+                if let errorMessage {
+                    Section {
+                        Text(errorMessage)
+                            .font(.appFont(for: .Regular, size: 12))
+                            .foregroundStyle(Color.red)
+                    }
+                }
+            }
+            .navigationTitle("프로필 편집")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("취소") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("저장") {
+                        let result = viewModel.updateProfileDetails(
+                            profileMessage: profileMessage,
+                            breed: breed,
+                            ageYearsText: ageYearsText,
+                            gender: gender
+                        )
+                        switch result {
+                        case .success:
+                            onSaved("프로필 정보를 저장했어요.")
+                            dismiss()
+                        case .failure(let error):
+                            errorMessage = error.localizedDescription
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 struct ImageView: View {
     let image: UIImage?
     var body: some View {
