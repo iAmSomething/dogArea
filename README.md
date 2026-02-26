@@ -16,6 +16,7 @@
 - 다견가정 도메인/UX 명세 v1: `docs/multi-dog-domain-v1.md`
 - 명소 넓이 데이터 거버넌스 v1: `docs/area-references-data-governance.md`
 - 이미지 생성 공급자 라우터 명세 v1: `docs/image-provider-router-v1.md`
+- 시계열 Heatmap 명세 v1: `docs/heatmap-timeseries-v1.md`
 
 ## 강아지들의 영역 표시
 

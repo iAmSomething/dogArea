@@ -35,6 +35,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     @Published var cameraPosition = MapCameraPosition.userLocation(followsHeading: false,fallback: .automatic)
     @Published var selectedMarker: Location? = nil
     @Published var showOnlyOne: Bool = true
+    @Published var heatmapEnabled: Bool = true
+    @Published var heatmapCells: [HeatmapCellDTO] = []
     override init() {
         super.init()
         self.locationManager.delegate = self
@@ -44,9 +46,11 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         self.locationManager.startUpdatingLocation() // 위치 업데이트 시작
         self.polygonList = self.fetchPolygons()
         self.polygon = lastPolygon() ?? Polygon(walkingTime: 0.0, walkingArea: 0.0)
+        self.refreshHeatmap()
     }
     func fetchPolygonList() {
         self.polygonList = self.fetchPolygons()
+        self.refreshHeatmap()
     }
     func fetchSelectedPolygonList(for clusters: Cluster) {
         if clusters.sumLocs.count == self.selectedPolygonList.count {
@@ -74,11 +78,12 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         }
     }
     func removeLocation(_ locationID : UUID){
-        if let first = polygon.locations.firstIndex(where:{ $0.id == locationID}){
+        if polygon.locations.firstIndex(where:{ $0.id == locationID}) != nil {
             polygon.removeAt(locationID)
             if polygon.locations.count<3 {
-                self.polygonList = deletePolygon(id: self.polygon.id)
-                polygonList.removeAll(where: {$0.id == self.polygon.id})
+                _ = deletePolygon(id: self.polygon.id)
+                self.polygonList = self.fetchPolygons()
+                self.refreshHeatmap()
             }
         }
     }
@@ -91,7 +96,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         if isWalking {
                 if self.polygon.locations.count > 2{
                     polygon.makePolygon(walkArea: calculateArea(), walkTime: self.time, img: img)
-                    self.polygonList = savePolygon(polygon: self.polygon)
+                    _ = savePolygon(polygon: self.polygon)
+                    self.polygonList = self.fetchPolygons()
+                    self.refreshHeatmap()
                 }
             time = 0.0
         }
@@ -122,6 +129,36 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
             if duration > 1800 {
                 self.endWalk()
             }
+        }
+    }
+
+    func deletePolygonAndRefresh(_ id: UUID) {
+        _ = deletePolygon(id: id)
+        self.fetchPolygonList()
+    }
+
+    func refreshHeatmap(now: Date = Date()) {
+        let points = self.polygonList.flatMap { $0.locations }
+        self.heatmapCells = HeatmapEngine.aggregate(points: points, now: now, precision: 7)
+    }
+
+    func heatmapColor(for score: Double) -> Color {
+        switch HeatmapCellDTO.intensityLevel(for: score) {
+        case 0: return Color.appGreen
+        case 1: return Color.appYellowPale
+        case 2: return Color.appYellow
+        case 3: return Color.appPeach
+        default: return Color.appRed
+        }
+    }
+
+    func heatmapOpacity(for score: Double) -> Double {
+        switch HeatmapCellDTO.intensityLevel(for: score) {
+        case 0: return 0.25
+        case 1: return 0.35
+        case 2: return 0.45
+        case 3: return 0.55
+        default: return 0.65
         }
     }
 

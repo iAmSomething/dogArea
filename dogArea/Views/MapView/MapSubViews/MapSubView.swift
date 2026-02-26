@@ -23,6 +23,15 @@ struct MapSubView: View {
                         .shadow(radius: 5)
                 }
             }
+            if !viewModel.isWalking && !viewModel.showOnlyOne && viewModel.heatmapEnabled {
+                ForEach(viewModel.heatmapCells) { cell in
+                    MapCircle(center: cell.centerCoordinate, radius: 75)
+                        .foregroundStyle(
+                            viewModel.heatmapColor(for: cell.score)
+                                .opacity(viewModel.heatmapOpacity(for: cell.score))
+                        )
+                }
+            }
             if let walkArea = viewModel.polygon.polygon{
                 if viewModel.showOnlyOne {
                     ForEach(viewModel.polygon.locations) { location in
@@ -118,4 +127,3 @@ struct MapSubView: View {
         }.mapControlVisibility(.visible)
     }
 }
-
