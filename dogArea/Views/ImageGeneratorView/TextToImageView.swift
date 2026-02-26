@@ -26,7 +26,7 @@ struct TextToImageView: View {
                     .textFieldStyle(.roundedBorder)
                     .disabled(vm.fetchPhase == .loading)
                 Button(action: {
-                    guard authFlow.requireMember(trigger: .imageGenerator) else {
+                    guard authFlow.requestAccess(feature: .aiGeneration) else {
                         return
                     }
                     Task { await vm.generateImage() }

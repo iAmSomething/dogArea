@@ -386,6 +386,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     }
 
     private func enqueueSyncOutbox(for polygon: Polygon, hasImage: Bool) {
+        guard isCloudSyncAvailableForSession else { return }
         syncOutbox.enqueueWalkStages(
             walkSessionId: polygon.id,
             userId: currentMetricUserId(),
@@ -882,8 +883,16 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         featureFlags.isEnabled(.heatmapV1)
     }
 
+    var isCloudSyncAvailableForSession: Bool {
+        AppFeatureGate.isAllowed(.cloudSync)
+    }
+
+    var isNearbySocialAvailableForSession: Bool {
+        AppFeatureGate.isAllowed(.nearbySocial)
+    }
+
     var isNearbyHotspotFeatureAvailable: Bool {
-        featureFlags.isEnabled(.nearbyHotspotV1)
+        featureFlags.isEnabled(.nearbyHotspotV1) && isNearbySocialAvailableForSession
     }
 
     func heatmapColor(for score: Double) -> Color {
@@ -1060,13 +1069,14 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     private func applyFeatureFlags() {
         let heatmapAllowed = featureFlags.isEnabled(.heatmapV1)
         let nearbyAllowed = featureFlags.isEnabled(.nearbyHotspotV1)
+        let nearbyAllowedForSession = nearbyAllowed && isNearbySocialAvailableForSession
         let heatmapPreference = UserDefaults.standard.object(forKey: heatmapEnabledKey) as? Bool ?? true
         let nearbyPreference = UserDefaults.standard.object(forKey: nearbyHotspotEnabledKey) as? Bool ?? true
         let sharingPreference = UserDefaults.standard.bool(forKey: locationSharingKey)
 
         self.heatmapEnabled = heatmapAllowed ? heatmapPreference : false
-        self.nearbyHotspotEnabled = nearbyAllowed ? nearbyPreference : false
-        self.locationSharingEnabled = nearbyAllowed ? sharingPreference : false
+        self.nearbyHotspotEnabled = nearbyAllowedForSession ? nearbyPreference : false
+        self.locationSharingEnabled = nearbyAllowedForSession ? sharingPreference : false
 
         if heatmapAllowed {
             self.refreshHeatmap()
@@ -1074,7 +1084,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
             self.heatmapCells = []
         }
 
-        if nearbyAllowed == false {
+        if nearbyAllowedForSession == false {
             self.nearbyHotspots = []
             UserDefaults.standard.set(false, forKey: locationSharingKey)
             self.syncVisibilitySettingIfNeeded()

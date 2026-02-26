@@ -54,7 +54,7 @@ struct MapView : View{
                 if viewModel.hasSyncOutboxStatus {
                     syncOutboxBanner
                 }
-                if authFlow.isGuestMode && !viewModel.isWalking && !viewModel.polygonList.isEmpty {
+                if !authFlow.canAccess(.cloudSync) && !viewModel.isWalking && !viewModel.polygonList.isEmpty {
                     guestBackupBanner
                 }
                 Spacer()
@@ -257,7 +257,7 @@ struct MapView : View{
                 .foregroundStyle(Color.appTextDarkGray)
             Spacer()
             Button("로그인하고 백업") {
-                _ = authFlow.requireMember(trigger: .walkBackup)
+                _ = authFlow.requestAccess(feature: .cloudSync)
             }
             .font(.appFont(for: .SemiBold, size: 11))
             .padding(.horizontal, 8)

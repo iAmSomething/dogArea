@@ -32,9 +32,12 @@ Check.assertTrue(source.contains("final class AuthFlowCoordinator"), "auth flow 
 Check.assertTrue(source.contains("MemberUpgradeSheetView"), "shared upgrade sheet view must exist")
 Check.assertTrue(signIn.contains("allowDismiss"), "sign-in should support later/cancel path")
 Check.assertTrue(signIn.contains("onAuthenticated"), "sign-in should use callback completion")
-Check.assertTrue(mapStart.contains("requireMember(trigger: .walkStart)"), "walk start should be member-gated")
-Check.assertTrue(image.contains("requireMember(trigger: .imageGenerator)"), "image generation should be member-gated")
-Check.assertTrue(walkList.contains("requireMember(trigger: .walkHistory)"), "walk list should provide login-to-sync path")
+Check.assertTrue(source.contains("enum FeatureCapability"), "feature capability matrix should be defined")
+Check.assertTrue(source.contains("enum AppFeatureGate"), "central feature gate module should exist")
+Check.assertTrue(source.contains("func requestAccess(feature:"), "auth flow should expose centralized feature access request")
+Check.assertTrue(mapStart.contains("requestAccess(feature: .walkWrite)"), "walk start should use centralized gate")
+Check.assertTrue(image.contains("requestAccess(feature: .aiGeneration)"), "image generation should use centralized gate")
+Check.assertTrue(walkList.contains("requestAccess(feature: .cloudSync)"), "walk list should use centralized gate for sync CTA")
 
 if Check.failed {
     exit(1)

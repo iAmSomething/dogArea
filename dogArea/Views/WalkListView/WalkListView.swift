@@ -93,7 +93,7 @@ struct WalkListView: View {
             }
             Spacer()
             Button("로그인") {
-                _ = authFlow.requireMember(trigger: .walkHistory)
+                _ = authFlow.requestAccess(feature: .cloudSync)
             }
             .font(.appFont(for: .SemiBold, size: 12))
             .padding(.horizontal, 12)
