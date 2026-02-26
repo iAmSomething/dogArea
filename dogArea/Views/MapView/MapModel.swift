@@ -146,6 +146,15 @@ struct HeatmapCellDTO: Identifiable, Equatable {
     }
 }
 
+struct NearbyHotspotDTO: Identifiable, Equatable {
+    let geohash: String
+    let count: Int
+    let intensity: Double
+    let centerCoordinate: CLLocationCoordinate2D
+
+    var id: String { geohash }
+}
+
 enum HeatmapEngine {
     private static let halfLifeDays = 21.0
     private static let lambda = log(2.0) / halfLifeDays

@@ -32,6 +32,15 @@ struct MapSubView: View {
                         )
                 }
             }
+            if viewModel.nearbyHotspotEnabled {
+                ForEach(viewModel.nearbyHotspots) { spot in
+                    MapCircle(center: spot.centerCoordinate, radius: 100)
+                        .foregroundStyle(
+                            viewModel.nearbyHotspotColor(for: spot.intensity)
+                                .opacity(viewModel.nearbyHotspotOpacity(for: spot.intensity))
+                        )
+                }
+            }
             if let walkArea = viewModel.polygon.polygon{
                 if viewModel.showOnlyOne {
                     ForEach(viewModel.polygon.locations) { location in

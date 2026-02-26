@@ -19,6 +19,7 @@
 - 시계열 Heatmap 명세 v1: `docs/heatmap-timeseries-v1.md`
 - Watch 액션 신뢰성 명세 v1: `docs/watch-connectivity-reliability-v1.md`
 - 캐리커처 비동기 파이프라인 명세 v1: `docs/caricature-async-pipeline-v1.md`
+- 근처 사용자 익명 핫스팟 명세 v1: `docs/nearby-anonymous-hotspot-v1.md`
 
 ## 강아지들의 영역 표시
 
