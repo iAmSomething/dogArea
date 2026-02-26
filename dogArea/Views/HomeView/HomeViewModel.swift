@@ -15,23 +15,45 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     @Published var myArea: AreaMeter = .init("", 0.0)
     @Published var myAreaList: [AreaMeterDTO] = []
     @Published var userInfo: UserInfo? = nil
+    @Published var selectedPetId: String = ""
+    @Published var selectedPet: PetInfo? = nil
+
+    var pets: [PetInfo] {
+        userInfo?.pet ?? []
+    }
+
+    var selectedPetNameWithYi: String {
+        (selectedPet?.petName ?? "강아지").addYi()
+    }
+
     init() {
+        reloadUserInfo()
         fetchData()
-        totalArea = polygonList.map{$0.walkingArea}.reduce(0.0){$0 + $1}
-        totalTime = polygonList.map{$0.walkingTime}.reduce(0.0){$0 + $1}
-        myArea = .init("\(UserdefaultSetting().getValue()?.pet.first?.petName.addYi() ?? "강아지")의 영역", totalArea)
-        myAreaList = fetchArea()
-        if let info = UserdefaultSetting().getValue() {
-            userInfo = info
-        } else {
-            //로그아웃 액션
-        }
     }
+
     func fetchData() {
+        reloadUserInfo()
         polygonList = fetchPolygons()
+        totalArea = polygonList.map { $0.walkingArea }.reduce(0.0) { $0 + $1 }
+        totalTime = polygonList.map { $0.walkingTime }.reduce(0.0) { $0 + $1 }
+        myArea = .init("\(selectedPetNameWithYi)의 영역", totalArea)
         updateCurrentMeter()
-        
+        myAreaList = fetchArea()
     }
+
+    func reloadUserInfo() {
+        userInfo = UserdefaultSetting.shared.getValue()
+        selectedPet = UserdefaultSetting.shared.selectedPet(from: userInfo)
+        selectedPetId = selectedPet?.petId ?? ""
+    }
+
+    func selectPet(_ petId: String) {
+        guard pets.contains(where: { $0.petId == petId }) else { return }
+        UserdefaultSetting.shared.setSelectedPetId(petId)
+        reloadUserInfo()
+        myArea = .init("\(selectedPetNameWithYi)의 영역", totalArea)
+    }
+
     func refreshAreaList () {
         myAreaList = fetchArea()
     }
@@ -68,7 +90,7 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     }
     private func updateCurrentMeter() {
         if shouldUpdateMeter() {
-            var currents = krAreas.nearistArea(since: fetchArea().last, from: myArea.area)
+            let currents = krAreas.nearistArea(since: fetchArea().last, from: myArea.area)
             for c in currents.reversed() {
                 if saveArea(area: .init(areaName: c.areaName, area: c.area, createdAt: Date().timeIntervalSince1970)) {
 //                    print("저장 성공")

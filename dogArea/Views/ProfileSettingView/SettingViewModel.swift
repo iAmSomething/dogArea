@@ -14,9 +14,16 @@ final class SettingViewModel: ObservableObject, CoreDataProtocol {
     @Published var userName: String? = nil
     @Published var petName: String? = nil
     @Published var userInfo: UserInfo? = nil
+    @Published var selectedPetId: String = ""
+    @Published var selectedPet: PetInfo? = nil
     private var petURL: String? = nil
     private var profileURL: String? = nil
     private var storage = Storage.storage().reference()
+
+    var pets: [PetInfo] {
+        userInfo?.pet ?? []
+    }
+
     init() {
         fetchModel()
         reloadUserInfo()
@@ -26,7 +33,15 @@ final class SettingViewModel: ObservableObject, CoreDataProtocol {
     }
 
     func reloadUserInfo() {
-        self.userInfo = UserdefaultSetting().getValue()
+        self.userInfo = UserdefaultSetting.shared.getValue()
+        self.selectedPet = UserdefaultSetting.shared.selectedPet(from: userInfo)
+        self.selectedPetId = selectedPet?.petId ?? ""
+    }
+
+    func selectPet(_ petId: String) {
+        guard pets.contains(where: { $0.petId == petId }) else { return }
+        UserdefaultSetting.shared.setSelectedPetId(petId)
+        reloadUserInfo()
     }
     func uploadImg(img: UIImage, isPet:Bool = false){
         Task{ @MainActor in

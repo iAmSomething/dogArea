@@ -28,14 +28,31 @@ struct NotificationCenterView: View {
                }
                UnderLine()
                TitleTextView(title: "강아지 정보",type: .MediumTitle, subTitle: "강아지를 소개할게요")
+               if viewModel.pets.isEmpty == false {
+                   ScrollView(.horizontal, showsIndicators: false) {
+                       HStack(spacing: 8) {
+                           ForEach(viewModel.pets, id: \.petId) { pet in
+                               Text(pet.petName)
+                                   .font(.appFont(for: .Regular, size: 13))
+                                   .padding(.horizontal, 10)
+                                   .padding(.vertical, 6)
+                                   .background(viewModel.selectedPetId == pet.petId ? Color.appYellow : Color.appYellowPale)
+                                   .cornerRadius(8)
+                                   .onTapGesture {
+                                       viewModel.selectPet(pet.petId)
+                                   }
+                           }
+                       }.padding(.horizontal, 16)
+                   }
+               }
                HStack {
                    PetProfileImageView()
                        .environmentObject(viewModel)
                        .padding(.trailing, 20)
                    VStack(alignment: .leading) {
-                       Text("\(viewModel.userInfo?.pet.first?.petName ?? "강아지")")
+                       Text("\(viewModel.selectedPet?.petName ?? "강아지")")
                            .font(.appFont(for: .SemiBold, size: 20))
-                       if let status = viewModel.userInfo?.pet.first?.caricatureStatus {
+                       if let status = viewModel.selectedPet?.caricatureStatus {
                            Text("캐리커처 상태: \(status.rawValue)")
                                .font(.appFont(for: .Light, size: 11))
                                .foregroundStyle(Color.appTextDarkGray)
@@ -103,7 +120,7 @@ struct UserProfileImageView: View {
 struct PetProfileImageView: View {
     @EnvironmentObject var viewModel: SettingViewModel
     var body: some View {
-        if let url = viewModel.userInfo?.pet.first?.caricatureURL ?? viewModel.userInfo?.pet.first?.petProfile {
+        if let url = viewModel.selectedPet?.caricatureURL ?? viewModel.selectedPet?.petProfile {
             KFImage(URL(string: url))
                 .resizable()
                 .aspectRatio(contentMode: .fit)

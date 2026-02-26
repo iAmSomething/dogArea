@@ -103,6 +103,7 @@ struct MapView : View{
             }
         }
         .onAppear {
+            viewModel.reloadSelectedPetContext()
             viewModel.updateAnnotations(cameraDistance: self.distance)
             tabStatus.appear()
         }
@@ -111,7 +112,7 @@ struct MapView : View{
                 .presentationDetents([.oneThird])
             
         }.fullScreenCover(isPresented: $isWalkingViewPresented) {
-            StartModalView()
+            StartModalView(petName: viewModel.selectedPetName)
                 .interactiveDismissDisabled(true)
         }.sheet(isPresented: $endWalkingViewPresented) {
             WalkDetailView()
@@ -146,5 +147,4 @@ struct MapView : View{
 #Preview {
     MapView()
 }
-
 

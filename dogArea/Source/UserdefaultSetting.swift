@@ -13,6 +13,7 @@ class UserdefaultSetting {
         case userName = "userName"
         case userProfile = "userProfile"
         case petInfo = "petInfo"
+        case selectedPetId = "selectedPetId"
         case createdAt = "createdAt"
         case nonce = "nonce"
     }
@@ -20,11 +21,24 @@ class UserdefaultSetting {
     func savenonce(nonce: Double) {
         UserDefaults.standard.setValue(nonce, forKey: keyValue.nonce.rawValue)
     }
-    func save(id: String, name: String, profile: String?, pet: [PetInfo], createdAt: Double) {
+    func save(
+        id: String,
+        name: String,
+        profile: String?,
+        pet: [PetInfo],
+        createdAt: Double,
+        selectedPetId: String? = nil
+    ) {
+        let normalizedPets = normalizePets(pet)
+        let resolvedSelectedPetId = resolveSelectedPetId(
+            in: normalizedPets,
+            requested: selectedPetId
+        )
         UserDefaults.standard.setValue(id, forKey: keyValue.userId.rawValue)
         UserDefaults.standard.setValue(name, forKey: keyValue.userName.rawValue)
         UserDefaults.standard.setValue(profile, forKey: keyValue.userProfile.rawValue)
-        UserDefaults.standard.setStructArray(pet, forKey: keyValue.petInfo.rawValue)
+        UserDefaults.standard.setStructArray(normalizedPets, forKey: keyValue.petInfo.rawValue)
+        UserDefaults.standard.setValue(resolvedSelectedPetId, forKey: keyValue.selectedPetId.rawValue)
         UserDefaults.standard.setValue(createdAt, forKey: keyValue.createdAt.rawValue)
     }
     func getValue() -> UserInfo? {
@@ -32,8 +46,26 @@ class UserdefaultSetting {
               let name = UserDefaults.standard.string(forKey: keyValue.userName.rawValue)
              
                else {return nil}
-        let pets = UserDefaults.standard.structArrayData(PetInfo.self, forKey: keyValue.petInfo.rawValue)
+        let storedPets = UserDefaults.standard.structArrayData(PetInfo.self, forKey: keyValue.petInfo.rawValue)
+        let pets = normalizePets(storedPets)
         let createdAt = UserDefaults.standard.double(forKey: keyValue.createdAt.rawValue)
+        let selectedPetId = resolveSelectedPetId(
+            in: pets,
+            requested: UserDefaults.standard.string(forKey: keyValue.selectedPetId.rawValue)
+        )
+        let shouldMigrate = storedPets != pets ||
+        selectedPetId != UserDefaults.standard.string(forKey: keyValue.selectedPetId.rawValue)
+
+        if shouldMigrate {
+            save(
+                id: id,
+                name: name,
+                profile: UserDefaults.standard.string(forKey: keyValue.userProfile.rawValue),
+                pet: pets,
+                createdAt: createdAt,
+                selectedPetId: selectedPetId
+            )
+        }
         if let profile = UserDefaults.standard.string(forKey: keyValue.userProfile.rawValue){
             return .init(id: id, name: name, profile: profile, pet: pets, createdAt: createdAt)
         } else {
@@ -46,8 +78,33 @@ class UserdefaultSetting {
         UserDefaults.standard.removeObject(forKey: keyValue.userName.rawValue)
         UserDefaults.standard.removeObject(forKey: keyValue.userProfile.rawValue)
         UserDefaults.standard.removeObject(forKey: keyValue.petInfo.rawValue)
+        UserDefaults.standard.removeObject(forKey: keyValue.selectedPetId.rawValue)
     }
     #endif
+
+    private func normalizePets(_ pets: [PetInfo]) -> [PetInfo] {
+        var seen = Set<String>()
+        return pets.map { pet in
+            var normalized = pet
+            if normalized.petId.isEmpty || seen.contains(normalized.petId) {
+                normalized.petId = UUID().uuidString.lowercased()
+            }
+            seen.insert(normalized.petId)
+            return normalized
+        }
+    }
+
+    private func resolveSelectedPetId(in pets: [PetInfo], requested: String?) -> String? {
+        guard pets.isEmpty == false else { return nil }
+        if let requested, pets.contains(where: { $0.petId == requested }) {
+            return requested
+        }
+        if let stored = UserDefaults.standard.string(forKey: keyValue.selectedPetId.rawValue),
+           pets.contains(where: { $0.petId == stored }) {
+            return stored
+        }
+        return pets.first?.petId
+    }
 }
 struct UserInfo: TimeCheckable {
     let id: String
@@ -64,12 +121,49 @@ enum CaricatureStatus: String, Codable {
     case failed
 }
 
-struct PetInfo: Codable {
+struct PetInfo: Codable, Identifiable, Equatable {
+    var id: String { petId }
+    var petId: String
     var petName: String
     var petProfile: String?
     var caricatureURL: String? = nil
     var caricatureStatus: CaricatureStatus? = nil
     var caricatureProvider: String? = nil
+
+    init(
+        petId: String = UUID().uuidString.lowercased(),
+        petName: String,
+        petProfile: String?,
+        caricatureURL: String? = nil,
+        caricatureStatus: CaricatureStatus? = nil,
+        caricatureProvider: String? = nil
+    ) {
+        self.petId = petId
+        self.petName = petName
+        self.petProfile = petProfile
+        self.caricatureURL = caricatureURL
+        self.caricatureStatus = caricatureStatus
+        self.caricatureProvider = caricatureProvider
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case petId
+        case petName
+        case petProfile
+        case caricatureURL
+        case caricatureStatus
+        case caricatureProvider
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.petId = try container.decodeIfPresent(String.self, forKey: .petId) ?? UUID().uuidString.lowercased()
+        self.petName = try container.decode(String.self, forKey: .petName)
+        self.petProfile = try container.decodeIfPresent(String.self, forKey: .petProfile)
+        self.caricatureURL = try container.decodeIfPresent(String.self, forKey: .caricatureURL)
+        self.caricatureStatus = try container.decodeIfPresent(CaricatureStatus.self, forKey: .caricatureStatus)
+        self.caricatureProvider = try container.decodeIfPresent(String.self, forKey: .caricatureProvider)
+    }
 }
 
 extension UserDefaults {
@@ -100,28 +194,59 @@ extension UserDefaults {
 }
 
 extension UserdefaultSetting {
+    func selectedPetId() -> String? {
+        UserDefaults.standard.string(forKey: keyValue.selectedPetId.rawValue)
+    }
+
+    func setSelectedPetId(_ petId: String) {
+        guard let current = getValue(), current.pet.contains(where: { $0.petId == petId }) else {
+            return
+        }
+        UserDefaults.standard.setValue(petId, forKey: keyValue.selectedPetId.rawValue)
+        // Normalize persisted payload in case pet ids were migrated this session.
+        save(
+            id: current.id,
+            name: current.name,
+            profile: current.profile,
+            pet: current.pet,
+            createdAt: current.createdAt,
+            selectedPetId: petId
+        )
+    }
+
+    func selectedPet(from userInfo: UserInfo? = nil) -> PetInfo? {
+        let info = userInfo ?? getValue()
+        guard let info else { return nil }
+        let selectedId = selectedPetId()
+        return info.pet.first(where: { $0.petId == selectedId }) ?? info.pet.first
+    }
+
     func updateFirstPetCaricature(
         status: CaricatureStatus,
         caricatureURL: String? = nil,
         provider: String? = nil
     ) {
         guard let current = getValue(), current.pet.isEmpty == false else { return }
+        let targetPetId = selectedPet(from: current)?.petId ?? current.pet.first?.petId
+        guard let targetPetId else { return }
         var pets = current.pet
-        pets[0].caricatureStatus = status
-        if let caricatureURL {
-            pets[0].caricatureURL = caricatureURL
-            // Display generated profile first after it is ready.
-            pets[0].petProfile = caricatureURL
-        }
-        if let provider {
-            pets[0].caricatureProvider = provider
+        if let index = pets.firstIndex(where: { $0.petId == targetPetId }) {
+            pets[index].caricatureStatus = status
+            if let caricatureURL {
+                pets[index].caricatureURL = caricatureURL
+                pets[index].petProfile = caricatureURL
+            }
+            if let provider {
+                pets[index].caricatureProvider = provider
+            }
         }
         save(
             id: current.id,
             name: current.name,
             profile: current.profile,
             pet: pets,
-            createdAt: current.createdAt
+            createdAt: current.createdAt,
+            selectedPetId: targetPetId
         )
     }
 }

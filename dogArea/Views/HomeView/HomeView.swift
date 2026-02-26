@@ -22,6 +22,25 @@ struct HomeView: View {
                     }.padding()
                     Spacer()
                 }
+                if viewModel.pets.isEmpty == false {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(viewModel.pets, id: \.petId) { pet in
+                                Text(pet.petName)
+                                    .font(.appFont(for: .Regular, size: 13))
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .background(
+                                        viewModel.selectedPetId == pet.petId ? Color.appYellow : Color.appYellowPale
+                                    )
+                                    .cornerRadius(8)
+                                    .onTapGesture {
+                                        viewModel.selectPet(pet.petId)
+                                    }
+                            }
+                        }.padding(.horizontal, 16)
+                    }
+                }
                 CalenderView(clickedDates: viewModel.walkedDates())
                 UnderLine()
                 HStack {
@@ -55,7 +74,7 @@ struct HomeView: View {
                         .padding(.trailing)
                 }
                 HStack {
-                    let petNameWithYi = viewModel.userInfo?.pet.first?.petName.addYi() ?? "강아지"
+                    let petNameWithYi = viewModel.selectedPetNameWithYi
                     VStack(alignment: .leading, spacing: 0) {
                         Text("\(petNameWithYi)의 영역")
                             .font(.appFont(for: .SemiBold, size: 40))
@@ -160,6 +179,7 @@ struct HomeView: View {
         }.refreshable {
             viewModel.fetchData()
         }.onAppear{
+            viewModel.reloadUserInfo()
             viewModel.fetchData()
         }.padding(.top,20)
     }

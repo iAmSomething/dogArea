@@ -30,6 +30,17 @@ struct StartButtonView: View {
                 .frame(width: 64, height: 64)
                 .onTapGesture {
                     if !viewModel.isWalking {
+                        viewModel.reloadSelectedPetContext()
+                        guard viewModel.hasSelectedPet else {
+                            myAlert.callAlert(
+                                type: .custom(
+                                    .simpleAlert(title: "반려견 선택 필요", message: "산책 시작 전에 반려견을 선택해주세요.", isOneButton: true),
+                                    {},
+                                    {}
+                                )
+                            )
+                            return
+                        }
                         isModalPresented.toggle()
                         DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
                             isModalPresented = false
@@ -54,7 +65,7 @@ struct StartButtonView: View {
                 }
             if viewModel.isWalking {
                 Spacer()
-                Text("산책시작\n" + viewModel.time.simpleWalkingTimeInterval)
+                Text("\(viewModel.currentWalkingPetName)\n" + viewModel.time.simpleWalkingTimeInterval)
                     .multilineTextAlignment(.center)
                     .frame(width: 100)
                     .font(.appFont(for: .Light, size: 18))
