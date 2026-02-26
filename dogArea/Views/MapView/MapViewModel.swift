@@ -92,12 +92,17 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         nearbyTickTimer?.invalidate()
     }
 
-    private func reloadPolygonState(restoreLatestPolygon: Bool = false) {
-        self.polygonList = self.fetchPolygons()
+    private func applyPolygonList(_ polygons: [Polygon], restoreLatestPolygon: Bool = false) {
+        self.polygonList = polygons
         if restoreLatestPolygon {
-            self.polygon = lastPolygon() ?? Polygon(walkingTime: 0.0, walkingArea: 0.0)
+            self.polygon = polygons.last ?? Polygon(walkingTime: 0.0, walkingArea: 0.0)
         }
         self.refreshHeatmap()
+    }
+
+    private func reloadPolygonState(restoreLatestPolygon: Bool = false) {
+        let latest = self.fetchPolygons()
+        self.applyPolygonList(latest, restoreLatestPolygon: restoreLatestPolygon)
     }
 
     func fetchPolygonList() {
@@ -120,9 +125,6 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
             }
         }
     }
-    private func lastPolygon() -> Polygon? {
-        return polygonList.last
-    }
     func addLocation(){
         if let location = self.location{
             polygon.addPoint(.init(coordinate: location.coordinate))
@@ -133,8 +135,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         if polygon.locations.firstIndex(where:{ $0.id == locationID}) != nil {
             polygon.removeAt(locationID)
             if polygon.locations.count<3 {
-                _ = deletePolygon(id: self.polygon.id)
-                self.reloadPolygonState()
+                let updated = deletePolygon(id: self.polygon.id)
+                self.applyPolygonList(updated)
             }
         }
     }
@@ -147,14 +149,15 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         if isWalking {
                 if self.polygon.locations.count > 2{
                     polygon.makePolygon(walkArea: calculateArea(), walkTime: self.time, img: img)
-                    let saved = savePolygon(polygon: self.polygon).isEmpty == false
+                    let updated = savePolygon(polygon: self.polygon)
+                    let saved = updated.contains(where: { $0.id == self.polygon.id })
                     metricTracker.track(
                         saved ? .walkSaveSuccess : .walkSaveFailed,
                         userKey: currentMetricUserId(),
                         featureKey: .heatmapV1,
                         payload: ["pointCount": "\(self.polygon.locations.count)"]
                     )
-                    self.reloadPolygonState()
+                    self.applyPolygonList(updated)
                 }
             time = 0.0
         }
@@ -190,8 +193,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     }
 
     func deletePolygonAndRefresh(_ id: UUID) {
-        _ = deletePolygon(id: id)
-        self.reloadPolygonState()
+        let updated = deletePolygon(id: id)
+        self.applyPolygonList(updated)
     }
 
     func refreshHeatmap(now: Date = Date()) {
