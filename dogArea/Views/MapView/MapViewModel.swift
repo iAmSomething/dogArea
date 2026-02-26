@@ -1032,7 +1032,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         guard showOnlyOne == false else { return polygonList }
         guard shouldRenderFullPolygonOverlays == false else { return polygonList }
 
-        let singleClusterIds = centerLocations.compactMap { cluster in
+        let singleClusterIds: [UUID] = centerLocations.compactMap { cluster -> UUID? in
             guard cluster.sumLocs.count == 1 else { return nil }
             return cluster.sumLocs.first?.1
         }
