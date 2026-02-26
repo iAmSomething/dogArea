@@ -381,6 +381,14 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         walkPointRecordMode == .auto
     }
 
+    var autoEndPolicySummaryText: String {
+        "무이동 5/12/15분 단계(휴식 후보/경고/자동 종료) + 최대 1시간 자동 종료"
+    }
+
+    var autoEndPolicyHintText: String {
+        "판정 기준: 정확도 40m 이내, 속도 0.3m/s 미만, 이동거리 25m 미만"
+    }
+
     var shouldShowWatchStatus: Bool {
         isWalking || latestWatchActionText.isEmpty == false
     }
