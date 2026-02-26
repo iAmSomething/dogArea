@@ -12,6 +12,8 @@ struct WalkListDetailView: View {
     @State var model: WalkDataModel
     @State private var isMeter: Bool = true
     @State private var showSaveMessage: String? = nil
+    @State private var shareItems: [Any] = []
+    @State private var showShareSheet = false
     @State private var selectedLoc: UUID? = nil
     @State private var sessionMetadata: WalkSessionMetadata? = nil
     @StateObject var tabStatus = TabAppear.shared
@@ -77,6 +79,19 @@ struct WalkListDetailView: View {
                         .padding(.horizontal, 20)
                 }
                 Button(action: {
+                    shareItems = prepareShareItems()
+                    if shareItems.isEmpty == false {
+                        showShareSheet = true
+                    }
+                }, label:  {
+                    Text("공유하기")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .foregroundStyle(.black)
+                }).frame(maxWidth: .infinity, minHeight: 50)
+                    .background(Color(red: 0.99, green: 0.73, blue: 0.73))
+                    .cornerRadius(15)
+                    .padding(.horizontal, 70)
+                Button(action: {
                     if let img = imageRenderer.capturedImage {
                         UIImageWriteToSavedPhotosAlbum(img, nil, nil, nil)
                         showSaveMessage = "사진을 저장했어요!"
@@ -117,6 +132,13 @@ struct WalkListDetailView: View {
                 }.animation(.easeInOut(duration: 0.2))
             ).navigationBarBackButtonHidden()
         }.padding(.top, 20)
+        .sheet(isPresented: $showShareSheet) {
+            ActivityShareSheet(items: shareItems) { _, completed, _, _ in
+                if completed {
+                    showSaveMessage = "공유를 완료했어요!"
+                }
+            }
+        }
         .onAppear {
             if let polygon = model.toPolygon().polygon {
                 imageRenderer.captureMapImage(for: polygon)
@@ -135,6 +157,20 @@ struct WalkListDetailView: View {
         case .autoInactive: return "무이동 자동 종료"
         case .autoTimeout: return "시간 제한 자동 종료"
         }
+    }
+
+    private func prepareShareItems() -> [Any] {
+        let summary = WalkShareSummaryBuilder.build(
+            createdAt: model.createdAt,
+            duration: model.walkDuration,
+            areaM2: model.walkArea,
+            pointCount: model.locations.count,
+            petName: nil
+        )
+        if let image = imageRenderer.capturedImage ?? model.image {
+            return [summary, image]
+        }
+        return [summary]
     }
 
     func calculatedAreaString(areaSize: Double , isPyong: Bool = false) -> String {
