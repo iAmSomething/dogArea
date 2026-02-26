@@ -17,6 +17,7 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     @Published var userInfo: UserInfo? = nil
     @Published var selectedPetId: String = ""
     @Published var selectedPet: PetInfo? = nil
+    @Published var guestDataUpgradeReport: GuestDataUpgradeReport? = nil
 
     var pets: [PetInfo] {
         userInfo?.pet ?? []
@@ -39,6 +40,7 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
         myArea = .init("\(selectedPetNameWithYi)의 영역", totalArea)
         updateCurrentMeter()
         myAreaList = fetchArea()
+        refreshGuestDataUpgradeReport()
     }
 
     func reloadUserInfo() {
@@ -52,6 +54,14 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
         UserdefaultSetting.shared.setSelectedPetId(petId)
         reloadUserInfo()
         myArea = .init("\(selectedPetNameWithYi)의 영역", totalArea)
+    }
+
+    func refreshGuestDataUpgradeReport() {
+        guard let userId = userInfo?.id, userId.isEmpty == false else {
+            guestDataUpgradeReport = nil
+            return
+        }
+        guestDataUpgradeReport = GuestDataUpgradeService.shared.latestReport(for: userId)
     }
 
     func refreshAreaList () {
