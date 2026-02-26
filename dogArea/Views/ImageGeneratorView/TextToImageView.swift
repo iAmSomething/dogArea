@@ -8,6 +8,7 @@ import SwiftUI
 import Foundation
 import Observation
 struct TextToImageView: View {
+    @EnvironmentObject var authFlow: AuthFlowCoordinator
     @Bindable var vm = ImageGenerateViewModel()
     var body: some View {
         VStack {
@@ -25,6 +26,9 @@ struct TextToImageView: View {
                     .textFieldStyle(.roundedBorder)
                     .disabled(vm.fetchPhase == .loading)
                 Button(action: {
+                    guard authFlow.requireMember(trigger: .imageGenerator) else {
+                        return
+                    }
                     Task { await vm.generateImage() }
                 }, label: {
                     Text("만들기")

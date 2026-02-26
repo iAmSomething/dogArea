@@ -11,9 +11,16 @@ struct PetProfileSettingView: View {
     @Environment(\.colorScheme) var scheme
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var viewModel: SigningViewModel
-    @State var rootViewAppear: Bool = false
     @Binding var path: NavigationPath
     @State var imageSelect: Bool = false
+    @State private var didCompleteSignup: Bool = false
+    let onSignupCompleted: () -> Void
+
+    init(path: Binding<NavigationPath>, onSignupCompleted: @escaping () -> Void = {}) {
+        self._path = path
+        self.onSignupCompleted = onSignupCompleted
+    }
+
     var body: some View {
         VStack {
             TitleTextView(title: "강아지 사진",type: .MediumTitle, subTitle: "강아지 사진을 추가해주세요!")
@@ -45,9 +52,6 @@ struct PetProfileSettingView: View {
             Spacer()
             Button(action: {
                 viewModel.setValue()
-                if viewModel.loading == .success {
-                    rootViewAppear.toggle()
-                }
             }, label: {
                 Text("회원 가입하기")
             })
@@ -62,9 +66,12 @@ struct PetProfileSettingView: View {
                 LoadingView()
             }
         })
-        .fullScreenCover(isPresented: .constant(viewModel.loading == .success), content: {
-            RootView()
-        })
+        .onChange(of: viewModel.loading) { state in
+            guard didCompleteSignup == false else { return }
+            if state == .success {
+                didCompleteSignup = true
+                onSignupCompleted()
+            }
+        }
     }
 }
-

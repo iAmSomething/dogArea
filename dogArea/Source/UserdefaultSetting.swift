@@ -7,6 +7,7 @@
 
 import Foundation
 import CryptoKit
+import SwiftUI
 class UserdefaultSetting {
     enum keyValue: String {
         case userId = "userId"
@@ -878,5 +879,173 @@ struct SupabaseSyncOutboxTransport: SyncOutboxTransporting {
         } catch {
             return .retryable(.unknown)
         }
+    }
+}
+
+enum MemberUpgradeTrigger: String {
+    case walkStart = "walk_start"
+    case imageGenerator = "image_generator"
+    case walkHistory = "walk_history"
+    case walkBackup = "walk_backup"
+
+    var title: String {
+        switch self {
+        case .walkStart:
+            return "회원 전환 후 산책 기록"
+        case .imageGenerator:
+            return "회원 전환 후 이미지 생성"
+        case .walkHistory:
+            return "회원 전환 후 기록 동기화"
+        case .walkBackup:
+            return "로그인하고 산책 백업"
+        }
+    }
+
+    var message: String {
+        switch self {
+        case .walkStart:
+            return "산책 기록은 계정과 연결되어야 안전하게 저장되고 기기 간 동기화됩니다."
+        case .imageGenerator:
+            return "AI 이미지 생성 결과를 안정적으로 저장하려면 계정 연동이 필요합니다."
+        case .walkHistory:
+            return "지금 로그인하면 현재 기기의 산책 기록을 계정에 백업하고 다른 기기에서도 볼 수 있어요."
+        case .walkBackup:
+            return "게스트 모드 기록은 기기 삭제 시 유실될 수 있어요. 로그인 후 자동 백업을 켜세요."
+        }
+    }
+}
+
+struct MemberUpgradeRequest: Identifiable {
+    let id = UUID()
+    let trigger: MemberUpgradeTrigger
+}
+
+@MainActor
+final class AuthFlowCoordinator: ObservableObject {
+    @Published var shouldShowEntryChoice: Bool = false
+    @Published var shouldShowSignIn: Bool = false
+    @Published var pendingUpgradeRequest: MemberUpgradeRequest? = nil
+
+    private let guestModeKey = "auth.guest_mode.v1"
+    private let entryChoiceCompletedKey = "auth.entry_choice_completed.v1"
+    private var onAuthenticated: (() -> Void)?
+
+    var isLoggedIn: Bool {
+        guard let id = UserdefaultSetting.shared.getValue()?.id else { return false }
+        return id.isEmpty == false
+    }
+
+    var isGuestMode: Bool {
+        isLoggedIn == false && UserDefaults.standard.bool(forKey: guestModeKey)
+    }
+
+    func refresh() {
+        if isLoggedIn {
+            UserDefaults.standard.set(false, forKey: guestModeKey)
+            UserDefaults.standard.set(true, forKey: entryChoiceCompletedKey)
+            shouldShowEntryChoice = false
+            shouldShowSignIn = false
+            pendingUpgradeRequest = nil
+            return
+        }
+        let didChooseEntryPath = UserDefaults.standard.bool(forKey: entryChoiceCompletedKey)
+        shouldShowEntryChoice = !didChooseEntryPath
+    }
+
+    func continueAsGuest() {
+        UserDefaults.standard.set(true, forKey: guestModeKey)
+        UserDefaults.standard.set(true, forKey: entryChoiceCompletedKey)
+        shouldShowEntryChoice = false
+    }
+
+    func chooseSignInFromEntry() {
+        UserDefaults.standard.set(true, forKey: entryChoiceCompletedKey)
+        shouldShowEntryChoice = false
+        shouldShowSignIn = true
+    }
+
+    @discardableResult
+    func requireMember(trigger: MemberUpgradeTrigger, onAuthenticated: (() -> Void)? = nil) -> Bool {
+        if isLoggedIn {
+            onAuthenticated?()
+            return true
+        }
+        self.onAuthenticated = onAuthenticated
+        pendingUpgradeRequest = MemberUpgradeRequest(trigger: trigger)
+        return false
+    }
+
+    func proceedToSignIn() {
+        pendingUpgradeRequest = nil
+        shouldShowSignIn = true
+    }
+
+    func dismissUpgradeRequest() {
+        pendingUpgradeRequest = nil
+        onAuthenticated = nil
+    }
+
+    func dismissSignIn() {
+        shouldShowSignIn = false
+        if isLoggedIn == false {
+            UserDefaults.standard.set(true, forKey: guestModeKey)
+        }
+        onAuthenticated = nil
+    }
+
+    func completeSignIn() {
+        UserDefaults.standard.set(false, forKey: guestModeKey)
+        UserDefaults.standard.set(true, forKey: entryChoiceCompletedKey)
+        shouldShowSignIn = false
+        shouldShowEntryChoice = false
+        pendingUpgradeRequest = nil
+        let completion = onAuthenticated
+        onAuthenticated = nil
+        completion?()
+    }
+}
+
+struct MemberUpgradeSheetView: View {
+    let request: MemberUpgradeRequest
+    let onUpgrade: () -> Void
+    let onLater: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(request.trigger.title)
+                .font(.appFont(for: .Bold, size: 22))
+                .foregroundStyle(Color.appTextDarkGray)
+            Text(request.trigger.message)
+                .font(.appFont(for: .Regular, size: 14))
+                .foregroundStyle(Color.appTextDarkGray)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("• 계정 연동 후 자동 백업")
+                Text("• 기기 변경 시 기록 복원")
+                Text("• 로그인 완료 후 현재 화면으로 복귀")
+            }
+            .font(.appFont(for: .Regular, size: 13))
+            .foregroundStyle(Color.appTextDarkGray)
+            HStack(spacing: 10) {
+                Button("나중에") {
+                    onLater()
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(Color.appYellowPale)
+                .foregroundStyle(Color.appTextDarkGray)
+                .cornerRadius(10)
+
+                Button("로그인하고 계속") {
+                    onUpgrade()
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(Color.appGreen)
+                .foregroundStyle(Color.white)
+                .cornerRadius(10)
+            }
+        }
+        .padding(20)
+        .background(Color.white)
     }
 }

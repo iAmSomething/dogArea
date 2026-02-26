@@ -12,6 +12,18 @@ struct ProfileSettingsView: View {
     @Binding var path: NavigationPath
     @StateObject var viewModel: SigningViewModel
     @State var imageSelect: Bool = false
+    let onSignupCompleted: () -> Void
+
+    init(
+        path: Binding<NavigationPath>,
+        viewModel: SigningViewModel,
+        onSignupCompleted: @escaping () -> Void = {}
+    ) {
+        self._path = path
+        self._viewModel = StateObject(wrappedValue: viewModel)
+        self.onSignupCompleted = onSignupCompleted
+    }
+
     var body: some View {
         VStack {
             TitleTextView(title: "프로필 사진",type: .MediumTitle, subTitle: "프로필 사진을 추가해주세요!")
@@ -43,7 +55,7 @@ struct ProfileSettingsView: View {
             }
             Spacer()
             NavigationLink(destination: {
-                PetProfileSettingView(path: $path).environmentObject(viewModel)}
+                PetProfileSettingView(path: $path, onSignupCompleted: onSignupCompleted).environmentObject(viewModel)}
                            , label: {Text("다음 단계로")})
             .disabled(viewModel.userName.isEmpty)
             .padding()

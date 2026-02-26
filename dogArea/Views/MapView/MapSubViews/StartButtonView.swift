@@ -10,6 +10,7 @@ import SwiftUI
 struct StartButtonView: View {
     @ObservedObject var viewModel: MapViewModel
     @ObservedObject var myAlert: CustomAlertViewModel
+    @EnvironmentObject var authFlow: AuthFlowCoordinator
     @Binding var isModalPresented: Bool
     @Binding var endWalkingViewPresented: Bool
     @State var isMeter: Bool = true
@@ -30,6 +31,9 @@ struct StartButtonView: View {
                 .frame(width: 64, height: 64)
                 .onTapGesture {
                     if !viewModel.isWalking {
+                        guard authFlow.requireMember(trigger: .walkStart) else {
+                            return
+                        }
                         viewModel.reloadSelectedPetContext()
                         guard viewModel.hasSelectedPet else {
                             myAlert.callAlert(
