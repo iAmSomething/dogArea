@@ -84,6 +84,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     @Published var latestWatchActionText: String = ""
     @Published var walkStatusMessage: String? = nil
     @Published var runtimeGuardStatusText: String = ""
+    @Published var syncOutboxPendingCount: Int = 0
+    @Published var syncOutboxPermanentFailureCount: Int = 0
+    @Published var syncOutboxLastErrorCodeText: String = ""
     private let watchSession = WCSession.isSupported() ? WCSession.default : nil
     private let featureFlags = FeatureFlagStore.shared
     private let metricTracker = AppMetricTracker.shared
@@ -117,6 +120,10 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     private var pendingRecoverableSession: ActiveWalkSessionSnapshot?
     private var lifecycleObservers: [NSObjectProtocol] = []
     private var lastAcceptedWalkLocation: CLLocation?
+    private var lastSyncFlushAt: Date = .distantPast
+    private var syncFlushTask: Task<Void, Never>? = nil
+    private let syncOutbox = SyncOutboxStore.shared
+    private let syncTransport = SupabaseSyncOutboxTransport()
 
     private enum WatchIncomingAction: String {
         case startWalk
@@ -161,11 +168,14 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         self.startNearbyTicker()
         self.syncVisibilitySettingIfNeeded()
         self.refreshFeatureFlagsFromRemote()
+        self.refreshSyncOutboxSummary()
+        self.flushSyncOutboxIfNeeded(force: true)
     }
 
     deinit {
         timer?.invalidate()
         nearbyTickTimer?.invalidate()
+        syncFlushTask?.cancel()
         lifecycleObservers.forEach { NotificationCenter.default.removeObserver($0) }
     }
 
@@ -224,14 +234,20 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         if isWalking {
                 if self.polygon.locations.count > 2{
                     polygon.makePolygon(walkArea: calculateArea(), walkTime: self.time, img: img)
-                    let updated = savePolygon(polygon: self.polygon)
-                    let saved = updated.contains(where: { $0.id == self.polygon.id })
+                    let completedPolygon = self.polygon
+                    let updated = savePolygon(polygon: completedPolygon)
+                    let saved = updated.contains(where: { $0.id == completedPolygon.id })
                     metricTracker.track(
                         saved ? .walkSaveSuccess : .walkSaveFailed,
                         userKey: currentMetricUserId(),
                         featureKey: .heatmapV1,
-                        payload: ["pointCount": "\(self.polygon.locations.count)"]
+                        payload: ["pointCount": "\(completedPolygon.locations.count)"]
                     )
+                    if saved {
+                        enqueueSyncOutbox(for: completedPolygon, hasImage: img != nil)
+                    } else {
+                        walkStatusMessage = "로컬 저장에 실패해 동기화 큐 적재를 건너뛰었습니다."
+                    }
                     self.applyPolygonList(updated)
                 }
             time = 0.0
@@ -307,12 +323,69 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         runtimeGuardStatusText.isEmpty == false
     }
 
+    var hasSyncOutboxStatus: Bool {
+        syncOutboxPendingCount > 0 || syncOutboxPermanentFailureCount > 0
+    }
+
+    var syncOutboxStatusText: String {
+        if syncOutboxPermanentFailureCount > 0 {
+            if syncOutboxLastErrorCodeText.isEmpty == false {
+                return "동기화 영구실패 \(syncOutboxPermanentFailureCount)건 (\(syncOutboxLastErrorCodeText))"
+            }
+            return "동기화 영구실패 \(syncOutboxPermanentFailureCount)건"
+        }
+        if syncOutboxPendingCount > 0 {
+            return "동기화 대기 \(syncOutboxPendingCount)건"
+        }
+        return ""
+    }
+
     func clearWalkStatusMessage() {
         walkStatusMessage = nil
     }
 
     func clearRuntimeGuardStatus() {
         runtimeGuardStatusText = ""
+    }
+
+    private func refreshSyncOutboxSummary() {
+        let summary = syncOutbox.summary()
+        syncOutboxPendingCount = summary.pendingCount
+        syncOutboxPermanentFailureCount = summary.permanentFailureCount
+        syncOutboxLastErrorCodeText = summary.lastErrorCode?.rawValue ?? ""
+    }
+
+    private func enqueueSyncOutbox(for polygon: Polygon, hasImage: Bool) {
+        syncOutbox.enqueueWalkStages(
+            walkSessionId: polygon.id,
+            userId: currentMetricUserId(),
+            pointCount: polygon.locations.count,
+            durationSec: polygon.walkingTime,
+            areaM2: polygon.walkingArea,
+            hasImage: hasImage,
+            createdAt: polygon.createdAt
+        )
+        refreshSyncOutboxSummary()
+        flushSyncOutboxIfNeeded(force: true)
+    }
+
+    private func flushSyncOutboxIfNeeded(force: Bool = false) {
+        let now = Date()
+        if force == false, now.timeIntervalSince(lastSyncFlushAt) < 5.0 {
+            return
+        }
+        guard syncFlushTask == nil else { return }
+        lastSyncFlushAt = now
+        syncFlushTask = Task { [weak self] in
+            guard let self else { return }
+            let summary = await syncOutbox.flush(using: syncTransport, now: Date())
+            await MainActor.run {
+                self.syncOutboxPendingCount = summary.pendingCount
+                self.syncOutboxPermanentFailureCount = summary.permanentFailureCount
+                self.syncOutboxLastErrorCodeText = summary.lastErrorCode?.rawValue ?? ""
+                self.syncFlushTask = nil
+            }
+        }
     }
 
     private static let statusTimeFormatter: DateFormatter = {
@@ -499,6 +572,14 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     private func setupLifecycleObservers() {
         #if canImport(UIKit)
         let center = NotificationCenter.default
+        let didBecomeActive = center.addObserver(
+            forName: UIApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.flushSyncOutboxIfNeeded(force: true)
+            self?.syncVisibilitySettingIfNeeded()
+        }
         let willResign = center.addObserver(
             forName: UIApplication.willResignActiveNotification,
             object: nil,
@@ -513,7 +594,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         ) { [weak self] _ in
             self?.persistActiveWalkSession(force: true)
         }
-        lifecycleObservers = [willResign, willTerminate]
+        lifecycleObservers = [didBecomeActive, willResign, willTerminate]
         #endif
     }
 
@@ -694,6 +775,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     }
 
     private func nearbyTick() {
+        flushSyncOutboxIfNeeded()
         guard let location else { return }
         let now = Date()
 

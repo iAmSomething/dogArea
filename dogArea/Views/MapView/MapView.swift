@@ -50,6 +50,9 @@ struct MapView : View{
                 if viewModel.hasRuntimeGuardStatus {
                     runtimeGuardBanner
                 }
+                if viewModel.hasSyncOutboxStatus {
+                    syncOutboxBanner
+                }
                 Spacer()
                 
                 if viewModel.isWalking {
@@ -225,6 +228,17 @@ struct MapView : View{
         Text(viewModel.runtimeGuardStatusText)
             .font(.appFont(for: .Light, size: 11))
             .foregroundStyle(Color.appRed)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Color.white.opacity(0.9))
+            .cornerRadius(8)
+            .padding(.top, 2)
+    }
+
+    var syncOutboxBanner: some View {
+        Text(viewModel.syncOutboxStatusText)
+            .font(.appFont(for: .Light, size: 11))
+            .foregroundStyle(Color.appTextDarkGray)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
             .background(Color.white.opacity(0.9))
