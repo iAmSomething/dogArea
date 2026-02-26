@@ -25,6 +25,9 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
         }
         applyContext(session?.receivedApplicationContext ?? [:])
     }
+    deinit {
+        session?.delegate = nil
+    }
 
     func sendAction(_ action: String) {
         guard let session else { return }

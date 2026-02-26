@@ -51,6 +51,11 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         }
         self.publishWatchState()
     }
+    deinit {
+        timerStop()
+        locationManager.stopUpdatingLocation()
+        watchSession?.delegate = nil
+    }
     func fetchPolygonList() {
         self.polygonList = self.fetchPolygons()
     }
@@ -165,6 +170,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 //MARK: - 넓이와 시간로직
 extension MapViewModel {
     func timerSet() {
+        timerStop()
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) {[weak self] t in
             guard let self = self else {return}
             self.time += t.timeInterval

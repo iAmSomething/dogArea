@@ -30,7 +30,8 @@ class SigningViewModel: ObservableObject {
     }
     func setValue(){
         loading = .loading
-        Task{ @MainActor in
+        Task { @MainActor [weak self] in
+            guard let self else { return }
             do {
                 if let img = userProfile {
                     profileURL = try await uploadImage(img: img, isPet: false)

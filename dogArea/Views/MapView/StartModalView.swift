@@ -22,6 +22,7 @@ struct StartModalView: View {
             }
         }
         .onAppear {
+            timer?.invalidate()
             timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { t in
                 time -= t.timeInterval
                 if time <= 0 {
