@@ -11,6 +11,7 @@ import SwiftUI
 struct RootView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject var myAlert: CustomAlertViewModel
+    @EnvironmentObject var authFlow: AuthFlowCoordinator
     @StateObject var loading: LoadingViewModel = LoadingViewModel()
     @State private var selectedTab = 2
     @State private var tabbarHidden = false
@@ -74,6 +75,14 @@ struct RootView: View {
                     LoadingView()
                 }
             })
+            .sheet(item: $authFlow.pendingUpgradeRequest) { request in
+                MemberUpgradeSheetView(
+                    request: request,
+                    onUpgrade: { authFlow.proceedToSignIn() },
+                    onLater: { authFlow.dismissUpgradeRequest() }
+                )
+                .presentationDetents([.medium])
+            }
 
     }
 }

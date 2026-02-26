@@ -25,6 +25,7 @@ struct dogAreaApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     
     @State var splash = true
+    @StateObject private var authFlow = AuthFlowCoordinator()
     let persistenceController = PersistenceController.shared
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
@@ -52,14 +53,59 @@ struct dogAreaApp: App {
             } else {
                 RootView()
                     .environmentObject(CustomAlertViewModel())
-                    .fullScreenCover(isPresented: .constant(
-                        UserdefaultSetting().getValue()?.id == nil
-//                        true
-                    ), content: {
-                        SignInView()
+                    .environmentObject(authFlow)
+                    .onAppear {
+                        authFlow.refresh()
+                    }
+                    .sheet(isPresented: $authFlow.shouldShowEntryChoice) {
+                        GuestEntryChoiceSheet(
+                            onContinueAsGuest: { authFlow.continueAsGuest() },
+                            onSignIn: { authFlow.chooseSignInFromEntry() }
+                        )
+                        .presentationDetents([.medium])
+                        .interactiveDismissDisabled(true)
+                    }
+                    .fullScreenCover(isPresented: $authFlow.shouldShowSignIn, content: {
+                        SignInView(
+                            allowDismiss: true,
+                            onAuthenticated: { authFlow.completeSignIn() },
+                            onDismiss: { authFlow.dismissSignIn() }
+                        )
                     })
             }
         }
         .modelContainer(sharedModelContainer)
+    }
+}
+
+private struct GuestEntryChoiceSheet: View {
+    let onContinueAsGuest: () -> Void
+    let onSignIn: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("DogArea 시작 방법 선택")
+                .font(.appFont(for: .Bold, size: 24))
+            Text("지금은 바로 시작하고, 필요할 때 로그인해서 기록을 동기화할 수 있어요.")
+                .font(.appFont(for: .Regular, size: 14))
+                .foregroundStyle(Color.appTextDarkGray)
+            Button("바로 시작") {
+                onContinueAsGuest()
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(Color.appYellowPale)
+            .foregroundStyle(Color.appTextDarkGray)
+            .cornerRadius(12)
+            Button("로그인하고 동기화") {
+                onSignIn()
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(Color.appGreen)
+            .foregroundStyle(Color.white)
+            .cornerRadius(12)
+        }
+        .padding(20)
     }
 }

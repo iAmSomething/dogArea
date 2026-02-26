@@ -10,6 +10,7 @@ import SwiftUI
 import _MapKit_SwiftUI
 struct MapView : View{
     @EnvironmentObject var loading: LoadingViewModel
+    @EnvironmentObject var authFlow: AuthFlowCoordinator
     @ObservedObject var myAlert: CustomAlertViewModel = .init()
     @ObservedObject var viewModel: MapViewModel = .init()
     @State private var isModalPresented = false
@@ -52,6 +53,9 @@ struct MapView : View{
                 }
                 if viewModel.hasSyncOutboxStatus {
                     syncOutboxBanner
+                }
+                if authFlow.isGuestMode && !viewModel.isWalking && !viewModel.polygonList.isEmpty {
+                    guestBackupBanner
                 }
                 Spacer()
                 
@@ -244,6 +248,28 @@ struct MapView : View{
             .background(Color.white.opacity(0.9))
             .cornerRadius(8)
             .padding(.top, 2)
+    }
+
+    var guestBackupBanner: some View {
+        HStack(spacing: 8) {
+            Text("게스트 기록은 이 기기에만 저장돼요.")
+                .font(.appFont(for: .Light, size: 11))
+                .foregroundStyle(Color.appTextDarkGray)
+            Spacer()
+            Button("로그인하고 백업") {
+                _ = authFlow.requireMember(trigger: .walkBackup)
+            }
+            .font(.appFont(for: .SemiBold, size: 11))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(Color.appYellow)
+            .cornerRadius(8)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(Color.white.opacity(0.9))
+        .cornerRadius(8)
+        .padding(.top, 2)
     }
 
     var addPointBtn: some View {

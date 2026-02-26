@@ -11,11 +11,17 @@ struct WalkListView: View {
     @StateObject var tabStatus = TabAppear.shared
     @ObservedObject private var viewModel = WalkListViewModel()
     @State private var scrollPosition: CGFloat = 0
+    @EnvironmentObject var authFlow: AuthFlowCoordinator
     @Environment(\.colorScheme) var scheme
     var body: some View {
         NavigationStack {
             ScrollView {
                 LazyVStack(pinnedViews: [.sectionHeaders]) {
+                    if authFlow.isGuestMode {
+                        guestUpgradeCard
+                            .padding(.horizontal, 16)
+                            .padding(.top, 10)
+                    }
                     Section(content: {
                         VStack {
                             ForEach(viewModel.walkingDatas.thisWeekList.reversed(), id:\.self) { walk in
@@ -47,7 +53,7 @@ struct WalkListView: View {
                                     .cornerRadius(15)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 15)
-                                        /Users/gimtaehun/멋사/dogArea/dogArea/Views/WalkListView/WalkListSubView                   .stroke(Color.appTextDarkGray, lineWidth: 0.3)
+                                            .stroke(Color.appTextDarkGray, lineWidth: 0.3)
                                     )
                                     .padding(.horizontal, 15)
 
@@ -74,6 +80,34 @@ struct WalkListView: View {
             }.navigationTitle("산책 목록")
                 .font(.appFont(for: .ExtraBold, size: 36))
         }
+    }
+
+    var guestUpgradeCard: some View {
+        HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("게스트 모드")
+                    .font(.appFont(for: .SemiBold, size: 13))
+                Text("로그인하면 산책 기록을 백업하고 다른 기기와 동기화할 수 있어요.")
+                    .font(.appFont(for: .Light, size: 11))
+                    .foregroundStyle(Color.appTextDarkGray)
+            }
+            Spacer()
+            Button("로그인") {
+                _ = authFlow.requireMember(trigger: .walkHistory)
+            }
+            .font(.appFont(for: .SemiBold, size: 12))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(Color.appYellow)
+            .cornerRadius(8)
+        }
+        .padding(10)
+        .background(Color.white)
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.appTextDarkGray, lineWidth: 0.25)
+        )
     }
 }
 

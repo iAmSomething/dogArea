@@ -13,81 +13,113 @@ struct SignInView: View {
     @Environment(\.colorScheme) var scheme
     @State var userId: AppleUserInfo? = nil
     @State var path = NavigationPath()
+    let allowDismiss: Bool
+    let onAuthenticated: () -> Void
+    let onDismiss: () -> Void
+
+    init(
+        allowDismiss: Bool = false,
+        onAuthenticated: @escaping () -> Void = {},
+        onDismiss: @escaping () -> Void = {}
+    ) {
+        self.allowDismiss = allowDismiss
+        self.onAuthenticated = onAuthenticated
+        self.onDismiss = onDismiss
+    }
+
     var body: some View {
         NavigationStack(path: $path) {
             VStack {
                 TitleTextView(title: "로그인/회원가입", subTitle: "계정 정보가 필요해요!")
                 Spacer()
-                AppleSigninButton(userId: $userId)
+                AppleSigninButton(userId: $userId, onAuthenticated: onAuthenticated)
             }
             .navigationDestination(item: $userId, destination: { info in
-                ProfileSettingsView(path: $path,viewModel: .init(info: info))
+                ProfileSettingsView(
+                    path: $path,
+                    viewModel: .init(info: info),
+                    onSignupCompleted: onAuthenticated
+                )
             })
             .frame(maxHeight: .infinity)
             .background(Color.appColor(type: .appYellowPale, scheme: scheme))
+            .toolbar {
+                if allowDismiss {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("나중에") {
+                            onDismiss()
+                        }
+                    }
+                }
+            }
         }
     }
 }
 struct AppleSigninButton : View{
     @Binding var userId: AppleUserInfo?
-    @State var isLogined: Bool = false
+    let onAuthenticated: () -> Void
+    @State private var isAuthenticating: Bool = false
+
     var body: some View{
-        SignInWithAppleButton(
-            onRequest: { request in
-                request.requestedScopes = [.fullName, .email]
-            },
-            onCompletion: { result in
-//                #if DEBUG
-//                UserdefaultSetting().removeAll()
-//                #endif
-                switch result {
-                case .success(let authResults):
-//                    print("Apple Login Successful")
-                    switch authResults.credential{
-                    case let appleIDCredential as ASAuthorizationAppleIDCredential:
-                        // 계정 정보 가져오기
-                        let userInfo = UserdefaultSetting().getValue()
-                        let UserIdentifier = appleIDCredential.user
-                        let fullName = appleIDCredential.fullName
-                        let name =  (fullName?.familyName ?? "") + (fullName?.givenName ?? "")
-                        if userInfo?.name == UserIdentifier {
-                            guard userInfo != nil else { return }
-                            isLogined.toggle()
-                            // 첫 가입 아님(이미 가입함)
-                        } else {
-                            guard let identityTokenData = appleIDCredential.identityToken,
-                                  let identityToken = String(data: identityTokenData, encoding: .utf8) else {
-                                print("identity token missing")
-                                return
-                            }
-                            if appleIDCredential.authorizationCode == nil {
-                                print("authorization code missing")
-                            }
-                            let credential = OAuthProvider.credential(withProviderID: "apple.com",
-                                                                      idToken: identityToken,
-                                                                      rawNonce: nil)
-                            Auth.auth().signIn(with: credential){ _, error in
-                                guard error == nil else {
-                                    print(error?.localizedDescription)
+        VStack(spacing: 8) {
+            SignInWithAppleButton(
+                onRequest: { request in
+                    request.requestedScopes = [.fullName, .email]
+                },
+                onCompletion: { result in
+                    switch result {
+                    case .success(let authResults):
+                        isAuthenticating = true
+                        switch authResults.credential{
+                        case let appleIDCredential as ASAuthorizationAppleIDCredential:
+                            let userInfo = UserdefaultSetting().getValue()
+                            let userIdentifier = appleIDCredential.user
+                            let fullName = appleIDCredential.fullName
+                            let name =  (fullName?.familyName ?? "") + (fullName?.givenName ?? "")
+                            if userInfo?.id == userIdentifier {
+                                isAuthenticating = false
+                                onAuthenticated()
+                            } else {
+                                guard let identityTokenData = appleIDCredential.identityToken,
+                                      let identityToken = String(data: identityTokenData, encoding: .utf8) else {
+                                    isAuthenticating = false
+                                    print("identity token missing")
                                     return
                                 }
-                                userId = .init(createdAt: Date().timeIntervalSince1970, id: appleIDCredential.user, name: name)
+                                if appleIDCredential.authorizationCode == nil {
+                                    print("authorization code missing")
+                                }
+                                let credential = OAuthProvider.credential(withProviderID: "apple.com",
+                                                                          idToken: identityToken,
+                                                                          rawNonce: nil)
+                                Auth.auth().signIn(with: credential){ _, error in
+                                    isAuthenticating = false
+                                    guard error == nil else {
+                                        print(error?.localizedDescription ?? "apple sign in failed")
+                                        return
+                                    }
+                                    userId = .init(createdAt: Date().timeIntervalSince1970, id: appleIDCredential.user, name: name)
+                                }
                             }
+                            
+                        default:
+                            isAuthenticating = false
+                            break
                         }
-
-                    default:
-                        break
+                    case .failure(let error):
+                        isAuthenticating = false
+                        print(error.localizedDescription)
                     }
-                case .failure(let error):
-                    print(error.localizedDescription)
                 }
+            )
+            .frame(width : UIScreen.main.bounds.width * 0.9, height:50)
+            .cornerRadius(5)
+
+            if isAuthenticating {
+                ProgressView("로그인 처리 중...")
+                    .font(.appFont(for: .Regular, size: 12))
             }
-        )
-        .frame(width : UIScreen.main.bounds.width * 0.9, height:50)
-        .cornerRadius(5)
-        .fullScreenCover(isPresented: $isLogined, content: {
-            RootView()
-        })
+        }
 
     }
 }
