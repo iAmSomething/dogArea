@@ -135,7 +135,15 @@ struct WalkDetailView: View {
             petName: viewModel.currentWalkingPetName
         )
         if let capturedImage = mapImageProvider.capturedImage {
-            return [summary, capturedImage]
+            let shareCard = WalkShareCardTemplateBuilder.build(
+                baseImage: capturedImage,
+                createdAt: viewModel.polygon.createdAt,
+                duration: viewModel.polygon.walkingTime,
+                areaM2: viewModel.polygon.walkingArea,
+                pointCount: viewModel.polygon.locations.count,
+                petName: viewModel.currentWalkingPetName
+            )
+            return [summary, shareCard]
         }
         return [summary]
     }
