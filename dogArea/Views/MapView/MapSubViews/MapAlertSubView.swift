@@ -40,7 +40,7 @@ struct MapAlertSubView: View {
                          alertModel: myAlert.alertType.model)
       case .deletePolygon(let id):
         ca = CustomAlert(presentAlert: $myAlert.isAlert,
-                         alertModel: myAlert.alertType.model, leftButtonAction: {viewModel.deletePolygon(id: id)
+                         alertModel: myAlert.alertType.model, leftButtonAction: {viewModel.deletePolygonAndRefresh(id)
         },rightButtonAction: {
           
         })

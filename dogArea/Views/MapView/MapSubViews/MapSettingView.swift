@@ -24,6 +24,15 @@ struct MapSettingView: View {
                   .padding(.vertical,5)
                   .background(viewModel.showOnlyOne ? Color.appPeach : Color.appGreen)
                   .cornerRadius(5)
+              Text("Heatmap")
+                  .font(.bold14)
+                  .onTapGesture {
+                      viewModel.heatmapEnabled.toggle()
+                  }
+                  .padding(.horizontal, 10)
+                  .padding(.vertical, 5)
+                  .background(viewModel.heatmapEnabled ? Color.appYellow : Color.appTextLightGray)
+                  .cornerRadius(5)
           }.padding(.horizontal)
         Spacer()
         Image(systemName: "clear")

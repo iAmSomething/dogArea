@@ -130,3 +130,140 @@ extension Array where Element == Polygon {
         self.first(where: {$0.id == id})
     }
 }
+
+struct HeatmapCellDTO: Identifiable, Equatable {
+    let geohash: String
+    let score: Double
+    let centerCoordinate: CLLocationCoordinate2D
+
+    var id: String { geohash }
+    var intensityLevel: Int { Self.intensityLevel(for: score) }
+
+    static func intensityLevel(for score: Double) -> Int {
+        guard score > 0 else { return 0 }
+        let level = Int(ceil(score * 5.0) - 1.0)
+        return min(4, max(0, level))
+    }
+}
+
+enum HeatmapEngine {
+    private static let halfLifeDays = 21.0
+    private static let lambda = log(2.0) / halfLifeDays
+
+    static func decayWeight(recordedAt: TimeInterval, now: Date = Date()) -> Double {
+        let ageDays = max(0.0, (now.timeIntervalSince1970 - recordedAt) / 86_400.0)
+        return exp(-lambda * ageDays)
+    }
+
+    static func aggregate(points: [Location], now: Date = Date(), precision: Int = 7) -> [HeatmapCellDTO] {
+        guard !points.isEmpty else { return [] }
+
+        var bucketWeights: [String: Double] = [:]
+        var bucketCenters: [String: CLLocationCoordinate2D] = [:]
+
+        for point in points {
+            let geohash = GeohashCoder.encode(
+                latitude: point.coordinate.latitude,
+                longitude: point.coordinate.longitude,
+                precision: precision
+            )
+            let weight = decayWeight(recordedAt: point.createdAt, now: now)
+            bucketWeights[geohash, default: 0.0] += weight
+
+            if bucketCenters[geohash] == nil {
+                bucketCenters[geohash] = GeohashCoder.decodeCenter(geohash: geohash)
+            }
+        }
+
+        guard let maxWeight = bucketWeights.values.max(), maxWeight > 0 else {
+            return []
+        }
+
+        return bucketWeights.keys.sorted().compactMap { geohash in
+            guard let weight = bucketWeights[geohash],
+                  let center = bucketCenters[geohash] else {
+                return nil
+            }
+
+            let normalized = min(1.0, max(0.0, weight / maxWeight))
+            return HeatmapCellDTO(
+                geohash: geohash,
+                score: normalized,
+                centerCoordinate: center
+            )
+        }
+    }
+}
+
+private enum GeohashCoder {
+    private static let base32 = Array("0123456789bcdefghjkmnpqrstuvwxyz")
+    private static let bitMasks = [16, 8, 4, 2, 1]
+
+    static func encode(latitude: Double, longitude: Double, precision: Int) -> String {
+        var latRange = (-90.0, 90.0)
+        var lonRange = (-180.0, 180.0)
+        var isEvenBit = true
+        var bitIndex = 0
+        var currentChar = 0
+        var output = ""
+
+        while output.count < max(1, precision) {
+            if isEvenBit {
+                let mid = (lonRange.0 + lonRange.1) / 2.0
+                if longitude >= mid {
+                    currentChar |= bitMasks[bitIndex]
+                    lonRange.0 = mid
+                } else {
+                    lonRange.1 = mid
+                }
+            } else {
+                let mid = (latRange.0 + latRange.1) / 2.0
+                if latitude >= mid {
+                    currentChar |= bitMasks[bitIndex]
+                    latRange.0 = mid
+                } else {
+                    latRange.1 = mid
+                }
+            }
+
+            isEvenBit.toggle()
+            if bitIndex < 4 {
+                bitIndex += 1
+            } else {
+                output.append(base32[currentChar])
+                bitIndex = 0
+                currentChar = 0
+            }
+        }
+        return output
+    }
+
+    static func decodeCenter(geohash: String) -> CLLocationCoordinate2D? {
+        guard !geohash.isEmpty else { return nil }
+
+        var latRange = (-90.0, 90.0)
+        var lonRange = (-180.0, 180.0)
+        var isEvenBit = true
+
+        for char in geohash.lowercased() {
+            guard let index = base32.firstIndex(of: char) else { return nil }
+
+            for bit in bitMasks {
+                let bitSet = (index & bit) != 0
+                if isEvenBit {
+                    let mid = (lonRange.0 + lonRange.1) / 2.0
+                    if bitSet { lonRange.0 = mid } else { lonRange.1 = mid }
+                } else {
+                    let mid = (latRange.0 + latRange.1) / 2.0
+                    if bitSet { latRange.0 = mid } else { latRange.1 = mid }
+                }
+                isEvenBit.toggle()
+            }
+        }
+
+        return CLLocationCoordinate2D(
+            latitude: (latRange.0 + latRange.1) / 2.0,
+            longitude: (lonRange.0 + lonRange.1) / 2.0
+        )
+    }
+}
