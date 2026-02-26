@@ -12,7 +12,7 @@ import CoreLocation
 import CoreData
 import Combine
 import WatchConnectivity
-class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreDataProtocol{
+class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreDataProtocol, WCSessionDelegate {
     @Environment(\.managedObjectContext) private var viewContext
     private let locationManager = CLLocationManager()
     private var timer: Timer? = nil
@@ -37,6 +37,12 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     @Published var showOnlyOne: Bool = true
     @Published var heatmapEnabled: Bool = true
     @Published var heatmapCells: [HeatmapCellDTO] = []
+    private let watchSession = WCSession.isSupported() ? WCSession.default : nil
+    private var processedWatchActionIds: Set<String> = []
+    private var processedWatchActionOrder: [String] = []
+    private let maxProcessedWatchActions = 500
+    private var lastWatchContextSyncAt: Date = .distantPast
+    private let processedWatchActionStorageKey = "watch.processedActionIds"
     override init() {
         super.init()
         self.locationManager.delegate = self
@@ -47,6 +53,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         self.polygonList = self.fetchPolygons()
         self.polygon = lastPolygon() ?? Polygon(walkingTime: 0.0, walkingArea: 0.0)
         self.refreshHeatmap()
+        self.loadProcessedWatchActions()
+        self.setupWatchConnectivity()
     }
     func fetchPolygonList() {
         self.polygonList = self.fetchPolygons()
@@ -75,6 +83,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     func addLocation(){
         if let location = self.location{
             polygon.addPoint(.init(coordinate: location.coordinate))
+            self.syncWatchContext(force: true)
         }
     }
     func removeLocation(_ locationID : UUID){
@@ -110,6 +119,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         withAnimation{ [weak self] in
             self?.isWalking.toggle()
         }
+        self.syncWatchContext(force: true)
     }
     func setTrackingMode() {
         guard let location = self.location else {
@@ -162,6 +172,86 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         }
     }
 
+    private func setupWatchConnectivity() {
+        guard let watchSession else { return }
+        watchSession.delegate = self
+        watchSession.activate()
+        self.syncWatchContext(force: true)
+    }
+
+    private func syncWatchContext(force: Bool = false) {
+        guard let watchSession, watchSession.activationState == .activated else { return }
+
+        let now = Date()
+        if force == false, now.timeIntervalSince(lastWatchContextSyncAt) < 1.0 {
+            return
+        }
+
+        let context: [String: Any] = [
+            "isWalking": self.isWalking,
+            "time": self.time,
+            "area": self.polygon.walkingArea,
+            "last_sync_at": now.timeIntervalSince1970
+        ]
+
+        do {
+            try watchSession.updateApplicationContext(context)
+            self.lastWatchContextSyncAt = now
+        } catch {
+            print("watch context update failed: \(error.localizedDescription)")
+        }
+    }
+
+    private func loadProcessedWatchActions() {
+        let stored = UserDefaults.standard.stringArray(forKey: processedWatchActionStorageKey) ?? []
+        self.processedWatchActionOrder = stored
+        self.processedWatchActionIds = Set(stored)
+    }
+
+    private func persistProcessedWatchActions() {
+        UserDefaults.standard.set(self.processedWatchActionOrder, forKey: processedWatchActionStorageKey)
+    }
+
+    private func shouldProcessWatchAction(actionId: String) -> Bool {
+        guard processedWatchActionIds.contains(actionId) == false else {
+            return false
+        }
+        processedWatchActionIds.insert(actionId)
+        processedWatchActionOrder.append(actionId)
+        if processedWatchActionOrder.count > maxProcessedWatchActions {
+            let overflow = processedWatchActionOrder.count - maxProcessedWatchActions
+            let removed = Array(processedWatchActionOrder.prefix(overflow))
+            processedWatchActionOrder.removeFirst(overflow)
+            removed.forEach { processedWatchActionIds.remove($0) }
+        }
+        persistProcessedWatchActions()
+        return true
+    }
+
+    private func handleWatchPayload(_ payload: [String: Any]) {
+        guard let action = payload["action"] as? String else { return }
+        let actionId = payload["action_id"] as? String ?? UUID().uuidString
+        if shouldProcessWatchAction(actionId: actionId) == false {
+            return
+        }
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            switch action {
+            case "startWalk":
+                if self.isWalking == false { self.endWalk() }
+            case "addPoint":
+                if self.isWalking {
+                    self.addLocation()
+                    self.syncWatchContext(force: true)
+                }
+            case "endWalk":
+                if self.isWalking { self.endWalk() }
+            default:
+                break
+            }
+        }
+    }
+
 }
 //MARK: - 넓이와 시간로직
 extension MapViewModel {
@@ -169,6 +259,7 @@ extension MapViewModel {
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) {[weak self] t in
             guard let self = self else {return}
             self.time += t.timeInterval
+            self.syncWatchContext()
             if self.time > 3600 {
                 self.forceQuit()
             }
@@ -310,5 +401,39 @@ extension MapViewModel {
             i += 1
         }
         return tempClusters
+    }
+}
+
+// MARK: - WatchConnectivity
+extension MapViewModel {
+    func session(
+        _ session: WCSession,
+        activationDidCompleteWith activationState: WCSessionActivationState,
+        error: Error?
+    ) {
+        if let error {
+            print("watch activation failed: \(error.localizedDescription)")
+            return
+        }
+        self.syncWatchContext(force: true)
+    }
+
+    #if os(iOS)
+    func sessionDidBecomeInactive(_ session: WCSession) {}
+    func sessionDidDeactivate(_ session: WCSession) {
+        session.activate()
+    }
+    #endif
+
+    func sessionReachabilityDidChange(_ session: WCSession) {
+        self.syncWatchContext(force: true)
+    }
+
+    func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
+        self.handleWatchPayload(message)
+    }
+
+    func session(_ session: WCSession, didReceiveUserInfo userInfo: [String : Any]) {
+        self.handleWatchPayload(userInfo)
     }
 }
