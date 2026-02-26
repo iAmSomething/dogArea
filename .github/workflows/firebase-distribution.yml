@@ -1,0 +1,268 @@
+name: Firebase Distribution
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      release_notes:
+        description: "Firebase release notes (optional)"
+        required: false
+        default: ""
+        type: string
+
+concurrency:
+  group: firebase-distribution-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  distribute-ios:
+    runs-on: macos-14
+    timeout-minutes: 90
+    env:
+      FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID }}
+      FIREBASE_TESTER_GROUP: ${{ vars.FIREBASE_TESTER_GROUP }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Xcode Version
+        run: xcodebuild -version
+
+      - name: Validate required secrets
+        id: validate
+        env:
+          IOS_DIST_CERT_P12_BASE64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
+          IOS_DIST_CERT_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
+          IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          FIREBASE_SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON_BASE64 }}
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          WATCH_PROVISIONING_PROFILE_BASE64: ${{ secrets.WATCH_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          set -euo pipefail
+          missing=()
+          [[ -z "${IOS_DIST_CERT_P12_BASE64}" ]] && missing+=("IOS_DIST_CERT_P12_BASE64(signing)")
+          [[ -z "${IOS_DIST_CERT_PASSWORD}" ]] && missing+=("IOS_DIST_CERT_PASSWORD(signing)")
+          [[ -z "${IOS_PROVISIONING_PROFILE_BASE64}" ]] && missing+=("IOS_PROVISIONING_PROFILE_BASE64(signing)")
+          if [[ -z "${FIREBASE_SERVICE_ACCOUNT_JSON_BASE64}" && -z "${FIREBASE_SERVICE_ACCOUNT_JSON}" ]]; then
+            missing+=("FIREBASE_SERVICE_ACCOUNT_JSON_BASE64|FIREBASE_SERVICE_ACCOUNT_JSON(permission)")
+          fi
+
+          watchState="not_set"
+          if [[ -n "${WATCH_PROVISIONING_PROFILE_BASE64}" ]]; then
+            watchState="provided"
+          fi
+          echo "watch_profile_state=${watchState}" >> "$GITHUB_OUTPUT"
+
+          if (( ${#missing[@]} > 0 )); then
+            printf '%s\n' "${missing[@]}" > .failure_missing_secrets.txt
+            echo "::error title=CI_SECRET_MISSING::Missing required secrets: ${missing[*]}"
+            exit 1
+          fi
+
+      - name: Ensure CI config placeholders
+        id: config_placeholders
+        run: |
+          set -euo pipefail
+          [[ -f OpenAIConfiguration.xcconfig ]] || printf 'OPENAI_API_KEY=\n' > OpenAIConfiguration.xcconfig
+          mkdir -p supabase
+          [[ -f supabase/supabaseConfig.xcconfig ]] || cat > supabase/supabaseConfig.xcconfig <<'CONFIG'
+          SUPABASE_URL=
+          SUPABASE_ANON_KEY=
+          SUPABASE_SERVICE_ROLE_KEY=
+          PROJECT_REF=
+          STORAGE_BUCKETS=
+          AUTH_REDIRECT_URL=
+          DB_CONN_STRING=
+          EXISTING_SCHEMA=
+CONFIG
+
+      - name: Prepare signing assets
+        id: signing_assets
+        env:
+          IOS_DIST_CERT_P12_BASE64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
+          IOS_DIST_CERT_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
+          IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          WATCH_PROVISIONING_PROFILE_BASE64: ${{ secrets.WATCH_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          set -euo pipefail
+
+          KEYCHAIN_PATH="$RUNNER_TEMP/dogarea-signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(uuidgen)"
+          CERT_PATH="$RUNNER_TEMP/dist.p12"
+          IOS_PROFILE_PATH="$RUNNER_TEMP/ios.mobileprovision"
+          WATCH_PROFILE_PATH="$RUNNER_TEMP/watch.mobileprovision"
+
+          echo "$IOS_DIST_CERT_P12_BASE64" | base64 --decode > "$CERT_PATH"
+          echo "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode > "$IOS_PROFILE_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH"
+          security default-keychain -d user -s "$KEYCHAIN_PATH"
+          security import "$CERT_PATH" -k "$KEYCHAIN_PATH" -P "$IOS_DIST_CERT_PASSWORD" -A -t cert -f pkcs12
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "$PROFILE_DIR"
+          cp "$IOS_PROFILE_PATH" "$PROFILE_DIR/$(uuidgen).mobileprovision"
+
+          security cms -D -i "$IOS_PROFILE_PATH" > "$RUNNER_TEMP/ios_profile.plist"
+          IOS_PROFILE_NAME=$(/usr/libexec/PlistBuddy -c 'Print :Name' "$RUNNER_TEMP/ios_profile.plist")
+          TEAM_ID=$(/usr/libexec/PlistBuddy -c 'Print :TeamIdentifier:0' "$RUNNER_TEMP/ios_profile.plist")
+
+          WATCH_PROFILE_NAME=""
+          if [[ -n "${WATCH_PROVISIONING_PROFILE_BASE64}" ]]; then
+            echo "$WATCH_PROVISIONING_PROFILE_BASE64" | base64 --decode > "$WATCH_PROFILE_PATH"
+            cp "$WATCH_PROFILE_PATH" "$PROFILE_DIR/$(uuidgen).mobileprovision"
+            security cms -D -i "$WATCH_PROFILE_PATH" > "$RUNNER_TEMP/watch_profile.plist"
+            WATCH_PROFILE_NAME=$(/usr/libexec/PlistBuddy -c 'Print :Name' "$RUNNER_TEMP/watch_profile.plist")
+          fi
+
+          EXPORT_PLIST="$RUNNER_TEMP/ExportOptions.plist"
+          {
+            echo '<?xml version="1.0" encoding="UTF-8"?>'
+            echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">'
+            echo '<plist version="1.0">'
+            echo '<dict>'
+            echo '  <key>method</key><string>ad-hoc</string>'
+            echo '  <key>signingStyle</key><string>manual</string>'
+            echo "  <key>teamID</key><string>${TEAM_ID}</string>"
+            echo '  <key>provisioningProfiles</key>'
+            echo '  <dict>'
+            echo "    <key>com.th.dogArea</key><string>${IOS_PROFILE_NAME}</string>"
+            if [[ -n "$WATCH_PROFILE_NAME" ]]; then
+              echo "    <key>com.th.dogArea.watchkitapp</key><string>${WATCH_PROFILE_NAME}</string>"
+            fi
+            echo '  </dict>'
+            echo '  <key>compileBitcode</key><false/>'
+            echo '  <key>stripSwiftSymbols</key><true/>'
+            echo '</dict>'
+            echo '</plist>'
+          } > "$EXPORT_PLIST"
+
+          echo "team_id=${TEAM_ID}" >> "$GITHUB_OUTPUT"
+          echo "export_plist=${EXPORT_PLIST}" >> "$GITHUB_OUTPUT"
+          echo "watch_profile_name=${WATCH_PROFILE_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Archive iOS app
+        id: archive
+        env:
+          TEAM_ID: ${{ steps.signing_assets.outputs.team_id }}
+          WATCH_PROFILE_NAME: ${{ steps.signing_assets.outputs.watch_profile_name }}
+          WATCH_PROFILE_STATE: ${{ steps.validate.outputs.watch_profile_state }}
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          set -o pipefail
+          xcodebuild \
+            -skipPackagePluginValidation \
+            -project dogArea.xcodeproj \
+            -scheme dogArea \
+            -configuration Release \
+            -archivePath build/dogArea.xcarchive \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            clean archive | tee build/archive.log
+
+          if [[ "${WATCH_PROFILE_STATE}" != "provided" && "${WATCH_PROFILE_NAME}" == "" ]]; then
+            if rg -n "watchkitapp|watchOS|No profiles for" build/archive.log >/dev/null 2>&1; then
+              echo "::error title=SIGNING_WATCH_PROFILE_MISSING::watchOS signing hints detected; set WATCH_PROVISIONING_PROFILE_BASE64"
+            fi
+          fi
+
+      - name: Export IPA
+        id: export_ipa
+        run: |
+          set -euo pipefail
+          mkdir -p build/export
+          set -o pipefail
+          xcodebuild \
+            -exportArchive \
+            -archivePath build/dogArea.xcarchive \
+            -exportPath build/export \
+            -exportOptionsPlist "${{ steps.signing_assets.outputs.export_plist }}" | tee build/export.log
+
+          IPA_PATH="$(find build/export -maxdepth 1 -name '*.ipa' | head -n 1)"
+          if [[ -z "$IPA_PATH" ]]; then
+            echo "::error title=BUILD_NO_IPA::IPA not found in build/export"
+            exit 1
+          fi
+          echo "ipa_path=$IPA_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dogArea-ipa-${{ github.run_number }}
+          path: ${{ steps.export_ipa.outputs.ipa_path }}
+          if-no-files-found: error
+
+      - name: Distribute to Firebase App Distribution
+        id: firebase_distribution
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON_BASE64 }}
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          FIREBASE_APP_ID: ${{ env.FIREBASE_APP_ID }}
+          FIREBASE_TESTER_GROUP: ${{ env.FIREBASE_TESTER_GROUP }}
+          IPA_PATH: ${{ steps.export_ipa.outputs.ipa_path }}
+          RELEASE_NOTES_INPUT: ${{ github.event.inputs.release_notes }}
+        run: |
+          set -euo pipefail
+          SA_PATH="$RUNNER_TEMP/firebase-sa.json"
+          if [[ -n "${FIREBASE_SERVICE_ACCOUNT_JSON_BASE64}" ]]; then
+            echo "$FIREBASE_SERVICE_ACCOUNT_JSON_BASE64" | base64 --decode > "$SA_PATH"
+          else
+            printf '%s\n' "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$SA_PATH"
+          fi
+          export GOOGLE_APPLICATION_CREDENTIALS="$SA_PATH"
+
+          APP_ID="${FIREBASE_APP_ID:-1:326179558500:ios:c8404bae2adc65046dbb71}"
+          GROUPS="${FIREBASE_TESTER_GROUP:-tester}"
+          NOTES="${RELEASE_NOTES_INPUT:-}"
+          if [[ -z "$NOTES" ]]; then
+            NOTES="dogArea CI build ${GITHUB_SHA::7}"
+          fi
+
+          npm i -g firebase-tools
+          firebase appdistribution:distribute "$IPA_PATH" \
+            --app "$APP_ID" \
+            --groups "$GROUPS" \
+            --release-notes "$NOTES"
+
+      - name: Failure classification guide
+        if: failure()
+        run: |
+          set -euo pipefail
+          echo "## Failure Classification" >> "$GITHUB_STEP_SUMMARY"
+          if [[ "${{ steps.validate.outcome }}" == "failure" ]]; then
+            echo "- 분류: 서명/권한 시크릿 누락" >> "$GITHUB_STEP_SUMMARY"
+            if [[ -f .failure_missing_secrets.txt ]]; then
+              echo "- 누락 시크릿:" >> "$GITHUB_STEP_SUMMARY"
+              while read -r line; do
+                echo "  - ${line}" >> "$GITHUB_STEP_SUMMARY"
+              done < .failure_missing_secrets.txt
+            fi
+            exit 0
+          fi
+
+          if [[ "${{ steps.archive.outcome }}" == "failure" || "${{ steps.export_ipa.outcome }}" == "failure" ]]; then
+            echo "- 분류: 빌드/서명 단계 실패" >> "$GITHUB_STEP_SUMMARY"
+            if [[ -f build/archive.log ]] && rg -n "No profiles for|CodeSign|Provisioning" build/archive.log >/dev/null 2>&1; then
+              echo "- 상세: 서명 실패 로그 감지 (archive.log)" >> "$GITHUB_STEP_SUMMARY"
+            fi
+            if [[ -f build/archive.log ]] && rg -n "watchkitapp|watchOS" build/archive.log >/dev/null 2>&1; then
+              echo "- 상세: watch 서명 실패 가능성 (WATCH_PROVISIONING_PROFILE_BASE64 확인)" >> "$GITHUB_STEP_SUMMARY"
+            fi
+            exit 0
+          fi
+
+          if [[ "${{ steps.firebase_distribution.outcome }}" == "failure" ]]; then
+            echo "- 분류: Firebase 권한/배포 실패" >> "$GITHUB_STEP_SUMMARY"
+            echo "- 확인: FIREBASE_SERVICE_ACCOUNT_JSON_BASE64, FIREBASE_APP_ID, tester 그룹 권한" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          echo "- 분류 불명: 실행 로그를 확인하세요." >> "$GITHUB_STEP_SUMMARY"
