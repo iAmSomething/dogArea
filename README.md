@@ -34,6 +34,10 @@
 - 산책 런타임 예외 방어 가드레일 v1: `docs/walk-runtime-guardrails-v1.md`
 - 산책 저장/동기화 정합성 아웃박스 v1: `docs/walk-sync-consistency-outbox-v1.md`
 - Cycle #80 결과 보고서(2026-02-26): `docs/cycle-80-sync-consistency-report-2026-02-26.md`
+- 예외처리 장애주입 매트릭스 v1: `docs/fault-injection-matrix-v1.md`
+- 예외처리 장애주입 런북 v1: `docs/fault-injection-runbook-v1.md`
+- 예외처리 결과 템플릿 v1: `docs/fault-injection-result-template-v1.md`
+- Cycle #81 결과 보고서(2026-02-26): `docs/cycle-81-fault-injection-report-2026-02-26.md`
 
 ## 강아지들의 영역 표시
 

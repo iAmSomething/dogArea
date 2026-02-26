@@ -1,0 +1,25 @@
+name: fault-injection-gate
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  fault-matrix-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "5.10"
+
+      - name: Validate Release Checklist
+        run: swift scripts/release_regression_checklist_unit_check.swift
+
+      - name: Validate Fault Injection Matrix
+        run: swift scripts/fault_injection_matrix_unit_check.swift

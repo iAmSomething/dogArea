@@ -22,6 +22,8 @@ assertTrue(checklist.contains("## 3. 빌드 체크"), "checklist must include bu
 assertTrue(checklist.contains("## 4. 핵심 시나리오 체크"), "checklist must include scenario check section")
 assertTrue(checklist.contains("## 5. 마이그레이션 검증 시나리오"), "checklist must include migration section")
 assertTrue(checklist.contains("## 6. 결과 기록 템플릿"), "checklist must include result template")
+assertTrue(checklist.contains("## 7. 예외 시나리오 게이트 (P0/P1)"), "checklist must include exception gate section")
+assertTrue(checklist.contains("P0 FAIL >= 1"), "checklist must include P0 auto blocking rule")
 
 assertTrue(report.contains("## 1. 빌드 체크 결과"), "report must include build results")
 assertTrue(report.contains("## 2. 핵심 시나리오 점검 결과"), "report must include scenario results")
