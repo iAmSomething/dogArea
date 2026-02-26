@@ -25,6 +25,7 @@
 - CoreData 반환 계약 정리 v1: `docs/coredata-return-contract-v1.md`
 - Swift 안정화(강제 언래핑/타이머 수명) v1: `docs/swift-stability-hardening-v1.md`
 - 프로젝트 설정/의존성 안정화 v1: `docs/project-settings-dependency-stability-v1.md`
+- Supabase 마이그레이션/운영 검증 v1: `docs/supabase-migration.md`
 - 릴리즈 회귀 체크리스트 v1: `docs/release-regression-checklist-v1.md`
 - 릴리즈 회귀 실행 리포트(2026-02-26): `docs/release-regression-report-2026-02-26.md`
 - 다중 반려견 산책 N:M 2차 설계 v2: `docs/multi-pet-session-nm-v2.md`

@@ -27,6 +27,7 @@ echo "[dogArea] running document/unit checks"
 swift scripts/swift_stability_unit_check.swift
 swift scripts/release_regression_checklist_unit_check.swift
 swift scripts/fault_injection_matrix_unit_check.swift
+swift scripts/supabase_ops_hardening_unit_check.swift
 swift scripts/project_stability_unit_check.swift
 
 if [[ "${DOGAREA_SKIP_BUILD:-0}" == "1" ]]; then
