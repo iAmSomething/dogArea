@@ -14,6 +14,7 @@ class UserdefaultSetting {
         case userId = "userId"
         case userName = "userName"
         case userProfile = "userProfile"
+        case profileMessage = "profileMessage"
         case petInfo = "petInfo"
         case selectedPetId = "selectedPetId"
         case petSelectionScoreMap = "petSelectionScoreMap"
@@ -34,6 +35,7 @@ class UserdefaultSetting {
         id: String,
         name: String,
         profile: String?,
+        profileMessage: String? = nil,
         pet: [PetInfo],
         createdAt: Double,
         selectedPetId: String? = nil
@@ -46,6 +48,7 @@ class UserdefaultSetting {
         UserDefaults.standard.setValue(id, forKey: keyValue.userId.rawValue)
         UserDefaults.standard.setValue(name, forKey: keyValue.userName.rawValue)
         UserDefaults.standard.setValue(profile, forKey: keyValue.userProfile.rawValue)
+        UserDefaults.standard.setValue(profileMessage, forKey: keyValue.profileMessage.rawValue)
         UserDefaults.standard.setStructArray(normalizedPets, forKey: keyValue.petInfo.rawValue)
         UserDefaults.standard.setValue(resolvedSelectedPetId, forKey: keyValue.selectedPetId.rawValue)
         UserDefaults.standard.setValue(resolvedSelectedPetId, forKey: keyValue.petSelectionRecentPetId.rawValue)
@@ -71,15 +74,30 @@ class UserdefaultSetting {
                 id: id,
                 name: name,
                 profile: UserDefaults.standard.string(forKey: keyValue.userProfile.rawValue),
+                profileMessage: UserDefaults.standard.string(forKey: keyValue.profileMessage.rawValue),
                 pet: pets,
                 createdAt: createdAt,
                 selectedPetId: selectedPetId
             )
         }
         if let profile = UserDefaults.standard.string(forKey: keyValue.userProfile.rawValue){
-            return .init(id: id, name: name, profile: profile, pet: pets, createdAt: createdAt)
+            return .init(
+                id: id,
+                name: name,
+                profile: profile,
+                profileMessage: UserDefaults.standard.string(forKey: keyValue.profileMessage.rawValue),
+                pet: pets,
+                createdAt: createdAt
+            )
         } else {
-            return .init(id: id, name: name, profile: nil, pet: pets, createdAt: createdAt)
+            return .init(
+                id: id,
+                name: name,
+                profile: nil,
+                profileMessage: UserDefaults.standard.string(forKey: keyValue.profileMessage.rawValue),
+                pet: pets,
+                createdAt: createdAt
+            )
         }
     }
     #if DEBUG
@@ -87,6 +105,7 @@ class UserdefaultSetting {
         UserDefaults.standard.removeObject(forKey: keyValue.userId.rawValue)
         UserDefaults.standard.removeObject(forKey: keyValue.userName.rawValue)
         UserDefaults.standard.removeObject(forKey: keyValue.userProfile.rawValue)
+        UserDefaults.standard.removeObject(forKey: keyValue.profileMessage.rawValue)
         UserDefaults.standard.removeObject(forKey: keyValue.petInfo.rawValue)
         UserDefaults.standard.removeObject(forKey: keyValue.selectedPetId.rawValue)
         UserDefaults.standard.removeObject(forKey: keyValue.walkStartCountdownEnabled.rawValue)
@@ -123,8 +142,23 @@ struct UserInfo: TimeCheckable {
     let id: String
     let name: String
     let profile: String?
+    let profileMessage: String?
     let pet: [PetInfo]
     var createdAt: TimeInterval
+}
+
+enum PetGender: String, Codable, CaseIterable {
+    case unknown
+    case male
+    case female
+
+    var title: String {
+        switch self {
+        case .unknown: return "미지정"
+        case .male: return "수컷"
+        case .female: return "암컷"
+        }
+    }
 }
 
 enum CaricatureStatus: String, Codable {
@@ -139,6 +173,9 @@ struct PetInfo: Codable, Identifiable, Equatable {
     var petId: String
     var petName: String
     var petProfile: String?
+    var breed: String? = nil
+    var ageYears: Int? = nil
+    var gender: PetGender = .unknown
     var caricatureURL: String? = nil
     var caricatureStatus: CaricatureStatus? = nil
     var caricatureProvider: String? = nil
@@ -147,6 +184,9 @@ struct PetInfo: Codable, Identifiable, Equatable {
         petId: String = UUID().uuidString.lowercased(),
         petName: String,
         petProfile: String?,
+        breed: String? = nil,
+        ageYears: Int? = nil,
+        gender: PetGender = .unknown,
         caricatureURL: String? = nil,
         caricatureStatus: CaricatureStatus? = nil,
         caricatureProvider: String? = nil
@@ -154,6 +194,9 @@ struct PetInfo: Codable, Identifiable, Equatable {
         self.petId = petId
         self.petName = petName
         self.petProfile = petProfile
+        self.breed = breed
+        self.ageYears = ageYears
+        self.gender = gender
         self.caricatureURL = caricatureURL
         self.caricatureStatus = caricatureStatus
         self.caricatureProvider = caricatureProvider
@@ -163,6 +206,9 @@ struct PetInfo: Codable, Identifiable, Equatable {
         case petId
         case petName
         case petProfile
+        case breed
+        case ageYears
+        case gender
         case caricatureURL
         case caricatureStatus
         case caricatureProvider
@@ -173,6 +219,10 @@ struct PetInfo: Codable, Identifiable, Equatable {
         self.petId = try container.decodeIfPresent(String.self, forKey: .petId) ?? UUID().uuidString.lowercased()
         self.petName = try container.decode(String.self, forKey: .petName)
         self.petProfile = try container.decodeIfPresent(String.self, forKey: .petProfile)
+        self.breed = try container.decodeIfPresent(String.self, forKey: .breed)
+        self.ageYears = try container.decodeIfPresent(Int.self, forKey: .ageYears)
+        let genderRaw = try container.decodeIfPresent(String.self, forKey: .gender)
+        self.gender = PetGender(rawValue: genderRaw ?? "") ?? .unknown
         self.caricatureURL = try container.decodeIfPresent(String.self, forKey: .caricatureURL)
         self.caricatureStatus = try container.decodeIfPresent(CaricatureStatus.self, forKey: .caricatureStatus)
         self.caricatureProvider = try container.decodeIfPresent(String.self, forKey: .caricatureProvider)

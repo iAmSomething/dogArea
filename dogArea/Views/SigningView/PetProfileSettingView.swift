@@ -51,6 +51,36 @@ struct PetProfileSettingView: View {
                     )
                     .padding(.horizontal)
             }
+            UnderLine()
+            TitleTextView(title: "강아지 상세 정보", type: .MediumTitle, subTitle: "품종/나이/성별을 입력하면 통계가 더 정확해져요! (선택)")
+            HStack {
+                TextField("품종 (예: 비숑)", text: $viewModel.petBreed)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 4)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 5)
+                            .stroke(Color.appColor(type: .appTextDarkGray, scheme: scheme), lineWidth: 0.8)
+                    )
+                    .padding(.horizontal)
+            }
+            HStack {
+                TextField("나이 (숫자)", text: $viewModel.petAgeYearsText)
+                    .keyboardType(.numberPad)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 4)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 5)
+                            .stroke(Color.appColor(type: .appTextDarkGray, scheme: scheme), lineWidth: 0.8)
+                    )
+                    .padding(.horizontal)
+            }
+            Picker("성별", selection: $viewModel.petGender) {
+                ForEach(PetGender.allCases, id: \.rawValue) { item in
+                    Text(item.title).tag(item)
+                }
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal)
             Spacer()
             Button(action: {
                 viewModel.setValue()

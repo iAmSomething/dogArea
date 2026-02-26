@@ -20,6 +20,12 @@ struct NotificationCenterView: View {
                    VStack(alignment: .leading) {
                        Text("\(viewModel.userInfo?.name ?? "산책꾼")")
                            .font(.appFont(for: .SemiBold, size: 20))
+                       if let profileMessage = viewModel.userInfo?.profileMessage,
+                          profileMessage.isEmpty == false {
+                           Text(profileMessage)
+                               .font(.appFont(for: .Regular, size: 13))
+                               .foregroundStyle(Color.appTextDarkGray)
+                       }
                        Text("가입 정보: \(viewModel.userInfo?.createdAt.createdAtTimeYYMMDD ?? "")")
                            .font(.appFont(for: .Light, size: 11))
                            .foregroundStyle(Color.appTextDarkGray)
@@ -52,6 +58,9 @@ struct NotificationCenterView: View {
                    VStack(alignment: .leading) {
                        Text("\(viewModel.selectedPet?.petName ?? "강아지")")
                            .font(.appFont(for: .SemiBold, size: 20))
+                       Text(petDetailsText(viewModel.selectedPet))
+                           .font(.appFont(for: .Regular, size: 12))
+                           .foregroundStyle(Color.appTextDarkGray)
                        if let status = viewModel.selectedPet?.caricatureStatus {
                            Text("캐리커처 상태: \(status.rawValue)")
                                .font(.appFont(for: .Light, size: 11))
@@ -66,6 +75,14 @@ struct NotificationCenterView: View {
                viewModel.reloadUserInfo()
            }
        }
+
+    private func petDetailsText(_ pet: PetInfo?) -> String {
+        guard let pet else { return "품종/나이/성별 미입력" }
+        let breed = pet.breed.flatMap { $0.isEmpty ? nil : $0 } ?? "품종 미입력"
+        let age = pet.ageYears.map { "\($0)세" } ?? "나이 미입력"
+        let gender = pet.gender.title
+        return "\(breed) · \(age) · \(gender)"
+    }
 }
 struct ImageView: View {
     let image: UIImage?

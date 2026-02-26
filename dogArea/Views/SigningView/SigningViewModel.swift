@@ -12,7 +12,11 @@ import FirebaseStorage
 class SigningViewModel: ObservableObject {
     @Published var loading: LoadingPhase = .initial
     @Published var userName: String = ""
+    @Published var userProfileMessage: String = ""
     @Published var petName: String = ""
+    @Published var petBreed: String = ""
+    @Published var petAgeYearsText: String = ""
+    @Published var petGender: PetGender = .unknown
     @Published var userProfile: UIImage? = nil
     @Published var petProfile: UIImage? = nil
     var appleInfo: AppleUserInfo
@@ -45,16 +49,20 @@ class SigningViewModel: ObservableObject {
                 }
                 let caricatureEnabled = featureFlags.isEnabled(.caricatureAsyncV1)
                 let petInfo = PetInfo(
-                    petName: petName,
+                    petName: petName.trimmingCharacters(in: .whitespacesAndNewlines),
                     petProfile: petURL,
+                    breed: normalizedPetBreed,
+                    ageYears: normalizedPetAgeYears,
+                    gender: petGender,
                     caricatureURL: nil,
                     caricatureStatus: (caricatureEnabled && petURL != nil) ? .queued : nil,
                     caricatureProvider: nil
                 )
                 userdefaluts.save(
                     id: userId,
-                    name: userName,
+                    name: userName.trimmingCharacters(in: .whitespacesAndNewlines),
                     profile: profileURL,
+                    profileMessage: normalizedProfileMessage,
                     pet: [petInfo],
                     createdAt: createdAt
                 )
@@ -136,5 +144,21 @@ class SigningViewModel: ObservableObject {
         try await self.storage.child("images/\(userName)/" + (isPet ? "petProfile.jpeg" : "userProfile.jpeg"))
             .downloadURL()
             .absoluteString
+    }
+
+    private var normalizedProfileMessage: String? {
+        let trimmed = userProfileMessage.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    private var normalizedPetBreed: String? {
+        let trimmed = petBreed.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    private var normalizedPetAgeYears: Int? {
+        let trimmed = petAgeYearsText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let age = Int(trimmed), (0...30).contains(age) else { return nil }
+        return age
     }
 }
