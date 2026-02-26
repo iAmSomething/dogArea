@@ -9,15 +9,25 @@ import Foundation
 import WatchConnectivity
 
 struct WatchActionDTO: Codable, Equatable {
+    let version: String
+    let type: String
     let action: String
     let actionId: String
     let sentAt: TimeInterval
 
-    var payload: [String: Any] {
-        [
+    var envelope: [String: Any] {
+        let payload: [String: Any] = [
             "action": action,
             "action_id": actionId,
             "sent_at": sentAt
+        ]
+        return [
+            "version": version,
+            "type": type,
+            "action": action,
+            "action_id": actionId,
+            "sent_at": sentAt,
+            "payload": payload
         ]
     }
 }
@@ -35,8 +45,15 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
     @Published var walkingArea: Double = 0
     @Published var isReachable = false
     @Published var lastSyncAt: TimeInterval = 0
+    @Published var pendingActionCount: Int = 0
+    @Published var lastAckStatus: String = "대기"
+    @Published var lastAckActionId: String = ""
+    @Published var contractVersion: String = "watch.remote.v1"
 
     private let actionQueueStorageKey = "watch.pendingActions.v1"
+    private let watchContractVersion = "watch.remote.v1"
+    private let watchActionMessageType = "watch_action"
+    private let watchAckMessageType = "watch_ack"
     private var pendingActions: [WatchActionDTO] = []
     private let session = WCSession.default
 
@@ -54,16 +71,15 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
 
     func sendAction(_ action: WatchActionType) {
         let dto = WatchActionDTO(
+            version: watchContractVersion,
+            type: watchActionMessageType,
             action: action.rawValue,
-            actionId: UUID().uuidString,
+            actionId: UUID().uuidString.lowercased(),
             sentAt: Date().timeIntervalSince1970
         )
 
         if session.activationState == .activated, session.isReachable {
-            session.sendMessage(dto.payload, replyHandler: nil) { [weak self] _ in
-                self?.enqueue(dto)
-                self?.flushPendingActions()
-            }
+            sendImmediately(dto)
             return
         }
 
@@ -71,18 +87,35 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
         flushPendingActions()
     }
 
+    private func sendImmediately(_ action: WatchActionDTO) {
+        session.sendMessage(action.envelope, replyHandler: { [weak self] reply in
+            self?.handleAck(reply, fallbackActionId: action.actionId)
+        }, errorHandler: { [weak self] _ in
+            self?.enqueue(action)
+            self?.flushPendingActions()
+            DispatchQueue.main.async {
+                self?.lastAckStatus = "즉시 전송 실패, 큐로 보관"
+                self?.lastAckActionId = action.actionId
+            }
+        })
+    }
+
     private func enqueue(_ action: WatchActionDTO) {
+        guard pendingActions.contains(where: { $0.actionId == action.actionId }) == false else { return }
         pendingActions.append(action)
         persistPendingActions()
+        pendingActionCount = pendingActions.count
     }
 
     private func loadPendingActions() {
         guard let data = UserDefaults.standard.data(forKey: actionQueueStorageKey),
               let decoded = try? JSONDecoder().decode([WatchActionDTO].self, from: data) else {
             pendingActions = []
+            pendingActionCount = 0
             return
         }
         pendingActions = decoded
+        pendingActionCount = decoded.count
     }
 
     private func persistPendingActions() {
@@ -93,21 +126,48 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
     private func flushPendingActions() {
         guard session.activationState == .activated,
               session.isReachable,
-              pendingActions.isEmpty == false else { return }
+              pendingActions.isEmpty == false else {
+            pendingActionCount = pendingActions.count
+            return
+        }
 
-        // Flush queued actions when the connection is restored.
-        pendingActions.forEach { session.transferUserInfo($0.payload) }
+        let queued = pendingActions
+        queued.forEach { session.transferUserInfo($0.envelope) }
         pendingActions.removeAll()
         persistPendingActions()
+        pendingActionCount = 0
+        lastAckStatus = "큐 전송 등록 \(queued.count)건"
     }
 
     private func applyContext(_ context: [String: Any]) {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
+            self.contractVersion = context["version"] as? String ?? self.contractVersion
             self.isWalking = context["isWalking"] as? Bool ?? false
             self.walkingTime = context["time"] as? TimeInterval ?? 0
             self.walkingArea = context["area"] as? Double ?? 0
             self.lastSyncAt = context["last_sync_at"] as? TimeInterval ?? 0
+            if let appliedActionId = context["last_action_id_applied"] as? String, appliedActionId.isEmpty == false {
+                self.lastAckActionId = appliedActionId
+            }
+            if let status = context["watch_status"] as? String, status.isEmpty == false {
+                self.lastAckStatus = status
+            }
+        }
+    }
+
+    private func handleAck(_ reply: [String: Any], fallbackActionId: String) {
+        let replyType = reply["type"] as? String
+        if let replyType, replyType.isEmpty == false, replyType != watchAckMessageType {
+            return
+        }
+        let status = (reply["status"] as? String) ?? "accepted"
+        let actionId = (reply["action_id"] as? String) ?? fallbackActionId
+        let syncedAt = (reply["last_sync_at"] as? TimeInterval) ?? Date().timeIntervalSince1970
+        DispatchQueue.main.async { [weak self] in
+            self?.lastAckStatus = "ACK \(status)"
+            self?.lastAckActionId = actionId
+            self?.lastSyncAt = syncedAt
         }
     }
 

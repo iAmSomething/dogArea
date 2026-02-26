@@ -127,6 +127,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     private var processedWatchActionOrder: [String] = []
     private let maxProcessedWatchActions = 500
     private var lastWatchContextSyncAt: Date = .distantPast
+    private var lastAppliedWatchActionId: String = ""
     private let processedWatchActionStorageKey = "watch.processedActionIds"
     private let activeWalkSessionStorageKey = "walk.activeSession.v1"
     private let heatmapEnabledKey = "heatmap.enabled"
@@ -170,6 +171,19 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         case addPoint
         case endWalk
         case syncState
+    }
+
+    private struct WatchActionEnvelope {
+        let version: String
+        let action: WatchIncomingAction
+        let actionId: String
+        let sentAt: TimeInterval?
+    }
+
+    private enum WatchContract {
+        static let version = "watch.remote.v1"
+        static let actionType = "watch_action"
+        static let ackType = "watch_ack"
     }
 
     private enum PointAppendSource {
@@ -1322,10 +1336,14 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         }
 
         let context: [String: Any] = [
+            "version": WatchContract.version,
+            "type": "watch_state",
             "isWalking": self.isWalking,
             "time": self.time,
             "area": self.polygon.walkingArea,
-            "last_sync_at": now.timeIntervalSince1970
+            "last_sync_at": now.timeIntervalSince1970,
+            "watch_status": self.watchSyncStatusText,
+            "last_action_id_applied": self.lastAppliedWatchActionId
         ]
 
         do {
@@ -1364,80 +1382,118 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         return true
     }
 
-    private func handleWatchPayload(_ payload: [String: Any]) {
-        guard let action = parseWatchAction(from: payload) else { return }
-        let actionName = action.rawValue
+    @discardableResult
+    private func handleWatchPayload(_ payload: [String: Any]) -> [String: Any]? {
+        guard let envelope = parseWatchEnvelope(from: payload) else { return nil }
+        let actionName = envelope.action.rawValue
+        let sentAtLabel: String = {
+            guard let sentAt = envelope.sentAt else { return "" }
+            return " sent:\(Int(sentAt))"
+        }()
         latestWatchActionText = "워치 \(actionName) 수신 \(Self.statusTimeString(from: Date()))"
         metricTracker.track(
             .watchActionReceived,
             userKey: currentMetricUserId(),
-            payload: ["action": actionName]
+            payload: [
+                "action": actionName,
+                "version": envelope.version + sentAtLabel
+            ]
         )
-        let actionId: String = {
-            if let id = payload["action_id"] as? String, id.isEmpty == false {
-                return id
-            }
-            if let sentAt = payload["sent_at"] as? TimeInterval {
-                return "\(actionName):\(Int(sentAt * 1000.0))"
-            }
-            return UUID().uuidString
-        }()
-        if shouldProcessWatchAction(actionId: actionId) == false {
+        if shouldProcessWatchAction(actionId: envelope.actionId) == false {
             metricTracker.track(
                 .watchActionDuplicate,
                 userKey: currentMetricUserId(),
-                payload: ["action": actionName]
+                payload: [
+                    "action": actionName,
+                    "actionId": envelope.actionId
+                ]
             )
-            return
+            return [
+                "version": WatchContract.version,
+                "type": WatchContract.ackType,
+                "status": "duplicate",
+                "action": actionName,
+                "action_id": envelope.actionId,
+                "last_sync_at": Date().timeIntervalSince1970
+            ]
         }
         metricTracker.track(
             .watchActionProcessed,
             userKey: currentMetricUserId(),
-            payload: ["action": actionName]
+            payload: [
+                "action": actionName,
+                "actionId": envelope.actionId
+            ]
         )
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
-            self.applyWatchAction(action)
+            self.applyWatchAction(envelope)
         }
+        return [
+            "version": WatchContract.version,
+            "type": WatchContract.ackType,
+            "status": "accepted",
+            "action": actionName,
+            "action_id": envelope.actionId,
+            "last_sync_at": Date().timeIntervalSince1970
+        ]
     }
 
-    private func parseWatchAction(from payload: [String: Any]) -> WatchIncomingAction? {
-        guard let rawAction = payload["action"] as? String else { return nil }
-        return WatchIncomingAction(rawValue: rawAction)
+    private func parseWatchEnvelope(from payload: [String: Any]) -> WatchActionEnvelope? {
+        let version = (payload["version"] as? String) ?? "watch.legacy.v0"
+        if let type = payload["type"] as? String,
+           type.isEmpty == false,
+           type != WatchContract.actionType {
+            return nil
+        }
+        let nestedPayload = payload["payload"] as? [String: Any]
+        let actionPayload = nestedPayload ?? payload
+
+        guard let rawAction = (actionPayload["action"] as? String) ?? (payload["action"] as? String),
+              let action = WatchIncomingAction(rawValue: rawAction) else {
+            return nil
+        }
+        let actionId: String = {
+            if let id = (actionPayload["action_id"] as? String) ?? (payload["action_id"] as? String),
+               id.isEmpty == false {
+                return id
+            }
+            if let sentAt = (actionPayload["sent_at"] as? TimeInterval) ?? (payload["sent_at"] as? TimeInterval) {
+                return "\(rawAction):\(Int(sentAt * 1000.0))"
+            }
+            return UUID().uuidString.lowercased()
+        }()
+        let sentAt = (actionPayload["sent_at"] as? TimeInterval) ?? (payload["sent_at"] as? TimeInterval)
+        return WatchActionEnvelope(version: version, action: action, actionId: actionId, sentAt: sentAt)
     }
 
-    private func applyWatchAction(_ action: WatchIncomingAction) {
+    private func applyWatchAction(_ envelope: WatchActionEnvelope) {
+        let action = envelope.action
         switch action {
         case .startWalk:
             if self.isWalking == false {
                 self.startWalkNow()
                 self.latestWatchActionText = "워치 시작 반영 \(Self.statusTimeString(from: Date()))"
                 self.metricTracker.track(.watchActionApplied, userKey: self.currentMetricUserId(), payload: ["action": action.rawValue])
-            } else {
-                self.syncWatchContext(force: true)
             }
         case .addPoint:
             if self.isWalking {
                 if let location = self.location {
                     self.appendWalkPoint(from: location, recordedAt: Date(), source: .watch)
-                    self.syncWatchContext(force: true)
                     self.metricTracker.track(.watchActionApplied, userKey: self.currentMetricUserId(), payload: ["action": action.rawValue])
                 }
-            } else {
-                self.syncWatchContext(force: true)
             }
         case .endWalk:
             if self.isWalking {
                 self.endWalk()
                 self.latestWatchActionText = "워치 종료 반영 \(Self.statusTimeString(from: Date()))"
                 self.metricTracker.track(.watchActionApplied, userKey: self.currentMetricUserId(), payload: ["action": action.rawValue])
-            } else {
-                self.syncWatchContext(force: true)
             }
         case .syncState:
             self.latestWatchActionText = "워치 상태 재동기화 \(Self.statusTimeString(from: Date()))"
-            self.syncWatchContext(force: true)
         }
+        self.lastAppliedWatchActionId = envelope.actionId
+        self.syncWatchContext(force: true)
     }
 
 }
@@ -1659,6 +1715,20 @@ extension MapViewModel {
 
     func sessionReachabilityDidChange(_ session: WCSession) {
         self.syncWatchContext(force: true)
+    }
+
+    func session(
+        _ session: WCSession,
+        didReceiveMessage message: [String : Any],
+        replyHandler: @escaping ([String : Any]) -> Void
+    ) {
+        let ack = self.handleWatchPayload(message) ?? [
+            "version": WatchContract.version,
+            "type": WatchContract.ackType,
+            "status": "ignored",
+            "last_sync_at": Date().timeIntervalSince1970
+        ]
+        replyHandler(ack)
     }
 
     func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {

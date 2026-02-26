@@ -1,61 +1,79 @@
-# Watch Connectivity Reliability v1
+# Watch Connectivity Reliability v1 (Issue #25)
 
 ## 1. 목적
-watchOS 액션 전달에서 중복 적용과 유실을 줄이기 위한 신뢰성 규약을 고정한다.
+watchOS 원격 액션(`startWalk/addPoint/endWalk`)을 iPhone 상태머신에 멱등/복구 가능하게 반영한다.
 
 연결 이슈:
-- 구현: #43
+- 구현: #25
 
-## 2. 액션 계약
-iPhone <- Watch payload:
+## 2. 액션 계약 (Watch -> iPhone)
+버전 고정: `watch.remote.v1`
 
 ```json
 {
-  "action": "startWalk | addPoint | endWalk",
+  "version": "watch.remote.v1",
+  "type": "watch_action",
+  "action": "startWalk",
   "action_id": "uuid",
-  "sent_at": 1770000000.0
+  "sent_at": 1770000000.0,
+  "payload": {
+    "action": "startWalk",
+    "action_id": "uuid",
+    "sent_at": 1770000000.0
+  }
 }
 ```
 
-필드 규칙:
-- `action`: watch 사용자 의도
-- `action_id`: 멱등키(중복 제거 기준)
-- `sent_at`: watch 발생 시각(epoch seconds)
+규칙:
+- `action_id`는 멱등키(중복 수신 제거 기준)
+- `payload`가 표준 계약이며, 상위 필드는 레거시 호환용으로도 유지
+- `type != watch_action` 인 메시지는 무시
 
-## 3. 수신 측(iPhone) 처리
-- `action_id`를 최근 N개(기본 500) 캐시
-- 이미 처리된 `action_id`는 무시
-- 액션 적용:
-  - `startWalk`: 산책이 꺼져 있으면 시작
-  - `addPoint`: 산책 중일 때만 포인트 추가
-  - `endWalk`: 산책 중일 때만 종료
-
-## 4. 송신 측(Watch) 처리
-- 즉시 전송 경로:
-  - `session.isReachable == true`이면 `sendMessage` 시도
-- 비연결/실패 경로:
-  - 로컬 큐(UserDefaults)에 저장
-  - 세션 활성화 후 `transferUserInfo`로 재전송
-- 큐는 전송 등록 후 비움(전송 보장은 `transferUserInfo`가 담당)
-
-## 5. 컨텍스트 동기화
-iPhone -> Watch application context:
+## 3. ACK 계약 (iPhone -> Watch reply)
 
 ```json
 {
+  "version": "watch.remote.v1",
+  "type": "watch_ack",
+  "status": "accepted | duplicate | ignored",
+  "action": "startWalk",
+  "action_id": "uuid",
+  "last_sync_at": 1770000001.0
+}
+```
+
+## 4. iPhone 수신 처리
+- 최근 `action_id` 500개 캐시 후 dedupe
+- 액션 적용 기준
+  - `startWalk`: 미산책 상태에서만 시작
+  - `addPoint`: 산책 중 + 위치가 있을 때만 추가
+  - `endWalk`: 산책 중일 때만 종료
+  - `syncState`: 상태 재동기화
+- 적용 결과는 `syncWatchContext(force: true)`로 즉시 피드백
+
+## 5. 상태 컨텍스트 계약 (iPhone -> Watch)
+
+```json
+{
+  "version": "watch.remote.v1",
+  "type": "watch_state",
   "isWalking": true,
   "time": 123.0,
   "area": 45.6,
-  "last_sync_at": 1770000000.0
+  "last_sync_at": 1770000002.0,
+  "watch_status": "워치 동기화 12:34:56",
+  "last_action_id_applied": "uuid"
 }
 ```
 
-목적:
-- Watch UI 상태 표시(연동 상태/시간/면적)
-- 로컬 액션 시점 판단 보조
+## 6. 오프라인/재연결 동작
+- Watch 즉시 전송: `sendMessage` + ACK 처리
+- 즉시 전송 실패 시: 로컬 큐(UserDefaults)에 적재
+- 재연결 시: 큐를 `transferUserInfo`로 등록하여 순차 재전송
+- 큐 등록 후 로컬 큐는 비워 `중복 등록`을 방지
 
-## 6. 검증 시나리오
-- [ ] 동일 `action_id`를 2회 보내도 1회만 적용
-- [ ] watch 오프라인에서 액션 누적 후 연결 복구 시 반영
-- [ ] 산책 중이 아닐 때 `addPoint`가 무시됨
-- [ ] `startWalk -> addPoint -> endWalk` 순서가 iPhone에 반영
+## 7. 검증 시나리오
+- [ ] 워치에서 `startWalk -> addPoint x3 -> endWalk` 순서 반영
+- [ ] 동일 `action_id` 재수신 시 duplicate ACK + 1회 적용
+- [ ] 오프라인 액션 누적 후 재연결 시 큐 반영
+- [ ] 컨텍스트(`time/area/last_action_id_applied`)가 Watch UI와 일치
