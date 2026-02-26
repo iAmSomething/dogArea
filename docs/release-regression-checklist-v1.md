@@ -79,6 +79,7 @@
 - [ ] 신규 migration 파일 존재 확인
 - [ ] DDL/RLS/함수 변경사항 문서와 일치
 - [ ] `profiles.profile_message`, `pets.breed/age_years/gender` 컬럼 및 제약 확인
+- [ ] `area_reference_catalogs` + `area_references.catalog_id/display_order/is_featured` 구조 확인
 
 ## 6. 배포 파이프라인 검증 시나리오
 ### 6.1 Workflow 정의/활성 상태

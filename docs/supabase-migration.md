@@ -142,9 +142,31 @@ order by pet.created_at asc;
 - `age_years`는 `null` 또는 `0..30`
 - 로컬 UserDefaults 저장값과 조회 결과가 동일
 
+### 5.6 비교군 카탈로그/시드 정합성 확인 (#121)
+```sql
+select
+  c.code as catalog_code,
+  c.name as catalog_name,
+  count(r.id) as reference_count,
+  sum(case when r.is_featured then 1 else 0 end) as featured_count,
+  min(r.display_order) as min_display_order,
+  max(r.display_order) as max_display_order
+from public.area_reference_catalogs c
+left join public.area_references r on r.catalog_id = c.id and r.is_active = true
+where c.is_active = true
+group by c.code, c.name
+order by c.sort_order asc, c.code asc;
+```
+
+기대값:
+- 활성 카탈로그별 `reference_count`가 0보다 큼
+- `featured_count`가 최소 1개 이상(큐레이션 카탈로그 기준)
+- `display_order`가 음수 없이 정렬 가능 범위로 유지
+
 ## 6. 운영 체크리스트
 - [ ] `migration list --local` / `migration list --linked` 결과 저장
 - [ ] User A/B 교차 접근 차단 SQL 결과 저장
 - [ ] Storage 버킷 정책/경로 규칙 검증
 - [ ] 핵심 통계 SQL 결과를 릴리스 문서에 첨부
 - [ ] User/Pet 확장 필드 정합성 SQL 결과 첨부
+- [ ] 비교군 카탈로그/시드 정합성 SQL 결과 첨부
