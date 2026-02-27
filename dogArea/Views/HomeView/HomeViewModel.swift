@@ -25,6 +25,8 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     @Published private(set) var aggregationTimeZoneIdentifier: String = TimeZone.current.identifier
     @Published var indoorMissionBoard: IndoorMissionBoard = .empty
     @Published var indoorMissionStatusMessage: String? = nil
+    @Published var weatherFeedbackRemainingCount: Int = 2
+    @Published var weatherFeedbackResultMessage: String? = nil
 
     private var allPolygons: [Polygon] = []
     private var cancellables: Set<AnyCancellable> = []
@@ -42,6 +44,14 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
 
     var nextGoalArea: AreaMeter? {
         nearlistMore()
+    }
+
+    var weatherFeedbackWeeklyLimit: Int {
+        indoorMissionStore.weeklyFeedbackLimit
+    }
+
+    var canSubmitWeatherMismatchFeedback: Bool {
+        indoorMissionBoard.riskLevel != .clear && weatherFeedbackRemainingCount > 0
     }
 
     var remainingAreaToGoal: Double {
@@ -89,6 +99,10 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
 
     func clearIndoorMissionStatusMessage() {
         indoorMissionStatusMessage = nil
+    }
+
+    func clearWeatherFeedbackResultMessage() {
+        weatherFeedbackResultMessage = nil
     }
 
     private func bindSelectedPetSync() {
@@ -235,6 +249,7 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
 
     func refreshIndoorMissions(now: Date = Date()) {
         indoorMissionBoard = indoorMissionStore.buildBoard(now: now)
+        weatherFeedbackRemainingCount = indoorMissionStore.weatherFeedbackRemainingCount(now: now)
         guard indoorMissionBoard.isIndoorReplacementActive else { return }
         let exposureKey = "\(indoorMissionBoard.dayKey)|\(indoorMissionBoard.riskLevel.rawValue)"
         guard exposureKey != lastIndoorMissionExposureTrackKey else { return }
@@ -296,6 +311,48 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
         case .alreadyCompleted:
             indoorMissionStatusMessage = "이미 완료한 미션입니다."
         }
+    }
+
+    func submitWeatherMismatchFeedback(now: Date = Date()) {
+        let outcome = indoorMissionStore.submitWeatherMismatchFeedback(now: now)
+        weatherFeedbackRemainingCount = outcome.remainingWeeklyQuota
+
+        if outcome.accepted {
+            let hasRiskChanged = outcome.originalRisk != outcome.adjustedRisk
+            weatherFeedbackResultMessage = hasRiskChanged
+                ? "체감 피드백 반영: \(outcome.originalRisk.displayTitle) → \(outcome.adjustedRisk.displayTitle)"
+                : "피드백을 반영했지만 안전 기준상 오늘 판정은 \(outcome.adjustedRisk.displayTitle)로 유지돼요."
+            metricTracker.track(
+                .weatherFeedbackSubmitted,
+                userKey: userInfo?.id,
+                payload: [
+                    "fromRisk": outcome.originalRisk.rawValue,
+                    "toRisk": outcome.adjustedRisk.rawValue,
+                    "remainingQuota": "\(outcome.remainingWeeklyQuota)"
+                ]
+            )
+            metricTracker.track(
+                .weatherRiskReevaluated,
+                userKey: userInfo?.id,
+                payload: [
+                    "fromRisk": outcome.originalRisk.rawValue,
+                    "toRisk": outcome.adjustedRisk.rawValue,
+                    "changed": hasRiskChanged ? "true" : "false"
+                ]
+            )
+        } else {
+            weatherFeedbackResultMessage = outcome.message
+            metricTracker.track(
+                .weatherFeedbackRateLimited,
+                userKey: userInfo?.id,
+                payload: [
+                    "remainingQuota": "\(outcome.remainingWeeklyQuota)"
+                ]
+            )
+        }
+
+        indoorMissionStatusMessage = weatherFeedbackResultMessage
+        refreshIndoorMissions(now: now)
     }
 
     private func currentCalendar() -> Calendar {
@@ -532,6 +589,14 @@ struct IndoorMissionBoard: Equatable {
     }
 }
 
+struct WeatherFeedbackOutcome: Equatable {
+    let accepted: Bool
+    let message: String
+    let originalRisk: IndoorWeatherRiskLevel
+    let adjustedRisk: IndoorWeatherRiskLevel
+    let remainingWeeklyQuota: Int
+}
+
 private enum IndoorMissionCompletionResult {
     case completed
     case insufficientAction(actionCount: Int, required: Int)
@@ -544,7 +609,11 @@ private final class IndoorMissionStore {
         static let actionCounts = "indoor.mission.actionCounts.v1"
         static let completionFlags = "indoor.mission.completed.v1"
         static let exposureHistory = "indoor.mission.exposureHistory.v1"
+        static let weatherFeedbackTimestamps = "weather.feedback.timestamps.v1"
+        static let weatherFeedbackDailyAdjustment = "weather.feedback.dailyAdjustment.v1"
     }
+
+    let weeklyFeedbackLimit = 2
 
     private let calendar: Calendar = {
         var value = Calendar.autoupdatingCurrent
@@ -601,7 +670,7 @@ private final class IndoorMissionStore {
     ]
 
     func buildBoard(now: Date) -> IndoorMissionBoard {
-        let riskLevel = resolveRiskLevel()
+        let riskLevel = resolveRiskLevel(now: now)
         let dayKey = dayStamp(for: now)
         guard riskLevel.replacementMissionCount > 0 else {
             return .init(riskLevel: riskLevel, dayKey: dayKey, missions: [])
@@ -660,6 +729,55 @@ private final class IndoorMissionStore {
         )
     }
 
+    func weatherFeedbackRemainingCount(now: Date = Date()) -> Int {
+        max(0, weeklyFeedbackLimit - feedbackCountInCurrentWeek(now: now))
+    }
+
+    func submitWeatherMismatchFeedback(now: Date = Date()) -> WeatherFeedbackOutcome {
+        let originalRisk = resolveRiskLevel(now: now)
+        let remainingBefore = weatherFeedbackRemainingCount(now: now)
+        guard remainingBefore > 0 else {
+            return .init(
+                accepted: false,
+                message: "체감 피드백은 주간 \(weeklyFeedbackLimit)회까지 반영할 수 있어요.",
+                originalRisk: originalRisk,
+                adjustedRisk: originalRisk,
+                remainingWeeklyQuota: 0
+            )
+        }
+
+        appendFeedbackTimestamp(now: now)
+        let dayKey = dayStamp(for: now)
+
+        let adjustedRisk: IndoorWeatherRiskLevel
+        if originalRisk == .severe {
+            adjustedRisk = .bad
+        } else if originalRisk == .bad {
+            adjustedRisk = .caution
+        } else {
+            adjustedRisk = originalRisk
+        }
+
+        let adjustmentStep = adjustmentStep(from: originalRisk, to: adjustedRisk)
+        persistDailyAdjustment(dayKey: dayKey, step: adjustmentStep)
+
+        let remainingAfter = weatherFeedbackRemainingCount(now: now)
+        let message: String
+        if originalRisk != adjustedRisk {
+            message = "체감 피드백이 반영되어 오늘 판정을 \(adjustedRisk.displayTitle)로 재평가했어요."
+        } else {
+            message = "피드백은 반영했지만 안전 기준상 오늘 판정은 \(adjustedRisk.displayTitle)로 유지돼요."
+        }
+
+        return .init(
+            accepted: true,
+            message: message,
+            originalRisk: originalRisk,
+            adjustedRisk: adjustedRisk,
+            remainingWeeklyQuota: remainingAfter
+        )
+    }
+
     private func makeCardModel(
         template: IndoorMissionTemplate,
         riskLevel: IndoorWeatherRiskLevel,
@@ -693,7 +811,7 @@ private final class IndoorMissionStore {
         templates.first(where: { $0.id == missionId })
     }
 
-    private func resolveRiskLevel() -> IndoorWeatherRiskLevel {
+    private func resolveBaseRiskLevel() -> IndoorWeatherRiskLevel {
         if let env = ProcessInfo.processInfo.environment["WEATHER_RISK_LEVEL"],
            let level = IndoorWeatherRiskLevel(rawValue: env.lowercased()) {
             return level
@@ -703,6 +821,13 @@ private final class IndoorMissionStore {
             return level
         }
         return .caution
+    }
+
+    private func resolveRiskLevel(now: Date = Date()) -> IndoorWeatherRiskLevel {
+        let baseRisk = resolveBaseRiskLevel()
+        let dayKey = dayStamp(for: now)
+        let adjustment = dailyAdjustmentMap()[dayKey] ?? 0
+        return adjustedRisk(from: baseRisk, step: adjustment)
     }
 
     private func selectedTemplatesForToday(
@@ -786,6 +911,63 @@ private final class IndoorMissionStore {
 
     private func resolvedRiskLevelFromBoard() -> IndoorWeatherRiskLevel {
         resolveRiskLevel()
+    }
+
+    private func adjustedRisk(from risk: IndoorWeatherRiskLevel, step: Int) -> IndoorWeatherRiskLevel {
+        guard step != 0 else { return risk }
+        let allCases = IndoorWeatherRiskLevel.allCases
+        guard let currentIndex = allCases.firstIndex(of: risk) else { return risk }
+        let targetIndex = min(max(0, currentIndex + step), allCases.count - 1)
+        let targetRisk = allCases[targetIndex]
+        if risk != .clear && targetRisk == .clear {
+            return .caution
+        }
+        return targetRisk
+    }
+
+    private func adjustmentStep(from originalRisk: IndoorWeatherRiskLevel, to adjustedRisk: IndoorWeatherRiskLevel) -> Int {
+        guard let originalIndex = IndoorWeatherRiskLevel.allCases.firstIndex(of: originalRisk),
+              let adjustedIndex = IndoorWeatherRiskLevel.allCases.firstIndex(of: adjustedRisk) else {
+            return 0
+        }
+        return adjustedIndex - originalIndex
+    }
+
+    private func feedbackCountInCurrentWeek(now: Date) -> Int {
+        guard let interval = calendar.dateInterval(of: .weekOfYear, for: now) else { return 0 }
+        let events = feedbackTimestamps().filter { timestamp in
+            let date = Date(timeIntervalSince1970: timestamp)
+            return interval.contains(date)
+        }
+        return events.count
+    }
+
+    private func feedbackTimestamps() -> [TimeInterval] {
+        let raw = UserDefaults.standard.array(forKey: DefaultsKey.weatherFeedbackTimestamps) as? [Double] ?? []
+        return raw.sorted()
+    }
+
+    private func appendFeedbackTimestamp(now: Date) {
+        let expiration = now.addingTimeInterval(-60 * 24 * 3600).timeIntervalSince1970
+        var values = feedbackTimestamps().filter { $0 >= expiration }
+        values.append(now.timeIntervalSince1970)
+        UserDefaults.standard.set(values, forKey: DefaultsKey.weatherFeedbackTimestamps)
+    }
+
+    private func dailyAdjustmentMap() -> [String: Int] {
+        UserDefaults.standard.dictionary(forKey: DefaultsKey.weatherFeedbackDailyAdjustment) as? [String: Int] ?? [:]
+    }
+
+    private func persistDailyAdjustment(dayKey: String, step: Int) {
+        var map = dailyAdjustmentMap()
+        if step == 0 {
+            map.removeValue(forKey: dayKey)
+        } else {
+            map[dayKey] = step
+        }
+        let keysToKeep = Set(previousDayStamps(from: dayKey, count: 14) + [dayKey])
+        map = map.filter { keysToKeep.contains($0.key) }
+        UserDefaults.standard.set(map, forKey: DefaultsKey.weatherFeedbackDailyAdjustment)
     }
 
     private static let dayFormatter: DateFormatter = {

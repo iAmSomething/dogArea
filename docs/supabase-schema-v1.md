@@ -16,6 +16,7 @@
 - 캐리커처 비동기 파이프라인용 데이터 구조
 - 근처 사용자 익명 핫스팟용 데이터 구조
 - 시즌 안티 농사 점수 규칙용 데이터 구조
+- 체감 날씨 피드백 KPI 뷰
 - RLS 정책 원칙
 - Storage 경로 규칙
 - 마이그레이션/롤백 절차
@@ -208,6 +209,11 @@ erDiagram
 - `rpc_score_walk_session_anti_farming`
   - 세션 점수 계산 결과 + UX 설명(`explain.ui_reason`) 반환
 
+### 4.7 체감 날씨 피드백 KPI
+- `view_weather_feedback_kpis_7d`
+  - `weather_feedback_submitted/rate_limited/weather_risk_reevaluated` 기반 일자별 지표 집계
+  - `changed_ratio`, `rate_limited_ratio`로 오탐/정탐/남용 상태 관측
+
 ## 5. RLS 정책 원칙
 - 사용자 데이터는 `auth.uid()` 소유 범위로만 접근
 - `area_references`는 읽기 공개(`anon`, `authenticated`)
@@ -236,6 +242,8 @@ erDiagram
 - `season_tile_score_events`, `season_score_audit_logs`
   - `select`: 소유자
   - write: 서비스 경로(RPC/service role)
+- `view_weather_feedback_kpis_7d`
+  - `select`: 공개(운영 관측용)
 
 ## 6. Storage 규칙
 버킷:

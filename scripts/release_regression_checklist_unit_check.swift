@@ -32,6 +32,9 @@ assertTrue(checklist.contains("privacy_guard_policies/privacy_sensitive_geo_mask
 assertTrue(checklist.contains("동일 타일 30분 내 반복 이벤트가 0점 처리"), "checklist should include season anti-farming repeat suppression scenario")
 assertTrue(checklist.contains("score_blocked=true"), "checklist should include season anti-farming blocking scenario")
 assertTrue(checklist.contains("season_scoring_policies/season_tile_score_events/season_score_audit_logs"), "checklist should include season anti-farming migration verification")
+assertTrue(checklist.contains("체감 날씨 다름"), "checklist should include weather feedback one-tap scenario")
+assertTrue(checklist.contains("주간 3회 입력"), "checklist should include weather feedback weekly limit scenario")
+assertTrue(checklist.contains("view_weather_feedback_kpis_7d"), "checklist should include weather feedback KPI view verification")
 
 assertTrue(report.contains("## 1. 빌드 체크 결과"), "report must include build results")
 assertTrue(report.contains("## 2. 핵심 시나리오 점검 결과"), "report must include scenario results")
