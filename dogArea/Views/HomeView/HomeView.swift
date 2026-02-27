@@ -208,6 +208,9 @@ struct HomeView: View {
             if viewModel.pets.isEmpty == false {
                 selectedPetContextPill
             }
+            Text("비교군 소스: \(viewModel.areaReferenceSourceLabel) · featured \(viewModel.featuredAreaCount)개 우선")
+                .font(.appFont(for: .Light, size: 11))
+                .foregroundStyle(Color.appTextDarkGray)
             HStack(alignment: .top) {
                 Text("영역 목표 트래커")
                     .font(.appFont(for: .SemiBold, size: 20))
