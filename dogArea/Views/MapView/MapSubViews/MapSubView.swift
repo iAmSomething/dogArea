@@ -8,13 +8,49 @@
 import Foundation
 import SwiftUI
 import _MapKit_SwiftUI
+import Combine
 
 struct MapSubView: View {
     @ObservedObject var myAlert: CustomAlertViewModel
     @ObservedObject var viewModel: MapViewModel
+    @State private var motionNow: Date = Date()
+    @State private var clusterPulseActive: Bool = false
+    private let motionTicker = Timer.publish(every: 0.12, on: .main, in: .common).autoconnect()
+
     var body: some View {
         Map(position: $viewModel.cameraPosition,
             interactionModes: .all){
+            ForEach(viewModel.activeCaptureRipples(at: motionNow)) { ripple in
+                let progress = viewModel.captureRippleProgress(for: ripple, now: motionNow)
+                Annotation("", coordinate: ripple.coordinate) {
+                    ZStack {
+                        Circle()
+                            .stroke(Color.appYellow.opacity(0.7), lineWidth: 2)
+                            .frame(width: 16, height: 16)
+                            .scaleEffect(0.5 + (progress * 2.2))
+                            .opacity(1.0 - progress)
+                        Circle()
+                            .stroke(Color.appYellowPale.opacity(0.55), lineWidth: 1.5)
+                            .frame(width: 12, height: 12)
+                            .scaleEffect(0.6 + (progress * 1.6))
+                            .opacity(max(0.0, 0.8 - progress))
+                    }
+                    .allowsHitTesting(false)
+                }
+            }
+            if viewModel.isWalking {
+                ForEach(viewModel.activeTrailMarkers) { trail in
+                    Annotation("", coordinate: trail.coordinate) {
+                        Image(.dogPrint)
+                            .resizable()
+                            .frame(width: 12, height: 12)
+                            .foregroundStyle(Color.appTextDarkGray)
+                            .scaleEffect(trail.scale)
+                            .opacity(trail.opacity)
+                            .allowsHitTesting(false)
+                    }
+                }
+            }
             if let currentLoc = viewModel.location {
                 Annotation("", coordinate: currentLoc.coordinate) {
                     Circle().foregroundStyle(Color.appHotPink)
@@ -83,7 +119,10 @@ struct MapSubView: View {
                                         .font(.appFont(for: .Regular, size: 12))
                                         .foregroundColor(.appTextDarkGray)
                                 }
-                            }.onTapGesture {
+                            }
+                            .scaleEffect(clusterPulseScale)
+                            .opacity(clusterPulseOpacity)
+                            .onTapGesture {
                                 viewModel.fetchSelectedPolygonList(for: viewModel.centerLocations[index])
                             }
                         }
@@ -128,7 +167,37 @@ struct MapSubView: View {
         }.mapControls {
 //            mapControls
         }
+        .onReceive(motionTicker) { now in
+            motionNow = now
+            viewModel.compactMapMotionArtifacts(now: now)
+        }
+        .onChange(of: viewModel.clusterMotionToken) { _ in
+            guard viewModel.clusterMotionTransition != .none else { return }
+            withAnimation(.easeOut(duration: viewModel.clusterMotionAnimationDuration)) {
+                clusterPulseActive = true
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + viewModel.clusterMotionAnimationDuration) {
+                withAnimation(.easeOut(duration: viewModel.clusterMotionAnimationDuration)) {
+                    clusterPulseActive = false
+                }
+            }
+        }
     }
+
+    private var clusterPulseScale: Double {
+        guard clusterPulseActive else { return 1.0 }
+        switch viewModel.clusterMotionTransition {
+        case .decompose: return 0.92
+        case .merge: return 1.08
+        case .none: return 1.0
+        }
+    }
+
+    private var clusterPulseOpacity: Double {
+        guard clusterPulseActive else { return 1.0 }
+        return viewModel.isMapMotionReduced ? 0.92 : 0.82
+    }
+
     var mapControls: some View {
         VStack{
             MapUserLocationButton()
