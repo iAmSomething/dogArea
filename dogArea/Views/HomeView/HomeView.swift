@@ -142,6 +142,10 @@ struct HomeView: View {
                             .padding(.trailing)
                     }
                     seasonMotionCard(summary: viewModel.seasonMotionSummary)
+                    weatherMissionStatusCard(summary: viewModel.weatherMissionStatusSummary)
+                    if let shieldDaily = viewModel.weatherShieldDailySummary {
+                        weatherShieldSummaryCard(summary: shieldDaily)
+                    }
                     if viewModel.indoorMissionBoard.shouldDisplayCard {
                         indoorMissionCard(board: viewModel.indoorMissionBoard)
                         UnderLine()
@@ -478,6 +482,74 @@ struct HomeView: View {
         .padding(.horizontal, 16)
     }
 
+    private func weatherMissionStatusCard(summary: WeatherMissionStatusSummary) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            HStack {
+                Text(summary.title)
+                    .font(.appFont(for: .SemiBold, size: 15))
+                Spacer()
+                Text(summary.badgeText)
+                    .font(.appFont(for: .SemiBold, size: 11))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                    .background(summary.isFallback ? Color.appTextLightGray.opacity(0.35) : Color.appYellowPale)
+                    .cornerRadius(8)
+            }
+            Text(summary.reasonText)
+                .font(.appFont(for: .Light, size: 12))
+                .foregroundStyle(Color.appTextDarkGray)
+            HStack(spacing: 8) {
+                Text(summary.appliedAtText)
+                    .font(.appFont(for: .Light, size: 11))
+                    .foregroundStyle(Color.appTextDarkGray)
+                Spacer()
+                Text(summary.shieldUsageText)
+                    .font(.appFont(for: .SemiBold, size: 11))
+                    .foregroundStyle(summary.riskLevel == .clear ? Color.appTextDarkGray : Color.appGreen)
+            }
+            if let fallbackNotice = summary.fallbackNotice {
+                Text(fallbackNotice)
+                    .font(.appFont(for: .Light, size: 10))
+                    .foregroundStyle(Color.appTextDarkGray)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 6)
+                    .background(Color.appTextLightGray.opacity(0.2))
+                    .cornerRadius(8)
+            }
+        }
+        .padding(12)
+        .background(Color.white)
+        .cornerRadius(10)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color.appTextLightGray, lineWidth: 0.5)
+        )
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(summary.accessibilityText)
+    }
+
+    private func weatherShieldSummaryCard(summary: WeatherShieldDailySummary) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 3) {
+                Text("오늘 스트릭 보호 요약")
+                    .font(.appFont(for: .SemiBold, size: 13))
+                Text("보호 적용 \(summary.applyCount)회 · 마지막 \(summary.lastAppliedAtText)")
+                    .font(.appFont(for: .Light, size: 11))
+                    .foregroundStyle(Color.appTextDarkGray)
+            }
+            Spacer()
+        }
+        .padding(11)
+        .background(Color.appGreen.opacity(0.22))
+        .cornerRadius(10)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("오늘 스트릭 보호 요약. 적용 \(summary.applyCount)회, 마지막 \(summary.lastAppliedAtText)")
+    }
+
     private func indoorMissionCard(board: IndoorMissionBoard) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
@@ -493,11 +565,18 @@ struct HomeView: View {
                         .cornerRadius(8)
                 }
             }
-            Text(board.riskLevel == .clear
-                 ? "연장 슬롯 상태를 확인할 수 있어요."
-                 : "악천후 단계에 맞춰 실외 미션 일부를 실내 미션으로 치환했어요.")
+            Text(viewModel.weatherMissionStatusSummary.reasonText)
                 .font(.appFont(for: .Light, size: 12))
                 .foregroundStyle(Color.appTextDarkGray)
+            HStack {
+                Text(viewModel.weatherMissionStatusSummary.appliedAtText)
+                    .font(.appFont(for: .Light, size: 11))
+                    .foregroundStyle(Color.appTextDarkGray)
+                Spacer()
+                Text(viewModel.weatherMissionStatusSummary.shieldUsageText)
+                    .font(.appFont(for: .SemiBold, size: 11))
+                    .foregroundStyle(Color.appTextDarkGray)
+            }
             if board.riskLevel != .clear {
                 HStack(spacing: 8) {
                     Button("체감 날씨 다름") {

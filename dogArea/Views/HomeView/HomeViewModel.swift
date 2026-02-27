@@ -81,6 +81,36 @@ struct SeasonResultPresentation: Identifiable, Equatable {
     let shieldApplyCount: Int
 }
 
+struct WeatherMissionStatusSummary: Equatable {
+    let badgeText: String
+    let title: String
+    let reasonText: String
+    let appliedAtText: String
+    let shieldUsageText: String
+    let fallbackNotice: String?
+    let accessibilityText: String
+    let isFallback: Bool
+    let riskLevel: IndoorWeatherRiskLevel
+
+    static let empty = WeatherMissionStatusSummary(
+        badgeText: "정상",
+        title: "오늘 날씨 연동 상태",
+        reasonText: "기본 퀘스트 진행",
+        appliedAtText: "적용 시점 -",
+        shieldUsageText: "보호 사용 0회",
+        fallbackNotice: nil,
+        accessibilityText: "오늘 날씨 연동 상태. 기본 퀘스트 진행.",
+        isFallback: false,
+        riskLevel: .clear
+    )
+}
+
+struct WeatherShieldDailySummary: Equatable {
+    let dayKey: String
+    let applyCount: Int
+    let lastAppliedAtText: String
+}
+
 final class HomeViewModel: ObservableObject, CoreDataProtocol {
     @Published var polygonList: [Polygon] = []
     @Published var totalArea: Double = 0.0
@@ -99,6 +129,8 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     @Published var indoorMissionStatusMessage: String? = nil
     @Published var weatherFeedbackRemainingCount: Int = 2
     @Published var weatherFeedbackResultMessage: String? = nil
+    @Published var weatherMissionStatusSummary: WeatherMissionStatusSummary = .empty
+    @Published var weatherShieldDailySummary: WeatherShieldDailySummary? = nil
     @Published var seasonCatchupBuffStatusMessage: String? = nil
     @Published var seasonCatchupBuffStatusWarning: Bool = false
     @Published private(set) var isShowingAllRecordsOverride: Bool = false
@@ -127,6 +159,12 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ko_KR")
         formatter.dateFormat = "M/d HH:mm"
+        return formatter
+    }()
+    private static let weatherAppliedTimeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ko_KR")
+        formatter.dateFormat = "HH:mm"
         return formatter
     }()
 
@@ -172,6 +210,11 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     var goalProgressRatio: Double {
         guard let nextGoalArea, nextGoalArea.area > 0 else { return 1.0 }
         return min(1.0, max(0.0, myArea.area / nextGoalArea.area))
+    }
+
+    private func localizedCopy(ko: String, en: String) -> String {
+        let languageCode = Locale.preferredLanguages.first?.lowercased() ?? "ko"
+        return languageCode.hasPrefix("en") ? en : ko
     }
 
     init(areaReferenceRepository: AreaReferenceRepository = SupabaseAreaReferenceRepository.shared) {
@@ -486,6 +529,13 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
         let missionContext = makeIndoorMissionPetContext(reference: now)
         indoorMissionBoard = indoorMissionStore.buildBoard(now: now, context: missionContext)
         weatherFeedbackRemainingCount = indoorMissionStore.weatherFeedbackRemainingCount(now: now)
+        let weatherStatus = indoorMissionStore.weatherStatus(now: now)
+        weatherShieldDailySummary = indoorMissionStore.weatherShieldDailySummary(now: now)
+        weatherMissionStatusSummary = makeWeatherMissionStatusSummary(
+            board: indoorMissionBoard,
+            status: weatherStatus,
+            now: now
+        )
         if indoorMissionBoard.isIndoorReplacementActive {
             let exposureKey = "\(indoorMissionBoard.dayKey)|\(indoorMissionBoard.riskLevel.rawValue)"
             if exposureKey != lastIndoorMissionExposureTrackKey {
@@ -603,6 +653,9 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
                 streakEligible: mission.streakEligible,
                 riskLevel: indoorMissionBoard.riskLevel
             )
+            if seasonUpdate.shieldApplied {
+                indoorMissionStore.recordWeatherShieldUsage()
+            }
             seasonMotionSummary = seasonUpdate.summary
             if let completedSeason = seasonUpdate.completedSeason {
                 seasonResultPresentation = completedSeason
@@ -821,6 +874,74 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
         }
     }
 
+    private func makeWeatherMissionStatusSummary(
+        board: IndoorMissionBoard,
+        status: IndoorWeatherStatus,
+        now: Date
+    ) -> WeatherMissionStatusSummary {
+        let badgeText: String
+        if status.source == .fallback {
+            badgeText = localizedCopy(ko: "Fallback", en: "Fallback")
+        } else if board.riskLevel == .clear {
+            badgeText = localizedCopy(ko: "정상", en: "Normal")
+        } else {
+            badgeText = localizedCopy(ko: "치환", en: "Replaced")
+        }
+
+        let reasonText: String
+        if status.source == .fallback {
+            reasonText = localizedCopy(
+                ko: "날씨 데이터 수신 실패로 기본 퀘스트를 유지합니다.",
+                en: "Weather feed unavailable. Keeping default quests."
+            )
+        } else if board.riskLevel == .clear {
+            reasonText = localizedCopy(
+                ko: "날씨 안정 단계로 기본 퀘스트를 진행합니다.",
+                en: "Stable weather. Running default quests."
+            )
+        } else {
+            reasonText = localizedCopy(
+                ko: "\(board.riskLevel.displayTitle) 단계로 일부 실외 목표를 실내 미션으로 치환했어요.",
+                en: "Risk \(board.riskLevel.rawValue) replaced some outdoor goals with indoor missions."
+            )
+        }
+
+        let appliedTimestamp = status.lastUpdatedAt ?? now.timeIntervalSince1970
+        let appliedTime = Self.weatherAppliedTimeFormatter.string(from: Date(timeIntervalSince1970: appliedTimestamp))
+        let shieldCount = weatherShieldDailySummary?.applyCount ?? indoorMissionStore.weatherShieldDailySummary(now: now)?.applyCount ?? 0
+        let shieldText = localizedCopy(
+            ko: "보호 사용 \(shieldCount)회",
+            en: "Shield used \(shieldCount)x"
+        )
+        let fallbackNotice: String?
+        if status.source == .fallback {
+            fallbackNotice = localizedCopy(
+                ko: "오프라인/날씨 API 장애 시 기본 퀘스트로 자동 전환돼요.",
+                en: "Offline/API failure automatically falls back to default quests."
+            )
+        } else {
+            fallbackNotice = nil
+        }
+
+        let appliedAtText = localizedCopy(
+            ko: "적용 시점 \(appliedTime)",
+            en: "Applied at \(appliedTime)"
+        )
+        let accessibilityText = "\(badgeText). \(reasonText). \(appliedAtText). \(shieldText)"
+
+        return WeatherMissionStatusSummary(
+            badgeText: badgeText,
+            title: localizedCopy(ko: "오늘 날씨 연동 상태", en: "Today's Weather Status"),
+            reasonText: reasonText,
+            appliedAtText: appliedAtText,
+            shieldUsageText: shieldText,
+            fallbackNotice: fallbackNotice,
+            accessibilityText: accessibilityText,
+            isFallback: status.source == .fallback,
+            riskLevel: board.riskLevel
+        )
+    }
+
     private func currentCalendar() -> Calendar {
         var calendar = Calendar.autoupdatingCurrent
         calendar.timeZone = TimeZone.autoupdatingCurrent
@@ -995,6 +1116,19 @@ enum IndoorWeatherRiskLevel: String, CaseIterable {
         case .severe: return 0.84
         }
     }
+}
+
+enum IndoorWeatherRiskSource: String, Equatable {
+    case environment
+    case userOverride
+    case fallback
+}
+
+struct IndoorWeatherStatus: Equatable {
+    let source: IndoorWeatherRiskSource
+    let baseRisk: IndoorWeatherRiskLevel
+    let adjustedRisk: IndoorWeatherRiskLevel
+    let lastUpdatedAt: TimeInterval?
 }
 
 enum IndoorMissionCategory: String, CaseIterable {
@@ -1241,6 +1375,7 @@ private final class IndoorMissionStore {
         static let exposureHistory = "indoor.mission.exposureHistory.v1"
         static let weatherFeedbackTimestamps = "weather.feedback.timestamps.v1"
         static let weatherFeedbackDailyAdjustment = "weather.feedback.dailyAdjustment.v1"
+        static let weatherShieldUsage = "weather.shield.usage.v1"
         static let extensionLedger = "indoor.mission.extensionLedger.v1"
         static let easyDayUsage = "indoor.mission.easyDayUsage.v1"
         static let difficultyLedger = "indoor.mission.difficultyLedger.v1"
@@ -1446,6 +1581,45 @@ private final class IndoorMissionStore {
                 minimumActionCount: mission.minimumActionCount,
                 isCompleted: completed[key] != nil
             )
+        )
+    }
+
+    func weatherStatus(now: Date = Date()) -> IndoorWeatherStatus {
+        let base = resolveBaseRiskProfile()
+        let dayKey = dayStamp(for: now)
+        let adjustment = dailyAdjustmentMap()[dayKey] ?? 0
+        let adjusted = adjustedRisk(from: base.risk, step: adjustment)
+        return IndoorWeatherStatus(
+            source: base.source,
+            baseRisk: base.risk,
+            adjustedRisk: adjusted,
+            lastUpdatedAt: lastWeatherAdjustmentTimestamp(now: now)
+        )
+    }
+
+    func recordWeatherShieldUsage(now: Date = Date()) {
+        let dayKey = dayStamp(for: now)
+        var map = weatherShieldUsageMap()
+        var values = map[dayKey] ?? []
+        values.append(now.timeIntervalSince1970)
+        map[dayKey] = values
+        let keysToKeep = Set(previousDayStamps(from: dayKey, count: 14) + [dayKey])
+        map = map.filter { keysToKeep.contains($0.key) }
+        UserDefaults.standard.set(map, forKey: DefaultsKey.weatherShieldUsage)
+    }
+
+    func weatherShieldDailySummary(now: Date = Date()) -> WeatherShieldDailySummary? {
+        let dayKey = dayStamp(for: now)
+        let values = weatherShieldUsageMap()[dayKey] ?? []
+        guard values.isEmpty == false else { return nil }
+        let lastApplied = values.max() ?? now.timeIntervalSince1970
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ko_KR")
+        formatter.dateFormat = "HH:mm"
+        return WeatherShieldDailySummary(
+            dayKey: dayKey,
+            applyCount: values.count,
+            lastAppliedAtText: formatter.string(from: Date(timeIntervalSince1970: lastApplied))
         )
     }
 
@@ -1929,23 +2103,20 @@ private final class IndoorMissionStore {
         "\(dayKey)|\(petId)"
     }
 
-    private func resolveBaseRiskLevel() -> IndoorWeatherRiskLevel {
+    private func resolveBaseRiskProfile() -> (risk: IndoorWeatherRiskLevel, source: IndoorWeatherRiskSource) {
         if let env = ProcessInfo.processInfo.environment["WEATHER_RISK_LEVEL"],
            let level = IndoorWeatherRiskLevel(rawValue: env.lowercased()) {
-            return level
+            return (level, .environment)
         }
         if let raw = UserDefaults.standard.string(forKey: DefaultsKey.weatherRiskOverride),
            let level = IndoorWeatherRiskLevel(rawValue: raw.lowercased()) {
-            return level
+            return (level, .userOverride)
         }
-        return .caution
+        return (.clear, .fallback)
     }
 
     private func resolveRiskLevel(now: Date = Date()) -> IndoorWeatherRiskLevel {
-        let baseRisk = resolveBaseRiskLevel()
-        let dayKey = dayStamp(for: now)
-        let adjustment = dailyAdjustmentMap()[dayKey] ?? 0
-        return adjustedRisk(from: baseRisk, step: adjustment)
+        weatherStatus(now: now).adjustedRisk
     }
 
     private func selectedTemplatesForToday(
@@ -2059,6 +2230,18 @@ private final class IndoorMissionStore {
     private func feedbackTimestamps() -> [TimeInterval] {
         let raw = UserDefaults.standard.array(forKey: DefaultsKey.weatherFeedbackTimestamps) as? [Double] ?? []
         return raw.sorted()
+    }
+
+    private func weatherShieldUsageMap() -> [String: [TimeInterval]] {
+        UserDefaults.standard.dictionary(forKey: DefaultsKey.weatherShieldUsage) as? [String: [TimeInterval]] ?? [:]
+    }
+
+    private func lastWeatherAdjustmentTimestamp(now: Date) -> TimeInterval? {
+        let dayKey = dayStamp(for: now)
+        return feedbackTimestamps().last { timestamp in
+            let date = Date(timeIntervalSince1970: timestamp)
+            return dayStamp(for: date) == dayKey
+        }
     }
 
     private func appendFeedbackTimestamp(now: Date) {

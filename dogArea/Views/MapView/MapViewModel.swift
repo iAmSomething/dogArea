@@ -122,6 +122,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     @Published private(set) var clusterMotionToken: Int = 0
     @Published private(set) var weatherOverlayRiskLevel: WeatherOverlayRiskLevel = .clear
     @Published private(set) var weatherOverlayOpacity: Double = 0.0
+    @Published private(set) var weatherOverlayStatusText: String = "날씨 상태 정상"
+    @Published private(set) var weatherOverlayFallbackActive: Bool = false
     @Published var mapMotionReduced: Bool = false
     private let watchSession = WCSession.isSupported() ? WCSession.default : nil
     private let featureFlags = FeatureFlagStore.shared
@@ -217,6 +219,15 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         case caution
         case bad
         case severe
+
+        var displayTitle: String {
+            switch self {
+            case .clear: return "정상"
+            case .caution: return "주의"
+            case .bad: return "악천후"
+            case .severe: return "고위험"
+            }
+        }
     }
 
     struct CaptureRipple: Identifiable {
@@ -1491,16 +1502,26 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         }
     }
 
-    private func resolveWeatherOverlayRiskFromDefaults() -> WeatherOverlayRiskLevel {
-        let raw = (UserDefaults.standard.string(forKey: weatherRiskOverrideKey) ?? "").lowercased()
-        return WeatherOverlayRiskLevel(rawValue: raw) ?? .clear
+    private func resolveWeatherOverlayRiskFromDefaults() -> (risk: WeatherOverlayRiskLevel, fallback: Bool) {
+        if let env = ProcessInfo.processInfo.environment["WEATHER_RISK_LEVEL"],
+           let fromEnv = WeatherOverlayRiskLevel(rawValue: env.lowercased()) {
+            return (fromEnv, false)
+        }
+        if let raw = UserDefaults.standard.string(forKey: weatherRiskOverrideKey),
+           let fromDefaults = WeatherOverlayRiskLevel(rawValue: raw.lowercased()) {
+            return (fromDefaults, false)
+        }
+        return (.clear, true)
     }
 
     func refreshWeatherOverlayRisk() {
-        let nextRisk = resolveWeatherOverlayRiskFromDefaults()
-        guard nextRisk != weatherOverlayRiskLevel || (nextRisk == .clear && weatherOverlayOpacity != 0.0) else {
-            return
-        }
+        let next = resolveWeatherOverlayRiskFromDefaults()
+        let nextRisk = next.risk
+        weatherOverlayFallbackActive = next.fallback
+        weatherOverlayStatusText = next.fallback
+            ? "Fallback: 날씨 데이터 연결 불가"
+            : "날씨 위험도 \(nextRisk.displayTitle)"
+        guard nextRisk != weatherOverlayRiskLevel || (nextRisk == .clear && weatherOverlayOpacity != 0.0) else { return }
         withAnimation(.easeInOut(duration: weatherOverlayAnimationDuration)) {
             weatherOverlayRiskLevel = nextRisk
             weatherOverlayOpacity = nextRisk == .clear ? 0.0 : (isMapMotionReduced ? 0.12 : 0.18)
