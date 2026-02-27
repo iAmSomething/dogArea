@@ -54,10 +54,11 @@ assertTrue(startButton.contains("prepareWalkPetSelectionSuggestion"), "start but
 assertTrue(homeViewModel.contains("selectedPetDidChangeNotification"), "home should sync selected pet changes")
 assertTrue(homeViewModel.contains("applySelectedPetStatistics"), "home should recalculate selected-pet statistics")
 assertTrue(homeViewModel.contains("filteredPolygons"), "home should filter polygons by selected pet context")
+assertTrue(homeViewModel.contains("$0.petId == selectedPetId"), "home should filter by canonical polygon petId")
 assertTrue(settingViewModel.contains("selectedPetDidChangeNotification"), "setting should sync selected pet changes")
 assertTrue(walkListViewModel.contains("selectedPetDidChangeNotification"), "walk list should sync selected pet changes")
 assertTrue(walkListViewModel.contains("applySelectedPetFilter"), "walk list should apply selected-pet filtering")
-assertTrue(walkListViewModel.contains("sessionMetadataStore.petId"), "walk list should filter by session metadata pet id")
+assertTrue(walkListViewModel.contains("$0.petId == selectedPetId"), "walk list should filter by canonical walk data petId")
 assertTrue(walkListView.contains("현재 반려견 컨텍스트"), "walk list should show shared selected pet context")
 
 print("PASS: multi dog context sync unit checks")

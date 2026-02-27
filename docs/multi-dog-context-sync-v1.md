@@ -50,3 +50,9 @@
   - 기존 기록처럼 `petId`가 없는 세션만 존재하는 경우 전체 세션을 집계 대상으로 사용한다.
   - `petId`가 있는 세션이 하나라도 있는 사용자에서는 선택 반려견 일치 세션만 집계한다.
 - 선택 반려견 변경 이벤트 수신 시 Home/WalkList 집계를 즉시 재계산한다.
+
+## 8. 산책 세션 pet 귀속 canonicalization (v1.2 / #136)
+- canonical 필드: `PolygonEntity.petId` (CoreData 저장 본체)
+- 신규 세션은 저장 시점에 `selectedPetId`를 `Polygon.petId -> PolygonEntity.petId`로 고정 저장한다.
+- Home/WalkList 필터는 canonical 필드(`polygon.petId`)를 1순위 기준으로 사용한다.
+- `WalkSessionMetadataStore.petId`는 레거시 백필 용도로만 유지한다.

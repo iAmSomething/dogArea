@@ -33,17 +33,27 @@ struct WalkDataModel: Identifiable, Hashable, TimeCheckable {
     let image: UIImage?
     let walkDuration: Double
     let walkArea: Double
+    let petId: String?
     init(polygon: Polygon) {
         self.id = polygon.id
         self.createdAt = polygon.createdAt
         self.locations = polygon.locations.map{.init(location: $0)}
         self.walkArea = polygon.walkingArea
         self.walkDuration = polygon.walkingTime
+        self.petId = polygon.petId
         if let imgData = polygon.binaryImage {
             self.image = UIImage(data: imgData)
         } else { self.image = nil}
     }
     func toPolygon() -> Polygon {
-        .init(locations: self.locations.map{$0.toLocation()}, createdAt: createdAt, id: id, walkingTime: walkDuration, walkingArea: walkArea, imgData: nil)
+        .init(
+            locations: self.locations.map { $0.toLocation() },
+            createdAt: createdAt,
+            id: id,
+            walkingTime: walkDuration,
+            walkingArea: walkArea,
+            imgData: nil,
+            petId: petId
+        )
     }
 }

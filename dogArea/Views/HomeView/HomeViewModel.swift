@@ -20,7 +20,6 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     @Published var selectedPet: PetInfo? = nil
     @Published var guestDataUpgradeReport: GuestDataUpgradeReport? = nil
     private var allPolygons: [Polygon] = []
-    private let sessionMetadataStore = WalkSessionMetadataStore.shared
     private var cancellables: Set<AnyCancellable> = []
 
     var pets: [PetInfo] {
@@ -98,8 +97,8 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
             return polygons
         }
 
-        let taggedPolygons = polygons.filter { sessionMetadataStore.petId(sessionId: $0.id) != nil }
-        let selectedPetPolygons = polygons.filter { sessionMetadataStore.petId(sessionId: $0.id) == selectedPetId }
+        let taggedPolygons = polygons.filter { ($0.petId?.isEmpty == false) }
+        let selectedPetPolygons = polygons.filter { $0.petId == selectedPetId }
 
         // Legacy records created before session->pet tagging should remain visible.
         if selectedPetPolygons.isEmpty && taggedPolygons.isEmpty {
