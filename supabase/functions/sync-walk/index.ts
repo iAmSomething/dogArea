@@ -21,8 +21,12 @@ type SeasonScoreSummaryDTO = {
   suspicious_repeat_count: number;
   base_score: number;
   new_route_bonus: number;
+  catchup_bonus?: number;
   total_score: number;
   score_blocked: boolean;
+  catchup_buff_active?: boolean;
+  catchup_buff_granted_at?: string | null;
+  catchup_buff_expires_at?: string | null;
   explain?: Record<string, unknown>;
 };
 

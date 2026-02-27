@@ -49,6 +49,17 @@ struct HomeView: View {
                         .cornerRadius(8)
                         .padding(.horizontal, 16)
                 }
+                if let message = viewModel.seasonCatchupBuffStatusMessage {
+                    Text(message)
+                        .font(.appFont(for: .Light, size: 12))
+                        .foregroundStyle(Color.appTextDarkGray)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(viewModel.seasonCatchupBuffStatusWarning ? Color.appYellowPale : Color.appGreen.opacity(0.45))
+                        .cornerRadius(8)
+                        .padding(.horizontal, 16)
+                }
                 if viewModel.pets.isEmpty == false {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {

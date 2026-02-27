@@ -27,6 +27,8 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     @Published var indoorMissionStatusMessage: String? = nil
     @Published var weatherFeedbackRemainingCount: Int = 2
     @Published var weatherFeedbackResultMessage: String? = nil
+    @Published var seasonCatchupBuffStatusMessage: String? = nil
+    @Published var seasonCatchupBuffStatusWarning: Bool = false
 
     private var allPolygons: [Polygon] = []
     private var cancellables: Set<AnyCancellable> = []
@@ -35,6 +37,12 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     private var lastIndoorMissionDifficultyTrackKey: String = ""
     private let indoorMissionStore = IndoorMissionStore()
     private let metricTracker = AppMetricTracker.shared
+    private static let catchupExpiryTimeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ko_KR")
+        formatter.dateFormat = "M/d HH:mm"
+        return formatter
+    }()
 
     var pets: [PetInfo] {
         userInfo?.pet ?? []
@@ -69,12 +77,15 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     init() {
         bindSelectedPetSync()
         bindTimeBoundaryNotifications()
+        bindSeasonCatchupBuffStatusNotifications()
         reloadUserInfo()
+        reloadSeasonCatchupBuffStatus()
         fetchData()
     }
 
     func fetchData() {
         reloadUserInfo()
+        reloadSeasonCatchupBuffStatus()
         allPolygons = fetchPolygons()
         applySelectedPetStatistics(shouldUpdateMeter: true)
         myAreaList = fetchArea()
@@ -105,6 +116,15 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
 
     func clearWeatherFeedbackResultMessage() {
         weatherFeedbackResultMessage = nil
+    }
+
+    private func bindSeasonCatchupBuffStatusNotifications() {
+        NotificationCenter.default.publisher(for: UserdefaultSetting.seasonCatchupBuffDidUpdateNotification)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.reloadSeasonCatchupBuffStatus()
+            }
+            .store(in: &cancellables)
     }
 
     private func bindSelectedPetSync() {
@@ -141,6 +161,54 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
 
         guard didTimeZoneChange || name == .NSSystemTimeZoneDidChange else { return }
         aggregationStatusMessage = "타임존이 변경되어 통계를 현재 시간대 기준으로 다시 계산했어요."
+    }
+
+    private func reloadSeasonCatchupBuffStatus(now: Date = Date()) {
+        guard let snapshot = UserdefaultSetting.shared.seasonCatchupBuffSnapshot() else {
+            seasonCatchupBuffStatusMessage = nil
+            seasonCatchupBuffStatusWarning = false
+            return
+        }
+
+        let nowTs = now.timeIntervalSince1970
+        let expiresAt = snapshot.expiresAt
+
+        if snapshot.isActive, let expiresAt, expiresAt > nowTs {
+            let expiryText = Self.catchupExpiryTimeFormatter.string(from: Date(timeIntervalSince1970: expiresAt))
+            seasonCatchupBuffStatusMessage = "복귀 버프 적용 중(+20%): \(expiryText)까지 신규 타일 점수 강화"
+            seasonCatchupBuffStatusWarning = false
+            return
+        }
+
+        if snapshot.status == .blocked {
+            seasonCatchupBuffStatusMessage = "복귀 버프 미적용: \(catchupBlockReasonText(snapshot.blockReason))"
+            seasonCatchupBuffStatusWarning = true
+            return
+        }
+
+        if let expiresAt, expiresAt <= nowTs, nowTs - expiresAt <= 86_400 {
+            seasonCatchupBuffStatusMessage = "복귀 버프 만료: 조건 충족 시 다음 주기에 다시 지급돼요."
+            seasonCatchupBuffStatusWarning = false
+            return
+        }
+
+        seasonCatchupBuffStatusMessage = nil
+        seasonCatchupBuffStatusWarning = false
+    }
+
+    private func catchupBlockReasonText(_ reason: String?) -> String {
+        switch reason {
+        case "season_end_window":
+            return "시즌 종료 24시간 전에는 지급되지 않아요."
+        case "weekly_limit_reached":
+            return "이번 주 지급 한도(1회)를 이미 사용했어요."
+        case "insufficient_inactivity":
+            return "최근 활동 간격이 72시간 미만이에요."
+        case "no_prior_activity":
+            return "이전 활동 기록이 없어 복귀 판정이 보류됐어요."
+        default:
+            return "운영 정책 조건을 만족하지 않았어요."
+        }
     }
 
     private func applySelectedPetStatistics(shouldUpdateMeter: Bool = false) {

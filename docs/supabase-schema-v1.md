@@ -207,8 +207,13 @@ erDiagram
   - 포인트 단위 점수 원장(`base_score`, `novelty_bonus`, `suppression_reason`)
 - `season_score_audit_logs`
   - 반복 파밍 의심/차단 판정 근거 로그
+- `season_catchup_buff_policies`
+  - 복귀 버프 정책(비활동 임계/지급기간/보정률/주간한도/시즌종료 차단구간)
+- `season_catchup_buff_grants`
+  - 복귀 버프 지급/차단 상태(`status`, `blocked_reason`, `abuse_flag`) 기록
 - `rpc_score_walk_session_anti_farming`
   - 세션 점수 계산 결과 + UX 설명(`explain.ui_reason`) 반환
+  - 복귀 버프 점수/상태(`catchup_bonus`, `catchup_buff_active`, `explain.catchup_buff`) 동시 반환
 
 ### 4.7 체감 날씨 피드백 KPI
 - `view_weather_feedback_kpis_7d`
@@ -254,9 +259,11 @@ erDiagram
   - 익명 조회는 RPC/View 통해 집계 결과만 반환
 - `season_scoring_policies`
   - `select`: 공개(읽기)
-- `season_tile_score_events`, `season_score_audit_logs`
+- `season_tile_score_events`, `season_score_audit_logs`, `season_catchup_buff_grants`
   - `select`: 소유자
   - write: 서비스 경로(RPC/service role)
+- `season_catchup_buff_policies`
+  - `select`: 공개(읽기)
 - `view_weather_feedback_kpis_7d`
   - `select`: 공개(운영 관측용)
 - `rival_league_policies`
@@ -288,10 +295,11 @@ erDiagram
 2. 핵심 테이블 생성(`profiles`, `pets`, `walk_sessions`, `walk_points`, `area_milestones`, `walk_session_pets`)
 3. 비교군 테이블 생성(`area_reference_catalogs`, `area_references`) 및 seed
 4. 캐리커처/근처 기능 테이블 생성(`caricature_jobs`, `user_visibility_settings`, `nearby_presence`)
-5. 인덱스 생성
-6. RLS enable + 정책 적용
-7. Storage bucket/policy 적용
-8. 검증 쿼리 실행
+5. 시즌 점수/복귀 버프 테이블 및 RPC 생성(`season_*`)
+6. 인덱스 생성
+7. RLS enable + 정책 적용
+8. Storage bucket/policy 적용
+9. 검증 쿼리 실행
 
 ## 8. 운영 체크리스트
 
