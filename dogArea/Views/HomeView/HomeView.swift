@@ -15,9 +15,22 @@ struct HomeView: View {
     @State private var questClaimPulseMissionId: String? = nil
     @State private var questCompletionModal: QuestCompletionPresentation? = nil
     @State private var questCompletionPop: Bool = false
+    @State private var isLowPowerModeEnabled: Bool = ProcessInfo.processInfo.isLowPowerModeEnabled
+    @State private var seasonAnimatedProgress: Double = 0
+    @State private var seasonGaugeWaveOffset: CGFloat = -120
+    @State private var seasonShieldRotation: Double = 0
+    @State private var seasonResultModal: SeasonResultPresentation? = nil
+    @State private var seasonResultPop: Bool = false
+    @State private var seasonResultRevealRank: Bool = false
+    @State private var seasonResultRevealContribution: Bool = false
+    @State private var seasonResultRevealShield: Bool = false
+    @State private var seasonResetBannerVisible: Bool = false
 
     private var isQuestMotionReduced: Bool {
         accessibilityReduceMotion
+    }
+    private var isSeasonMotionReduced: Bool {
+        accessibilityReduceMotion || isLowPowerModeEnabled
     }
     var body: some View {
         ZStack {
@@ -128,6 +141,7 @@ struct HomeView: View {
                         }.frame(maxWidth: .infinity)
                             .padding(.trailing)
                     }
+                    seasonMotionCard(summary: viewModel.seasonMotionSummary)
                     if viewModel.indoorMissionBoard.shouldDisplayCard {
                         indoorMissionCard(board: viewModel.indoorMissionBoard)
                         UnderLine()
@@ -166,6 +180,10 @@ struct HomeView: View {
             }.onAppear{
                 viewModel.reloadUserInfo()
                 viewModel.fetchData()
+                seasonAnimatedProgress = viewModel.seasonMotionSummary.progress
+                if viewModel.seasonMotionSummary.weatherShieldActive {
+                    startSeasonShieldRingAnimationIfNeeded()
+                }
             }.onChange(of: viewModel.aggregationStatusMessage) { newValue in
                 guard newValue != nil else { return }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
@@ -186,11 +204,43 @@ struct HomeView: View {
             }.onChange(of: viewModel.questCompletionPresentation) { payload in
                 guard let payload else { return }
                 presentQuestCompletionModal(payload)
+            }.onChange(of: viewModel.seasonMotionSummary.progress) { progress in
+                animateSeasonProgress(to: progress)
+            }.onChange(of: viewModel.seasonMotionSummary.weatherShieldActive) { active in
+                if active {
+                    startSeasonShieldRingAnimationIfNeeded()
+                } else {
+                    seasonShieldRotation = 0
+                }
+            }.onChange(of: viewModel.seasonMotionEvent) { event in
+                handleSeasonMotionEvent(event)
+            }.onChange(of: viewModel.seasonResultPresentation) { payload in
+                guard let payload else { return }
+                presentSeasonResultModal(payload)
+            }.onChange(of: viewModel.seasonResetTransitionToken) { token in
+                guard token != nil else { return }
+                presentSeasonResetTransitionBanner()
+            }.onChange(of: isLowPowerModeEnabled) { enabled in
+                if enabled {
+                    seasonShieldRotation = 0
+                } else if viewModel.seasonMotionSummary.weatherShieldActive {
+                    startSeasonShieldRingAnimationIfNeeded()
+                }
+            }.onReceive(NotificationCenter.default.publisher(for: .NSProcessInfoPowerStateDidChange)) { _ in
+                isLowPowerModeEnabled = ProcessInfo.processInfo.isLowPowerModeEnabled
             }.padding(.top,20)
 
             if let questCompletionModal {
                 questCompletionOverlay(payload: questCompletionModal)
                     .zIndex(10)
+            }
+            if let seasonResultModal {
+                seasonResultOverlay(payload: seasonResultModal)
+                    .zIndex(11)
+            }
+            if seasonResetBannerVisible {
+                seasonResetTransitionBanner
+                    .zIndex(9)
             }
         }
     }
@@ -567,6 +617,132 @@ struct HomeView: View {
         .cornerRadius(8)
     }
 
+    private func seasonMotionCard(summary: SeasonMotionSummary) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .center) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("시즌 게이지")
+                        .font(.appFont(for: .SemiBold, size: 18))
+                    Text("주간 점수 \(Int(summary.score.rounded())) / \(Int(summary.targetScore.rounded()))")
+                        .font(.appFont(for: .Light, size: 11))
+                        .foregroundStyle(Color.appTextDarkGray)
+                }
+                Spacer()
+                seasonShieldBadge(active: summary.weatherShieldActive)
+                Text(summary.rankTier.title)
+                    .font(.appFont(for: .SemiBold, size: 12))
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 6)
+                    .background(Color.appYellowPale)
+                    .cornerRadius(8)
+            }
+
+            animatedSeasonGauge(progress: seasonAnimatedProgress)
+                .frame(height: 12)
+
+            HStack(spacing: 8) {
+                seasonMetricPill(
+                    title: "기여",
+                    value: "\(summary.contributionCount)회",
+                    color: Color.appYellowPale
+                )
+                seasonMetricPill(
+                    title: "Shield",
+                    value: "\(summary.weatherShieldApplyCount)회",
+                    color: Color.appGreen.opacity(0.22)
+                )
+                seasonMetricPill(
+                    title: "주차",
+                    value: summary.weekKey.isEmpty ? "-" : summary.weekKey,
+                    color: Color.appPinkYello.opacity(0.44)
+                )
+            }
+        }
+        .padding(14)
+        .background(Color.white)
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.appTextLightGray, lineWidth: 0.5)
+        )
+        .padding(.horizontal, 16)
+        .padding(.bottom, 10)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            "시즌 점수 \(Int(summary.score.rounded()))점, 랭크 \(summary.rankTier.title), 보호 \(summary.weatherShieldApplyCount)회"
+        )
+    }
+
+    private func seasonMetricPill(title: String, value: String, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.appFont(for: .Light, size: 10))
+                .foregroundStyle(Color.appTextDarkGray)
+            Text(value)
+                .font(.appFont(for: .SemiBold, size: 12))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 9)
+        .padding(.vertical, 7)
+        .background(color)
+        .cornerRadius(8)
+    }
+
+    private func animatedSeasonGauge(progress: Double) -> some View {
+        let clampedProgress = min(1.0, max(0.0, progress))
+        return GeometryReader { proxy in
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color.appTextLightGray.opacity(0.24))
+                Capsule()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.appGreen.opacity(0.75), Color.appYellow.opacity(0.85)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .frame(width: proxy.size.width * clampedProgress)
+                    .overlay(alignment: .leading) {
+                        if isSeasonMotionReduced == false && clampedProgress > 0 {
+                            Rectangle()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            Color.white.opacity(0.0),
+                                            Color.white.opacity(0.34),
+                                            Color.white.opacity(0.0)
+                                        ],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .frame(width: 120)
+                                .offset(x: seasonGaugeWaveOffset)
+                        }
+                    }
+                    .clipShape(Capsule())
+            }
+        }
+    }
+
+    private func seasonShieldBadge(active: Bool) -> some View {
+        ZStack {
+            Circle()
+                .stroke(Color.appTextLightGray.opacity(0.5), lineWidth: 1)
+                .frame(width: 28, height: 28)
+            if active {
+                Circle()
+                    .trim(from: 0.1, to: 0.9)
+                    .stroke(Color.appGreen, style: StrokeStyle(lineWidth: 1.8, lineCap: .round))
+                    .frame(width: 28, height: 28)
+                    .rotationEffect(.degrees(seasonShieldRotation))
+            }
+            Text("S")
+                .font(.appFont(for: .SemiBold, size: 11))
+        }
+    }
+
     private func multiplierDescription(_ multiplier: Double) -> String {
         let deltaPercent = Int(((multiplier - 1.0) * 100).rounded())
         if deltaPercent == 0 {
@@ -627,6 +803,128 @@ struct HomeView: View {
         }
     }
 
+    private func animateSeasonProgress(to nextProgress: Double) {
+        let clamped = min(1.0, max(0.0, nextProgress))
+        if isSeasonMotionReduced {
+            seasonAnimatedProgress = clamped
+            return
+        }
+
+        let delta = abs(clamped - seasonAnimatedProgress)
+        let duration = min(1.0, max(0.22, delta * 1.2))
+        seasonGaugeWaveOffset = -120
+        withAnimation(.easeOut(duration: duration)) {
+            seasonAnimatedProgress = clamped
+        }
+        withAnimation(.easeInOut(duration: duration)) {
+            seasonGaugeWaveOffset = 120
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
+            seasonGaugeWaveOffset = -120
+        }
+    }
+
+    private func startSeasonShieldRingAnimationIfNeeded() {
+        guard isSeasonMotionReduced == false else {
+            seasonShieldRotation = 0
+            return
+        }
+        seasonShieldRotation = 0
+        withAnimation(.linear(duration: 1.3).repeatForever(autoreverses: false)) {
+            seasonShieldRotation = 360
+        }
+    }
+
+    private func handleSeasonMotionEvent(_ event: SeasonMotionEvent?) {
+        guard let event else { return }
+        switch event.type {
+        case .scoreIncreased:
+            AppHapticFeedback.seasonScoreTick(reducedMotion: isSeasonMotionReduced)
+            if event.shieldApplied {
+                AppHapticFeedback.seasonShieldApplied(reducedMotion: isSeasonMotionReduced)
+            }
+        case .rankUp:
+            AppHapticFeedback.seasonRankUp(reducedMotion: isSeasonMotionReduced)
+            if event.shieldApplied {
+                AppHapticFeedback.seasonShieldApplied(reducedMotion: isSeasonMotionReduced)
+            }
+        case .shieldApplied:
+            AppHapticFeedback.seasonShieldApplied(reducedMotion: isSeasonMotionReduced)
+        case .seasonReset:
+            AppHapticFeedback.seasonReset(reducedMotion: isSeasonMotionReduced)
+        }
+    }
+
+    private func presentSeasonResultModal(_ payload: SeasonResultPresentation) {
+        seasonResultModal = payload
+        seasonResultPop = false
+        seasonResultRevealRank = false
+        seasonResultRevealContribution = false
+        seasonResultRevealShield = false
+
+        if isSeasonMotionReduced {
+            seasonResultPop = true
+            seasonResultRevealRank = true
+            seasonResultRevealContribution = true
+            seasonResultRevealShield = true
+            return
+        }
+
+        withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
+            seasonResultPop = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) {
+            withAnimation(.easeOut(duration: 0.24)) {
+                seasonResultRevealRank = true
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
+            withAnimation(.easeOut(duration: 0.24)) {
+                seasonResultRevealContribution = true
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.54) {
+            withAnimation(.easeOut(duration: 0.24)) {
+                seasonResultRevealShield = true
+            }
+        }
+    }
+
+    private func dismissSeasonResultModal() {
+        if isSeasonMotionReduced {
+            seasonResultModal = nil
+            viewModel.clearSeasonResultPresentation()
+            return
+        }
+        withAnimation(.easeOut(duration: 0.2)) {
+            seasonResultPop = false
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            seasonResultModal = nil
+            viewModel.clearSeasonResultPresentation()
+        }
+    }
+
+    private func presentSeasonResetTransitionBanner() {
+        if isSeasonMotionReduced {
+            seasonResetBannerVisible = true
+        } else {
+            withAnimation(.easeOut(duration: 0.24)) {
+                seasonResetBannerVisible = true
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.1) {
+            if isSeasonMotionReduced {
+                seasonResetBannerVisible = false
+            } else {
+                withAnimation(.easeIn(duration: 0.2)) {
+                    seasonResetBannerVisible = false
+                }
+            }
+            viewModel.clearSeasonResetTransitionToken()
+        }
+    }
+
     private func presentQuestCompletionModal(_ payload: QuestCompletionPresentation) {
         questCompletionModal = payload
         questCompletionPop = false
@@ -682,6 +980,96 @@ struct HomeView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black.opacity(questCompletionPop ? 0.18 : 0.0))
         .allowsHitTesting(false)
+    }
+
+    private func seasonResultOverlay(payload: SeasonResultPresentation) -> some View {
+        VStack(spacing: 0) {
+            Spacer()
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("시즌 결과")
+                            .font(.appFont(for: .SemiBold, size: 18))
+                        Text("\(payload.weekKey) 리포트")
+                            .font(.appFont(for: .Light, size: 12))
+                            .foregroundStyle(Color.appTextDarkGray)
+                    }
+                    Spacer()
+                    Button("닫기") {
+                        dismissSeasonResultModal()
+                    }
+                    .font(.appFont(for: .SemiBold, size: 11))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.appYellowPale)
+                    .cornerRadius(8)
+                }
+                seasonResultRow(
+                    title: "최종 랭크",
+                    value: payload.rankTier.title,
+                    isVisible: seasonResultRevealRank
+                )
+                seasonResultRow(
+                    title: "기여 횟수",
+                    value: "\(payload.contributionCount)회",
+                    isVisible: seasonResultRevealContribution
+                )
+                seasonResultRow(
+                    title: "Shield 적용",
+                    value: "\(payload.shieldApplyCount)회",
+                    isVisible: seasonResultRevealShield
+                )
+            }
+            .padding(16)
+            .background(Color.white)
+            .cornerRadius(14)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.appYellow, lineWidth: 1.0)
+            )
+            .padding(.horizontal, 24)
+            .padding(.bottom, 72)
+            .scaleEffect(seasonResultPop ? 1.0 : 0.9)
+            .opacity(seasonResultPop ? 1.0 : 0.0)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black.opacity(seasonResultPop ? 0.22 : 0.0))
+    }
+
+    private func seasonResultRow(title: String, value: String, isVisible: Bool) -> some View {
+        HStack {
+            Text(title)
+                .font(.appFont(for: .Light, size: 12))
+                .foregroundStyle(Color.appTextDarkGray)
+            Spacer()
+            Text(value)
+                .font(.appFont(for: .SemiBold, size: 15))
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(Color.appYellowPale.opacity(0.45))
+        .cornerRadius(8)
+        .offset(y: isVisible ? 0 : 10)
+        .opacity(isVisible ? 1.0 : 0.0)
+    }
+
+    private var seasonResetTransitionBanner: some View {
+        VStack {
+            HStack {
+                Text("주간 시즌이 리셋되어 새 라운드를 시작했어요.")
+                    .font(.appFont(for: .SemiBold, size: 12))
+                    .foregroundStyle(Color.appTextDarkGray)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color.appYellow)
+                    .cornerRadius(10)
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            Spacer()
+        }
+        .transition(.opacity)
     }
 
     @ViewBuilder

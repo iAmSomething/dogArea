@@ -48,6 +48,7 @@
 - 예외처리 장애주입 매트릭스 v1: `docs/fault-injection-matrix-v1.md`
 - 예외처리 장애주입 런북 v1: `docs/fault-injection-runbook-v1.md`
 - 예외처리 결과 템플릿 v1: `docs/fault-injection-result-template-v1.md`
+- 시즌 인터랙션 모션팩 v1: `docs/season-motion-pack-v1.md`
 - Cycle #81 결과 보고서(2026-02-26): `docs/cycle-81-fault-injection-report-2026-02-26.md`
 - Cycle #78 결과 보고서(2026-02-26): `docs/cycle-78-auto-end-policy-report-2026-02-26.md`
 - Cycle #148 결과 보고서(2026-02-27): `docs/cycle-148-quest-failure-buffer-report-2026-02-27.md`

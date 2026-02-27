@@ -35,6 +35,52 @@ struct QuestCompletionPresentation: Identifiable, Equatable {
     let rewardPoint: Int
 }
 
+enum SeasonMotionEventType: String, Equatable {
+    case scoreIncreased
+    case rankUp
+    case shieldApplied
+    case seasonReset
+}
+
+struct SeasonMotionEvent: Identifiable, Equatable {
+    let id = UUID()
+    let type: SeasonMotionEventType
+    let scoreDelta: Double
+    let rankTier: SeasonRankTier
+    let shieldApplied: Bool
+}
+
+struct SeasonMotionSummary: Equatable {
+    let weekKey: String
+    let score: Double
+    let targetScore: Double
+    let progress: Double
+    let rankTier: SeasonRankTier
+    let contributionCount: Int
+    let weatherShieldActive: Bool
+    let weatherShieldApplyCount: Int
+
+    static let empty = SeasonMotionSummary(
+        weekKey: "",
+        score: 0,
+        targetScore: 520,
+        progress: 0,
+        rankTier: .rookie,
+        contributionCount: 0,
+        weatherShieldActive: false,
+        weatherShieldApplyCount: 0
+    )
+}
+
+struct SeasonResultPresentation: Identifiable, Equatable {
+    let id = UUID()
+    let weekKey: String
+    let rankTier: SeasonRankTier
+    let totalScore: Int
+    let contributionCount: Int
+    let shieldApplyCount: Int
+}
+
 final class HomeViewModel: ObservableObject, CoreDataProtocol {
     @Published var polygonList: [Polygon] = []
     @Published var totalArea: Double = 0.0
@@ -61,6 +107,10 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     @Published private(set) var featuredAreaCount: Int = 0
     @Published var questMotionEvent: QuestMotionEvent? = nil
     @Published var questCompletionPresentation: QuestCompletionPresentation? = nil
+    @Published var seasonMotionSummary: SeasonMotionSummary = .empty
+    @Published var seasonMotionEvent: SeasonMotionEvent? = nil
+    @Published var seasonResultPresentation: SeasonResultPresentation? = nil
+    @Published var seasonResetTransitionToken: UUID? = nil
 
     private var allPolygons: [Polygon] = []
     private var cancellables: Set<AnyCancellable> = []
@@ -70,6 +120,7 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     private let indoorMissionStore = IndoorMissionStore()
     private let metricTracker = AppMetricTracker.shared
     private let areaReferenceRepository: AreaReferenceRepository
+    private let seasonMotionStore = SeasonMotionStore()
     private var featuredGoalAreas: [AreaMeter] = []
     private var areaReferenceTask: Task<Void, Never>? = nil
     private static let catchupExpiryTimeFormatter: DateFormatter = {
@@ -206,6 +257,14 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
 
     func clearQuestCompletionPresentation() {
         questCompletionPresentation = nil
+    }
+
+    func clearSeasonResultPresentation() {
+        seasonResultPresentation = nil
+    }
+
+    func clearSeasonResetTransitionToken() {
+        seasonResetTransitionToken = nil
     }
 
     private func bindSeasonCatchupBuffStatusNotifications() {
@@ -498,6 +557,8 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
                 )
             }
         }
+
+        refreshSeasonMotion(now: now)
     }
 
     func recordIndoorMissionAction(_ missionId: String) {
@@ -537,6 +598,31 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
 
         switch result {
         case .completed:
+            let seasonUpdate = seasonMotionStore.recordMissionCompletion(
+                rewardPoint: mission.rewardPoint,
+                streakEligible: mission.streakEligible,
+                riskLevel: indoorMissionBoard.riskLevel
+            )
+            seasonMotionSummary = seasonUpdate.summary
+            if let completedSeason = seasonUpdate.completedSeason {
+                seasonResultPresentation = completedSeason
+                seasonResetTransitionToken = UUID()
+            }
+            if seasonUpdate.scoreDelta > 0 || seasonUpdate.rankUp || seasonUpdate.shieldApplied {
+                seasonMotionEvent = SeasonMotionEvent(
+                    type: seasonUpdate.rankUp ? .rankUp : .scoreIncreased,
+                    scoreDelta: seasonUpdate.scoreDelta,
+                    rankTier: seasonUpdate.summary.rankTier,
+                    shieldApplied: seasonUpdate.shieldApplied
+                )
+            } else if seasonUpdate.completedSeason != nil {
+                seasonMotionEvent = SeasonMotionEvent(
+                    type: .seasonReset,
+                    scoreDelta: 0,
+                    rankTier: seasonUpdate.summary.rankTier,
+                    shieldApplied: false
+                )
+            }
             if mission.isExtension {
                 _ = indoorMissionStore.markExtensionConsumedIfNeeded(mission)
                 indoorMissionStatusMessage = "\(mission.title) 연장 미션 완료! 감액 보상 \(mission.rewardPoint)pt"
@@ -715,6 +801,24 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
             recentDailyMinutes: recentDailyMinutes,
             averageWeeklyWalkCount: averageWeeklyWalkCount
         )
+    }
+
+    private func refreshSeasonMotion(now: Date) {
+        let refresh = seasonMotionStore.refresh(
+            now: now,
+            riskLevel: indoorMissionBoard.riskLevel
+        )
+        seasonMotionSummary = refresh.summary
+        if let completedSeason = refresh.completedSeason {
+            seasonResultPresentation = completedSeason
+            seasonResetTransitionToken = UUID()
+            seasonMotionEvent = SeasonMotionEvent(
+                type: .seasonReset,
+                scoreDelta: 0,
+                rankTier: refresh.summary.rankTier,
+                shieldApplied: false
+            )
+        }
     }
 
     private func currentCalendar() -> Calendar {
@@ -1986,4 +2090,199 @@ private final class IndoorMissionStore {
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter
     }()
+}
+
+enum SeasonRankTier: String, Codable, CaseIterable, Equatable {
+    case rookie
+    case bronze
+    case silver
+    case gold
+    case platinum
+
+    var title: String {
+        switch self {
+        case .rookie: return "Rookie"
+        case .bronze: return "Bronze"
+        case .silver: return "Silver"
+        case .gold: return "Gold"
+        case .platinum: return "Platinum"
+        }
+    }
+
+    var minimumScore: Double {
+        switch self {
+        case .rookie: return 0
+        case .bronze: return 80
+        case .silver: return 180
+        case .gold: return 320
+        case .platinum: return 520
+        }
+    }
+}
+
+private struct SeasonMotionRefreshResult {
+    let summary: SeasonMotionSummary
+    let completedSeason: SeasonResultPresentation?
+}
+
+private struct SeasonMotionRecordResult {
+    let summary: SeasonMotionSummary
+    let scoreDelta: Double
+    let rankUp: Bool
+    let shieldApplied: Bool
+    let completedSeason: SeasonResultPresentation?
+}
+
+private final class SeasonMotionStore {
+    private struct State: Codable, Equatable {
+        let weekKey: String
+        var score: Double
+        var contributionCount: Int
+        var weatherShieldApplyCount: Int
+        var updatedAt: TimeInterval
+    }
+
+    private enum DefaultsKey {
+        static let currentState = "season.motion.current.v1"
+    }
+
+    private static let weekFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.calendar = Calendar(identifier: .iso8601)
+        formatter.dateFormat = "YYYY-'W'ww"
+        return formatter
+    }()
+
+    private let targetScore: Double = 520
+    private let defaults = UserDefaults.standard
+
+    func refresh(now: Date, riskLevel: IndoorWeatherRiskLevel) -> SeasonMotionRefreshResult {
+        let (state, completedSeason) = ensureCurrentState(now: now)
+        return SeasonMotionRefreshResult(
+            summary: summary(from: state, riskLevel: riskLevel),
+            completedSeason: completedSeason
+        )
+    }
+
+    func recordMissionCompletion(
+        rewardPoint: Int,
+        streakEligible: Bool,
+        riskLevel: IndoorWeatherRiskLevel,
+        now: Date = Date()
+    ) -> SeasonMotionRecordResult {
+        let ensured = ensureCurrentState(now: now)
+        var state = ensured.0
+        let completedSeason = ensured.1
+        let beforeRank = rankTier(for: state.score)
+        var scoreDelta = 0.0
+
+        if streakEligible {
+            scoreDelta = Double(max(1, rewardPoint))
+            state.score += scoreDelta
+            state.contributionCount += 1
+        }
+
+        let shieldApplied = riskLevel != .clear && streakEligible
+        if shieldApplied {
+            state.weatherShieldApplyCount += 1
+        }
+
+        state.updatedAt = now.timeIntervalSince1970
+        persist(state)
+
+        let afterRank = rankTier(for: state.score)
+        return SeasonMotionRecordResult(
+            summary: summary(from: state, riskLevel: riskLevel),
+            scoreDelta: scoreDelta,
+            rankUp: afterRank != beforeRank,
+            shieldApplied: shieldApplied,
+            completedSeason: completedSeason
+        )
+    }
+
+    private func summary(from state: State, riskLevel: IndoorWeatherRiskLevel) -> SeasonMotionSummary {
+        let score = max(0, state.score)
+        let progress = min(1, max(0, score / targetScore))
+        return SeasonMotionSummary(
+            weekKey: state.weekKey,
+            score: score,
+            targetScore: targetScore,
+            progress: progress,
+            rankTier: rankTier(for: score),
+            contributionCount: state.contributionCount,
+            weatherShieldActive: riskLevel != .clear,
+            weatherShieldApplyCount: state.weatherShieldApplyCount
+        )
+    }
+
+    private func rankTier(for score: Double) -> SeasonRankTier {
+        if score >= SeasonRankTier.platinum.minimumScore {
+            return .platinum
+        }
+        if score >= SeasonRankTier.gold.minimumScore {
+            return .gold
+        }
+        if score >= SeasonRankTier.silver.minimumScore {
+            return .silver
+        }
+        if score >= SeasonRankTier.bronze.minimumScore {
+            return .bronze
+        }
+        return .rookie
+    }
+
+    private func ensureCurrentState(now: Date) -> (State, SeasonResultPresentation?) {
+        let weekKey = currentWeekKey(for: now)
+        guard var current = loadCurrentState() else {
+            let newState = State(
+                weekKey: weekKey,
+                score: 0,
+                contributionCount: 0,
+                weatherShieldApplyCount: 0,
+                updatedAt: now.timeIntervalSince1970
+            )
+            persist(newState)
+            return (newState, nil)
+        }
+
+        if current.weekKey == weekKey {
+            return (current, nil)
+        }
+
+        let completedSeason = SeasonResultPresentation(
+            weekKey: current.weekKey,
+            rankTier: rankTier(for: current.score),
+            totalScore: Int(current.score.rounded()),
+            contributionCount: current.contributionCount,
+            shieldApplyCount: current.weatherShieldApplyCount
+        )
+
+        current = State(
+            weekKey: weekKey,
+            score: 0,
+            contributionCount: 0,
+            weatherShieldApplyCount: 0,
+            updatedAt: now.timeIntervalSince1970
+        )
+        persist(current)
+        return (current, completedSeason.totalScore > 0 || completedSeason.contributionCount > 0 ? completedSeason : nil)
+    }
+
+    private func currentWeekKey(for date: Date) -> String {
+        Self.weekFormatter.string(from: date)
+    }
+
+    private func loadCurrentState() -> State? {
+        guard let data = defaults.data(forKey: DefaultsKey.currentState),
+              let decoded = try? JSONDecoder().decode(State.self, from: data) else {
+            return nil
+        }
+        return decoded
+    }
+
+    private func persist(_ state: State) {
+        guard let data = try? JSONEncoder().encode(state) else { return }
+        defaults.set(data, forKey: DefaultsKey.currentState)
+    }
 }

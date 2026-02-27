@@ -48,6 +48,10 @@ struct NotificationCenterView: View {
                    }
                    Spacer()
                }
+               if let season = viewModel.seasonProfileSummary {
+                   seasonSummaryCard(summary: season)
+                       .padding(.horizontal, 16)
+               }
                UnderLine()
                TitleTextView(title: "강아지 정보",type: .MediumTitle, subTitle: "강아지를 소개할게요")
                if viewModel.pets.isEmpty == false {
@@ -105,6 +109,27 @@ struct NotificationCenterView: View {
                }
            }
        }
+
+    private func seasonSummaryCard(summary: SeasonProfileSummary) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("시즌 진행 현황")
+                .font(.appFont(for: .SemiBold, size: 13))
+            Text("랭크 \(summary.rankTier.title) · 점수 \(summary.score)pt")
+                .font(.appFont(for: .Regular, size: 12))
+                .foregroundStyle(Color.appTextDarkGray)
+            Text("주차 \(summary.weekKey) · 기여 \(summary.contributionCount)회")
+                .font(.appFont(for: .Light, size: 11))
+                .foregroundStyle(Color.appTextDarkGray)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
+        .background(Color.appYellowPale.opacity(0.55))
+        .cornerRadius(10)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color.appTextLightGray, lineWidth: 0.4)
+        )
+    }
 
     private func petDetailsText(_ pet: PetInfo?) -> String {
         guard let pet else { return "품종/나이/성별 미입력" }
