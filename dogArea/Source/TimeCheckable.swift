@@ -35,20 +35,19 @@ enum dateFormatType {
 extension Array where Element: TimeCheckable {
     var thisWeekList:[Element] {
         let currentDate = Date()
-        let calendar = Calendar.current
+        var calendar = Calendar.autoupdatingCurrent
+        calendar.timeZone = TimeZone.autoupdatingCurrent
         let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: currentDate)
-        guard let startOfWeek = calendar.date(from: components) else {
+        guard let startOfWeek = calendar.date(from: components),
+              let endOfWeek = calendar.date(byAdding: .weekOfYear, value: 1, to: startOfWeek) else {
             fatalError("Failed to calculate the start of the week.")
-        }
-        guard calendar.date(byAdding: .weekOfYear, value: 1, to: startOfWeek) != nil else {
-            fatalError("Failed to calculate the end of the week.")
         }
         let thisWeek = self.filter{e in
             let date = Date(timeIntervalSince1970: e.createdAt)
-            guard let roundedDate = Calendar.current.date(bySettingHour: 0, minute: 0, second: 0, of: date) else {
+            guard let roundedDate = calendar.date(bySettingHour: 0, minute: 0, second: 0, of: date) else {
                 return false
             }
-            return roundedDate > startOfWeek
+            return roundedDate >= startOfWeek && roundedDate < endOfWeek
         }
         return thisWeek
     }
