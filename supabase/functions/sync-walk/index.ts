@@ -30,6 +30,18 @@ type SeasonScoreSummaryDTO = {
   explain?: Record<string, unknown>;
 };
 
+type WeatherReplacementSummaryDTO = {
+  applied: boolean;
+  shield_applied: boolean;
+  blocked_reason: string | null;
+  risk_level: string | null;
+  replacement_reason: string | null;
+  replacement_count_today: number;
+  daily_replacement_limit: number;
+  shield_used_this_week: number;
+  weekly_shield_limit: number;
+};
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -260,12 +272,35 @@ Deno.serve(async (req) => {
       seasonScoreSummary = seasonScoreRows[0] as SeasonScoreSummaryDTO;
     }
 
+    const weatherRiskLevel = asString(payload.weather_risk_level) ?? "clear";
+    const sourceQuestId = asString(payload.source_quest_id) ?? "outdoor.default";
+    const replacementQuestId = asString(payload.replacement_quest_id) ?? "indoor.light";
+    let weatherReplacementSummary: WeatherReplacementSummaryDTO | null = null;
+    const { data: weatherReplacementRows, error: weatherReplacementError } = await userClient.rpc(
+      "rpc_apply_weather_replacement",
+      {
+        target_user_id: userId,
+        target_walk_session_id: walkSessionId,
+        target_risk_level: weatherRiskLevel,
+        source_quest_id: sourceQuestId,
+        replaced_quest_id: replacementQuestId,
+        now_ts: new Date().toISOString(),
+      },
+    );
+
+    if (weatherReplacementError) {
+      console.warn("weather replacement rpc failed", weatherReplacementError.message);
+    } else if (Array.isArray(weatherReplacementRows) && weatherReplacementRows.length > 0) {
+      weatherReplacementSummary = weatherReplacementRows[0] as WeatherReplacementSummaryDTO;
+    }
+
     return json({
       ok: true,
       stage,
       walk_session_id: walkSessionId,
       point_count: rows.length,
       season_score_summary: seasonScoreSummary,
+      weather_replacement_summary: weatherReplacementSummary,
     });
   }
 

@@ -279,6 +279,67 @@ order by effective_league, league;
 - 표본 부족 리그에서 `fallback_applied` + `effective_league` 병합 반영
 - 변경 사용자는 `rival_league_history`에 이력이 기록됨
 
+### 5.11 날씨 치환/스트릭 보호 엔진 검증 (#134)
+서버 판정 호출:
+```sql
+select *
+from public.rpc_apply_weather_replacement(
+  ':user_uuid'::uuid,
+  ':walk_session_uuid'::uuid,
+  'bad',
+  'outdoor.default',
+  'indoor.routine',
+  now()
+);
+```
+
+치환 이력 확인:
+```sql
+select
+  owner_user_id,
+  day_key,
+  risk_level,
+  source_quest_id,
+  replacement_quest_id,
+  shield_applied,
+  created_at
+from public.weather_replacement_histories
+where owner_user_id = ':user_uuid'::uuid
+order by created_at desc
+limit 20;
+```
+
+Shield 원장 확인:
+```sql
+select
+  owner_user_id,
+  week_start,
+  day_key,
+  reason,
+  consumed_at
+from public.weather_shield_ledgers
+where owner_user_id = ':user_uuid'::uuid
+order by consumed_at desc
+limit 20;
+```
+
+14일 감사 뷰:
+```sql
+select
+  day_key,
+  risk_level,
+  replacement_count,
+  shield_applied_count
+from public.view_weather_replacement_audit_14d
+order by day_key desc, risk_level asc;
+```
+
+기대값:
+- `bad|severe` 리스크에서 치환 이력이 생성됨
+- 동일 사용자 동일 일자 2회 호출 시 `daily_limit_reached` 차단
+- 같은 주차에서 `weekly_shield_limit=1`을 초과하지 않음
+- `weather_replacement_histories`에 원/치환 퀘스트 ID와 사유가 누락 없이 저장됨
+
 ## 6. 운영 체크리스트
 - [ ] `migration list --local` / `migration list --linked` 결과 저장
 - [ ] User A/B 교차 접근 차단 SQL 결과 저장
@@ -288,4 +349,5 @@ order by effective_league, league;
 - [ ] 비교군 카탈로그/시드 정합성 SQL 결과 첨부
 - [ ] 시즌 안티 농사 RPC/감사 로그 검증 결과 첨부
 - [ ] 체감 날씨 피드백 KPI 뷰 검증 결과 첨부
+- [ ] 날씨 치환/Shield RPC 및 이력 원장 검증 결과 첨부
 - [ ] 라이벌 리그 스냅샷/분포/히스토리 검증 결과 첨부
