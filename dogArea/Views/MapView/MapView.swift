@@ -23,6 +23,9 @@ struct MapView : View{
     @State private var distance = 2000.0
     @State private var selectedPolygonData: WalkDataModel? = nil
     @State private var recoveryIssue: RecoveryIssue? = nil
+    @State private var activeBanner: MapTopBannerCandidate? = nil
+    @State private var bannerSuppressedUntil: [MapTopBannerKind: Date] = [:]
+    @State private var bannerAutoDismissTask: Task<Void, Never>? = nil
     @ObservedObject var tabStatus = TabAppear.shared
     
     var body : some View {
@@ -46,23 +49,8 @@ struct MapView : View{
                             .cornerRadius(10)
                     })
                 }
-                if viewModel.hasRecoverableWalkSession && !viewModel.isWalking {
-                    recoverableSessionBanner
-                }
-                if viewModel.shouldShowWatchStatus {
-                    watchStatusBanner
-                }
-                if viewModel.hasRuntimeGuardStatus {
-                    runtimeGuardBanner
-                }
-                if viewModel.hasSyncOutboxStatus {
-                    syncOutboxBanner
-                }
-                if viewModel.isOfflineRecoveryMode {
-                    offlineModeBadge
-                }
-                if !authFlow.canAccess(.cloudSync) && !viewModel.isWalking && !viewModel.polygonList.isEmpty {
-                    guestBackupBanner
+                if let activeBanner {
+                    topBannerView(for: activeBanner)
                 }
                 Spacer()
                 
@@ -128,7 +116,7 @@ struct MapView : View{
         .onAppear {
             viewModel.reloadSelectedPetContext()
             viewModel.updateAnnotations(cameraDistance: self.distance)
-            evaluateRecoveryIssue()
+            recomputeBannerQueue()
             tabStatus.appear()
         }
         .onChange(of: viewModel.walkStatusMessage) { newValue in
@@ -139,16 +127,35 @@ struct MapView : View{
         }
         .onChange(of: viewModel.runtimeGuardStatusText) { newValue in
             guard newValue.isEmpty == false else { return }
-            evaluateRecoveryIssue()
+            recomputeBannerQueue()
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                 viewModel.clearRuntimeGuardStatus()
+                recomputeBannerQueue()
             }
         }
         .onChange(of: viewModel.syncOutboxLastErrorCodeText) { _ in
-            evaluateRecoveryIssue()
+            recomputeBannerQueue()
         }
         .onChange(of: viewModel.syncOutboxPendingCount) { _ in
-            evaluateRecoveryIssue()
+            recomputeBannerQueue()
+        }
+        .onChange(of: viewModel.syncOutboxPermanentFailureCount) { _ in
+            recomputeBannerQueue()
+        }
+        .onChange(of: viewModel.hasRecoverableWalkSession) { _ in
+            recomputeBannerQueue()
+        }
+        .onChange(of: viewModel.isWalking) { _ in
+            recomputeBannerQueue()
+        }
+        .onChange(of: viewModel.watchSyncStatusText) { _ in
+            recomputeBannerQueue()
+        }
+        .onChange(of: viewModel.latestWatchActionText) { _ in
+            recomputeBannerQueue()
+        }
+        .onChange(of: viewModel.polygonList.count) { _ in
+            recomputeBannerQueue()
         }
         .onChange(of: viewModel.syncRecoveryToastMessage) { message in
             guard let message else { return }
@@ -157,8 +164,14 @@ struct MapView : View{
                 viewModel.clearSyncRecoveryToastMessage()
             }
         }
+        .onReceive(authFlow.objectWillChange) { _ in
+            recomputeBannerQueue()
+        }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
-            evaluateRecoveryIssue()
+            recomputeBannerQueue()
+        }
+        .onDisappear {
+            bannerAutoDismissTask?.cancel()
         }
         .sheet(isPresented: $isModalPresented){
             MapSettingView(viewModel: self.viewModel, myAlert: self.myAlert)
@@ -190,14 +203,6 @@ struct MapView : View{
         }
         .overlay(alignment: .top) {
             VStack(spacing: 6) {
-                if let issue = recoveryIssue {
-                    RecoveryActionBanner(
-                        issue: issue,
-                        onPrimary: { handleRecoveryPrimaryAction(issue) },
-                        onDismiss: { recoveryIssue = nil }
-                    )
-                    .padding(.top, 12)
-                }
                 if let message = viewModel.walkStatusMessage {
                     Text(message)
                         .font(.appFont(for: .SemiBold, size: 13))
@@ -206,14 +211,36 @@ struct MapView : View{
                         .padding(.vertical, 8)
                         .background(Color.appYellow)
                         .cornerRadius(10)
-                        .padding(.top, issueTopPadding)
+                        .padding(.top, 12)
                 }
             }
         }
     }
 
-    private var issueTopPadding: CGFloat {
-        recoveryIssue == nil ? 12 : 0
+    @ViewBuilder
+    private func topBannerView(for candidate: MapTopBannerCandidate) -> some View {
+        switch candidate.kind {
+        case .recoveryIssue:
+            if let issue = recoveryIssue {
+                RecoveryActionBanner(
+                    issue: issue,
+                    onPrimary: { handleRecoveryPrimaryAction(issue) },
+                    onDismiss: { dismissTopBanner(candidate) }
+                )
+            }
+        case .recoverableSession:
+            recoverableSessionBanner
+        case .runtimeGuard:
+            runtimeGuardBanner
+        case .syncOutbox:
+            syncOutboxBanner
+        case .offlineMode:
+            offlineModeBadge
+        case .guestBackup:
+            guestBackupBanner
+        case .watchStatus:
+            watchStatusBanner
+        }
     }
 
     var recoverableSessionBanner: some View {
@@ -241,6 +268,14 @@ struct MapView : View{
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
             .background(Color.appTextLightGray)
+            .cornerRadius(8)
+            Button("닫기") {
+                dismissTopBanner(.recoverableSession, suppressFor: 180)
+            }
+            .font(.appFont(for: .SemiBold, size: 12))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(Color.appYellowPale)
             .cornerRadius(8)
         }
         .padding(10)
@@ -346,8 +381,145 @@ struct MapView : View{
                     viewModel.setTrackingMode()
                     myAlert.alertType = .addPoint
                     myAlert.callAlert(type: .addPoint)
-                }
+            }
         }
+    }
+
+    private func recomputeBannerQueue() {
+        evaluateRecoveryIssue()
+        refreshTopBannerQueue()
+    }
+
+    private func refreshTopBannerQueue() {
+        let candidates = prioritizedBannerCandidates()
+        let now = Date()
+        let next = candidates.first { candidate in
+            guard let suppressedUntil = bannerSuppressedUntil[candidate.kind] else { return true }
+            return suppressedUntil <= now
+        }
+
+        guard next != activeBanner else { return }
+        activeBanner = next
+        scheduleAutoDismissIfNeeded(for: next)
+    }
+
+    private func scheduleAutoDismissIfNeeded(for candidate: MapTopBannerCandidate?) {
+        bannerAutoDismissTask?.cancel()
+        guard let candidate,
+              let autoDismissAfter = candidate.autoDismissAfter,
+              autoDismissAfter > 0 else {
+            return
+        }
+
+        bannerAutoDismissTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: UInt64(autoDismissAfter * 1_000_000_000))
+            guard activeBanner == candidate else { return }
+            dismissTopBanner(candidate)
+        }
+    }
+
+    private func dismissTopBanner(_ candidate: MapTopBannerCandidate) {
+        dismissTopBanner(candidate.kind, suppressFor: candidate.suppressFor)
+    }
+
+    private func dismissTopBanner(_ kind: MapTopBannerKind, suppressFor: TimeInterval) {
+        bannerSuppressedUntil[kind] = Date().addingTimeInterval(suppressFor)
+        if activeBanner?.kind == kind {
+            activeBanner = nil
+        }
+        refreshTopBannerQueue()
+    }
+
+    private func prioritizedBannerCandidates() -> [MapTopBannerCandidate] {
+        var candidates: [MapTopBannerCandidate] = []
+
+        if recoveryIssue != nil {
+            candidates.append(
+                MapTopBannerCandidate(
+                    kind: .recoveryIssue,
+                    severity: .p0,
+                    autoDismissAfter: nil,
+                    suppressFor: 60
+                )
+            )
+        }
+
+        if viewModel.hasRecoverableWalkSession && !viewModel.isWalking {
+            candidates.append(
+                MapTopBannerCandidate(
+                    kind: .recoverableSession,
+                    severity: .p0,
+                    autoDismissAfter: nil,
+                    suppressFor: 180
+                )
+            )
+        }
+
+        if viewModel.syncOutboxPermanentFailureCount > 0 {
+            candidates.append(
+                MapTopBannerCandidate(
+                    kind: .syncOutbox,
+                    severity: .p1,
+                    autoDismissAfter: nil,
+                    suppressFor: 120
+                )
+            )
+        } else if viewModel.hasSyncOutboxStatus {
+            candidates.append(
+                MapTopBannerCandidate(
+                    kind: .syncOutbox,
+                    severity: .p1,
+                    autoDismissAfter: 4.0,
+                    suppressFor: 20
+                )
+            )
+        }
+
+        if viewModel.hasRuntimeGuardStatus {
+            candidates.append(
+                MapTopBannerCandidate(
+                    kind: .runtimeGuard,
+                    severity: .p1,
+                    autoDismissAfter: 4.0,
+                    suppressFor: 20
+                )
+            )
+        }
+
+        if viewModel.isOfflineRecoveryMode {
+            candidates.append(
+                MapTopBannerCandidate(
+                    kind: .offlineMode,
+                    severity: .p1,
+                    autoDismissAfter: 4.0,
+                    suppressFor: 20
+                )
+            )
+        }
+
+        if !authFlow.canAccess(.cloudSync) && !viewModel.isWalking && !viewModel.polygonList.isEmpty {
+            candidates.append(
+                MapTopBannerCandidate(
+                    kind: .guestBackup,
+                    severity: .p2,
+                    autoDismissAfter: 6.0,
+                    suppressFor: 180
+                )
+            )
+        }
+
+        if viewModel.shouldShowWatchStatus {
+            candidates.append(
+                MapTopBannerCandidate(
+                    kind: .watchStatus,
+                    severity: .p2,
+                    autoDismissAfter: 4.0,
+                    suppressFor: 12
+                )
+            )
+        }
+
+        return candidates.sorted()
     }
 
     private func evaluateRecoveryIssue() {
@@ -371,10 +543,49 @@ struct MapView : View{
         case .authExpired:
             authFlow.startReauthenticationFlow()
         }
+        refreshTopBannerQueue()
     }
 }
 #Preview {
     MapView()
+}
+
+private enum MapTopBannerKind: String, Hashable {
+    case recoveryIssue
+    case recoverableSession
+    case runtimeGuard
+    case syncOutbox
+    case offlineMode
+    case guestBackup
+    case watchStatus
+}
+
+private enum MapTopBannerSeverity: Int, Comparable {
+    case p0 = 0
+    case p1 = 1
+    case p2 = 2
+
+    static func < (lhs: MapTopBannerSeverity, rhs: MapTopBannerSeverity) -> Bool {
+        lhs.rawValue < rhs.rawValue
+    }
+}
+
+private struct MapTopBannerCandidate: Identifiable, Equatable, Comparable {
+    let kind: MapTopBannerKind
+    let severity: MapTopBannerSeverity
+    let autoDismissAfter: TimeInterval?
+    let suppressFor: TimeInterval
+
+    var id: MapTopBannerKind {
+        kind
+    }
+
+    static func < (lhs: MapTopBannerCandidate, rhs: MapTopBannerCandidate) -> Bool {
+        if lhs.severity == rhs.severity {
+            return lhs.kind.rawValue < rhs.kind.rawValue
+        }
+        return lhs.severity < rhs.severity
+    }
 }
 
 enum RecoveryIssueKind: Equatable {
