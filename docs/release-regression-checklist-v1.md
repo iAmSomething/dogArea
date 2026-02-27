@@ -67,6 +67,9 @@
 - [ ] `체감 날씨 다름` 1탭 입력 시 당일 위험도 재평가 결과가 즉시 노출됨
 - [ ] 체감 피드백 주간 3회 입력 시 3회차가 제한 처리되고 잔여 횟수가 정확히 표시됨
 - [ ] 체감 피드백만으로 위험도 `clear` 완전 해제가 발생하지 않음
+- [ ] 라이벌 리그가 최근 14일 활동량 기준으로 `light/mid/hardcore`에 배정됨
+- [ ] 리그 표본 부족 시 `effective_league` 인접 병합이 적용됨
+- [ ] 리그 변동 시 사용자 안내 메시지/히스토리 데이터가 조회 가능함
 - [ ] nearby 핫스팟에서 표본 미달 셀은 count가 노출되지 않고(percentile-only) 강도만 표시됨
 - [ ] nearby 핫스팟에서 야간(22~06) 지연 60분 정책이 반영됨
 - [ ] 민감 구역 마스킹 대상 셀이 지도 오버레이에 노출되지 않음
@@ -101,6 +104,7 @@
 - [ ] `privacy_guard_policies/privacy_sensitive_geo_masks/privacy_guard_audit_logs` 구조 및 `rpc_get_nearby_hotspots` 확장 컬럼 확인
 - [ ] `season_scoring_policies/season_tile_score_events/season_score_audit_logs` 구조 및 `rpc_score_walk_session_anti_farming` 실행 확인
 - [ ] `view_weather_feedback_kpis_7d` 뷰 조회 및 지표 컬럼(`submitted/rate_limited/changed_ratio`) 확인
+- [ ] `rival_league_policies/rival_league_assignments/rival_league_history` 구조 및 `rpc_refresh_rival_leagues/rpc_get_my_rival_league` 실행 확인
 
 ## 6. 배포 파이프라인 검증 시나리오
 ### 6.1 Workflow 정의/활성 상태
