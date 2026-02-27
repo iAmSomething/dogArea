@@ -148,6 +148,11 @@ struct HomeView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.8) {
                 viewModel.clearIndoorMissionStatusMessage()
             }
+        }.onChange(of: viewModel.weatherFeedbackResultMessage) { newValue in
+            guard newValue != nil else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.2) {
+                viewModel.clearWeatherFeedbackResultMessage()
+            }
         }.padding(.top,20)
     }
 
@@ -328,6 +333,30 @@ struct HomeView: View {
             Text("악천후 단계에 맞춰 실외 미션 일부를 실내 미션으로 치환했어요.")
                 .font(.appFont(for: .Light, size: 12))
                 .foregroundStyle(Color.appTextDarkGray)
+            HStack(spacing: 8) {
+                Button("체감 날씨 다름") {
+                    viewModel.submitWeatherMismatchFeedback()
+                }
+                .disabled(viewModel.canSubmitWeatherMismatchFeedback == false)
+                .font(.appFont(for: .SemiBold, size: 11))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .background(viewModel.canSubmitWeatherMismatchFeedback ? Color.appYellow : Color.appTextLightGray)
+                .cornerRadius(8)
+
+                Text("주간 남은 반영 \(viewModel.weatherFeedbackRemainingCount)/\(viewModel.weatherFeedbackWeeklyLimit)")
+                    .font(.appFont(for: .Light, size: 11))
+                    .foregroundStyle(Color.appTextDarkGray)
+            }
+            if let feedbackMessage = viewModel.weatherFeedbackResultMessage {
+                Text(feedbackMessage)
+                    .font(.appFont(for: .Light, size: 11))
+                    .foregroundStyle(Color.appTextDarkGray)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 6)
+                    .background(Color.appYellowPale)
+                    .cornerRadius(8)
+            }
 
             ForEach(board.missions) { mission in
                 indoorMissionRow(mission: mission)

@@ -39,3 +39,9 @@
 - `indoor_mission_action_logged`
 - `indoor_mission_completed`
 - `indoor_mission_completion_rejected`
+
+## 7. 체감 날씨 피드백 루프 연계 (#151)
+- 홈 카드에서 `체감 날씨 다름` 1탭 액션 제공
+- 반영 범위는 당일 위험도에 한정, 주간 2회 제한 적용
+- 피드백으로 위험도를 완전 해제(`clear`)하지 않음
+- 상세 명세: `docs/weather-feedback-loop-v1.md`

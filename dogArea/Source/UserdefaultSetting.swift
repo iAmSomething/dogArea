@@ -553,6 +553,9 @@ enum AppMetricEvent: String {
     case indoorMissionActionLogged = "indoor_mission_action_logged"
     case indoorMissionCompleted = "indoor_mission_completed"
     case indoorMissionCompletionRejected = "indoor_mission_completion_rejected"
+    case weatherFeedbackSubmitted = "weather_feedback_submitted"
+    case weatherFeedbackRateLimited = "weather_feedback_rate_limited"
+    case weatherRiskReevaluated = "weather_risk_reevaluated"
 }
 
 final class FeatureFlagStore {

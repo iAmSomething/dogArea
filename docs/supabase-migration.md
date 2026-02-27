@@ -192,6 +192,26 @@ order by created_at desc
 limit 20;
 ```
 
+### 5.8 체감 날씨 피드백 KPI 검증 (#151)
+```sql
+select
+  day_bucket,
+  submitted_count,
+  rate_limited_count,
+  changed_count,
+  unchanged_count,
+  changed_ratio,
+  rate_limited_ratio
+from public.view_weather_feedback_kpis_7d
+order by day_bucket desc
+limit 7;
+```
+
+기대값:
+- 피드백 이벤트가 발생한 일자에 `submitted_count`/`rate_limited_count`가 반영
+- 위험도 재평가 이벤트에서 `changed_ratio`가 0~1 범위로 계산
+- 제한 발생 시 `rate_limited_ratio`가 증가
+
 ## 6. 운영 체크리스트
 - [ ] `migration list --local` / `migration list --linked` 결과 저장
 - [ ] User A/B 교차 접근 차단 SQL 결과 저장
@@ -200,3 +220,4 @@ limit 20;
 - [ ] User/Pet 확장 필드 정합성 SQL 결과 첨부
 - [ ] 비교군 카탈로그/시드 정합성 SQL 결과 첨부
 - [ ] 시즌 안티 농사 RPC/감사 로그 검증 결과 첨부
+- [ ] 체감 날씨 피드백 KPI 뷰 검증 결과 첨부
