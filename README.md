@@ -27,6 +27,7 @@
 - 시즌 복귀 캐치업 버프 v1: `docs/season-comeback-catchup-buff-v1.md`
 - 체감 날씨 피드백 루프 v1: `docs/weather-feedback-loop-v1.md`
 - 날씨 리스크 모델/Provider 정책 v1: `docs/weather-risk-provider-policy-v1.md`
+- 날씨 치환/스트릭 보호 서버 엔진 v1: `docs/weather-replacement-shield-engine-v1.md`
 - 날씨 연동 UX/fallback/접근성 v1: `docs/weather-ux-fallback-accessibility-v1.md`
 - 퀘스트 실패 완충(자동 연장 슬롯) v1: `docs/quest-failure-buffer-v1.md`
 - 반려견 맞춤 난이도/쉬운 날 모드 v1: `docs/pet-adaptive-quest-difficulty-v1.md`
@@ -58,6 +59,7 @@
 - Cycle #145 결과 보고서(2026-02-27): `docs/cycle-145-season-catchup-buff-report-2026-02-27.md`
 - Cycle #135 결과 보고서(2026-02-27): `docs/cycle-135-weather-ux-fallback-report-2026-02-27.md`
 - Cycle #133 결과 보고서(2026-02-27): `docs/cycle-133-weather-risk-policy-report-2026-02-27.md`
+- Cycle #134 결과 보고서(2026-02-27): `docs/cycle-134-weather-stage2-engine-report-2026-02-27.md`
 - Cycle #138 결과 보고서(2026-02-27): `docs/cycle-138-pet-context-badge-report-2026-02-27.md`
 - Cycle #139 결과 보고서(2026-02-27): `docs/cycle-139-area-reference-db-ui-report-2026-02-27.md`
 

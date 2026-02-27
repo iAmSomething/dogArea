@@ -17,6 +17,7 @@
 - 근처 사용자 익명 핫스팟용 데이터 구조
 - 시즌 안티 농사 점수 규칙용 데이터 구조
 - 체감 날씨 피드백 KPI 뷰
+- 날씨 치환/스트릭 보호 서버 엔진 구조
 - 라이벌 공정 리그 매칭 구조
 - RLS 정책 원칙
 - Storage 경로 규칙
@@ -220,7 +221,21 @@ erDiagram
   - `weather_feedback_submitted/rate_limited/weather_risk_reevaluated` 기반 일자별 지표 집계
   - `changed_ratio`, `rate_limited_ratio`로 오탐/정탐/남용 상태 관측
 
-### 4.8 라이벌 공정 리그 매칭
+### 4.8 날씨 치환/스트릭 보호 엔진
+- `weather_replacement_runtime_policies`
+  - 일일 치환 한도(`daily_replacement_limit`) + 주간 Shield 한도(`weekly_shield_limit`) 정책
+- `weather_replacement_mappings`
+  - 위험 단계(`caution|bad|severe`)별 대체 퀘스트 매핑
+- `weather_replacement_histories`
+  - 치환 이력/사유/원퀘스트/대체퀘스트/보호 적용 여부 원장
+- `weather_shield_ledgers`
+  - 주차 단위 Shield 소진 원장
+- `rpc_apply_weather_replacement`
+  - 일일 최대 1회 치환 + 주간 1회 Shield 정책 확정
+- `view_weather_replacement_audit_14d`
+  - 14일 치환/Shield 집계 관측
+
+### 4.9 라이벌 공정 리그 매칭
 - `rival_league_policies`
   - 14일 활동량/주간 반영/표본 fallback 임계값을 서버 파라미터로 관리
 - `rival_league_assignments`
@@ -265,6 +280,13 @@ erDiagram
 - `season_catchup_buff_policies`
   - `select`: 공개(읽기)
 - `view_weather_feedback_kpis_7d`
+  - `select`: 공개(운영 관측용)
+- `weather_replacement_runtime_policies`, `weather_replacement_mappings`
+  - `select`: 공개(정책/매핑 조회)
+- `weather_replacement_histories`, `weather_shield_ledgers`
+  - `select`: 소유자
+  - write: 서비스 경로(RPC/service role)
+- `view_weather_replacement_audit_14d`
   - `select`: 공개(운영 관측용)
 - `rival_league_policies`
   - `select`: 공개(정책 조회)
