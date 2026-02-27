@@ -58,6 +58,18 @@ struct MapView : View{
                             .cornerRadius(10)
                     })
                 }
+                HStack {
+                    Text(viewModel.weatherOverlayStatusText)
+                        .font(.appFont(for: .SemiBold, size: 11))
+                        .foregroundStyle(Color.appTextDarkGray)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(viewModel.weatherOverlayFallbackActive ? Color.appTextLightGray.opacity(0.35) : Color.appYellowPale)
+                        .cornerRadius(8)
+                        .accessibilityLabel("지도 날씨 상태 \(viewModel.weatherOverlayStatusText)")
+                    Spacer()
+                }
+                .padding(.top, 6)
                 if let activeBanner {
                     topBannerView(for: activeBanner)
                 }
