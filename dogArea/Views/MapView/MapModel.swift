@@ -37,7 +37,13 @@ struct Polygon: Identifiable, TimeCheckable {
     var walkingArea: Double
     var walkingTime: Double
     var binaryImage: Data?
-    init(locations: [Location] = [], walkingTime: Double, walkingArea: Double) {
+    var petId: String?
+    init(
+        locations: [Location] = [],
+        walkingTime: Double,
+        walkingArea: Double,
+        petId: String? = nil
+    ) {
         self.locations = locations
         self.id = UUID()
         self.polygon = MKPolygon(coordinates: locations.map{$0.coordinate}, count: locations.count)
@@ -45,8 +51,17 @@ struct Polygon: Identifiable, TimeCheckable {
         self.createdAt = Date().timeIntervalSince1970
         self.walkingArea = walkingArea
         self.walkingTime = walkingTime
+        self.petId = petId
     }
-    init(locations: [Location] = [], createdAt: Double,id: UUID, walkingTime: Double, walkingArea: Double, imgData: Data?) {
+    init(
+        locations: [Location] = [],
+        createdAt: Double,
+        id: UUID,
+        walkingTime: Double,
+        walkingArea: Double,
+        imgData: Data?,
+        petId: String? = nil
+    ) {
         self.locations = locations
         self.id = id
         self.polygon = MKPolygon(coordinates: locations.map{$0.coordinate}, count: locations.count)
@@ -55,6 +70,7 @@ struct Polygon: Identifiable, TimeCheckable {
         self.walkingArea = walkingArea
         self.walkingTime = walkingTime
         self.binaryImage = imgData
+        self.petId = petId
     }
     func center() -> CLLocationCoordinate2D? {
         guard !self.locations.isEmpty else {

@@ -63,6 +63,7 @@ extension CoreDataProtocol {
         polygons.walkingTime = polygon.walkingTime
         polygons.createdAt = polygon.createdAt
         polygons.mapImage = polygon.binaryImage
+        polygons.petId = normalizedPetId(polygon.petId)
         for location in polygon.locations {
             let locationEntity = LocationEntity(context: context)
             locationEntity.x = (location.coordinate.latitude) as NSNumber
@@ -80,6 +81,7 @@ extension CoreDataProtocol {
         }
     }
     func fetchPolygons() -> [Polygon] {
+        backfillPolygonPetIdsFromMetadataIfNeeded()
         var polygonList = [Polygon]()
         do {
             // Perform the fetch request
@@ -109,6 +111,41 @@ extension CoreDataProtocol {
         } catch let error as NSError {
             print("Could not delete. \(error), \(error.userInfo)")
             return fetchPolygons()
+        }
+    }
+
+    private func normalizedPetId(_ raw: String?) -> String? {
+        guard let raw,
+              raw.isEmpty == false,
+              UUID(uuidString: raw) != nil else {
+            return nil
+        }
+        return raw.lowercased()
+    }
+
+    private func backfillPolygonPetIdsFromMetadataIfNeeded() {
+        let backfillFlagKey = "coredata.polygon.petid.backfill.v1.completed"
+        guard UserDefaults.standard.bool(forKey: backfillFlagKey) == false else { return }
+
+        do {
+            let polygons = try context.fetch(fetchRequest)
+            var didUpdate = false
+            for polygon in polygons {
+                if normalizedPetId(polygon.petId) != nil { continue }
+                guard let sessionId = polygon.uuid,
+                      let metadataPetId = normalizedPetId(WalkSessionMetadataStore.shared.petId(sessionId: sessionId)) else {
+                    continue
+                }
+                polygon.petId = metadataPetId
+                didUpdate = true
+            }
+
+            if didUpdate {
+                try context.save()
+            }
+            UserDefaults.standard.set(true, forKey: backfillFlagKey)
+        } catch let error as NSError {
+            print("Could not backfill polygon petId. \(error), \(error.userInfo)")
         }
     }
 

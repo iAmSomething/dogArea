@@ -295,6 +295,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
                     if let endedAtOverride {
                         self.time = max(0, endedAtOverride.timeIntervalSince(self.startTime))
                     }
+                    self.polygon.petId = selectedPetId
                     polygon.makePolygon(walkArea: calculateArea(), walkTime: self.time, img: img)
                     let completedPolygon = self.polygon
                     let updated = savePolygon(polygon: completedPolygon)
@@ -332,6 +333,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
             startTime = Date()
             timerSet()
             polygon.clear()
+            polygon.petId = selectedPetId
             self.currentWalkingPetName = self.selectedPetName
             self.resetAutoPointRecordState()
             self.lastAcceptedWalkLocation = nil
@@ -463,7 +465,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         guard let sessionDTO = CoreDataSupabaseBackfillDTOConverter.makeSessionDTO(
             from: polygon,
             ownerUserId: currentMetricUserId(),
-            petId: selectedPetId,
+            petId: polygon.petId,
             sourceDevice: "ios",
             hasImage: hasImage
         ) else { return }
@@ -640,7 +642,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
             id: restoredSessionId ?? UUID(),
             walkingTime: walkTime,
             walkingArea: 0.0,
-            imgData: nil
+            imgData: nil,
+            petId: snapshot.selectedPetId
         )
         var finalized = completed
         finalized.makePolygon(walkArea: calculateArea(points: restoredPoints), walkTime: walkTime)
@@ -676,7 +679,12 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
             )
         }
 
-        polygon = Polygon(locations: restoredPoints, walkingTime: snapshot.elapsedTime, walkingArea: 0.0)
+        polygon = Polygon(
+            locations: restoredPoints,
+            walkingTime: snapshot.elapsedTime,
+            walkingArea: 0.0,
+            petId: snapshot.selectedPetId
+        )
         if let sessionId = snapshot.sessionId, let restoredId = UUID(uuidString: sessionId) {
             polygon.id = restoredId
         }
@@ -752,7 +760,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
             id: restoredSessionId ?? UUID(),
             walkingTime: walkTime,
             walkingArea: 0.0,
-            imgData: nil
+            imgData: nil,
+            petId: snapshot.selectedPetId
         )
         var finalized = completed
         finalized.makePolygon(walkArea: calculateArea(points: restoredPoints), walkTime: walkTime)

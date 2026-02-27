@@ -7,6 +7,14 @@
 
 import Foundation
 
+private func normalizedUUIDStringOrNil(_ raw: String?) -> String? {
+    guard let raw, raw.isEmpty == false,
+          let parsed = UUID(uuidString: raw) else {
+        return nil
+    }
+    return parsed.uuidString.lowercased()
+}
+
 struct WalkPointBackfillDTO: Codable, Equatable {
     let seqNo: Int
     let lat: Double
@@ -68,7 +76,7 @@ enum CoreDataSupabaseBackfillDTOConverter {
         return WalkSessionBackfillDTO(
             walkSessionId: walkSessionId,
             ownerUserId: ownerUserId,
-            petId: normalizedUUIDString(petId),
+            petId: normalizedUUIDString(petId) ?? normalizedUUIDString(polygon.petId),
             createdAt: endedAt,
             startedAt: startedAt,
             endedAt: endedAt,
@@ -87,11 +95,12 @@ enum CoreDataSupabaseBackfillDTOConverter {
         petId: String?,
         sourceDevice: String = "ios"
     ) -> WalkSessionBackfillDTO? {
+        let canonicalPetId = normalizedUUIDString(petId) ?? normalizedUUIDString(entity.petId)
         guard let polygon = entity.toPolygon() else { return nil }
         return makeSessionDTO(
             from: polygon,
             ownerUserId: ownerUserId,
-            petId: petId,
+            petId: canonicalPetId,
             sourceDevice: sourceDevice,
             hasImage: entity.mapImage != nil
         )
@@ -118,6 +127,7 @@ extension PolygonEntity {
       return nil
     }
       let data = self.mapImage
+      let petId = normalizedUUIDStringOrNil(self.petId)
     for entity in locationEntities {
       if let location = entity.toLocation() {
         locations.append(location)
@@ -128,7 +138,8 @@ extension PolygonEntity {
                      id:id,
                      walkingTime: walkingTime,
                      walkingArea: walkingArea,
-                     imgData: data)
+                     imgData: data,
+                     petId: petId)
   }
 }
 

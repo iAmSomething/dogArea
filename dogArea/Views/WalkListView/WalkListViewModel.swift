@@ -13,7 +13,6 @@ final class WalkListViewModel: ObservableObject, CoreDataProtocol {
     @Published var selectedPetId: String = ""
     @Published var selectedPetName: String = "강아지"
     private var allWalkingDatas: [WalkDataModel] = []
-    private let sessionMetadataStore = WalkSessionMetadataStore.shared
     private var cancellables: Set<AnyCancellable> = []
 
     var pets: [PetInfo] {
@@ -61,8 +60,8 @@ final class WalkListViewModel: ObservableObject, CoreDataProtocol {
             return
         }
 
-        let tagged = allWalkingDatas.filter { sessionMetadataStore.petId(sessionId: $0.id) != nil }
-        let selected = allWalkingDatas.filter { sessionMetadataStore.petId(sessionId: $0.id) == selectedPetId }
+        let tagged = allWalkingDatas.filter { ($0.petId?.isEmpty == false) }
+        let selected = allWalkingDatas.filter { $0.petId == selectedPetId }
         if selected.isEmpty && tagged.isEmpty {
             walkingDatas = allWalkingDatas
             return
