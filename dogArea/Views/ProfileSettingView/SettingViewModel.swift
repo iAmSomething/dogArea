@@ -9,6 +9,14 @@ import Foundation
 import Combine
 import UIKit
 import FirebaseStorage
+
+struct SeasonProfileSummary: Equatable {
+    let weekKey: String
+    let score: Int
+    let rankTier: SeasonRankTier
+    let contributionCount: Int
+}
+
 final class SettingViewModel: ObservableObject, CoreDataProtocol {
     enum ProfileEditValidationError: LocalizedError {
         case userNotFound
@@ -30,6 +38,7 @@ final class SettingViewModel: ObservableObject, CoreDataProtocol {
     @Published var userInfo: UserInfo? = nil
     @Published var selectedPetId: String = ""
     @Published var selectedPet: PetInfo? = nil
+    @Published var seasonProfileSummary: SeasonProfileSummary? = nil
     private var petURL: String? = nil
     private var profileURL: String? = nil
     private var storage = Storage.storage().reference()
@@ -54,6 +63,7 @@ final class SettingViewModel: ObservableObject, CoreDataProtocol {
         self.userInfo = profileRepository.fetchUserInfo()
         self.selectedPet = profileRepository.selectedPet(from: userInfo)
         self.selectedPetId = selectedPet?.petId ?? ""
+        reloadSeasonProfileSummary()
     }
 
     func selectPet(_ petId: String) {
@@ -125,6 +135,39 @@ final class SettingViewModel: ObservableObject, CoreDataProtocol {
                 self?.reloadUserInfo()
             }
             .store(in: &cancellables)
+    }
+
+    private func reloadSeasonProfileSummary() {
+        struct StoredSeasonState: Decodable {
+            let weekKey: String
+            let score: Double
+            let contributionCount: Int
+        }
+
+        guard let data = UserDefaults.standard.data(forKey: "season.motion.current.v1"),
+              let decoded = try? JSONDecoder().decode(StoredSeasonState.self, from: data) else {
+            seasonProfileSummary = nil
+            return
+        }
+        let score = Int(decoded.score.rounded())
+        let rankTier: SeasonRankTier
+        if decoded.score >= SeasonRankTier.platinum.minimumScore {
+            rankTier = .platinum
+        } else if decoded.score >= SeasonRankTier.gold.minimumScore {
+            rankTier = .gold
+        } else if decoded.score >= SeasonRankTier.silver.minimumScore {
+            rankTier = .silver
+        } else if decoded.score >= SeasonRankTier.bronze.minimumScore {
+            rankTier = .bronze
+        } else {
+            rankTier = .rookie
+        }
+        seasonProfileSummary = SeasonProfileSummary(
+            weekKey: decoded.weekKey,
+            score: score,
+            rankTier: rankTier,
+            contributionCount: decoded.contributionCount
+        )
     }
     func uploadImg(img: UIImage, isPet:Bool = false){
         Task{ @MainActor in
