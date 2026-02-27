@@ -249,6 +249,19 @@ erDiagram
 - `view_rival_league_distribution_current`
   - 최신 리그 분포/표본 상태 모니터링
 
+### 4.10 주간 시즌 정책 고정(Stage 1)
+- 정책 문서: `docs/season-weekly-policy-stage1-v1.md`
+- v1 고정값:
+  - 신규 타일 점령 `+5`
+  - 동일 타일 유지 방문(일 1회) `+1`
+  - 48시간 유예 후 하루 `-2` 감쇠(하한 0)
+  - 동점 정렬: `active_tile_count -> new_tile_capture_count -> last_contribution_at -> user_id`
+  - 티어 컷: `Bronze 80 / Silver 180 / Gold 320 / Platinum 520`
+- 서버 파라미터 연결:
+  - 점수/억제 정책: `season_scoring_policies`
+  - 복귀/보정 정책: `season_catchup_buff_policies`
+  - Stage2 구현 시 `season_runs`, `season_user_scores`, `season_rewards`로 정산 스냅샷/보상 영속화 확장
+
 ## 5. RLS 정책 원칙
 - 사용자 데이터는 `auth.uid()` 소유 범위로만 접근
 - `area_references`는 읽기 공개(`anon`, `authenticated`)
