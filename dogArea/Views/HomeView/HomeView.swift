@@ -100,7 +100,7 @@ struct HomeView: View {
                     }.frame(maxWidth: .infinity)
                         .padding(.trailing)
                 }
-                if viewModel.indoorMissionBoard.isIndoorReplacementActive {
+                if viewModel.indoorMissionBoard.shouldDisplayCard {
                     indoorMissionCard(board: viewModel.indoorMissionBoard)
                     UnderLine()
                 }
@@ -320,33 +320,52 @@ struct HomeView: View {
     private func indoorMissionCard(board: IndoorMissionBoard) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("악천후 실내 대체 미션")
+                Text(board.riskLevel == .clear ? "데일리 미션 상태" : "악천후 실내 대체 미션")
                     .font(.appFont(for: .SemiBold, size: 18))
                 Spacer()
-                Text(board.riskLevel.displayTitle)
-                    .font(.appFont(for: .SemiBold, size: 11))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.appYellow)
-                    .cornerRadius(8)
+                if board.riskLevel != .clear {
+                    Text(board.riskLevel.displayTitle)
+                        .font(.appFont(for: .SemiBold, size: 11))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.appYellow)
+                        .cornerRadius(8)
+                }
             }
-            Text("악천후 단계에 맞춰 실외 미션 일부를 실내 미션으로 치환했어요.")
+            Text(board.riskLevel == .clear
+                 ? "연장 슬롯 상태를 확인할 수 있어요."
+                 : "악천후 단계에 맞춰 실외 미션 일부를 실내 미션으로 치환했어요.")
                 .font(.appFont(for: .Light, size: 12))
                 .foregroundStyle(Color.appTextDarkGray)
-            HStack(spacing: 8) {
-                Button("체감 날씨 다름") {
-                    viewModel.submitWeatherMismatchFeedback()
-                }
-                .disabled(viewModel.canSubmitWeatherMismatchFeedback == false)
-                .font(.appFont(for: .SemiBold, size: 11))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 7)
-                .background(viewModel.canSubmitWeatherMismatchFeedback ? Color.appYellow : Color.appTextLightGray)
-                .cornerRadius(8)
+            if board.riskLevel != .clear {
+                HStack(spacing: 8) {
+                    Button("체감 날씨 다름") {
+                        viewModel.submitWeatherMismatchFeedback()
+                    }
+                    .disabled(viewModel.canSubmitWeatherMismatchFeedback == false)
+                    .font(.appFont(for: .SemiBold, size: 11))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
+                    .background(viewModel.canSubmitWeatherMismatchFeedback ? Color.appYellow : Color.appTextLightGray)
+                    .cornerRadius(8)
 
-                Text("주간 남은 반영 \(viewModel.weatherFeedbackRemainingCount)/\(viewModel.weatherFeedbackWeeklyLimit)")
+                    Text("주간 남은 반영 \(viewModel.weatherFeedbackRemainingCount)/\(viewModel.weatherFeedbackWeeklyLimit)")
+                        .font(.appFont(for: .Light, size: 11))
+                        .foregroundStyle(Color.appTextDarkGray)
+                }
+            }
+            if let extensionMessage = board.extensionMessage {
+                Text(extensionMessage)
                     .font(.appFont(for: .Light, size: 11))
                     .foregroundStyle(Color.appTextDarkGray)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 6)
+                    .background(
+                        board.extensionState == .active || board.extensionState == .consumed
+                        ? Color.appYellowPale
+                        : Color.appTextLightGray.opacity(0.28)
+                    )
+                    .cornerRadius(8)
             }
             if let feedbackMessage = viewModel.weatherFeedbackResultMessage {
                 Text(feedbackMessage)
@@ -358,8 +377,15 @@ struct HomeView: View {
                     .cornerRadius(8)
             }
 
-            ForEach(board.missions) { mission in
-                indoorMissionRow(mission: mission)
+            if board.missions.isEmpty {
+                Text("오늘 활성화된 미션이 없어요.")
+                    .font(.appFont(for: .Light, size: 12))
+                    .foregroundStyle(Color.appTextDarkGray)
+                    .padding(.vertical, 4)
+            } else {
+                ForEach(board.missions) { mission in
+                    indoorMissionRow(mission: mission)
+                }
             }
         }
         .padding(14)
@@ -377,6 +403,14 @@ struct HomeView: View {
             HStack {
                 Text(mission.title)
                     .font(.appFont(for: .SemiBold, size: 14))
+                if mission.isExtension {
+                    Text("연장 슬롯")
+                        .font(.appFont(for: .SemiBold, size: 10))
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 4)
+                        .background(Color.appYellowPale)
+                        .cornerRadius(6)
+                }
                 Spacer()
                 Text("보상 \(mission.rewardPoint)pt")
                     .font(.appFont(for: .SemiBold, size: 11))
@@ -385,6 +419,11 @@ struct HomeView: View {
             Text(mission.description)
                 .font(.appFont(for: .Light, size: 12))
                 .foregroundStyle(Color.appTextDarkGray)
+            if mission.isExtension {
+                Text("전일 미션 연장 · 보상 70% · 시즌 점수/연속 보상 제외")
+                    .font(.appFont(for: .Light, size: 10))
+                    .foregroundStyle(Color.appTextDarkGray)
+            }
             ProgressView(value: mission.progress.progressRatio)
                 .tint(mission.progress.isCompleted ? Color.appGreen : Color.appYellow)
             Text("행동량 \(mission.progress.actionCount)/\(mission.minimumActionCount)")

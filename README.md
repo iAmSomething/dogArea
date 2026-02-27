@@ -24,6 +24,7 @@
 - 라이벌 공정 리그 매칭 v1: `docs/rival-fair-league-v1.md`
 - 시즌 안티 농사 규칙 v1: `docs/season-anti-farming-v1.md`
 - 체감 날씨 피드백 루프 v1: `docs/weather-feedback-loop-v1.md`
+- 퀘스트 실패 완충(자동 연장 슬롯) v1: `docs/quest-failure-buffer-v1.md`
 - Feature Flag/롤아웃 모니터링 명세 v1: `docs/feature-flag-rollout-monitoring-v1.md`
 - ViewModel 현대화 리팩토링 명세 v1: `docs/viewmodel-modernization-v1.md`
 - CoreData 반환 계약 정리 v1: `docs/coredata-return-contract-v1.md`
@@ -45,6 +46,7 @@
 - 예외처리 결과 템플릿 v1: `docs/fault-injection-result-template-v1.md`
 - Cycle #81 결과 보고서(2026-02-26): `docs/cycle-81-fault-injection-report-2026-02-26.md`
 - Cycle #78 결과 보고서(2026-02-26): `docs/cycle-78-auto-end-policy-report-2026-02-26.md`
+- Cycle #148 결과 보고서(2026-02-27): `docs/cycle-148-quest-failure-buffer-report-2026-02-27.md`
 
 ## 로컬 PR 체크
 
