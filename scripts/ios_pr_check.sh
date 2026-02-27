@@ -31,6 +31,7 @@ swift scripts/supabase_ops_hardening_unit_check.swift
 swift scripts/rival_privacy_hard_guard_unit_check.swift
 swift scripts/rival_league_matching_unit_check.swift
 swift scripts/season_anti_farming_unit_check.swift
+swift scripts/season_comeback_catchup_unit_check.swift
 swift scripts/weather_feedback_loop_unit_check.swift
 swift scripts/quest_failure_buffer_unit_check.swift
 swift scripts/pet_adaptive_quest_unit_check.swift

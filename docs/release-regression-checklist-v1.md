@@ -82,6 +82,9 @@
 - [ ] 시즌 점수에서 동일 타일 30분 내 반복 이벤트가 0점 처리됨
 - [ ] 시즌 점수에서 신규 경로 비율이 높을수록 보너스가 증가함
 - [ ] 반복 파밍 의심 패턴에서 `score_blocked=true` + 감사 로그가 기록됨
+- [ ] 72시간 비활동 복귀 세션에서 `catchup_buff_active=true` 및 +20% 신규 타일 보정이 적용됨
+- [ ] 복귀 버프 주간 1회 한도 초과 시 `block_reason=weekly_limit_reached`가 기록됨
+- [ ] 시즌 종료 24시간 이내 복귀 시 `block_reason=season_end_window`로 신규 지급이 차단됨
 
 ### 4.3 목록/상세
 - [ ] 산책 목록 로딩 정상
@@ -108,7 +111,7 @@
 - [ ] `profiles.profile_message`, `pets.breed/age_years/gender` 컬럼 및 제약 확인
 - [ ] `area_reference_catalogs` + `area_references.catalog_id/display_order/is_featured` 구조 확인
 - [ ] `privacy_guard_policies/privacy_sensitive_geo_masks/privacy_guard_audit_logs` 구조 및 `rpc_get_nearby_hotspots` 확장 컬럼 확인
-- [ ] `season_scoring_policies/season_tile_score_events/season_score_audit_logs` 구조 및 `rpc_score_walk_session_anti_farming` 실행 확인
+- [ ] `season_scoring_policies/season_tile_score_events/season_score_audit_logs/season_catchup_buff_policies/season_catchup_buff_grants` 구조 및 `rpc_score_walk_session_anti_farming` 실행 확인
 - [ ] `view_weather_feedback_kpis_7d` 뷰 조회 및 지표 컬럼(`submitted/rate_limited/changed_ratio`) 확인
 - [ ] `rival_league_policies/rival_league_assignments/rival_league_history` 구조 및 `rpc_refresh_rival_leagues/rpc_get_my_rival_league` 실행 확인
 

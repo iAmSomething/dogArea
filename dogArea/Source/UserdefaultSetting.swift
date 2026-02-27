@@ -22,11 +22,13 @@ class UserdefaultSetting {
         case petSelectionEvents = "petSelectionEvents"
         case walkStartCountdownEnabled = "walkStartCountdownEnabled"
         case walkPointRecordMode = "walkPointRecordMode"
+        case seasonCatchupBuffSnapshot = "seasonCatchupBuffSnapshot"
         case createdAt = "createdAt"
         case nonce = "nonce"
     }
     static var shared = UserdefaultSetting()
     static let selectedPetDidChangeNotification = Notification.Name("userdefault.selectedPetDidChange")
+    static let seasonCatchupBuffDidUpdateNotification = Notification.Name("userdefault.seasonCatchupBuffDidUpdate")
     func savenonce(nonce: Double) {
         UserDefaults.standard.setValue(nonce, forKey: keyValue.nonce.rawValue)
     }
@@ -164,6 +166,25 @@ enum CaricatureStatus: String, Codable {
     case processing
     case ready
     case failed
+}
+
+enum SeasonCatchupBuffDisplayStatus: String, Codable {
+    case active
+    case granted
+    case blocked
+    case inactive
+}
+
+struct SeasonCatchupBuffSnapshot: Codable, Equatable {
+    let walkSessionId: String
+    let status: SeasonCatchupBuffDisplayStatus
+    let isActive: Bool
+    let bonusScore: Double
+    let uiReason: String?
+    let blockReason: String?
+    let grantedAt: TimeInterval?
+    let expiresAt: TimeInterval?
+    let syncedAt: TimeInterval
 }
 
 struct PetInfo: Codable, Identifiable, Equatable {
@@ -505,6 +526,26 @@ extension UserdefaultSetting {
             pet: pets,
             createdAt: current.createdAt,
             selectedPetId: targetPetId
+        )
+    }
+
+    func seasonCatchupBuffSnapshot() -> SeasonCatchupBuffSnapshot? {
+        UserDefaults.standard.structData(
+            SeasonCatchupBuffSnapshot.self,
+            forKey: keyValue.seasonCatchupBuffSnapshot.rawValue
+        )
+    }
+
+    func updateSeasonCatchupBuffSnapshot(_ snapshot: SeasonCatchupBuffSnapshot) {
+        UserDefaults.standard.setStruct(snapshot, forKey: keyValue.seasonCatchupBuffSnapshot.rawValue)
+        NotificationCenter.default.post(
+            name: UserdefaultSetting.seasonCatchupBuffDidUpdateNotification,
+            object: nil,
+            userInfo: [
+                "status": snapshot.status.rawValue,
+                "isActive": snapshot.isActive,
+                "walkSessionId": snapshot.walkSessionId
+            ]
         )
     }
 
@@ -1177,6 +1218,68 @@ struct SupabaseSyncOutboxTransport: SyncOutboxTransporting {
         }
     }
 
+    private struct SyncStageResponseDTO: Decodable {
+        let seasonScoreSummary: SeasonScoreSummaryDTO?
+
+        enum CodingKeys: String, CodingKey {
+            case seasonScoreSummary = "season_score_summary"
+        }
+    }
+
+    private struct SeasonScoreSummaryDTO: Decodable {
+        let catchupBonus: Double?
+        let catchupBuffActive: Bool?
+        let catchupBuffGrantedAt: String?
+        let catchupBuffExpiresAt: String?
+        let explain: ExplainDTO?
+
+        enum CodingKeys: String, CodingKey {
+            case catchupBonus = "catchup_bonus"
+            case catchupBuffActive = "catchup_buff_active"
+            case catchupBuffGrantedAt = "catchup_buff_granted_at"
+            case catchupBuffExpiresAt = "catchup_buff_expires_at"
+            case explain
+        }
+    }
+
+    private struct ExplainDTO: Decodable {
+        let uiReason: String?
+        let catchupBuff: CatchupBuffDTO?
+
+        enum CodingKeys: String, CodingKey {
+            case uiReason = "ui_reason"
+            case catchupBuff = "catchup_buff"
+        }
+    }
+
+    private struct CatchupBuffDTO: Decodable {
+        let status: String?
+        let blockReason: String?
+        let grantedAt: String?
+        let expiresAt: String?
+        let bonusScore: Double?
+
+        enum CodingKeys: String, CodingKey {
+            case status
+            case blockReason = "block_reason"
+            case grantedAt = "granted_at"
+            case expiresAt = "expires_at"
+            case bonusScore = "bonus_score"
+        }
+    }
+
+    private static let iso8601WithFractional: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+
+    private static let iso8601Basic: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter
+    }()
+
     private func endpointURL(from env: [String: String]) -> URL? {
         guard let rawURL = env["SUPABASE_URL"], rawURL.isEmpty == false else { return nil }
         return URL(string: rawURL + "/functions/v1/sync-walk")
@@ -1184,6 +1287,38 @@ struct SupabaseSyncOutboxTransport: SyncOutboxTransporting {
 
     private func bearerToken(from env: [String: String]) -> String {
         env["SUPABASE_ANON_KEY"] ?? ""
+    }
+
+    private func parseISO8601ToEpoch(_ value: String?) -> TimeInterval? {
+        guard let value, value.isEmpty == false else { return nil }
+        if let date = Self.iso8601WithFractional.date(from: value) ?? Self.iso8601Basic.date(from: value) {
+            return date.timeIntervalSince1970
+        }
+        return nil
+    }
+
+    private func persistSeasonCatchupBuffSnapshotIfNeeded(item: SyncOutboxItem, data: Data) {
+        guard item.stage == .points else { return }
+        guard let decoded = try? JSONDecoder().decode(SyncStageResponseDTO.self, from: data),
+              let season = decoded.seasonScoreSummary else {
+            return
+        }
+
+        let catchup = season.explain?.catchupBuff
+        let status = SeasonCatchupBuffDisplayStatus(rawValue: catchup?.status ?? "")
+            ?? (season.catchupBuffActive == true ? .active : .inactive)
+        let snapshot = SeasonCatchupBuffSnapshot(
+            walkSessionId: item.walkSessionId,
+            status: status,
+            isActive: season.catchupBuffActive ?? false,
+            bonusScore: season.catchupBonus ?? catchup?.bonusScore ?? 0,
+            uiReason: season.explain?.uiReason,
+            blockReason: catchup?.blockReason,
+            grantedAt: parseISO8601ToEpoch(season.catchupBuffGrantedAt ?? catchup?.grantedAt),
+            expiresAt: parseISO8601ToEpoch(season.catchupBuffExpiresAt ?? catchup?.expiresAt),
+            syncedAt: Date().timeIntervalSince1970
+        )
+        UserdefaultSetting.shared.updateSeasonCatchupBuffSnapshot(snapshot)
     }
 
     func send(item: SyncOutboxItem) async -> SyncOutboxSendResult {
@@ -1215,12 +1350,13 @@ struct SupabaseSyncOutboxTransport: SyncOutboxTransporting {
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
         do {
-            let (_, response) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await URLSession.shared.data(for: request)
             guard let statusCode = (response as? HTTPURLResponse)?.statusCode else {
                 return .retryable(.unknown)
             }
             switch statusCode {
             case 200..<300:
+                persistSeasonCatchupBuffSnapshotIfNeeded(item: item, data: data)
                 return .success
             case 401, 403:
                 return .retryable(.tokenExpired)

@@ -192,7 +192,41 @@ order by created_at desc
 limit 20;
 ```
 
-### 5.8 체감 날씨 피드백 KPI 검증 (#151)
+### 5.8 시즌 복귀 캐치업 버프 검증 (#145)
+```sql
+select
+  catchup_bonus,
+  catchup_buff_active,
+  catchup_buff_granted_at,
+  catchup_buff_expires_at,
+  explain -> 'catchup_buff' as catchup_buff
+from public.rpc_score_walk_session_anti_farming(
+  ':walk_session_uuid'::uuid,
+  now()
+);
+```
+
+기대값:
+- 조건 충족 시 `catchup_buff_active=true` 또는 `explain.catchup_buff.status='granted|active'`
+- 버프는 신규 타일 점수 기반으로만 `catchup_bonus` 반영
+- 차단 케이스는 `explain.catchup_buff.block_reason`에 사유가 남음
+
+지급 원장 확인:
+```sql
+select
+  status,
+  blocked_reason,
+  granted_at,
+  expires_at,
+  boost_rate,
+  abuse_flag
+from public.season_catchup_buff_grants
+where owner_user_id = ':user_uuid'::uuid
+order by created_at desc
+limit 20;
+```
+
+### 5.9 체감 날씨 피드백 KPI 검증 (#151)
 ```sql
 select
   day_bucket,
@@ -212,7 +246,7 @@ limit 7;
 - 위험도 재평가 이벤트에서 `changed_ratio`가 0~1 범위로 계산
 - 제한 발생 시 `rate_limited_ratio`가 증가
 
-### 5.9 라이벌 공정 리그 매칭 검증 (#149)
+### 5.10 라이벌 공정 리그 매칭 검증 (#149)
 주간 스냅샷 재산정:
 ```sql
 select *

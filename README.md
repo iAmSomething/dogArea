@@ -23,6 +23,7 @@
 - 라이벌 프라이버시 하드 가드 v1: `docs/rival-privacy-hard-guard-v1.md`
 - 라이벌 공정 리그 매칭 v1: `docs/rival-fair-league-v1.md`
 - 시즌 안티 농사 규칙 v1: `docs/season-anti-farming-v1.md`
+- 시즌 복귀 캐치업 버프 v1: `docs/season-comeback-catchup-buff-v1.md`
 - 체감 날씨 피드백 루프 v1: `docs/weather-feedback-loop-v1.md`
 - 퀘스트 실패 완충(자동 연장 슬롯) v1: `docs/quest-failure-buffer-v1.md`
 - 반려견 맞춤 난이도/쉬운 날 모드 v1: `docs/pet-adaptive-quest-difficulty-v1.md`
@@ -49,6 +50,7 @@
 - Cycle #78 결과 보고서(2026-02-26): `docs/cycle-78-auto-end-policy-report-2026-02-26.md`
 - Cycle #148 결과 보고서(2026-02-27): `docs/cycle-148-quest-failure-buffer-report-2026-02-27.md`
 - Cycle #147 결과 보고서(2026-02-27): `docs/cycle-147-pet-adaptive-quest-report-2026-02-27.md`
+- Cycle #145 결과 보고서(2026-02-27): `docs/cycle-145-season-catchup-buff-report-2026-02-27.md`
 
 ## 로컬 PR 체크
 
