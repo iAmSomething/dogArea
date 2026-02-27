@@ -44,6 +44,8 @@ assertTrue(checklist.contains("rival_league_policies/rival_league_assignments/ri
 assertTrue(checklist.contains("선택 반려견 기준"), "checklist should include selected pet context badge scenario")
 assertTrue(checklist.contains("전체 기록 보기"), "checklist should include empty state CTA scenario")
 assertTrue(checklist.contains("기준으로 돌아가기"), "checklist should include filter restore scenario")
+assertTrue(checklist.contains("DB 비교군"), "checklist should include DB area reference scenario")
+assertTrue(checklist.contains("로컬 비교군 (Fallback)"), "checklist should include area fallback scenario")
 
 assertTrue(report.contains("## 1. 빌드 체크 결과"), "report must include build results")
 assertTrue(report.contains("## 2. 핵심 시나리오 점검 결과"), "report must include scenario results")

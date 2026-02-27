@@ -30,6 +30,9 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     @Published var seasonCatchupBuffStatusMessage: String? = nil
     @Published var seasonCatchupBuffStatusWarning: Bool = false
     @Published private(set) var isShowingAllRecordsOverride: Bool = false
+    @Published private(set) var areaReferenceSections: [AreaReferenceSection] = []
+    @Published private(set) var areaReferenceSourceLabel: String = "로컬 비교군"
+    @Published private(set) var featuredAreaCount: Int = 0
 
     private var allPolygons: [Polygon] = []
     private var cancellables: Set<AnyCancellable> = []
@@ -38,6 +41,9 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     private var lastIndoorMissionDifficultyTrackKey: String = ""
     private let indoorMissionStore = IndoorMissionStore()
     private let metricTracker = AppMetricTracker.shared
+    private let areaReferenceRepository: AreaReferenceRepository
+    private var featuredGoalAreas: [AreaMeter] = []
+    private var areaReferenceTask: Task<Void, Never>? = nil
     private static let catchupExpiryTimeFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ko_KR")
@@ -89,7 +95,8 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
         return min(1.0, max(0.0, myArea.area / nextGoalArea.area))
     }
 
-    init() {
+    init(areaReferenceRepository: AreaReferenceRepository = SupabaseAreaReferenceRepository.shared) {
+        self.areaReferenceRepository = areaReferenceRepository
         bindSelectedPetSync()
         bindTimeBoundaryNotifications()
         bindSeasonCatchupBuffStatusNotifications()
@@ -98,14 +105,37 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
         fetchData()
     }
 
+    deinit {
+        areaReferenceTask?.cancel()
+    }
+
     func fetchData() {
         reloadUserInfo()
         reloadSeasonCatchupBuffStatus()
         allPolygons = fetchPolygons()
         applySelectedPetStatistics(shouldUpdateMeter: true)
         myAreaList = fetchArea()
+        refreshAreaReferenceCatalogs()
         refreshGuestDataUpgradeReport()
         refreshIndoorMissions()
+    }
+
+    func refreshAreaReferenceCatalogs() {
+        areaReferenceTask?.cancel()
+        areaReferenceTask = Task { [weak self] in
+            guard let self else { return }
+            let snapshot = await areaReferenceRepository.fetchSnapshot()
+            guard Task.isCancelled == false else { return }
+            await MainActor.run {
+                self.krAreas = AreaMeterCollection(areas: snapshot.allAreas)
+                self.featuredGoalAreas = snapshot.featuredAreas.sorted { $0.area > $1.area }
+                self.featuredAreaCount = self.featuredGoalAreas.count
+                self.areaReferenceSections = snapshot.sections
+                self.areaReferenceSourceLabel = snapshot.source == .remote ? "DB 비교군" : "로컬 비교군 (Fallback)"
+                self.updateCurrentMeter()
+                self.refreshAreaList()
+            }
+        }
     }
 
     func reloadUserInfo() {
@@ -300,6 +330,9 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     }
 
     func nearlistMore() -> AreaMeter? {
+        if let featuredNext = featuredGoalAreas.last(where: { $0.area > myArea.area }) {
+            return featuredNext
+        }
         krAreas.closeArea(of: myArea.area)
     }
 

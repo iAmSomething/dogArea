@@ -15,6 +15,7 @@
 - 데이터 레이어 전환 설계 v1: `docs/data-layer-transition-v1.md`
 - 다견가정 도메인/UX 명세 v1: `docs/multi-dog-domain-v1.md`
 - 명소 넓이 데이터 거버넌스 v1: `docs/area-references-data-governance.md`
+- 비교군 UI DB 전환 v1: `docs/area-reference-db-ui-transition-v1.md`
 - 이미지 생성 공급자 라우터 명세 v1: `docs/image-provider-router-v1.md`
 - 시계열 Heatmap 명세 v1: `docs/heatmap-timeseries-v1.md`
 - Watch 액션 신뢰성 명세 v1: `docs/watch-connectivity-reliability-v1.md`
@@ -53,6 +54,7 @@
 - Cycle #147 결과 보고서(2026-02-27): `docs/cycle-147-pet-adaptive-quest-report-2026-02-27.md`
 - Cycle #145 결과 보고서(2026-02-27): `docs/cycle-145-season-catchup-buff-report-2026-02-27.md`
 - Cycle #138 결과 보고서(2026-02-27): `docs/cycle-138-pet-context-badge-report-2026-02-27.md`
+- Cycle #139 결과 보고서(2026-02-27): `docs/cycle-139-area-reference-db-ui-report-2026-02-27.md`
 
 ## 로컬 PR 체크
 

@@ -27,7 +27,16 @@ struct AreaMeterDTO: Hashable, TimeCheckable {
     var createdAt: Double
 }
 struct AreaMeterCollection {
+    private let customAreas: [AreaMeter]?
+
+    init(areas: [AreaMeter]? = nil) {
+        self.customAreas = areas
+    }
+
     var areas: [AreaMeter] {
+      if let customAreas, customAreas.isEmpty == false {
+          return customAreas.sorted { $0.area > $1.area }
+      }
       var area: [AreaMeter] = [.init("강원특별자치도 홍천군" , 1820.58),
         .init("강원특별자치도 인제군",1646.19),
         .init("경상북도 안동시",1522.21),
@@ -280,5 +289,247 @@ struct AreaMeterCollection {
     }
     func closeArea(of myarea: Double) -> AreaMeter? {
         return areas.last{$0.area > myarea}
+    }
+}
+
+struct AreaReferenceCatalogDTO: Decodable {
+    let id: String
+    let code: String
+    let name: String
+    let sortOrder: Int
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case code
+        case name
+        case sortOrder = "sort_order"
+    }
+}
+
+struct AreaReferenceRowDTO: Decodable {
+    let id: String
+    let catalogId: String
+    let referenceName: String
+    let areaM2: Double
+    let isFeatured: Bool
+    let displayOrder: Int
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case catalogId = "catalog_id"
+        case referenceName = "reference_name"
+        case areaM2 = "area_m2"
+        case isFeatured = "is_featured"
+        case displayOrder = "display_order"
+    }
+}
+
+struct AreaReferenceItem: Identifiable, Hashable {
+    let id: String
+    let catalogId: String
+    let referenceName: String
+    let areaM2: Double
+    let isFeatured: Bool
+    let displayOrder: Int
+}
+
+struct AreaReferenceSection: Identifiable, Hashable {
+    let id: String
+    let catalogCode: String
+    let catalogName: String
+    let sortOrder: Int
+    let references: [AreaReferenceItem]
+}
+
+enum AreaReferenceSource {
+    case remote
+    case fallback
+}
+
+struct AreaReferenceSnapshot {
+    let source: AreaReferenceSource
+    let allAreas: [AreaMeter]
+    let featuredAreas: [AreaMeter]
+    let sections: [AreaReferenceSection]
+}
+
+protocol AreaReferenceRepository {
+    func fetchSnapshot() async -> AreaReferenceSnapshot
+}
+
+final class SupabaseAreaReferenceRepository: AreaReferenceRepository {
+    static let shared = SupabaseAreaReferenceRepository()
+
+    private let session: URLSession
+
+    init(session: URLSession = .shared) {
+        self.session = session
+    }
+
+    func fetchSnapshot() async -> AreaReferenceSnapshot {
+        do {
+            let (catalogs, references) = try await fetchRemoteCatalogAndReferences()
+            let snapshot = makeRemoteSnapshot(catalogs: catalogs, references: references)
+            if snapshot.allAreas.isEmpty {
+                return fallbackSnapshot()
+            }
+            return snapshot
+        } catch {
+            return fallbackSnapshot()
+        }
+    }
+
+    private func fetchRemoteCatalogAndReferences() async throws -> ([AreaReferenceCatalogDTO], [AreaReferenceRowDTO]) {
+        let env = ProcessInfo.processInfo.environment
+        guard let rawURL = env["SUPABASE_URL"], rawURL.isEmpty == false,
+              let baseURL = URL(string: rawURL) else {
+            throw URLError(.badURL)
+        }
+
+        let anonKey = env["SUPABASE_ANON_KEY"] ?? ""
+        guard anonKey.isEmpty == false else {
+            throw URLError(.userAuthenticationRequired)
+        }
+
+        let catalogsURL = baseURL
+            .appending(path: "rest/v1/area_reference_catalogs")
+            .appending(queryItems: [
+                URLQueryItem(name: "select", value: "id,code,name,sort_order,is_active"),
+                URLQueryItem(name: "is_active", value: "eq.true"),
+                URLQueryItem(name: "order", value: "sort_order.asc")
+            ])
+
+        let referencesURL = baseURL
+            .appending(path: "rest/v1/area_references")
+            .appending(queryItems: [
+                URLQueryItem(name: "select", value: "id,catalog_id,reference_name,area_m2,is_featured,display_order,is_active"),
+                URLQueryItem(name: "is_active", value: "eq.true"),
+                URLQueryItem(name: "order", value: "display_order.asc,area_m2.desc")
+            ])
+
+        async let catalogsData = get(url: catalogsURL, anonKey: anonKey)
+        async let referencesData = get(url: referencesURL, anonKey: anonKey)
+
+        let decoder = JSONDecoder()
+        let catalogs = try decoder.decode([AreaReferenceCatalogDTO].self, from: try await catalogsData)
+        let references = try decoder.decode([AreaReferenceRowDTO].self, from: try await referencesData)
+        return (catalogs, references)
+    }
+
+    private func get(url: URL, anonKey: String) async throws -> Data {
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(anonKey, forHTTPHeaderField: "apikey")
+        request.setValue("Bearer \(anonKey)", forHTTPHeaderField: "Authorization")
+
+        let (data, response) = try await session.data(for: request)
+        guard let code = (response as? HTTPURLResponse)?.statusCode,
+              (200..<300).contains(code) else {
+            throw URLError(.badServerResponse)
+        }
+        return data
+    }
+
+    private func makeRemoteSnapshot(
+        catalogs: [AreaReferenceCatalogDTO],
+        references: [AreaReferenceRowDTO]
+    ) -> AreaReferenceSnapshot {
+        let activeCatalogIds = Set(catalogs.map(\.id))
+        let filteredReferences = references.filter { activeCatalogIds.contains($0.catalogId) }
+        let items = filteredReferences.map {
+            AreaReferenceItem(
+                id: $0.id,
+                catalogId: $0.catalogId,
+                referenceName: $0.referenceName,
+                areaM2: $0.areaM2,
+                isFeatured: $0.isFeatured,
+                displayOrder: $0.displayOrder
+            )
+        }
+
+        let sections = catalogs
+            .sorted { lhs, rhs in
+                if lhs.sortOrder == rhs.sortOrder {
+                    return lhs.code < rhs.code
+                }
+                return lhs.sortOrder < rhs.sortOrder
+            }
+            .map { catalog in
+                let sectionItems = items
+                    .filter { $0.catalogId == catalog.id }
+                    .sorted { lhs, rhs in
+                        if lhs.isFeatured == rhs.isFeatured {
+                            if lhs.displayOrder == rhs.displayOrder {
+                                return lhs.areaM2 > rhs.areaM2
+                            }
+                            return lhs.displayOrder < rhs.displayOrder
+                        }
+                        return lhs.isFeatured && !rhs.isFeatured
+                    }
+                return AreaReferenceSection(
+                    id: catalog.id,
+                    catalogCode: catalog.code,
+                    catalogName: catalog.name,
+                    sortOrder: catalog.sortOrder,
+                    references: sectionItems
+                )
+            }
+            .filter { $0.references.isEmpty == false }
+
+        let allAreas = items
+            .map { AreaMeter($0.referenceName, $0.areaM2) }
+            .sorted { $0.area > $1.area }
+
+        let featuredAreas = items
+            .filter(\.isFeatured)
+            .map { AreaMeter($0.referenceName, $0.areaM2) }
+            .sorted { $0.area > $1.area }
+
+        return AreaReferenceSnapshot(
+            source: .remote,
+            allAreas: allAreas,
+            featuredAreas: featuredAreas,
+            sections: sections
+        )
+    }
+
+    private func fallbackSnapshot() -> AreaReferenceSnapshot {
+        let legacy = AreaMeterCollection().areas
+        let legacyItems = legacy.enumerated().map { index, area in
+            AreaReferenceItem(
+                id: "fallback-\(index)",
+                catalogId: "legacy",
+                referenceName: area.areaName,
+                areaM2: area.area,
+                isFeatured: index < 10,
+                displayOrder: index
+            )
+        }
+
+        return AreaReferenceSnapshot(
+            source: .fallback,
+            allAreas: legacy,
+            featuredAreas: Array(legacy.prefix(10)),
+            sections: [
+                AreaReferenceSection(
+                    id: "legacy",
+                    catalogCode: "legacy",
+                    catalogName: "로컬 비교군 (Fallback)",
+                    sortOrder: 0,
+                    references: legacyItems
+                )
+            ]
+        )
+    }
+}
+
+private extension URL {
+    func appending(queryItems: [URLQueryItem]) -> URL {
+        guard var components = URLComponents(url: self, resolvingAgainstBaseURL: false) else {
+            return self
+        }
+        components.queryItems = (components.queryItems ?? []) + queryItems
+        return components.url ?? self
     }
 }
