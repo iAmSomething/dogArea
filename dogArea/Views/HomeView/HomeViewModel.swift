@@ -9,6 +9,32 @@ import Foundation
 import SwiftUI
 import Combine
 
+extension Notification.Name {
+    static let walkPointRecordedForQuest = Notification.Name("walk.point.recorded.for.quest")
+}
+
+enum QuestMotionEventType: String, Equatable {
+    case progress
+    case completed
+    case failed
+    case alreadyCompleted
+}
+
+struct QuestMotionEvent: Identifiable, Equatable {
+    let id = UUID()
+    let missionId: String
+    let missionTitle: String
+    let type: QuestMotionEventType
+    let progress: Double
+}
+
+struct QuestCompletionPresentation: Identifiable, Equatable {
+    let id = UUID()
+    let missionId: String
+    let missionTitle: String
+    let rewardPoint: Int
+}
+
 final class HomeViewModel: ObservableObject, CoreDataProtocol {
     @Published var polygonList: [Polygon] = []
     @Published var totalArea: Double = 0.0
@@ -33,6 +59,8 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     @Published private(set) var areaReferenceSections: [AreaReferenceSection] = []
     @Published private(set) var areaReferenceSourceLabel: String = "로컬 비교군"
     @Published private(set) var featuredAreaCount: Int = 0
+    @Published var questMotionEvent: QuestMotionEvent? = nil
+    @Published var questCompletionPresentation: QuestCompletionPresentation? = nil
 
     private var allPolygons: [Polygon] = []
     private var cancellables: Set<AnyCancellable> = []
@@ -100,6 +128,7 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
         bindSelectedPetSync()
         bindTimeBoundaryNotifications()
         bindSeasonCatchupBuffStatusNotifications()
+        bindQuestProgressNotifications()
         reloadUserInfo()
         reloadSeasonCatchupBuffStatus()
         fetchData()
@@ -175,6 +204,10 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
         weatherFeedbackResultMessage = nil
     }
 
+    func clearQuestCompletionPresentation() {
+        questCompletionPresentation = nil
+    }
+
     private func bindSeasonCatchupBuffStatusNotifications() {
         NotificationCenter.default.publisher(for: UserdefaultSetting.seasonCatchupBuffDidUpdateNotification)
             .receive(on: RunLoop.main)
@@ -192,6 +225,15 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
                 self.isShowingAllRecordsOverride = false
                 self.reloadUserInfo()
                 self.applySelectedPetStatistics()
+            }
+            .store(in: &cancellables)
+    }
+
+    private func bindQuestProgressNotifications() {
+        NotificationCenter.default.publisher(for: .walkPointRecordedForQuest)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.refreshIndoorMissions()
             }
             .store(in: &cancellables)
     }
@@ -466,6 +508,12 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
         )
         mission = indoorMissionStore.updatedMissionState(mission)
         indoorMissionBoard = indoorMissionBoard.updated(mission)
+        questMotionEvent = QuestMotionEvent(
+            missionId: mission.id,
+            missionTitle: mission.title,
+            type: .progress,
+            progress: mission.progress.progressRatio
+        )
         metricTracker.track(
             .indoorMissionActionLogged,
             userKey: userInfo?.id,
@@ -504,6 +552,17 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
             } else {
                 indoorMissionStatusMessage = "\(mission.title) 완료! 보상 \(mission.rewardPoint)pt"
             }
+            questMotionEvent = QuestMotionEvent(
+                missionId: mission.id,
+                missionTitle: mission.title,
+                type: .completed,
+                progress: 1.0
+            )
+            questCompletionPresentation = QuestCompletionPresentation(
+                missionId: mission.id,
+                missionTitle: mission.title,
+                rewardPoint: mission.rewardPoint
+            )
             metricTracker.track(
                 .indoorMissionCompleted,
                 userKey: userInfo?.id,
@@ -517,6 +576,12 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
             refreshIndoorMissions()
         case .insufficientAction(let actionCount, let required):
             indoorMissionStatusMessage = "완료 기준 미달: \(actionCount)/\(required) 행동"
+            questMotionEvent = QuestMotionEvent(
+                missionId: mission.id,
+                missionTitle: mission.title,
+                type: .failed,
+                progress: mission.progress.progressRatio
+            )
             metricTracker.track(
                 .indoorMissionCompletionRejected,
                 userKey: userInfo?.id,
@@ -529,6 +594,12 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
             )
         case .alreadyCompleted:
             indoorMissionStatusMessage = "이미 완료한 미션입니다."
+            questMotionEvent = QuestMotionEvent(
+                missionId: mission.id,
+                missionTitle: mission.title,
+                type: .alreadyCompleted,
+                progress: 1.0
+            )
         }
     }
 

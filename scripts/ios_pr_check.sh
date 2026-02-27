@@ -27,6 +27,7 @@ echo "[dogArea] running document/unit checks"
 swift scripts/swift_stability_unit_check.swift
 swift scripts/userdefault_store_split_unit_check.swift
 swift scripts/map_motion_pack_unit_check.swift
+swift scripts/quest_motion_pack_unit_check.swift
 swift scripts/release_regression_checklist_unit_check.swift
 swift scripts/fault_injection_matrix_unit_check.swift
 swift scripts/supabase_ops_hardening_unit_check.swift

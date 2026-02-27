@@ -109,6 +109,7 @@
 		DAE140101400000000000002 /* PetSelectionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE140001400000000000002 /* PetSelectionStore.swift */; };
 		DAE140101400000000000003 /* WalkSessionMetadataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE140001400000000000003 /* WalkSessionMetadataStore.swift */; };
 		DAE140101400000000000004 /* ProfileSyncOutboxStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE140001400000000000004 /* ProfileSyncOutboxStore.swift */; };
+		DAE142101420000000000001 /* AppHapticFeedback.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE142001420000000000001 /* AppHapticFeedback.swift */; };
 		DAC19F162B0B3246002FE2E8 /* PetProfileSettingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F152B0B3246002FE2E8 /* PetProfileSettingView.swift */; };
 		DAC19F1E2B0B331A002FE2E8 /* SigningViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F1D2B0B331A002FE2E8 /* SigningViewModel.swift */; };
 		DAC19F202B0B3798002FE2E8 /* LoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F1F2B0B3798002FE2E8 /* LoadingView.swift */; };
@@ -263,6 +264,7 @@
 		DAE140001400000000000002 /* PetSelectionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetSelectionStore.swift; sourceTree = "<group>"; };
 		DAE140001400000000000003 /* WalkSessionMetadataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkSessionMetadataStore.swift; sourceTree = "<group>"; };
 		DAE140001400000000000004 /* ProfileSyncOutboxStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileSyncOutboxStore.swift; sourceTree = "<group>"; };
+		DAE142001420000000000001 /* AppHapticFeedback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppHapticFeedback.swift; sourceTree = "<group>"; };
 		DAC19F152B0B3246002FE2E8 /* PetProfileSettingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetProfileSettingView.swift; sourceTree = "<group>"; };
 		DAC19F1D2B0B331A002FE2E8 /* SigningViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SigningViewModel.swift; sourceTree = "<group>"; };
 		DAC19F1F2B0B3798002FE2E8 /* LoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingView.swift; sourceTree = "<group>"; };
@@ -423,6 +425,7 @@
 				DAE140001400000000000002 /* PetSelectionStore.swift */,
 				DAE140001400000000000003 /* WalkSessionMetadataStore.swift */,
 				DAE140001400000000000004 /* ProfileSyncOutboxStore.swift */,
+				DAE142001420000000000001 /* AppHapticFeedback.swift */,
 				DAC19F372B0B9E81002FE2E8 /* StringExtensions.swift */,
 			);
 			path = Source;
@@ -833,6 +836,7 @@
 				DAE140101400000000000002 /* PetSelectionStore.swift in Sources */,
 				DAE140101400000000000003 /* WalkSessionMetadataStore.swift in Sources */,
 				DAE140101400000000000004 /* ProfileSyncOutboxStore.swift in Sources */,
+				DAE142101420000000000001 /* AppHapticFeedback.swift in Sources */,
 				DA354FFD2B01DF1F00E4094A /* TimeIntervalExtensions.swift in Sources */,
 				DA45138C2AFB36D4007AD69B /* WalkListModel.swift in Sources */,
 				DA3F9BA12AE0F14F0048550C /* NotificationCenterView.swift in Sources */,

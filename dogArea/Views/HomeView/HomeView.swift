@@ -8,169 +8,191 @@
 import SwiftUI
 
 struct HomeView: View {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @StateObject var viewModel = HomeViewModel()
-    var body: some View {
-        ScrollView {
-            VStack{
-                HStack(alignment: .bottom) {
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text("산책 달력")
-                            .font(.appFont(for: .SemiBold, size: 40))
-                        Text("산책한 날을 표시해보아요!")
-                            .font(.appFont(for: .Light, size: 15))
-                            .foregroundStyle(Color.appTextDarkGray)
-                    }.padding()
-                    Spacer()
-                }
-                if let report = viewModel.guestDataUpgradeReport {
-                    guestDataUpgradeCard(report: report)
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 8)
-                }
-                if let message = viewModel.aggregationStatusMessage {
-                    Text(message)
-                        .font(.appFont(for: .Light, size: 12))
-                        .foregroundStyle(Color.appTextDarkGray)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(Color.appYellowPale)
-                        .cornerRadius(8)
-                        .padding(.horizontal, 16)
-                }
-                if let message = viewModel.indoorMissionStatusMessage {
-                    Text(message)
-                        .font(.appFont(for: .Light, size: 12))
-                        .foregroundStyle(Color.appTextDarkGray)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(Color.appYellowPale)
-                        .cornerRadius(8)
-                        .padding(.horizontal, 16)
-                }
-                if let message = viewModel.seasonCatchupBuffStatusMessage {
-                    Text(message)
-                        .font(.appFont(for: .Light, size: 12))
-                        .foregroundStyle(Color.appTextDarkGray)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(viewModel.seasonCatchupBuffStatusWarning ? Color.appYellowPale : Color.appGreen.opacity(0.45))
-                        .cornerRadius(8)
-                        .padding(.horizontal, 16)
-                }
-                if viewModel.pets.isEmpty == false {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            ForEach(viewModel.pets, id: \.petId) { pet in
-                                Text(pet.petName)
-                                    .font(.appFont(for: .Regular, size: 13))
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 6)
-                                    .background(
-                                        viewModel.selectedPetId == pet.petId ? Color.appYellow : Color.appYellowPale
-                                    )
-                                    .cornerRadius(8)
-                                    .onTapGesture {
-                                        viewModel.selectPet(pet.petId)
-                                    }
-                            }
-                        }.padding(.horizontal, 16)
-                    }
-                }
-                CalenderView(clickedDates: viewModel.walkedDates())
-                UnderLine()
-                if viewModel.pets.isEmpty == false {
-                    selectedPetContextBanner
-                    if viewModel.shouldShowSelectedPetEmptyState {
-                        selectedPetEmptyStateCard
-                    }
-                }
-                HStack {
-                    VStack{
-                        HStack {
-                            Text("이번 주 산책한 영역")
-                                .font(.appFont(for: .SemiBold, size: 20))
-                                .multilineTextAlignment(.center)
-                                .padding()
-                        }
-                        Text("\(viewModel.walkedAreaforWeek().calculatedAreaString)")
-                            .font(.appFont(for: .Light, size: 15))
-                    }.frame(maxWidth: .infinity)
-                        .padding(.leading)
-                    Rectangle()
-                        .foregroundColor(.clear)
-                        .frame(width: 0.6)
-                        .frame(maxHeight: .infinity)
-                        .background(Color(red: 0.19, green: 0.19, blue: 0.19))
-                    VStack {
-                        HStack {
-                            Text("이번 주 산책 횟수")
-                                .font(.appFont(for: .SemiBold, size: 20))
-                                .multilineTextAlignment(.center)
-                                .padding()
-                        }
-                        Text("\(viewModel.walkedCountforWeek()) 회")
-                            .font(.appFont(for: .Light, size: 15))
+    @State private var animatedQuestProgress: [String: Double] = [:]
+    @State private var questProgressPulseMissionId: String? = nil
+    @State private var questClaimPulseMissionId: String? = nil
+    @State private var questCompletionModal: QuestCompletionPresentation? = nil
+    @State private var questCompletionPop: Bool = false
 
-                    }.frame(maxWidth: .infinity)
-                        .padding(.trailing)
-                }
-                if viewModel.indoorMissionBoard.shouldDisplayCard {
-                    indoorMissionCard(board: viewModel.indoorMissionBoard)
-                    UnderLine()
-                }
-                if let contribution = viewModel.boundarySplitContribution {
-                    dayBoundarySplitCard(contribution: contribution)
-                }
-                HStack {
-                    let petNameWithYi = viewModel.selectedPetNameWithYi
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text("\(petNameWithYi)의 영역")
-                            .font(.appFont(for: .SemiBold, size: 40))
-                        Text("\(petNameWithYi)가 정복한 영역을 확인해보세요!")
-                            .font(.appFont(for: .Light, size: 15))
+    private var isQuestMotionReduced: Bool {
+        accessibilityReduceMotion
+    }
+    var body: some View {
+        ZStack {
+            ScrollView {
+                VStack{
+                    HStack(alignment: .bottom) {
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text("산책 달력")
+                                .font(.appFont(for: .SemiBold, size: 40))
+                            Text("산책한 날을 표시해보아요!")
+                                .font(.appFont(for: .Light, size: 15))
+                                .foregroundStyle(Color.appTextDarkGray)
+                        }.padding()
+                        Spacer()
+                    }
+                    if let report = viewModel.guestDataUpgradeReport {
+                        guestDataUpgradeCard(report: report)
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 8)
+                    }
+                    if let message = viewModel.aggregationStatusMessage {
+                        Text(message)
+                            .font(.appFont(for: .Light, size: 12))
                             .foregroundStyle(Color.appTextDarkGray)
-                    }.padding()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(Color.appYellowPale)
+                            .cornerRadius(8)
+                            .padding(.horizontal, 16)
+                    }
+                    if let message = viewModel.indoorMissionStatusMessage {
+                        Text(message)
+                            .font(.appFont(for: .Light, size: 12))
+                            .foregroundStyle(Color.appTextDarkGray)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(Color.appYellowPale)
+                            .cornerRadius(8)
+                            .padding(.horizontal, 16)
+                    }
+                    if let message = viewModel.seasonCatchupBuffStatusMessage {
+                        Text(message)
+                            .font(.appFont(for: .Light, size: 12))
+                            .foregroundStyle(Color.appTextDarkGray)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(viewModel.seasonCatchupBuffStatusWarning ? Color.appYellowPale : Color.appGreen.opacity(0.45))
+                            .cornerRadius(8)
+                            .padding(.horizontal, 16)
+                    }
+                    if viewModel.pets.isEmpty == false {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(viewModel.pets, id: \.petId) { pet in
+                                    Text(pet.petName)
+                                        .font(.appFont(for: .Regular, size: 13))
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 6)
+                                        .background(
+                                            viewModel.selectedPetId == pet.petId ? Color.appYellow : Color.appYellowPale
+                                        )
+                                        .cornerRadius(8)
+                                        .onTapGesture {
+                                            viewModel.selectPet(pet.petId)
+                                        }
+                                }
+                            }.padding(.horizontal, 16)
+                        }
+                    }
+                    CalenderView(clickedDates: viewModel.walkedDates())
+                    UnderLine()
+                    if viewModel.pets.isEmpty == false {
+                        selectedPetContextBanner
+                        if viewModel.shouldShowSelectedPetEmptyState {
+                            selectedPetEmptyStateCard
+                        }
+                    }
+                    HStack {
+                        VStack{
+                            HStack {
+                                Text("이번 주 산책한 영역")
+                                    .font(.appFont(for: .SemiBold, size: 20))
+                                    .multilineTextAlignment(.center)
+                                    .padding()
+                            }
+                            Text("\(viewModel.walkedAreaforWeek().calculatedAreaString)")
+                                .font(.appFont(for: .Light, size: 15))
+                        }.frame(maxWidth: .infinity)
+                            .padding(.leading)
+                        Rectangle()
+                            .foregroundColor(.clear)
+                            .frame(width: 0.6)
+                            .frame(maxHeight: .infinity)
+                            .background(Color(red: 0.19, green: 0.19, blue: 0.19))
+                        VStack {
+                            HStack {
+                                Text("이번 주 산책 횟수")
+                                    .font(.appFont(for: .SemiBold, size: 20))
+                                    .multilineTextAlignment(.center)
+                                    .padding()
+                            }
+                            Text("\(viewModel.walkedCountforWeek()) 회")
+                                .font(.appFont(for: .Light, size: 15))
+
+                        }.frame(maxWidth: .infinity)
+                            .padding(.trailing)
+                    }
+                    if viewModel.indoorMissionBoard.shouldDisplayCard {
+                        indoorMissionCard(board: viewModel.indoorMissionBoard)
+                        UnderLine()
+                    }
+                    if let contribution = viewModel.boundarySplitContribution {
+                        dayBoundarySplitCard(contribution: contribution)
+                    }
+                    HStack {
+                        let petNameWithYi = viewModel.selectedPetNameWithYi
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text("\(petNameWithYi)의 영역")
+                                .font(.appFont(for: .SemiBold, size: 40))
+                            Text("\(petNameWithYi)가 정복한 영역을 확인해보세요!")
+                                .font(.appFont(for: .Light, size: 15))
+                                .foregroundStyle(Color.appTextDarkGray)
+                        }.padding()
+                        Spacer()
+                    }
+                    goalTrackerCard
+                    UnderLine()
+                    recentConqueredCard
+                    UnderLine()
+                    
                     Spacer()
+    //#if DEBUG
+    //                Button("영역 올리기") {
+    //                    viewModel.makeitup()
+    //                }
+    //                Button("초기화") {
+    //                    viewModel.reset()
+    //                }
+    //#endif
                 }
-                goalTrackerCard
-                UnderLine()
-                recentConqueredCard
-                UnderLine()
-                
-                Spacer()
-//#if DEBUG
-//                Button("영역 올리기") {
-//                    viewModel.makeitup()
-//                }
-//                Button("초기화") {
-//                    viewModel.reset()
-//                }
-//#endif
+            }.refreshable {
+                viewModel.fetchData()
+            }.onAppear{
+                viewModel.reloadUserInfo()
+                viewModel.fetchData()
+            }.onChange(of: viewModel.aggregationStatusMessage) { newValue in
+                guard newValue != nil else { return }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                    viewModel.clearAggregationStatusMessage()
+                }
+            }.onChange(of: viewModel.indoorMissionStatusMessage) { newValue in
+                guard newValue != nil else { return }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.8) {
+                    viewModel.clearIndoorMissionStatusMessage()
+                }
+            }.onChange(of: viewModel.weatherFeedbackResultMessage) { newValue in
+                guard newValue != nil else { return }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3.2) {
+                    viewModel.clearWeatherFeedbackResultMessage()
+                }
+            }.onChange(of: viewModel.questMotionEvent) { event in
+                handleQuestMotionEvent(event)
+            }.onChange(of: viewModel.questCompletionPresentation) { payload in
+                guard let payload else { return }
+                presentQuestCompletionModal(payload)
+            }.padding(.top,20)
+
+            if let questCompletionModal {
+                questCompletionOverlay(payload: questCompletionModal)
+                    .zIndex(10)
             }
-        }.refreshable {
-            viewModel.fetchData()
-        }.onAppear{
-            viewModel.reloadUserInfo()
-            viewModel.fetchData()
-        }.onChange(of: viewModel.aggregationStatusMessage) { newValue in
-            guard newValue != nil else { return }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                viewModel.clearAggregationStatusMessage()
-            }
-        }.onChange(of: viewModel.indoorMissionStatusMessage) { newValue in
-            guard newValue != nil else { return }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.8) {
-                viewModel.clearIndoorMissionStatusMessage()
-            }
-        }.onChange(of: viewModel.weatherFeedbackResultMessage) { newValue in
-            guard newValue != nil else { return }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3.2) {
-                viewModel.clearWeatherFeedbackResultMessage()
-            }
-        }.padding(.top,20)
+        }
     }
 
     @ViewBuilder
@@ -556,7 +578,144 @@ struct HomeView: View {
         return "\(deltaPercent)%"
     }
 
+    private func questProgressValue(for mission: IndoorMissionCardModel) -> Double {
+        animatedQuestProgress[mission.id] ?? mission.progress.progressRatio
+    }
+
+    private func missionIsClaimable(_ mission: IndoorMissionCardModel) -> Bool {
+        mission.progress.actionCount >= mission.minimumActionCount && mission.progress.isCompleted == false
+    }
+
+    private func handleQuestMotionEvent(_ event: QuestMotionEvent?) {
+        guard let event else { return }
+        let shouldAnimate = isQuestMotionReduced == false
+        switch event.type {
+        case .progress:
+            if shouldAnimate {
+                withAnimation(.easeOut(duration: 0.34)) {
+                    animatedQuestProgress[event.missionId] = event.progress
+                    questProgressPulseMissionId = event.missionId
+                }
+            } else {
+                animatedQuestProgress[event.missionId] = event.progress
+            }
+            AppHapticFeedback.questProgress()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
+                if questProgressPulseMissionId == event.missionId {
+                    questProgressPulseMissionId = nil
+                }
+            }
+        case .completed:
+            if shouldAnimate {
+                withAnimation(.spring(response: 0.34, dampingFraction: 0.72)) {
+                    animatedQuestProgress[event.missionId] = 1.0
+                    questClaimPulseMissionId = event.missionId
+                }
+            } else {
+                animatedQuestProgress[event.missionId] = 1.0
+            }
+            AppHapticFeedback.questCompleted()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+                if questClaimPulseMissionId == event.missionId {
+                    questClaimPulseMissionId = nil
+                }
+            }
+        case .failed:
+            AppHapticFeedback.questFailed()
+        case .alreadyCompleted:
+            AppHapticFeedback.questProgress()
+        }
+    }
+
+    private func presentQuestCompletionModal(_ payload: QuestCompletionPresentation) {
+        questCompletionModal = payload
+        questCompletionPop = false
+        if isQuestMotionReduced {
+            questCompletionPop = true
+        } else {
+            withAnimation(.spring(response: 0.28, dampingFraction: 0.72)) {
+                questCompletionPop = true
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.68) {
+            if isQuestMotionReduced {
+                questCompletionModal = nil
+                viewModel.clearQuestCompletionPresentation()
+                return
+            }
+            withAnimation(.easeOut(duration: 0.2)) {
+                questCompletionPop = false
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                questCompletionModal = nil
+                viewModel.clearQuestCompletionPresentation()
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func questCompletionOverlay(payload: QuestCompletionPresentation) -> some View {
+        VStack {
+            Spacer().frame(height: 120)
+            VStack(spacing: 8) {
+                Text("퀘스트 완료")
+                    .font(.appFont(for: .SemiBold, size: 16))
+                Text(payload.missionTitle)
+                    .font(.appFont(for: .SemiBold, size: 14))
+                    .multilineTextAlignment(.center)
+                Text("+\(payload.rewardPoint)pt 수령 완료")
+                    .font(.appFont(for: .Light, size: 12))
+                    .foregroundStyle(Color.appTextDarkGray)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+            .background(Color.white)
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.appYellow, lineWidth: 1.0)
+            )
+            .scaleEffect(questCompletionPop ? 1.0 : 0.86)
+            .opacity(questCompletionPop ? 1.0 : 0.0)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black.opacity(questCompletionPop ? 0.18 : 0.0))
+        .allowsHitTesting(false)
+    }
+
+    @ViewBuilder
+    private func animatedQuestProgressBar(mission: IndoorMissionCardModel) -> some View {
+        let progress = min(1.0, max(0.0, questProgressValue(for: mission)))
+        GeometryReader { proxy in
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color.appTextLightGray.opacity(0.28))
+                Capsule()
+                    .fill(mission.progress.isCompleted ? Color.appGreen : Color.appYellow)
+                    .frame(width: proxy.size.width * progress)
+                if questProgressPulseMissionId == mission.id, isQuestMotionReduced == false {
+                    Capsule()
+                        .fill(Color.white.opacity(0.35))
+                        .frame(width: proxy.size.width * progress)
+                        .blur(radius: 2.5)
+                }
+            }
+        }
+        .frame(height: 8)
+        .animation(
+            isQuestMotionReduced ? nil : .easeOut(duration: 0.34),
+            value: progress
+        )
+    }
+
     private func indoorMissionRow(mission: IndoorMissionCardModel) -> some View {
+        let claimable = missionIsClaimable(mission)
+        let claimed = mission.progress.isCompleted
+        let folded = isQuestMotionReduced ? false : (claimable || claimed)
+        let claimTitle = claimed ? "수령 완료" : (claimable ? "즉시 수령" : "완료 확인")
+        let claimButtonColor = claimed ? Color.appGreen : (claimable ? Color.appYellow : Color.appTextLightGray)
+
         VStack(alignment: .leading, spacing: 7) {
             HStack {
                 Text(mission.title)
@@ -574,16 +733,17 @@ struct HomeView: View {
                     .font(.appFont(for: .SemiBold, size: 11))
                     .foregroundStyle(Color.appTextDarkGray)
             }
-            Text(mission.description)
-                .font(.appFont(for: .Light, size: 12))
-                .foregroundStyle(Color.appTextDarkGray)
-            if mission.isExtension {
-                Text("전일 미션 연장 · 보상 70% · 시즌 점수/연속 보상 제외")
-                    .font(.appFont(for: .Light, size: 10))
+            if folded == false {
+                Text(mission.description)
+                    .font(.appFont(for: .Light, size: 12))
                     .foregroundStyle(Color.appTextDarkGray)
+                if mission.isExtension {
+                    Text("전일 미션 연장 · 보상 70% · 시즌 점수/연속 보상 제외")
+                        .font(.appFont(for: .Light, size: 10))
+                        .foregroundStyle(Color.appTextDarkGray)
+                }
             }
-            ProgressView(value: mission.progress.progressRatio)
-                .tint(mission.progress.isCompleted ? Color.appGreen : Color.appYellow)
+            animatedQuestProgressBar(mission: mission)
             Text("행동량 \(mission.progress.actionCount)/\(mission.minimumActionCount)")
                 .font(.appFont(for: .Light, size: 11))
                 .foregroundStyle(Color.appTextDarkGray)
@@ -596,21 +756,45 @@ struct HomeView: View {
                 .padding(.vertical, 6)
                 .background(Color.appYellowPale)
                 .cornerRadius(8)
+                .disabled(claimed)
 
-                Button(mission.progress.isCompleted ? "완료됨" : "완료 확인") {
+                Button(claimTitle) {
                     viewModel.finalizeIndoorMission(mission.id)
                 }
-                .disabled(mission.progress.isCompleted)
                 .font(.appFont(for: .SemiBold, size: 11))
                 .padding(.horizontal, 8)
                 .padding(.vertical, 6)
-                .background(mission.progress.isCompleted ? Color.appTextLightGray : Color.appYellow)
+                .background(claimButtonColor)
                 .cornerRadius(8)
+                .scaleEffect(questClaimPulseMissionId == mission.id ? 1.06 : 1.0)
+                .animation(
+                    isQuestMotionReduced ? nil : .spring(response: 0.3, dampingFraction: 0.74),
+                    value: questClaimPulseMissionId == mission.id
+                )
             }
         }
         .padding(10)
         .background(Color.appYellowPale.opacity(0.45))
         .cornerRadius(10)
+        .scaleEffect(folded ? 0.985 : 1.0)
+        .animation(
+            isQuestMotionReduced ? nil : .easeInOut(duration: 0.22),
+            value: folded
+        )
+        .onAppear {
+            if animatedQuestProgress[mission.id] == nil {
+                animatedQuestProgress[mission.id] = mission.progress.progressRatio
+            }
+        }
+        .onChange(of: mission.progress.progressRatio) { next in
+            if isQuestMotionReduced {
+                animatedQuestProgress[mission.id] = next
+            } else {
+                withAnimation(.easeOut(duration: 0.34)) {
+                    animatedQuestProgress[mission.id] = next
+                }
+            }
+        }
     }
 }
 
