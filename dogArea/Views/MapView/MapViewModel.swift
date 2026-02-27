@@ -663,21 +663,13 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     private func triggerCaptureHapticIfNeeded(now: Date = Date()) {
         guard now.timeIntervalSince(lastCaptureHapticAt) >= 0.08 else { return }
         lastCaptureHapticAt = now
-        #if canImport(UIKit)
-        let generator = UIImpactFeedbackGenerator(style: .light)
-        generator.prepare()
-        generator.impactOccurred(intensity: isMapMotionReduced ? 0.45 : 0.75)
-        #endif
+        AppHapticFeedback.mapCaptureSuccess(reducedMotion: isMapMotionReduced)
     }
 
     private func triggerWarningHapticIfNeeded(now: Date = Date()) {
         guard now.timeIntervalSince(lastWarningHapticAt) >= 1.2 else { return }
         lastWarningHapticAt = now
-        #if canImport(UIKit)
-        let generator = UINotificationFeedbackGenerator()
-        generator.prepare()
-        generator.notificationOccurred(.warning)
-        #endif
+        AppHapticFeedback.mapWarning()
     }
 
     private func validateWalkLocationSample(_ location: CLLocation) -> Bool {
@@ -1128,6 +1120,14 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         persistActiveWalkSession(force: true)
         syncWatchContext(force: true)
         compactMapMotionArtifacts(now: recordedAt)
+        NotificationCenter.default.post(
+            name: .walkPointRecordedForQuest,
+            object: nil,
+            userInfo: [
+                "source": "\(source)",
+                "recordedAt": recordedAt.timeIntervalSince1970
+            ]
+        )
     }
 
     private func resetAutoPointRecordState() {
