@@ -21,6 +21,7 @@
 - 캐리커처 비동기 파이프라인 명세 v1: `docs/caricature-async-pipeline-v1.md`
 - 근처 사용자 익명 핫스팟 명세 v1: `docs/nearby-anonymous-hotspot-v1.md`
 - 라이벌 프라이버시 하드 가드 v1: `docs/rival-privacy-hard-guard-v1.md`
+- 라이벌 공정 리그 매칭 v1: `docs/rival-fair-league-v1.md`
 - 시즌 안티 농사 규칙 v1: `docs/season-anti-farming-v1.md`
 - 체감 날씨 피드백 루프 v1: `docs/weather-feedback-loop-v1.md`
 - Feature Flag/롤아웃 모니터링 명세 v1: `docs/feature-flag-rollout-monitoring-v1.md`

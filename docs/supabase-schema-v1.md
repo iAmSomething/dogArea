@@ -17,6 +17,7 @@
 - 근처 사용자 익명 핫스팟용 데이터 구조
 - 시즌 안티 농사 점수 규칙용 데이터 구조
 - 체감 날씨 피드백 KPI 뷰
+- 라이벌 공정 리그 매칭 구조
 - RLS 정책 원칙
 - Storage 경로 규칙
 - 마이그레이션/롤백 절차
@@ -214,6 +215,20 @@ erDiagram
   - `weather_feedback_submitted/rate_limited/weather_risk_reevaluated` 기반 일자별 지표 집계
   - `changed_ratio`, `rate_limited_ratio`로 오탐/정탐/남용 상태 관측
 
+### 4.8 라이벌 공정 리그 매칭
+- `rival_league_policies`
+  - 14일 활동량/주간 반영/표본 fallback 임계값을 서버 파라미터로 관리
+- `rival_league_assignments`
+  - 사용자 최신 스냅샷 리그(`league`)와 fallback 적용 결과(`effective_league`)
+- `rival_league_history`
+  - 승격/강등/병합 변경 이력
+- `rpc_refresh_rival_leagues`
+  - 주간 리그 재산정 및 히스토리 기록
+- `rpc_get_my_rival_league`
+  - 앱 조회용 본인 리그/안내 메시지 반환
+- `view_rival_league_distribution_current`
+  - 최신 리그 분포/표본 상태 모니터링
+
 ## 5. RLS 정책 원칙
 - 사용자 데이터는 `auth.uid()` 소유 범위로만 접근
 - `area_references`는 읽기 공개(`anon`, `authenticated`)
@@ -243,6 +258,13 @@ erDiagram
   - `select`: 소유자
   - write: 서비스 경로(RPC/service role)
 - `view_weather_feedback_kpis_7d`
+  - `select`: 공개(운영 관측용)
+- `rival_league_policies`
+  - `select`: 공개(정책 조회)
+- `rival_league_assignments`, `rival_league_history`
+  - `select`: 소유자
+  - write: 서비스 경로(RPC/service role)
+- `view_rival_league_distribution_current`
   - `select`: 공개(운영 관측용)
 
 ## 6. Storage 규칙

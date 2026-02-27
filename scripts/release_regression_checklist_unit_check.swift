@@ -35,6 +35,9 @@ assertTrue(checklist.contains("season_scoring_policies/season_tile_score_events/
 assertTrue(checklist.contains("체감 날씨 다름"), "checklist should include weather feedback one-tap scenario")
 assertTrue(checklist.contains("주간 3회 입력"), "checklist should include weather feedback weekly limit scenario")
 assertTrue(checklist.contains("view_weather_feedback_kpis_7d"), "checklist should include weather feedback KPI view verification")
+assertTrue(checklist.contains("최근 14일 활동량 기준"), "checklist should include rival 14-day activity league scenario")
+assertTrue(checklist.contains("effective_league"), "checklist should include rival fallback merge scenario")
+assertTrue(checklist.contains("rival_league_policies/rival_league_assignments/rival_league_history"), "checklist should include rival league migration verification")
 
 assertTrue(report.contains("## 1. 빌드 체크 결과"), "report must include build results")
 assertTrue(report.contains("## 2. 핵심 시나리오 점검 결과"), "report must include scenario results")

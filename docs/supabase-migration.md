@@ -212,6 +212,39 @@ limit 7;
 - 위험도 재평가 이벤트에서 `changed_ratio`가 0~1 범위로 계산
 - 제한 발생 시 `rate_limited_ratio`가 증가
 
+### 5.9 라이벌 공정 리그 매칭 검증 (#149)
+주간 스냅샷 재산정:
+```sql
+select *
+from public.rpc_refresh_rival_leagues(
+  date_trunc('week', now())::date,
+  now()
+);
+```
+
+본인 리그 조회:
+```sql
+select *
+from public.rpc_get_my_rival_league(auth.uid(), now());
+```
+
+분포 확인:
+```sql
+select
+  snapshot_week_start,
+  league,
+  effective_league,
+  user_count,
+  fallback_count
+from public.view_rival_league_distribution_current
+order by effective_league, league;
+```
+
+기대값:
+- 리그가 `onboarding/light/mid/hardcore`로 배정됨
+- 표본 부족 리그에서 `fallback_applied` + `effective_league` 병합 반영
+- 변경 사용자는 `rival_league_history`에 이력이 기록됨
+
 ## 6. 운영 체크리스트
 - [ ] `migration list --local` / `migration list --linked` 결과 저장
 - [ ] User A/B 교차 접근 차단 SQL 결과 저장
@@ -221,3 +254,4 @@ limit 7;
 - [ ] 비교군 카탈로그/시드 정합성 SQL 결과 첨부
 - [ ] 시즌 안티 농사 RPC/감사 로그 검증 결과 첨부
 - [ ] 체감 날씨 피드백 KPI 뷰 검증 결과 첨부
+- [ ] 라이벌 리그 스냅샷/분포/히스토리 검증 결과 첨부
