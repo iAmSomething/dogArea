@@ -37,6 +37,7 @@
 - 릴리즈 회귀 실행 리포트(2026-02-26): `docs/release-regression-report-2026-02-26.md`
 - 다중 반려견 산책 N:M 2차 설계 v2: `docs/multi-pet-session-nm-v2.md`
 - 다견 1차 선택 반려견 UX v1: `docs/multi-dog-selection-ux-v1.md`
+- 선택 반려견 컨텍스트 배지/빈 상태 UX v1: `docs/pet-context-badge-empty-state-v1.md`
 - 산책 시작/종료 UX 단순화 v1: `docs/walk-start-stop-ux-v1.md`
 - 영역 포인트 자동 기록 모드 v1: `docs/walk-point-auto-record-v1.md`
 - 산책 세션 자동 복구/자동 종료 정책 v1: `docs/walk-session-recovery-auto-end-v1.md`
@@ -51,6 +52,7 @@
 - Cycle #148 결과 보고서(2026-02-27): `docs/cycle-148-quest-failure-buffer-report-2026-02-27.md`
 - Cycle #147 결과 보고서(2026-02-27): `docs/cycle-147-pet-adaptive-quest-report-2026-02-27.md`
 - Cycle #145 결과 보고서(2026-02-27): `docs/cycle-145-season-catchup-buff-report-2026-02-27.md`
+- Cycle #138 결과 보고서(2026-02-27): `docs/cycle-138-pet-context-badge-report-2026-02-27.md`
 
 ## 로컬 PR 체크
 
