@@ -5,11 +5,15 @@
 
 연결 이슈:
 - 구현: #45
+- 프라이버시 하드 가드: #150
 
 ## 2. 프라이버시 규칙
 - 기본값: `location_sharing_enabled = false`
 - 명시적 동의 사용자만 presence 송신
 - 지도에는 닉네임/개별 좌표를 노출하지 않고 geohash7 집계 강도만 노출
+- 최소 표본(`k>=20`) 미달 셀은 정확 count를 숨기고 상위 퍼센타일 intensity만 노출
+- 반영 지연: 주간 30분, 야간 60분(`Asia/Seoul`, 기본값)
+- 민감 구역(`privacy_sensitive_geo_masks`)은 집계 결과에서 자동 마스킹
 
 ## 3. 데이터 계약
 
@@ -27,9 +31,11 @@
 - `updated_at timestamptz`
 
 ## 4. 집계 계약
-- TTL: `last_seen_at >= now() - interval '10 minutes'`
+- 지연 윈도우: `last_seen_at ∈ [now - (delay + 10m), now - delay]`
 - 조회 단위: geohash7
 - 반환: `geohash7`, `count`, `intensity`, `center_lat`, `center_lng`
+  - `count`: 표본 미달/민감 셀은 `0`으로 비공개 처리
+  - `intensity`: 표본 미달 셀은 percentile 기반(`privacy_mode=percentile_only`)
 - 반경 필터: 기본 1km
 
 ## 5. 주기
@@ -44,5 +50,8 @@
 ## 7. 검증 체크리스트
 - [ ] 비동의 사용자 송신 0건
 - [ ] 연결 상태에서 30초 주기 upsert 동작
-- [ ] TTL 10분 지난 presence 집계 제외
+- [ ] 주간 30분/야간 60분 지연 반영 후 핫스팟 노출
+- [ ] 표본 미달 셀 count 비공개 + percentile 노출 동작
+- [ ] 민감 구역 셀 자동 마스킹 동작
 - [ ] 지도 갱신 주기 10초 이내 반영
+- [ ] `privacy_guard_audit_logs`에 요청별 점검 로그/경보 적재
