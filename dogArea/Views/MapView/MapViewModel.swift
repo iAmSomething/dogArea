@@ -108,6 +108,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     @Published private(set) var walkAutoEndPolicyEnabled: Bool = true
     @Published var hasRecoverableWalkSession: Bool = false
     @Published var recoverableWalkSummaryText: String = ""
+    @Published var recoverableWalkEstimateText: String = ""
     @Published var watchSyncStatusText: String = "워치 동기화 대기"
     @Published var latestWatchActionText: String = ""
     @Published var walkStatusMessage: String? = nil
@@ -592,18 +593,42 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
             return
         }
         let now = Date()
-        let lastMovementAt = snapshotLastMovementTime(snapshot)
-        let inactivity = now.timeIntervalSince(lastMovementAt)
-        if inactivity >= inactivityFinalizeInterval {
-            autoFinalizeRecoverableSession(snapshot, now: now, lastMovementAt: lastMovementAt)
-            return
-        }
         pendingRecoverableSession = snapshot
         hasRecoverableWalkSession = true
         recoverableWalkSummaryText = "미종료 산책 \(Int(snapshot.elapsedTime))초 · 포인트 \(snapshot.points.count)개"
+        recoverableWalkEstimateText = recoverableFinalizationEstimateText(snapshot: snapshot, now: now)
+        metricTracker.track(
+            .recoveryDraftDetected,
+            userKey: currentMetricUserId(),
+            payload: [
+                "pointCount": "\(snapshot.points.count)",
+                "elapsedSec": "\(Int(snapshot.elapsedTime))"
+            ]
+        )
+    }
+
+    private func recoverableFinalizationEstimate(
+        snapshot: ActiveWalkSessionSnapshot,
+        now: Date
+    ) -> (endedAt: TimeInterval?, source: String) {
+        let lastMovementAt = snapshotLastMovementTime(snapshot)
+        let inactivity = now.timeIntervalSince(lastMovementAt)
         if inactivity < restCandidateInterval {
-            resumeRecoverableWalkSession(autoRecovered: true)
+            return (nil, "resume_recommended")
         }
+        let estimated = min(now.timeIntervalSince1970, lastMovementAt.timeIntervalSince1970 + inactivityFinalizeInterval)
+        return (max(snapshot.startedAt, estimated), "last_movement_plus_threshold")
+    }
+
+    private func recoverableFinalizationEstimateText(
+        snapshot: ActiveWalkSessionSnapshot,
+        now: Date
+    ) -> String {
+        let estimate = recoverableFinalizationEstimate(snapshot: snapshot, now: now)
+        guard let endedAt = estimate.endedAt else {
+            return "최근 이동이 감지되어 세션 복구를 권장해요."
+        }
+        return "추정 종료 시각 \(Self.statusTimeString(from: Date(timeIntervalSince1970: endedAt))) (마지막 이동 + 15분)"
     }
 
     private func snapshotLastMovementTime(_ snapshot: ActiveWalkSessionSnapshot) -> Date {
@@ -614,54 +639,6 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
             return Date(timeIntervalSince1970: lastPointAt)
         }
         return Date(timeIntervalSince1970: snapshot.startedAt + snapshot.elapsedTime)
-    }
-
-    private func autoFinalizeRecoverableSession(
-        _ snapshot: ActiveWalkSessionSnapshot,
-        now: Date,
-        lastMovementAt: Date
-    ) {
-        let restoredPoints = snapshot.points.map {
-            Location(
-                coordinate: CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude),
-                id: UUID(),
-                createdAt: $0.createdAt
-            )
-        }
-        guard restoredPoints.count > 2 else {
-            clearActiveWalkSession()
-            walkStatusMessage = "15분 무이동으로 미종료 산책 임시기록을 폐기했습니다."
-            return
-        }
-        let endedAt = min(now.timeIntervalSince1970, lastMovementAt.timeIntervalSince1970 + inactivityFinalizeInterval)
-        let walkTime = max(0, endedAt - snapshot.startedAt)
-        let restoredSessionId = snapshot.sessionId.flatMap(UUID.init(uuidString:))
-        let completed = Polygon(
-            locations: restoredPoints,
-            createdAt: snapshot.startedAt,
-            id: restoredSessionId ?? UUID(),
-            walkingTime: walkTime,
-            walkingArea: 0.0,
-            imgData: nil,
-            petId: snapshot.selectedPetId
-        )
-        var finalized = completed
-        finalized.makePolygon(walkArea: calculateArea(points: restoredPoints), walkTime: walkTime)
-        let updated = savePolygon(polygon: finalized)
-        if updated.contains(where: { $0.id == finalized.id }) {
-            WalkSessionMetadataStore.shared.set(
-                sessionId: finalized.id,
-                reason: .autoInactive,
-                endedAt: endedAt,
-                petId: snapshot.selectedPetId
-            )
-            enqueueSyncOutbox(for: finalized, hasImage: finalized.binaryImage != nil)
-            walkStatusMessage = "15분 무이동으로 이전 산책을 자동 종료했습니다."
-        } else {
-            walkStatusMessage = "이전 산책 자동 종료 저장에 실패했습니다."
-        }
-        applyPolygonList(updated)
-        clearActiveWalkSession()
     }
 
     func resumeRecoverableWalkSession() {
@@ -728,10 +705,35 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     }
 
     func discardRecoverableWalkSession() {
+        metricTracker.track(
+            .recoveryDraftDiscarded,
+            userKey: currentMetricUserId(),
+            payload: [:]
+        )
         pendingRecoverableSession = nil
         hasRecoverableWalkSession = false
         recoverableWalkSummaryText = ""
+        recoverableWalkEstimateText = ""
         clearActiveWalkSession()
+    }
+
+    func finalizeRecoverableWalkSessionEstimated() {
+        guard let snapshot = pendingRecoverableSession else {
+            clearActiveWalkSession()
+            return
+        }
+        let estimate = recoverableFinalizationEstimate(snapshot: snapshot, now: Date())
+        guard let endedAt = estimate.endedAt else {
+            walkStatusMessage = "최근 이동이 감지되어 추정 종료를 권장하지 않아요. 복구 후 종료해주세요."
+            return
+        }
+        finalizeRecoverableWalkSession(
+            snapshot: snapshot,
+            endedAt: endedAt,
+            reason: .recoveryEstimated,
+            successMessage: "미종료 산책을 추정 종료 시각으로 저장했습니다.",
+            metricSource: estimate.source
+        )
     }
 
     func finalizeRecoverableWalkSessionNow() {
@@ -739,6 +741,22 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
             clearActiveWalkSession()
             return
         }
+        finalizeRecoverableWalkSession(
+            snapshot: snapshot,
+            endedAt: Date().timeIntervalSince1970,
+            reason: .manual,
+            successMessage: "미종료 산책을 지금 종료로 저장했습니다.",
+            metricSource: "manual_now"
+        )
+    }
+
+    private func finalizeRecoverableWalkSession(
+        snapshot: ActiveWalkSessionSnapshot,
+        endedAt: TimeInterval,
+        reason: WalkSessionEndReason,
+        successMessage: String,
+        metricSource: String
+    ) {
         let restoredPoints = snapshot.points.map {
             Location(
                 coordinate: CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude),
@@ -747,12 +765,16 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
             )
         }
         guard restoredPoints.count > 2 else {
-            clearActiveWalkSession()
-            walkStatusMessage = "미종료 산책 임시기록을 폐기했습니다."
+            walkStatusMessage = "포인트 부족으로 종료 확정을 할 수 없어요. 복구 후 계속 기록하거나 폐기해주세요."
+            metricTracker.track(
+                .recoveryFinalizeFailed,
+                userKey: currentMetricUserId(),
+                payload: ["reason": "insufficient_points"]
+            )
             return
         }
-        let nowTs = Date().timeIntervalSince1970
-        let walkTime = max(0, nowTs - snapshot.startedAt)
+        let finalizedEndAt = max(snapshot.startedAt, endedAt)
+        let walkTime = max(0, finalizedEndAt - snapshot.startedAt)
         let restoredSessionId = snapshot.sessionId.flatMap(UUID.init(uuidString:))
         let completed = Polygon(
             locations: restoredPoints,
@@ -769,17 +791,31 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         if updated.contains(where: { $0.id == finalized.id }) {
             WalkSessionMetadataStore.shared.set(
                 sessionId: finalized.id,
-                reason: .manual,
-                endedAt: nowTs,
+                reason: reason,
+                endedAt: finalizedEndAt,
                 petId: snapshot.selectedPetId
             )
             enqueueSyncOutbox(for: finalized, hasImage: finalized.binaryImage != nil)
-            walkStatusMessage = "미종료 산책을 지금 종료로 저장했습니다."
+            walkStatusMessage = successMessage
+            metricTracker.track(
+                .recoveryFinalizeConfirmed,
+                userKey: currentMetricUserId(),
+                payload: [
+                    "mode": reason.rawValue,
+                    "source": metricSource,
+                    "endedAt": "\(Int(finalizedEndAt))"
+                ]
+            )
+            applyPolygonList(updated)
+            clearActiveWalkSession()
         } else {
             walkStatusMessage = "미종료 산책 종료 저장에 실패했습니다."
+            metricTracker.track(
+                .recoveryFinalizeFailed,
+                userKey: currentMetricUserId(),
+                payload: ["reason": "local_save_failed"]
+            )
         }
-        applyPolygonList(updated)
-        clearActiveWalkSession()
     }
 
     private func decodeActiveWalkSession() -> ActiveWalkSessionSnapshot? {
@@ -826,6 +862,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         pendingRecoverableSession = nil
         hasRecoverableWalkSession = false
         recoverableWalkSummaryText = ""
+        recoverableWalkEstimateText = ""
         lastPointEventAt = nil
         lastMovementAt = nil
         movementAnchorLocation = nil

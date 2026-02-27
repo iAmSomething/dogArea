@@ -239,6 +239,7 @@ enum WalkSessionEndReason: String, Codable {
     case manual = "manual"
     case autoInactive = "auto_inactive"
     case autoTimeout = "auto_timeout"
+    case recoveryEstimated = "recovery_estimated"
 }
 
 struct WalkSessionMetadata: Codable, Equatable {
@@ -544,6 +545,10 @@ enum AppMetricEvent: String {
     case nearbyOptInDisabled = "nearby_opt_in_disabled"
     case petSelectionChanged = "pet_selection_changed"
     case petSelectionSuggested = "pet_selection_suggested"
+    case recoveryDraftDetected = "recovery_draft_detected"
+    case recoveryDraftDiscarded = "recovery_draft_discarded"
+    case recoveryFinalizeConfirmed = "recovery_finalize_confirmed"
+    case recoveryFinalizeFailed = "recovery_finalize_failed"
 }
 
 final class FeatureFlagStore {

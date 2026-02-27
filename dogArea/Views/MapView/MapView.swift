@@ -251,6 +251,11 @@ struct MapView : View{
                 Text(viewModel.recoverableWalkSummaryText)
                     .font(.appFont(for: .Light, size: 11))
                     .foregroundStyle(Color.appTextDarkGray)
+                if viewModel.recoverableWalkEstimateText.isEmpty == false {
+                    Text(viewModel.recoverableWalkEstimateText)
+                        .font(.appFont(for: .Light, size: 11))
+                        .foregroundStyle(Color.appTextDarkGray)
+                }
             }
             Spacer()
             Button("복구") {
@@ -261,13 +266,21 @@ struct MapView : View{
             .padding(.vertical, 6)
             .background(Color.appGreen)
             .cornerRadius(8)
+            Button("추정 종료") {
+                viewModel.finalizeRecoverableWalkSessionEstimated()
+            }
+            .font(.appFont(for: .SemiBold, size: 12))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(Color.appTextLightGray)
+            .cornerRadius(8)
             Button("지금 종료") {
                 viewModel.finalizeRecoverableWalkSessionNow()
             }
             .font(.appFont(for: .SemiBold, size: 12))
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
-            .background(Color.appTextLightGray)
+            .background(Color.appYellow)
             .cornerRadius(8)
             Button("닫기") {
                 dismissTopBanner(.recoverableSession, suppressFor: 180)
@@ -582,9 +595,23 @@ private struct MapTopBannerCandidate: Identifiable, Equatable, Comparable {
 
     static func < (lhs: MapTopBannerCandidate, rhs: MapTopBannerCandidate) -> Bool {
         if lhs.severity == rhs.severity {
-            return lhs.kind.rawValue < rhs.kind.rawValue
+            return lhs.kind.priorityRank < rhs.kind.priorityRank
         }
         return lhs.severity < rhs.severity
+    }
+}
+
+private extension MapTopBannerKind {
+    var priorityRank: Int {
+        switch self {
+        case .recoverableSession: return 0
+        case .recoveryIssue: return 1
+        case .syncOutbox: return 2
+        case .runtimeGuard: return 3
+        case .offlineMode: return 4
+        case .guestBackup: return 5
+        case .watchStatus: return 6
+        }
     }
 }
 
