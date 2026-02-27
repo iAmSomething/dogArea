@@ -31,6 +31,7 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     private var allPolygons: [Polygon] = []
     private var cancellables: Set<AnyCancellable> = []
     private var lastIndoorMissionExposureTrackKey: String = ""
+    private var lastIndoorMissionExtensionTrackKey: String = ""
     private let indoorMissionStore = IndoorMissionStore()
     private let metricTracker = AppMetricTracker.shared
 
@@ -250,62 +251,126 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     func refreshIndoorMissions(now: Date = Date()) {
         indoorMissionBoard = indoorMissionStore.buildBoard(now: now)
         weatherFeedbackRemainingCount = indoorMissionStore.weatherFeedbackRemainingCount(now: now)
-        guard indoorMissionBoard.isIndoorReplacementActive else { return }
-        let exposureKey = "\(indoorMissionBoard.dayKey)|\(indoorMissionBoard.riskLevel.rawValue)"
-        guard exposureKey != lastIndoorMissionExposureTrackKey else { return }
-        lastIndoorMissionExposureTrackKey = exposureKey
-        metricTracker.track(
-            .indoorMissionReplacementApplied,
-            userKey: userInfo?.id,
-            payload: [
-                "risk": indoorMissionBoard.riskLevel.rawValue,
-                "missionCount": "\(indoorMissionBoard.missions.count)"
-            ]
-        )
+        if indoorMissionBoard.isIndoorReplacementActive {
+            let exposureKey = "\(indoorMissionBoard.dayKey)|\(indoorMissionBoard.riskLevel.rawValue)"
+            if exposureKey != lastIndoorMissionExposureTrackKey {
+                lastIndoorMissionExposureTrackKey = exposureKey
+                metricTracker.track(
+                    .indoorMissionReplacementApplied,
+                    userKey: userInfo?.id,
+                    payload: [
+                        "risk": indoorMissionBoard.riskLevel.rawValue,
+                        "missionCount": "\(indoorMissionBoard.missions.count)"
+                    ]
+                )
+            }
+        }
+
+        let extensionTrackKey = "\(indoorMissionBoard.dayKey)|\(indoorMissionBoard.extensionState.rawValue)"
+        guard extensionTrackKey != lastIndoorMissionExtensionTrackKey else { return }
+        lastIndoorMissionExtensionTrackKey = extensionTrackKey
+
+        switch indoorMissionBoard.extensionState {
+        case .active:
+            metricTracker.track(
+                .indoorMissionExtensionApplied,
+                userKey: userInfo?.id,
+                payload: [
+                    "dayKey": indoorMissionBoard.dayKey,
+                    "rewardScale": String(format: "%.2f", indoorMissionStore.extensionRewardScale)
+                ]
+            )
+        case .expired:
+            indoorMissionStatusMessage = indoorMissionBoard.extensionMessage
+            metricTracker.track(
+                .indoorMissionExtensionExpired,
+                userKey: userInfo?.id,
+                payload: [
+                    "dayKey": indoorMissionBoard.dayKey
+                ]
+            )
+        case .cooldown:
+            indoorMissionStatusMessage = indoorMissionBoard.extensionMessage
+            metricTracker.track(
+                .indoorMissionExtensionBlocked,
+                userKey: userInfo?.id,
+                payload: [
+                    "dayKey": indoorMissionBoard.dayKey,
+                    "reason": "consecutive_limit"
+                ]
+            )
+        case .consumed, .none:
+            break
+        }
     }
 
     func recordIndoorMissionAction(_ missionId: String) {
         guard var mission = indoorMissionBoard.missions.first(where: { $0.id == missionId }) else { return }
-        indoorMissionStore.incrementActionCount(missionId: missionId)
+        indoorMissionStore.incrementActionCount(
+            missionId: mission.trackingMissionId,
+            dayKey: mission.dayKey
+        )
         mission = indoorMissionStore.updatedMissionState(mission)
         indoorMissionBoard = indoorMissionBoard.updated(mission)
         metricTracker.track(
             .indoorMissionActionLogged,
             userKey: userInfo?.id,
             payload: [
-                "missionId": missionId,
-                "actionCount": "\(mission.progress.actionCount)"
+                "missionId": mission.trackingMissionId,
+                "actionCount": "\(mission.progress.actionCount)",
+                "isExtension": mission.isExtension ? "true" : "false"
             ]
         )
     }
 
     func finalizeIndoorMission(_ missionId: String) {
         guard var mission = indoorMissionBoard.missions.first(where: { $0.id == missionId }) else { return }
-        let result = indoorMissionStore.confirmCompletion(missionId: missionId, minimumActionCount: mission.minimumActionCount)
+        let result = indoorMissionStore.confirmCompletion(
+            missionId: mission.trackingMissionId,
+            dayKey: mission.dayKey,
+            minimumActionCount: mission.minimumActionCount
+        )
         mission = indoorMissionStore.updatedMissionState(mission)
         indoorMissionBoard = indoorMissionBoard.updated(mission)
 
         switch result {
         case .completed:
-            indoorMissionStatusMessage = "\(mission.title) 완료! 보상 \(mission.rewardPoint)pt"
+            if mission.isExtension {
+                _ = indoorMissionStore.markExtensionConsumedIfNeeded(mission)
+                indoorMissionStatusMessage = "\(mission.title) 연장 미션 완료! 감액 보상 \(mission.rewardPoint)pt"
+                metricTracker.track(
+                    .indoorMissionExtensionConsumed,
+                    userKey: userInfo?.id,
+                    payload: [
+                        "missionId": mission.trackingMissionId,
+                        "reward": "\(mission.rewardPoint)",
+                        "rewardScale": String(format: "%.2f", mission.extensionRewardScale)
+                    ]
+                )
+            } else {
+                indoorMissionStatusMessage = "\(mission.title) 완료! 보상 \(mission.rewardPoint)pt"
+            }
             metricTracker.track(
                 .indoorMissionCompleted,
                 userKey: userInfo?.id,
                 payload: [
-                    "missionId": missionId,
+                    "missionId": mission.trackingMissionId,
                     "reward": "\(mission.rewardPoint)",
-                    "risk": indoorMissionBoard.riskLevel.rawValue
+                    "risk": indoorMissionBoard.riskLevel.rawValue,
+                    "isExtension": mission.isExtension ? "true" : "false"
                 ]
             )
+            refreshIndoorMissions()
         case .insufficientAction(let actionCount, let required):
             indoorMissionStatusMessage = "완료 기준 미달: \(actionCount)/\(required) 행동"
             metricTracker.track(
                 .indoorMissionCompletionRejected,
                 userKey: userInfo?.id,
                 payload: [
-                    "missionId": missionId,
+                    "missionId": mission.trackingMissionId,
                     "actionCount": "\(actionCount)",
-                    "required": "\(required)"
+                    "required": "\(required)",
+                    "isExtension": mission.isExtension ? "true" : "false"
                 ]
             )
         case .alreadyCompleted:
@@ -566,26 +631,65 @@ struct IndoorMissionCardModel: Identifiable, Equatable {
     let minimumActionCount: Int
     let rewardPoint: Int
     let streakEligible: Bool
+    let trackingMissionId: String
     let dayKey: String
+    let isExtension: Bool
+    let extensionSourceDayKey: String?
+    let extensionRewardScale: Double
     let progress: IndoorMissionProgress
+}
+
+enum IndoorMissionExtensionState: String, Codable, Equatable {
+    case none
+    case active
+    case consumed
+    case expired
+    case cooldown
+
+    var shouldDisplayCard: Bool {
+        switch self {
+        case .none:
+            return false
+        case .active, .consumed, .expired, .cooldown:
+            return true
+        }
+    }
 }
 
 struct IndoorMissionBoard: Equatable {
     let riskLevel: IndoorWeatherRiskLevel
     let dayKey: String
     let missions: [IndoorMissionCardModel]
+    let extensionState: IndoorMissionExtensionState
+    let extensionMessage: String?
 
     var isIndoorReplacementActive: Bool {
         riskLevel != .clear && missions.isEmpty == false
     }
 
-    static let empty = IndoorMissionBoard(riskLevel: .clear, dayKey: "", missions: [])
+    var shouldDisplayCard: Bool {
+        missions.isEmpty == false || extensionState.shouldDisplayCard
+    }
+
+    static let empty = IndoorMissionBoard(
+        riskLevel: .clear,
+        dayKey: "",
+        missions: [],
+        extensionState: .none,
+        extensionMessage: nil
+    )
 
     func updated(_ mission: IndoorMissionCardModel) -> IndoorMissionBoard {
         let replaced = missions.map { existing in
             existing.id == mission.id ? mission : existing
         }
-        return .init(riskLevel: riskLevel, dayKey: dayKey, missions: replaced)
+        return .init(
+            riskLevel: riskLevel,
+            dayKey: dayKey,
+            missions: replaced,
+            extensionState: extensionState,
+            extensionMessage: extensionMessage
+        )
     }
 }
 
@@ -604,6 +708,22 @@ private enum IndoorMissionCompletionResult {
 }
 
 private final class IndoorMissionStore {
+    private struct IndoorMissionExtensionEntry: Codable, Equatable {
+        let dayKey: String
+        let sourceDayKey: String?
+        let missionId: String?
+        let rewardScale: Double
+        var state: IndoorMissionExtensionState
+
+        var hasAllocation: Bool {
+            guard let sourceDayKey, sourceDayKey.isEmpty == false,
+                  let missionId, missionId.isEmpty == false else {
+                return false
+            }
+            return true
+        }
+    }
+
     private enum DefaultsKey {
         static let weatherRiskOverride = "weather.risk.level.v1"
         static let actionCounts = "indoor.mission.actionCounts.v1"
@@ -611,9 +731,11 @@ private final class IndoorMissionStore {
         static let exposureHistory = "indoor.mission.exposureHistory.v1"
         static let weatherFeedbackTimestamps = "weather.feedback.timestamps.v1"
         static let weatherFeedbackDailyAdjustment = "weather.feedback.dailyAdjustment.v1"
+        static let extensionLedger = "indoor.mission.extensionLedger.v1"
     }
 
     let weeklyFeedbackLimit = 2
+    let extensionRewardScale = 0.70
 
     private let calendar: Calendar = {
         var value = Calendar.autoupdatingCurrent
@@ -672,19 +794,41 @@ private final class IndoorMissionStore {
     func buildBoard(now: Date) -> IndoorMissionBoard {
         let riskLevel = resolveRiskLevel(now: now)
         let dayKey = dayStamp(for: now)
-        guard riskLevel.replacementMissionCount > 0 else {
-            return .init(riskLevel: riskLevel, dayKey: dayKey, missions: [])
+        let selectedTemplates: [IndoorMissionTemplate]
+        if riskLevel.replacementMissionCount > 0 {
+            selectedTemplates = selectedTemplatesForToday(riskLevel: riskLevel, dayKey: dayKey)
+        } else {
+            selectedTemplates = []
         }
-
-        let selectedTemplates = selectedTemplatesForToday(riskLevel: riskLevel, dayKey: dayKey)
         let missions = selectedTemplates.map { template in
             makeCardModel(template: template, riskLevel: riskLevel, dayKey: dayKey)
         }
-        return .init(riskLevel: riskLevel, dayKey: dayKey, missions: missions)
+        let extensionEntry = resolveExtensionEntry(dayKey: dayKey)
+        var combinedMissions = missions
+        if let extensionMission = makeExtensionCardModel(entry: extensionEntry, riskLevel: riskLevel) {
+            combinedMissions.insert(extensionMission, at: 0)
+        }
+
+        if combinedMissions.isEmpty, extensionEntry.state == .none {
+            return .init(
+                riskLevel: riskLevel,
+                dayKey: dayKey,
+                missions: [],
+                extensionState: .none,
+                extensionMessage: nil
+            )
+        }
+
+        return .init(
+            riskLevel: riskLevel,
+            dayKey: dayKey,
+            missions: combinedMissions,
+            extensionState: extensionEntry.state,
+            extensionMessage: extensionMessage(for: extensionEntry)
+        )
     }
 
-    func incrementActionCount(missionId: String, now: Date = Date()) {
-        let dayKey = dayStamp(for: now)
+    func incrementActionCount(missionId: String, dayKey: String) {
         let key = actionKey(missionId: missionId, dayKey: dayKey)
         var counts = UserDefaults.standard.dictionary(forKey: DefaultsKey.actionCounts) as? [String: Int] ?? [:]
         counts[key] = (counts[key] ?? 0) + 1
@@ -693,10 +837,10 @@ private final class IndoorMissionStore {
 
     func confirmCompletion(
         missionId: String,
+        dayKey: String,
         minimumActionCount: Int,
         now: Date = Date()
     ) -> IndoorMissionCompletionResult {
-        let dayKey = dayStamp(for: now)
         let completedKey = actionKey(missionId: missionId, dayKey: dayKey)
         var completed = UserDefaults.standard.dictionary(forKey: DefaultsKey.completionFlags) as? [String: TimeInterval] ?? [:]
         if completed[completedKey] != nil {
@@ -713,19 +857,43 @@ private final class IndoorMissionStore {
         return .completed
     }
 
+    @discardableResult
+    func markExtensionConsumedIfNeeded(_ mission: IndoorMissionCardModel, now: Date = Date()) -> Bool {
+        guard mission.isExtension else { return false }
+        let dayKey = dayStamp(for: now)
+        var ledger = extensionLedger()
+        guard var entry = ledger[dayKey], entry.hasAllocation else { return false }
+        guard entry.missionId == mission.trackingMissionId else { return false }
+        guard entry.state == .active else { return false }
+        entry.state = .consumed
+        ledger[dayKey] = entry
+        persistExtensionLedger(ledger)
+        return true
+    }
+
     func updatedMissionState(_ mission: IndoorMissionCardModel) -> IndoorMissionCardModel {
-        makeCardModel(
-            template: template(for: mission.id) ?? .init(
-                id: mission.id,
-                category: mission.category,
-                title: mission.title,
-                description: mission.description,
+        let key = actionKey(missionId: mission.trackingMissionId, dayKey: mission.dayKey)
+        let counts = UserDefaults.standard.dictionary(forKey: DefaultsKey.actionCounts) as? [String: Int] ?? [:]
+        let completed = UserDefaults.standard.dictionary(forKey: DefaultsKey.completionFlags) as? [String: TimeInterval] ?? [:]
+
+        return .init(
+            id: mission.id,
+            category: mission.category,
+            title: mission.title,
+            description: mission.description,
+            minimumActionCount: mission.minimumActionCount,
+            rewardPoint: mission.rewardPoint,
+            streakEligible: mission.streakEligible,
+            trackingMissionId: mission.trackingMissionId,
+            dayKey: mission.dayKey,
+            isExtension: mission.isExtension,
+            extensionSourceDayKey: mission.extensionSourceDayKey,
+            extensionRewardScale: mission.extensionRewardScale,
+            progress: .init(
+                actionCount: counts[key] ?? 0,
                 minimumActionCount: mission.minimumActionCount,
-                baseRewardPoint: mission.rewardPoint,
-                streakEligible: mission.streakEligible
-            ),
-            riskLevel: resolvedRiskLevelFromBoard(),
-            dayKey: mission.dayKey
+                isCompleted: completed[key] != nil
+            )
         )
     }
 
@@ -781,24 +949,35 @@ private final class IndoorMissionStore {
     private func makeCardModel(
         template: IndoorMissionTemplate,
         riskLevel: IndoorWeatherRiskLevel,
-        dayKey: String
+        dayKey: String,
+        displayId: String? = nil,
+        trackingMissionId: String? = nil,
+        isExtension: Bool = false,
+        extensionSourceDayKey: String? = nil,
+        rewardScale: Double = 1.0,
+        streakEligibleOverride: Bool? = nil
     ) -> IndoorMissionCardModel {
-        let key = actionKey(missionId: template.id, dayKey: dayKey)
+        let trackingId = trackingMissionId ?? template.id
+        let key = actionKey(missionId: trackingId, dayKey: dayKey)
         let counts = UserDefaults.standard.dictionary(forKey: DefaultsKey.actionCounts) as? [String: Int] ?? [:]
         let completed = UserDefaults.standard.dictionary(forKey: DefaultsKey.completionFlags) as? [String: TimeInterval] ?? [:]
         let actionCount = counts[key] ?? 0
         let isCompleted = completed[key] != nil
-        let reward = Int((Double(template.baseRewardPoint) * riskLevel.rewardScale).rounded())
+        let reward = Int((Double(template.baseRewardPoint) * riskLevel.rewardScale * rewardScale).rounded())
 
         return .init(
-            id: template.id,
+            id: displayId ?? template.id,
             category: template.category,
             title: template.title,
             description: template.description,
             minimumActionCount: template.minimumActionCount,
             rewardPoint: max(1, reward),
-            streakEligible: template.streakEligible,
+            streakEligible: streakEligibleOverride ?? template.streakEligible,
+            trackingMissionId: trackingId,
             dayKey: dayKey,
+            isExtension: isExtension,
+            extensionSourceDayKey: extensionSourceDayKey,
+            extensionRewardScale: rewardScale,
             progress: .init(
                 actionCount: actionCount,
                 minimumActionCount: template.minimumActionCount,
@@ -807,8 +986,151 @@ private final class IndoorMissionStore {
         )
     }
 
+    private func makeExtensionCardModel(
+        entry: IndoorMissionExtensionEntry,
+        riskLevel: IndoorWeatherRiskLevel
+    ) -> IndoorMissionCardModel? {
+        guard entry.state == .active || entry.state == .consumed else { return nil }
+        guard let sourceDayKey = entry.sourceDayKey,
+              let missionId = entry.missionId,
+              let template = template(for: missionId) else {
+            return nil
+        }
+
+        let displayId = "\(missionId)|extension|\(sourceDayKey)"
+        return makeCardModel(
+            template: template,
+            riskLevel: riskLevel,
+            dayKey: sourceDayKey,
+            displayId: displayId,
+            trackingMissionId: missionId,
+            isExtension: true,
+            extensionSourceDayKey: sourceDayKey,
+            rewardScale: entry.rewardScale,
+            streakEligibleOverride: false
+        )
+    }
+
     private func template(for missionId: String) -> IndoorMissionTemplate? {
         templates.first(where: { $0.id == missionId })
+    }
+
+    private func extensionMessage(for entry: IndoorMissionExtensionEntry) -> String? {
+        switch entry.state {
+        case .none:
+            return nil
+        case .active:
+            return "전일 미션 1개를 자동 연장했어요. 완료 시 보상은 기본의 70%만 지급돼요."
+        case .consumed:
+            return "연장 슬롯 사용 완료. 연장 미션은 시즌 점수/연속 보상에서 제외돼요."
+        case .expired:
+            return "전일 연장 미션이 미완료로 소멸되어 오늘은 자동 연장이 제공되지 않아요."
+        case .cooldown:
+            return "연장 슬롯은 연속 2일 이상 자동 적용되지 않아요. 오늘은 쿨다운 상태예요."
+        }
+    }
+
+    private func resolveExtensionEntry(dayKey: String) -> IndoorMissionExtensionEntry {
+        var ledger = extensionLedger()
+        if var existing = ledger[dayKey] {
+            if existing.state == .active,
+               let sourceDayKey = existing.sourceDayKey,
+               let missionId = existing.missionId,
+               isMissionCompleted(missionId: missionId, dayKey: sourceDayKey) {
+                existing.state = .consumed
+                ledger[dayKey] = existing
+                persistExtensionLedger(ledger)
+            }
+            return existing
+        }
+
+        let previousDayKey = previousDayStamps(from: dayKey, count: 1).first
+        guard let previousDayKey, previousDayKey.isEmpty == false else {
+            let none = IndoorMissionExtensionEntry(
+                dayKey: dayKey,
+                sourceDayKey: nil,
+                missionId: nil,
+                rewardScale: extensionRewardScale,
+                state: .none
+            )
+            ledger[dayKey] = none
+            persistExtensionLedger(ledger)
+            return none
+        }
+
+        if let previousEntry = ledger[previousDayKey], previousEntry.hasAllocation {
+            let wasCompleted: Bool
+            if let sourceDayKey = previousEntry.sourceDayKey, let missionId = previousEntry.missionId {
+                wasCompleted = isMissionCompleted(missionId: missionId, dayKey: sourceDayKey)
+            } else {
+                wasCompleted = false
+            }
+            let state: IndoorMissionExtensionState = wasCompleted ? .cooldown : .expired
+            let blocked = IndoorMissionExtensionEntry(
+                dayKey: dayKey,
+                sourceDayKey: nil,
+                missionId: nil,
+                rewardScale: extensionRewardScale,
+                state: state
+            )
+            ledger[dayKey] = blocked
+            persistExtensionLedger(ledger)
+            return blocked
+        }
+
+        if let missionId = unresolvedMissionCandidate(from: previousDayKey) {
+            let active = IndoorMissionExtensionEntry(
+                dayKey: dayKey,
+                sourceDayKey: previousDayKey,
+                missionId: missionId,
+                rewardScale: extensionRewardScale,
+                state: .active
+            )
+            ledger[dayKey] = active
+            persistExtensionLedger(ledger)
+            return active
+        }
+
+        let none = IndoorMissionExtensionEntry(
+            dayKey: dayKey,
+            sourceDayKey: nil,
+            missionId: nil,
+            rewardScale: extensionRewardScale,
+            state: .none
+        )
+        ledger[dayKey] = none
+        persistExtensionLedger(ledger)
+        return none
+    }
+
+    private func unresolvedMissionCandidate(from dayKey: String) -> String? {
+        let history = UserDefaults.standard.dictionary(forKey: DefaultsKey.exposureHistory) as? [String: [String]] ?? [:]
+        let missionIds = history[dayKey] ?? []
+        guard missionIds.isEmpty == false else { return nil }
+        return missionIds.first(where: { isMissionCompleted(missionId: $0, dayKey: dayKey) == false })
+    }
+
+    private func isMissionCompleted(missionId: String, dayKey: String) -> Bool {
+        let key = actionKey(missionId: missionId, dayKey: dayKey)
+        let completed = UserDefaults.standard.dictionary(forKey: DefaultsKey.completionFlags) as? [String: TimeInterval] ?? [:]
+        return completed[key] != nil
+    }
+
+    private func extensionLedger() -> [String: IndoorMissionExtensionEntry] {
+        guard let data = UserDefaults.standard.data(forKey: DefaultsKey.extensionLedger) else { return [:] }
+        do {
+            return try JSONDecoder().decode([String: IndoorMissionExtensionEntry].self, from: data)
+        } catch {
+            return [:]
+        }
+    }
+
+    private func persistExtensionLedger(_ ledger: [String: IndoorMissionExtensionEntry]) {
+        let sortedKeys = ledger.keys.sorted()
+        let keysToKeep = Set(sortedKeys.suffix(21))
+        let pruned = ledger.filter { keysToKeep.contains($0.key) }
+        guard let encoded = try? JSONEncoder().encode(pruned) else { return }
+        UserDefaults.standard.set(encoded, forKey: DefaultsKey.extensionLedger)
     }
 
     private func resolveBaseRiskLevel() -> IndoorWeatherRiskLevel {
@@ -907,10 +1229,6 @@ private final class IndoorMissionStore {
             guard let date = calendar.date(byAdding: .day, value: -offset, to: current) else { return nil }
             return Self.dayFormatter.string(from: date)
         }
-    }
-
-    private func resolvedRiskLevelFromBoard() -> IndoorWeatherRiskLevel {
-        resolveRiskLevel()
     }
 
     private func adjustedRisk(from risk: IndoorWeatherRiskLevel, step: Int) -> IndoorWeatherRiskLevel {

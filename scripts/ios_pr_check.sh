@@ -32,6 +32,7 @@ swift scripts/rival_privacy_hard_guard_unit_check.swift
 swift scripts/rival_league_matching_unit_check.swift
 swift scripts/season_anti_farming_unit_check.swift
 swift scripts/weather_feedback_loop_unit_check.swift
+swift scripts/quest_failure_buffer_unit_check.swift
 swift scripts/project_stability_unit_check.swift
 
 if [[ "${DOGAREA_SKIP_BUILD:-0}" == "1" ]]; then
