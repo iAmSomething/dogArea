@@ -12,6 +12,20 @@ type RequestDTO = {
   session_ids?: string[];
 };
 
+type SeasonScoreSummaryDTO = {
+  walk_session_id: string;
+  total_points: number;
+  unique_tiles: number;
+  novelty_ratio: number;
+  repeat_suppressed_count: number;
+  suspicious_repeat_count: number;
+  base_score: number;
+  new_route_bonus: number;
+  total_score: number;
+  score_blocked: boolean;
+  explain?: Record<string, unknown>;
+};
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -227,7 +241,28 @@ Deno.serve(async (req) => {
       if (pointsError) return json({ error: pointsError.message }, 500);
     }
 
-    return json({ ok: true, stage, walk_session_id: walkSessionId, point_count: rows.length });
+    let seasonScoreSummary: SeasonScoreSummaryDTO | null = null;
+    const { data: seasonScoreRows, error: seasonScoreError } = await userClient.rpc(
+      "rpc_score_walk_session_anti_farming",
+      {
+        target_walk_session_id: walkSessionId,
+        now_ts: new Date().toISOString(),
+      },
+    );
+
+    if (seasonScoreError) {
+      console.warn("season scoring rpc failed", seasonScoreError.message);
+    } else if (Array.isArray(seasonScoreRows) && seasonScoreRows.length > 0) {
+      seasonScoreSummary = seasonScoreRows[0] as SeasonScoreSummaryDTO;
+    }
+
+    return json({
+      ok: true,
+      stage,
+      walk_session_id: walkSessionId,
+      point_count: rows.length,
+      season_score_summary: seasonScoreSummary,
+    });
   }
 
   if (stage === "meta") {

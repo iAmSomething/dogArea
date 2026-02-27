@@ -163,6 +163,35 @@ order by c.sort_order asc, c.code asc;
 - `featured_count`가 최소 1개 이상(큐레이션 카탈로그 기준)
 - `display_order`가 음수 없이 정렬 가능 범위로 유지
 
+### 5.7 시즌 안티 농사 점수 검증 (#146)
+```sql
+select *
+from public.rpc_score_walk_session_anti_farming(
+  ':walk_session_uuid'::uuid,
+  now()
+);
+```
+
+기대값:
+- 동일 타일 반복 입력이 많은 세션은 `repeat_suppressed_count`가 증가
+- `score_blocked=true`일 때 `total_score=0`
+- `explain.ui_reason`에 차단/감쇠 사유가 포함
+
+감사 로그 확인:
+```sql
+select
+  severity,
+  blocked,
+  repeat_suppressed_count,
+  novelty_ratio,
+  session_distance_m,
+  created_at
+from public.season_score_audit_logs
+where walk_session_id = ':walk_session_uuid'::uuid
+order by created_at desc
+limit 20;
+```
+
 ## 6. 운영 체크리스트
 - [ ] `migration list --local` / `migration list --linked` 결과 저장
 - [ ] User A/B 교차 접근 차단 SQL 결과 저장
@@ -170,3 +199,4 @@ order by c.sort_order asc, c.code asc;
 - [ ] 핵심 통계 SQL 결과를 릴리스 문서에 첨부
 - [ ] User/Pet 확장 필드 정합성 SQL 결과 첨부
 - [ ] 비교군 카탈로그/시드 정합성 SQL 결과 첨부
+- [ ] 시즌 안티 농사 RPC/감사 로그 검증 결과 첨부

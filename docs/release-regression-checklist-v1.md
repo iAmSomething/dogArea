@@ -67,6 +67,9 @@
 - [ ] nearby 핫스팟에서 표본 미달 셀은 count가 노출되지 않고(percentile-only) 강도만 표시됨
 - [ ] nearby 핫스팟에서 야간(22~06) 지연 60분 정책이 반영됨
 - [ ] 민감 구역 마스킹 대상 셀이 지도 오버레이에 노출되지 않음
+- [ ] 시즌 점수에서 동일 타일 30분 내 반복 이벤트가 0점 처리됨
+- [ ] 시즌 점수에서 신규 경로 비율이 높을수록 보너스가 증가함
+- [ ] 반복 파밍 의심 패턴에서 `score_blocked=true` + 감사 로그가 기록됨
 
 ### 4.3 목록/상세
 - [ ] 산책 목록 로딩 정상
@@ -93,6 +96,7 @@
 - [ ] `profiles.profile_message`, `pets.breed/age_years/gender` 컬럼 및 제약 확인
 - [ ] `area_reference_catalogs` + `area_references.catalog_id/display_order/is_featured` 구조 확인
 - [ ] `privacy_guard_policies/privacy_sensitive_geo_masks/privacy_guard_audit_logs` 구조 및 `rpc_get_nearby_hotspots` 확장 컬럼 확인
+- [ ] `season_scoring_policies/season_tile_score_events/season_score_audit_logs` 구조 및 `rpc_score_walk_session_anti_farming` 실행 확인
 
 ## 6. 배포 파이프라인 검증 시나리오
 ### 6.1 Workflow 정의/활성 상태
