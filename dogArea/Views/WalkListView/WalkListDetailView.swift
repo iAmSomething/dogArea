@@ -156,6 +156,7 @@ struct WalkListDetailView: View {
         case .manual: return "수동 종료"
         case .autoInactive: return "무이동 자동 종료"
         case .autoTimeout: return "시간 제한 자동 종료"
+        case .recoveryEstimated: return "복구 추정 종료"
         }
     }
 

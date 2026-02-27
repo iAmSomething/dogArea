@@ -25,6 +25,8 @@ let userDefaultsSetting = load("dogArea/Source/UserdefaultSetting.swift")
 assertTrue(doc.contains("세션 임시저장"), "doc must include active session snapshot section")
 assertTrue(doc.contains("재실행 복구 UX"), "doc must include recovery UX section")
 assertTrue(doc.contains("자동 종료 정책(v1)"), "doc must include auto-end policy section")
+assertTrue(doc.contains("자동 확정/자동 종료 금지"), "doc must prohibit automatic confirmation on battery recovery")
+assertTrue(doc.contains("추정 종료"), "doc must include estimated finalize action")
 assertTrue(doc.contains("5분"), "doc must include rest candidate threshold")
 assertTrue(doc.contains("12분"), "doc must include warning threshold")
 assertTrue(doc.contains("15분"), "doc must include finalize threshold")
@@ -35,6 +37,9 @@ assertTrue(mapViewModel.contains("prepareRecoverableSessionIfNeeded"), "view mod
 assertTrue(mapViewModel.contains("resumeRecoverableWalkSession"), "view model must support resume action")
 assertTrue(mapViewModel.contains("discardRecoverableWalkSession"), "view model must support discard action")
 assertTrue(mapViewModel.contains("finalizeRecoverableWalkSessionNow"), "view model must support finish-now action")
+assertTrue(mapViewModel.contains("finalizeRecoverableWalkSessionEstimated"), "view model must support estimated finalize action")
+assertTrue(mapViewModel.contains("recoverableFinalizationEstimate"), "view model must calculate estimated end time")
+assertTrue(mapViewModel.contains("autoFinalizeRecoverableSession") == false, "view model should not auto-finalize recoverable drafts")
 assertTrue(mapViewModel.contains("persistActiveWalkSession"), "view model must persist active session")
 assertTrue(mapViewModel.contains("handleAutoEndIfNeeded"), "view model must implement auto-end policy")
 assertTrue(mapViewModel.contains("restCandidateInterval"), "view model must define rest candidate threshold")
@@ -47,6 +52,7 @@ assertTrue(mapViewModel.contains("UIApplication.willTerminateNotification"), "vi
 
 assertTrue(mapView.contains("recoverableSessionBanner"), "map view must show recoverable session banner")
 assertTrue(mapView.contains("지금 종료"), "map view must provide finish-now action")
+assertTrue(mapView.contains("추정 종료"), "map view must provide estimated finalize action")
 assertTrue(mapView.contains("watchStatusBanner"), "map view must show watch status banner")
 assertTrue(mapView.contains("walkStatusMessage"), "map view must render walk status toast")
 
@@ -61,8 +67,10 @@ assertTrue(userDefaultsSetting.contains("walkAutoEndPolicyEnabled()") == false, 
 
 assertTrue(userDefaultsSetting.contains("WalkSessionMetadataStore"), "session metadata store must persist end reason/time")
 assertTrue(userDefaultsSetting.contains("WalkSessionEndReason"), "session end reason enum must exist")
+assertTrue(userDefaultsSetting.contains("recovery_estimated"), "session end reason should include recovery_estimated")
 
 assertTrue(checklist.contains("미종료 세션 복구 배너"), "checklist must include recovery banner scenario")
+assertTrue(checklist.contains("배터리 종료 복구 배너"), "checklist must include battery recovery estimated-finalize scenario")
 assertTrue(checklist.contains("무이동 5분/12분/15분"), "checklist must include staged inactivity scenario")
 assertTrue(checklist.contains("단계/판정 기준 문구"), "checklist should include policy copy visibility check")
 
