@@ -25,6 +25,7 @@
 - 라이벌 공정 리그 매칭 v1: `docs/rival-fair-league-v1.md`
 - 시즌 안티 농사 규칙 v1: `docs/season-anti-farming-v1.md`
 - 시즌 복귀 캐치업 버프 v1: `docs/season-comeback-catchup-buff-v1.md`
+- 시즌 주간 정책 Stage1 v1: `docs/season-weekly-policy-stage1-v1.md`
 - 체감 날씨 피드백 루프 v1: `docs/weather-feedback-loop-v1.md`
 - 날씨 리스크 모델/Provider 정책 v1: `docs/weather-risk-provider-policy-v1.md`
 - 날씨 치환/스트릭 보호 서버 엔진 v1: `docs/weather-replacement-shield-engine-v1.md`
@@ -57,6 +58,7 @@
 - Cycle #148 결과 보고서(2026-02-27): `docs/cycle-148-quest-failure-buffer-report-2026-02-27.md`
 - Cycle #147 결과 보고서(2026-02-27): `docs/cycle-147-pet-adaptive-quest-report-2026-02-27.md`
 - Cycle #145 결과 보고서(2026-02-27): `docs/cycle-145-season-catchup-buff-report-2026-02-27.md`
+- Cycle #124 결과 보고서(2026-02-27): `docs/cycle-124-season-policy-report-2026-02-27.md`
 - Cycle #135 결과 보고서(2026-02-27): `docs/cycle-135-weather-ux-fallback-report-2026-02-27.md`
 - Cycle #133 결과 보고서(2026-02-27): `docs/cycle-133-weather-risk-policy-report-2026-02-27.md`
 - Cycle #134 결과 보고서(2026-02-27): `docs/cycle-134-weather-stage2-engine-report-2026-02-27.md`

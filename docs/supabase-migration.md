@@ -340,6 +340,37 @@ order by day_key desc, risk_level asc;
 - 같은 주차에서 `weekly_shield_limit=1`을 초과하지 않음
 - `weather_replacement_histories`에 원/치환 퀘스트 ID와 사유가 누락 없이 저장됨
 
+### 5.12 시즌 Stage1 정책 검증 (#124)
+시즌 점수/감쇠/티어 파라미터 확인:
+```sql
+select
+  policy_key,
+  base_tile_score,
+  new_route_bonus_weight,
+  repeat_cooldown_minutes,
+  suspicious_repeat_threshold
+from public.season_scoring_policies
+where policy_key = 'season_tile_anti_farming_v1';
+```
+
+복귀/보정 파라미터 확인:
+```sql
+select
+  policy_key,
+  inactivity_threshold_hours,
+  buff_active_hours,
+  score_boost_rate,
+  weekly_issue_limit,
+  season_end_block_hours
+from public.season_catchup_buff_policies
+where policy_key = 'season_comeback_catchup_v1';
+```
+
+기대값:
+- 운영 파라미터가 Stage1 정책 문서(`docs/season-weekly-policy-stage1-v1.md`)의 기본값 범위를 벗어나지 않음
+- 시즌 종료 지연창(`2h`) 운영 규칙이 앱/운영 문서와 일치
+- 티어 컷(80/180/320/520) 및 동점 우선순위가 문서/클라이언트 표시 로직과 동일
+
 ## 6. 운영 체크리스트
 - [ ] `migration list --local` / `migration list --linked` 결과 저장
 - [ ] User A/B 교차 접근 차단 SQL 결과 저장
@@ -348,6 +379,7 @@ order by day_key desc, risk_level asc;
 - [ ] User/Pet 확장 필드 정합성 SQL 결과 첨부
 - [ ] 비교군 카탈로그/시드 정합성 SQL 결과 첨부
 - [ ] 시즌 안티 농사 RPC/감사 로그 검증 결과 첨부
+- [ ] 시즌 Stage1 정책 파라미터 검증 결과 첨부
 - [ ] 체감 날씨 피드백 KPI 뷰 검증 결과 첨부
 - [ ] 날씨 치환/Shield RPC 및 이력 원장 검증 결과 첨부
 - [ ] 라이벌 리그 스냅샷/분포/히스토리 검증 결과 첨부
