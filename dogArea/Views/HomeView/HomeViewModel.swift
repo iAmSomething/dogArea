@@ -29,6 +29,7 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     @Published var weatherFeedbackResultMessage: String? = nil
     @Published var seasonCatchupBuffStatusMessage: String? = nil
     @Published var seasonCatchupBuffStatusWarning: Bool = false
+    @Published private(set) var isShowingAllRecordsOverride: Bool = false
 
     private var allPolygons: [Polygon] = []
     private var cancellables: Set<AnyCancellable> = []
@@ -50,6 +51,20 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
 
     var selectedPetNameWithYi: String {
         (selectedPet?.petName ?? "강아지").addYi()
+    }
+
+    var selectedPetName: String {
+        selectedPet?.petName ?? "강아지"
+    }
+
+    var shouldShowSelectedPetEmptyState: Bool {
+        guard isShowingAllRecordsOverride == false else { return false }
+        guard let selectedPetId = selectedPet?.petId, selectedPetId.isEmpty == false else { return false }
+        guard allPolygons.isEmpty == false else { return false }
+        let taggedPolygons = allPolygons.filter { ($0.petId?.isEmpty == false) }
+        guard taggedPolygons.isEmpty == false else { return false }
+        let selectedCount = taggedPolygons.filter { $0.petId == selectedPetId }.count
+        return selectedCount == 0
     }
 
     var nextGoalArea: AreaMeter? {
@@ -101,8 +116,20 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
 
     func selectPet(_ petId: String) {
         guard pets.contains(where: { $0.petId == petId }) else { return }
+        isShowingAllRecordsOverride = false
         UserdefaultSetting.shared.setSelectedPetId(petId, source: "home")
         reloadUserInfo()
+        applySelectedPetStatistics()
+    }
+
+    func showAllRecordsTemporarily() {
+        guard allPolygons.isEmpty == false else { return }
+        isShowingAllRecordsOverride = true
+        applySelectedPetStatistics()
+    }
+
+    func showSelectedPetRecords() {
+        isShowingAllRecordsOverride = false
         applySelectedPetStatistics()
     }
 
@@ -132,6 +159,7 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
                 guard let self else { return }
+                self.isShowingAllRecordsOverride = false
                 self.reloadUserInfo()
                 self.applySelectedPetStatistics()
             }
@@ -224,6 +252,9 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     }
 
     private func filteredPolygons(from polygons: [Polygon]) -> [Polygon] {
+        if isShowingAllRecordsOverride {
+            return polygons
+        }
         guard let selectedPetId = selectedPet?.petId, selectedPetId.isEmpty == false else {
             return polygons
         }

@@ -27,51 +27,62 @@ struct WalkListView: View {
                             .padding(.horizontal, 16)
                             .padding(.top, 8)
                     }
-                    Section(content: {
-                        VStack {
-                            ForEach(viewModel.walkingDatas.thisWeekList.reversed(), id:\.self) { walk in
-                                NavigationLink(value: walk) {
-                                    WalkListCell(walkData: walk)
-                                }.padding()
-                                    .cornerRadius(15)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 15)
-                                            .stroke(Color.appTextDarkGray, lineWidth: 0.3)
-                                    )
-                                    .padding(.horizontal, 15)
-                            }
+                    if viewModel.walkingDatas.isEmpty {
+                        if viewModel.shouldShowSelectedPetEmptyState {
+                            filteredEmptyStateCard
+                        } else {
+                            emptyHistoryCard
                         }
-                    }, header: {HStack {
-                        Text("이번 주 산책 목록")
-                            .font(.appFont(for: .SemiBold, size: 20))
-                            .padding()
-                        Spacer()
-                    }.background(scheme == .dark ? Color.black : Color.white)
-                    })
-                    Section(content: {
-                        VStack {
-                            ForEach(viewModel.walkingDatas.exceptThisWeek.reversed(), id:\.self) { walk in
-                                NavigationLink(value: walk) {
-                                    WalkListCell(walkData: walk)
-                                        
-                                }.padding()
-                                    .cornerRadius(15)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 15)
-                                            .stroke(Color.appTextDarkGray, lineWidth: 0.3)
-                                    )
-                                    .padding(.horizontal, 15)
-
-                            }
+                    } else {
+                        if viewModel.walkingDatas.thisWeekList.isEmpty == false {
+                            Section(content: {
+                                VStack {
+                                    ForEach(viewModel.walkingDatas.thisWeekList.reversed(), id:\.self) { walk in
+                                        NavigationLink(value: walk) {
+                                            WalkListCell(walkData: walk)
+                                        }.padding()
+                                            .cornerRadius(15)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 15)
+                                                    .stroke(Color.appTextDarkGray, lineWidth: 0.3)
+                                            )
+                                            .padding(.horizontal, 15)
+                                    }
+                                }
+                            }, header: {HStack {
+                                Text("이번 주 산책 목록")
+                                    .font(.appFont(for: .SemiBold, size: 20))
+                                    .padding()
+                                Spacer()
+                            }.background(scheme == .dark ? Color.black : Color.white)
+                            })
                         }
+                        if viewModel.walkingDatas.exceptThisWeek.isEmpty == false {
+                            Section(content: {
+                                VStack {
+                                    ForEach(viewModel.walkingDatas.exceptThisWeek.reversed(), id:\.self) { walk in
+                                        NavigationLink(value: walk) {
+                                            WalkListCell(walkData: walk)
+                                        }.padding()
+                                            .cornerRadius(15)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 15)
+                                                    .stroke(Color.appTextDarkGray, lineWidth: 0.3)
+                                            )
+                                            .padding(.horizontal, 15)
 
-                    }, header: {HStack {
-                        Text("이전 산책 목록")
-                            .font(.appFont(for: .SemiBold, size: 20))
-                            .padding()
-                        Spacer()
-                    }.background(scheme == .dark ? Color.black : Color.white)
-                    })
+                                    }
+                                }
+
+                            }, header: {HStack {
+                                Text("이전 산책 목록")
+                                    .font(.appFont(for: .SemiBold, size: 20))
+                                    .padding()
+                                Spacer()
+                            }.background(scheme == .dark ? Color.black : Color.white)
+                            })
+                        }
+                    }
                     
                 }
             }.refreshable {
@@ -117,9 +128,34 @@ struct WalkListView: View {
 
     var petContextSwitcher: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("현재 반려견 컨텍스트: \(viewModel.selectedPetName)")
+            HStack(spacing: 10) {
+                Text(viewModel.isShowingAllRecordsOverride
+                     ? "전체 기록 보기 모드 · 선택 반려견 \(viewModel.selectedPetName)"
+                     : "선택 반려견 기준 · \(viewModel.selectedPetName)")
                 .font(.appFont(for: .SemiBold, size: 12))
                 .foregroundStyle(Color.appTextDarkGray)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Color.appYellowPale)
+                .cornerRadius(8)
+                .accessibilityLabel(
+                    viewModel.isShowingAllRecordsOverride
+                        ? "전체 기록 보기 모드, 선택 반려견 \(viewModel.selectedPetName)"
+                        : "선택 반려견 기준, \(viewModel.selectedPetName)"
+                )
+                if viewModel.isShowingAllRecordsOverride {
+                    Button("기준으로 돌아가기") {
+                        viewModel.showSelectedPetRecords()
+                    }
+                    .font(.appFont(for: .SemiBold, size: 11))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.appYellow)
+                    .cornerRadius(8)
+                    .accessibilityLabel("선택 반려견 기준으로 돌아가기")
+                }
+                Spacer(minLength: 0)
+            }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(viewModel.pets, id: \.petId) { pet in
@@ -138,6 +174,55 @@ struct WalkListView: View {
                 }
             }
         }
+    }
+
+    var filteredEmptyStateCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("\(viewModel.selectedPetName) 산책 기록이 아직 없어요")
+                .font(.appFont(for: .SemiBold, size: 14))
+            Text("필터 기준으로는 0건입니다. 전체 기록으로 전환하면 다른 반려견 기록을 확인할 수 있어요.")
+                .font(.appFont(for: .Light, size: 12))
+                .foregroundStyle(Color.appTextDarkGray)
+            Button("전체 기록 보기") {
+                viewModel.showAllRecordsTemporarily()
+            }
+            .font(.appFont(for: .SemiBold, size: 12))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(Color.appYellow)
+            .cornerRadius(8)
+            .accessibilityLabel("전체 기록 보기")
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(Color.white)
+        .cornerRadius(10)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color.appTextDarkGray, lineWidth: 0.25)
+        )
+        .padding(.horizontal, 16)
+        .padding(.top, 12)
+    }
+
+    var emptyHistoryCard: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("아직 저장된 산책 기록이 없어요")
+                .font(.appFont(for: .SemiBold, size: 14))
+            Text("지도에서 산책을 기록하면 목록에 자동으로 추가됩니다.")
+                .font(.appFont(for: .Light, size: 12))
+                .foregroundStyle(Color.appTextDarkGray)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(Color.white)
+        .cornerRadius(10)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color.appTextDarkGray, lineWidth: 0.25)
+        )
+        .padding(.horizontal, 16)
+        .padding(.top, 12)
     }
 }
 

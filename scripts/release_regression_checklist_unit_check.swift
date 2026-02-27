@@ -41,6 +41,9 @@ assertTrue(checklist.contains("view_weather_feedback_kpis_7d"), "checklist shoul
 assertTrue(checklist.contains("최근 14일 활동량 기준"), "checklist should include rival 14-day activity league scenario")
 assertTrue(checklist.contains("effective_league"), "checklist should include rival fallback merge scenario")
 assertTrue(checklist.contains("rival_league_policies/rival_league_assignments/rival_league_history"), "checklist should include rival league migration verification")
+assertTrue(checklist.contains("선택 반려견 기준"), "checklist should include selected pet context badge scenario")
+assertTrue(checklist.contains("전체 기록 보기"), "checklist should include empty state CTA scenario")
+assertTrue(checklist.contains("기준으로 돌아가기"), "checklist should include filter restore scenario")
 
 assertTrue(report.contains("## 1. 빌드 체크 결과"), "report must include build results")
 assertTrue(report.contains("## 2. 핵심 시나리오 점검 결과"), "report must include scenario results")

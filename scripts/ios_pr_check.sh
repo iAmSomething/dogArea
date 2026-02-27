@@ -35,6 +35,7 @@ swift scripts/season_comeback_catchup_unit_check.swift
 swift scripts/weather_feedback_loop_unit_check.swift
 swift scripts/quest_failure_buffer_unit_check.swift
 swift scripts/pet_adaptive_quest_unit_check.swift
+swift scripts/pet_context_badge_empty_state_unit_check.swift
 swift scripts/project_stability_unit_check.swift
 
 if [[ "${DOGAREA_SKIP_BUILD:-0}" == "1" ]]; then

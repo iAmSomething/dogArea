@@ -81,6 +81,12 @@ struct HomeView: View {
                 }
                 CalenderView(clickedDates: viewModel.walkedDates())
                 UnderLine()
+                if viewModel.pets.isEmpty == false {
+                    selectedPetContextBanner
+                    if viewModel.shouldShowSelectedPetEmptyState {
+                        selectedPetEmptyStateCard
+                    }
+                }
                 HStack {
                     VStack{
                         HStack {
@@ -199,6 +205,9 @@ struct HomeView: View {
 
     private var goalTrackerCard: some View {
         VStack(alignment: .leading, spacing: 10) {
+            if viewModel.pets.isEmpty == false {
+                selectedPetContextPill
+            }
             HStack(alignment: .top) {
                 Text("영역 목표 트래커")
                     .font(.appFont(for: .SemiBold, size: 20))
@@ -242,6 +251,72 @@ struct HomeView: View {
         .accessibilityLabel(
             "영역 목표 트래커. 현재 영역 \(viewModel.myArea.area.calculatedAreaString), 다음 목표 \(viewModel.nextGoalArea?.areaName ?? "없음"), 남은 면적 \(viewModel.remainingAreaToGoal.calculatedAreaString)"
         )
+    }
+
+    private var selectedPetContextPillText: String {
+        viewModel.isShowingAllRecordsOverride
+            ? "전체 기록 보기 모드 · 선택 반려견 \(viewModel.selectedPetName)"
+            : "선택 반려견 기준 · \(viewModel.selectedPetName)"
+    }
+
+    private var selectedPetContextPill: some View {
+        Text(selectedPetContextPillText)
+            .font(.appFont(for: .SemiBold, size: 11))
+            .foregroundStyle(Color.appTextDarkGray)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Color.appYellowPale)
+            .cornerRadius(8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityLabel(selectedPetContextPillText)
+    }
+
+    private var selectedPetContextBanner: some View {
+        HStack(alignment: .center, spacing: 10) {
+            selectedPetContextPill
+            if viewModel.isShowingAllRecordsOverride {
+                Button("기준으로 돌아가기") {
+                    viewModel.showSelectedPetRecords()
+                }
+                .font(.appFont(for: .SemiBold, size: 11))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Color.appYellow)
+                .cornerRadius(8)
+                .accessibilityLabel("선택 반려견 기준으로 돌아가기")
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
+    }
+
+    private var selectedPetEmptyStateCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("\(viewModel.selectedPetName) 기록이 아직 없어요")
+                .font(.appFont(for: .SemiBold, size: 14))
+            Text("필터를 유지하면 0건으로 보일 수 있어요. 전체 기록으로 전환해 계속 탐색해보세요.")
+                .font(.appFont(for: .Light, size: 12))
+                .foregroundStyle(Color.appTextDarkGray)
+            Button("전체 기록 보기") {
+                viewModel.showAllRecordsTemporarily()
+            }
+            .font(.appFont(for: .SemiBold, size: 12))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(Color.appYellow)
+            .cornerRadius(8)
+            .accessibilityLabel("전체 기록 보기")
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(Color.white)
+        .cornerRadius(10)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color.appTextDarkGray, lineWidth: 0.25)
+        )
+        .padding(.horizontal, 16)
+        .padding(.bottom, 6)
     }
 
     private func goalMetricRow(title: String, value: String, detail: String) -> some View {
