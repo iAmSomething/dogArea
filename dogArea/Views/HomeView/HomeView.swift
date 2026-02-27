@@ -27,6 +27,17 @@ struct HomeView: View {
                         .padding(.horizontal, 16)
                         .padding(.bottom, 8)
                 }
+                if let message = viewModel.aggregationStatusMessage {
+                    Text(message)
+                        .font(.appFont(for: .Light, size: 12))
+                        .foregroundStyle(Color.appTextDarkGray)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color.appYellowPale)
+                        .cornerRadius(8)
+                        .padding(.horizontal, 16)
+                }
                 if viewModel.pets.isEmpty == false {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
@@ -78,6 +89,9 @@ struct HomeView: View {
                     }.frame(maxWidth: .infinity)
                         .padding(.trailing)
                 }
+                if let contribution = viewModel.boundarySplitContribution {
+                    dayBoundarySplitCard(contribution: contribution)
+                }
                 HStack {
                     let petNameWithYi = viewModel.selectedPetNameWithYi
                     VStack(alignment: .leading, spacing: 0) {
@@ -109,6 +123,11 @@ struct HomeView: View {
         }.onAppear{
             viewModel.reloadUserInfo()
             viewModel.fetchData()
+        }.onChange(of: viewModel.aggregationStatusMessage) { newValue in
+            guard newValue != nil else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                viewModel.clearAggregationStatusMessage()
+            }
         }.padding(.top,20)
     }
 
@@ -237,6 +256,40 @@ struct HomeView: View {
         .padding(.horizontal, 16)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("최근 정복 영역 \(viewModel.nearlistLess()?.areaName ?? "없음")")
+    }
+
+    private func dayBoundarySplitCard(contribution: DayBoundarySplitContribution) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("전날/오늘 분할 기여")
+                .font(.appFont(for: .SemiBold, size: 17))
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(contribution.previousDayLabel)
+                        .font(.appFont(for: .SemiBold, size: 13))
+                    Text("면적 \(contribution.previousArea.calculatedAreaString)")
+                        .font(.appFont(for: .Light, size: 12))
+                    Text("시간 \(contribution.previousDuration.simpleWalkingTimeInterval)")
+                        .font(.appFont(for: .Light, size: 12))
+                }
+                Spacer()
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(contribution.currentDayLabel)
+                        .font(.appFont(for: .SemiBold, size: 13))
+                    Text("면적 \(contribution.currentArea.calculatedAreaString)")
+                        .font(.appFont(for: .Light, size: 12))
+                    Text("시간 \(contribution.currentDuration.simpleWalkingTimeInterval)")
+                        .font(.appFont(for: .Light, size: 12))
+                }
+            }
+        }
+        .padding(12)
+        .background(Color.white)
+        .cornerRadius(10)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color.appTextLightGray, lineWidth: 0.5)
+        )
+        .padding(.horizontal, 16)
     }
 }
 

@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import Combine
+
 final class HomeViewModel: ObservableObject, CoreDataProtocol {
     @Published var polygonList: [Polygon] = []
     @Published var totalArea: Double = 0.0
@@ -19,6 +20,10 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     @Published var selectedPetId: String = ""
     @Published var selectedPet: PetInfo? = nil
     @Published var guestDataUpgradeReport: GuestDataUpgradeReport? = nil
+    @Published var boundarySplitContribution: DayBoundarySplitContribution? = nil
+    @Published var aggregationStatusMessage: String? = nil
+    @Published private(set) var aggregationTimeZoneIdentifier: String = TimeZone.current.identifier
+
     private var allPolygons: [Polygon] = []
     private var cancellables: Set<AnyCancellable> = []
 
@@ -46,6 +51,7 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
 
     init() {
         bindSelectedPetSync()
+        bindTimeBoundaryNotifications()
         reloadUserInfo()
         fetchData()
     }
@@ -71,6 +77,10 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
         applySelectedPetStatistics()
     }
 
+    func clearAggregationStatusMessage() {
+        aggregationStatusMessage = nil
+    }
+
     private func bindSelectedPetSync() {
         NotificationCenter.default.publisher(for: UserdefaultSetting.selectedPetDidChangeNotification)
             .receive(on: RunLoop.main)
@@ -82,11 +92,36 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
             .store(in: &cancellables)
     }
 
+    private func bindTimeBoundaryNotifications() {
+        let center = NotificationCenter.default
+        let timezoneChanged = center.publisher(for: .NSSystemTimeZoneDidChange)
+        let dayChanged = center.publisher(for: .NSCalendarDayChanged)
+
+        Publishers.Merge(timezoneChanged, dayChanged)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] notification in
+                self?.handleTimeBoundaryChange(notification.name)
+            }
+            .store(in: &cancellables)
+    }
+
+    private func handleTimeBoundaryChange(_ name: Notification.Name) {
+        let newTimeZoneIdentifier = TimeZone.current.identifier
+        let didTimeZoneChange = newTimeZoneIdentifier != aggregationTimeZoneIdentifier
+
+        aggregationTimeZoneIdentifier = newTimeZoneIdentifier
+        applySelectedPetStatistics()
+
+        guard didTimeZoneChange || name == .NSSystemTimeZoneDidChange else { return }
+        aggregationStatusMessage = "타임존이 변경되어 통계를 현재 시간대 기준으로 다시 계산했어요."
+    }
+
     private func applySelectedPetStatistics(shouldUpdateMeter: Bool = false) {
         polygonList = filteredPolygons(from: allPolygons)
         totalArea = polygonList.map(\.walkingArea).reduce(0.0, +)
         totalTime = polygonList.map(\.walkingTime).reduce(0.0, +)
         myArea = .init("\(selectedPetNameWithYi)의 영역", totalArea)
+        boundarySplitContribution = makeDayBoundarySplitContribution(reference: Date())
         if shouldUpdateMeter {
             updateCurrentMeter()
         }
@@ -115,32 +150,35 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
         guestDataUpgradeReport = GuestDataUpgradeService.shared.latestReport(for: userId)
     }
 
-    func refreshAreaList () {
+    func refreshAreaList() {
         myAreaList = fetchArea()
     }
+
     private func findIndex() -> Int {
         guard let i = krAreas.areas.firstIndex(where: {
             $0.area < myArea.area
-        }) else {return krAreas.areas.count}
+        }) else { return krAreas.areas.count }
         return i
     }
+
     func combinedAreas() -> [AreaMeter] {
         let i = findIndex()
         var temp = krAreas.areas
         temp.insert(myArea, at: i)
         return temp
     }
+
     func nearlistLess() -> AreaMeter? {
         krAreas.nearistArea(of: myArea.area)
     }
+
     func nearlistMore() -> AreaMeter? {
         krAreas.closeArea(of: myArea.area)
     }
-    private func shouldUpdateMeter() -> Bool{
-        // 코어데이터가 비어있고
-        guard let last = fetchArea().last else {return true}
-        guard let current = nearlistLess() else {return false}
-        // 만약 코어데이터 최근 값과 정복한 영역이 같다면 업데이트를 안 해 준다.
+
+    private func shouldUpdateMeter() -> Bool {
+        guard let last = fetchArea().last else { return true }
+        guard let current = nearlistLess() else { return false }
         if (last.area == current.area && last.areaName == current.areaName) {
             return false
         } else if last.area > current.area {
@@ -149,44 +187,178 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
             return true
         }
     }
+
     private func updateCurrentMeter() {
         if shouldUpdateMeter() {
             let currents = krAreas.nearistArea(since: fetchArea().last, from: myArea.area)
             for c in currents.reversed() {
                 if saveArea(area: .init(areaName: c.areaName, area: c.area, createdAt: Date().timeIntervalSince1970)) {
-//                    print("저장 성공")
                 }
             }
         }
     }
-    func walkedDates() -> Array<Date> {
-        let dateArr = polygonList.map{Date(timeIntervalSince1970:$0.createdAt)}
-            .compactMap { Calendar.current.date(bySettingHour: 0, minute: 0, second: 0, of: $0) }
-        return dateArr
+
+    func walkedDates() -> [Date] {
+        let calendar = currentCalendar()
+        var dayStarts: [TimeInterval: Date] = [:]
+        for polygon in polygonList {
+            for day in dayStartsCovered(by: polygon, calendar: calendar) {
+                dayStarts[day.timeIntervalSince1970] = day
+            }
+        }
+        return dayStarts.values.sorted()
     }
-    func walkedAreaforWeek() -> Double {
-        let polygonListWeek = polygonList.thisWeekList
-        let areaWeek = polygonListWeek.map{$0.walkingArea}.reduce(0.0){$0 + $1}
-        return areaWeek
+
+    func walkedAreaforWeek(reference: Date = Date()) -> Double {
+        let weekInterval = currentWeekInterval(reference: reference)
+        return polygonList.reduce(0.0) { partial, polygon in
+            partial + weightedAreaContribution(for: polygon, in: weekInterval)
+        }
     }
-    func walkedCountforWeek() -> Int {
-        let polygonListWeek = polygonList.thisWeekList
-        return polygonListWeek.count
+
+    func walkedCountforWeek(reference: Date = Date()) -> Int {
+        let weekInterval = currentWeekInterval(reference: reference)
+        return polygonList.filter { sessionOverlaps($0, with: weekInterval) }.count
     }
-//#if DEBUG
-//    func makeitup() {
-//        withAnimation{
-//            myArea.area += 1000000.0
-//        }
-//    }
-//    func reset() {
-//        withAnimation{
-//            myArea = .init("강아지의 영역", totalArea)
-//            clear()
-//        }
-//    }
-//    func clear() {
-//        deleteArea()
-//    }
-//#endif
+
+    private func currentCalendar() -> Calendar {
+        var calendar = Calendar.autoupdatingCurrent
+        calendar.timeZone = TimeZone.autoupdatingCurrent
+        return calendar
+    }
+
+    private func currentWeekInterval(reference: Date) -> DateInterval {
+        let calendar = currentCalendar()
+        let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: reference)
+        let start = calendar.date(from: components) ?? calendar.startOfDay(for: reference)
+        let end = calendar.date(byAdding: .weekOfYear, value: 1, to: start) ?? start.addingTimeInterval(7 * 24 * 3600)
+        return DateInterval(start: start, end: end)
+    }
+
+    private func sessionInterval(for polygon: Polygon) -> DateInterval {
+        let start = Date(timeIntervalSince1970: polygon.createdAt)
+        let duration = max(0, polygon.walkingTime)
+        if duration <= 0 {
+            return DateInterval(start: start, end: start.addingTimeInterval(1))
+        }
+        return DateInterval(start: start, end: start.addingTimeInterval(duration))
+    }
+
+    private func overlapSeconds(_ lhs: DateInterval, _ rhs: DateInterval) -> TimeInterval {
+        let overlapStart = max(lhs.start, rhs.start)
+        let overlapEnd = min(lhs.end, rhs.end)
+        return max(0, overlapEnd.timeIntervalSince(overlapStart))
+    }
+
+    private func weightedAreaContribution(for polygon: Polygon, in bucket: DateInterval) -> Double {
+        let duration = max(0, polygon.walkingTime)
+        let area = max(0, polygon.walkingArea)
+        if duration <= 0 {
+            let point = Date(timeIntervalSince1970: polygon.createdAt)
+            return bucket.contains(point) ? area : 0
+        }
+
+        let overlap = overlapSeconds(sessionInterval(for: polygon), bucket)
+        guard overlap > 0 else { return 0 }
+        let ratio = min(1, overlap / duration)
+        return area * ratio
+    }
+
+    private func weightedDurationContribution(for polygon: Polygon, in bucket: DateInterval) -> Double {
+        let duration = max(0, polygon.walkingTime)
+        if duration <= 0 {
+            let point = Date(timeIntervalSince1970: polygon.createdAt)
+            return bucket.contains(point) ? duration : 0
+        }
+
+        let overlap = overlapSeconds(sessionInterval(for: polygon), bucket)
+        guard overlap > 0 else { return 0 }
+        let ratio = min(1, overlap / duration)
+        return duration * ratio
+    }
+
+    private func sessionOverlaps(_ polygon: Polygon, with bucket: DateInterval) -> Bool {
+        if max(0, polygon.walkingTime) <= 0 {
+            return bucket.contains(Date(timeIntervalSince1970: polygon.createdAt))
+        }
+        return overlapSeconds(sessionInterval(for: polygon), bucket) > 0
+    }
+
+    private func dayStartsCovered(by polygon: Polygon, calendar: Calendar) -> [Date] {
+        let interval = sessionInterval(for: polygon)
+        var dates: [Date] = []
+        var cursor = calendar.startOfDay(for: interval.start)
+        dates.append(cursor)
+
+        while let next = calendar.date(byAdding: .day, value: 1, to: cursor), next < interval.end {
+            dates.append(next)
+            cursor = next
+        }
+
+        return dates
+    }
+
+    private func makeDayBoundarySplitContribution(reference: Date) -> DayBoundarySplitContribution? {
+        let calendar = currentCalendar()
+        let todayStart = calendar.startOfDay(for: reference)
+        guard let yesterdayStart = calendar.date(byAdding: .day, value: -1, to: todayStart),
+              let tomorrowStart = calendar.date(byAdding: .day, value: 1, to: todayStart) else {
+            return nil
+        }
+
+        let previousInterval = DateInterval(start: yesterdayStart, end: todayStart)
+        let currentInterval = DateInterval(start: todayStart, end: tomorrowStart)
+
+        var previousArea = 0.0
+        var currentArea = 0.0
+        var previousDuration = 0.0
+        var currentDuration = 0.0
+
+        for polygon in polygonList {
+            let session = sessionInterval(for: polygon)
+            guard session.start < todayStart && session.end > todayStart else { continue }
+
+            previousArea += weightedAreaContribution(for: polygon, in: previousInterval)
+            currentArea += weightedAreaContribution(for: polygon, in: currentInterval)
+            previousDuration += weightedDurationContribution(for: polygon, in: previousInterval)
+            currentDuration += weightedDurationContribution(for: polygon, in: currentInterval)
+        }
+
+        guard previousArea > 0 || currentArea > 0 || previousDuration > 0 || currentDuration > 0 else {
+            return nil
+        }
+
+        return DayBoundarySplitContribution(
+            previousDay: yesterdayStart,
+            currentDay: todayStart,
+            previousArea: previousArea,
+            currentArea: currentArea,
+            previousDuration: previousDuration,
+            currentDuration: currentDuration
+        )
+    }
+}
+
+struct DayBoundarySplitContribution {
+    let previousDay: Date
+    let currentDay: Date
+    let previousArea: Double
+    let currentArea: Double
+    let previousDuration: Double
+    let currentDuration: Double
+
+    var previousDayLabel: String {
+        Self.dayFormatter.string(from: previousDay)
+    }
+
+    var currentDayLabel: String {
+        Self.dayFormatter.string(from: currentDay)
+    }
+
+    private static let dayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ko_KR")
+        formatter.dateFormat = "M/d(E)"
+        return formatter
+    }()
 }
