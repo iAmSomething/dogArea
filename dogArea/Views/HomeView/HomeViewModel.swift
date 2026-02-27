@@ -23,9 +23,14 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     @Published var boundarySplitContribution: DayBoundarySplitContribution? = nil
     @Published var aggregationStatusMessage: String? = nil
     @Published private(set) var aggregationTimeZoneIdentifier: String = TimeZone.current.identifier
+    @Published var indoorMissionBoard: IndoorMissionBoard = .empty
+    @Published var indoorMissionStatusMessage: String? = nil
 
     private var allPolygons: [Polygon] = []
     private var cancellables: Set<AnyCancellable> = []
+    private var lastIndoorMissionExposureTrackKey: String = ""
+    private let indoorMissionStore = IndoorMissionStore()
+    private let metricTracker = AppMetricTracker.shared
 
     var pets: [PetInfo] {
         userInfo?.pet ?? []
@@ -62,6 +67,7 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
         applySelectedPetStatistics(shouldUpdateMeter: true)
         myAreaList = fetchArea()
         refreshGuestDataUpgradeReport()
+        refreshIndoorMissions()
     }
 
     func reloadUserInfo() {
@@ -79,6 +85,10 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
 
     func clearAggregationStatusMessage() {
         aggregationStatusMessage = nil
+    }
+
+    func clearIndoorMissionStatusMessage() {
+        indoorMissionStatusMessage = nil
     }
 
     private func bindSelectedPetSync() {
@@ -111,6 +121,7 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
 
         aggregationTimeZoneIdentifier = newTimeZoneIdentifier
         applySelectedPetStatistics()
+        refreshIndoorMissions()
 
         guard didTimeZoneChange || name == .NSSystemTimeZoneDidChange else { return }
         aggregationStatusMessage = "타임존이 변경되어 통계를 현재 시간대 기준으로 다시 계산했어요."
@@ -122,6 +133,7 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
         totalTime = polygonList.map(\.walkingTime).reduce(0.0, +)
         myArea = .init("\(selectedPetNameWithYi)의 영역", totalArea)
         boundarySplitContribution = makeDayBoundarySplitContribution(reference: Date())
+        refreshIndoorMissions()
         if shouldUpdateMeter {
             updateCurrentMeter()
         }
@@ -219,6 +231,71 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     func walkedCountforWeek(reference: Date = Date()) -> Int {
         let weekInterval = currentWeekInterval(reference: reference)
         return polygonList.filter { sessionOverlaps($0, with: weekInterval) }.count
+    }
+
+    func refreshIndoorMissions(now: Date = Date()) {
+        indoorMissionBoard = indoorMissionStore.buildBoard(now: now)
+        guard indoorMissionBoard.isIndoorReplacementActive else { return }
+        let exposureKey = "\(indoorMissionBoard.dayKey)|\(indoorMissionBoard.riskLevel.rawValue)"
+        guard exposureKey != lastIndoorMissionExposureTrackKey else { return }
+        lastIndoorMissionExposureTrackKey = exposureKey
+        metricTracker.track(
+            .indoorMissionReplacementApplied,
+            userKey: userInfo?.id,
+            payload: [
+                "risk": indoorMissionBoard.riskLevel.rawValue,
+                "missionCount": "\(indoorMissionBoard.missions.count)"
+            ]
+        )
+    }
+
+    func recordIndoorMissionAction(_ missionId: String) {
+        guard var mission = indoorMissionBoard.missions.first(where: { $0.id == missionId }) else { return }
+        indoorMissionStore.incrementActionCount(missionId: missionId)
+        mission = indoorMissionStore.updatedMissionState(mission)
+        indoorMissionBoard = indoorMissionBoard.updated(mission)
+        metricTracker.track(
+            .indoorMissionActionLogged,
+            userKey: userInfo?.id,
+            payload: [
+                "missionId": missionId,
+                "actionCount": "\(mission.progress.actionCount)"
+            ]
+        )
+    }
+
+    func finalizeIndoorMission(_ missionId: String) {
+        guard var mission = indoorMissionBoard.missions.first(where: { $0.id == missionId }) else { return }
+        let result = indoorMissionStore.confirmCompletion(missionId: missionId, minimumActionCount: mission.minimumActionCount)
+        mission = indoorMissionStore.updatedMissionState(mission)
+        indoorMissionBoard = indoorMissionBoard.updated(mission)
+
+        switch result {
+        case .completed:
+            indoorMissionStatusMessage = "\(mission.title) 완료! 보상 \(mission.rewardPoint)pt"
+            metricTracker.track(
+                .indoorMissionCompleted,
+                userKey: userInfo?.id,
+                payload: [
+                    "missionId": missionId,
+                    "reward": "\(mission.rewardPoint)",
+                    "risk": indoorMissionBoard.riskLevel.rawValue
+                ]
+            )
+        case .insufficientAction(let actionCount, let required):
+            indoorMissionStatusMessage = "완료 기준 미달: \(actionCount)/\(required) 행동"
+            metricTracker.track(
+                .indoorMissionCompletionRejected,
+                userKey: userInfo?.id,
+                payload: [
+                    "missionId": missionId,
+                    "actionCount": "\(actionCount)",
+                    "required": "\(required)"
+                ]
+            )
+        case .alreadyCompleted:
+            indoorMissionStatusMessage = "이미 완료한 미션입니다."
+        }
     }
 
     private func currentCalendar() -> Calendar {
@@ -359,6 +436,362 @@ struct DayBoundarySplitContribution {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ko_KR")
         formatter.dateFormat = "M/d(E)"
+        return formatter
+    }()
+}
+
+enum IndoorWeatherRiskLevel: String, CaseIterable {
+    case clear
+    case caution
+    case bad
+    case severe
+
+    var displayTitle: String {
+        switch self {
+        case .clear: return "날씨 안정"
+        case .caution: return "기상 주의"
+        case .bad: return "악천후"
+        case .severe: return "고위험 악천후"
+        }
+    }
+
+    var replacementMissionCount: Int {
+        switch self {
+        case .clear: return 0
+        case .caution: return 1
+        case .bad: return 2
+        case .severe: return 3
+        }
+    }
+
+    var rewardScale: Double {
+        switch self {
+        case .clear: return 1.0
+        case .caution: return 0.92
+        case .bad: return 0.88
+        case .severe: return 0.84
+        }
+    }
+}
+
+enum IndoorMissionCategory: String, CaseIterable {
+    case recordCleanup
+    case petCareCheck
+    case trainingCheck
+}
+
+struct IndoorMissionTemplate: Identifiable, Equatable {
+    let id: String
+    let category: IndoorMissionCategory
+    let title: String
+    let description: String
+    let minimumActionCount: Int
+    let baseRewardPoint: Int
+    let streakEligible: Bool
+}
+
+struct IndoorMissionProgress: Equatable {
+    let actionCount: Int
+    let minimumActionCount: Int
+    let isCompleted: Bool
+
+    var progressRatio: Double {
+        guard minimumActionCount > 0 else { return 1.0 }
+        return min(1.0, Double(actionCount) / Double(minimumActionCount))
+    }
+}
+
+struct IndoorMissionCardModel: Identifiable, Equatable {
+    let id: String
+    let category: IndoorMissionCategory
+    let title: String
+    let description: String
+    let minimumActionCount: Int
+    let rewardPoint: Int
+    let streakEligible: Bool
+    let dayKey: String
+    let progress: IndoorMissionProgress
+}
+
+struct IndoorMissionBoard: Equatable {
+    let riskLevel: IndoorWeatherRiskLevel
+    let dayKey: String
+    let missions: [IndoorMissionCardModel]
+
+    var isIndoorReplacementActive: Bool {
+        riskLevel != .clear && missions.isEmpty == false
+    }
+
+    static let empty = IndoorMissionBoard(riskLevel: .clear, dayKey: "", missions: [])
+
+    func updated(_ mission: IndoorMissionCardModel) -> IndoorMissionBoard {
+        let replaced = missions.map { existing in
+            existing.id == mission.id ? mission : existing
+        }
+        return .init(riskLevel: riskLevel, dayKey: dayKey, missions: replaced)
+    }
+}
+
+private enum IndoorMissionCompletionResult {
+    case completed
+    case insufficientAction(actionCount: Int, required: Int)
+    case alreadyCompleted
+}
+
+private final class IndoorMissionStore {
+    private enum DefaultsKey {
+        static let weatherRiskOverride = "weather.risk.level.v1"
+        static let actionCounts = "indoor.mission.actionCounts.v1"
+        static let completionFlags = "indoor.mission.completed.v1"
+        static let exposureHistory = "indoor.mission.exposureHistory.v1"
+    }
+
+    private let calendar: Calendar = {
+        var value = Calendar.autoupdatingCurrent
+        value.timeZone = TimeZone.autoupdatingCurrent
+        return value
+    }()
+
+    private let templates: [IndoorMissionTemplate] = [
+        .init(
+            id: "indoor.record.cleanup",
+            category: .recordCleanup,
+            title: "기록 정리 체크",
+            description: "산책 기록/사진/메모 정리를 3회 진행해요.",
+            minimumActionCount: 3,
+            baseRewardPoint: 40,
+            streakEligible: true
+        ),
+        .init(
+            id: "indoor.petcare.check",
+            category: .petCareCheck,
+            title: "펫 케어 루틴 체크",
+            description: "물/브러싱/컨디션 체크를 2회 진행해요.",
+            minimumActionCount: 2,
+            baseRewardPoint: 32,
+            streakEligible: true
+        ),
+        .init(
+            id: "indoor.training.check",
+            category: .trainingCheck,
+            title: "실내 훈련 체크",
+            description: "기다려/손/하우스 훈련을 4회 수행해요.",
+            minimumActionCount: 4,
+            baseRewardPoint: 48,
+            streakEligible: true
+        ),
+        .init(
+            id: "indoor.record.photo_sort",
+            category: .recordCleanup,
+            title: "사진 정리 체크",
+            description: "최근 산책 사진 분류/삭제/보관을 2회 진행해요.",
+            minimumActionCount: 2,
+            baseRewardPoint: 28,
+            streakEligible: true
+        ),
+        .init(
+            id: "indoor.training.focus",
+            category: .trainingCheck,
+            title: "집중 훈련 체크",
+            description: "10초 집중 유지 훈련을 3회 진행해요.",
+            minimumActionCount: 3,
+            baseRewardPoint: 36,
+            streakEligible: true
+        )
+    ]
+
+    func buildBoard(now: Date) -> IndoorMissionBoard {
+        let riskLevel = resolveRiskLevel()
+        let dayKey = dayStamp(for: now)
+        guard riskLevel.replacementMissionCount > 0 else {
+            return .init(riskLevel: riskLevel, dayKey: dayKey, missions: [])
+        }
+
+        let selectedTemplates = selectedTemplatesForToday(riskLevel: riskLevel, dayKey: dayKey)
+        let missions = selectedTemplates.map { template in
+            makeCardModel(template: template, riskLevel: riskLevel, dayKey: dayKey)
+        }
+        return .init(riskLevel: riskLevel, dayKey: dayKey, missions: missions)
+    }
+
+    func incrementActionCount(missionId: String, now: Date = Date()) {
+        let dayKey = dayStamp(for: now)
+        let key = actionKey(missionId: missionId, dayKey: dayKey)
+        var counts = UserDefaults.standard.dictionary(forKey: DefaultsKey.actionCounts) as? [String: Int] ?? [:]
+        counts[key] = (counts[key] ?? 0) + 1
+        UserDefaults.standard.set(counts, forKey: DefaultsKey.actionCounts)
+    }
+
+    func confirmCompletion(
+        missionId: String,
+        minimumActionCount: Int,
+        now: Date = Date()
+    ) -> IndoorMissionCompletionResult {
+        let dayKey = dayStamp(for: now)
+        let completedKey = actionKey(missionId: missionId, dayKey: dayKey)
+        var completed = UserDefaults.standard.dictionary(forKey: DefaultsKey.completionFlags) as? [String: TimeInterval] ?? [:]
+        if completed[completedKey] != nil {
+            return .alreadyCompleted
+        }
+
+        let counts = UserDefaults.standard.dictionary(forKey: DefaultsKey.actionCounts) as? [String: Int] ?? [:]
+        let actionCount = counts[completedKey] ?? 0
+        guard actionCount >= minimumActionCount else {
+            return .insufficientAction(actionCount: actionCount, required: minimumActionCount)
+        }
+        completed[completedKey] = now.timeIntervalSince1970
+        UserDefaults.standard.set(completed, forKey: DefaultsKey.completionFlags)
+        return .completed
+    }
+
+    func updatedMissionState(_ mission: IndoorMissionCardModel) -> IndoorMissionCardModel {
+        makeCardModel(
+            template: template(for: mission.id) ?? .init(
+                id: mission.id,
+                category: mission.category,
+                title: mission.title,
+                description: mission.description,
+                minimumActionCount: mission.minimumActionCount,
+                baseRewardPoint: mission.rewardPoint,
+                streakEligible: mission.streakEligible
+            ),
+            riskLevel: resolvedRiskLevelFromBoard(),
+            dayKey: mission.dayKey
+        )
+    }
+
+    private func makeCardModel(
+        template: IndoorMissionTemplate,
+        riskLevel: IndoorWeatherRiskLevel,
+        dayKey: String
+    ) -> IndoorMissionCardModel {
+        let key = actionKey(missionId: template.id, dayKey: dayKey)
+        let counts = UserDefaults.standard.dictionary(forKey: DefaultsKey.actionCounts) as? [String: Int] ?? [:]
+        let completed = UserDefaults.standard.dictionary(forKey: DefaultsKey.completionFlags) as? [String: TimeInterval] ?? [:]
+        let actionCount = counts[key] ?? 0
+        let isCompleted = completed[key] != nil
+        let reward = Int((Double(template.baseRewardPoint) * riskLevel.rewardScale).rounded())
+
+        return .init(
+            id: template.id,
+            category: template.category,
+            title: template.title,
+            description: template.description,
+            minimumActionCount: template.minimumActionCount,
+            rewardPoint: max(1, reward),
+            streakEligible: template.streakEligible,
+            dayKey: dayKey,
+            progress: .init(
+                actionCount: actionCount,
+                minimumActionCount: template.minimumActionCount,
+                isCompleted: isCompleted
+            )
+        )
+    }
+
+    private func template(for missionId: String) -> IndoorMissionTemplate? {
+        templates.first(where: { $0.id == missionId })
+    }
+
+    private func resolveRiskLevel() -> IndoorWeatherRiskLevel {
+        if let env = ProcessInfo.processInfo.environment["WEATHER_RISK_LEVEL"],
+           let level = IndoorWeatherRiskLevel(rawValue: env.lowercased()) {
+            return level
+        }
+        if let raw = UserDefaults.standard.string(forKey: DefaultsKey.weatherRiskOverride),
+           let level = IndoorWeatherRiskLevel(rawValue: raw.lowercased()) {
+            return level
+        }
+        return .caution
+    }
+
+    private func selectedTemplatesForToday(
+        riskLevel: IndoorWeatherRiskLevel,
+        dayKey: String
+    ) -> [IndoorMissionTemplate] {
+        let recentMissionIds = recentPresentedMissionIds(dayKey: dayKey)
+        let ordered = templates.sorted { lhs, rhs in
+            missionPriority(of: lhs, for: riskLevel) < missionPriority(of: rhs, for: riskLevel)
+        }
+        var filtered = ordered.filter { recentMissionIds.contains($0.id) == false }
+        if filtered.count < riskLevel.replacementMissionCount {
+            filtered = ordered
+        }
+
+        let selected = Array(filtered.prefix(riskLevel.replacementMissionCount))
+        persistExposure(dayKey: dayKey, missionIds: selected.map(\.id))
+        return selected
+    }
+
+    private func missionPriority(of template: IndoorMissionTemplate, for riskLevel: IndoorWeatherRiskLevel) -> Int {
+        switch riskLevel {
+        case .clear:
+            return 99
+        case .caution:
+            switch template.category {
+            case .petCareCheck: return 0
+            case .recordCleanup: return 1
+            case .trainingCheck: return 2
+            }
+        case .bad:
+            switch template.category {
+            case .recordCleanup: return 0
+            case .petCareCheck: return 1
+            case .trainingCheck: return 2
+            }
+        case .severe:
+            switch template.category {
+            case .petCareCheck: return 0
+            case .trainingCheck: return 1
+            case .recordCleanup: return 2
+            }
+        }
+    }
+
+    private func recentPresentedMissionIds(dayKey: String) -> Set<String> {
+        let history = UserDefaults.standard.dictionary(forKey: DefaultsKey.exposureHistory) as? [String: [String]] ?? [:]
+        let previousDayKeys = previousDayStamps(from: dayKey, count: 2)
+        var ids: Set<String> = []
+        for key in previousDayKeys {
+            for id in history[key] ?? [] {
+                ids.insert(id)
+            }
+        }
+        return ids
+    }
+
+    private func persistExposure(dayKey: String, missionIds: [String]) {
+        var history = UserDefaults.standard.dictionary(forKey: DefaultsKey.exposureHistory) as? [String: [String]] ?? [:]
+        history[dayKey] = missionIds
+        let keysToKeep = Set(previousDayStamps(from: dayKey, count: 7) + [dayKey])
+        history = history.filter { keysToKeep.contains($0.key) }
+        UserDefaults.standard.set(history, forKey: DefaultsKey.exposureHistory)
+    }
+
+    private func actionKey(missionId: String, dayKey: String) -> String {
+        "\(dayKey)|\(missionId)"
+    }
+
+    private func dayStamp(for date: Date) -> String {
+        Self.dayFormatter.string(from: date)
+    }
+
+    private func previousDayStamps(from dayKey: String, count: Int) -> [String] {
+        guard let current = Self.dayFormatter.date(from: dayKey) else { return [] }
+        return (1...count).compactMap { offset in
+            guard let date = calendar.date(byAdding: .day, value: -offset, to: current) else { return nil }
+            return Self.dayFormatter.string(from: date)
+        }
+    }
+
+    private func resolvedRiskLevelFromBoard() -> IndoorWeatherRiskLevel {
+        resolveRiskLevel()
+    }
+
+    private static let dayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ko_KR")
+        formatter.dateFormat = "yyyy-MM-dd"
         return formatter
     }()
 }

@@ -549,6 +549,10 @@ enum AppMetricEvent: String {
     case recoveryDraftDiscarded = "recovery_draft_discarded"
     case recoveryFinalizeConfirmed = "recovery_finalize_confirmed"
     case recoveryFinalizeFailed = "recovery_finalize_failed"
+    case indoorMissionReplacementApplied = "indoor_mission_replacement_applied"
+    case indoorMissionActionLogged = "indoor_mission_action_logged"
+    case indoorMissionCompleted = "indoor_mission_completed"
+    case indoorMissionCompletionRejected = "indoor_mission_completion_rejected"
 }
 
 final class FeatureFlagStore {

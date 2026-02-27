@@ -38,6 +38,17 @@ struct HomeView: View {
                         .cornerRadius(8)
                         .padding(.horizontal, 16)
                 }
+                if let message = viewModel.indoorMissionStatusMessage {
+                    Text(message)
+                        .font(.appFont(for: .Light, size: 12))
+                        .foregroundStyle(Color.appTextDarkGray)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color.appYellowPale)
+                        .cornerRadius(8)
+                        .padding(.horizontal, 16)
+                }
                 if viewModel.pets.isEmpty == false {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
@@ -89,6 +100,10 @@ struct HomeView: View {
                     }.frame(maxWidth: .infinity)
                         .padding(.trailing)
                 }
+                if viewModel.indoorMissionBoard.isIndoorReplacementActive {
+                    indoorMissionCard(board: viewModel.indoorMissionBoard)
+                    UnderLine()
+                }
                 if let contribution = viewModel.boundarySplitContribution {
                     dayBoundarySplitCard(contribution: contribution)
                 }
@@ -127,6 +142,11 @@ struct HomeView: View {
             guard newValue != nil else { return }
             DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
                 viewModel.clearAggregationStatusMessage()
+            }
+        }.onChange(of: viewModel.indoorMissionStatusMessage) { newValue in
+            guard newValue != nil else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.8) {
+                viewModel.clearIndoorMissionStatusMessage()
             }
         }.padding(.top,20)
     }
@@ -290,6 +310,81 @@ struct HomeView: View {
                 .stroke(Color.appTextLightGray, lineWidth: 0.5)
         )
         .padding(.horizontal, 16)
+    }
+
+    private func indoorMissionCard(board: IndoorMissionBoard) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("악천후 실내 대체 미션")
+                    .font(.appFont(for: .SemiBold, size: 18))
+                Spacer()
+                Text(board.riskLevel.displayTitle)
+                    .font(.appFont(for: .SemiBold, size: 11))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.appYellow)
+                    .cornerRadius(8)
+            }
+            Text("악천후 단계에 맞춰 실외 미션 일부를 실내 미션으로 치환했어요.")
+                .font(.appFont(for: .Light, size: 12))
+                .foregroundStyle(Color.appTextDarkGray)
+
+            ForEach(board.missions) { mission in
+                indoorMissionRow(mission: mission)
+            }
+        }
+        .padding(14)
+        .background(Color.white)
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.appTextLightGray, lineWidth: 0.5)
+        )
+        .padding(.horizontal, 16)
+    }
+
+    private func indoorMissionRow(mission: IndoorMissionCardModel) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            HStack {
+                Text(mission.title)
+                    .font(.appFont(for: .SemiBold, size: 14))
+                Spacer()
+                Text("보상 \(mission.rewardPoint)pt")
+                    .font(.appFont(for: .SemiBold, size: 11))
+                    .foregroundStyle(Color.appTextDarkGray)
+            }
+            Text(mission.description)
+                .font(.appFont(for: .Light, size: 12))
+                .foregroundStyle(Color.appTextDarkGray)
+            ProgressView(value: mission.progress.progressRatio)
+                .tint(mission.progress.isCompleted ? Color.appGreen : Color.appYellow)
+            Text("행동량 \(mission.progress.actionCount)/\(mission.minimumActionCount)")
+                .font(.appFont(for: .Light, size: 11))
+                .foregroundStyle(Color.appTextDarkGray)
+            HStack(spacing: 8) {
+                Button("행동 +1") {
+                    viewModel.recordIndoorMissionAction(mission.id)
+                }
+                .font(.appFont(for: .SemiBold, size: 11))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background(Color.appYellowPale)
+                .cornerRadius(8)
+
+                Button(mission.progress.isCompleted ? "완료됨" : "완료 확인") {
+                    viewModel.finalizeIndoorMission(mission.id)
+                }
+                .disabled(mission.progress.isCompleted)
+                .font(.appFont(for: .SemiBold, size: 11))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background(mission.progress.isCompleted ? Color.appTextLightGray : Color.appYellow)
+                .cornerRadius(8)
+            }
+        }
+        .padding(10)
+        .background(Color.appYellowPale.opacity(0.45))
+        .cornerRadius(10)
     }
 }
 
