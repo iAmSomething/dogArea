@@ -31,6 +31,15 @@ struct MapView : View{
     var body : some View {
         ZStack{
             MapSubView(myAlert: myAlert, viewModel: viewModel)
+            Rectangle()
+                .fill(viewModel.weatherOverlayTintColor)
+                .opacity(viewModel.weatherOverlayOpacity)
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+                .animation(
+                    .easeInOut(duration: viewModel.weatherOverlayAnimationDuration),
+                    value: viewModel.weatherOverlayRiskLevel
+                )
             MapAlertSubView(viewModel: viewModel, myAlert: myAlert)
             
             VStack {

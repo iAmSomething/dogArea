@@ -117,6 +117,12 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     @Published var syncOutboxPermanentFailureCount: Int = 0
     @Published var syncOutboxLastErrorCodeText: String = ""
     @Published var syncRecoveryToastMessage: String? = nil
+    @Published private(set) var captureRipples: [CaptureRipple] = []
+    @Published private(set) var clusterMotionTransition: ClusterMotionTransition = .none
+    @Published private(set) var clusterMotionToken: Int = 0
+    @Published private(set) var weatherOverlayRiskLevel: WeatherOverlayRiskLevel = .clear
+    @Published private(set) var weatherOverlayOpacity: Double = 0.0
+    @Published var mapMotionReduced: Bool = false
     private let watchSession = WCSession.isSupported() ? WCSession.default : nil
     private let featureFlags = FeatureFlagStore.shared
     private let metricTracker = AppMetricTracker.shared
@@ -135,6 +141,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     private let locationSharingKey = "nearby.locationSharingEnabled"
     private let nearbyHotspotEnabledKey = "nearby.hotspotEnabled"
     private let nearbyPresenceUserIdKey = "nearby.presenceUserId"
+    private let mapMotionReducedKey = "map.motion.reduced"
+    private let weatherRiskOverrideKey = "weather.risk.level.v1"
     private var lastAutoRecordedLocation: CLLocation?
     private var lastAutoRecordedAt: Date = .distantPast
     private let autoRecordMinDistance: CLLocationDistance = 12.0
@@ -166,6 +174,11 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     private var syncFlushTask: Task<Void, Never>? = nil
     private let syncOutbox = SyncOutboxStore.shared
     private let syncTransport = SupabaseSyncOutboxTransport()
+    private var lastCaptureHapticAt: Date = .distantPast
+    private var lastWarningHapticAt: Date = .distantPast
+    private let maxCaptureRipples = 12
+    private let trailLifetime: TimeInterval = 5.0
+    private let trailLimit = 12
 
     private enum WatchIncomingAction: String {
         case startWalk
@@ -193,6 +206,51 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         case watch
     }
 
+    enum ClusterMotionTransition {
+        case none
+        case decompose
+        case merge
+    }
+
+    enum WeatherOverlayRiskLevel: String {
+        case clear
+        case caution
+        case bad
+        case severe
+    }
+
+    struct CaptureRipple: Identifiable {
+        let id: UUID
+        let coordinate: CLLocationCoordinate2D
+        let createdAt: TimeInterval
+
+        init(
+            id: UUID = UUID(),
+            coordinate: CLLocationCoordinate2D,
+            createdAt: TimeInterval = Date().timeIntervalSince1970
+        ) {
+            self.id = id
+            self.coordinate = coordinate
+            self.createdAt = createdAt
+        }
+    }
+
+    struct TrailMarker: Identifiable {
+        let id: UUID
+        let coordinate: CLLocationCoordinate2D
+        let age: TimeInterval
+
+        var opacity: Double {
+            let ratio = min(1.0, max(0.0, age / 5.0))
+            return 0.75 - (ratio * 0.65)
+        }
+
+        var scale: Double {
+            let ratio = min(1.0, max(0.0, age / 5.0))
+            return 0.95 + ((1.0 - ratio) * 0.25)
+        }
+    }
+
     override init() {
         super.init()
         self.locationManager.delegate = self
@@ -206,11 +264,13 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         let storedHeatmapEnabled = UserDefaults.standard.object(forKey: heatmapEnabledKey) as? Bool ?? true
         let storedNearbyHotspotEnabled = UserDefaults.standard.object(forKey: nearbyHotspotEnabledKey) as? Bool ?? true
         let storedLocationSharingEnabled = UserDefaults.standard.bool(forKey: locationSharingKey)
+        let storedMotionReduced = UserDefaults.standard.bool(forKey: mapMotionReducedKey)
 
         self.heatmapEnabled = featureFlags.isEnabled(.heatmapV1) ? storedHeatmapEnabled : false
         let nearbyFeatureOn = featureFlags.isEnabled(.nearbyHotspotV1)
         self.nearbyHotspotEnabled = nearbyFeatureOn ? storedNearbyHotspotEnabled : false
         self.locationSharingEnabled = nearbyFeatureOn ? storedLocationSharingEnabled : false
+        self.mapMotionReduced = storedMotionReduced
         self.walkStartCountdownEnabled = UserdefaultSetting.shared.walkStartCountdownEnabled()
         self.walkAutoEndPolicyEnabled = true
         self.walkPointRecordMode = WalkPointRecordMode(
@@ -225,6 +285,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         self.refreshFeatureFlagsFromRemote()
         self.refreshSyncOutboxSummary()
         self.flushSyncOutboxIfNeeded(force: true)
+        self.refreshWeatherOverlayRisk()
     }
 
     deinit {
@@ -516,6 +577,107 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
 
     private func setRuntimeGuardStatus(_ message: String) {
         runtimeGuardStatusText = "\(Self.statusTimeString(from: Date())) \(message)"
+        triggerWarningHapticIfNeeded()
+    }
+
+    var isMapMotionReduced: Bool {
+        #if canImport(UIKit)
+        return mapMotionReduced || UIAccessibility.isReduceMotionEnabled
+        #else
+        return mapMotionReduced
+        #endif
+    }
+
+    func toggleMapMotionReduced() {
+        mapMotionReduced.toggle()
+        UserDefaults.standard.set(mapMotionReduced, forKey: mapMotionReducedKey)
+    }
+
+    var weatherOverlayTintColor: Color {
+        switch weatherOverlayRiskLevel {
+        case .clear: return .clear
+        case .caution: return Color.appYellowPale
+        case .bad: return Color.appPeach
+        case .severe: return Color.appRed
+        }
+    }
+
+    var weatherOverlayAnimationDuration: Double {
+        isMapMotionReduced ? 0.18 : 0.42
+    }
+
+    var clusterMotionAnimationDuration: Double {
+        isMapMotionReduced ? 0.14 : 0.28
+    }
+
+    var captureRippleDuration: Double {
+        isMapMotionReduced ? 0.35 : 0.52
+    }
+
+    var activeTrailMarkers: [TrailMarker] {
+        guard isWalking else { return [] }
+        let now = Date().timeIntervalSince1970
+        return Array(
+            polygon.locations
+            .suffix(trailLimit * 2)
+            .reversed()
+            .compactMap { point in
+                let age = max(0, now - point.createdAt)
+                guard age <= trailLifetime else { return nil }
+                return TrailMarker(id: point.id, coordinate: point.coordinate, age: age)
+            }
+            .prefix(trailLimit)
+            .map { $0 }
+            .reversed()
+        )
+    }
+
+    func activeCaptureRipples(at now: Date = Date()) -> [CaptureRipple] {
+        let nowTs = now.timeIntervalSince1970
+        return captureRipples.filter { nowTs - $0.createdAt <= captureRippleDuration }
+    }
+
+    func captureRippleProgress(for ripple: CaptureRipple, now: Date = Date()) -> Double {
+        let elapsed = max(0, now.timeIntervalSince1970 - ripple.createdAt)
+        return min(1.0, elapsed / max(0.001, captureRippleDuration))
+    }
+
+    func compactMapMotionArtifacts(now: Date = Date()) {
+        let valid = activeCaptureRipples(at: now)
+        if valid.count != captureRipples.count {
+            captureRipples = valid
+        }
+    }
+
+    private func pushCaptureRipple(at coordinate: CLLocationCoordinate2D, source: PointAppendSource) {
+        let ripple = CaptureRipple(coordinate: coordinate)
+        captureRipples.append(ripple)
+        if captureRipples.count > maxCaptureRipples {
+            captureRipples.removeFirst(captureRipples.count - maxCaptureRipples)
+        }
+        if source != .auto {
+            triggerCaptureHapticIfNeeded()
+        }
+    }
+
+    private func triggerCaptureHapticIfNeeded(now: Date = Date()) {
+        guard now.timeIntervalSince(lastCaptureHapticAt) >= 0.08 else { return }
+        lastCaptureHapticAt = now
+        #if canImport(UIKit)
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.prepare()
+        generator.impactOccurred(intensity: isMapMotionReduced ? 0.45 : 0.75)
+        #endif
+    }
+
+    private func triggerWarningHapticIfNeeded(now: Date = Date()) {
+        guard now.timeIntervalSince(lastWarningHapticAt) >= 1.2 else { return }
+        lastWarningHapticAt = now
+        #if canImport(UIKit)
+        let generator = UINotificationFeedbackGenerator()
+        generator.prepare()
+        generator.notificationOccurred(.warning)
+        #endif
     }
 
     private func validateWalkLocationSample(_ location: CLLocation) -> Bool {
@@ -881,9 +1043,11 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
             if polygon.locations.count > 2 {
                 endWalk(reason: .autoInactive, endedAtOverride: Date(timeIntervalSince1970: endedAt))
                 walkStatusMessage = "15분 무이동으로 산책을 자동 종료했습니다."
+                triggerWarningHapticIfNeeded()
             } else {
                 discardCurrentWalk()
                 walkStatusMessage = "15분 무이동으로 산책 임시기록을 폐기했습니다."
+                triggerWarningHapticIfNeeded()
             }
             return
         }
@@ -891,6 +1055,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         if inactivity >= inactivityWarningInterval, didNotifyInactivityWarning == false {
             didNotifyInactivityWarning = true
             walkStatusMessage = "12분 무이동: 3분 후 자동 종료 예정입니다."
+            triggerWarningHapticIfNeeded()
             return
         }
 
@@ -910,6 +1075,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         ) { [weak self] _ in
             self?.flushSyncOutboxIfNeeded(force: true)
             self?.syncVisibilitySettingIfNeeded()
+            self?.refreshWeatherOverlayRisk()
         }
         let willResign = center.addObserver(
             forName: UIApplication.willResignActiveNotification,
@@ -932,12 +1098,25 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         ) { [weak self] _ in
             self?.reloadSelectedPetContext()
         }
+        #if canImport(UIKit)
+        let reduceMotionChanged = center.addObserver(
+            forName: UIAccessibility.reduceMotionStatusDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.objectWillChange.send()
+            self?.refreshWeatherOverlayRisk()
+        }
+        lifecycleObservers = [didBecomeActive, willResign, willTerminate, petContextChanged, reduceMotionChanged]
+        #else
         lifecycleObservers = [didBecomeActive, willResign, willTerminate, petContextChanged]
+        #endif
         #endif
     }
 
     private func appendWalkPoint(from location: CLLocation, recordedAt: Date, source: PointAppendSource) {
         polygon.addPoint(.init(coordinate: location.coordinate))
+        pushCaptureRipple(at: location.coordinate, source: source)
         lastAutoRecordedLocation = location
         lastAutoRecordedAt = recordedAt
         lastPointEventAt = recordedAt
@@ -948,6 +1127,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         }
         persistActiveWalkSession(force: true)
         syncWatchContext(force: true)
+        compactMapMotionArtifacts(now: recordedAt)
     }
 
     private func resetAutoPointRecordState() {
@@ -1207,6 +1387,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
 
     private func nearbyTick() {
         flushSyncOutboxIfNeeded()
+        refreshWeatherOverlayRisk()
         guard let location else { return }
         let now = Date()
 
@@ -1307,6 +1488,22 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
             self.nearbyHotspots = []
             UserDefaults.standard.set(false, forKey: locationSharingKey)
             self.syncVisibilitySettingIfNeeded()
+        }
+    }
+
+    private func resolveWeatherOverlayRiskFromDefaults() -> WeatherOverlayRiskLevel {
+        let raw = (UserDefaults.standard.string(forKey: weatherRiskOverrideKey) ?? "").lowercased()
+        return WeatherOverlayRiskLevel(rawValue: raw) ?? .clear
+    }
+
+    func refreshWeatherOverlayRisk() {
+        let nextRisk = resolveWeatherOverlayRiskFromDefaults()
+        guard nextRisk != weatherOverlayRiskLevel || (nextRisk == .clear && weatherOverlayOpacity != 0.0) else {
+            return
+        }
+        withAnimation(.easeInOut(duration: weatherOverlayAnimationDuration)) {
+            weatherOverlayRiskLevel = nextRisk
+            weatherOverlayOpacity = nextRisk == .clear ? 0.0 : (isMapMotionReduced ? 0.12 : 0.18)
         }
     }
 
@@ -1656,6 +1853,7 @@ extension MapViewModel {
             }
             self.nearbyTick()
             self.handleAutoPointRecord(with: location)
+            self.compactMapMotionArtifacts()
             self.persistActiveWalkSession()
             self.handleAutoEndIfNeeded()
         }
@@ -1685,8 +1883,21 @@ extension MapViewModel {
 extension MapViewModel {
     func updateAnnotations(cameraDistance: Double){
         let safeDistance = max(120.0, cameraDistance)
+        let previousCount = centerLocations.count
         currentCameraDistance = safeDistance
-        centerLocations = cluster(distance: safeDistance)
+        let nextClusters = cluster(distance: safeDistance)
+        centerLocations = nextClusters
+
+        let nextCount = nextClusters.count
+        if nextCount > previousCount {
+            clusterMotionTransition = .decompose
+            clusterMotionToken += 1
+        } else if nextCount < previousCount {
+            clusterMotionTransition = .merge
+            clusterMotionToken += 1
+        } else {
+            clusterMotionTransition = .none
+        }
     }
     private func hotspots() async { // 핫스팟 로직 고민해보기
 
