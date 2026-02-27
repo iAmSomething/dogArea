@@ -1,0 +1,327 @@
+import Foundation
+
+enum ProfileSyncOutboxStage: String, Codable, CaseIterable {
+    case profile
+    case pet
+
+    var order: Int {
+        switch self {
+        case .profile: return 0
+        case .pet: return 1
+        }
+    }
+}
+
+struct ProfileSyncOutboxItem: Codable, Identifiable, Equatable {
+    let id: String
+    let userId: String
+    let petId: String?
+    let stage: ProfileSyncOutboxStage
+    let idempotencyKey: String
+    let payload: [String: String]
+    var status: SyncOutboxStatus
+    var retryCount: Int
+    var nextRetryAt: TimeInterval
+    var lastErrorCode: SyncOutboxErrorCode?
+    let createdAt: TimeInterval
+    var updatedAt: TimeInterval
+}
+
+protocol ProfileSyncOutboxTransporting {
+    func send(item: ProfileSyncOutboxItem) async -> SyncOutboxSendResult
+}
+
+final class ProfileSyncOutboxStore {
+    static let shared = ProfileSyncOutboxStore()
+
+    private let lock = NSLock()
+    private let storageKey = "sync.profile.outbox.items.v1"
+    private var items: [ProfileSyncOutboxItem] = []
+    private let maxItems = 500
+
+    private init() {
+        load()
+    }
+
+    func enqueueSnapshot(userInfo: UserInfo) {
+        lock.lock()
+        var mutable = items
+        let now = Date().timeIntervalSince1970
+
+        let profilePayload: [String: String] = [
+            "display_name": userInfo.name,
+            "profile_image_url": userInfo.profile ?? "",
+            "profile_message": userInfo.profileMessage ?? ""
+        ]
+        let profileKey = "profile-\(userInfo.id)"
+        if mutable.contains(where: { $0.idempotencyKey == profileKey && $0.status != .completed }) == false {
+            mutable.append(
+                ProfileSyncOutboxItem(
+                    id: UUID().uuidString.lowercased(),
+                    userId: userInfo.id,
+                    petId: nil,
+                    stage: .profile,
+                    idempotencyKey: profileKey,
+                    payload: profilePayload,
+                    status: .queued,
+                    retryCount: 0,
+                    nextRetryAt: now,
+                    lastErrorCode: nil,
+                    createdAt: now,
+                    updatedAt: now
+                )
+            )
+        }
+
+        userInfo.pet.forEach { pet in
+            let petKey = "pet-\(userInfo.id)-\(pet.petId)"
+            guard mutable.contains(where: { $0.idempotencyKey == petKey && $0.status != .completed }) == false else {
+                return
+            }
+            let payload: [String: String] = [
+                "pet_id": pet.petId,
+                "name": pet.petName,
+                "photo_url": pet.petProfile ?? "",
+                "breed": pet.breed ?? "",
+                "age_years": pet.ageYears.map(String.init) ?? "",
+                "gender": pet.gender.rawValue,
+                "is_active": "true"
+            ]
+            mutable.append(
+                ProfileSyncOutboxItem(
+                    id: UUID().uuidString.lowercased(),
+                    userId: userInfo.id,
+                    petId: pet.petId,
+                    stage: .pet,
+                    idempotencyKey: petKey,
+                    payload: payload,
+                    status: .queued,
+                    retryCount: 0,
+                    nextRetryAt: now,
+                    lastErrorCode: nil,
+                    createdAt: now,
+                    updatedAt: now
+                )
+            )
+        }
+
+        if mutable.count > maxItems {
+            let overflow = mutable.count - maxItems
+            let removable = mutable
+                .enumerated()
+                .filter { _, item in item.status == .completed || item.status == .permanentFailed }
+                .prefix(overflow)
+                .map(\.offset)
+            removable.reversed().forEach { mutable.remove(at: $0) }
+        }
+
+        items = mutable
+        persistLocked()
+        lock.unlock()
+    }
+
+    func summary() -> SyncOutboxSummary {
+        lock.lock()
+        defer { lock.unlock() }
+        let pending = items.filter { $0.status == .queued || $0.status == .retrying || $0.status == .processing }.count
+        let permanent = items.filter { $0.status == .permanentFailed }.count
+        let lastError = items.reversed().compactMap(\.lastErrorCode).first
+        return SyncOutboxSummary(pendingCount: pending, permanentFailureCount: permanent, lastErrorCode: lastError)
+    }
+
+    @discardableResult
+    func flush(using transport: ProfileSyncOutboxTransporting, now: Date = Date()) async -> SyncOutboxSummary {
+        let nowTs = now.timeIntervalSince1970
+        while let next = nextDispatchableItem(now: nowTs) {
+            updateItem(id: next.id) { item in
+                item.status = .processing
+                item.updatedAt = Date().timeIntervalSince1970
+            }
+
+            let result = await transport.send(item: next)
+            let currentNow = Date().timeIntervalSince1970
+            switch result {
+            case .success:
+                updateItem(id: next.id) { item in
+                    item.status = .completed
+                    item.lastErrorCode = nil
+                    item.updatedAt = currentNow
+                }
+            case .retryable(let code):
+                let delay = Self.retryDelay(retryCount: next.retryCount + 1)
+                updateItem(id: next.id) { item in
+                    item.status = .retrying
+                    item.retryCount += 1
+                    item.lastErrorCode = code
+                    item.nextRetryAt = currentNow + delay
+                    item.updatedAt = currentNow
+                }
+                return summary()
+            case .permanent(let code):
+                updateItem(id: next.id) { item in
+                    item.status = .permanentFailed
+                    item.lastErrorCode = code
+                    item.updatedAt = currentNow
+                }
+                return summary()
+            }
+        }
+        return summary()
+    }
+
+    private static func retryDelay(retryCount: Int) -> TimeInterval {
+        let exp = pow(2.0, Double(max(0, retryCount)))
+        return min(900.0, 5.0 * exp)
+    }
+
+    private func nextDispatchableItem(now: TimeInterval) -> ProfileSyncOutboxItem? {
+        lock.lock()
+        defer { lock.unlock() }
+        return items
+            .sorted { lhs, rhs in
+                if lhs.createdAt == rhs.createdAt {
+                    if lhs.stage.order == rhs.stage.order {
+                        return lhs.id < rhs.id
+                    }
+                    return lhs.stage.order < rhs.stage.order
+                }
+                return lhs.createdAt < rhs.createdAt
+            }
+            .first(where: {
+                ($0.status == .queued || $0.status == .retrying || $0.status == .processing) &&
+                $0.nextRetryAt <= now
+            })
+    }
+
+    private func updateItem(id: String, _ block: (inout ProfileSyncOutboxItem) -> Void) {
+        lock.lock()
+        if let idx = items.firstIndex(where: { $0.id == id }) {
+            block(&items[idx])
+            persistLocked()
+        }
+        lock.unlock()
+    }
+
+    private func load() {
+        guard let data = UserDefaults.standard.data(forKey: storageKey),
+              let decoded = try? JSONDecoder().decode([ProfileSyncOutboxItem].self, from: data) else {
+            items = []
+            return
+        }
+        items = decoded
+    }
+
+    private func persistLocked() {
+        guard let data = try? JSONEncoder().encode(items) else { return }
+        UserDefaults.standard.set(data, forKey: storageKey)
+    }
+}
+
+struct SupabaseProfileSyncTransport: ProfileSyncOutboxTransporting {
+    private func endpointURL(from env: [String: String]) -> URL? {
+        guard let rawURL = env["SUPABASE_URL"], rawURL.isEmpty == false else { return nil }
+        return URL(string: rawURL + "/functions/v1/sync-profile")
+    }
+
+    private func bearerToken(from env: [String: String]) -> String {
+        env["SUPABASE_ANON_KEY"] ?? ""
+    }
+
+    func send(item: ProfileSyncOutboxItem) async -> SyncOutboxSendResult {
+        guard AppFeatureGate.isAllowed(.cloudSync, session: AppFeatureGate.currentSession()) else {
+            return .retryable(.unauthorized)
+        }
+        let env = ProcessInfo.processInfo.environment
+        guard let url = endpointURL(from: env) else {
+            return .retryable(.notConfigured)
+        }
+
+        let token = bearerToken(from: env)
+        guard token.isEmpty == false else {
+            return .retryable(.tokenExpired)
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        var body: [String: Any] = [
+            "action": "sync_profile_stage",
+            "stage": item.stage.rawValue,
+            "user_id": item.userId,
+            "idempotency_key": item.idempotencyKey,
+            "payload": item.payload
+        ]
+        body["pet_id"] = item.petId ?? NSNull()
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            guard let statusCode = (response as? HTTPURLResponse)?.statusCode else {
+                return .retryable(.unknown)
+            }
+            switch statusCode {
+            case 200..<300:
+                return .success
+            case 401, 403:
+                return .retryable(.tokenExpired)
+            case 429, 500..<600:
+                return .retryable(.serverError)
+            case 404:
+                return .retryable(.notConfigured)
+            case 400, 422:
+                return .permanent(.schemaMismatch)
+            case 507:
+                return .permanent(.storageQuota)
+            default:
+                return .retryable(.unknown)
+            }
+        } catch let error as URLError {
+            switch error.code {
+            case .notConnectedToInternet, .networkConnectionLost, .timedOut, .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed:
+                return .retryable(.offline)
+            case .userAuthenticationRequired:
+                return .retryable(.tokenExpired)
+            default:
+                return .retryable(.unknown)
+            }
+        } catch {
+            return .retryable(.unknown)
+        }
+    }
+}
+
+final class ProfileSyncCoordinator {
+    static let shared = ProfileSyncCoordinator()
+
+    private let outbox = ProfileSyncOutboxStore.shared
+    private let transport = SupabaseProfileSyncTransport()
+    private var flushTask: Task<Void, Never>? = nil
+    private var lastFlushAt: Date = .distantPast
+
+    private init() {}
+
+    func enqueueSnapshot(userInfo: UserInfo) {
+        outbox.enqueueSnapshot(userInfo: userInfo)
+    }
+
+    func flushIfNeeded(force: Bool = false) {
+        let now = Date()
+        if force == false, now.timeIntervalSince(lastFlushAt) < 5.0 {
+            return
+        }
+        guard flushTask == nil else { return }
+        lastFlushAt = now
+        flushTask = Task { [weak self] in
+            guard let self else { return }
+            _ = await self.outbox.flush(using: self.transport, now: Date())
+            self.flushTask = nil
+        }
+    }
+
+    func summary() -> SyncOutboxSummary {
+        outbox.summary()
+    }
+}
+

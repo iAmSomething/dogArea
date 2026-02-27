@@ -19,23 +19,26 @@ protocol ProfileRepository {
 final class DefaultProfileRepository: ProfileRepository {
     static let shared = DefaultProfileRepository()
 
-    private let userStore: UserdefaultSetting
+    private let profileStore: ProfileStoring
+    private let petSelectionStore: PetSelectionStoring
     private let syncCoordinator: ProfileSyncCoordinator
 
     init(
-        userStore: UserdefaultSetting = .shared,
+        profileStore: ProfileStoring = ProfileStore.shared,
+        petSelectionStore: PetSelectionStoring = PetSelectionStore.shared,
         syncCoordinator: ProfileSyncCoordinator = .shared
     ) {
-        self.userStore = userStore
+        self.profileStore = profileStore
+        self.petSelectionStore = petSelectionStore
         self.syncCoordinator = syncCoordinator
     }
 
     func fetchUserInfo() -> UserInfo? {
-        userStore.getValue()
+        profileStore.getValue()
     }
 
     func selectedPet(from userInfo: UserInfo?) -> PetInfo? {
-        userStore.selectedPet(from: userInfo)
+        petSelectionStore.selectedPet(from: userInfo ?? profileStore.getValue())
     }
 
     @discardableResult
@@ -48,7 +51,7 @@ final class DefaultProfileRepository: ProfileRepository {
         createdAt: Double,
         selectedPetId: String?
     ) -> UserInfo? {
-        userStore.save(
+        profileStore.save(
             id: id,
             name: name,
             profile: profile,
@@ -57,13 +60,13 @@ final class DefaultProfileRepository: ProfileRepository {
             createdAt: createdAt,
             selectedPetId: selectedPetId
         )
-        guard let snapshot = userStore.getValue() else { return nil }
+        guard let snapshot = profileStore.getValue() else { return nil }
         syncCoordinator.enqueueSnapshot(userInfo: snapshot)
         syncCoordinator.flushIfNeeded(force: true)
         return snapshot
     }
 
     func setSelectedPetId(_ petId: String, source: String) {
-        userStore.setSelectedPetId(petId, source: source)
+        petSelectionStore.setSelectedPetId(petId, source: source)
     }
 }

@@ -9,6 +9,7 @@ import Foundation
 import CryptoKit
 import SwiftUI
 import CoreData
+
 class UserdefaultSetting {
     enum keyValue: String {
         case userId = "userId"
@@ -26,12 +27,42 @@ class UserdefaultSetting {
         case createdAt = "createdAt"
         case nonce = "nonce"
     }
+
     static var shared = UserdefaultSetting()
-    static let selectedPetDidChangeNotification = Notification.Name("userdefault.selectedPetDidChange")
+    static let selectedPetDidChangeNotification = PetSelectionStore.selectedPetDidChangeNotification
     static let seasonCatchupBuffDidUpdateNotification = Notification.Name("userdefault.seasonCatchupBuffDidUpdate")
-    func savenonce(nonce: Double) {
-        UserDefaults.standard.setValue(nonce, forKey: keyValue.nonce.rawValue)
+
+    private let userDefaults: UserDefaults
+    private let profileStore: ProfileStoring
+    private let petSelectionStore: PetSelectionStoring
+    private let walkSessionMetadataStore: WalkSessionMetadataStore
+    private let profileSyncOutboxStore: ProfileSyncOutboxStore
+    private let profileSyncCoordinator: ProfileSyncCoordinator
+    private let profileSyncTransport: SupabaseProfileSyncTransport
+    private let profileSyncStorageKey = "sync.profile.outbox.items.v1"
+
+    init(
+        userDefaults: UserDefaults = .standard,
+        profileStore: ProfileStoring = ProfileStore.shared,
+        petSelectionStore: PetSelectionStoring = PetSelectionStore.shared,
+        walkSessionMetadataStore: WalkSessionMetadataStore = .shared,
+        profileSyncOutboxStore: ProfileSyncOutboxStore = .shared,
+        profileSyncCoordinator: ProfileSyncCoordinator = .shared,
+        profileSyncTransport: SupabaseProfileSyncTransport = .init()
+    ) {
+        self.userDefaults = userDefaults
+        self.profileStore = profileStore
+        self.petSelectionStore = petSelectionStore
+        self.walkSessionMetadataStore = walkSessionMetadataStore
+        self.profileSyncOutboxStore = profileSyncOutboxStore
+        self.profileSyncCoordinator = profileSyncCoordinator
+        self.profileSyncTransport = profileSyncTransport
     }
+
+    func savenonce(nonce: Double) {
+        userDefaults.setValue(nonce, forKey: keyValue.nonce.rawValue)
+    }
+
     func save(
         id: String,
         name: String,
@@ -41,102 +72,31 @@ class UserdefaultSetting {
         createdAt: Double,
         selectedPetId: String? = nil
     ) {
-        let normalizedPets = normalizePets(pet)
-        let resolvedSelectedPetId = resolveSelectedPetId(
-            in: normalizedPets,
-            requested: selectedPetId
+        profileStore.save(
+            id: id,
+            name: name,
+            profile: profile,
+            profileMessage: profileMessage,
+            pet: pet,
+            createdAt: createdAt,
+            selectedPetId: selectedPetId
         )
-        UserDefaults.standard.setValue(id, forKey: keyValue.userId.rawValue)
-        UserDefaults.standard.setValue(name, forKey: keyValue.userName.rawValue)
-        UserDefaults.standard.setValue(profile, forKey: keyValue.userProfile.rawValue)
-        UserDefaults.standard.setValue(profileMessage, forKey: keyValue.profileMessage.rawValue)
-        UserDefaults.standard.setStructArray(normalizedPets, forKey: keyValue.petInfo.rawValue)
-        UserDefaults.standard.setValue(resolvedSelectedPetId, forKey: keyValue.selectedPetId.rawValue)
-        UserDefaults.standard.setValue(resolvedSelectedPetId, forKey: keyValue.petSelectionRecentPetId.rawValue)
-        UserDefaults.standard.setValue(createdAt, forKey: keyValue.createdAt.rawValue)
     }
-    func getValue() -> UserInfo? {
-        guard let id = UserDefaults.standard.string(forKey: keyValue.userId.rawValue) ,
-              let name = UserDefaults.standard.string(forKey: keyValue.userName.rawValue)
-             
-               else {return nil}
-        let storedPets = UserDefaults.standard.structArrayData(PetInfo.self, forKey: keyValue.petInfo.rawValue)
-        let pets = normalizePets(storedPets)
-        let createdAt = UserDefaults.standard.double(forKey: keyValue.createdAt.rawValue)
-        let selectedPetId = resolveSelectedPetId(
-            in: pets,
-            requested: UserDefaults.standard.string(forKey: keyValue.selectedPetId.rawValue)
-        )
-        let shouldMigrate = storedPets != pets ||
-        selectedPetId != UserDefaults.standard.string(forKey: keyValue.selectedPetId.rawValue)
 
-        if shouldMigrate {
-            save(
-                id: id,
-                name: name,
-                profile: UserDefaults.standard.string(forKey: keyValue.userProfile.rawValue),
-                profileMessage: UserDefaults.standard.string(forKey: keyValue.profileMessage.rawValue),
-                pet: pets,
-                createdAt: createdAt,
-                selectedPetId: selectedPetId
-            )
-        }
-        if let profile = UserDefaults.standard.string(forKey: keyValue.userProfile.rawValue){
-            return .init(
-                id: id,
-                name: name,
-                profile: profile,
-                profileMessage: UserDefaults.standard.string(forKey: keyValue.profileMessage.rawValue),
-                pet: pets,
-                createdAt: createdAt
-            )
-        } else {
-            return .init(
-                id: id,
-                name: name,
-                profile: nil,
-                profileMessage: UserDefaults.standard.string(forKey: keyValue.profileMessage.rawValue),
-                pet: pets,
-                createdAt: createdAt
-            )
-        }
+    func getValue() -> UserInfo? {
+        profileStore.getValue()
     }
+
     #if DEBUG
     func removeAll() {
-        UserDefaults.standard.removeObject(forKey: keyValue.userId.rawValue)
-        UserDefaults.standard.removeObject(forKey: keyValue.userName.rawValue)
-        UserDefaults.standard.removeObject(forKey: keyValue.userProfile.rawValue)
-        UserDefaults.standard.removeObject(forKey: keyValue.profileMessage.rawValue)
-        UserDefaults.standard.removeObject(forKey: keyValue.petInfo.rawValue)
-        UserDefaults.standard.removeObject(forKey: keyValue.selectedPetId.rawValue)
-        UserDefaults.standard.removeObject(forKey: keyValue.walkStartCountdownEnabled.rawValue)
-        UserDefaults.standard.removeObject(forKey: keyValue.walkPointRecordMode.rawValue)
+        profileStore.removeAll()
+        petSelectionStore.clearSelectionState()
+        walkSessionMetadataStore.clearPreferences()
+        userDefaults.removeObject(forKey: keyValue.selectedPetId.rawValue)
+        userDefaults.removeObject(forKey: keyValue.walkStartCountdownEnabled.rawValue)
+        userDefaults.removeObject(forKey: keyValue.walkPointRecordMode.rawValue)
     }
     #endif
-
-    private func normalizePets(_ pets: [PetInfo]) -> [PetInfo] {
-        var seen = Set<String>()
-        return pets.map { pet in
-            var normalized = pet
-            if normalized.petId.isEmpty || seen.contains(normalized.petId) {
-                normalized.petId = UUID().uuidString.lowercased()
-            }
-            seen.insert(normalized.petId)
-            return normalized
-        }
-    }
-
-    private func resolveSelectedPetId(in pets: [PetInfo], requested: String?) -> String? {
-        guard pets.isEmpty == false else { return nil }
-        if let requested, pets.contains(where: { $0.petId == requested }) {
-            return requested
-        }
-        if let stored = UserDefaults.standard.string(forKey: keyValue.selectedPetId.rawValue),
-           pets.contains(where: { $0.petId == stored }) {
-            return stored
-        }
-        return pets.first?.petId
-    }
 }
 struct UserInfo: TimeCheckable {
     let id: String
@@ -256,78 +216,6 @@ struct PetSelectionEvent: Codable, Equatable {
     let recordedAt: TimeInterval
 }
 
-enum WalkSessionEndReason: String, Codable {
-    case manual = "manual"
-    case autoInactive = "auto_inactive"
-    case autoTimeout = "auto_timeout"
-    case recoveryEstimated = "recovery_estimated"
-}
-
-struct WalkSessionMetadata: Codable, Equatable {
-    let endReason: WalkSessionEndReason
-    let endedAt: TimeInterval
-    let petId: String?
-    let updatedAt: TimeInterval
-}
-
-final class WalkSessionMetadataStore {
-    static let shared = WalkSessionMetadataStore()
-
-    private let storageKey = "walk.session.metadata.v1"
-    private let lock = NSLock()
-    private var cache: [String: WalkSessionMetadata] = [:]
-
-    private init() {
-        guard let data = UserDefaults.standard.data(forKey: storageKey),
-              let decoded = try? JSONDecoder().decode([String: WalkSessionMetadata].self, from: data) else {
-            cache = [:]
-            return
-        }
-        cache = decoded
-    }
-
-    func set(
-        sessionId: UUID,
-        reason: WalkSessionEndReason,
-        endedAt: TimeInterval,
-        petId: String? = nil
-    ) {
-        lock.lock()
-        cache[sessionId.uuidString.lowercased()] = WalkSessionMetadata(
-            endReason: reason,
-            endedAt: endedAt,
-            petId: petId,
-            updatedAt: Date().timeIntervalSince1970
-        )
-        persistLocked()
-        lock.unlock()
-    }
-
-    func metadata(sessionId: UUID) -> WalkSessionMetadata? {
-        lock.lock()
-        defer { lock.unlock() }
-        return cache[sessionId.uuidString.lowercased()]
-    }
-
-    func petId(sessionId: UUID) -> String? {
-        lock.lock()
-        defer { lock.unlock() }
-        return cache[sessionId.uuidString.lowercased()]?.petId
-    }
-
-    func clear(sessionId: UUID) {
-        lock.lock()
-        cache.removeValue(forKey: sessionId.uuidString.lowercased())
-        persistLocked()
-        lock.unlock()
-    }
-
-    private func persistLocked() {
-        guard let data = try? JSONEncoder().encode(cache) else { return }
-        UserDefaults.standard.set(data, forKey: storageKey)
-    }
-}
-
 extension UserDefaults {
     public func setStruct<T: Codable>(_ value: T?, forKey defaultName: String){
         let data = try? JSONEncoder().encode(value)
@@ -356,148 +244,26 @@ extension UserDefaults {
 }
 
 extension UserdefaultSetting {
-    private enum PetSelectionTimeSlot: String {
-        case morning
-        case afternoon
-        case evening
-        case night
-    }
-
-    private func petSelectionTimeSlot(for date: Date) -> PetSelectionTimeSlot {
-        let hour = Calendar.current.component(.hour, from: date)
-        switch hour {
-        case 5...10: return .morning
-        case 11...16: return .afternoon
-        case 17...21: return .evening
-        default: return .night
-        }
-    }
-
-    private func petSelectionScoreKey(petId: String, weekday: Int, timeSlot: PetSelectionTimeSlot) -> String {
-        "\(weekday)|\(timeSlot.rawValue)|\(petId)"
-    }
-
-    private func loadPetSelectionScoreMap() -> [String: Int] {
-        UserDefaults.standard.dictionary(forKey: keyValue.petSelectionScoreMap.rawValue) as? [String: Int] ?? [:]
-    }
-
-    private func savePetSelectionScoreMap(_ map: [String: Int]) {
-        UserDefaults.standard.set(map, forKey: keyValue.petSelectionScoreMap.rawValue)
-    }
-
-    private func recordPetSelectionEvent(petId: String, source: String, at date: Date = Date()) {
-        let weekday = Calendar.current.component(.weekday, from: date)
-        let timeSlot = petSelectionTimeSlot(for: date)
-        let key = petSelectionScoreKey(petId: petId, weekday: weekday, timeSlot: timeSlot)
-        var scoreMap = loadPetSelectionScoreMap()
-        scoreMap[key, default: 0] += 1
-        savePetSelectionScoreMap(scoreMap)
-        UserDefaults.standard.set(petId, forKey: keyValue.petSelectionRecentPetId.rawValue)
-
-        var events = UserDefaults.standard.structArrayData(PetSelectionEvent.self, forKey: keyValue.petSelectionEvents.rawValue)
-        events.append(
-            PetSelectionEvent(
-                petId: petId,
-                source: source,
-                weekday: weekday,
-                timeSlot: timeSlot.rawValue,
-                recordedAt: date.timeIntervalSince1970
-            )
-        )
-        if events.count > 100 {
-            events.removeFirst(events.count - 100)
-        }
-        UserDefaults.standard.setStructArray(events, forKey: keyValue.petSelectionEvents.rawValue)
-    }
-
     func selectedPetId() -> String? {
-        UserDefaults.standard.string(forKey: keyValue.selectedPetId.rawValue)
+        petSelectionStore.selectedPetId()
     }
 
     func setSelectedPetId(_ petId: String, source: String = "manual") {
-        guard let current = getValue(), current.pet.contains(where: { $0.petId == petId }) else {
-            return
-        }
-        let previousId = UserDefaults.standard.string(forKey: keyValue.selectedPetId.rawValue)
-        UserDefaults.standard.setValue(petId, forKey: keyValue.selectedPetId.rawValue)
-        // Normalize persisted payload in case pet ids were migrated this session.
-        save(
-            id: current.id,
-            name: current.name,
-            profile: current.profile,
-            pet: current.pet,
-            createdAt: current.createdAt,
-            selectedPetId: petId
-        )
-        recordPetSelectionEvent(petId: petId, source: source)
-
-        if previousId != petId {
-            let now = Date()
-            let weekday = Calendar.current.component(.weekday, from: now)
-            let timeSlot = petSelectionTimeSlot(for: now).rawValue
-            AppMetricTracker.shared.track(
-                .petSelectionChanged,
-                userKey: current.id,
-                payload: [
-                    "source": source,
-                    "petId": petId,
-                    "weekday": "\(weekday)",
-                    "timeSlot": timeSlot
-                ]
-            )
-            NotificationCenter.default.post(
-                name: UserdefaultSetting.selectedPetDidChangeNotification,
-                object: nil,
-                userInfo: [
-                    "petId": petId,
-                    "source": source
-                ]
-            )
-        }
+        petSelectionStore.setSelectedPetId(petId, source: source)
     }
 
     func selectedPet(from userInfo: UserInfo? = nil) -> PetInfo? {
         let info = userInfo ?? getValue()
-        guard let info else { return nil }
-        let selectedId = selectedPetId()
-        return info.pet.first(where: { $0.petId == selectedId }) ?? info.pet.first
+        return petSelectionStore.selectedPet(from: info)
     }
 
     func suggestedPetForWalkStart(from userInfo: UserInfo? = nil, now: Date = Date()) -> PetInfo? {
         let info = userInfo ?? getValue()
-        guard let info, info.pet.isEmpty == false else { return nil }
-        if info.pet.count == 1 {
-            return info.pet.first
-        }
-
-        let weekday = Calendar.current.component(.weekday, from: now)
-        let timeSlot = petSelectionTimeSlot(for: now)
-        let scoreMap = loadPetSelectionScoreMap()
-        let ranked = info.pet
-            .map { pet in
-                (pet, scoreMap[petSelectionScoreKey(petId: pet.petId, weekday: weekday, timeSlot: timeSlot)] ?? 0)
-            }
-            .sorted { lhs, rhs in
-                if lhs.1 == rhs.1 {
-                    return lhs.0.petName < rhs.0.petName
-                }
-                return lhs.1 > rhs.1
-            }
-
-        if let first = ranked.first, first.1 > 0 {
-            return first.0
-        }
-
-        if let recentPetId = UserDefaults.standard.string(forKey: keyValue.petSelectionRecentPetId.rawValue),
-           let recentPet = info.pet.first(where: { $0.petId == recentPetId }) {
-            return recentPet
-        }
-
-        return selectedPet(from: info) ?? info.pet.first
+        return petSelectionStore.suggestedPetForWalkStart(from: info, now: now)
     }
 
     func recentPetSelectionEvents() -> [PetSelectionEvent] {
-        UserDefaults.standard.structArrayData(PetSelectionEvent.self, forKey: keyValue.petSelectionEvents.rawValue)
+        petSelectionStore.recentPetSelectionEvents()
     }
 
     func updateFirstPetCaricature(
@@ -508,36 +274,23 @@ extension UserdefaultSetting {
         guard let current = getValue(), current.pet.isEmpty == false else { return }
         let targetPetId = selectedPet(from: current)?.petId ?? current.pet.first?.petId
         guard let targetPetId else { return }
-        var pets = current.pet
-        if let index = pets.firstIndex(where: { $0.petId == targetPetId }) {
-            pets[index].caricatureStatus = status
-            if let caricatureURL {
-                pets[index].caricatureURL = caricatureURL
-                pets[index].petProfile = caricatureURL
-            }
-            if let provider {
-                pets[index].caricatureProvider = provider
-            }
-        }
-        save(
-            id: current.id,
-            name: current.name,
-            profile: current.profile,
-            pet: pets,
-            createdAt: current.createdAt,
-            selectedPetId: targetPetId
+        _ = profileStore.updatePetCaricature(
+            status: status,
+            targetPetId: targetPetId,
+            caricatureURL: caricatureURL,
+            provider: provider
         )
     }
 
     func seasonCatchupBuffSnapshot() -> SeasonCatchupBuffSnapshot? {
-        UserDefaults.standard.structData(
+        userDefaults.structData(
             SeasonCatchupBuffSnapshot.self,
             forKey: keyValue.seasonCatchupBuffSnapshot.rawValue
         )
     }
 
     func updateSeasonCatchupBuffSnapshot(_ snapshot: SeasonCatchupBuffSnapshot) {
-        UserDefaults.standard.setStruct(snapshot, forKey: keyValue.seasonCatchupBuffSnapshot.rawValue)
+        userDefaults.setStruct(snapshot, forKey: keyValue.seasonCatchupBuffSnapshot.rawValue)
         NotificationCenter.default.post(
             name: UserdefaultSetting.seasonCatchupBuffDidUpdateNotification,
             object: nil,
@@ -550,19 +303,19 @@ extension UserdefaultSetting {
     }
 
     func walkStartCountdownEnabled() -> Bool {
-        UserDefaults.standard.object(forKey: keyValue.walkStartCountdownEnabled.rawValue) as? Bool ?? false
+        walkSessionMetadataStore.walkStartCountdownEnabled()
     }
 
     func setWalkStartCountdownEnabled(_ enabled: Bool) {
-        UserDefaults.standard.set(enabled, forKey: keyValue.walkStartCountdownEnabled.rawValue)
+        walkSessionMetadataStore.setWalkStartCountdownEnabled(enabled)
     }
 
     func walkPointRecordModeRawValue() -> String {
-        UserDefaults.standard.string(forKey: keyValue.walkPointRecordMode.rawValue) ?? "manual"
+        walkSessionMetadataStore.walkPointRecordModeRawValue()
     }
 
     func setWalkPointRecordModeRawValue(_ rawValue: String) {
-        UserDefaults.standard.set(rawValue, forKey: keyValue.walkPointRecordMode.rawValue)
+        walkSessionMetadataStore.setWalkPointRecordModeRawValue(rawValue)
     }
 
 }
@@ -1423,331 +1176,6 @@ struct SupabaseSyncOutboxTransport: SyncOutboxTransporting {
         } catch {
             return nil
         }
-    }
-}
-
-enum ProfileSyncOutboxStage: String, Codable, CaseIterable {
-    case profile
-    case pet
-
-    var order: Int {
-        switch self {
-        case .profile: return 0
-        case .pet: return 1
-        }
-    }
-}
-
-struct ProfileSyncOutboxItem: Codable, Identifiable, Equatable {
-    let id: String
-    let userId: String
-    let petId: String?
-    let stage: ProfileSyncOutboxStage
-    let idempotencyKey: String
-    let payload: [String: String]
-    var status: SyncOutboxStatus
-    var retryCount: Int
-    var nextRetryAt: TimeInterval
-    var lastErrorCode: SyncOutboxErrorCode?
-    let createdAt: TimeInterval
-    var updatedAt: TimeInterval
-}
-
-protocol ProfileSyncOutboxTransporting {
-    func send(item: ProfileSyncOutboxItem) async -> SyncOutboxSendResult
-}
-
-final class ProfileSyncOutboxStore {
-    static let shared = ProfileSyncOutboxStore()
-
-    private let lock = NSLock()
-    private let storageKey = "sync.profile.outbox.items.v1"
-    private var items: [ProfileSyncOutboxItem] = []
-    private let maxItems = 500
-
-    private init() {
-        load()
-    }
-
-    func enqueueSnapshot(userInfo: UserInfo) {
-        lock.lock()
-        var mutable = items
-        let now = Date().timeIntervalSince1970
-
-        let profilePayload: [String: String] = [
-            "display_name": userInfo.name,
-            "profile_image_url": userInfo.profile ?? "",
-            "profile_message": userInfo.profileMessage ?? ""
-        ]
-        let profileKey = "profile-\(userInfo.id)"
-        if mutable.contains(where: { $0.idempotencyKey == profileKey && $0.status != .completed }) == false {
-            mutable.append(
-                ProfileSyncOutboxItem(
-                    id: UUID().uuidString.lowercased(),
-                    userId: userInfo.id,
-                    petId: nil,
-                    stage: .profile,
-                    idempotencyKey: profileKey,
-                    payload: profilePayload,
-                    status: .queued,
-                    retryCount: 0,
-                    nextRetryAt: now,
-                    lastErrorCode: nil,
-                    createdAt: now,
-                    updatedAt: now
-                )
-            )
-        }
-
-        userInfo.pet.forEach { pet in
-            let petKey = "pet-\(userInfo.id)-\(pet.petId)"
-            guard mutable.contains(where: { $0.idempotencyKey == petKey && $0.status != .completed }) == false else {
-                return
-            }
-            let payload: [String: String] = [
-                "pet_id": pet.petId,
-                "name": pet.petName,
-                "photo_url": pet.petProfile ?? "",
-                "breed": pet.breed ?? "",
-                "age_years": pet.ageYears.map(String.init) ?? "",
-                "gender": pet.gender.rawValue,
-                "is_active": "true"
-            ]
-            mutable.append(
-                ProfileSyncOutboxItem(
-                    id: UUID().uuidString.lowercased(),
-                    userId: userInfo.id,
-                    petId: pet.petId,
-                    stage: .pet,
-                    idempotencyKey: petKey,
-                    payload: payload,
-                    status: .queued,
-                    retryCount: 0,
-                    nextRetryAt: now,
-                    lastErrorCode: nil,
-                    createdAt: now,
-                    updatedAt: now
-                )
-            )
-        }
-
-        if mutable.count > maxItems {
-            let overflow = mutable.count - maxItems
-            let removable = mutable
-                .enumerated()
-                .filter { _, item in item.status == .completed || item.status == .permanentFailed }
-                .prefix(overflow)
-                .map(\.offset)
-            removable.reversed().forEach { mutable.remove(at: $0) }
-        }
-
-        items = mutable
-        persistLocked()
-        lock.unlock()
-    }
-
-    func summary() -> SyncOutboxSummary {
-        lock.lock()
-        defer { lock.unlock() }
-        let pending = items.filter { $0.status == .queued || $0.status == .retrying || $0.status == .processing }.count
-        let permanent = items.filter { $0.status == .permanentFailed }.count
-        let lastError = items.reversed().compactMap(\.lastErrorCode).first
-        return SyncOutboxSummary(pendingCount: pending, permanentFailureCount: permanent, lastErrorCode: lastError)
-    }
-
-    @discardableResult
-    func flush(using transport: ProfileSyncOutboxTransporting, now: Date = Date()) async -> SyncOutboxSummary {
-        let nowTs = now.timeIntervalSince1970
-        while let next = nextDispatchableItem(now: nowTs) {
-            updateItem(id: next.id) { item in
-                item.status = .processing
-                item.updatedAt = Date().timeIntervalSince1970
-            }
-
-            let result = await transport.send(item: next)
-            let currentNow = Date().timeIntervalSince1970
-            switch result {
-            case .success:
-                updateItem(id: next.id) { item in
-                    item.status = .completed
-                    item.lastErrorCode = nil
-                    item.updatedAt = currentNow
-                }
-            case .retryable(let code):
-                let delay = Self.retryDelay(retryCount: next.retryCount + 1)
-                updateItem(id: next.id) { item in
-                    item.status = .retrying
-                    item.retryCount += 1
-                    item.lastErrorCode = code
-                    item.nextRetryAt = currentNow + delay
-                    item.updatedAt = currentNow
-                }
-                return summary()
-            case .permanent(let code):
-                updateItem(id: next.id) { item in
-                    item.status = .permanentFailed
-                    item.lastErrorCode = code
-                    item.updatedAt = currentNow
-                }
-                return summary()
-            }
-        }
-        return summary()
-    }
-
-    private static func retryDelay(retryCount: Int) -> TimeInterval {
-        let exp = pow(2.0, Double(max(0, retryCount)))
-        return min(900.0, 5.0 * exp)
-    }
-
-    private func nextDispatchableItem(now: TimeInterval) -> ProfileSyncOutboxItem? {
-        lock.lock()
-        defer { lock.unlock() }
-        return items
-            .sorted { lhs, rhs in
-                if lhs.createdAt == rhs.createdAt {
-                    if lhs.stage.order == rhs.stage.order {
-                        return lhs.id < rhs.id
-                    }
-                    return lhs.stage.order < rhs.stage.order
-                }
-                return lhs.createdAt < rhs.createdAt
-            }
-            .first(where: {
-                ($0.status == .queued || $0.status == .retrying || $0.status == .processing) &&
-                $0.nextRetryAt <= now
-            })
-    }
-
-    private func updateItem(id: String, _ block: (inout ProfileSyncOutboxItem) -> Void) {
-        lock.lock()
-        if let idx = items.firstIndex(where: { $0.id == id }) {
-            block(&items[idx])
-            persistLocked()
-        }
-        lock.unlock()
-    }
-
-    private func load() {
-        guard let data = UserDefaults.standard.data(forKey: storageKey),
-              let decoded = try? JSONDecoder().decode([ProfileSyncOutboxItem].self, from: data) else {
-            items = []
-            return
-        }
-        items = decoded
-    }
-
-    private func persistLocked() {
-        guard let data = try? JSONEncoder().encode(items) else { return }
-        UserDefaults.standard.set(data, forKey: storageKey)
-    }
-}
-
-struct SupabaseProfileSyncTransport: ProfileSyncOutboxTransporting {
-    private func endpointURL(from env: [String: String]) -> URL? {
-        guard let rawURL = env["SUPABASE_URL"], rawURL.isEmpty == false else { return nil }
-        return URL(string: rawURL + "/functions/v1/sync-profile")
-    }
-
-    private func bearerToken(from env: [String: String]) -> String {
-        env["SUPABASE_ANON_KEY"] ?? ""
-    }
-
-    func send(item: ProfileSyncOutboxItem) async -> SyncOutboxSendResult {
-        guard AppFeatureGate.isAllowed(.cloudSync, session: AppFeatureGate.currentSession()) else {
-            return .retryable(.unauthorized)
-        }
-        let env = ProcessInfo.processInfo.environment
-        guard let url = endpointURL(from: env) else {
-            return .retryable(.notConfigured)
-        }
-
-        let token = bearerToken(from: env)
-        guard token.isEmpty == false else {
-            return .retryable(.tokenExpired)
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-        var body: [String: Any] = [
-            "action": "sync_profile_stage",
-            "stage": item.stage.rawValue,
-            "user_id": item.userId,
-            "idempotency_key": item.idempotencyKey,
-            "payload": item.payload
-        ]
-        body["pet_id"] = item.petId ?? NSNull()
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-
-        do {
-            let (_, response) = try await URLSession.shared.data(for: request)
-            guard let statusCode = (response as? HTTPURLResponse)?.statusCode else {
-                return .retryable(.unknown)
-            }
-            switch statusCode {
-            case 200..<300:
-                return .success
-            case 401, 403:
-                return .retryable(.tokenExpired)
-            case 429, 500..<600:
-                return .retryable(.serverError)
-            case 404:
-                return .retryable(.notConfigured)
-            case 400, 422:
-                return .permanent(.schemaMismatch)
-            case 507:
-                return .permanent(.storageQuota)
-            default:
-                return .retryable(.unknown)
-            }
-        } catch let error as URLError {
-            switch error.code {
-            case .notConnectedToInternet, .networkConnectionLost, .timedOut, .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed:
-                return .retryable(.offline)
-            case .userAuthenticationRequired:
-                return .retryable(.tokenExpired)
-            default:
-                return .retryable(.unknown)
-            }
-        } catch {
-            return .retryable(.unknown)
-        }
-    }
-}
-
-final class ProfileSyncCoordinator {
-    static let shared = ProfileSyncCoordinator()
-
-    private let outbox = ProfileSyncOutboxStore.shared
-    private let transport = SupabaseProfileSyncTransport()
-    private var flushTask: Task<Void, Never>? = nil
-    private var lastFlushAt: Date = .distantPast
-
-    private init() {}
-
-    func enqueueSnapshot(userInfo: UserInfo) {
-        outbox.enqueueSnapshot(userInfo: userInfo)
-    }
-
-    func flushIfNeeded(force: Bool = false) {
-        let now = Date()
-        if force == false, now.timeIntervalSince(lastFlushAt) < 5.0 {
-            return
-        }
-        guard flushTask == nil else { return }
-        lastFlushAt = now
-        flushTask = Task { [weak self] in
-            guard let self else { return }
-            _ = await self.outbox.flush(using: self.transport, now: Date())
-            self.flushTask = nil
-        }
-    }
-
-    func summary() -> SyncOutboxSummary {
-        outbox.summary()
     }
 }
 
