@@ -26,6 +26,9 @@ assertTrue(checklist.contains("## 7. 결과 기록 템플릿"), "checklist must 
 assertTrue(checklist.contains("## 8. 배포 전/후 핵심 지표 비교"), "checklist must include pre/post metric comparison section")
 assertTrue(checklist.contains("## 9. 예외 시나리오 게이트 (P0/P1)"), "checklist must include exception gate section")
 assertTrue(checklist.contains("P0 FAIL >= 1"), "checklist must include P0 auto blocking rule")
+assertTrue(checklist.contains("표본 미달 셀은 count가 노출되지 않고(percentile-only)"), "checklist should include privacy k-anon scenario")
+assertTrue(checklist.contains("야간(22~06) 지연 60분 정책"), "checklist should include nighttime delay scenario")
+assertTrue(checklist.contains("privacy_guard_policies/privacy_sensitive_geo_masks/privacy_guard_audit_logs"), "checklist should include privacy guard migration verification")
 
 assertTrue(report.contains("## 1. 빌드 체크 결과"), "report must include build results")
 assertTrue(report.contains("## 2. 핵심 시나리오 점검 결과"), "report must include scenario results")

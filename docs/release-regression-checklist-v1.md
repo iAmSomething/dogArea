@@ -64,6 +64,9 @@
 - [ ] 악천후 단계에서 실외 미션이 실내 대체 미션으로 자동 치환됨
 - [ ] 실내 미션 최소 행동량 미달 시 완료 확정이 거절됨
 - [ ] 실내 미션이 연속 일자에 동일 템플릿으로 반복 노출되지 않음
+- [ ] nearby 핫스팟에서 표본 미달 셀은 count가 노출되지 않고(percentile-only) 강도만 표시됨
+- [ ] nearby 핫스팟에서 야간(22~06) 지연 60분 정책이 반영됨
+- [ ] 민감 구역 마스킹 대상 셀이 지도 오버레이에 노출되지 않음
 
 ### 4.3 목록/상세
 - [ ] 산책 목록 로딩 정상
@@ -89,6 +92,7 @@
 - [ ] DDL/RLS/함수 변경사항 문서와 일치
 - [ ] `profiles.profile_message`, `pets.breed/age_years/gender` 컬럼 및 제약 확인
 - [ ] `area_reference_catalogs` + `area_references.catalog_id/display_order/is_featured` 구조 확인
+- [ ] `privacy_guard_policies/privacy_sensitive_geo_masks/privacy_guard_audit_logs` 구조 및 `rpc_get_nearby_hotspots` 확장 컬럼 확인
 
 ## 6. 배포 파이프라인 검증 시나리오
 ### 6.1 Workflow 정의/활성 상태

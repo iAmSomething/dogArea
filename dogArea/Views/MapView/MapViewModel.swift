@@ -1238,10 +1238,12 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     }
 
     private func fetchNearbyHotspots(center: CLLocationCoordinate2D) {
+        let userId = currentPresenceUserId()
         Task { [weak self] in
             guard let self else { return }
             do {
                 let hotspots = try await nearbyService.getHotspots(
+                    userId: userId,
                     centerLatitude: center.latitude,
                     centerLongitude: center.longitude,
                     radiusKm: 1.0
@@ -1886,16 +1888,21 @@ private struct NearbyPresenceService {
     }
 
     func getHotspots(
+        userId: String?,
         centerLatitude: Double,
         centerLongitude: Double,
         radiusKm: Double
     ) async throws -> [NearbyHotspotDTO] {
-        let data = try await post(payload: [
+        var payload: [String: Any] = [
             "action": "get_hotspots",
             "centerLat": centerLatitude,
             "centerLng": centerLongitude,
             "radiusKm": radiusKm
-        ])
+        ]
+        if let userId, userId.isEmpty == false {
+            payload["userId"] = userId
+        }
+        let data = try await post(payload: payload)
         let decoded = try JSONDecoder().decode(HotspotEnvelope.self, from: data)
         return decoded.hotspots.map {
             NearbyHotspotDTO(
