@@ -354,6 +354,9 @@ struct HomeView: View {
                         .foregroundStyle(Color.appTextDarkGray)
                 }
             }
+            if let difficulty = board.difficultySummary {
+                missionDifficultySummary(difficulty)
+            }
             if let extensionMessage = board.extensionMessage {
                 Text(extensionMessage)
                     .font(.appFont(for: .Light, size: 11))
@@ -396,6 +399,72 @@ struct HomeView: View {
                 .stroke(Color.appTextLightGray, lineWidth: 0.5)
         )
         .padding(.horizontal, 16)
+    }
+
+    private func missionDifficultySummary(_ summary: IndoorMissionDifficultySummary) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("\(summary.petName) 기준 난이도: \(summary.adjustmentDescription)")
+                .font(.appFont(for: .SemiBold, size: 12))
+            Text("연령 \(summary.ageBand.title) · 활동 \(summary.activityLevel.title) · 빈도 \(summary.walkFrequency.title)")
+                .font(.appFont(for: .Light, size: 11))
+                .foregroundStyle(Color.appTextDarkGray)
+            ForEach(summary.reasons.prefix(2), id: \.self) { reason in
+                Text("• \(reason)")
+                    .font(.appFont(for: .Light, size: 10))
+                    .foregroundStyle(Color.appTextDarkGray)
+            }
+            Text(summary.easyDayMessage)
+                .font(.appFont(for: .Light, size: 10))
+                .foregroundStyle(Color.appTextDarkGray)
+
+            if summary.easyDayState == .available {
+                Button("쉬운 날 모드 사용 (보상 -20%)") {
+                    viewModel.activateEasyDayMode()
+                }
+                .font(.appFont(for: .SemiBold, size: 11))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Color.appYellow)
+                .cornerRadius(8)
+            } else if summary.easyDayState == .active {
+                Text("오늘 쉬운 날 모드 적용됨")
+                    .font(.appFont(for: .SemiBold, size: 11))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.appYellowPale)
+                    .cornerRadius(8)
+            }
+
+            if summary.history.isEmpty == false {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("최근 난이도 히스토리")
+                        .font(.appFont(for: .SemiBold, size: 11))
+                    ForEach(Array(summary.history.prefix(3))) { history in
+                        Text(
+                            "\(history.dayKey) · \(multiplierDescription(history.multiplier))\(history.easyDayApplied ? " · 쉬운 날" : "")"
+                        )
+                        .font(.appFont(for: .Light, size: 10))
+                        .foregroundStyle(Color.appTextDarkGray)
+                    }
+                }
+                .padding(.top, 2)
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 7)
+        .background(Color.appYellowPale.opacity(0.45))
+        .cornerRadius(8)
+    }
+
+    private func multiplierDescription(_ multiplier: Double) -> String {
+        let deltaPercent = Int(((multiplier - 1.0) * 100).rounded())
+        if deltaPercent == 0 {
+            return "기본"
+        }
+        if deltaPercent > 0 {
+            return "+\(deltaPercent)%"
+        }
+        return "\(deltaPercent)%"
     }
 
     private func indoorMissionRow(mission: IndoorMissionCardModel) -> some View {

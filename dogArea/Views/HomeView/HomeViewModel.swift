@@ -32,6 +32,7 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     private var cancellables: Set<AnyCancellable> = []
     private var lastIndoorMissionExposureTrackKey: String = ""
     private var lastIndoorMissionExtensionTrackKey: String = ""
+    private var lastIndoorMissionDifficultyTrackKey: String = ""
     private let indoorMissionStore = IndoorMissionStore()
     private let metricTracker = AppMetricTracker.shared
 
@@ -249,7 +250,8 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     }
 
     func refreshIndoorMissions(now: Date = Date()) {
-        indoorMissionBoard = indoorMissionStore.buildBoard(now: now)
+        let missionContext = makeIndoorMissionPetContext(reference: now)
+        indoorMissionBoard = indoorMissionStore.buildBoard(now: now, context: missionContext)
         weatherFeedbackRemainingCount = indoorMissionStore.weatherFeedbackRemainingCount(now: now)
         if indoorMissionBoard.isIndoorReplacementActive {
             let exposureKey = "\(indoorMissionBoard.dayKey)|\(indoorMissionBoard.riskLevel.rawValue)"
@@ -267,40 +269,60 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
         }
 
         let extensionTrackKey = "\(indoorMissionBoard.dayKey)|\(indoorMissionBoard.extensionState.rawValue)"
-        guard extensionTrackKey != lastIndoorMissionExtensionTrackKey else { return }
-        lastIndoorMissionExtensionTrackKey = extensionTrackKey
+        if extensionTrackKey != lastIndoorMissionExtensionTrackKey {
+            lastIndoorMissionExtensionTrackKey = extensionTrackKey
 
-        switch indoorMissionBoard.extensionState {
-        case .active:
-            metricTracker.track(
-                .indoorMissionExtensionApplied,
-                userKey: userInfo?.id,
-                payload: [
-                    "dayKey": indoorMissionBoard.dayKey,
-                    "rewardScale": String(format: "%.2f", indoorMissionStore.extensionRewardScale)
-                ]
-            )
-        case .expired:
-            indoorMissionStatusMessage = indoorMissionBoard.extensionMessage
-            metricTracker.track(
-                .indoorMissionExtensionExpired,
-                userKey: userInfo?.id,
-                payload: [
-                    "dayKey": indoorMissionBoard.dayKey
-                ]
-            )
-        case .cooldown:
-            indoorMissionStatusMessage = indoorMissionBoard.extensionMessage
-            metricTracker.track(
-                .indoorMissionExtensionBlocked,
-                userKey: userInfo?.id,
-                payload: [
-                    "dayKey": indoorMissionBoard.dayKey,
-                    "reason": "consecutive_limit"
-                ]
-            )
-        case .consumed, .none:
-            break
+            switch indoorMissionBoard.extensionState {
+            case .active:
+                metricTracker.track(
+                    .indoorMissionExtensionApplied,
+                    userKey: userInfo?.id,
+                    payload: [
+                        "dayKey": indoorMissionBoard.dayKey,
+                        "rewardScale": String(format: "%.2f", indoorMissionStore.extensionRewardScale)
+                    ]
+                )
+            case .expired:
+                indoorMissionStatusMessage = indoorMissionBoard.extensionMessage
+                metricTracker.track(
+                    .indoorMissionExtensionExpired,
+                    userKey: userInfo?.id,
+                    payload: [
+                        "dayKey": indoorMissionBoard.dayKey
+                    ]
+                )
+            case .cooldown:
+                indoorMissionStatusMessage = indoorMissionBoard.extensionMessage
+                metricTracker.track(
+                    .indoorMissionExtensionBlocked,
+                    userKey: userInfo?.id,
+                    payload: [
+                        "dayKey": indoorMissionBoard.dayKey,
+                        "reason": "consecutive_limit"
+                    ]
+                )
+            case .consumed, .none:
+                break
+            }
+        }
+
+        if let difficulty = indoorMissionBoard.difficultySummary {
+            let difficultyKey = "\(indoorMissionBoard.dayKey)|\(difficulty.petId ?? "none")|\(String(format: "%.2f", difficulty.appliedMultiplier))|\(difficulty.easyDayState.rawValue)"
+            if difficultyKey != lastIndoorMissionDifficultyTrackKey {
+                lastIndoorMissionDifficultyTrackKey = difficultyKey
+                metricTracker.track(
+                    .indoorMissionDifficultyAdjusted,
+                    userKey: userInfo?.id,
+                    payload: [
+                        "petId": difficulty.petId ?? "",
+                        "multiplier": String(format: "%.2f", difficulty.appliedMultiplier),
+                        "easyDay": difficulty.easyDayState == .active ? "true" : "false",
+                        "ageBand": difficulty.ageBand.rawValue,
+                        "activityLevel": difficulty.activityLevel.rawValue,
+                        "walkFrequency": difficulty.walkFrequency.rawValue
+                    ]
+                )
+            }
         }
     }
 
@@ -418,6 +440,78 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
 
         indoorMissionStatusMessage = weatherFeedbackResultMessage
         refreshIndoorMissions(now: now)
+    }
+
+    func activateEasyDayMode(now: Date = Date()) {
+        guard let difficulty = indoorMissionBoard.difficultySummary else {
+            indoorMissionStatusMessage = "선택된 반려견 정보가 없어 쉬운 날 모드를 사용할 수 없어요."
+            metricTracker.track(
+                .indoorMissionEasyDayRejected,
+                userKey: userInfo?.id,
+                payload: [
+                    "reason": "no_pet_context"
+                ]
+            )
+            return
+        }
+
+        let outcome = indoorMissionStore.activateEasyDayMode(
+            petId: difficulty.petId,
+            now: now
+        )
+        switch outcome {
+        case .activated:
+            indoorMissionStatusMessage = "쉬운 날 모드를 적용했어요. 오늘 보상은 20% 감액돼요."
+            metricTracker.track(
+                .indoorMissionEasyDayActivated,
+                userKey: userInfo?.id,
+                payload: [
+                    "petId": difficulty.petId ?? "",
+                    "dayKey": indoorMissionBoard.dayKey,
+                    "rewardScale": "0.80"
+                ]
+            )
+            refreshIndoorMissions(now: now)
+        case .alreadyUsed:
+            indoorMissionStatusMessage = "쉬운 날 모드는 하루에 한 번만 사용할 수 있어요."
+            metricTracker.track(
+                .indoorMissionEasyDayRejected,
+                userKey: userInfo?.id,
+                payload: [
+                    "petId": difficulty.petId ?? "",
+                    "reason": "daily_limit"
+                ]
+            )
+        case .missingPet:
+            indoorMissionStatusMessage = "선택 반려견을 먼저 지정한 뒤 다시 시도해주세요."
+            metricTracker.track(
+                .indoorMissionEasyDayRejected,
+                userKey: userInfo?.id,
+                payload: [
+                    "reason": "missing_pet"
+                ]
+            )
+        }
+    }
+
+    private func makeIndoorMissionPetContext(reference: Date) -> IndoorMissionPetContext {
+        let fourteenDaysAgo = reference.addingTimeInterval(-14 * 24 * 3600)
+        let twentyEightDaysAgo = reference.addingTimeInterval(-28 * 24 * 3600)
+        let recentPolygons = polygonList.filter { Date(timeIntervalSince1970: $0.createdAt) >= fourteenDaysAgo }
+        let monthlyPolygons = polygonList.filter { Date(timeIntervalSince1970: $0.createdAt) >= twentyEightDaysAgo }
+        let totalRecentMinutes = recentPolygons.reduce(0.0) { partial, polygon in
+            partial + max(0, polygon.walkingTime) / 60.0
+        }
+        let recentDailyMinutes = totalRecentMinutes / 14.0
+        let averageWeeklyWalkCount = Double(monthlyPolygons.count) / 4.0
+
+        return .init(
+            petId: selectedPet?.petId,
+            petName: selectedPet?.petName ?? "강아지",
+            ageYears: selectedPet?.ageYears,
+            recentDailyMinutes: recentDailyMinutes,
+            averageWeeklyWalkCount: averageWeeklyWalkCount
+        )
     }
 
     private func currentCalendar() -> Calendar {
@@ -602,6 +696,93 @@ enum IndoorMissionCategory: String, CaseIterable {
     case trainingCheck
 }
 
+enum IndoorMissionPetAgeBand: String, Codable, Equatable {
+    case puppy
+    case adult
+    case senior
+    case unknown
+
+    var title: String {
+        switch self {
+        case .puppy: return "유년기"
+        case .adult: return "성견"
+        case .senior: return "노령기"
+        case .unknown: return "연령 미지정"
+        }
+    }
+}
+
+enum IndoorMissionActivityLevel: String, Codable, Equatable {
+    case low
+    case moderate
+    case high
+
+    var title: String {
+        switch self {
+        case .low: return "저활동"
+        case .moderate: return "보통 활동"
+        case .high: return "고활동"
+        }
+    }
+}
+
+enum IndoorMissionWalkFrequencyBand: String, Codable, Equatable {
+    case sparse
+    case steady
+    case frequent
+
+    var title: String {
+        switch self {
+        case .sparse: return "산책 빈도 낮음"
+        case .steady: return "산책 빈도 보통"
+        case .frequent: return "산책 빈도 높음"
+        }
+    }
+}
+
+enum IndoorMissionEasyDayState: String, Codable, Equatable {
+    case unavailable
+    case available
+    case active
+}
+
+struct IndoorMissionPetContext: Equatable {
+    let petId: String?
+    let petName: String
+    let ageYears: Int?
+    let recentDailyMinutes: Double
+    let averageWeeklyWalkCount: Double
+}
+
+struct IndoorMissionDifficultyHistoryEntry: Identifiable, Equatable {
+    var id: String {
+        "\(dayKey)|\(petId)"
+    }
+
+    let dayKey: String
+    let petId: String
+    let petName: String
+    let multiplier: Double
+    let ageBand: IndoorMissionPetAgeBand
+    let activityLevel: IndoorMissionActivityLevel
+    let walkFrequency: IndoorMissionWalkFrequencyBand
+    let easyDayApplied: Bool
+}
+
+struct IndoorMissionDifficultySummary: Equatable {
+    let petId: String?
+    let petName: String
+    let ageBand: IndoorMissionPetAgeBand
+    let activityLevel: IndoorMissionActivityLevel
+    let walkFrequency: IndoorMissionWalkFrequencyBand
+    let appliedMultiplier: Double
+    let adjustmentDescription: String
+    let reasons: [String]
+    let easyDayState: IndoorMissionEasyDayState
+    let easyDayMessage: String
+    let history: [IndoorMissionDifficultyHistoryEntry]
+}
+
 struct IndoorMissionTemplate: Identifiable, Equatable {
     let id: String
     let category: IndoorMissionCategory
@@ -662,13 +843,14 @@ struct IndoorMissionBoard: Equatable {
     let missions: [IndoorMissionCardModel]
     let extensionState: IndoorMissionExtensionState
     let extensionMessage: String?
+    let difficultySummary: IndoorMissionDifficultySummary?
 
     var isIndoorReplacementActive: Bool {
         riskLevel != .clear && missions.isEmpty == false
     }
 
     var shouldDisplayCard: Bool {
-        missions.isEmpty == false || extensionState.shouldDisplayCard
+        missions.isEmpty == false || extensionState.shouldDisplayCard || difficultySummary != nil
     }
 
     static let empty = IndoorMissionBoard(
@@ -676,7 +858,8 @@ struct IndoorMissionBoard: Equatable {
         dayKey: "",
         missions: [],
         extensionState: .none,
-        extensionMessage: nil
+        extensionMessage: nil,
+        difficultySummary: nil
     )
 
     func updated(_ mission: IndoorMissionCardModel) -> IndoorMissionBoard {
@@ -688,7 +871,8 @@ struct IndoorMissionBoard: Equatable {
             dayKey: dayKey,
             missions: replaced,
             extensionState: extensionState,
-            extensionMessage: extensionMessage
+            extensionMessage: extensionMessage,
+            difficultySummary: difficultySummary
         )
     }
 }
@@ -724,6 +908,25 @@ private final class IndoorMissionStore {
         }
     }
 
+    private struct IndoorMissionDifficultyLedgerEntry: Codable, Equatable {
+        let dayKey: String
+        let petId: String
+        let petName: String
+        let ageBand: IndoorMissionPetAgeBand
+        let activityLevel: IndoorMissionActivityLevel
+        let walkFrequency: IndoorMissionWalkFrequencyBand
+        let multiplier: Double
+        let reasons: [String]
+        let easyDayApplied: Bool
+        let updatedAt: TimeInterval
+    }
+
+    enum EasyDayActivationOutcome {
+        case activated
+        case alreadyUsed
+        case missingPet
+    }
+
     private enum DefaultsKey {
         static let weatherRiskOverride = "weather.risk.level.v1"
         static let actionCounts = "indoor.mission.actionCounts.v1"
@@ -732,10 +935,14 @@ private final class IndoorMissionStore {
         static let weatherFeedbackTimestamps = "weather.feedback.timestamps.v1"
         static let weatherFeedbackDailyAdjustment = "weather.feedback.dailyAdjustment.v1"
         static let extensionLedger = "indoor.mission.extensionLedger.v1"
+        static let easyDayUsage = "indoor.mission.easyDayUsage.v1"
+        static let difficultyLedger = "indoor.mission.difficultyLedger.v1"
     }
 
     let weeklyFeedbackLimit = 2
     let extensionRewardScale = 0.70
+    let easyDayRewardScale = 0.80
+    let maxDailyDifficultyDelta = 0.15
 
     private let calendar: Calendar = {
         var value = Calendar.autoupdatingCurrent
@@ -792,8 +999,18 @@ private final class IndoorMissionStore {
     ]
 
     func buildBoard(now: Date) -> IndoorMissionBoard {
+        buildBoard(now: now, context: nil)
+    }
+
+    func buildBoard(now: Date, context: IndoorMissionPetContext?) -> IndoorMissionBoard {
         let riskLevel = resolveRiskLevel(now: now)
         let dayKey = dayStamp(for: now)
+        let difficultySummary = resolveDifficultySummary(
+            context: context,
+            dayKey: dayKey,
+            now: now
+        )
+        let easyDayRewardMultiplier = difficultySummary?.easyDayState == .active ? easyDayRewardScale : 1.0
         let selectedTemplates: [IndoorMissionTemplate]
         if riskLevel.replacementMissionCount > 0 {
             selectedTemplates = selectedTemplatesForToday(riskLevel: riskLevel, dayKey: dayKey)
@@ -801,21 +1018,35 @@ private final class IndoorMissionStore {
             selectedTemplates = []
         }
         let missions = selectedTemplates.map { template in
-            makeCardModel(template: template, riskLevel: riskLevel, dayKey: dayKey)
+            makeCardModel(
+                template: template,
+                riskLevel: riskLevel,
+                dayKey: dayKey,
+                difficultyMultiplier: difficultySummary?.appliedMultiplier ?? 1.0,
+                rewardScale: easyDayRewardMultiplier
+            )
         }
         let extensionEntry = resolveExtensionEntry(dayKey: dayKey)
         var combinedMissions = missions
-        if let extensionMission = makeExtensionCardModel(entry: extensionEntry, riskLevel: riskLevel) {
+        if let extensionMission = makeExtensionCardModel(
+            entry: extensionEntry,
+            riskLevel: riskLevel,
+            difficultyMultiplier: difficultySummary?.appliedMultiplier ?? 1.0,
+            easyDayRewardScale: easyDayRewardMultiplier
+        ) {
             combinedMissions.insert(extensionMission, at: 0)
         }
 
-        if combinedMissions.isEmpty, extensionEntry.state == .none {
+        if combinedMissions.isEmpty,
+           extensionEntry.state == .none,
+           difficultySummary == nil {
             return .init(
                 riskLevel: riskLevel,
                 dayKey: dayKey,
                 missions: [],
                 extensionState: .none,
-                extensionMessage: nil
+                extensionMessage: nil,
+                difficultySummary: nil
             )
         }
 
@@ -824,8 +1055,22 @@ private final class IndoorMissionStore {
             dayKey: dayKey,
             missions: combinedMissions,
             extensionState: extensionEntry.state,
-            extensionMessage: extensionMessage(for: extensionEntry)
+            extensionMessage: extensionMessage(for: extensionEntry),
+            difficultySummary: difficultySummary
         )
+    }
+
+    func activateEasyDayMode(petId: String?, now: Date = Date()) -> EasyDayActivationOutcome {
+        guard let petId, petId.isEmpty == false else { return .missingPet }
+        let dayKey = dayStamp(for: now)
+        let key = easyDayKey(dayKey: dayKey, petId: petId)
+        var map = easyDayUsageMap()
+        if map[key] != nil {
+            return .alreadyUsed
+        }
+        map[key] = now.timeIntervalSince1970
+        persistEasyDayUsageMap(map, currentDayKey: dayKey)
+        return .activated
     }
 
     func incrementActionCount(missionId: String, dayKey: String) {
@@ -954,7 +1199,9 @@ private final class IndoorMissionStore {
         trackingMissionId: String? = nil,
         isExtension: Bool = false,
         extensionSourceDayKey: String? = nil,
+        difficultyMultiplier: Double = 1.0,
         rewardScale: Double = 1.0,
+        extensionScale: Double = 1.0,
         streakEligibleOverride: Bool? = nil
     ) -> IndoorMissionCardModel {
         let trackingId = trackingMissionId ?? template.id
@@ -963,24 +1210,28 @@ private final class IndoorMissionStore {
         let completed = UserDefaults.standard.dictionary(forKey: DefaultsKey.completionFlags) as? [String: TimeInterval] ?? [:]
         let actionCount = counts[key] ?? 0
         let isCompleted = completed[key] != nil
-        let reward = Int((Double(template.baseRewardPoint) * riskLevel.rewardScale * rewardScale).rounded())
+        let adjustedMinimumAction = max(
+            1,
+            Int((Double(template.minimumActionCount) * difficultyMultiplier).rounded())
+        )
+        let reward = Int((Double(template.baseRewardPoint) * riskLevel.rewardScale * rewardScale * extensionScale).rounded())
 
         return .init(
             id: displayId ?? template.id,
             category: template.category,
             title: template.title,
             description: template.description,
-            minimumActionCount: template.minimumActionCount,
+            minimumActionCount: adjustedMinimumAction,
             rewardPoint: max(1, reward),
             streakEligible: streakEligibleOverride ?? template.streakEligible,
             trackingMissionId: trackingId,
             dayKey: dayKey,
             isExtension: isExtension,
             extensionSourceDayKey: extensionSourceDayKey,
-            extensionRewardScale: rewardScale,
+            extensionRewardScale: extensionScale,
             progress: .init(
                 actionCount: actionCount,
-                minimumActionCount: template.minimumActionCount,
+                minimumActionCount: adjustedMinimumAction,
                 isCompleted: isCompleted
             )
         )
@@ -988,7 +1239,9 @@ private final class IndoorMissionStore {
 
     private func makeExtensionCardModel(
         entry: IndoorMissionExtensionEntry,
-        riskLevel: IndoorWeatherRiskLevel
+        riskLevel: IndoorWeatherRiskLevel,
+        difficultyMultiplier: Double,
+        easyDayRewardScale: Double
     ) -> IndoorMissionCardModel? {
         guard entry.state == .active || entry.state == .consumed else { return nil }
         guard let sourceDayKey = entry.sourceDayKey,
@@ -1006,7 +1259,9 @@ private final class IndoorMissionStore {
             trackingMissionId: missionId,
             isExtension: true,
             extensionSourceDayKey: sourceDayKey,
-            rewardScale: entry.rewardScale,
+            difficultyMultiplier: difficultyMultiplier,
+            rewardScale: easyDayRewardScale,
+            extensionScale: entry.rewardScale,
             streakEligibleOverride: false
         )
     }
@@ -1131,6 +1386,240 @@ private final class IndoorMissionStore {
         let pruned = ledger.filter { keysToKeep.contains($0.key) }
         guard let encoded = try? JSONEncoder().encode(pruned) else { return }
         UserDefaults.standard.set(encoded, forKey: DefaultsKey.extensionLedger)
+    }
+
+    private func resolveDifficultySummary(
+        context: IndoorMissionPetContext?,
+        dayKey: String,
+        now: Date
+    ) -> IndoorMissionDifficultySummary? {
+        guard let context,
+              let petId = context.petId,
+              petId.isEmpty == false else {
+            return nil
+        }
+
+        let ageBand = petAgeBand(for: context.ageYears)
+        let activityLevel = activityLevel(for: context.recentDailyMinutes)
+        let walkFrequency = walkFrequencyBand(for: context.averageWeeklyWalkCount)
+
+        var multiplier = 1.0
+        var reasons: [String] = []
+
+        switch ageBand {
+        case .puppy:
+            multiplier -= 0.08
+            reasons.append("유년기 반려견이라 목표를 소폭 완화했어요.")
+        case .senior:
+            multiplier -= 0.12
+            reasons.append("노령기 반려견 컨디션을 고려해 목표를 완화했어요.")
+        case .adult, .unknown:
+            break
+        }
+
+        switch activityLevel {
+        case .low:
+            multiplier -= 0.12
+            reasons.append("최근 활동량이 낮아 완료 경험 안정화를 위해 목표를 낮췄어요.")
+        case .high:
+            multiplier += 0.10
+            reasons.append("최근 활동량이 높아 목표를 조금 높였어요.")
+        case .moderate:
+            break
+        }
+
+        switch walkFrequency {
+        case .sparse:
+            multiplier -= 0.08
+            reasons.append("최근 산책 빈도가 낮아 목표를 완화했어요.")
+        case .frequent:
+            multiplier += 0.08
+            reasons.append("최근 산책 빈도가 높아 목표를 상향했어요.")
+        case .steady:
+            break
+        }
+
+        multiplier = min(max(0.75, multiplier), 1.25)
+        if let previous = previousDifficultyMultiplier(petId: petId, beforeDayKey: dayKey) {
+            let lowerBound = previous - maxDailyDifficultyDelta
+            let upperBound = previous + maxDailyDifficultyDelta
+            let clamped = min(max(lowerBound, multiplier), upperBound)
+            if abs(clamped - multiplier) > 0.001 {
+                reasons.append("급격한 변동을 막기 위해 일일 변동폭 제한을 적용했어요.")
+            }
+            multiplier = clamped
+        }
+        multiplier = min(max(0.75, multiplier), 1.25)
+
+        let easyDayApplied = isEasyDayActive(dayKey: dayKey, petId: petId)
+        upsertDifficultyLedgerEntry(
+            dayKey: dayKey,
+            petId: petId,
+            petName: context.petName,
+            ageBand: ageBand,
+            activityLevel: activityLevel,
+            walkFrequency: walkFrequency,
+            multiplier: multiplier,
+            reasons: reasons,
+            easyDayApplied: easyDayApplied,
+            now: now
+        )
+
+        let adjustmentPercent = Int(((multiplier - 1.0) * 100).rounded())
+        let adjustmentDescription: String
+        if adjustmentPercent == 0 {
+            adjustmentDescription = "기본 난이도 유지"
+        } else if adjustmentPercent > 0 {
+            adjustmentDescription = "기본 대비 +\(adjustmentPercent)%"
+        } else {
+            adjustmentDescription = "기본 대비 \(adjustmentPercent)%"
+        }
+
+        let easyDayState: IndoorMissionEasyDayState = easyDayApplied ? .active : .available
+        let easyDayMessage: String = easyDayApplied
+            ? "오늘 쉬운 날 모드가 적용되어 보상이 20% 감액돼요."
+            : "쉬운 날 모드(일 1회) 사용 시 오늘 목표를 더 쉽게 진행하고 보상은 20% 감액돼요."
+
+        return .init(
+            petId: petId,
+            petName: context.petName,
+            ageBand: ageBand,
+            activityLevel: activityLevel,
+            walkFrequency: walkFrequency,
+            appliedMultiplier: multiplier,
+            adjustmentDescription: adjustmentDescription,
+            reasons: reasons,
+            easyDayState: easyDayState,
+            easyDayMessage: easyDayMessage,
+            history: difficultyHistory(for: petId)
+        )
+    }
+
+    private func petAgeBand(for ageYears: Int?) -> IndoorMissionPetAgeBand {
+        guard let ageYears else { return .unknown }
+        if ageYears <= 1 { return .puppy }
+        if ageYears >= 10 { return .senior }
+        return .adult
+    }
+
+    private func activityLevel(for recentDailyMinutes: Double) -> IndoorMissionActivityLevel {
+        if recentDailyMinutes < 20 { return .low }
+        if recentDailyMinutes > 65 { return .high }
+        return .moderate
+    }
+
+    private func walkFrequencyBand(for averageWeeklyWalkCount: Double) -> IndoorMissionWalkFrequencyBand {
+        if averageWeeklyWalkCount < 3 { return .sparse }
+        if averageWeeklyWalkCount > 10 { return .frequent }
+        return .steady
+    }
+
+    private func difficultyLedger() -> [String: IndoorMissionDifficultyLedgerEntry] {
+        guard let data = UserDefaults.standard.data(forKey: DefaultsKey.difficultyLedger) else { return [:] }
+        do {
+            return try JSONDecoder().decode([String: IndoorMissionDifficultyLedgerEntry].self, from: data)
+        } catch {
+            return [:]
+        }
+    }
+
+    private func persistDifficultyLedger(_ ledger: [String: IndoorMissionDifficultyLedgerEntry], dayKey: String) {
+        let keysToKeep = Set(previousDayStamps(from: dayKey, count: 42) + [dayKey])
+        let filtered = ledger.filter { keysToKeep.contains($0.value.dayKey) }
+        guard let encoded = try? JSONEncoder().encode(filtered) else { return }
+        UserDefaults.standard.set(encoded, forKey: DefaultsKey.difficultyLedger)
+    }
+
+    private func upsertDifficultyLedgerEntry(
+        dayKey: String,
+        petId: String,
+        petName: String,
+        ageBand: IndoorMissionPetAgeBand,
+        activityLevel: IndoorMissionActivityLevel,
+        walkFrequency: IndoorMissionWalkFrequencyBand,
+        multiplier: Double,
+        reasons: [String],
+        easyDayApplied: Bool,
+        now: Date
+    ) {
+        let key = difficultyKey(dayKey: dayKey, petId: petId)
+        var ledger = difficultyLedger()
+        ledger[key] = .init(
+            dayKey: dayKey,
+            petId: petId,
+            petName: petName,
+            ageBand: ageBand,
+            activityLevel: activityLevel,
+            walkFrequency: walkFrequency,
+            multiplier: multiplier,
+            reasons: reasons,
+            easyDayApplied: easyDayApplied,
+            updatedAt: now.timeIntervalSince1970
+        )
+        persistDifficultyLedger(ledger, dayKey: dayKey)
+    }
+
+    private func previousDifficultyMultiplier(petId: String, beforeDayKey dayKey: String) -> Double? {
+        let ledger = difficultyLedger()
+        let previousKeys = previousDayStamps(from: dayKey, count: 7)
+        for key in previousKeys {
+            let lookup = difficultyKey(dayKey: key, petId: petId)
+            if let entry = ledger[lookup] {
+                return entry.multiplier
+            }
+        }
+        return nil
+    }
+
+    private func difficultyHistory(for petId: String) -> [IndoorMissionDifficultyHistoryEntry] {
+        let entries = difficultyLedger().values
+            .filter { $0.petId == petId }
+            .sorted { lhs, rhs in
+                if lhs.dayKey == rhs.dayKey {
+                    return lhs.updatedAt > rhs.updatedAt
+                }
+                return lhs.dayKey > rhs.dayKey
+            }
+            .prefix(5)
+
+        return entries.map { entry in
+            .init(
+                dayKey: entry.dayKey,
+                petId: entry.petId,
+                petName: entry.petName,
+                multiplier: entry.multiplier,
+                ageBand: entry.ageBand,
+                activityLevel: entry.activityLevel,
+                walkFrequency: entry.walkFrequency,
+                easyDayApplied: entry.easyDayApplied
+            )
+        }
+    }
+
+    private func easyDayUsageMap() -> [String: TimeInterval] {
+        UserDefaults.standard.dictionary(forKey: DefaultsKey.easyDayUsage) as? [String: TimeInterval] ?? [:]
+    }
+
+    private func persistEasyDayUsageMap(_ map: [String: TimeInterval], currentDayKey: String) {
+        let keysToKeep = Set(previousDayStamps(from: currentDayKey, count: 14) + [currentDayKey])
+        let filtered = map.filter { key, _ in
+            let dayKey = key.components(separatedBy: "|").first ?? ""
+            return keysToKeep.contains(dayKey)
+        }
+        UserDefaults.standard.set(filtered, forKey: DefaultsKey.easyDayUsage)
+    }
+
+    private func easyDayKey(dayKey: String, petId: String) -> String {
+        "\(dayKey)|\(petId)"
+    }
+
+    private func isEasyDayActive(dayKey: String, petId: String) -> Bool {
+        let key = easyDayKey(dayKey: dayKey, petId: petId)
+        return easyDayUsageMap()[key] != nil
+    }
+
+    private func difficultyKey(dayKey: String, petId: String) -> String {
+        "\(dayKey)|\(petId)"
     }
 
     private func resolveBaseRiskLevel() -> IndoorWeatherRiskLevel {
