@@ -29,6 +29,7 @@ swift scripts/release_regression_checklist_unit_check.swift
 swift scripts/fault_injection_matrix_unit_check.swift
 swift scripts/supabase_ops_hardening_unit_check.swift
 swift scripts/rival_privacy_hard_guard_unit_check.swift
+swift scripts/season_anti_farming_unit_check.swift
 swift scripts/project_stability_unit_check.swift
 
 if [[ "${DOGAREA_SKIP_BUILD:-0}" == "1" ]]; then

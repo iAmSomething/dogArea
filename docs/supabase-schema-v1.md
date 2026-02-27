@@ -15,6 +15,7 @@
 - 사용자/다견/산책/좌표/명소비교 구조
 - 캐리커처 비동기 파이프라인용 데이터 구조
 - 근처 사용자 익명 핫스팟용 데이터 구조
+- 시즌 안티 농사 점수 규칙용 데이터 구조
 - RLS 정책 원칙
 - Storage 경로 규칙
 - 마이그레이션/롤백 절차
@@ -197,6 +198,16 @@ erDiagram
   - 사용자 1행 upsert 패턴
   - TTL 10분 기준으로 집계 시 제외
 
+### 4.6 시즌 안티 농사 점수
+- `season_scoring_policies`
+  - 동일 타일 반복 억제/신규 경로 보너스/차단 임계값을 서버 파라미터로 관리
+- `season_tile_score_events`
+  - 포인트 단위 점수 원장(`base_score`, `novelty_bonus`, `suppression_reason`)
+- `season_score_audit_logs`
+  - 반복 파밍 의심/차단 판정 근거 로그
+- `rpc_score_walk_session_anti_farming`
+  - 세션 점수 계산 결과 + UX 설명(`explain.ui_reason`) 반환
+
 ## 5. RLS 정책 원칙
 - 사용자 데이터는 `auth.uid()` 소유 범위로만 접근
 - `area_references`는 읽기 공개(`anon`, `authenticated`)
@@ -220,6 +231,11 @@ erDiagram
 - `nearby_presence`
   - 소유자 upsert
   - 익명 조회는 RPC/View 통해 집계 결과만 반환
+- `season_scoring_policies`
+  - `select`: 공개(읽기)
+- `season_tile_score_events`, `season_score_audit_logs`
+  - `select`: 소유자
+  - write: 서비스 경로(RPC/service role)
 
 ## 6. Storage 규칙
 버킷:
