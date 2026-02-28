@@ -18,10 +18,29 @@ struct AuthMiddleware: ClientMiddleware {
         return try await next(request,body,baseURL)
     }
 }
+enum OpenAIClientError: LocalizedError {
+    case missingImageURL
+    case http(statusCode: Int)
+
+    var errorDescription: String? {
+        switch self {
+        case .missingImageURL:
+            return "Missing image URL in response"
+        case .http(let statusCode):
+            return "\(statusCode) : Failed to load image"
+        }
+    }
+}
 public struct OpenAIClient{
     let client: Client
     public init(apikey: String) {
-        self.client = Client(serverURL: try! Servers.server1(),
+        let serverURL: URL
+        do {
+            serverURL = try Servers.server1()
+        } catch {
+            serverURL = URL(string: "https://api.openai.com/v1") ?? URL(fileURLWithPath: "/")
+        }
+        self.client = Client(serverURL: serverURL,
                              transport: URLSessionTransport(),
                              middlewares: [AuthMiddleware(apiKey: apikey)])
         
@@ -39,17 +58,17 @@ public struct OpenAIClient{
             
         case .ok(let response):
             switch response.body {
-            case .json(let imageResponse) where imageResponse.data.first?.url != nil:
-                return URL(string: imageResponse.data.first!.url!)!
-                
-            default :
-                throw "Unknown response"
+            case .json(let imageResponse):
+                guard
+                    let urlString = imageResponse.data.first?.url,
+                    let generatedURL = URL(string: urlString)
+                else {
+                    throw OpenAIClientError.missingImageURL
+                }
+                return generatedURL
             }
         case .undocumented(statusCode: let statusCode, _):
-            throw "\(statusCode) : Failed to load image"
+            throw OpenAIClientError.http(statusCode: statusCode)
         }
     }
-}
-extension String: LocalizedError {
-    public var errorDescription: String? { self }
 }

@@ -60,6 +60,24 @@ struct ContentView: View {
         }
         .padding()
     }
+    private func formatTime(_ time: TimeInterval) -> String {
+        let hours = Int(time) / 3600
+        let minutes = (Int(time) % 3600) / 60
+        let seconds = Int(time) % 60
+        if hours == 0 {
+            return String(format: "%02d:%02d", minutes, seconds)
+        }
+        return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
+    }
+    private func formatArea(_ area: Double) -> String {
+        if area > 100000.0 {
+            return String(format: "%.2f k㎡", area / 1000000)
+        }
+        if area > 10000.0 {
+            return String(format: "%.2f 만㎡", area / 10000)
+        }
+        return String(format: "%.2f ㎡", area)
+    }
 }
 
 #Preview {

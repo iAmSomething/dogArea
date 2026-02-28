@@ -89,6 +89,23 @@ struct NotificationCenterView: View {
                    }
                    Spacer()
                }
+               if viewModel.pets.count > 1 {
+                   HStack {
+                       Text("현재 함께 사는 강아지")
+                           .font(.appFont(for: .Light, size: 12))
+                           .foregroundStyle(Color.appTextDarkGray)
+                       Spacer()
+                   }
+                   Picker("대표 강아지", selection: Binding<UUID>(
+                    get: { viewModel.selectedPetId ?? viewModel.pets.first?.id ?? UUID() },
+                    set: { viewModel.updateSelectedPet($0) }
+                   )) {
+                       ForEach(viewModel.pets, id: \.id) { pet in
+                           Text(pet.petName).tag(pet.id)
+                       }
+                   }
+                   .pickerStyle(.menu)
+               }
                Spacer()
            }
            .onAppear {

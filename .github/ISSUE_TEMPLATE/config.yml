@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Architecture Discussion
+    url: https://github.com/iAmSomething/dogArea/discussions
+    about: 구조/설계 논의는 Discussion 사용
