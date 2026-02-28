@@ -170,7 +170,8 @@ final class SettingViewModel: ObservableObject, CoreDataProtocol {
         )
     }
     func uploadImg(img: UIImage, isPet:Bool = false){
-        Task{ @MainActor in
+        Task { @MainActor [weak self] in
+            guard let self else { return }
             do {
                 if isPet {
                     petURL = try await uploadImage(img: img, isPet: isPet)

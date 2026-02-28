@@ -104,7 +104,13 @@ struct UserInfo: TimeCheckable {
     let profile: String?
     let profileMessage: String?
     let pet: [PetInfo]
+    var selectedPetId: UUID?
     var createdAt: TimeInterval
+    var selectedPet: PetInfo? {
+        guard !pet.isEmpty else { return nil }
+        guard let selectedPetId = selectedPetId else { return pet.first }
+        return pet.first(where: { $0.id == selectedPetId }) ?? pet.first
+    }
 }
 
 enum PetGender: String, Codable, CaseIterable {
@@ -230,8 +236,7 @@ extension UserDefaults {
     }
     
     public func setStructArray<T: Codable>(_ value: [T], forKey defaultName: String){
-        let data = value.map { try? JSONEncoder().encode($0) }
-        
+        let data = value.compactMap { try? JSONEncoder().encode($0) }
         set(data, forKey: defaultName)
     }
     

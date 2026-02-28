@@ -74,6 +74,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
 
     private let locationManager = CLLocationManager()
     private var timer: Timer? = nil
+    private let watchSession = WCSession.isSupported() ? WCSession.default : nil
     @Published var time: TimeInterval = 0.0
     @Published var startTime = Date()
     @Published var location: CLLocation?
@@ -86,6 +87,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
             if self.isWalking {
                 self.showOnlyOne = true
             }
+            self.publishWatchState()
         }
     }
     @Published var centerLocations: [Cluster] = []
@@ -1428,6 +1430,35 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
             }
         }
     }
+    private func publishWatchState() {
+        guard let watchSession else { return }
+        let context: [String: Any] = [
+            "isWalking": isWalking,
+            "time": time,
+            "area": calculateArea()
+        ]
+        try? watchSession.updateApplicationContext(context)
+    }
+    private func applyWatchAction(_ action: String) {
+        switch action {
+        case "startWalk":
+            if !isWalking {
+                endWalk()
+            }
+        case "addPoint":
+            if isWalking {
+                addLocation()
+                makePolygon()
+            }
+        case "endWalk":
+            if isWalking {
+                timerStop()
+                endWalk()
+            }
+        default:
+            break
+        }
+    }
 
     private func fetchNearbyHotspots(center: CLLocationCoordinate2D) {
         let userId = currentPresenceUserId()
@@ -1840,6 +1871,38 @@ extension MapViewModel {
         }
         return str
     }
+}
+//MARK: - WatchConnectivity
+extension MapViewModel {
+    func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
+        guard let action = message["action"] as? String else { return }
+        DispatchQueue.main.async { [weak self] in
+            self?.applyWatchAction(action)
+        }
+    }
+    func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String : Any]) {
+        guard let action = applicationContext["action"] as? String else { return }
+        DispatchQueue.main.async { [weak self] in
+            self?.applyWatchAction(action)
+        }
+    }
+    func sessionDidBecomeInactive(_ session: WCSession) {}
+    func sessionDidDeactivate(_ session: WCSession) {
+        session.activate()
+    }
+    func sessionWatchStateDidChange(_ session: WCSession) {
+        publishWatchState()
+    }
+    func sessionReachabilityDidChange(_ session: WCSession) {
+        publishWatchState()
+    }
+    #if os(iOS)
+    func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
+        if activationState == .activated {
+            publishWatchState()
+        }
+    }
+    #endif
 }
 //MARK: - CLLocation 관련 로직
 extension MapViewModel {
