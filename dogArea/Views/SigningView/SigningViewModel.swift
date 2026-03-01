@@ -18,7 +18,7 @@ class SigningViewModel: ObservableObject {
     @Published var petGender: PetGender = .unknown
     @Published var userProfile: UIImage? = nil
     @Published var petProfile: UIImage? = nil
-    var appleInfo: AppleUserInfo
+    var appleInfo: AuthUserInfo
     private var userId:String = ""
     private var petURL: String? = nil
     private var profileURL: String? = nil
@@ -28,7 +28,7 @@ class SigningViewModel: ObservableObject {
     private let featureFlags = FeatureFlagStore.shared
     private let metricTracker = AppMetricTracker.shared
     init(
-        info: AppleUserInfo,
+        info: AuthUserInfo,
         profileRepository: ProfileRepository = DefaultProfileRepository.shared,
         imageRepository: ProfileImageRepository = SupabaseProfileImageRepository.shared
     ) {

@@ -12,6 +12,9 @@ import SwiftUI
 struct SignInView: View {
     @Environment(\.colorScheme) var scheme
 
+    /// Apple Developer 서명 준비 전까지 Apple 로그인 노출을 차단합니다.
+    private let isAppleSignInTemporarilyDisabled: Bool
+
     @State private var userId: AuthUserInfo? = nil
     @State private var path = NavigationPath()
     @State private var email: String = ""
@@ -31,11 +34,13 @@ struct SignInView: View {
         authService: AppleCredentialAuthServiceProtocol = DeviceAppleCredentialAuthService.shared,
         profileRepository: ProfileRepository = DefaultProfileRepository.shared,
         authSessionStore: AuthSessionStoreProtocol = DefaultAuthSessionStore.shared,
+        isAppleSignInTemporarilyDisabled: Bool = true,
         authUseCase: AuthUseCaseProtocol? = nil
     ) {
         self.allowDismiss = allowDismiss
         self.onAuthenticated = onAuthenticated
         self.onDismiss = onDismiss
+        self.isAppleSignInTemporarilyDisabled = isAppleSignInTemporarilyDisabled
         self.authUseCase = authUseCase ?? DefaultAuthUseCase(
             authRepository: DefaultAuthRepository(credentialService: authService),
             profileRepository: profileRepository,
@@ -48,20 +53,27 @@ struct SignInView: View {
             VStack(spacing: 14) {
                 TitleTextView(title: "로그인/회원가입", subTitle: "계정 정보가 필요해요!")
 
-                AppleSigninButton(
-                    authUseCase: authUseCase,
-                    onOutcome: applyAuthOutcome,
-                    onError: { authErrorMessage = $0 }
-                )
+                if isAppleSignInTemporarilyDisabled == false {
+                    AppleSigninButton(
+                        authUseCase: authUseCase,
+                        onOutcome: applyAuthOutcome,
+                        onError: { authErrorMessage = $0 }
+                    )
 
-                HStack {
-                    Rectangle().fill(Color.appTextLightGray.opacity(0.5)).frame(height: 0.7)
-                    Text("또는 이메일")
-                        .font(.appFont(for: .Light, size: 12))
+                    HStack {
+                        Rectangle().fill(Color.appTextLightGray.opacity(0.5)).frame(height: 0.7)
+                        Text("또는 이메일")
+                            .font(.appFont(for: .Light, size: 12))
+                            .foregroundStyle(Color.appTextDarkGray)
+                        Rectangle().fill(Color.appTextLightGray.opacity(0.5)).frame(height: 0.7)
+                    }
+                    .padding(.horizontal, 20)
+                } else {
+                    Text("Apple 로그인은 준비 중입니다. 현재 이메일 로그인/회원가입만 사용할 수 있어요.")
+                        .font(.appFont(for: .Regular, size: 12))
                         .foregroundStyle(Color.appTextDarkGray)
-                    Rectangle().fill(Color.appTextLightGray.opacity(0.5)).frame(height: 0.7)
+                        .padding(.horizontal, 20)
                 }
-                .padding(.horizontal, 20)
 
                 VStack(spacing: 8) {
                     TextField("이메일", text: $email)
