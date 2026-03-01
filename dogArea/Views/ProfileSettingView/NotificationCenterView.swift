@@ -178,6 +178,7 @@ struct ProfileFieldEditSheet: View {
     @State private var ageYearsText: String
     @State private var gender: PetGender
     @State private var errorMessage: String? = nil
+    @State private var caricatureMessage: String? = nil
 
     init(viewModel: SettingViewModel, onSaved: @escaping (String) -> Void) {
         self.viewModel = viewModel
@@ -202,6 +203,28 @@ struct ProfileFieldEditSheet: View {
                         ForEach(PetGender.allCases, id: \.rawValue) { item in
                             Text(item.title).tag(item)
                         }
+                    }
+                }
+                Section("반려견 캐리커처") {
+                    Text("현재 상태: \(viewModel.selectedPet?.caricatureStatus?.rawValue ?? "none")")
+                        .font(.appFont(for: .Light, size: 11))
+                        .foregroundStyle(Color.appTextDarkGray)
+
+                    Button(viewModel.isCaricatureGenerating ? "생성 중..." : "캐리커처 생성/재생성") {
+                        caricatureMessage = nil
+                        Task {
+                            let message = await viewModel.regenerateSelectedPetCaricature()
+                            await MainActor.run {
+                                caricatureMessage = message
+                            }
+                        }
+                    }
+                    .disabled(viewModel.isCaricatureGenerating)
+
+                    if let caricatureMessage {
+                        Text(caricatureMessage)
+                            .font(.appFont(for: .Regular, size: 12))
+                            .foregroundStyle(Color.appTextDarkGray)
                     }
                 }
                 if let errorMessage {

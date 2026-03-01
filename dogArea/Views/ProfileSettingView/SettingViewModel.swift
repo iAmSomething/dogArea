@@ -37,8 +37,12 @@ final class SettingViewModel: ObservableObject {
     @Published var selectedPetId: String = ""
     @Published var selectedPet: PetInfo? = nil
     @Published var seasonProfileSummary: SeasonProfileSummary? = nil
+    @Published var isCaricatureGenerating: Bool = false
     private let profileRepository: ProfileRepository
     private let walkRepository: WalkRepositoryProtocol
+    private let featureFlags = FeatureFlagStore.shared
+    private let metricTracker = AppMetricTracker.shared
+    private let caricatureClient = CaricatureEdgeClient()
     private var cancellables: Set<AnyCancellable> = []
 
     var pets: [PetInfo] {
@@ -121,6 +125,67 @@ final class SettingViewModel: ObservableObject {
         }
         reloadUserInfo()
         return .success(())
+    }
+
+    /// 프로필 편집 화면에서 선택된 반려견의 캐리커처를 생성/재생성합니다.
+    @MainActor
+    func regenerateSelectedPetCaricature() async -> String {
+        guard featureFlags.isEnabled(.caricatureAsyncV1) else {
+            return "캐리커처 기능이 아직 비활성화되어 있어요."
+        }
+        guard AppFeatureGate.isAllowed(.aiGeneration, session: AppFeatureGate.currentSession()) else {
+            return "회원 전용 기능입니다. 로그인 후 다시 시도해주세요."
+        }
+        guard let currentUser = profileRepository.fetchUserInfo(),
+              let targetPet = profileRepository.selectedPet(from: currentUser) else {
+            return "반려견 정보를 찾을 수 없어 캐리커처를 생성할 수 없습니다."
+        }
+        guard let sourceImageURL = targetPet.petProfile ?? targetPet.caricatureURL,
+              sourceImageURL.isEmpty == false else {
+            return "선택된 반려견 사진이 없어 캐리커처를 생성할 수 없습니다."
+        }
+
+        isCaricatureGenerating = true
+        UserdefaultSetting.shared.updateFirstPetCaricature(status: .processing)
+        reloadUserInfo()
+        defer { isCaricatureGenerating = false }
+
+        do {
+            let response = try await caricatureClient.requestCaricature(
+                petId: targetPet.petId,
+                userId: currentUser.id,
+                sourceImageURL: sourceImageURL,
+                requestId: UUID().uuidString.lowercased()
+            )
+            guard let caricatureURL = response.caricatureURL,
+                  caricatureURL.isEmpty == false else {
+                throw CaricatureEdgeClient.RequestError.invalidResponse
+            }
+            UserdefaultSetting.shared.updateFirstPetCaricature(
+                status: .ready,
+                caricatureURL: caricatureURL,
+                provider: response.provider
+            )
+            reloadUserInfo()
+            metricTracker.track(
+                .caricatureSuccess,
+                userKey: currentUser.id,
+                featureKey: .caricatureAsyncV1,
+                payload: ["provider": response.provider ?? "unknown"]
+            )
+            return "캐리커처 생성이 완료되어 프로필에 반영됐어요."
+        } catch {
+            let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            UserdefaultSetting.shared.updateFirstPetCaricature(status: .failed)
+            reloadUserInfo()
+            metricTracker.track(
+                .caricatureFailed,
+                userKey: currentUser.id,
+                featureKey: .caricatureAsyncV1,
+                payload: ["error": message]
+            )
+            return "캐리커처 생성에 실패했습니다: \(message)"
+        }
     }
 
     private func normalizeOptionalText(_ value: String) -> String? {
