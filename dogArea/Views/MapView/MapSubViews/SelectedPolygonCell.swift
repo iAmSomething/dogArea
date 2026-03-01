@@ -24,7 +24,7 @@ struct SelectedPolygonCell: View {
               Spacer()
             }
           }.frame(maxWidth: .infinity)
-            ThumnailImageView(image: walkData.image)
+            ThumbnailImageView(image: walkData.image)
         }.frame(height: 80)
       }
 }
