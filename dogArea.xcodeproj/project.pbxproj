@@ -13,10 +13,13 @@
 		23CB28F896D94B88CEF351F7 /* DesignAuditUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D982F3BFEE53C6D1333FF67 /* DesignAuditUITests.swift */; };
 		260998357CBB95987A042E95 /* PetProfileImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FFD83BC3079033CF24E9D6A /* PetProfileImageView.swift */; };
 		28782FDF88C341A3A600D280 /* HomeWeeklyMetricCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEA093F2A0E2A16E5E116F3E /* HomeWeeklyMetricCardView.swift */; };
+		2FAF945E5AA7BC004D27C72E /* WalkDetailContextProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81CDB8AB4C8855FE6D106BF3 /* WalkDetailContextProvider.swift */; };
 		316EF137D15633B33FDB93A3 /* ProfileFieldEditSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C8E7D8185E273FFD5B84579 /* ProfileFieldEditSheet.swift */; };
+		37382EBDCEA90A2E818A05BB /* ProfileFieldEditSheetViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30BF0E17B2BF40E97DBA5E07 /* ProfileFieldEditSheetViewModel.swift */; };
 		3B09EF73E528C78FEEE2AB01 /* SeasonProfileFrameStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CEBC83AFF321A2E3D10E8A0 /* SeasonProfileFrameStyle.swift */; };
 		45CA89EBC76C1FE5200FD88D /* HomeSelectedPetContextBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B7738E4A04B406F4D70AE19 /* HomeSelectedPetContextBannerView.swift */; };
 		541633F39AA01B555EA4A904 /* HomeRecentConqueredSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E3FDEC98167CC2EA0DAFA5E /* HomeRecentConqueredSectionView.swift */; };
+		5951E893E8CBC77DCA82E00F /* WalkDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A775802DB2A590A7C7DA0978 /* WalkDetailViewModel.swift */; };
 		5F3ED37B0435F882BC90593E /* HomePetSelectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDA31AC1DF69B7CA85070D28 /* HomePetSelectorView.swift */; };
 		68DE48DFEF4001E3F518BF10 /* HomeTerritoryHeaderSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86FFE492DDD22A6AC1319D9D /* HomeTerritoryHeaderSectionView.swift */; };
 		6B1F802F9363A5DD652CA409 /* AreaDetailListHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C0C69DBDA661E0970F6A0BB /* AreaDetailListHeaderView.swift */; };
@@ -205,6 +208,7 @@
 		1D982F3BFEE53C6D1333FF67 /* DesignAuditUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DesignAuditUITests.swift; sourceTree = "<group>"; };
 		21CE83B02069A8E4171B35DE /* RivalTabView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RivalTabView.swift; path = dogArea/Views/ProfileSettingView/RivalTabView.swift; sourceTree = "<group>"; };
 		2615443270FF3222AEBDE893 /* ThumbnailImageView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ThumbnailImageView.swift; sourceTree = "<group>"; };
+		30BF0E17B2BF40E97DBA5E07 /* ProfileFieldEditSheetViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ProfileFieldEditSheetViewModel.swift; path = dogArea/Views/ProfileSettingView/ProfileFieldEditSheetViewModel.swift; sourceTree = "<group>"; };
 		376D30D4A7542596A014DEE1 /* SimpleKeyValueView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SimpleKeyValueView.swift; sourceTree = "<group>"; };
 		4A1B2C487816AA2CCCA6186F /* HomeStatusBannerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeStatusBannerView.swift; path = dogArea/Views/HomeView/HomeSubView/HomeStatusBannerView.swift; sourceTree = "<group>"; };
 		4D14629580BEDCDCAE5B9EC3 /* HomeSelectedPetEmptyStateCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeSelectedPetEmptyStateCardView.swift; path = dogArea/Views/HomeView/HomeSubView/HomeSelectedPetEmptyStateCardView.swift; sourceTree = "<group>"; };
@@ -213,11 +217,13 @@
 		688E8E192EA6BCB551D19759 /* dogAreaUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = dogAreaUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		6C8E7D8185E273FFD5B84579 /* ProfileFieldEditSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ProfileFieldEditSheet.swift; path = dogArea/Views/ProfileSettingView/ProfileFieldEditSheet.swift; sourceTree = "<group>"; };
 		6E3FDEC98167CC2EA0DAFA5E /* HomeRecentConqueredSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeRecentConqueredSectionView.swift; sourceTree = "<group>"; };
+		81CDB8AB4C8855FE6D106BF3 /* WalkDetailContextProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WalkDetailContextProvider.swift; path = dogArea/Views/MapView/WalkDetailContextProvider.swift; sourceTree = "<group>"; };
 		86FFE492DDD22A6AC1319D9D /* HomeTerritoryHeaderSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeTerritoryHeaderSectionView.swift; sourceTree = "<group>"; };
 		8B7738E4A04B406F4D70AE19 /* HomeSelectedPetContextBannerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeSelectedPetContextBannerView.swift; path = dogArea/Views/HomeView/HomeSubView/HomeSelectedPetContextBannerView.swift; sourceTree = "<group>"; };
 		8CEBC83AFF321A2E3D10E8A0 /* SeasonProfileFrameStyle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SeasonProfileFrameStyle.swift; path = dogArea/Views/ProfileSettingView/SeasonProfileFrameStyle.swift; sourceTree = "<group>"; };
 		92C5F96B5D23BD6D36935CA0 /* PositionMarkerViewWithSelection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PositionMarkerViewWithSelection.swift; sourceTree = "<group>"; };
 		9FFD83BC3079033CF24E9D6A /* PetProfileImageView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PetProfileImageView.swift; path = dogArea/Views/ProfileSettingView/PetProfileImageView.swift; sourceTree = "<group>"; };
+		A775802DB2A590A7C7DA0978 /* WalkDetailViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WalkDetailViewModel.swift; path = dogArea/Views/MapView/WalkDetailViewModel.swift; sourceTree = "<group>"; };
 		C566C61F8B5520FEC3406DFF /* HomeGoalTrackerCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeGoalTrackerCardView.swift; sourceTree = "<group>"; };
 		C63D5D25262A8E2185005C50 /* RecoveryActionBanner.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RecoveryActionBanner.swift; path = dogArea/Views/MapView/RecoveryActionBanner.swift; sourceTree = "<group>"; };
 		CEBDE81DFC43DCD56546D775 /* HomeHeaderSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeHeaderSectionView.swift; sourceTree = "<group>"; };
@@ -569,6 +575,9 @@
 				21CE83B02069A8E4171B35DE /* RivalTabView.swift */,
 				8CEBC83AFF321A2E3D10E8A0 /* SeasonProfileFrameStyle.swift */,
 				F73B707BA77AC2C69A6BC62B /* UserProfileImageView.swift */,
+				30BF0E17B2BF40E97DBA5E07 /* ProfileFieldEditSheetViewModel.swift */,
+				A775802DB2A590A7C7DA0978 /* WalkDetailViewModel.swift */,
+				81CDB8AB4C8855FE6D106BF3 /* WalkDetailContextProvider.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -1032,6 +1041,9 @@
 				A83350BB79B3CBB09B4C4963 /* RivalTabView.swift in Sources */,
 				3B09EF73E528C78FEEE2AB01 /* SeasonProfileFrameStyle.swift in Sources */,
 				A0C814D250B8F26BDCC21F66 /* UserProfileImageView.swift in Sources */,
+				37382EBDCEA90A2E818A05BB /* ProfileFieldEditSheetViewModel.swift in Sources */,
+				5951E893E8CBC77DCA82E00F /* WalkDetailViewModel.swift in Sources */,
+				2FAF945E5AA7BC004D27C72E /* WalkDetailContextProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
