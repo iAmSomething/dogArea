@@ -177,6 +177,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private let syncOutbox = SyncOutboxStore.shared
     private let syncTransport = SupabaseSyncOutboxTransport()
     private let walkRepository: WalkRepositoryProtocol
+    private let userSessionStore: UserSessionStoreProtocol
+    private let preferenceStore: MapPreferenceStoreProtocol
+    private let eventCenter: AppEventCenterProtocol
     private var lastCaptureHapticAt: Date = .distantPast
     private var lastWarningHapticAt: Date = .distantPast
     private let maxCaptureRipples = 12
@@ -263,8 +266,16 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         }
     }
 
-    init(walkRepository: WalkRepositoryProtocol = WalkRepositoryContainer.shared) {
+    init(
+        walkRepository: WalkRepositoryProtocol = WalkRepositoryContainer.shared,
+        userSessionStore: UserSessionStoreProtocol = DefaultUserSessionStore.shared,
+        preferenceStore: MapPreferenceStoreProtocol = DefaultMapPreferenceStore.shared,
+        eventCenter: AppEventCenterProtocol = DefaultAppEventCenter.shared
+    ) {
         self.walkRepository = walkRepository
+        self.userSessionStore = userSessionStore
+        self.preferenceStore = preferenceStore
+        self.eventCenter = eventCenter
         super.init()
         self.locationManager.delegate = self
         self.locationManager.allowsBackgroundLocationUpdates = true
@@ -274,20 +285,20 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         self.reloadPolygonState(restoreLatestPolygon: true)
         self.loadProcessedWatchActions()
 
-        let storedHeatmapEnabled = UserDefaults.standard.object(forKey: heatmapEnabledKey) as? Bool ?? true
-        let storedNearbyHotspotEnabled = UserDefaults.standard.object(forKey: nearbyHotspotEnabledKey) as? Bool ?? true
-        let storedLocationSharingEnabled = UserDefaults.standard.bool(forKey: locationSharingKey)
-        let storedMotionReduced = UserDefaults.standard.bool(forKey: mapMotionReducedKey)
+        let storedHeatmapEnabled = preferenceStore.bool(forKey: heatmapEnabledKey, default: true)
+        let storedNearbyHotspotEnabled = preferenceStore.bool(forKey: nearbyHotspotEnabledKey, default: true)
+        let storedLocationSharingEnabled = preferenceStore.bool(forKey: locationSharingKey, default: false)
+        let storedMotionReduced = preferenceStore.bool(forKey: mapMotionReducedKey, default: false)
 
         self.heatmapEnabled = featureFlags.isEnabled(.heatmapV1) ? storedHeatmapEnabled : false
         let nearbyFeatureOn = featureFlags.isEnabled(.nearbyHotspotV1)
         self.nearbyHotspotEnabled = nearbyFeatureOn ? storedNearbyHotspotEnabled : false
         self.locationSharingEnabled = nearbyFeatureOn ? storedLocationSharingEnabled : false
         self.mapMotionReduced = storedMotionReduced
-        self.walkStartCountdownEnabled = UserdefaultSetting.shared.walkStartCountdownEnabled()
+        self.walkStartCountdownEnabled = userSessionStore.walkStartCountdownEnabled()
         self.walkAutoEndPolicyEnabled = true
         self.walkPointRecordMode = WalkPointRecordMode(
-            rawValue: UserdefaultSetting.shared.walkPointRecordModeRawValue()
+            rawValue: userSessionStore.walkPointRecordModeRawValue()
         ) ?? .manual
         self.prepareRecoverableSessionIfNeeded()
         self.reloadSelectedPetContext()
@@ -305,7 +316,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         timer?.invalidate()
         nearbyTickTimer?.invalidate()
         syncFlushTask?.cancel()
-        lifecycleObservers.forEach { NotificationCenter.default.removeObserver($0) }
+        lifecycleObservers.forEach { eventCenter.removeObserver($0) }
     }
 
     private func applyPolygonList(_ polygons: [Polygon], restoreLatestPolygon: Bool = false) {
@@ -446,12 +457,12 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 
     func toggleWalkStartCountdown() {
         walkStartCountdownEnabled.toggle()
-        UserdefaultSetting.shared.setWalkStartCountdownEnabled(walkStartCountdownEnabled)
+        userSessionStore.setWalkStartCountdownEnabled(walkStartCountdownEnabled)
     }
 
     func toggleWalkPointRecordMode() {
         walkPointRecordMode = walkPointRecordMode == .manual ? .auto : .manual
-        UserdefaultSetting.shared.setWalkPointRecordModeRawValue(walkPointRecordMode.rawValue)
+        userSessionStore.setWalkPointRecordModeRawValue(walkPointRecordMode.rawValue)
         resetAutoPointRecordState()
     }
 
@@ -603,7 +614,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 
     func toggleMapMotionReduced() {
         mapMotionReduced.toggle()
-        UserDefaults.standard.set(mapMotionReduced, forKey: mapMotionReducedKey)
+        preferenceStore.set(mapMotionReduced, forKey: mapMotionReducedKey)
     }
 
     var weatherOverlayTintColor: Color {
@@ -839,12 +850,12 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         }
 
         if let selectedPetId = snapshot.selectedPetId {
-            UserdefaultSetting.shared.setSelectedPetId(selectedPetId)
+            userSessionStore.setSelectedPetId(selectedPetId, source: "walk_recovery")
         }
         reloadSelectedPetContext()
         currentWalkingPetName = snapshot.currentWalkingPetName
         walkPointRecordMode = WalkPointRecordMode(rawValue: snapshot.pointRecordMode) ?? .manual
-        UserdefaultSetting.shared.setWalkPointRecordModeRawValue(walkPointRecordMode.rawValue)
+        userSessionStore.setWalkPointRecordModeRawValue(walkPointRecordMode.rawValue)
 
         lastPointEventAt = snapshot.points.last.map { Date(timeIntervalSince1970: $0.createdAt) } ?? Date()
         lastMovementAt = snapshot.lastMovementAt.map { Date(timeIntervalSince1970: $0) } ?? lastPointEventAt
@@ -986,7 +997,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     }
 
     private func decodeActiveWalkSession() -> ActiveWalkSessionSnapshot? {
-        guard let data = UserDefaults.standard.data(forKey: activeWalkSessionStorageKey) else {
+        guard let data = preferenceStore.data(forKey: activeWalkSessionStorageKey) else {
             return nil
         }
         return try? JSONDecoder().decode(ActiveWalkSessionSnapshot.self, from: data)
@@ -1019,13 +1030,13 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         )
 
         if let data = try? JSONEncoder().encode(snapshot) {
-            UserDefaults.standard.set(data, forKey: activeWalkSessionStorageKey)
+            preferenceStore.set(data, forKey: activeWalkSessionStorageKey)
             lastSnapshotPersistAt = now
         }
     }
 
     private func clearActiveWalkSession() {
-        UserDefaults.standard.removeObject(forKey: activeWalkSessionStorageKey)
+        preferenceStore.removeObject(forKey: activeWalkSessionStorageKey)
         pendingRecoverableSession = nil
         hasRecoverableWalkSession = false
         recoverableWalkSummaryText = ""
@@ -1072,8 +1083,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 
     private func setupLifecycleObservers() {
         #if canImport(UIKit)
-        let center = NotificationCenter.default
-        let didBecomeActive = center.addObserver(
+        let didBecomeActive = eventCenter.addObserver(
             forName: UIApplication.didBecomeActiveNotification,
             object: nil,
             queue: .main
@@ -1082,21 +1092,21 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             self?.syncVisibilitySettingIfNeeded()
             self?.refreshWeatherOverlayRisk()
         }
-        let willResign = center.addObserver(
+        let willResign = eventCenter.addObserver(
             forName: UIApplication.willResignActiveNotification,
             object: nil,
             queue: .main
         ) { [weak self] _ in
             self?.persistActiveWalkSession(force: true)
         }
-        let willTerminate = center.addObserver(
+        let willTerminate = eventCenter.addObserver(
             forName: UIApplication.willTerminateNotification,
             object: nil,
             queue: .main
         ) { [weak self] _ in
             self?.persistActiveWalkSession(force: true)
         }
-        let petContextChanged = center.addObserver(
+        let petContextChanged = eventCenter.addObserver(
             forName: UserdefaultSetting.selectedPetDidChangeNotification,
             object: nil,
             queue: .main
@@ -1104,7 +1114,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             self?.reloadSelectedPetContext()
         }
         #if canImport(UIKit)
-        let reduceMotionChanged = center.addObserver(
+        let reduceMotionChanged = eventCenter.addObserver(
             forName: UIAccessibility.reduceMotionStatusDidChangeNotification,
             object: nil,
             queue: .main
@@ -1133,7 +1143,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         persistActiveWalkSession(force: true)
         syncWatchContext(force: true)
         compactMapMotionArtifacts(now: recordedAt)
-        NotificationCenter.default.post(
+        eventCenter.post(
             name: .walkPointRecordedForQuest,
             object: nil,
             userInfo: [
@@ -1225,13 +1235,11 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     }
 
     private func lodIntValue(key: String, defaultValue: Int) -> Int {
-        let value = UserDefaults.standard.integer(forKey: key)
-        return value > 0 ? value : defaultValue
+        preferenceStore.integer(forKey: key, default: defaultValue)
     }
 
     private func lodDoubleValue(key: String, defaultValue: Double) -> Double {
-        let value = UserDefaults.standard.double(forKey: key)
-        return value > 0 ? value : defaultValue
+        preferenceStore.double(forKey: key, default: defaultValue)
     }
 
     private var overlayMaxCameraDistance: Double {
@@ -1352,7 +1360,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             return
         }
         self.heatmapEnabled.toggle()
-        UserDefaults.standard.set(self.heatmapEnabled, forKey: heatmapEnabledKey)
+        preferenceStore.set(self.heatmapEnabled, forKey: heatmapEnabledKey)
         if self.heatmapEnabled {
             refreshHeatmap()
         } else {
@@ -1363,12 +1371,12 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     func toggleLocationSharing() {
         guard isNearbyHotspotFeatureAvailable else {
             self.locationSharingEnabled = false
-            UserDefaults.standard.set(false, forKey: locationSharingKey)
+            preferenceStore.set(false, forKey: locationSharingKey)
             self.syncVisibilitySettingIfNeeded()
             return
         }
         self.locationSharingEnabled.toggle()
-        UserDefaults.standard.set(self.locationSharingEnabled, forKey: locationSharingKey)
+        preferenceStore.set(self.locationSharingEnabled, forKey: locationSharingKey)
         metricTracker.track(
             self.locationSharingEnabled ? .nearbyOptInEnabled : .nearbyOptInDisabled,
             userKey: currentMetricUserId(),
@@ -1381,11 +1389,11 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         guard isNearbyHotspotFeatureAvailable else {
             self.nearbyHotspotEnabled = false
             self.nearbyHotspots = []
-            UserDefaults.standard.set(false, forKey: nearbyHotspotEnabledKey)
+            preferenceStore.set(false, forKey: nearbyHotspotEnabledKey)
             return
         }
         self.nearbyHotspotEnabled.toggle()
-        UserDefaults.standard.set(self.nearbyHotspotEnabled, forKey: nearbyHotspotEnabledKey)
+        preferenceStore.set(self.nearbyHotspotEnabled, forKey: nearbyHotspotEnabledKey)
         if nearbyHotspotEnabled == false {
             self.nearbyHotspots = []
         }
@@ -1512,9 +1520,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         let heatmapAllowed = featureFlags.isEnabled(.heatmapV1)
         let nearbyAllowed = featureFlags.isEnabled(.nearbyHotspotV1)
         let nearbyAllowedForSession = nearbyAllowed && isNearbySocialAvailableForSession
-        let heatmapPreference = UserDefaults.standard.object(forKey: heatmapEnabledKey) as? Bool ?? true
-        let nearbyPreference = UserDefaults.standard.object(forKey: nearbyHotspotEnabledKey) as? Bool ?? true
-        let sharingPreference = UserDefaults.standard.bool(forKey: locationSharingKey)
+        let heatmapPreference = preferenceStore.bool(forKey: heatmapEnabledKey, default: true)
+        let nearbyPreference = preferenceStore.bool(forKey: nearbyHotspotEnabledKey, default: true)
+        let sharingPreference = preferenceStore.bool(forKey: locationSharingKey, default: false)
 
         self.heatmapEnabled = heatmapAllowed ? heatmapPreference : false
         self.nearbyHotspotEnabled = nearbyAllowedForSession ? nearbyPreference : false
@@ -1528,7 +1536,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 
         if nearbyAllowedForSession == false {
             self.nearbyHotspots = []
-            UserDefaults.standard.set(false, forKey: locationSharingKey)
+            preferenceStore.set(false, forKey: locationSharingKey)
             self.syncVisibilitySettingIfNeeded()
         }
     }
@@ -1538,7 +1546,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
            let fromEnv = WeatherOverlayRiskLevel(rawValue: env.lowercased()) {
             return (fromEnv, false)
         }
-        if let raw = UserDefaults.standard.string(forKey: weatherRiskOverrideKey),
+        if let raw = preferenceStore.string(forKey: weatherRiskOverrideKey),
            let fromDefaults = WeatherOverlayRiskLevel(rawValue: raw.lowercased()) {
             return (fromDefaults, false)
         }
@@ -1560,29 +1568,29 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     }
 
     private func currentPresenceUserId() -> String? {
-        if let existing = UserDefaults.standard.string(forKey: nearbyPresenceUserIdKey) {
+        if let existing = preferenceStore.string(forKey: nearbyPresenceUserIdKey) {
             return existing
         }
-        guard let raw = UserdefaultSetting.shared.getValue()?.id,
+        guard let raw = userSessionStore.currentUserInfo()?.id,
               raw.isEmpty == false else {
             return nil
         }
         let stable = raw.stableUUIDString
-        UserDefaults.standard.set(stable, forKey: nearbyPresenceUserIdKey)
+        preferenceStore.set(stable, forKey: nearbyPresenceUserIdKey)
         return stable
     }
 
     private func currentMetricUserId() -> String? {
-        guard let raw = UserdefaultSetting.shared.getValue()?.id, raw.isEmpty == false else {
+        guard let raw = userSessionStore.currentUserInfo()?.id, raw.isEmpty == false else {
             return nil
         }
         return raw
     }
 
     func reloadSelectedPetContext() {
-        let userInfo = UserdefaultSetting.shared.getValue()
+        let userInfo = userSessionStore.currentUserInfo()
         self.availablePets = userInfo?.pet ?? []
-        let selectedPet = UserdefaultSetting.shared.selectedPet(from: userInfo)
+        let selectedPet = userSessionStore.selectedPet(from: userInfo)
         self.selectedPetId = selectedPet?.petId
         self.selectedPetName = selectedPet?.petName ?? "강아지"
         if isWalking == false {
@@ -1596,13 +1604,13 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 
     func prepareWalkPetSelectionSuggestion() {
         guard isWalking == false else { return }
-        guard let userInfo = UserdefaultSetting.shared.getValue(), userInfo.pet.isEmpty == false else {
+        guard let userInfo = userSessionStore.currentUserInfo(), userInfo.pet.isEmpty == false else {
             reloadSelectedPetContext()
             return
         }
-        if let suggested = UserdefaultSetting.shared.suggestedPetForWalkStart(from: userInfo),
+        if let suggested = userSessionStore.suggestedPetForWalkStart(from: userInfo, now: Date()),
            suggested.petId != selectedPetId {
-            UserdefaultSetting.shared.setSelectedPetId(suggested.petId, source: "walk_start_suggestion")
+            userSessionStore.setSelectedPetId(suggested.petId, source: "walk_start_suggestion")
             metricTracker.track(
                 .petSelectionSuggested,
                 userKey: currentMetricUserId(),
@@ -1623,7 +1631,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         let currentIndex = availablePets.firstIndex(where: { $0.petId == selectedPetId }) ?? -1
         let nextIndex = (currentIndex + 1) % availablePets.count
         let nextPet = availablePets[nextIndex]
-        UserdefaultSetting.shared.setSelectedPetId(nextPet.petId, source: "walk_start_switcher")
+        userSessionStore.setSelectedPetId(nextPet.petId, source: "walk_start_switcher")
         walkStatusMessage = "산책 대상: \(nextPet.petName)"
         reloadSelectedPetContext()
     }
@@ -1665,13 +1673,13 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     }
 
     private func loadProcessedWatchActions() {
-        let stored = UserDefaults.standard.stringArray(forKey: processedWatchActionStorageKey) ?? []
+        let stored = preferenceStore.stringArray(forKey: processedWatchActionStorageKey)
         self.processedWatchActionOrder = stored
         self.processedWatchActionIds = Set(stored)
     }
 
     private func persistProcessedWatchActions() {
-        UserDefaults.standard.set(self.processedWatchActionOrder, forKey: processedWatchActionStorageKey)
+        preferenceStore.set(self.processedWatchActionOrder, forKey: processedWatchActionStorageKey)
     }
 
     private func shouldProcessWatchAction(actionId: String) -> Bool {

@@ -54,3 +54,14 @@
 1. `MapViewModel` UserDefaults/NotificationCenter 접근을 `MapPreferenceStore`로 추출
 2. `HomeViewModel`의 시즌/날씨 정책 로직을 `SeasonPolicyUseCase`로 분리
 3. `UserdefaultSetting`를 Store 단위 파일로 분할(`ProfileStore`, `SeasonStore`, `WalkPreferenceStore`)
+
+## 이번 사이클 계획 (Issue #178 후속)
+- 범위
+  - `MapViewModel`의 `UserDefaults.standard` 직접 접근을 `MapPreferenceStoreProtocol`로 치환
+  - `MapViewModel`/`HomeViewModel`의 `NotificationCenter.default` 직접 접근을 `AppEventCenterProtocol`로 치환
+  - `MapViewModel`/`HomeViewModel`의 `UserdefaultSetting.shared` 직접 접근을 `UserSessionStoreProtocol`로 치환
+- 비범위
+  - `IndoorMissionStore`/`SeasonMotionStore`의 내부 저장 구현(`UserDefaults`) 전면 교체는 다음 사이클
+- 검증
+  - `scripts/map_home_viewmodel_boundary_unit_check.swift` 추가
+  - `bash scripts/ios_pr_check.sh` 통과
