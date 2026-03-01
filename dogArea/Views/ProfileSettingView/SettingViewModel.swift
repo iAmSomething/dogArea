@@ -7,8 +7,6 @@
 
 import Foundation
 import Combine
-import UIKit
-import FirebaseStorage
 
 struct SeasonProfileSummary: Equatable {
     let weekKey: String
@@ -39,9 +37,6 @@ final class SettingViewModel: ObservableObject {
     @Published var selectedPetId: String = ""
     @Published var selectedPet: PetInfo? = nil
     @Published var seasonProfileSummary: SeasonProfileSummary? = nil
-    private var petURL: String? = nil
-    private var profileURL: String? = nil
-    private var storage = Storage.storage().reference()
     private let profileRepository: ProfileRepository
     private let walkRepository: WalkRepositoryProtocol
     private var cancellables: Set<AnyCancellable> = []
@@ -173,43 +168,5 @@ final class SettingViewModel: ObservableObject {
             rankTier: rankTier,
             contributionCount: decoded.contributionCount
         )
-    }
-    func uploadImg(img: UIImage, isPet:Bool = false){
-        Task { @MainActor [weak self] in
-            guard let self else { return }
-            do {
-                if isPet {
-                    petURL = try await uploadImage(img: img, isPet: isPet)
-                } else {
-                    profileURL = try await uploadImage(img: img, isPet: isPet)
-                }
-            }
-        }
-    }
-
-    private func uploadImage(img: UIImage, isPet: Bool) async throws -> String?{
-        guard let data = img.pngData() else { return nil}
-        var finished: Bool = false
-        var urlString: String? = nil
-        do { try await self.storage.child("images/" + (isPet ? "petProfile.png" : "userProfile.png")).putDataAsync(data) { p in
-            if p?.isFinished == true {
-//                print("업로드 성공?")
-                finished = true
-                return
-            } else if p?.isCancelled == true{
-//                print("업로드 실패")
-            }
-        }
-        }
-        if finished {
-            urlString = try await getURL(isPet: isPet)
-        }
-        guard let str = urlString else { return nil}
-        return str
-    }
-    private func getURL(isPet: Bool) async throws -> String{
-        try await self.storage.child("images/" + (isPet ? "petProfile.png" : "userProfile.png"))
-            .downloadURL()
-            .absoluteString
     }
 }

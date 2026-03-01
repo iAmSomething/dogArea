@@ -1,5 +1,11 @@
 import Foundation
 import CoreLocation
+#if canImport(FirebaseAuth)
+import FirebaseAuth
+#endif
+#if canImport(FirebaseStorage)
+import FirebaseStorage
+#endif
 
 struct SupabaseRuntimeConfig: Equatable {
     let baseURL: URL
@@ -796,5 +802,67 @@ private extension Bundle {
         }
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? nil : trimmed
+    }
+}
+
+enum FirebaseInfrastructureError: LocalizedError {
+    case missingModule(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .missingModule(let name):
+            return "\(name) 모듈을 사용할 수 없습니다."
+        }
+    }
+}
+
+final class FirebaseAppleCredentialAuthService: AppleCredentialAuthServiceProtocol {
+    static let shared = FirebaseAppleCredentialAuthService()
+
+    func signInWithApple(identityToken: String) async throws {
+        #if canImport(FirebaseAuth)
+        let credential = OAuthProvider.credential(
+            withProviderID: "apple.com",
+            idToken: identityToken,
+            rawNonce: nil
+        )
+        _ = try await Auth.auth().signIn(with: credential)
+        #else
+        throw FirebaseInfrastructureError.missingModule("FirebaseAuth")
+        #endif
+    }
+}
+
+final class FirebaseProfileImageRepository: ProfileImageRepository {
+    static let shared = FirebaseProfileImageRepository()
+
+    #if canImport(FirebaseStorage)
+    private let storage: StorageReference
+    init(storage: StorageReference = Storage.storage().reference()) {
+        self.storage = storage
+    }
+    #else
+    init() {}
+    #endif
+
+    func uploadUserProfileImage(data: Data, ownerId: String) async throws -> String {
+        try await upload(data: data, ownerId: ownerId, fileName: "userProfile.jpeg")
+    }
+
+    func uploadPetProfileImage(data: Data, ownerId: String) async throws -> String {
+        try await upload(data: data, ownerId: ownerId, fileName: "petProfile.jpeg")
+    }
+
+    private func upload(data: Data, ownerId: String, fileName: String) async throws -> String {
+        #if canImport(FirebaseStorage)
+        let safeOwnerId = ownerId
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "/", with: "_")
+        let ref = storage.child("images/\(safeOwnerId)/\(fileName)")
+        _ = try await ref.putDataAsync(data)
+        return try await ref.downloadURL().absoluteString
+        #else
+        throw FirebaseInfrastructureError.missingModule("FirebaseStorage")
+        #endif
     }
 }

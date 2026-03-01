@@ -48,6 +48,7 @@ swift scripts/area_reference_db_ui_unit_check.swift
 swift scripts/walk_repository_contract_unit_check.swift
 swift scripts/walk_repository_backfill_unit_check.swift
 swift scripts/walk_session_pet_canonicalization_unit_check.swift
+swift scripts/presentation_firebase_boundary_unit_check.swift
 swift scripts/project_stability_unit_check.swift
 
 if [[ "${DOGAREA_SKIP_BUILD:-0}" == "1" ]]; then
