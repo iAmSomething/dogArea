@@ -30,7 +30,7 @@ class SigningViewModel: ObservableObject {
     init(
         info: AppleUserInfo,
         profileRepository: ProfileRepository = DefaultProfileRepository.shared,
-        imageRepository: ProfileImageRepository = FirebaseProfileImageRepository.shared
+        imageRepository: ProfileImageRepository = SupabaseProfileImageRepository.shared
     ) {
         self.appleInfo = info
         self.userName = info.name ?? ""

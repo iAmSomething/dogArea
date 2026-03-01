@@ -1,11 +1,5 @@
 import Foundation
 import CoreLocation
-#if canImport(FirebaseAuth)
-import FirebaseAuth
-#endif
-#if canImport(FirebaseStorage)
-import FirebaseStorage
-#endif
 
 struct SupabaseRuntimeConfig: Equatable {
     let baseURL: URL
@@ -805,64 +799,78 @@ private extension Bundle {
     }
 }
 
-enum FirebaseInfrastructureError: LocalizedError {
-    case missingModule(String)
+enum SupabaseAssetError: LocalizedError {
+    case invalidResponse
+    case serverError(String)
 
     var errorDescription: String? {
         switch self {
-        case .missingModule(let name):
-            return "\(name) 모듈을 사용할 수 없습니다."
+        case .invalidResponse:
+            return "이미지 업로드 응답이 올바르지 않습니다."
+        case .serverError(let message):
+            return message
         }
     }
 }
 
-final class FirebaseAppleCredentialAuthService: AppleCredentialAuthServiceProtocol {
-    static let shared = FirebaseAppleCredentialAuthService()
+final class DeviceAppleCredentialAuthService: AppleCredentialAuthServiceProtocol {
+    static let shared = DeviceAppleCredentialAuthService()
 
     func signInWithApple(identityToken: String) async throws {
-        #if canImport(FirebaseAuth)
-        let credential = OAuthProvider.credential(
-            withProviderID: "apple.com",
-            idToken: identityToken,
-            rawNonce: nil
-        )
-        _ = try await Auth.auth().signIn(with: credential)
-        #else
-        throw FirebaseInfrastructureError.missingModule("FirebaseAuth")
-        #endif
+        if identityToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            throw SupabaseAssetError.serverError("Apple identity token is missing.")
+        }
     }
 }
 
-final class FirebaseProfileImageRepository: ProfileImageRepository {
-    static let shared = FirebaseProfileImageRepository()
+private struct UploadProfileImageRequestDTO: Encodable {
+    let ownerId: String
+    let imageBase64: String
+    let imageKind: String
+}
 
-    #if canImport(FirebaseStorage)
-    private let storage: StorageReference
-    init(storage: StorageReference = Storage.storage().reference()) {
-        self.storage = storage
+private struct UploadProfileImageResponseDTO: Decodable {
+    let publicUrl: String?
+    let error: String?
+}
+
+final class SupabaseProfileImageRepository: ProfileImageRepository {
+    static let shared = SupabaseProfileImageRepository()
+    private let client: SupabaseHTTPClient
+
+    init(client: SupabaseHTTPClient = .live) {
+        self.client = client
     }
-    #else
-    init() {}
-    #endif
 
     func uploadUserProfileImage(data: Data, ownerId: String) async throws -> String {
-        try await upload(data: data, ownerId: ownerId, fileName: "userProfile.jpeg")
+        try await upload(data: data, ownerId: ownerId, imageKind: "user")
     }
 
     func uploadPetProfileImage(data: Data, ownerId: String) async throws -> String {
-        try await upload(data: data, ownerId: ownerId, fileName: "petProfile.jpeg")
+        try await upload(data: data, ownerId: ownerId, imageKind: "pet")
     }
 
-    private func upload(data: Data, ownerId: String, fileName: String) async throws -> String {
-        #if canImport(FirebaseStorage)
+    private func upload(data: Data, ownerId: String, imageKind: String) async throws -> String {
         let safeOwnerId = ownerId
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .replacingOccurrences(of: "/", with: "_")
-        let ref = storage.child("images/\(safeOwnerId)/\(fileName)")
-        _ = try await ref.putDataAsync(data)
-        return try await ref.downloadURL().absoluteString
-        #else
-        throw FirebaseInfrastructureError.missingModule("FirebaseStorage")
-        #endif
+        let requestBody = UploadProfileImageRequestDTO(
+            ownerId: safeOwnerId,
+            imageBase64: data.base64EncodedString(),
+            imageKind: imageKind
+        )
+        let responseData = try await client.request(
+            .function(name: "upload-profile-image"),
+            method: .post,
+            body: requestBody
+        )
+        let decoded = try JSONDecoder().decode(UploadProfileImageResponseDTO.self, from: responseData)
+        if let url = decoded.publicUrl, url.isEmpty == false {
+            return url
+        }
+        if let message = decoded.error, message.isEmpty == false {
+            throw SupabaseAssetError.serverError(message)
+        }
+        throw SupabaseAssetError.invalidResponse
     }
 }

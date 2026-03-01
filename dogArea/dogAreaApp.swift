@@ -7,7 +7,6 @@
 
 import SwiftUI
 import SwiftData
-import FirebaseCore
 
 struct SupabaseConfiguration {
     let url: URL
@@ -58,7 +57,6 @@ private extension Bundle {
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
-        FirebaseApp.configure()
         if SupabaseConfiguration.load() == nil {
             print("Supabase configuration is missing required values.")
         }
