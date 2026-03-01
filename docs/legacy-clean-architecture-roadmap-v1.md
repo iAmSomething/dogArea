@@ -40,10 +40,15 @@
 - `SigningViewModel`의 FirebaseStorage 직접 의존 제거
 - `SettingViewModel`의 FirebaseStorage 직접 의존 제거 및 미사용 업로드 코드 삭제
 - 인프라 어댑터 추가
-  - `FirebaseAppleCredentialAuthService`
-  - `FirebaseProfileImageRepository`
+  - `DeviceAppleCredentialAuthService`
+  - `SupabaseProfileImageRepository`
+- 이미지 업로드 Edge Function 추가
+  - `supabase/functions/upload-profile-image`
+- 앱 런타임 Firebase 패키지 의존 제거(Distribution은 CI 파이프라인에서만 유지)
+- `GoogleService-Info.plist` 앱 리소스 포함 제거
 - 경계 회귀 체크 추가
   - `scripts/presentation_firebase_boundary_unit_check.swift`
+  - `scripts/supabase_profile_image_upload_unit_check.swift`
 
 ## 다음 사이클 우선순위
 1. `MapViewModel` UserDefaults/NotificationCenter 접근을 `MapPreferenceStore`로 추출

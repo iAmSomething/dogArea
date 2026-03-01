@@ -22,7 +22,7 @@ struct SignInView: View {
         allowDismiss: Bool = false,
         onAuthenticated: @escaping () -> Void = {},
         onDismiss: @escaping () -> Void = {},
-        authService: AppleCredentialAuthServiceProtocol = FirebaseAppleCredentialAuthService.shared,
+        authService: AppleCredentialAuthServiceProtocol = DeviceAppleCredentialAuthService.shared,
         profileRepository: ProfileRepository = DefaultProfileRepository.shared
     ) {
         self.allowDismiss = allowDismiss
