@@ -12,18 +12,11 @@ struct WalkDetailView: View {
     @EnvironmentObject var loading: LoadingViewModel
     @EnvironmentObject var viewModel: MapViewModel
     @StateObject var mapImageProvider = MapImageProvider()
-
-    @State private var isMeter: Bool = true
-    @State private var capturedWalkPhoto: UIImage? = nil
-    @State private var shareItems: [Any] = []
-    @State private var showShareSheet = false
-    @State private var showCameraPicker = false
-    @State private var showPhotoLibraryPicker = false
-    @State private var toastMessage: String? = nil
+    @StateObject private var detailViewModel = WalkDetailViewModel()
 
     var body: some View {
         VStack {
-            Image(uiImage: previewImage ?? UIImage.emptyImg)
+            Image(uiImage: detailViewModel.previewImage(mapCapturedImage: mapImageProvider.capturedImage) ?? UIImage.emptyImg)
                 .resizable()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .cornerRadius(5)
@@ -37,10 +30,10 @@ struct WalkDetailView: View {
                     }
                 }
             HStack {
-                SimpleKeyValueView(value: ("영역 넓이", viewModel.calculatedAreaString(areaSize: viewModel.polygon.walkingArea,isPyong: !isMeter)))
-                    .onTapGesture {isMeter.toggle()}
+                SimpleKeyValueView(value: ("영역 넓이", detailViewModel.areaValueText()))
+                    .onTapGesture { detailViewModel.toggleAreaUnit() }
                 Spacer()
-                SimpleKeyValueView(value: ("산책 시간", "\(viewModel.polygon.walkingTime .simpleWalkingTimeInterval)"))
+                SimpleKeyValueView(value: ("산책 시간", detailViewModel.durationText()))
             }.frame(maxWidth: .infinity)
                 .padding(.horizontal, 30)
                 .padding(.bottom, 20)
@@ -57,7 +50,7 @@ struct WalkDetailView: View {
                     .background(Color(red: 0.19, green: 0.19, blue: 0.19))
                     .padding(.horizontal, 20)
                 Button(action: {
-                    openCameraOrFallback()
+                    detailViewModel.requestImageInput()
                 }, label: {
                     HStack {
                         Image(systemName: "camera.fill")
@@ -72,10 +65,7 @@ struct WalkDetailView: View {
                     .padding(.top, 10)
                 })
                 Button(action: {
-                    shareItems = prepareShareItems()
-                    if shareItems.isEmpty == false {
-                        showShareSheet = true
-                    }
+                    detailViewModel.prepareShareSheet(mapCapturedImage: mapImageProvider.capturedImage)
                 }, label: {
                     HStack {
                         Image(systemName: "square.and.arrow.up")
@@ -93,16 +83,14 @@ struct WalkDetailView: View {
             }
             Spacer()
             Button(action: {
-                loading.loading()
-                guard let image = buildShareCardImage() else {
-                    loading.failed(msg: "이미지 가져오기 실패")
-                    return
-                }
-                UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
-                loading.success()
-                toastMessage = "저장이 완료되었습니다"
+                _ = detailViewModel.saveShareCardToPhotoLibrary(
+                    mapCapturedImage: mapImageProvider.capturedImage,
+                    onLoading: { loading.loading() },
+                    onFailed: { loading.failed(msg: $0) },
+                    onSuccess: { loading.success() }
+                )
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                    self.toastMessage = nil
+                    detailViewModel.clearToastMessage()
                 }
             },
                    label:  {
@@ -115,10 +103,7 @@ struct WalkDetailView: View {
                 .cornerRadius(15)
                 .padding(.horizontal, 70)
             Button(action: {
-                if mapImageProvider.capturedImage == nil {
-                    viewModel.walkStatusMessage = "지도 이미지 없이 산책 기록만 저장했습니다."
-                }
-                viewModel.endWalk(img: mapImageProvider.capturedImage)
+                detailViewModel.confirmWalkEnd(mapCapturedImage: mapImageProvider.capturedImage)
                 dismiss()
             },
                    label:  {
@@ -131,68 +116,26 @@ struct WalkDetailView: View {
                 .padding(.horizontal, 70)
         }.overlay(
             Group {
-                if let toastMessage {
+                if let toastMessage = detailViewModel.toastMessage {
                     SimpleMessageView(message: toastMessage)
                         .transition(.opacity)
                 }
-            }.animation(.easeInOut(duration: 0.2), value: toastMessage)
+            }.animation(.easeInOut(duration: 0.2), value: detailViewModel.toastMessage)
         )
-        .sheet(isPresented: $showShareSheet) {
-            ActivityShareSheet(items: shareItems) { _, completed, _, _ in
-                if completed {
-                    toastMessage = "공유를 완료했습니다"
-                }
+        .sheet(isPresented: $detailViewModel.showShareSheet) {
+            ActivityShareSheet(items: detailViewModel.shareItems) { _, completed, _, _ in
+                detailViewModel.handleShareCompletion(completed: completed)
             }
         }
-        .fullScreenCover(isPresented: $showCameraPicker) {
-            ImagePicker(image: $capturedWalkPhoto, type: .camera)
+        .fullScreenCover(isPresented: $detailViewModel.showCameraPicker) {
+            ImagePicker(image: $detailViewModel.capturedWalkPhoto, type: .camera)
         }
-        .fullScreenCover(isPresented: $showPhotoLibraryPicker) {
-            ImagePicker(image: $capturedWalkPhoto, type: .photoLibrary)
+        .fullScreenCover(isPresented: $detailViewModel.showPhotoLibraryPicker) {
+            ImagePicker(image: $detailViewModel.capturedWalkPhoto, type: .photoLibrary)
         }
-    }
-
-    private var previewImage: UIImage? {
-        capturedWalkPhoto ?? mapImageProvider.capturedImage
-    }
-
-    private func buildShareCardImage() -> UIImage? {
-        guard let baseImage = previewImage else { return nil }
-        return WalkShareCardTemplateBuilder.build(
-            baseImage: baseImage,
-            createdAt: viewModel.polygon.createdAt,
-            duration: viewModel.polygon.walkingTime,
-            areaM2: viewModel.polygon.walkingArea,
-            pointCount: viewModel.polygon.locations.count,
-            petName: viewModel.currentWalkingPetName
-        )
-    }
-
-    private func prepareShareItems() -> [Any] {
-        let summary = WalkShareSummaryBuilder.build(
-            createdAt: viewModel.polygon.createdAt,
-            duration: viewModel.polygon.walkingTime,
-            areaM2: viewModel.polygon.walkingArea,
-            pointCount: viewModel.polygon.locations.count,
-            petName: viewModel.currentWalkingPetName
-        )
-        if let shareCard = buildShareCardImage() {
-            return [summary, shareCard]
+        .onAppear {
+            detailViewModel.bind(context: viewModel)
         }
-        return [summary]
-    }
-
-    private func openCameraOrFallback() {
-        if UIImagePickerController.isSourceTypeAvailable(.camera) {
-            showCameraPicker = true
-            return
-        }
-        if UIImagePickerController.isSourceTypeAvailable(.photoLibrary) {
-            toastMessage = "카메라 미지원 환경이라 앨범 선택으로 전환했어요."
-            showPhotoLibraryPicker = true
-            return
-        }
-        toastMessage = "이미지 입력을 사용할 수 없는 환경입니다."
     }
 }
 //
