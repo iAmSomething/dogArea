@@ -61,13 +61,11 @@ final class RivalTabViewModel: NSObject, ObservableObject, @preconcurrency CLLoc
     private let nearbyService: NearbyPresenceServiceProtocol
     private let rivalLeagueService: RivalLeagueServiceProtocol
     private let preferenceStore: MapPreferenceStoreProtocol
+    private let moderationStore: RivalModerationStoreProtocol
     private let locationManager: CLLocationManager
     private let authSessionStore: AuthSessionStoreProtocol
     private let sessionProvider: () -> AppSessionState
     private let locationSharingKey = "nearby.locationSharingEnabled.v1"
-    private let hiddenAliasKey = "rival.hidden.alias.codes.v1"
-    private let blockedAliasKey = "rival.blocked.alias.codes.v1"
-    private let moderationLogKey = "rival.moderation.logs.v1"
     private var pollingTimer: Timer? = nil
     private var lastRefreshAt: Date = .distantPast
     private var lastLeaderboardRefreshAt: Date = .distantPast
@@ -78,6 +76,7 @@ final class RivalTabViewModel: NSObject, ObservableObject, @preconcurrency CLLoc
         nearbyService: NearbyPresenceServiceProtocol = NearbyPresenceService(),
         rivalLeagueService: RivalLeagueServiceProtocol = RivalLeagueService(),
         preferenceStore: MapPreferenceStoreProtocol = DefaultMapPreferenceStore.shared,
+        moderationStore: RivalModerationStoreProtocol? = nil,
         locationManager: CLLocationManager = CLLocationManager(),
         authSessionStore: AuthSessionStoreProtocol = DefaultAuthSessionStore.shared,
         sessionProvider: @escaping () -> AppSessionState = { AppFeatureGate.currentSession() }
@@ -85,6 +84,7 @@ final class RivalTabViewModel: NSObject, ObservableObject, @preconcurrency CLLoc
         self.nearbyService = nearbyService
         self.rivalLeagueService = rivalLeagueService
         self.preferenceStore = preferenceStore
+        self.moderationStore = moderationStore ?? RivalModerationStore(preferenceStore: preferenceStore)
         self.locationManager = locationManager
         self.authSessionStore = authSessionStore
         self.sessionProvider = sessionProvider
@@ -152,7 +152,7 @@ final class RivalTabViewModel: NSObject, ObservableObject, @preconcurrency CLLoc
                 preferenceStore.set(false, forKey: locationSharingKey)
                 locationSharingEnabled = false
                 refreshViewState()
-                showToast(visibilityFailureMessage(from: error))
+                showToast(RivalNetworkErrorInterpreter.visibilityFailureMessage(from: error))
             }
         }
     }
@@ -185,7 +185,7 @@ final class RivalTabViewModel: NSObject, ObservableObject, @preconcurrency CLLoc
                 preferenceStore.set(previous, forKey: locationSharingKey)
                 locationSharingEnabled = previous
                 refreshViewState()
-                showToast(visibilityFailureMessage(from: error))
+                showToast(RivalNetworkErrorInterpreter.visibilityFailureMessage(from: error))
             }
         }
     }
@@ -233,7 +233,7 @@ final class RivalTabViewModel: NSObject, ObservableObject, @preconcurrency CLLoc
                     screenState = .ready
                 }
             } catch {
-                if isConnectivityError(error) {
+                if RivalNetworkErrorInterpreter.isConnectivityError(error) {
                     screenState = hotspots.isEmpty ? .offlineEmpty : .offlineCached
                 } else {
                     screenState = .errorRetryable
@@ -410,86 +410,26 @@ final class RivalTabViewModel: NSObject, ObservableObject, @preconcurrency CLLoc
 
     /// 인증/권한/공유 상태를 바탕으로 라이벌 화면 상태를 결정합니다.
     private func refreshViewState() {
-        guard currentUserId != nil else {
-            screenState = .guestLocked
-            leaderboardState = .guestLocked
-            return
-        }
-        guard permissionState == .authorized else {
-            screenState = .permissionRequired
-            leaderboardState = .permissionRequired
-            return
-        }
-        guard locationSharingEnabled else {
-            screenState = .consentRequired
-            leaderboardState = .consentRequired
-            return
-        }
-        if hotspots.isEmpty {
-            screenState = .empty
-        } else {
-            screenState = .ready
-        }
-        if compareScope == .friend {
-            leaderboardState = .friendPreview
-        } else if leaderboardEntries.isEmpty {
-            leaderboardState = .empty
-        } else {
-            leaderboardState = .ready
-        }
-    }
-
-    /// 익명 공유 설정 실패를 사용자 액션으로 이어질 수 있는 문구로 변환합니다.
-    private func visibilityFailureMessage(from error: Error) -> String {
-        guard let supabaseError = error as? SupabaseHTTPError else {
-            return "설정 반영 실패, 다시 시도해주세요."
-        }
-        switch supabaseError {
-        case .notConfigured:
-            return "Supabase 설정이 누락되어 있어요. 설정 파일을 확인해주세요."
-        case .unexpectedStatusCode(let statusCode):
-            switch statusCode {
-            case 400, 401, 403:
-                return "인증 세션 확인이 필요해요. 다시 로그인 후 시도해주세요."
-            case 404:
-                return "근처 공유 기능이 아직 서버에 배포되지 않았어요."
-            case 500...599:
-                return "서버 설정이 준비되지 않았어요. 잠시 후 다시 시도해주세요."
-            default:
-                return "설정 반영 실패(\(statusCode))"
-            }
-        case .invalidURL, .invalidBody, .invalidResponse:
-            return "요청 형식 확인이 필요해요. 앱을 재시작 후 다시 시도해주세요."
-        }
+        let resolved = RivalViewStateResolver.resolve(
+            RivalViewStateInput(
+                hasAuthenticatedUser: currentUserId != nil,
+                permissionState: permissionState,
+                locationSharingEnabled: locationSharingEnabled,
+                hasHotspots: hotspots.isEmpty == false,
+                compareScope: compareScope,
+                hasLeaderboardEntries: leaderboardEntries.isEmpty == false
+            )
+        )
+        screenState = resolved.screen
+        leaderboardState = resolved.leaderboard
     }
 
     /// 핫스팟 요약 텍스트를 계산해 카드에 표시합니다.
     private func updateHotspotSummary() {
-        guard let maximum = hotspots.map(\.intensity).max() else {
-            maxIntensityText = "없음"
-            lastUpdatedText = "-"
-            hotspotPreviewRows = []
-            return
-        }
-        if maximum >= 0.67 {
-            maxIntensityText = "높음"
-        } else if maximum >= 0.34 {
-            maxIntensityText = "보통"
-        } else {
-            maxIntensityText = "낮음"
-        }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm"
-        lastUpdatedText = formatter.string(from: Date())
-        hotspotPreviewRows = hotspots
-            .sorted(by: { $0.intensity > $1.intensity })
-            .prefix(3)
-            .map { hotspot in
-                HotspotPreviewRow(
-                    title: "격자 \(hotspot.geohash.prefix(5))",
-                    value: "\(Int(hotspot.intensity * 100))% · \(hotspot.count)명"
-                )
-            }
+        let summary = RivalHotspotSummaryBuilder.build(from: hotspots)
+        maxIntensityText = summary.maxIntensityText
+        lastUpdatedText = summary.lastUpdatedText
+        hotspotPreviewRows = summary.previewRows
     }
 
     /// 주기 조회 타이머를 시작해 공유 중 상태에서 10초마다 핫스팟을 갱신합니다.
@@ -505,14 +445,19 @@ final class RivalTabViewModel: NSObject, ObservableObject, @preconcurrency CLLoc
 
     /// 저장된 숨김/차단 익명 코드 목록을 불러옵니다.
     private func loadModerationPreferences() {
-        hiddenAliases = Array(Set(preferenceStore.stringArray(forKey: hiddenAliasKey))).sorted()
-        blockedAliases = Array(Set(preferenceStore.stringArray(forKey: blockedAliasKey))).sorted()
+        let snapshot = moderationStore.loadSnapshot()
+        hiddenAliases = snapshot.hiddenAliases
+        blockedAliases = snapshot.blockedAliases
     }
 
     /// 현재 숨김/차단 익명 코드 목록을 로컬 설정에 저장합니다.
     private func persistModerationPreferences() {
-        preferenceStore.set(hiddenAliases.sorted(), forKey: hiddenAliasKey)
-        preferenceStore.set(blockedAliases.sorted(), forKey: blockedAliasKey)
+        moderationStore.saveSnapshot(
+            RivalModerationSnapshot(
+                hiddenAliases: hiddenAliases,
+                blockedAliases: blockedAliases
+            )
+        )
     }
 
     /// 리더보드 원본 데이터에 숨김/차단 필터를 적용해 사용자 노출 목록을 갱신합니다.
@@ -533,41 +478,7 @@ final class RivalTabViewModel: NSObject, ObservableObject, @preconcurrency CLLoc
 
     /// 신고/차단/숨김 이력을 로컬 JSON 로그에 누적합니다.
     private func appendModerationLog(action: String, aliasCode: String, reason: String?) {
-        let decoder = JSONDecoder()
-        let encoder = JSONEncoder()
-        var logs: [RivalModerationLogEntry] = []
-        if let data = preferenceStore.data(forKey: moderationLogKey),
-           let decoded = try? decoder.decode([RivalModerationLogEntry].self, from: data) {
-            logs = decoded
-        }
-        let entry = RivalModerationLogEntry(
-            action: action,
-            aliasCode: aliasCode,
-            reason: reason,
-            createdAt: Date().timeIntervalSince1970
-        )
-        logs.append(entry)
-        if logs.count > 200 {
-            logs.removeFirst(logs.count - 200)
-        }
-        let encoded = try? encoder.encode(logs)
-        preferenceStore.set(encoded, forKey: moderationLogKey)
-    }
-
-    /// 네트워크 계열 오류 여부를 판별합니다.
-    private func isConnectivityError(_ error: Error) -> Bool {
-        if error is URLError {
-            return true
-        }
-        if let supabaseError = error as? SupabaseHTTPError {
-            switch supabaseError {
-            case .unexpectedStatusCode(let code):
-                return code == 429 || (500...599).contains(code)
-            default:
-                return false
-            }
-        }
-        return false
+        moderationStore.appendLog(action: action, aliasCode: aliasCode, reason: reason)
     }
 
     /// 위치 권한이 바뀌면 화면 상태를 즉시 재계산합니다.
@@ -586,4 +497,3 @@ final class RivalTabViewModel: NSObject, ObservableObject, @preconcurrency CLLoc
         refreshLeaderboard(force: false)
     }
 }
-
