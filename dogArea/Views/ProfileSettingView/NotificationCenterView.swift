@@ -178,6 +178,7 @@ struct ProfileFieldEditSheet: View {
     @State private var ageYearsText: String
     @State private var gender: PetGender
     @State private var errorMessage: String? = nil
+    @State private var showCaricatureGenerator: Bool = false
 
     init(viewModel: SettingViewModel, onSaved: @escaping (String) -> Void) {
         self.viewModel = viewModel
@@ -203,6 +204,17 @@ struct ProfileFieldEditSheet: View {
                             Text(item.title).tag(item)
                         }
                     }
+                }
+                Section("반려견 캐리커처") {
+                    if let status = viewModel.selectedPet?.caricatureStatus {
+                        Text("현재 상태: \(status.rawValue)")
+                            .font(.appFont(for: .Regular, size: 12))
+                            .foregroundStyle(Color.appTextDarkGray)
+                    }
+                    Button("캐리커처 생성/재생성") {
+                        showCaricatureGenerator = true
+                    }
+                    .disabled(viewModel.selectedPet?.petProfile == nil && viewModel.selectedPet?.caricatureURL == nil)
                 }
                 if let errorMessage {
                     Section {
@@ -236,6 +248,11 @@ struct ProfileFieldEditSheet: View {
                             errorMessage = error.localizedDescription
                         }
                     }
+                }
+            }
+            .sheet(isPresented: $showCaricatureGenerator) {
+                NavigationStack {
+                    TextToImageView()
                 }
             }
         }

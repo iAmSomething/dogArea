@@ -36,7 +36,7 @@ struct CustomTabBar: View {
       TabButtonView(selectedTab: $selectedTab,
                     imageName: ("imageBtn","imageBtnGray"),
                     tabId: 3,
-                    titleName: "이미지")
+                    titleName: "비교군")
       
       // Settings button
       TabButtonView(selectedTab: $selectedTab,

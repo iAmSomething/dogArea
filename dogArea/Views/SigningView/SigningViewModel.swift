@@ -18,7 +18,8 @@ class SigningViewModel: ObservableObject {
     @Published var petGender: PetGender = .unknown
     @Published var userProfile: UIImage? = nil
     @Published var petProfile: UIImage? = nil
-    var appleInfo: AppleUserInfo
+    @Published var enableCaricatureOnSignup: Bool = true
+    var authInfo: AuthUserInfo
     private var userId:String = ""
     private var petURL: String? = nil
     private var profileURL: String? = nil
@@ -28,11 +29,11 @@ class SigningViewModel: ObservableObject {
     private let featureFlags = FeatureFlagStore.shared
     private let metricTracker = AppMetricTracker.shared
     init(
-        info: AppleUserInfo,
+        info: AuthUserInfo,
         profileRepository: ProfileRepository = DefaultProfileRepository.shared,
         imageRepository: ProfileImageRepository = SupabaseProfileImageRepository.shared
     ) {
-        self.appleInfo = info
+        self.authInfo = info
         self.userName = info.name ?? ""
         self.userId = info.id
         self.createdAt = info.createdAt
@@ -53,7 +54,7 @@ class SigningViewModel: ObservableObject {
                 if let img = petProfile {
                     petURL = try await uploadImage(img: img, isPet: true)
                 }
-                let caricatureEnabled = featureFlags.isEnabled(.caricatureAsyncV1)
+                let caricatureEnabled = featureFlags.isEnabled(.caricatureAsyncV1) && enableCaricatureOnSignup
                 let petInfo = PetInfo(
                     petName: petName.trimmingCharacters(in: .whitespacesAndNewlines),
                     petProfile: petURL,

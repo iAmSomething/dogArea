@@ -268,7 +268,7 @@ final class HomeViewModel: ObservableObject {
             guard Task.isCancelled == false else { return }
             await MainActor.run {
                 self.krAreas = AreaMeterCollection(areas: snapshot.allAreas)
-                self.featuredGoalAreas = snapshot.featuredAreas.sorted { $0.area > $1.area }
+                self.featuredGoalAreas = snapshot.featuredAreas.sorted { $0.area < $1.area }
                 self.featuredAreaCount = self.featuredGoalAreas.count
                 self.areaReferenceSections = snapshot.sections
                 self.areaReferenceSourceLabel = snapshot.source == .remote ? "DB 비교군" : "로컬 비교군 (Fallback)"
@@ -485,9 +485,10 @@ final class HomeViewModel: ObservableObject {
         myAreaList = walkRepository.fetchAreas()
     }
 
+    /// 현재 누적 면적이 들어갈 오름차순 비교군 삽입 위치를 계산합니다.
     private func findIndex() -> Int {
         guard let i = krAreas.areas.firstIndex(where: {
-            $0.area < myArea.area
+            $0.area > myArea.area
         }) else { return krAreas.areas.count }
         return i
     }
@@ -504,7 +505,7 @@ final class HomeViewModel: ObservableObject {
     }
 
     func nearlistMore() -> AreaMeter? {
-        if let featuredNext = featuredGoalAreas.last(where: { $0.area > myArea.area }) {
+        if let featuredNext = featuredGoalAreas.first(where: { $0.area > myArea.area }) {
             return featuredNext
         }
         return krAreas.closeArea(of: myArea.area)
@@ -513,19 +514,16 @@ final class HomeViewModel: ObservableObject {
     private func shouldUpdateMeter() -> Bool {
         guard let last = walkRepository.fetchAreas().last else { return true }
         guard let current = nearlistLess() else { return false }
-        if (last.area == current.area && last.areaName == current.areaName) {
+        if (last.area == current.area && last.areaName == current.areaName) || last.area >= current.area {
             return false
-        } else if last.area > current.area {
-            return false
-        } else {
-            return true
         }
+        return true
     }
 
     private func updateCurrentMeter() {
         if shouldUpdateMeter() {
             let currents = krAreas.nearistArea(since: walkRepository.fetchAreas().last, from: myArea.area)
-            for c in currents.reversed() {
+            for c in currents {
                 if walkRepository.saveArea(.init(areaName: c.areaName, area: c.area, createdAt: Date().timeIntervalSince1970)) {
                 }
             }

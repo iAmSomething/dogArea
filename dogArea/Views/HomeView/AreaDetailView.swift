@@ -12,6 +12,14 @@ struct AreaDetailView: View {
     @ObservedObject var tabStatus = TabAppear.shared
     
     @ObservedObject var viewModel: HomeViewModel
+    private let hidesTabBarOnAppear: Bool
+
+    /// 비교군 화면에서 탭바 표시 여부를 호출 컨텍스트에 맞게 주입합니다.
+    init(viewModel: HomeViewModel, hidesTabBarOnAppear: Bool = true) {
+        self.viewModel = viewModel
+        self.hidesTabBarOnAppear = hidesTabBarOnAppear
+    }
+
     var body: some View {
         ScrollView {
             HStack(alignment: .bottom) {
@@ -114,11 +122,15 @@ struct AreaDetailView: View {
                 }
             }
         }.onAppear{
-            tabStatus.hide()
+            if hidesTabBarOnAppear {
+                tabStatus.hide()
+            }
             viewModel.refreshAreaList()
             viewModel.refreshAreaReferenceCatalogs()
         }.onDisappear {
-            tabStatus.appear()
+            if hidesTabBarOnAppear {
+                tabStatus.appear()
+            }
         }.refreshable {
             viewModel.refreshAreaList()
             viewModel.refreshAreaReferenceCatalogs()

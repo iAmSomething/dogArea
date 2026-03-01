@@ -19,13 +19,13 @@ struct RootView: View {
     private var homeView: HomeView
     private var walkListView: WalkListView    
     private var mapView: MapView
-    private var textToImageView: TextToImageView
+    private var areaDetailView: AreaDetailView
     private var notificationCenterView: NotificationCenterView
     init() {
         self.homeView = HomeView()
         self.walkListView = WalkListView()
         self.mapView = MapView()
-        self.textToImageView = TextToImageView()
+        self.areaDetailView = AreaDetailView(viewModel: HomeViewModel(), hidesTabBarOnAppear: false)
         self.notificationCenterView = NotificationCenterView()
     }
     var body: some View {
@@ -51,7 +51,7 @@ struct RootView: View {
             }
             else if self.selectedTab == 3 {
                 NavigationView {
-                    textToImageView.frame(maxWidth: .infinity,maxHeight: .infinity)
+                    areaDetailView.frame(maxWidth: .infinity,maxHeight: .infinity)
                         .navigationBarHidden(selectedTab == 3)
                 }
             }

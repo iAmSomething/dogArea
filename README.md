@@ -71,6 +71,11 @@
 - 전체 체크(iOS/watchOS build 포함): `bash scripts/ios_pr_check.sh`
 - 문서/유닛만 빠르게 체크: `DOGAREA_SKIP_BUILD=1 bash scripts/ios_pr_check.sh`
 
+## Supabase 테스트 계정/데이터 시드
+
+- `node scripts/supabase_seed_test_account.mjs --email test@test.com --password '원하는비밀번호'`
+- 좌표를 직접 고정하려면: `--lat 37.5665 --lng 126.9780`
+
 ## 강아지들의 영역 표시
 
 산책하다 보면 강아지들이 영역 표시를 하는 것을 아실 수 있습니다.

@@ -81,6 +81,16 @@ struct PetProfileSettingView: View {
             }
             .pickerStyle(.segmented)
             .padding(.horizontal)
+            Toggle(isOn: $viewModel.enableCaricatureOnSignup) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("가입 후 캐리커처 자동 생성")
+                        .font(.appFont(for: .SemiBold, size: 13))
+                    Text("반려견 사진을 기준으로 프로필 캐리커처를 자동으로 준비해요.")
+                        .font(.appFont(for: .Light, size: 11))
+                        .foregroundStyle(Color.appTextDarkGray)
+                }
+            }
+            .padding(.horizontal)
             Spacer()
             Button(action: {
                 viewModel.setValue()

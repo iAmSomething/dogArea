@@ -35,7 +35,7 @@ struct AreaMeterCollection {
 
     var areas: [AreaMeter] {
       if let customAreas, customAreas.isEmpty == false {
-          return customAreas.sorted { $0.area > $1.area }
+          return customAreas.sorted { $0.area < $1.area }
       }
       var area: [AreaMeter] = [.init("강원특별자치도 홍천군" , 1820.58),
         .init("강원특별자치도 인제군",1646.19),
@@ -276,19 +276,24 @@ struct AreaMeterCollection {
                                .init("애버랜드", 0.99),
                                .init("바티칸 시국", 0.44),
                                .init("롯데월드", 0.11)]
-        return area.map{AreaMeter($0.areaName, $0.area * 1000000)}
+        return area
+            .map { AreaMeter($0.areaName, $0.area * 1000000) }
+            .sorted { $0.area < $1.area }
    }
+    /// 현재 누적 면적보다 작고 가장 가까운 비교군(최근 정복)을 반환합니다.
     func nearistArea(of myarea: Double) -> AreaMeter? {
-        return areas.first{$0.area < myarea}
+        return areas.last { $0.area < myarea }
     }
+    /// 이전 마일스톤 이후 새롭게 달성한 비교군 목록을 반환합니다.
     func nearistArea(since: AreaMeterDTO? = nil, from myarea: Double) -> [AreaMeter] {
         guard let since else {
             return areas.filter { $0.area < myarea }
         }
         return areas.filter { $0.area < myarea && $0.area > since.area }
     }
+    /// 현재 누적 면적보다 큰 비교군 중 가장 가까운 다음 목표를 반환합니다.
     func closeArea(of myarea: Double) -> AreaMeter? {
-        return areas.last{$0.area > myarea}
+        return areas.first { $0.area > myarea }
     }
 }
 
@@ -356,4 +361,3 @@ struct AreaReferenceSnapshot {
 protocol AreaReferenceRepository {
     func fetchSnapshot() async -> AreaReferenceSnapshot
 }
-
