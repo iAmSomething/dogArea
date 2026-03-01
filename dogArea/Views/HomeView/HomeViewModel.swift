@@ -9,10 +9,6 @@ import Foundation
 import SwiftUI
 import Combine
 
-extension Notification.Name {
-    static let walkPointRecordedForQuest = Notification.Name("walk.point.recorded.for.quest")
-}
-
 enum QuestMotionEventType: String, Equatable {
     case progress
     case completed
@@ -153,6 +149,8 @@ final class HomeViewModel: ObservableObject {
     private let metricTracker = AppMetricTracker.shared
     private let areaReferenceRepository: AreaReferenceRepository
     private let walkRepository: WalkRepositoryProtocol
+    private let userSessionStore: UserSessionStoreProtocol
+    private let eventCenter: AppEventCenterProtocol
     private let seasonMotionStore = SeasonMotionStore()
     private var featuredGoalAreas: [AreaMeter] = []
     private var areaReferenceTask: Task<Void, Never>? = nil
@@ -220,10 +218,14 @@ final class HomeViewModel: ObservableObject {
 
     init(
         areaReferenceRepository: AreaReferenceRepository = SupabaseAreaReferenceRepository.shared,
-        walkRepository: WalkRepositoryProtocol = WalkRepositoryContainer.shared
+        walkRepository: WalkRepositoryProtocol = WalkRepositoryContainer.shared,
+        userSessionStore: UserSessionStoreProtocol = DefaultUserSessionStore.shared,
+        eventCenter: AppEventCenterProtocol = DefaultAppEventCenter.shared
     ) {
         self.areaReferenceRepository = areaReferenceRepository
         self.walkRepository = walkRepository
+        self.userSessionStore = userSessionStore
+        self.eventCenter = eventCenter
         bindSelectedPetSync()
         bindTimeBoundaryNotifications()
         bindSeasonCatchupBuffStatusNotifications()
@@ -267,15 +269,15 @@ final class HomeViewModel: ObservableObject {
     }
 
     func reloadUserInfo() {
-        userInfo = UserdefaultSetting.shared.getValue()
-        selectedPet = UserdefaultSetting.shared.selectedPet(from: userInfo)
+        userInfo = userSessionStore.currentUserInfo()
+        selectedPet = userSessionStore.selectedPet(from: userInfo)
         selectedPetId = selectedPet?.petId ?? ""
     }
 
     func selectPet(_ petId: String) {
         guard pets.contains(where: { $0.petId == petId }) else { return }
         isShowingAllRecordsOverride = false
-        UserdefaultSetting.shared.setSelectedPetId(petId, source: "home")
+        userSessionStore.setSelectedPetId(petId, source: "home")
         reloadUserInfo()
         applySelectedPetStatistics()
     }
@@ -316,7 +318,7 @@ final class HomeViewModel: ObservableObject {
     }
 
     private func bindSeasonCatchupBuffStatusNotifications() {
-        NotificationCenter.default.publisher(for: UserdefaultSetting.seasonCatchupBuffDidUpdateNotification)
+        eventCenter.publisher(for: UserdefaultSetting.seasonCatchupBuffDidUpdateNotification, object: nil)
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
                 self?.reloadSeasonCatchupBuffStatus()
@@ -325,7 +327,7 @@ final class HomeViewModel: ObservableObject {
     }
 
     private func bindSelectedPetSync() {
-        NotificationCenter.default.publisher(for: UserdefaultSetting.selectedPetDidChangeNotification)
+        eventCenter.publisher(for: UserdefaultSetting.selectedPetDidChangeNotification, object: nil)
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
                 guard let self else { return }
@@ -337,7 +339,7 @@ final class HomeViewModel: ObservableObject {
     }
 
     private func bindQuestProgressNotifications() {
-        NotificationCenter.default.publisher(for: .walkPointRecordedForQuest)
+        eventCenter.publisher(for: .walkPointRecordedForQuest, object: nil)
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
                 self?.refreshIndoorMissions()
@@ -346,9 +348,8 @@ final class HomeViewModel: ObservableObject {
     }
 
     private func bindTimeBoundaryNotifications() {
-        let center = NotificationCenter.default
-        let timezoneChanged = center.publisher(for: .NSSystemTimeZoneDidChange)
-        let dayChanged = center.publisher(for: .NSCalendarDayChanged)
+        let timezoneChanged = eventCenter.publisher(for: .NSSystemTimeZoneDidChange, object: nil)
+        let dayChanged = eventCenter.publisher(for: .NSCalendarDayChanged, object: nil)
 
         Publishers.Merge(timezoneChanged, dayChanged)
             .receive(on: RunLoop.main)
@@ -371,7 +372,7 @@ final class HomeViewModel: ObservableObject {
     }
 
     private func reloadSeasonCatchupBuffStatus(now: Date = Date()) {
-        guard let snapshot = UserdefaultSetting.shared.seasonCatchupBuffSnapshot() else {
+        guard let snapshot = userSessionStore.seasonCatchupBuffSnapshot() else {
             seasonCatchupBuffStatusMessage = nil
             seasonCatchupBuffStatusWarning = false
             return

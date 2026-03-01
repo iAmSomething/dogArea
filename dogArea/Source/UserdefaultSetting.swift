@@ -8,6 +8,7 @@
 import Foundation
 import CryptoKit
 import SwiftUI
+import Combine
 
 class UserdefaultSetting {
     enum keyValue: String {
@@ -86,6 +87,10 @@ class UserdefaultSetting {
         userDefaults.removeObject(forKey: keyValue.walkPointRecordMode.rawValue)
     }
     #endif
+}
+
+extension Notification.Name {
+    static let walkPointRecordedForQuest = Notification.Name("walk.point.recorded.for.quest")
 }
 struct UserInfo: TimeCheckable {
     let id: String
@@ -312,6 +317,185 @@ extension UserdefaultSetting {
         walkSessionMetadataStore.setWalkPointRecordModeRawValue(rawValue)
     }
 
+}
+
+protocol UserSessionStoreProtocol {
+    func currentUserInfo() -> UserInfo?
+    func selectedPet(from userInfo: UserInfo?) -> PetInfo?
+    func setSelectedPetId(_ petId: String, source: String)
+    func suggestedPetForWalkStart(from userInfo: UserInfo?, now: Date) -> PetInfo?
+    func seasonCatchupBuffSnapshot() -> SeasonCatchupBuffSnapshot?
+    func walkStartCountdownEnabled() -> Bool
+    func setWalkStartCountdownEnabled(_ enabled: Bool)
+    func walkPointRecordModeRawValue() -> String
+    func setWalkPointRecordModeRawValue(_ rawValue: String)
+}
+
+final class DefaultUserSessionStore: UserSessionStoreProtocol {
+    static let shared = DefaultUserSessionStore()
+    private let storage: UserdefaultSetting
+
+    init(storage: UserdefaultSetting = .shared) {
+        self.storage = storage
+    }
+
+    func currentUserInfo() -> UserInfo? {
+        storage.getValue()
+    }
+
+    func selectedPet(from userInfo: UserInfo?) -> PetInfo? {
+        storage.selectedPet(from: userInfo)
+    }
+
+    func setSelectedPetId(_ petId: String, source: String) {
+        storage.setSelectedPetId(petId, source: source)
+    }
+
+    func suggestedPetForWalkStart(from userInfo: UserInfo?, now: Date) -> PetInfo? {
+        storage.suggestedPetForWalkStart(from: userInfo, now: now)
+    }
+
+    func seasonCatchupBuffSnapshot() -> SeasonCatchupBuffSnapshot? {
+        storage.seasonCatchupBuffSnapshot()
+    }
+
+    func walkStartCountdownEnabled() -> Bool {
+        storage.walkStartCountdownEnabled()
+    }
+
+    func setWalkStartCountdownEnabled(_ enabled: Bool) {
+        storage.setWalkStartCountdownEnabled(enabled)
+    }
+
+    func walkPointRecordModeRawValue() -> String {
+        storage.walkPointRecordModeRawValue()
+    }
+
+    func setWalkPointRecordModeRawValue(_ rawValue: String) {
+        storage.setWalkPointRecordModeRawValue(rawValue)
+    }
+}
+
+protocol MapPreferenceStoreProtocol {
+    func bool(forKey key: String, default defaultValue: Bool) -> Bool
+    func integer(forKey key: String, default defaultValue: Int) -> Int
+    func double(forKey key: String, default defaultValue: Double) -> Double
+    func string(forKey key: String) -> String?
+    func data(forKey key: String) -> Data?
+    func stringArray(forKey key: String) -> [String]
+    func set(_ value: Bool, forKey key: String)
+    func set(_ value: String?, forKey key: String)
+    func set(_ value: Data?, forKey key: String)
+    func set(_ value: [String], forKey key: String)
+    func removeObject(forKey key: String)
+}
+
+final class DefaultMapPreferenceStore: MapPreferenceStoreProtocol {
+    static let shared = DefaultMapPreferenceStore()
+    private let userDefaults: UserDefaults
+
+    init(userDefaults: UserDefaults = .standard) {
+        self.userDefaults = userDefaults
+    }
+
+    func bool(forKey key: String, default defaultValue: Bool) -> Bool {
+        guard let value = userDefaults.object(forKey: key) as? Bool else {
+            return defaultValue
+        }
+        return value
+    }
+
+    func integer(forKey key: String, default defaultValue: Int) -> Int {
+        let value = userDefaults.integer(forKey: key)
+        return value > 0 ? value : defaultValue
+    }
+
+    func double(forKey key: String, default defaultValue: Double) -> Double {
+        let value = userDefaults.double(forKey: key)
+        return value > 0 ? value : defaultValue
+    }
+
+    func string(forKey key: String) -> String? {
+        userDefaults.string(forKey: key)
+    }
+
+    func data(forKey key: String) -> Data? {
+        userDefaults.data(forKey: key)
+    }
+
+    func stringArray(forKey key: String) -> [String] {
+        userDefaults.stringArray(forKey: key) ?? []
+    }
+
+    func set(_ value: Bool, forKey key: String) {
+        userDefaults.set(value, forKey: key)
+    }
+
+    func set(_ value: String?, forKey key: String) {
+        if let value {
+            userDefaults.set(value, forKey: key)
+        } else {
+            userDefaults.removeObject(forKey: key)
+        }
+    }
+
+    func set(_ value: Data?, forKey key: String) {
+        if let value {
+            userDefaults.set(value, forKey: key)
+        } else {
+            userDefaults.removeObject(forKey: key)
+        }
+    }
+
+    func set(_ value: [String], forKey key: String) {
+        userDefaults.set(value, forKey: key)
+    }
+
+    func removeObject(forKey key: String) {
+        userDefaults.removeObject(forKey: key)
+    }
+}
+
+protocol AppEventCenterProtocol {
+    func addObserver(
+        forName name: Notification.Name,
+        object: AnyObject?,
+        queue: OperationQueue?,
+        using block: @escaping (Notification) -> Void
+    ) -> NSObjectProtocol
+    func removeObserver(_ observer: NSObjectProtocol)
+    func post(name: Notification.Name, object: AnyObject?, userInfo: [AnyHashable: Any]?)
+    func publisher(for name: Notification.Name, object: AnyObject?) -> AnyPublisher<Notification, Never>
+}
+
+final class DefaultAppEventCenter: AppEventCenterProtocol {
+    static let shared = DefaultAppEventCenter()
+    private let center: NotificationCenter
+
+    init(center: NotificationCenter = .default) {
+        self.center = center
+    }
+
+    func addObserver(
+        forName name: Notification.Name,
+        object: AnyObject?,
+        queue: OperationQueue?,
+        using block: @escaping (Notification) -> Void
+    ) -> NSObjectProtocol {
+        center.addObserver(forName: name, object: object, queue: queue, using: block)
+    }
+
+    func removeObserver(_ observer: NSObjectProtocol) {
+        center.removeObserver(observer)
+    }
+
+    func post(name: Notification.Name, object: AnyObject?, userInfo: [AnyHashable: Any]?) {
+        center.post(name: name, object: object, userInfo: userInfo)
+    }
+
+    func publisher(for name: Notification.Name, object: AnyObject? = nil) -> AnyPublisher<Notification, Never> {
+        center.publisher(for: name, object: object).eraseToAnyPublisher()
+    }
 }
 
 enum AppFeatureFlagKey: String, CaseIterable {
