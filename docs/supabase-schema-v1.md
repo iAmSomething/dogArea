@@ -262,6 +262,22 @@ erDiagram
   - 복귀/보정 정책: `season_catchup_buff_policies`
   - Stage2 구현 시 `season_runs`, `season_user_scores`, `season_rewards`로 정산 스냅샷/보상 영속화 확장
 
+### 4.11 시즌 집계/정산 파이프라인(Stage 2)
+- 파이프라인 문서: `docs/season-stage2-pipeline-v1.md`
+- 신규 테이블:
+  - `season_runs`: 시즌 기간/정책/정산 상태(`active|settling|settled`)
+  - `tile_events`: 타일 점수 일 단위 원장 + 멱등키(`season_id+owner_user_id+tile_id+event_day`)
+  - `season_tile_scores`: 타일별 원점수/감쇠/유효점수
+  - `season_user_scores`: 사용자별 리더보드 집계(랭크/티어)
+  - `season_rewards`: 시즌 종료 보상 발급 이력(멱등 발급)
+- 신규 RPC:
+  - `rpc_ingest_season_tile_events(target_walk_session_id, now_ts)`
+  - `rpc_apply_season_daily_decay(target_season_id, now_ts)` (`service_role`)
+  - `rpc_finalize_season(target_season_id, now_ts)` (`service_role`)
+  - `rpc_get_season_leaderboard(target_season_id, top_n)`
+- 운영 관측:
+  - `view_season_batch_status_14d`
+
 ## 5. RLS 정책 원칙
 - 사용자 데이터는 `auth.uid()` 소유 범위로만 접근
 - `area_references`는 읽기 공개(`anon`, `authenticated`)
@@ -292,6 +308,11 @@ erDiagram
   - write: 서비스 경로(RPC/service role)
 - `season_catchup_buff_policies`
   - `select`: 공개(읽기)
+- `season_runs`
+  - `select`: 공개(시즌 상태 조회)
+- `tile_events`, `season_tile_scores`, `season_user_scores`, `season_rewards`
+  - `select`: 소유자
+  - write: 서비스 경로(RPC/service role)
 - `view_weather_feedback_kpis_7d`
   - `select`: 공개(운영 관측용)
 - `weather_replacement_runtime_policies`, `weather_replacement_mappings`

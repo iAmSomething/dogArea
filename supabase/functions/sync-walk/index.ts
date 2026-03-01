@@ -42,6 +42,16 @@ type WeatherReplacementSummaryDTO = {
   weekly_shield_limit: number;
 };
 
+type SeasonPipelineSummaryDTO = {
+  season_id: string;
+  season_key: string;
+  ingested_rows: number;
+  tile_rows: number;
+  user_total_score: number;
+  user_rank: number | null;
+  run_status: string;
+};
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -272,6 +282,21 @@ Deno.serve(async (req) => {
       seasonScoreSummary = seasonScoreRows[0] as SeasonScoreSummaryDTO;
     }
 
+    let seasonPipelineSummary: SeasonPipelineSummaryDTO | null = null;
+    const { data: seasonPipelineRows, error: seasonPipelineError } = await userClient.rpc(
+      "rpc_ingest_season_tile_events",
+      {
+        target_walk_session_id: walkSessionId,
+        now_ts: new Date().toISOString(),
+      },
+    );
+
+    if (seasonPipelineError) {
+      console.warn("season stage2 pipeline rpc failed", seasonPipelineError.message);
+    } else if (Array.isArray(seasonPipelineRows) && seasonPipelineRows.length > 0) {
+      seasonPipelineSummary = seasonPipelineRows[0] as SeasonPipelineSummaryDTO;
+    }
+
     const weatherRiskLevel = asString(payload.weather_risk_level) ?? "clear";
     const sourceQuestId = asString(payload.source_quest_id) ?? "outdoor.default";
     const replacementQuestId = asString(payload.replacement_quest_id) ?? "indoor.light";
@@ -300,6 +325,7 @@ Deno.serve(async (req) => {
       walk_session_id: walkSessionId,
       point_count: rows.length,
       season_score_summary: seasonScoreSummary,
+      season_pipeline_summary: seasonPipelineSummary,
       weather_replacement_summary: weatherReplacementSummary,
     });
   }

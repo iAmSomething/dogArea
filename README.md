@@ -26,6 +26,7 @@
 - 시즌 안티 농사 규칙 v1: `docs/season-anti-farming-v1.md`
 - 시즌 복귀 캐치업 버프 v1: `docs/season-comeback-catchup-buff-v1.md`
 - 시즌 주간 정책 Stage1 v1: `docs/season-weekly-policy-stage1-v1.md`
+- 시즌 집계/정산 파이프라인 Stage2 v1: `docs/season-stage2-pipeline-v1.md`
 - 체감 날씨 피드백 루프 v1: `docs/weather-feedback-loop-v1.md`
 - 날씨 리스크 모델/Provider 정책 v1: `docs/weather-risk-provider-policy-v1.md`
 - 날씨 치환/스트릭 보호 서버 엔진 v1: `docs/weather-replacement-shield-engine-v1.md`

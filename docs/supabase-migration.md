@@ -371,6 +371,77 @@ where policy_key = 'season_comeback_catchup_v1';
 - 시즌 종료 지연창(`2h`) 운영 규칙이 앱/운영 문서와 일치
 - 티어 컷(80/180/320/520) 및 동점 우선순위가 문서/클라이언트 표시 로직과 동일
 
+### 5.13 시즌 Stage2 집계/정산 파이프라인 검증 (#125)
+타일 이벤트 적재(멱등) 호출:
+```sql
+select *
+from public.rpc_ingest_season_tile_events(
+  ':walk_session_uuid'::uuid,
+  now()
+);
+```
+
+동일 요청 재호출 후 중복 여부 확인:
+```sql
+select
+  season_id,
+  owner_user_id,
+  tile_id,
+  event_day,
+  count(*) as row_count
+from public.tile_events
+where source_walk_session_id = ':walk_session_uuid'::uuid
+group by season_id, owner_user_id, tile_id, event_day
+having count(*) > 1;
+```
+
+감쇠 배치 재실행 검증(service_role):
+```sql
+select *
+from public.rpc_apply_season_daily_decay(
+  ':season_id'::uuid,
+  now()
+);
+```
+
+정산 실행 검증(service_role):
+```sql
+select *
+from public.rpc_finalize_season(
+  ':season_id'::uuid,
+  now()
+);
+```
+
+리더보드 조회 검증:
+```sql
+select *
+from public.rpc_get_season_leaderboard(
+  ':season_id'::uuid,
+  20
+);
+```
+
+배치 상태 뷰 검증:
+```sql
+select
+  season_key,
+  status,
+  participant_count,
+  leaderboard_total_score,
+  rewarded_user_count,
+  last_decay_run_at,
+  last_settlement_run_at
+from public.view_season_batch_status_14d
+order by season_key desc;
+```
+
+기대값:
+- `tile_events`에 `(season_id, owner_user_id, tile_id, event_day)` 중복이 0건
+- 감쇠 배치를 동일 시점으로 재실행해도 `season_user_scores.total_score`가 일관
+- 정산 재실행 시 `season_rewards` 중복 발급이 발생하지 않음
+- 리더보드 정렬이 정책 순서(`score -> active tile -> capture -> contribution time`)와 일치
+
 ## 6. 운영 체크리스트
 - [ ] `migration list --local` / `migration list --linked` 결과 저장
 - [ ] User A/B 교차 접근 차단 SQL 결과 저장
@@ -380,6 +451,7 @@ where policy_key = 'season_comeback_catchup_v1';
 - [ ] 비교군 카탈로그/시드 정합성 SQL 결과 첨부
 - [ ] 시즌 안티 농사 RPC/감사 로그 검증 결과 첨부
 - [ ] 시즌 Stage1 정책 파라미터 검증 결과 첨부
+- [ ] 시즌 Stage2 집계/감쇠/정산/보상 파이프라인 검증 결과 첨부
 - [ ] 체감 날씨 피드백 KPI 뷰 검증 결과 첨부
 - [ ] 날씨 치환/Shield RPC 및 이력 원장 검증 결과 첨부
 - [ ] 라이벌 리그 스냅샷/분포/히스토리 검증 결과 첨부
