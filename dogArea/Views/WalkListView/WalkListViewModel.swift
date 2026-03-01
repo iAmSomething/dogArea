@@ -7,7 +7,7 @@
 
 import Foundation
 import Combine
-final class WalkListViewModel: ObservableObject, CoreDataProtocol {
+final class WalkListViewModel: ObservableObject {
     @Published var walkingDatas: [WalkDataModel] = []
     @Published var userInfo: UserInfo? = nil
     @Published var selectedPetId: String = ""
@@ -15,6 +15,7 @@ final class WalkListViewModel: ObservableObject, CoreDataProtocol {
     @Published private(set) var isShowingAllRecordsOverride: Bool = false
     private var allWalkingDatas: [WalkDataModel] = []
     private var cancellables: Set<AnyCancellable> = []
+    private let walkRepository: WalkRepositoryProtocol
 
     var pets: [PetInfo] {
         userInfo?.pet ?? []
@@ -30,13 +31,14 @@ final class WalkListViewModel: ObservableObject, CoreDataProtocol {
         return selected.isEmpty
     }
 
-    init() {
+    init(walkRepository: WalkRepositoryProtocol = WalkRepositoryContainer.shared) {
+        self.walkRepository = walkRepository
         bindSelectedPetSync()
         reloadSelectedPetContext()
     }
 
     func fetchModel() {
-        self.allWalkingDatas = self.fetchPolygons().map{
+        self.allWalkingDatas = self.walkRepository.fetchPolygons().map{
             .init(polygon: $0)
         }
         reloadSelectedPetContext()

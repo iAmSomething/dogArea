@@ -15,20 +15,18 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
-let model = load("dogArea/dogArea.xcdatamodeld/dogArea.xcdatamodel/contents")
-let coreDataProtocol = load("dogArea/Source/CoreDataProtocol.swift")
-let coreDataDTO = load("dogArea/Source/CoreDataDTO.swift")
+let walkRepository = load("dogArea/Source/Data/Walk/WalkRepository.swift")
+let walkBackfill = load("dogArea/Source/Data/Walk/WalkBackfillDTO.swift")
 let mapModel = load("dogArea/Views/MapView/MapModel.swift")
 let mapViewModel = load("dogArea/Views/MapView/MapViewModel.swift")
 let homeViewModel = load("dogArea/Views/HomeView/HomeViewModel.swift")
 let walkListModel = load("dogArea/Views/WalkListView/WalkListModel.swift")
 let walkListViewModel = load("dogArea/Views/WalkListView/WalkListViewModel.swift")
 
-assertTrue(model.contains("attribute name=\"petId\""), "core data model should define PolygonEntity.petId")
-assertTrue(coreDataProtocol.contains("polygons.petId = normalizedPetId"), "save path should persist polygon petId canonically")
-assertTrue(coreDataProtocol.contains("backfillPolygonPetIdsFromMetadataIfNeeded"), "core data should backfill missing canonical petId from metadata")
-assertTrue(coreDataDTO.contains("normalizedUUIDString(petId) ?? normalizedUUIDString(polygon.petId)"), "supabase dto converter should use canonical polygon petId")
-assertTrue(coreDataDTO.contains("petId = normalizedUUIDStringOrNil(self.petId)"), "PolygonEntity->Polygon mapping should hydrate canonical petId")
+assertTrue(walkRepository.contains("petId: normalizedPetUUIDString(polygon.petId)"), "repository should persist canonical petId")
+assertTrue(walkRepository.contains("backfillPetIdsIfNeeded"), "repository should backfill missing canonical petId from metadata")
+assertTrue(walkBackfill.contains("normalizedUUIDString(petId) ?? normalizedUUIDString(polygon.petId)"), "backfill converter should use canonical polygon petId")
+assertTrue(walkBackfill.contains("normalizedUUIDStringOrNil(_ raw: String?)"), "canonical petId normalizer should exist")
 
 assertTrue(mapModel.contains("var petId: String?"), "polygon model should carry petId")
 assertTrue(mapViewModel.contains("self.polygon.petId = selectedPetId"), "walk end should pin current selected petId on polygon")

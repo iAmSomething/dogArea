@@ -9,14 +9,13 @@ import Foundation
 import SwiftUI
 import MapKit
 import CoreLocation
-import CoreData
 import Combine
 import WatchConnectivity
 import CryptoKit
 #if canImport(UIKit)
 import UIKit
 #endif
-class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreDataProtocol, WCSessionDelegate {
+class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSessionDelegate {
     enum WalkEndReason: String {
         case manual = "manual"
         case autoInactive = "auto_inactive"
@@ -74,7 +73,6 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
 
     private let locationManager = CLLocationManager()
     private var timer: Timer? = nil
-    private let watchSession = WCSession.isSupported() ? WCSession.default : nil
     @Published var time: TimeInterval = 0.0
     @Published var startTime = Date()
     @Published var location: CLLocation?
@@ -178,6 +176,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     private var syncFlushTask: Task<Void, Never>? = nil
     private let syncOutbox = SyncOutboxStore.shared
     private let syncTransport = SupabaseSyncOutboxTransport()
+    private let walkRepository: WalkRepositoryProtocol
     private var lastCaptureHapticAt: Date = .distantPast
     private var lastWarningHapticAt: Date = .distantPast
     private let maxCaptureRipples = 12
@@ -264,7 +263,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         }
     }
 
-    override init() {
+    init(walkRepository: WalkRepositoryProtocol = WalkRepositoryContainer.shared) {
+        self.walkRepository = walkRepository
         super.init()
         self.locationManager.delegate = self
         self.locationManager.allowsBackgroundLocationUpdates = true
@@ -317,7 +317,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
     }
 
     private func reloadPolygonState(restoreLatestPolygon: Bool = false) {
-        let latest = self.fetchPolygons()
+        let latest = self.walkRepository.fetchPolygons()
         self.applyPolygonList(latest, restoreLatestPolygon: restoreLatestPolygon)
     }
 
@@ -349,7 +349,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         if polygon.locations.firstIndex(where:{ $0.id == locationID}) != nil {
             polygon.removeAt(locationID)
             if polygon.locations.count<3 {
-                let updated = deletePolygon(id: self.polygon.id)
+                let updated = walkRepository.deletePolygon(id: self.polygon.id)
                 self.applyPolygonList(updated)
             }
         }
@@ -373,7 +373,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
                     self.polygon.petId = selectedPetId
                     polygon.makePolygon(walkArea: calculateArea(), walkTime: self.time, img: img)
                     let completedPolygon = self.polygon
-                    let updated = savePolygon(polygon: completedPolygon)
+                    let updated = walkRepository.savePolygon(completedPolygon)
                     let saved = updated.contains(where: { $0.id == completedPolygon.id })
                     metricTracker.track(
                         saved ? .walkSaveSuccess : .walkSaveFailed,
@@ -537,7 +537,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
 
     private func enqueueSyncOutbox(for polygon: Polygon, hasImage: Bool) {
         guard isCloudSyncAvailableForSession else { return }
-        guard let sessionDTO = CoreDataSupabaseBackfillDTOConverter.makeSessionDTO(
+        guard let sessionDTO = WalkBackfillDTOConverter.makeSessionDTO(
             from: polygon,
             ownerUserId: currentMetricUserId(),
             petId: polygon.petId,
@@ -954,7 +954,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
         )
         var finalized = completed
         finalized.makePolygon(walkArea: calculateArea(points: restoredPoints), walkTime: walkTime)
-        let updated = savePolygon(polygon: finalized)
+        let updated = walkRepository.savePolygon(finalized)
         if updated.contains(where: { $0.id == finalized.id }) {
             WalkSessionMetadataStore.shared.set(
                 sessionId: finalized.id,
@@ -1195,7 +1195,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, CoreD
 
     func deletePolygonAndRefresh(_ id: UUID) {
         WalkSessionMetadataStore.shared.clear(sessionId: id)
-        let updated = deletePolygon(id: id)
+        let updated = walkRepository.deletePolygon(id: id)
         self.applyPolygonList(updated)
     }
 
@@ -1872,38 +1872,6 @@ extension MapViewModel {
         return str
     }
 }
-//MARK: - WatchConnectivity
-extension MapViewModel {
-    func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
-        guard let action = message["action"] as? String else { return }
-        DispatchQueue.main.async { [weak self] in
-            self?.applyWatchAction(action)
-        }
-    }
-    func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String : Any]) {
-        guard let action = applicationContext["action"] as? String else { return }
-        DispatchQueue.main.async { [weak self] in
-            self?.applyWatchAction(action)
-        }
-    }
-    func sessionDidBecomeInactive(_ session: WCSession) {}
-    func sessionDidDeactivate(_ session: WCSession) {
-        session.activate()
-    }
-    func sessionWatchStateDidChange(_ session: WCSession) {
-        publishWatchState()
-    }
-    func sessionReachabilityDidChange(_ session: WCSession) {
-        publishWatchState()
-    }
-    #if os(iOS)
-    func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
-        if activationState == .activated {
-            publishWatchState()
-        }
-    }
-    #endif
-}
 //MARK: - CLLocation 관련 로직
 extension MapViewModel {
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
@@ -2107,105 +2075,5 @@ private extension String {
             )
         )
         return uuid.uuidString.lowercased()
-    }
-}
-
-private struct NearbyPresenceService {
-    private enum ServiceError: Error {
-        case notConfigured
-        case invalidURL
-        case badResponse
-    }
-
-    private struct ResponseHotspotDTO: Decodable {
-        let geohash7: String
-        let count: Int
-        let intensity: Double
-        let center_lat: Double
-        let center_lng: Double
-    }
-
-    private struct HotspotEnvelope: Decodable {
-        let hotspots: [ResponseHotspotDTO]
-    }
-
-    private func endpointURL() throws -> URL {
-        let env = ProcessInfo.processInfo.environment
-        guard let raw = env["SUPABASE_URL"], raw.isEmpty == false else {
-            throw ServiceError.notConfigured
-        }
-        guard let url = URL(string: raw + "/functions/v1/nearby-presence") else {
-            throw ServiceError.invalidURL
-        }
-        return url
-    }
-
-    private func bearerToken() -> String {
-        ProcessInfo.processInfo.environment["SUPABASE_ANON_KEY"] ?? ""
-    }
-
-    private func requestBody(_ payload: [String: Any]) throws -> Data {
-        try JSONSerialization.data(withJSONObject: payload)
-    }
-
-    private func post(payload: [String: Any]) async throws -> Data {
-        let url = try endpointURL()
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let token = bearerToken()
-        if token.isEmpty == false {
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
-        request.httpBody = try requestBody(payload)
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard let code = (response as? HTTPURLResponse)?.statusCode, (200..<300).contains(code) else {
-            throw ServiceError.badResponse
-        }
-        return data
-    }
-
-    func setVisibility(userId: String, enabled: Bool) async throws {
-        _ = try await post(payload: [
-            "action": "set_visibility",
-            "userId": userId,
-            "enabled": enabled
-        ])
-    }
-
-    func upsertPresence(userId: String, latitude: Double, longitude: Double) async throws {
-        _ = try await post(payload: [
-            "action": "upsert_presence",
-            "userId": userId,
-            "lat": latitude,
-            "lng": longitude
-        ])
-    }
-
-    func getHotspots(
-        userId: String?,
-        centerLatitude: Double,
-        centerLongitude: Double,
-        radiusKm: Double
-    ) async throws -> [NearbyHotspotDTO] {
-        var payload: [String: Any] = [
-            "action": "get_hotspots",
-            "centerLat": centerLatitude,
-            "centerLng": centerLongitude,
-            "radiusKm": radiusKm
-        ]
-        if let userId, userId.isEmpty == false {
-            payload["userId"] = userId
-        }
-        let data = try await post(payload: payload)
-        let decoded = try JSONDecoder().decode(HotspotEnvelope.self, from: data)
-        return decoded.hotspots.map {
-            NearbyHotspotDTO(
-                geohash: $0.geohash7,
-                count: $0.count,
-                intensity: max(0.0, min(1.0, $0.intensity)),
-                centerCoordinate: CLLocationCoordinate2D(latitude: $0.center_lat, longitude: $0.center_lng)
-            )
-        }
     }
 }

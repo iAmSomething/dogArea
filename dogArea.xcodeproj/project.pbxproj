@@ -10,9 +10,9 @@
 		DA16C1D92B05DCC8008FC133 /* CornerShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA16C1D82B05DCC8008FC133 /* CornerShape.swift */; };
 		DA16C1DC2B05E4DF008FC133 /* TimeCheckable.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA16C1DB2B05E4DF008FC133 /* TimeCheckable.swift */; };
 		DA16C1E12B060C7B008FC133 /* SelectedPolygonCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA16C1E02B060C7B008FC133 /* SelectedPolygonCell.swift */; };
-		DA1731712AE200C100EF10C8 /* dogArea.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = DA17316F2AE200C100EF10C8 /* dogArea.xcdatamodeld */; };
-		DA1731732AE2017500EF10C8 /* PersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1731722AE2017500EF10C8 /* PersistenceController.swift */; };
-		DA1731762AE20A4D00EF10C8 /* CoreDataDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1731752AE20A4D00EF10C8 /* CoreDataDTO.swift */; };
+		DA1731732AE2017500EF10C8 /* SupabaseInfrastructure.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1731722AE2017500EF10C8 /* SupabaseInfrastructure.swift */; };
+		DA1731762AE20A4D00EF10C8 /* WalkBackfillDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1731752AE20A4D00EF10C8 /* WalkBackfillDTO.swift */; };
+		DA1731712AE200C100EF10C8 /* ProfileRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1731702AE200C100EF10C8 /* ProfileRepository.swift */; };
 		DA354FFD2B01DF1F00E4094A /* TimeIntervalExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA354FFC2B01DF1F00E4094A /* TimeIntervalExtensions.swift */; };
 		DA3550022B01E0F900E4094A /* UnderLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3550012B01E0F900E4094A /* UnderLine.swift */; };
 		DA390A6F2AFE027C00BACF2B /* MapSubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA390A6E2AFE027C00BACF2B /* MapSubView.swift */; };
@@ -40,7 +40,7 @@
 		DA4513802AFB1EC1007AD69B /* WalkListCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA45137F2AFB1EC1007AD69B /* WalkListCell.swift */; };
 		DA4513832AFB25C2007AD69B /* PositionMarkerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA4513822AFB25C2007AD69B /* PositionMarkerView.swift */; };
 		DA4513862AFB2CFC007AD69B /* WalkListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA4513852AFB2CFC007AD69B /* WalkListViewModel.swift */; };
-		DA4513892AFB2D68007AD69B /* CoreDataProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA4513882AFB2D68007AD69B /* CoreDataProtocol.swift */; };
+		DA4513892AFB2D68007AD69B /* WalkRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA4513882AFB2D68007AD69B /* WalkRepository.swift */; };
 		DA45138C2AFB36D4007AD69B /* WalkListModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA45138B2AFB36D4007AD69B /* WalkListModel.swift */; };
 		DA56FFE82AE2B9890040855B /* MapAlertSubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA56FFE72AE2B9890040855B /* MapAlertSubView.swift */; };
 		DA71C83D2AD787AC00081ED0 /* dogAreaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA71C83C2AD787AC00081ED0 /* dogAreaApp.swift */; };
@@ -99,8 +99,6 @@
 		DAB314BC2B3C1B4B000357C7 /* dogAreaWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = DAB314AF2B3C1B4A000357C7 /* dogAreaWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		DAB314C22B3C1D71000357C7 /* ContentsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB314C12B3C1D71000357C7 /* ContentsViewModel.swift */; };
 		DAC19F042B0ADED6002FE2E8 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = DAC19F032B0ADED6002FE2E8 /* GoogleService-Info.plist */; };
-		DAC19F072B0AE2B6002FE2E8 /* FirebaseFirestoreSwift in Frameworks */ = {isa = PBXBuildFile; productRef = DAC19F062B0AE2B6002FE2E8 /* FirebaseFirestoreSwift */; };
-		DAC19F092B0AE2BF002FE2E8 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = DAC19F082B0AE2BF002FE2E8 /* FirebaseFirestore */; };
 		DAC19F0C2B0AE561002FE2E8 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = DAC19F0B2B0AE561002FE2E8 /* FirebaseStorage */; };
 		DAC19F0E2B0AE5AC002FE2E8 /* ImagePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F0D2B0AE5AC002FE2E8 /* ImagePicker.swift */; };
 		DAC19F102B0AF661002FE2E8 /* TitleTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F0F2B0AF661002FE2E8 /* TitleTextView.swift */; };
@@ -179,9 +177,9 @@
 		DA16C1D82B05DCC8008FC133 /* CornerShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CornerShape.swift; sourceTree = "<group>"; };
 		DA16C1DB2B05E4DF008FC133 /* TimeCheckable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeCheckable.swift; sourceTree = "<group>"; };
 		DA16C1E02B060C7B008FC133 /* SelectedPolygonCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectedPolygonCell.swift; sourceTree = "<group>"; };
-		DA1731702AE200C100EF10C8 /* dogArea.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = dogArea.xcdatamodel; sourceTree = "<group>"; };
-		DA1731722AE2017500EF10C8 /* PersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceController.swift; sourceTree = "<group>"; };
-		DA1731752AE20A4D00EF10C8 /* CoreDataDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataDTO.swift; sourceTree = "<group>"; };
+		DA1731702AE200C100EF10C8 /* ProfileRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileRepository.swift; sourceTree = "<group>"; };
+		DA1731722AE2017500EF10C8 /* SupabaseInfrastructure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Infrastructure/Supabase/SupabaseInfrastructure.swift; sourceTree = "<group>"; };
+		DA1731752AE20A4D00EF10C8 /* WalkBackfillDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Data/Walk/WalkBackfillDTO.swift; sourceTree = "<group>"; };
 		DA27AD832B061A1B001283D4 /* dogAreaRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = dogAreaRelease.entitlements; sourceTree = "<group>"; };
 		DA27AD842B061AC5001283D4 /* dogAreaDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = dogAreaDebug.entitlements; sourceTree = "<group>"; };
 		DA354FFC2B01DF1F00E4094A /* TimeIntervalExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeIntervalExtensions.swift; sourceTree = "<group>"; };
@@ -211,7 +209,7 @@
 		DA45137F2AFB1EC1007AD69B /* WalkListCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkListCell.swift; sourceTree = "<group>"; };
 		DA4513822AFB25C2007AD69B /* PositionMarkerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PositionMarkerView.swift; sourceTree = "<group>"; };
 		DA4513852AFB2CFC007AD69B /* WalkListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkListViewModel.swift; sourceTree = "<group>"; };
-		DA4513882AFB2D68007AD69B /* CoreDataProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataProtocol.swift; sourceTree = "<group>"; };
+		DA4513882AFB2D68007AD69B /* WalkRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Data/Walk/WalkRepository.swift; sourceTree = "<group>"; };
 		DA45138B2AFB36D4007AD69B /* WalkListModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkListModel.swift; sourceTree = "<group>"; };
 		DA56FFE72AE2B9890040855B /* MapAlertSubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapAlertSubView.swift; sourceTree = "<group>"; };
 		DA71C8392AD787AC00081ED0 /* dogArea.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = dogArea.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -286,10 +284,8 @@
 				DAC19F0C2B0AE561002FE2E8 /* FirebaseStorage in Frameworks */,
 				DA99F9B12AFA1EAB00B1483F /* Lottie in Frameworks */,
 				DAC19F352B0B898D002FE2E8 /* Kingfisher in Frameworks */,
-				DAC19F072B0AE2B6002FE2E8 /* FirebaseFirestoreSwift in Frameworks */,
 				DA3EB0A52B0384E900AEA65D /* FirebaseAnalytics in Frameworks */,
 				DA880D992B0D84F3005FE810 /* FirebaseAuth in Frameworks */,
-				DAC19F092B0AE2BF002FE2E8 /* FirebaseFirestore in Frameworks */,
 				DA3EB0A92B0384FA00AEA65D /* FirebaseAppCheck in Frameworks */,
 				DA3EB0A72B0384F100AEA65D /* FirebaseAppDistribution-Beta in Frameworks */,
 			);
@@ -415,13 +411,15 @@
 				DA354FFC2B01DF1F00E4094A /* TimeIntervalExtensions.swift */,
 				DA3F9BAD2AE0F2410048550C /* ViewUtility.swift */,
 				DAA8E4F82B01A80C00F9190B /* TabAppear.swift */,
-				DA4513882AFB2D68007AD69B /* CoreDataProtocol.swift */,
-				DA1731752AE20A4D00EF10C8 /* CoreDataDTO.swift */,
+				DA4513882AFB2D68007AD69B /* WalkRepository.swift */,
+				DA1731752AE20A4D00EF10C8 /* WalkBackfillDTO.swift */,
+				DA1731722AE2017500EF10C8 /* SupabaseInfrastructure.swift */,
 				DA3EB0AC2B04A1E100AEA65D /* Cluster.swift */,
 				DA16C1D82B05DCC8008FC133 /* CornerShape.swift */,
 				DA16C1DB2B05E4DF008FC133 /* TimeCheckable.swift */,
 				DAC19F122B0AFCAC002FE2E8 /* UserdefaultSetting.swift */,
 				DAE140001400000000000001 /* ProfileStore.swift */,
+				DA1731702AE200C100EF10C8 /* ProfileRepository.swift */,
 				DAE140001400000000000002 /* PetSelectionStore.swift */,
 				DAE140001400000000000003 /* WalkSessionMetadataStore.swift */,
 				DAE140001400000000000004 /* ProfileSyncOutboxStore.swift */,
@@ -512,8 +510,6 @@
 				DA27AD842B061AC5001283D4 /* dogAreaDebug.entitlements */,
 				DA27AD832B061A1B001283D4 /* dogAreaRelease.entitlements */,
 				DA71C83C2AD787AC00081ED0 /* dogAreaApp.swift */,
-				DA1731722AE2017500EF10C8 /* PersistenceController.swift */,
-				DA17316F2AE200C100EF10C8 /* dogArea.xcdatamodeld */,
 				DA1731742AE20A3600EF10C8 /* Resource */,
 				DA3F9BAC2AE0F2410048550C /* Source */,
 				DA3F9B962AE0F14F0048550C /* Views */,
@@ -665,8 +661,6 @@
 				DA3EB0A62B0384F100AEA65D /* FirebaseAppDistribution-Beta */,
 				DA3EB0A82B0384FA00AEA65D /* FirebaseAppCheck */,
 				DA3EB0AA2B03850400AEA65D /* FirebaseMessaging */,
-				DAC19F062B0AE2B6002FE2E8 /* FirebaseFirestoreSwift */,
-				DAC19F082B0AE2BF002FE2E8 /* FirebaseFirestore */,
 				DAC19F0B2B0AE561002FE2E8 /* FirebaseStorage */,
 				DAC19F342B0B898D002FE2E8 /* Kingfisher */,
 				DA880D982B0D84F3005FE810 /* FirebaseAuth */,
@@ -833,6 +827,7 @@
 				DA3F9BA22AE0F14F0048550C /* HomeView.swift in Sources */,
 				DA95CC8D2ADE1736004AD94D /* ImageGenerateViewModel.swift in Sources */,
 				DAE140101400000000000001 /* ProfileStore.swift in Sources */,
+				DA1731712AE200C100EF10C8 /* ProfileRepository.swift in Sources */,
 				DAE140101400000000000002 /* PetSelectionStore.swift in Sources */,
 				DAE140101400000000000003 /* WalkSessionMetadataStore.swift in Sources */,
 				DAE140101400000000000004 /* ProfileSyncOutboxStore.swift in Sources */,
@@ -843,7 +838,6 @@
 				DAC19F162B0B3246002FE2E8 /* PetProfileSettingView.swift in Sources */,
 				DA16C1DC2B05E4DF008FC133 /* TimeCheckable.swift in Sources */,
 				DAC19F132B0AFCAC002FE2E8 /* UserdefaultSetting.swift in Sources */,
-				DA1731712AE200C100EF10C8 /* dogArea.xcdatamodeld in Sources */,
 				DA3EB07A2B0344CD00AEA65D /* AreaDetailView.swift in Sources */,
 				DA933BE92ADD04E70029856C /* CustomAlertView.swift in Sources */,
 				DAC19F202B0B3798002FE2E8 /* LoadingView.swift in Sources */,
@@ -865,7 +859,7 @@
 				DAC19F252B0B37B1002FE2E8 /* LoadingPhase.swift in Sources */,
 				DA822CDD2AFB60B6001EC94D /* MapSettingView.swift in Sources */,
 				DA71C83D2AD787AC00081ED0 /* dogAreaApp.swift in Sources */,
-				DA1731732AE2017500EF10C8 /* PersistenceController.swift in Sources */,
+				DA1731732AE2017500EF10C8 /* SupabaseInfrastructure.swift in Sources */,
 				DAA8E4F92B01A80C00F9190B /* TabAppear.swift in Sources */,
 				DA3F9BA52AE0F14F0048550C /* MapModel.swift in Sources */,
 				DA4513832AFB25C2007AD69B /* PositionMarkerView.swift in Sources */,
@@ -877,10 +871,10 @@
 				DA3F9B362ADE7C100048550C /* CustomAlertViewModel.swift in Sources */,
 				DAA8E4D62B01A03700F9190B /* WalkListDetailView.swift in Sources */,
 				DA3F9BA02AE0F14F0048550C /* ProfileSettingsView.swift in Sources */,
-				DA4513892AFB2D68007AD69B /* CoreDataProtocol.swift in Sources */,
+				DA4513892AFB2D68007AD69B /* WalkRepository.swift in Sources */,
 				DA16C1E12B060C7B008FC133 /* SelectedPolygonCell.swift in Sources */,
 				DAED24FB2AFA1C980044715A /* LottieView.swift in Sources */,
-				DA1731762AE20A4D00EF10C8 /* CoreDataDTO.swift in Sources */,
+				DA1731762AE20A4D00EF10C8 /* WalkBackfillDTO.swift in Sources */,
 				DA822CD62AFB5E21001EC94D /* StartButtonView.swift in Sources */,
 				DA390A752AFE1AFC00BACF2B /* SimpleMessageView.swift in Sources */,
 				DAC19F2C2B0B43BB002FE2E8 /* SignInView.swift in Sources */,
@@ -1424,16 +1418,6 @@
 			package = DAED24F82AFA1C7A0044715A /* XCRemoteSwiftPackageReference "lottie-ios" */;
 			productName = Lottie;
 		};
-		DAC19F062B0AE2B6002FE2E8 /* FirebaseFirestoreSwift */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = DA3EB0A12B0383EF00AEA65D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseFirestoreSwift;
-		};
-		DAC19F082B0AE2BF002FE2E8 /* FirebaseFirestore */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = DA3EB0A12B0383EF00AEA65D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseFirestore;
-		};
 		DAC19F0B2B0AE561002FE2E8 /* FirebaseStorage */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = DA3EB0A12B0383EF00AEA65D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
@@ -1446,18 +1430,6 @@
 		};
 /* End XCSwiftPackageProductDependency section */
 
-/* Begin XCVersionGroup section */
-		DA17316F2AE200C100EF10C8 /* dogArea.xcdatamodeld */ = {
-			isa = XCVersionGroup;
-			children = (
-				DA1731702AE200C100EF10C8 /* dogArea.xcdatamodel */,
-			);
-			currentVersion = DA1731702AE200C100EF10C8 /* dogArea.xcdatamodel */;
-			path = dogArea.xcdatamodeld;
-			sourceTree = "<group>";
-			versionGroupType = wrapper.xcdatamodel;
-		};
-/* End XCVersionGroup section */
 	};
 	rootObject = DA71C8312AD787AC00081ED0 /* Project object */;
 }

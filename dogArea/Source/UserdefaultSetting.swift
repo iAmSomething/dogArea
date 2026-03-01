@@ -8,7 +8,6 @@
 import Foundation
 import CryptoKit
 import SwiftUI
-import CoreData
 
 class UserdefaultSetting {
     enum keyValue: String {
@@ -36,27 +35,17 @@ class UserdefaultSetting {
     private let profileStore: ProfileStoring
     private let petSelectionStore: PetSelectionStoring
     private let walkSessionMetadataStore: WalkSessionMetadataStore
-    private let profileSyncOutboxStore: ProfileSyncOutboxStore
-    private let profileSyncCoordinator: ProfileSyncCoordinator
-    private let profileSyncTransport: SupabaseProfileSyncTransport
-    private let profileSyncStorageKey = "sync.profile.outbox.items.v1"
 
     init(
         userDefaults: UserDefaults = .standard,
         profileStore: ProfileStoring = ProfileStore.shared,
         petSelectionStore: PetSelectionStoring = PetSelectionStore.shared,
-        walkSessionMetadataStore: WalkSessionMetadataStore = .shared,
-        profileSyncOutboxStore: ProfileSyncOutboxStore = .shared,
-        profileSyncCoordinator: ProfileSyncCoordinator = .shared,
-        profileSyncTransport: SupabaseProfileSyncTransport = .init()
+        walkSessionMetadataStore: WalkSessionMetadataStore = .shared
     ) {
         self.userDefaults = userDefaults
         self.profileStore = profileStore
         self.petSelectionStore = petSelectionStore
         self.walkSessionMetadataStore = walkSessionMetadataStore
-        self.profileSyncOutboxStore = profileSyncOutboxStore
-        self.profileSyncCoordinator = profileSyncCoordinator
-        self.profileSyncTransport = profileSyncTransport
     }
 
     func savenonce(nonce: Double) {
@@ -104,7 +93,7 @@ struct UserInfo: TimeCheckable {
     let profile: String?
     let profileMessage: String?
     let pet: [PetInfo]
-    var selectedPetId: UUID?
+    var selectedPetId: String?
     var createdAt: TimeInterval
     var selectedPet: PetInfo? {
         guard !pet.isEmpty else { return nil }
@@ -329,6 +318,9 @@ enum AppFeatureFlagKey: String, CaseIterable {
     case heatmapV1 = "ff_heatmap_v1"
     case caricatureAsyncV1 = "ff_caricature_async_v1"
     case nearbyHotspotV1 = "ff_nearby_hotspot_v1"
+    case repoLayerV2 = "ff_repo_layer_v2"
+    case supabaseReadV1 = "ff_supabase_read_v1"
+    case coredataDeprecationV1 = "ff_coredata_deprecation_v1"
 }
 
 enum AppMetricEvent: String {
@@ -408,6 +400,9 @@ final class FeatureFlagStore {
         AppFeatureFlagKey.heatmapV1.rawValue: .init(isEnabled: true, rolloutPercent: 100, updatedAt: nil),
         AppFeatureFlagKey.caricatureAsyncV1.rawValue: .init(isEnabled: true, rolloutPercent: 100, updatedAt: nil),
         AppFeatureFlagKey.nearbyHotspotV1.rawValue: .init(isEnabled: true, rolloutPercent: 100, updatedAt: nil),
+        AppFeatureFlagKey.repoLayerV2.rawValue: .init(isEnabled: true, rolloutPercent: 100, updatedAt: nil),
+        AppFeatureFlagKey.supabaseReadV1.rawValue: .init(isEnabled: true, rolloutPercent: 100, updatedAt: nil),
+        AppFeatureFlagKey.coredataDeprecationV1.rawValue: .init(isEnabled: true, rolloutPercent: 100, updatedAt: nil),
     ]
 
     private init() {
@@ -510,171 +505,6 @@ final class AppMetricTracker {
     }
 }
 
-private struct FeatureControlService {
-    static let shared = FeatureControlService()
-
-    private enum ServiceError: Error {
-        case notConfigured
-        case invalidURL
-        case badResponse
-    }
-
-    private func endpointURL() throws -> URL {
-        let env = ProcessInfo.processInfo.environment
-        guard let raw = env["SUPABASE_URL"], raw.isEmpty == false else {
-            throw ServiceError.notConfigured
-        }
-        guard let url = URL(string: raw + "/functions/v1/feature-control") else {
-            throw ServiceError.invalidURL
-        }
-        return url
-    }
-
-    private func bearerToken() -> String {
-        ProcessInfo.processInfo.environment["SUPABASE_ANON_KEY"] ?? ""
-    }
-
-    func post(payload: [String: Any]) async throws -> Data {
-        let url = try endpointURL()
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let token = bearerToken()
-        if token.isEmpty == false {
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
-        request.httpBody = try JSONSerialization.data(withJSONObject: payload)
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard let code = (response as? HTTPURLResponse)?.statusCode, (200..<300).contains(code) else {
-            throw ServiceError.badResponse
-        }
-        return data
-    }
-
-    func postFireAndForget(payload: [String: Any]) {
-        guard let url = try? endpointURL() else { return }
-        guard let body = try? JSONSerialization.data(withJSONObject: payload) else { return }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let token = bearerToken()
-        if token.isEmpty == false {
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
-        request.httpBody = body
-        URLSession.shared.dataTask(with: request).resume()
-    }
-}
-
-struct CaricatureEdgeClient {
-    static let schemaVersion = "2026-02-26.v1"
-
-    struct ResponseDTO: Decodable {
-        let version: String?
-        let requestId: String?
-        let jobId: String
-        let provider: String?
-        let caricatureUrl: String?
-        let status: String?
-        let errorCode: String?
-        let message: String?
-
-        var caricatureURL: String? { caricatureUrl }
-    }
-
-    private struct ErrorDTO: Decodable {
-        let errorCode: String?
-        let message: String?
-    }
-
-    struct RequestDTO: Encodable {
-        let version: String
-        let petId: String
-        let userId: String?
-        let sourceImagePath: String?
-        let sourceImageUrl: String?
-        let style: String
-        let providerHint: String
-        let requestId: String
-    }
-
-    enum RequestError: LocalizedError {
-        case notConfigured
-        case invalidURL
-        case invalidResponse
-        case requestFailed(code: Int, message: String)
-
-        var errorDescription: String? {
-            switch self {
-            case .notConfigured:
-                return "Supabase 설정이 누락되어 캐리커처 요청을 보낼 수 없습니다."
-            case .invalidURL:
-                return "캐리커처 요청 URL이 올바르지 않습니다."
-            case .invalidResponse:
-                return "캐리커처 응답을 해석할 수 없습니다."
-            case .requestFailed(_, let message):
-                return message
-            }
-        }
-    }
-
-    func requestCaricature(
-        petId: String,
-        userId: String?,
-        sourceImagePath: String? = nil,
-        sourceImageURL: String? = nil,
-        style: String = "cute_cartoon",
-        providerHint: String = "auto",
-        requestId: String
-    ) async throws -> ResponseDTO {
-        let env = ProcessInfo.processInfo.environment
-        let supabaseURL = env["SUPABASE_URL"] ?? ""
-        let anonKey = env["SUPABASE_ANON_KEY"] ?? ""
-        guard supabaseURL.isEmpty == false, anonKey.isEmpty == false else {
-            throw RequestError.notConfigured
-        }
-        guard let url = URL(string: "\(supabaseURL)/functions/v1/caricature") else {
-            throw RequestError.invalidURL
-        }
-
-        let payload = RequestDTO(
-            version: Self.schemaVersion,
-            petId: petId,
-            userId: userId,
-            sourceImagePath: sourceImagePath,
-            sourceImageUrl: sourceImageURL,
-            style: style,
-            providerHint: providerHint,
-            requestId: requestId
-        )
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.timeoutInterval = 35
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(anonKey)", forHTTPHeaderField: "Authorization")
-        request.httpBody = try JSONEncoder().encode(payload)
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard let statusCode = (response as? HTTPURLResponse)?.statusCode else {
-            throw RequestError.invalidResponse
-        }
-        guard (200..<300).contains(statusCode) else {
-            if let err = try? JSONDecoder().decode(ErrorDTO.self, from: data) {
-                let message = err.message ?? "캐리커처 생성에 실패했습니다. 잠시 후 다시 시도해주세요."
-                throw RequestError.requestFailed(code: statusCode, message: message)
-            }
-            throw RequestError.requestFailed(
-                code: statusCode,
-                message: "캐리커처 생성 실패(\(statusCode)). 네트워크/권한을 확인해주세요."
-            )
-        }
-        guard let decoded = try? JSONDecoder().decode(ResponseDTO.self, from: data) else {
-            throw RequestError.invalidResponse
-        }
-        return decoded
-    }
-}
 
 enum SyncOutboxStage: String, Codable, CaseIterable {
     case session
@@ -957,232 +787,6 @@ final class SyncOutboxStore {
     }
 }
 
-struct SupabaseSyncOutboxTransport: SyncOutboxTransporting {
-    private struct BackfillSummaryResponseDTO: Decodable {
-        let summary: SummaryDTO?
-
-        struct SummaryDTO: Decodable {
-            let sessionCount: Int
-            let pointCount: Int
-            let totalAreaM2: Double
-            let totalDurationSec: Double
-
-            enum CodingKeys: String, CodingKey {
-                case sessionCount = "session_count"
-                case pointCount = "point_count"
-                case totalAreaM2 = "total_area_m2"
-                case totalDurationSec = "total_duration_sec"
-            }
-        }
-    }
-
-    private struct SyncStageResponseDTO: Decodable {
-        let seasonScoreSummary: SeasonScoreSummaryDTO?
-
-        enum CodingKeys: String, CodingKey {
-            case seasonScoreSummary = "season_score_summary"
-        }
-    }
-
-    private struct SeasonScoreSummaryDTO: Decodable {
-        let catchupBonus: Double?
-        let catchupBuffActive: Bool?
-        let catchupBuffGrantedAt: String?
-        let catchupBuffExpiresAt: String?
-        let explain: ExplainDTO?
-
-        enum CodingKeys: String, CodingKey {
-            case catchupBonus = "catchup_bonus"
-            case catchupBuffActive = "catchup_buff_active"
-            case catchupBuffGrantedAt = "catchup_buff_granted_at"
-            case catchupBuffExpiresAt = "catchup_buff_expires_at"
-            case explain
-        }
-    }
-
-    private struct ExplainDTO: Decodable {
-        let uiReason: String?
-        let catchupBuff: CatchupBuffDTO?
-
-        enum CodingKeys: String, CodingKey {
-            case uiReason = "ui_reason"
-            case catchupBuff = "catchup_buff"
-        }
-    }
-
-    private struct CatchupBuffDTO: Decodable {
-        let status: String?
-        let blockReason: String?
-        let grantedAt: String?
-        let expiresAt: String?
-        let bonusScore: Double?
-
-        enum CodingKeys: String, CodingKey {
-            case status
-            case blockReason = "block_reason"
-            case grantedAt = "granted_at"
-            case expiresAt = "expires_at"
-            case bonusScore = "bonus_score"
-        }
-    }
-
-    private static let iso8601WithFractional: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter
-    }()
-
-    private static let iso8601Basic: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        return formatter
-    }()
-
-    private func endpointURL(from env: [String: String]) -> URL? {
-        guard let rawURL = env["SUPABASE_URL"], rawURL.isEmpty == false else { return nil }
-        return URL(string: rawURL + "/functions/v1/sync-walk")
-    }
-
-    private func bearerToken(from env: [String: String]) -> String {
-        env["SUPABASE_ANON_KEY"] ?? ""
-    }
-
-    private func parseISO8601ToEpoch(_ value: String?) -> TimeInterval? {
-        guard let value, value.isEmpty == false else { return nil }
-        if let date = Self.iso8601WithFractional.date(from: value) ?? Self.iso8601Basic.date(from: value) {
-            return date.timeIntervalSince1970
-        }
-        return nil
-    }
-
-    private func persistSeasonCatchupBuffSnapshotIfNeeded(item: SyncOutboxItem, data: Data) {
-        guard item.stage == .points else { return }
-        guard let decoded = try? JSONDecoder().decode(SyncStageResponseDTO.self, from: data),
-              let season = decoded.seasonScoreSummary else {
-            return
-        }
-
-        let catchup = season.explain?.catchupBuff
-        let status = SeasonCatchupBuffDisplayStatus(rawValue: catchup?.status ?? "")
-            ?? (season.catchupBuffActive == true ? .active : .inactive)
-        let snapshot = SeasonCatchupBuffSnapshot(
-            walkSessionId: item.walkSessionId,
-            status: status,
-            isActive: season.catchupBuffActive ?? false,
-            bonusScore: season.catchupBonus ?? catchup?.bonusScore ?? 0,
-            uiReason: season.explain?.uiReason,
-            blockReason: catchup?.blockReason,
-            grantedAt: parseISO8601ToEpoch(season.catchupBuffGrantedAt ?? catchup?.grantedAt),
-            expiresAt: parseISO8601ToEpoch(season.catchupBuffExpiresAt ?? catchup?.expiresAt),
-            syncedAt: Date().timeIntervalSince1970
-        )
-        UserdefaultSetting.shared.updateSeasonCatchupBuffSnapshot(snapshot)
-    }
-
-    func send(item: SyncOutboxItem) async -> SyncOutboxSendResult {
-        guard AppFeatureGate.isAllowed(.cloudSync, session: AppFeatureGate.currentSession()) else {
-            return .retryable(.unauthorized)
-        }
-        let env = ProcessInfo.processInfo.environment
-        guard let url = endpointURL(from: env) else {
-            return .retryable(.notConfigured)
-        }
-
-        let token = bearerToken(from: env)
-        guard token.isEmpty == false else {
-            return .retryable(.tokenExpired)
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-        let body: [String: Any] = [
-            "action": "sync_walk_stage",
-            "walk_session_id": item.walkSessionId,
-            "stage": item.stage.rawValue,
-            "idempotency_key": item.idempotencyKey,
-            "payload": item.payload
-        ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-
-        do {
-            let (data, response) = try await URLSession.shared.data(for: request)
-            guard let statusCode = (response as? HTTPURLResponse)?.statusCode else {
-                return .retryable(.unknown)
-            }
-            switch statusCode {
-            case 200..<300:
-                persistSeasonCatchupBuffSnapshotIfNeeded(item: item, data: data)
-                return .success
-            case 401, 403:
-                return .retryable(.tokenExpired)
-            case 409:
-                return .success
-            case 429, 500..<600:
-                return .retryable(.serverError)
-            case 404:
-                return .retryable(.notConfigured)
-            case 400, 422:
-                return .permanent(.schemaMismatch)
-            case 507:
-                return .permanent(.storageQuota)
-            default:
-                return .retryable(.unknown)
-            }
-        } catch let error as URLError {
-            switch error.code {
-            case .notConnectedToInternet, .networkConnectionLost, .timedOut, .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed:
-                return .retryable(.offline)
-            case .userAuthenticationRequired:
-                return .retryable(.tokenExpired)
-            default:
-                return .retryable(.unknown)
-            }
-        } catch {
-            return .retryable(.unknown)
-        }
-    }
-
-    func fetchBackfillValidationSummary(sessionIds: [String]) async -> SyncBackfillValidationSummary? {
-        guard AppFeatureGate.isAllowed(.cloudSync, session: AppFeatureGate.currentSession()) else {
-            return nil
-        }
-        let env = ProcessInfo.processInfo.environment
-        guard let url = endpointURL(from: env) else { return nil }
-        let token = bearerToken(from: env)
-        guard token.isEmpty == false else { return nil }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        let body: [String: Any] = [
-            "action": "get_backfill_summary",
-            "session_ids": sessionIds
-        ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-
-        do {
-            let (data, response) = try await URLSession.shared.data(for: request)
-            guard let statusCode = (response as? HTTPURLResponse)?.statusCode,
-                  (200..<300).contains(statusCode) else {
-                return nil
-            }
-            let decoded = try JSONDecoder().decode(BackfillSummaryResponseDTO.self, from: data)
-            guard let summary = decoded.summary else { return nil }
-            return SyncBackfillValidationSummary(
-                sessionCount: summary.sessionCount,
-                pointCount: summary.pointCount,
-                totalAreaM2: summary.totalAreaM2,
-                totalDurationSec: summary.totalDurationSec
-            )
-        } catch {
-            return nil
-        }
-    }
-}
 
 enum AppSessionState: Equatable {
     case guest
@@ -1325,15 +929,18 @@ struct GuestDataUpgradePrompt: Identifiable {
     let shouldEmphasizeRetry: Bool
 }
 
-final class GuestDataUpgradeService: CoreDataProtocol {
+final class GuestDataUpgradeService {
     static let shared = GuestDataUpgradeService()
 
     private let syncOutbox = SyncOutboxStore.shared
     private let syncTransport = SupabaseSyncOutboxTransport()
+    private let walkRepository: WalkRepositoryProtocol
     private let reportStoragePrefix = "guest.data.upgrade.report.v1."
     private let acknowledgedSignaturePrefix = "guest.data.upgrade.signature.v1."
 
-    private init() {}
+    private init(walkRepository: WalkRepositoryProtocol = WalkRepositoryContainer.shared) {
+        self.walkRepository = walkRepository
+    }
 
     func pendingPrompt(for userId: String) -> GuestDataUpgradePrompt? {
         guard let snapshot = localSnapshot(), snapshot.sessionCount > 0 else { return nil }
@@ -1363,8 +970,8 @@ final class GuestDataUpgradeService: CoreDataProtocol {
             syncOutbox.requeuePermanentFailures(walkSessionIds: Set(snapshot.sessionIds))
         }
 
-        for polygon in fetchPolygons() {
-            guard let sessionDTO = CoreDataSupabaseBackfillDTOConverter.makeSessionDTO(
+        for polygon in walkRepository.fetchPolygons() {
+            guard let sessionDTO = WalkBackfillDTOConverter.makeSessionDTO(
                 from: polygon,
                 ownerUserId: userId,
                 petId: nil,
@@ -1403,7 +1010,7 @@ final class GuestDataUpgradeService: CoreDataProtocol {
     }
 
     private func localSnapshot() -> GuestDataUpgradeSnapshot? {
-        let polygons = fetchPolygons()
+        let polygons = walkRepository.fetchPolygons()
         guard polygons.isEmpty == false else { return nil }
 
         let sessionIds = polygons.map { $0.id.uuidString.lowercased() }.sorted()

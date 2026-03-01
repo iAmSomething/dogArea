@@ -17,7 +17,7 @@ struct SeasonProfileSummary: Equatable {
     let contributionCount: Int
 }
 
-final class SettingViewModel: ObservableObject, CoreDataProtocol {
+final class SettingViewModel: ObservableObject {
     enum ProfileEditValidationError: LocalizedError {
         case userNotFound
         case invalidAgeRange
@@ -43,20 +43,25 @@ final class SettingViewModel: ObservableObject, CoreDataProtocol {
     private var profileURL: String? = nil
     private var storage = Storage.storage().reference()
     private let profileRepository: ProfileRepository
+    private let walkRepository: WalkRepositoryProtocol
     private var cancellables: Set<AnyCancellable> = []
 
     var pets: [PetInfo] {
         userInfo?.pet ?? []
     }
 
-    init(profileRepository: ProfileRepository = DefaultProfileRepository.shared) {
+    init(
+        profileRepository: ProfileRepository = DefaultProfileRepository.shared,
+        walkRepository: WalkRepositoryProtocol = WalkRepositoryContainer.shared
+    ) {
         self.profileRepository = profileRepository
+        self.walkRepository = walkRepository
         bindSelectedPetSync()
         fetchModel()
         reloadUserInfo()
     }
     func fetchModel() {
-        self.polygonList = self.fetchPolygons()
+        self.polygonList = self.walkRepository.fetchPolygons()
     }
 
     func reloadUserInfo() {
