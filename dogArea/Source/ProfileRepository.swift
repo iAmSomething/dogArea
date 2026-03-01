@@ -1,5 +1,14 @@
 import Foundation
 
+protocol AppleCredentialAuthServiceProtocol {
+    func signInWithApple(identityToken: String) async throws
+}
+
+protocol ProfileImageRepository {
+    func uploadUserProfileImage(data: Data, ownerId: String) async throws -> String
+    func uploadPetProfileImage(data: Data, ownerId: String) async throws -> String
+}
+
 protocol ProfileRepository {
     func fetchUserInfo() -> UserInfo?
     func selectedPet(from userInfo: UserInfo?) -> PetInfo?

@@ -8,7 +8,6 @@
 import Foundation
 import AuthenticationServices
 import SwiftUI
-import FirebaseAuth
 struct SignInView: View {
     @Environment(\.colorScheme) var scheme
     @State var userId: AppleUserInfo? = nil
@@ -16,15 +15,21 @@ struct SignInView: View {
     let allowDismiss: Bool
     let onAuthenticated: () -> Void
     let onDismiss: () -> Void
+    private let authService: AppleCredentialAuthServiceProtocol
+    private let profileRepository: ProfileRepository
 
     init(
         allowDismiss: Bool = false,
         onAuthenticated: @escaping () -> Void = {},
-        onDismiss: @escaping () -> Void = {}
+        onDismiss: @escaping () -> Void = {},
+        authService: AppleCredentialAuthServiceProtocol = FirebaseAppleCredentialAuthService.shared,
+        profileRepository: ProfileRepository = DefaultProfileRepository.shared
     ) {
         self.allowDismiss = allowDismiss
         self.onAuthenticated = onAuthenticated
         self.onDismiss = onDismiss
+        self.authService = authService
+        self.profileRepository = profileRepository
     }
 
     var body: some View {
@@ -32,7 +37,12 @@ struct SignInView: View {
             VStack {
                 TitleTextView(title: "로그인/회원가입", subTitle: "계정 정보가 필요해요!")
                 Spacer()
-                AppleSigninButton(userId: $userId, onAuthenticated: onAuthenticated)
+                AppleSigninButton(
+                    userId: $userId,
+                    onAuthenticated: onAuthenticated,
+                    authService: authService,
+                    profileRepository: profileRepository
+                )
             }
             .navigationDestination(item: $userId, destination: { info in
                 ProfileSettingsView(
@@ -58,6 +68,8 @@ struct SignInView: View {
 struct AppleSigninButton : View{
     @Binding var userId: AppleUserInfo?
     let onAuthenticated: () -> Void
+    let authService: AppleCredentialAuthServiceProtocol
+    let profileRepository: ProfileRepository
     @State private var isAuthenticating: Bool = false
 
     var body: some View{
@@ -72,7 +84,7 @@ struct AppleSigninButton : View{
                         isAuthenticating = true
                         switch authResults.credential{
                         case let appleIDCredential as ASAuthorizationAppleIDCredential:
-                            let userInfo = UserdefaultSetting().getValue()
+                            let userInfo = profileRepository.fetchUserInfo()
                             let userIdentifier = appleIDCredential.user
                             let fullName = appleIDCredential.fullName
                             let name =  (fullName?.familyName ?? "") + (fullName?.givenName ?? "")
@@ -89,16 +101,23 @@ struct AppleSigninButton : View{
                                 if appleIDCredential.authorizationCode == nil {
                                     print("authorization code missing")
                                 }
-                                let credential = OAuthProvider.credential(withProviderID: "apple.com",
-                                                                          idToken: identityToken,
-                                                                          rawNonce: nil)
-                                Auth.auth().signIn(with: credential){ _, error in
-                                    isAuthenticating = false
-                                    guard error == nil else {
-                                        print(error?.localizedDescription ?? "apple sign in failed")
-                                        return
+                                Task {
+                                    do {
+                                        try await authService.signInWithApple(identityToken: identityToken)
+                                        await MainActor.run {
+                                            isAuthenticating = false
+                                            userId = .init(
+                                                createdAt: Date().timeIntervalSince1970,
+                                                id: appleIDCredential.user,
+                                                name: name
+                                            )
+                                        }
+                                    } catch {
+                                        await MainActor.run {
+                                            isAuthenticating = false
+                                            print(error.localizedDescription)
+                                        }
                                     }
-                                    userId = .init(createdAt: Date().timeIntervalSince1970, id: appleIDCredential.user, name: name)
                                 }
                             }
                             
