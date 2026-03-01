@@ -111,7 +111,7 @@ struct WeatherShieldDailySummary: Equatable {
     let lastAppliedAtText: String
 }
 
-final class HomeViewModel: ObservableObject, CoreDataProtocol {
+final class HomeViewModel: ObservableObject {
     @Published var polygonList: [Polygon] = []
     @Published var totalArea: Double = 0.0
     @Published var totalTime: Double = 0.0
@@ -152,6 +152,7 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     private let indoorMissionStore = IndoorMissionStore()
     private let metricTracker = AppMetricTracker.shared
     private let areaReferenceRepository: AreaReferenceRepository
+    private let walkRepository: WalkRepositoryProtocol
     private let seasonMotionStore = SeasonMotionStore()
     private var featuredGoalAreas: [AreaMeter] = []
     private var areaReferenceTask: Task<Void, Never>? = nil
@@ -217,8 +218,12 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
         return languageCode.hasPrefix("en") ? en : ko
     }
 
-    init(areaReferenceRepository: AreaReferenceRepository = SupabaseAreaReferenceRepository.shared) {
+    init(
+        areaReferenceRepository: AreaReferenceRepository = SupabaseAreaReferenceRepository.shared,
+        walkRepository: WalkRepositoryProtocol = WalkRepositoryContainer.shared
+    ) {
         self.areaReferenceRepository = areaReferenceRepository
+        self.walkRepository = walkRepository
         bindSelectedPetSync()
         bindTimeBoundaryNotifications()
         bindSeasonCatchupBuffStatusNotifications()
@@ -235,9 +240,9 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     func fetchData() {
         reloadUserInfo()
         reloadSeasonCatchupBuffStatus()
-        allPolygons = fetchPolygons()
+        allPolygons = walkRepository.fetchPolygons()
         applySelectedPetStatistics(shouldUpdateMeter: true)
-        myAreaList = fetchArea()
+        myAreaList = walkRepository.fetchAreas()
         refreshAreaReferenceCatalogs()
         refreshGuestDataUpgradeReport()
         refreshIndoorMissions()
@@ -452,7 +457,7 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
     }
 
     func refreshAreaList() {
-        myAreaList = fetchArea()
+        myAreaList = walkRepository.fetchAreas()
     }
 
     private func findIndex() -> Int {
@@ -477,11 +482,11 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
         if let featuredNext = featuredGoalAreas.last(where: { $0.area > myArea.area }) {
             return featuredNext
         }
-        krAreas.closeArea(of: myArea.area)
+        return krAreas.closeArea(of: myArea.area)
     }
 
     private func shouldUpdateMeter() -> Bool {
-        guard let last = fetchArea().last else { return true }
+        guard let last = walkRepository.fetchAreas().last else { return true }
         guard let current = nearlistLess() else { return false }
         if (last.area == current.area && last.areaName == current.areaName) {
             return false
@@ -494,9 +499,9 @@ final class HomeViewModel: ObservableObject, CoreDataProtocol {
 
     private func updateCurrentMeter() {
         if shouldUpdateMeter() {
-            let currents = krAreas.nearistArea(since: fetchArea().last, from: myArea.area)
+            let currents = krAreas.nearistArea(since: walkRepository.fetchAreas().last, from: myArea.area)
             for c in currents.reversed() {
-                if saveArea(area: .init(areaName: c.areaName, area: c.area, createdAt: Date().timeIntervalSince1970)) {
+                if walkRepository.saveArea(.init(areaName: c.areaName, area: c.area, createdAt: Date().timeIntervalSince1970)) {
                 }
             }
         }

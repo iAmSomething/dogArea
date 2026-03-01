@@ -1,10 +1,3 @@
-//
-//  CoreDataDTO.swift
-//  dogArea
-//
-//  Created by 김태훈 on 10/20/23.
-//
-
 import Foundation
 
 private func normalizedUUIDStringOrNil(_ raw: String?) -> String? {
@@ -47,7 +40,7 @@ struct WalkSessionBackfillDTO: Codable, Equatable {
     }
 }
 
-enum CoreDataSupabaseBackfillDTOConverter {
+enum WalkBackfillDTOConverter {
     static func makeSessionDTO(
         from polygon: Polygon,
         ownerUserId: String?,
@@ -89,23 +82,6 @@ enum CoreDataSupabaseBackfillDTOConverter {
         )
     }
 
-    static func makeSessionDTO(
-        from entity: PolygonEntity,
-        ownerUserId: String?,
-        petId: String?,
-        sourceDevice: String = "ios"
-    ) -> WalkSessionBackfillDTO? {
-        let canonicalPetId = normalizedUUIDString(petId) ?? normalizedUUIDString(entity.petId)
-        guard let polygon = entity.toPolygon() else { return nil }
-        return makeSessionDTO(
-            from: polygon,
-            ownerUserId: ownerUserId,
-            petId: canonicalPetId,
-            sourceDevice: sourceDevice,
-            hasImage: entity.mapImage != nil
-        )
-    }
-
     private static func normalizedUUIDString(_ raw: String?) -> String? {
         guard let raw, raw.isEmpty == false,
               let parsed = UUID(uuidString: raw) else {
@@ -115,52 +91,8 @@ enum CoreDataSupabaseBackfillDTOConverter {
     }
 }
 
-extension PolygonEntity {
-  func toPolygon() -> Polygon? {
-    var locations = [Location]()
-      let walkingTime = self.walkingTime
-      let walkingArea = self.walkingArea
-    guard
-      let id = self.uuid,
-      let locationEntities = self.locations?.array as? [LocationEntity]
-    else {
-      return nil
-    }
-      let data = self.mapImage
-      let petId = normalizedUUIDStringOrNil(self.petId)
-    for entity in locationEntities {
-      if let location = entity.toLocation() {
-        locations.append(location)
-      }
-    }
-      return Polygon(locations: locations,
-                     createdAt: Double(self.createdAt),
-                     id:id,
-                     walkingTime: walkingTime,
-                     walkingArea: walkingArea,
-                     imgData: data,
-                     petId: petId)
-  }
-}
-
-extension LocationEntity {
-  func toLocation() -> Location? {
-    guard
-      let id = self.uuid,
-      let x = self.x,
-      let y = self.y,
-      let createdAt = self.createdAt
-    else {
-      return nil
-    }
-    return Location.init(coordinate: .init(latitude: Double(truncating: x), longitude: Double(truncating: y)), id: id, createdAt: Double(truncating: createdAt))
-  }
-}
-extension AreaEntity {
-    func toArea() -> AreaMeterDTO? {
-        guard
-            let areaName = self.areaName
-        else {return nil}
-        return AreaMeterDTO(areaName: areaName, area: self.areaSize, createdAt: self.createdAt)
+extension Polygon {
+    var canonicalPetId: String? {
+        normalizedUUIDStringOrNil(self.petId)
     }
 }

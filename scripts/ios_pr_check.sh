@@ -45,6 +45,9 @@ swift scripts/quest_failure_buffer_unit_check.swift
 swift scripts/pet_adaptive_quest_unit_check.swift
 swift scripts/pet_context_badge_empty_state_unit_check.swift
 swift scripts/area_reference_db_ui_unit_check.swift
+swift scripts/walk_repository_contract_unit_check.swift
+swift scripts/walk_repository_backfill_unit_check.swift
+swift scripts/walk_session_pet_canonicalization_unit_check.swift
 swift scripts/project_stability_unit_check.swift
 
 if [[ "${DOGAREA_SKIP_BUILD:-0}" == "1" ]]; then
@@ -58,7 +61,7 @@ xcodebuild \
   -project dogArea.xcodeproj \
   -scheme dogArea \
   -configuration Debug \
-  -destination "generic/platform=iOS" \
+  -destination "generic/platform=iOS Simulator" \
   CODE_SIGNING_ALLOWED=NO \
   build
 
@@ -68,6 +71,6 @@ xcodebuild \
   -project dogArea.xcodeproj \
   -scheme "dogAreaWatch Watch App" \
   -configuration Debug \
-  -destination "generic/platform=watchOS" \
+  -destination "generic/platform=watchOS Simulator" \
   CODE_SIGNING_ALLOWED=NO \
   build

@@ -96,12 +96,12 @@ struct NotificationCenterView: View {
                            .foregroundStyle(Color.appTextDarkGray)
                        Spacer()
                    }
-                   Picker("대표 강아지", selection: Binding<UUID>(
-                    get: { viewModel.selectedPetId ?? viewModel.pets.first?.id ?? UUID() },
-                    set: { viewModel.updateSelectedPet($0) }
+                   Picker("대표 강아지", selection: Binding<String>(
+                    get: { viewModel.selectedPetId.isEmpty == false ? viewModel.selectedPetId : (viewModel.pets.first?.petId ?? "") },
+                    set: { viewModel.selectPet($0) }
                    )) {
                        ForEach(viewModel.pets, id: \.id) { pet in
-                           Text(pet.petName).tag(pet.id)
+                           Text(pet.petName).tag(pet.petId)
                        }
                    }
                    .pickerStyle(.menu)

@@ -7,9 +7,7 @@
 
 import SwiftUI
 import SwiftData
-import CoreData
 import FirebaseCore
-import FirebaseFirestore
 
 struct SupabaseConfiguration {
     let url: URL
@@ -61,7 +59,6 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         FirebaseApp.configure()
-        let db = Firestore.firestore()
         if SupabaseConfiguration.load() == nil {
             print("Supabase configuration is missing required values.")
         }
@@ -75,7 +72,6 @@ struct dogAreaApp: App {
     
     @State var splash = true
     @StateObject private var authFlow = AuthFlowCoordinator()
-    let persistenceController = PersistenceController.shared
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,

@@ -1183,7 +1183,7 @@ struct HomeView: View {
         let claimTitle = claimed ? "수령 완료" : (claimable ? "즉시 수령" : "완료 확인")
         let claimButtonColor = claimed ? Color.appGreen : (claimable ? Color.appYellow : Color.appTextLightGray)
 
-        VStack(alignment: .leading, spacing: 7) {
+        return VStack(alignment: .leading, spacing: 7) {
             HStack {
                 Text(mission.title)
                     .font(.appFont(for: .SemiBold, size: 14))
