@@ -49,8 +49,18 @@ struct RootView: View {
             }
             else if self.selectedTab == 3 {
                 NavigationView {
-                    notificationCenterView.frame(maxWidth: .infinity,maxHeight: .infinity)
+                    RivalTabView(
+                        onOpenMap: { selectedTab = 2 },
+                        onOpenSettings: { selectedTab = 4 }
+                    )
+                        .frame(maxWidth: .infinity,maxHeight: .infinity)
                         .navigationBarHidden(selectedTab == 3)
+                }
+            }
+            else if self.selectedTab == 4 {
+                NavigationView {
+                    notificationCenterView.frame(maxWidth: .infinity,maxHeight: .infinity)
+                        .navigationBarHidden(selectedTab == 4)
                 }
             }
             if tabStatus.isTabAppear {

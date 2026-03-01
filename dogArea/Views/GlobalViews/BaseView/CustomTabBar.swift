@@ -32,10 +32,18 @@ struct CustomTabBar: View {
       })
       .frame(maxWidth: .infinity)
       
+      // Rival button
+      SystemTabButtonView(
+        selectedTab: $selectedTab,
+        systemIconName: "person.2.fill",
+        tabId: 3,
+        titleName: "라이벌"
+      )
+
       // Settings button
       TabButtonView(selectedTab: $selectedTab,
                     imageName: ("settingBtn","settingBtnGray"),
-                    tabId: 3,
+                    tabId: 4,
                     titleName: "설정")
       
     }.padding(.horizontal,30)
@@ -95,5 +103,33 @@ struct TabButtonView: View {
       .onTapGesture {selectedTab=tabId}
       .labelStyle(TabStyle())
       .frame(maxWidth: .infinity)
+  }
+}
+
+struct SystemTabButtonView: View {
+  @Binding var selectedTab: Int
+  let systemIconName: String
+  let tabId: Int
+  let titleName: String
+
+  var body: some View {
+    Label(
+      title: {
+        Text(titleName)
+          .foregroundStyle(Color.black)
+      },
+      icon: {
+        Image(systemName: systemIconName)
+          .resizable()
+          .scaledToFit()
+          .frame(width: 24, height: 24)
+          .foregroundStyle(selectedTab == tabId ? Color.appGreen : Color.appTextDarkGray)
+      }
+    )
+    .padding(.horizontal, 5)
+    .font(.regular12)
+    .onTapGesture { selectedTab = tabId }
+    .labelStyle(TabStyle())
+    .frame(maxWidth: .infinity)
   }
 }
