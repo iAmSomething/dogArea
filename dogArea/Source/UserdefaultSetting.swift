@@ -1453,6 +1453,7 @@ struct MemberUpgradeSheetView: View {
                 Button("나중에") {
                     onLater()
                 }
+                .accessibilityIdentifier("sheet.memberUpgrade.later")
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
                 .background(Color.appYellowPale)
@@ -1462,6 +1463,7 @@ struct MemberUpgradeSheetView: View {
                 Button("로그인하고 계속") {
                     onUpgrade()
                 }
+                .accessibilityIdentifier("sheet.memberUpgrade.signin")
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
                 .background(Color.appGreen)

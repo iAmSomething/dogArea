@@ -11,7 +11,6 @@ import MapKit
 import CoreLocation
 import Combine
 import WatchConnectivity
-import CryptoKit
 #if canImport(UIKit)
 import UIKit
 #endif
@@ -178,6 +177,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private let syncTransport = SupabaseSyncOutboxTransport()
     private let walkRepository: WalkRepositoryProtocol
     private let userSessionStore: UserSessionStoreProtocol
+    private let authSessionStore: AuthSessionStoreProtocol
     private let preferenceStore: MapPreferenceStoreProtocol
     private let eventCenter: AppEventCenterProtocol
     private var lastCaptureHapticAt: Date = .distantPast
@@ -269,11 +269,13 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     init(
         walkRepository: WalkRepositoryProtocol = WalkRepositoryContainer.shared,
         userSessionStore: UserSessionStoreProtocol = DefaultUserSessionStore.shared,
+        authSessionStore: AuthSessionStoreProtocol = DefaultAuthSessionStore.shared,
         preferenceStore: MapPreferenceStoreProtocol = DefaultMapPreferenceStore.shared,
         eventCenter: AppEventCenterProtocol = DefaultAppEventCenter.shared
     ) {
         self.walkRepository = walkRepository
         self.userSessionStore = userSessionStore
+        self.authSessionStore = authSessionStore
         self.preferenceStore = preferenceStore
         self.eventCenter = eventCenter
         super.init()
@@ -1609,16 +1611,25 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     }
 
     private func currentPresenceUserId() -> String? {
-        if let existing = preferenceStore.string(forKey: nearbyPresenceUserIdKey) {
-            return existing
+        if let authUserId = authSessionStore.currentIdentity()?.userId,
+           let canonical = authUserId.canonicalUUIDString {
+            preferenceStore.set(canonical, forKey: nearbyPresenceUserIdKey)
+            return canonical
         }
-        guard let raw = userSessionStore.currentUserInfo()?.id,
-              raw.isEmpty == false else {
-            return nil
+
+        if let existing = preferenceStore.string(forKey: nearbyPresenceUserIdKey),
+           let canonical = existing.canonicalUUIDString {
+            return canonical
         }
-        let stable = raw.stableUUIDString
-        preferenceStore.set(stable, forKey: nearbyPresenceUserIdKey)
-        return stable
+
+        if let profileUserId = userSessionStore.currentUserInfo()?.id,
+           let canonical = profileUserId.canonicalUUIDString {
+            preferenceStore.set(canonical, forKey: nearbyPresenceUserIdKey)
+            return canonical
+        }
+
+        preferenceStore.removeObject(forKey: nearbyPresenceUserIdKey)
+        return nil
     }
 
     private func currentMetricUserId() -> String? {
@@ -2108,21 +2119,5 @@ extension MapViewModel {
 
     func session(_ session: WCSession, didReceiveUserInfo userInfo: [String : Any]) {
         self.handleWatchPayload(userInfo)
-    }
-}
-
-private extension String {
-    var stableUUIDString: String {
-        let digest = SHA256.hash(data: Data(self.utf8))
-        let bytes = Array(digest.prefix(16))
-        let uuid = UUID(
-            uuid: (
-                bytes[0], bytes[1], bytes[2], bytes[3],
-                bytes[4], bytes[5], bytes[6], bytes[7],
-                bytes[8], bytes[9], bytes[10], bytes[11],
-                bytes[12], bytes[13], bytes[14], bytes[15]
-            )
-        )
-        return uuid.uuidString.lowercased()
     }
 }

@@ -39,20 +39,16 @@ struct AreaDetailView: View {
                                 }.padding(.leading, 20)
                                 Spacer()
                                 VStack {
-                                    Image(.pawSelected)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                        .frame(width: 100, height: 100)
+                                    Image(systemName: "pawprint.circle.fill")
+                                        .font(.system(size: 68, weight: .semibold))
+                                        .foregroundStyle(Color.appYellow)
                                         .padding(.top, 10)
                                     Text(item.createdAt.createdAtTimeDescriptionSimple)
                                         .font(.appFont(for: .Light, size: 15))
                                         .foregroundStyle(Color.appTextDarkGray)
                                 }.padding(.horizontal, 20)
                             }.frame(maxWidth: .infinity)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 15)
-                                        .stroke(Color.appTextDarkGray, lineWidth: 0.3)
-                                )
+                                .appCardSurface()
                         }
                     }
                 }, header: {ListHeaderView(viewModel: viewModel)})
@@ -153,19 +149,15 @@ struct ListHeaderView: View {
                         Text((next.area - viewModel.myArea.area).calculatedAreaString + "남았습니다!")
                     }.padding(.leading, 20)
                     Spacer()
-                    Image(.paw)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 100, height: 100)
+                    Image(systemName: "pawprint.circle")
+                        .font(.system(size: 68, weight: .semibold))
+                        .foregroundStyle(Color.appYellow)
                         .padding(10)
                 }.frame(maxWidth: .infinity)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 15)
-                            .stroke(Color.appTextDarkGray, lineWidth: 0.3)
-                    )
+                    .appCardSurface()
                     .padding()
                 
-            }.background(Color.white)
+            }.background(Color.appBackground)
         }
         
     }

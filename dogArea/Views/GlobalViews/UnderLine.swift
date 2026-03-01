@@ -11,10 +11,20 @@ struct UnderLine: View {
     var body: some View {
         Rectangle()
             .foregroundColor(.clear)
-            .frame(height: 0.3)
+            .frame(height: 1)
             .frame(maxWidth: .infinity)
-            .background(Color(red: 0.19, green: 0.19, blue: 0.19))
-            .padding(.horizontal, 20)
+            .background(
+                LinearGradient(
+                    colors: [
+                        Color.appTextLightGray.opacity(0.05),
+                        Color.appTextLightGray.opacity(0.45),
+                        Color.appTextLightGray.opacity(0.05)
+                    ],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .padding(.horizontal, 16)
     }
 }
 

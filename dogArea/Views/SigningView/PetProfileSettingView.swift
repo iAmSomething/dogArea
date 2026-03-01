@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct PetProfileSettingView: View {
-    @Environment(\.colorScheme) var scheme
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var authFlow: AuthFlowCoordinator
     @EnvironmentObject var viewModel: SigningViewModel
@@ -24,74 +23,59 @@ struct PetProfileSettingView: View {
     }
 
     var body: some View {
-        VStack {
-            TitleTextView(title: "강아지 사진",type: .MediumTitle, subTitle: "강아지 사진을 추가해주세요!")
-            Image(uiImage: viewModel.petProfile ?? .emptyImg)
-                .resizable()
-                .frame(maxWidth: 200, maxHeight: 200)
-                .aspectRatio(contentMode: .fit)
-                .myCornerRadius(radius: 30)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 30)
-                        .stroke(!viewModel.petProfile.isNil ? Color.appColor(type: .appGreen, scheme: scheme) : Color.appColor(type: .appRed, scheme: scheme), lineWidth: 0.8)
-                        .foregroundStyle(Color.clear)
-                    
-                ).onTapGesture {
+        ScrollView {
+            VStack(spacing: 14) {
+                TitleTextView(title: "강아지 사진",type: .MediumTitle, subTitle: "강아지 사진을 추가해주세요!")
+                Button {
                     imageSelect.toggle()
+                } label: {
+                    Image(uiImage: viewModel.petProfile ?? .emptyImg)
+                        .resizable()
+                        .frame(maxWidth: 200, maxHeight: 200)
+                        .aspectRatio(contentMode: .fit)
+                        .myCornerRadius(radius: 30)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 30)
+                                .stroke(viewModel.petProfile == nil ? Color.appTextLightGray : Color.appGreen, lineWidth: 1)
+                        )
                 }
-            UnderLine()
-            TitleTextView(title: "강아지 이름", type: .MediumTitle, subTitle: "강아지 이름을 입력해주세요!")
-            HStack {
-                TextField("강아지 이름을 입력해주세요", text: $viewModel.petName)
-                    .padding(.horizontal, 5)
-                    .padding(.vertical, 4)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 5)
-                            .stroke(viewModel.petName != "" ? Color.appColor(type: .appGreen, scheme: scheme) : Color.appColor(type: .appRed, scheme: scheme), lineWidth: 0.8)
-                    )
-                    .padding(.horizontal)
-            }
-            UnderLine()
-            TitleTextView(title: "강아지 상세 정보", type: .MediumTitle, subTitle: "품종/나이/성별을 입력하면 통계가 더 정확해져요! (선택)")
-            HStack {
-                TextField("품종 (예: 비숑)", text: $viewModel.petBreed)
-                    .padding(.horizontal, 5)
-                    .padding(.vertical, 4)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 5)
-                            .stroke(Color.appColor(type: .appTextDarkGray, scheme: scheme), lineWidth: 0.8)
-                    )
-                    .padding(.horizontal)
-            }
-            HStack {
-                TextField("나이 (숫자)", text: $viewModel.petAgeYearsText)
-                    .keyboardType(.numberPad)
-                    .padding(.horizontal, 5)
-                    .padding(.vertical, 4)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 5)
-                            .stroke(Color.appColor(type: .appTextDarkGray, scheme: scheme), lineWidth: 0.8)
-                    )
-                    .padding(.horizontal)
-            }
-            Picker("성별", selection: $viewModel.petGender) {
-                ForEach(PetGender.allCases, id: \.rawValue) { item in
-                    Text(item.title).tag(item)
+                .buttonStyle(.plain)
+
+                VStack(alignment: .leading, spacing: 10) {
+                    TitleTextView(title: "강아지 이름", type: .MediumTitle, subTitle: "강아지 이름을 입력해주세요!")
+                    TextField("강아지 이름을 입력해주세요", text: $viewModel.petName)
+                        .appInputField(validity: viewModel.petName.isEmpty == false)
+
+                    TitleTextView(title: "강아지 상세 정보", type: .MediumTitle, subTitle: "견종/믹스/나이/성별 입력은 선택이며, 미입력도 정상 사용 가능해요")
+                    TextField("견종/믹스/기타 (선택)", text: $viewModel.petBreed)
+                        .appInputField()
+                    TextField("나이 (숫자)", text: $viewModel.petAgeYearsText)
+                        .keyboardType(.numberPad)
+                        .appInputField()
+                    Picker("성별", selection: $viewModel.petGender) {
+                        ForEach(PetGender.allCases, id: \.rawValue) { item in
+                            Text(item.title).tag(item)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    Button(action: {
+                        viewModel.setValue()
+                    }, label: {
+                        Text("회원 가입하기")
+                    })
+                    .disabled(viewModel.petName.isEmpty)
+                    .buttonStyle(AppFilledButtonStyle(role: viewModel.petName.isEmpty ? .neutral : .primary))
+                    .padding(.top, 4)
                 }
+                .padding(.horizontal, 16)
+                .appCardSurface()
+                .padding(.horizontal, 16)
             }
-            .pickerStyle(.segmented)
-            .padding(.horizontal)
-            Spacer()
-            Button(action: {
-                viewModel.setValue()
-            }, label: {
-                Text("회원 가입하기")
-            })
-            .disabled(viewModel.petName.isEmpty)
-                .padding()
-                .background(viewModel.petName.isEmpty ? Color.appColor(type: .appTextDarkGray, scheme: scheme) :Color.appColor(type: .appGreen, scheme: scheme))
-                .myCornerRadius(radius: 15)
-        }.fullScreenCover(isPresented: $imageSelect, content: {
+            .padding(.bottom, 24)
+        }
+        .background(Color.appBackground)
+        .fullScreenCover(isPresented: $imageSelect, content: {
             ImagePicker(image: $viewModel.petProfile, type: .photoLibrary)
         }).overlay(content: {
             if viewModel.loading == .loading {

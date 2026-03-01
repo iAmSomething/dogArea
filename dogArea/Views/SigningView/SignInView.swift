@@ -81,39 +81,45 @@ struct SignInView: View {
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled(true)
                         .padding(.horizontal, 12)
-                        .padding(.vertical, 10)
-                        .background(Color.white)
-                        .cornerRadius(10)
+                        .padding(.vertical, 12)
+                        .background(Color.appSurface)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .stroke(Color.appTextLightGray.opacity(0.7), lineWidth: 1)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .accessibilityIdentifier("signin.email")
 
                     SecureField("비밀번호", text: $password)
                         .padding(.horizontal, 12)
-                        .padding(.vertical, 10)
-                        .background(Color.white)
-                        .cornerRadius(10)
+                        .padding(.vertical, 12)
+                        .background(Color.appSurface)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .stroke(Color.appTextLightGray.opacity(0.7), lineWidth: 1)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .accessibilityIdentifier("signin.password")
 
                     HStack(spacing: 10) {
                         Button("이메일 로그인") {
                             runEmailAuth(isSignup: false)
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(Color.appGreen)
-                        .foregroundStyle(Color.white)
-                        .cornerRadius(10)
+                        .accessibilityIdentifier("signin.login")
+                        .buttonStyle(AppFilledButtonStyle(role: .primary))
                         .disabled(emailAuthLoading)
 
                         Button("이메일 회원가입") {
                             runEmailAuth(isSignup: true)
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(Color.appYellow)
-                        .foregroundStyle(Color.appTextDarkGray)
-                        .cornerRadius(10)
+                        .accessibilityIdentifier("signin.signup")
+                        .buttonStyle(AppFilledButtonStyle(role: .secondary))
                         .disabled(emailAuthLoading)
                     }
                 }
                 .padding(.horizontal, 20)
+                .appCardSurface()
+                .padding(.horizontal, 16)
 
                 if emailAuthLoading {
                     ProgressView("이메일 인증 처리 중...")
@@ -137,13 +143,15 @@ struct SignInView: View {
                 )
             })
             .frame(maxHeight: .infinity)
-            .background(Color.appColor(type: .appYellowPale, scheme: scheme))
+            .background(Color.appBackground)
+            .accessibilityIdentifier("screen.signin")
             .toolbar {
                 if allowDismiss {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button("나중에") {
                             onDismiss()
                         }
+                        .accessibilityIdentifier("signin.dismiss")
                     }
                 }
             }

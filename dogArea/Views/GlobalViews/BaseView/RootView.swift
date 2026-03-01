@@ -13,7 +13,7 @@ struct RootView: View {
     @EnvironmentObject var myAlert: CustomAlertViewModel
     @EnvironmentObject var authFlow: AuthFlowCoordinator
     @StateObject var loading: LoadingViewModel = LoadingViewModel()
-    @State private var selectedTab = 2
+    @State private var selectedTab = RootView.initialSelectedTabForRuntime()
     @State private var tabbarHidden = false
     @StateObject var tabStatus = TabAppear.shared
     private var homeView: HomeView
@@ -26,18 +26,30 @@ struct RootView: View {
         self.mapView = MapView()
         self.notificationCenterView = NotificationCenterView()
     }
+
+    /// UI 테스트 디자인 감사 모드에서는 기본 진입 탭을 홈으로 고정해 초기 렌더링 안정성을 높입니다.
+    private static func initialSelectedTabForRuntime() -> Int {
+        let arguments = ProcessInfo.processInfo.arguments
+        if arguments.contains("-UITest.DesignAudit") {
+            return 0
+        }
+        return 2
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             if self.selectedTab == 0 {
                 NavigationView {
                     homeView.frame(maxWidth: .infinity,maxHeight: .infinity)
                         .navigationBarHidden(selectedTab == 0)
+                        .accessibilityIdentifier("screen.home")
                 }
             }
             else if self.selectedTab == 1 {
                 NavigationView {
                     walkListView.frame(maxWidth: .infinity,maxHeight: .infinity)
                         .navigationBarHidden(selectedTab == 1)
+                        .accessibilityIdentifier("screen.walkList")
                 }
             }
             else if self.selectedTab == 2 {
@@ -45,6 +57,7 @@ struct RootView: View {
                     mapView
                         .environmentObject(loading)
                         .navigationBarHidden(selectedTab == 2)
+                        .accessibilityIdentifier("screen.map")
                 }
             }
             else if self.selectedTab == 3 {
@@ -55,22 +68,24 @@ struct RootView: View {
                     )
                         .frame(maxWidth: .infinity,maxHeight: .infinity)
                         .navigationBarHidden(selectedTab == 3)
+                        .accessibilityIdentifier("screen.rival")
                 }
             }
             else if self.selectedTab == 4 {
                 NavigationView {
                     notificationCenterView.frame(maxWidth: .infinity,maxHeight: .infinity)
                         .navigationBarHidden(selectedTab == 4)
+                        .accessibilityIdentifier("screen.settings")
                 }
             }
             if tabStatus.isTabAppear {
                 CustomTabBar(selectedTab: $selectedTab)
                     .frame(maxHeight: .infinity)
-                    .background(Color.white)
-                    .border(Color.appTextDarkGray, width: 0.3)
                     .aspectRatio(contentMode: .fit)
             }
-        }.edgesIgnoringSafeArea(.all)
+        }
+        .background(Color.appBackground.ignoresSafeArea())
+        .edgesIgnoringSafeArea(.all)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .overlay(content: {
                 if loading.phase == .loading {

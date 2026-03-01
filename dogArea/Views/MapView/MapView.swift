@@ -52,11 +52,17 @@ struct MapView : View{
                     }, label: {
                         Text("설정")
                             .font(.appFont(for: .Bold, size: 16))
-                            .foregroundStyle(Color.appTextDarkGray)
-                            .padding(7)
-                            .background(Color.appYellow)
-                            .cornerRadius(10)
+                            .foregroundStyle(Color.appInk)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(Color.appSurface.opacity(0.95))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(Color.appTextLightGray.opacity(0.7), lineWidth: 1)
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
                     })
+                    .accessibilityIdentifier("map.openSettings")
                 }
                 HStack {
                     Text(viewModel.weatherOverlayStatusText)
@@ -209,7 +215,8 @@ struct MapView : View{
         }
         .sheet(isPresented: $isModalPresented){
             MapSettingView(viewModel: self.viewModel, myAlert: self.myAlert)
-                .presentationDetents([.oneThird])
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
             
         }.fullScreenCover(isPresented: $isWalkingViewPresented) {
             StartModalView(
@@ -421,14 +428,22 @@ struct MapView : View{
                     .background(Color.appGreen)
                     .cornerRadius(6)
             }
-            Image("plusButton")
-                .resizable()
-                .frame(width: 70, height: 70)
-                .onTapGesture {
-                    viewModel.setTrackingMode()
-                    myAlert.alertType = .addPoint
-                    myAlert.callAlert(type: .addPoint)
+            Button {
+                viewModel.setTrackingMode()
+                myAlert.alertType = .addPoint
+                myAlert.callAlert(type: .addPoint)
+            } label: {
+                ZStack {
+                    Circle()
+                        .fill(Color.appYellow)
+                        .frame(width: 70, height: 70)
+                        .shadow(color: Color.black.opacity(0.18), radius: 14, x: 0, y: 8)
+                    Image(systemName: "plus")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundStyle(Color.appInk)
+                }
             }
+            .buttonStyle(.plain)
         }
     }
 

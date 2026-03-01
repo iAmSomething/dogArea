@@ -194,6 +194,25 @@ protocol NearbyPresenceServiceProtocol {
     func getHotspots(userId: String?, centerLatitude: Double, centerLongitude: Double, radiusKm: Double) async throws -> [NearbyHotspotDTO]
 }
 
+enum RivalLeaderboardPeriod: String, CaseIterable {
+    case week
+    case season
+}
+
+struct RivalLeaderboardEntryDTO: Identifiable, Equatable {
+    let id: String
+    let rank: Int
+    let aliasCode: String
+    let league: String
+    let effectiveLeague: String
+    let scoreBucket: String
+    let isMe: Bool
+}
+
+protocol RivalLeagueServiceProtocol {
+    func fetchLeaderboard(period: RivalLeaderboardPeriod, topN: Int) async throws -> [RivalLeaderboardEntryDTO]
+}
+
 protocol CaricatureServiceProtocol {
     func requestCaricature(
         petId: String,
@@ -669,6 +688,59 @@ struct NearbyPresenceService: NearbyPresenceServiceProtocol {
                 count: $0.count,
                 intensity: max(0.0, min(1.0, $0.intensity)),
                 centerCoordinate: CLLocationCoordinate2D(latitude: $0.center_lat, longitude: $0.center_lng)
+            )
+        }
+    }
+}
+
+struct RivalLeagueService: RivalLeagueServiceProtocol {
+    private struct ResponseRowDTO: Decodable {
+        let rankPosition: Int
+        let aliasCode: String
+        let league: String
+        let effectiveLeague: String
+        let scoreBucket: String
+        let isMe: Bool
+
+        enum CodingKeys: String, CodingKey {
+            case rankPosition = "rank_position"
+            case aliasCode = "alias_code"
+            case league
+            case effectiveLeague = "effective_league"
+            case scoreBucket = "score_bucket"
+            case isMe = "is_me"
+        }
+    }
+
+    private let client: SupabaseHTTPClient
+
+    init(client: SupabaseHTTPClient = .live) {
+        self.client = client
+    }
+
+    /// 점수 원문 대신 점수 버킷을 제공하는 익명 리더보드 데이터를 조회합니다.
+    func fetchLeaderboard(period: RivalLeaderboardPeriod, topN: Int = 20) async throws -> [RivalLeaderboardEntryDTO] {
+        let safeTopN = max(1, min(topN, 200))
+        let payload: [String: Any] = [
+            "period_type": period.rawValue,
+            "top_n": safeTopN,
+            "now_ts": ISO8601DateFormatter().string(from: Date())
+        ]
+        let data = try await client.request(
+            .rest(path: "rpc/rpc_get_rival_leaderboard"),
+            method: .post,
+            bodyData: try JSONSerialization.data(withJSONObject: payload)
+        )
+        let rows = try JSONDecoder().decode([ResponseRowDTO].self, from: data)
+        return rows.map { row in
+            RivalLeaderboardEntryDTO(
+                id: "\(period.rawValue)-\(row.rankPosition)-\(row.aliasCode)",
+                rank: row.rankPosition,
+                aliasCode: row.aliasCode,
+                league: row.league,
+                effectiveLeague: row.effectiveLeague,
+                scoreBucket: row.scoreBucket,
+                isMe: row.isMe
             )
         }
     }

@@ -8,21 +8,29 @@
 import Foundation
 import SwiftUI
 import UIKit
+
 extension Color {
-    static let appRed: Color = Color(red: 1, green: 0.43, blue: 0.38)
-    static let appYellow: Color = Color(red: 0.97, green: 0.82, blue: 0.38)
-    static let appYellowPale: Color = Color(red: 0.95, green: 0.91, blue: 0.62)
-    static let appGreen: Color = Color(red: 0.6, green: 0.85, blue: 0.67)
-    static let appTextLightGray: Color = Color(red: 0.85, green: 0.85, blue: 0.85)
-    static let appTextDarkGray: Color = Color(red: 0.59, green: 0.59, blue: 0.59)
-    static let appPinkYello: Color = Color(red: 1, green: 238.0/255.0, blue: 204.0/255.0)
-    static let appPeach: Color = Color(red: 1, green: 221.0/255, blue: 204.0/255.0)
-    static let appPink: Color = Color(red: 1, green: 204.0/255, blue: 204.0/255.0)
-    static let appHotPink: Color = Color(red: 1, green: 187.0/255, blue: 204.0/255.0)
+    // MARK: - Brand / Semantic Tokens
+    static let appRed: Color = Color(red: 0.90, green: 0.32, blue: 0.27)
+    static let appYellow: Color = Color(red: 0.93, green: 0.70, blue: 0.19)
+    static let appYellowPale: Color = Color(red: 0.98, green: 0.95, blue: 0.87)
+    static let appGreen: Color = Color(red: 0.27, green: 0.67, blue: 0.50)
+    static let appTextLightGray: Color = Color(red: 0.82, green: 0.84, blue: 0.87)
+    static let appTextDarkGray: Color = Color(red: 0.38, green: 0.42, blue: 0.49)
+    static let appPinkYello: Color = Color(red: 0.98, green: 0.94, blue: 0.84)
+    static let appPeach: Color = Color(red: 0.98, green: 0.87, blue: 0.79)
+    static let appPink: Color = Color(red: 0.96, green: 0.81, blue: 0.76)
+    static let appHotPink: Color = Color(red: 0.90, green: 0.49, blue: 0.56)
+
+    static let appBackground: Color = Color(red: 0.96, green: 0.95, blue: 0.90)
+    static let appSurface: Color = Color.white
+    static let appInk: Color = Color(red: 0.11, green: 0.13, blue: 0.17)
+
     static func appColor(type: appColorType, scheme: ColorScheme = .light) -> Color {
-        return scheme == .dark ? type.darkColor : type.color
+        scheme == .dark ? type.darkColor : type.color
     }
 }
+
 extension Color {
     enum appColorType {
         case appRed
@@ -39,59 +47,182 @@ extension Color {
         var color: Color {
             switch self {
             case .appRed:
-                Color(red: 1, green: 0.43, blue: 0.38)
+                Color.appRed
             case .appYellow:
-                Color(red: 0.97, green: 0.82, blue: 0.38)
+                Color.appYellow
             case .appYellowPale:
-                Color(red: 0.95, green: 0.91, blue: 0.62)
+                Color.appYellowPale
             case .appGreen:
-                Color(red: 0.6, green: 0.85, blue: 0.67)
+                Color.appGreen
             case .appTextLightGray:
-                Color(red: 0.85, green: 0.85, blue: 0.85)
+                Color.appTextLightGray
             case .appTextDarkGray:
-                Color(red: 0.59, green: 0.59, blue: 0.59)
+                Color.appTextDarkGray
             case .appTextBlack:
-                Color(red: 0, green:0, blue: 0)
+                Color.appInk
             case .appPinkYello:
-                Color(red: 1, green: 238.0/255.0, blue: 204.0/255.0)
+                Color.appPinkYello
             case .appPeach:
-                Color(red: 1, green: 221.0/255, blue: 204.0/255.0)
+                Color.appPeach
             case .appPink:
-                Color(red: 1, green: 204.0/255, blue: 204.0/255.0)
+                Color.appPink
             case .appHotPink:
-                Color(red: 1, green: 187.0/255, blue: 204.0/255.0)
+                Color.appHotPink
             }
         }
         var darkColor: Color {
             switch self{
             case .appRed:
-                Color(red: 1, green: 0.34, blue: 0.2)
+                Color(red: 0.93, green: 0.44, blue: 0.39)
             case .appYellow:
-                Color(red: 0.98, green: 0.86, blue: 0.43)
+                Color(red: 0.95, green: 0.77, blue: 0.32)
             case .appYellowPale:
-                Color(red: 0.97, green: 0.94, blue: 0.76)
+                Color(red: 0.29, green: 0.27, blue: 0.22)
             case .appGreen:
-                Color(red: 0.69, green: 0.86, blue: 0.75)
+                Color(red: 0.40, green: 0.74, blue: 0.57)
             case .appTextLightGray:
-                Color(red: 0.96, green: 0.96, blue: 0.96)
+                Color(red: 0.70, green: 0.72, blue: 0.76)
             case .appTextDarkGray:
-                Color(red: 0.83, green: 0.83, blue: 0.83)
+                Color(red: 0.85, green: 0.87, blue: 0.90)
             case .appTextBlack:
-                Color(red: 1, green:1, blue: 1)
+                Color(red: 0.95, green: 0.96, blue: 0.98)
             case .appPinkYello:
-                Color(red: 1, green: 238.0/255.0, blue: 204.0/255.0)
+                Color(red: 0.34, green: 0.30, blue: 0.23)
             case .appPeach:
-                Color(red: 1, green: 221.0/255, blue: 204.0/255.0)
+                Color(red: 0.44, green: 0.34, blue: 0.30)
             case .appPink:
-                Color(red: 1, green: 204.0/255, blue: 204.0/255.0)
+                Color(red: 0.45, green: 0.31, blue: 0.30)
             case .appHotPink:
-                Color(red: 1, green: 187.0/255, blue: 204.0/255.0)
+                Color(red: 0.56, green: 0.30, blue: 0.36)
             }
         }
     }
 }
+
 extension UIColor {
-    static let appYelloww: UIColor = UIColor(red: 0.97, green: 0.82, blue: 0.38, alpha: 1)
+    static let appYelloww: UIColor = UIColor(red: 0.93, green: 0.70, blue: 0.19, alpha: 1)
+}
+
+enum AppButtonRole {
+    case primary
+    case secondary
+    case neutral
+    case destructive
+
+    var backgroundColor: Color {
+        switch self {
+        case .primary: return Color.appInk
+        case .secondary: return Color.appYellow
+        case .neutral: return Color.appSurface
+        case .destructive: return Color.appRed
+        }
+    }
+
+    var foregroundColor: Color {
+        switch self {
+        case .primary, .destructive: return .white
+        case .secondary: return Color.appInk
+        case .neutral: return Color.appInk
+        }
+    }
+
+    var borderColor: Color {
+        switch self {
+        case .neutral: return Color.appTextLightGray.opacity(0.85)
+        default: return .clear
+        }
+    }
+}
+
+struct AppFilledButtonStyle: ButtonStyle {
+    let role: AppButtonRole
+    var fillsWidth: Bool = true
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.appFont(for: .SemiBold, size: 15))
+            .foregroundStyle(role.foregroundColor)
+            .frame(maxWidth: fillsWidth ? .infinity : nil)
+            .padding(.vertical, 12)
+            .padding(.horizontal, fillsWidth ? 0 : 12)
+            .background(role.backgroundColor)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(role.borderColor, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .scaleEffect(configuration.isPressed ? 0.985 : 1.0)
+            .opacity(configuration.isPressed ? 0.93 : 1.0)
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+    }
+}
+
+struct AppCardSurface: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .padding(14)
+            .background(Color.appSurface)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(Color.appTextLightGray.opacity(0.45), lineWidth: 1)
+            )
+            .shadow(color: Color.black.opacity(0.05), radius: 16, x: 0, y: 6)
+    }
+}
+
+struct AppInputFieldStyle: ViewModifier {
+    let validity: Bool?
+
+    func body(content: Content) -> some View {
+        content
+            .padding(.horizontal, 12)
+            .padding(.vertical, 12)
+            .background(Color.appSurface)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(borderColor, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private var borderColor: Color {
+        if let validity {
+            return validity ? Color.appGreen.opacity(0.75) : Color.appRed.opacity(0.75)
+        }
+        return Color.appTextLightGray.opacity(0.7)
+    }
+}
+
+struct AppPillStyle: ViewModifier {
+    let isActive: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .font(.appFont(for: .SemiBold, size: 12))
+            .foregroundStyle(isActive ? Color.appInk : Color.appTextDarkGray)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(isActive ? Color.appYellow : Color.appYellowPale)
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+}
+
+extension View {
+    /// 공통 카드 표면 스타일을 적용합니다.
+    func appCardSurface() -> some View {
+        modifier(AppCardSurface())
+    }
+
+    /// 공통 입력 필드 스타일을 적용합니다.
+    func appInputField(validity: Bool? = nil) -> some View {
+        modifier(AppInputFieldStyle(validity: validity))
+    }
+
+    /// 공통 칩(필터/토글) 스타일을 적용합니다.
+    func appPill(isActive: Bool) -> some View {
+        modifier(AppPillStyle(isActive: isActive))
+    }
 }
 // 색 보기
 struct ColorListView: View {

@@ -32,8 +32,11 @@ swift scripts/season_motion_pack_unit_check.swift
 swift scripts/release_regression_checklist_unit_check.swift
 swift scripts/fault_injection_matrix_unit_check.swift
 swift scripts/supabase_ops_hardening_unit_check.swift
+swift scripts/rival_privacy_policy_stage1_unit_check.swift
 swift scripts/rival_privacy_hard_guard_unit_check.swift
 swift scripts/rival_league_matching_unit_check.swift
+swift scripts/rival_stage2_backend_unit_check.swift
+swift scripts/rival_stage3_client_ux_unit_check.swift
 swift scripts/season_anti_farming_unit_check.swift
 swift scripts/season_comeback_catchup_unit_check.swift
 swift scripts/season_stage2_pipeline_unit_check.swift

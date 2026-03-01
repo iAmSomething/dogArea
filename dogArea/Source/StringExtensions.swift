@@ -27,4 +27,13 @@ extension String{
         let str = self.hasLastWordBatchimKR() ? "은" : "는"
         return self + str
     }
+
+    /// UUID 문자열이면 소문자 canonical 형태로 반환하고, 아니면 `nil`을 반환합니다.
+    var canonicalUUIDString: String? {
+        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.isEmpty == false, let uuid = UUID(uuidString: trimmed) else {
+            return nil
+        }
+        return uuid.uuidString.lowercased()
+    }
 }

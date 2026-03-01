@@ -7,12 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		22EA9355CC79568490A94348 /* dogAreaUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 626E89852AADA163B53AB03D /* dogAreaUITestsLaunchTests.swift */; };
+		23CB28F896D94B88CEF351F7 /* DesignAuditUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D982F3BFEE53C6D1333FF67 /* DesignAuditUITests.swift */; };
+		8DD9CE63EA914575B4763A9F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D8458EB9DE9760D52537B4B6 /* Foundation.framework */; };
 		DA16C1D92B05DCC8008FC133 /* CornerShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA16C1D82B05DCC8008FC133 /* CornerShape.swift */; };
 		DA16C1DC2B05E4DF008FC133 /* TimeCheckable.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA16C1DB2B05E4DF008FC133 /* TimeCheckable.swift */; };
 		DA16C1E12B060C7B008FC133 /* SelectedPolygonCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA16C1E02B060C7B008FC133 /* SelectedPolygonCell.swift */; };
+		DA1731712AE200C100EF10C8 /* ProfileRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1731702AE200C100EF10C8 /* ProfileRepository.swift */; };
 		DA1731732AE2017500EF10C8 /* SupabaseInfrastructure.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1731722AE2017500EF10C8 /* SupabaseInfrastructure.swift */; };
 		DA1731762AE20A4D00EF10C8 /* WalkBackfillDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1731752AE20A4D00EF10C8 /* WalkBackfillDTO.swift */; };
-		DA1731712AE200C100EF10C8 /* ProfileRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1731702AE200C100EF10C8 /* ProfileRepository.swift */; };
 		DA354FFD2B01DF1F00E4094A /* TimeIntervalExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA354FFC2B01DF1F00E4094A /* TimeIntervalExtensions.swift */; };
 		DA3550022B01E0F900E4094A /* UnderLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3550012B01E0F900E4094A /* UnderLine.swift */; };
 		DA390A6F2AFE027C00BACF2B /* MapSubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA390A6E2AFE027C00BACF2B /* MapSubView.swift */; };
@@ -96,11 +99,6 @@
 		DAC19F0E2B0AE5AC002FE2E8 /* ImagePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F0D2B0AE5AC002FE2E8 /* ImagePicker.swift */; };
 		DAC19F102B0AF661002FE2E8 /* TitleTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F0F2B0AF661002FE2E8 /* TitleTextView.swift */; };
 		DAC19F132B0AFCAC002FE2E8 /* UserdefaultSetting.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F122B0AFCAC002FE2E8 /* UserdefaultSetting.swift */; };
-		DAE140101400000000000001 /* ProfileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE140001400000000000001 /* ProfileStore.swift */; };
-		DAE140101400000000000002 /* PetSelectionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE140001400000000000002 /* PetSelectionStore.swift */; };
-		DAE140101400000000000003 /* WalkSessionMetadataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE140001400000000000003 /* WalkSessionMetadataStore.swift */; };
-		DAE140101400000000000004 /* ProfileSyncOutboxStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE140001400000000000004 /* ProfileSyncOutboxStore.swift */; };
-		DAE142101420000000000001 /* AppHapticFeedback.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE142001420000000000001 /* AppHapticFeedback.swift */; };
 		DAC19F162B0B3246002FE2E8 /* PetProfileSettingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F152B0B3246002FE2E8 /* PetProfileSettingView.swift */; };
 		DAC19F1E2B0B331A002FE2E8 /* SigningViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F1D2B0B331A002FE2E8 /* SigningViewModel.swift */; };
 		DAC19F202B0B3798002FE2E8 /* LoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F1F2B0B3798002FE2E8 /* LoadingView.swift */; };
@@ -109,11 +107,23 @@
 		DAC19F2C2B0B43BB002FE2E8 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F2B2B0B43BB002FE2E8 /* SignInView.swift */; };
 		DAC19F352B0B898D002FE2E8 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = DAC19F342B0B898D002FE2E8 /* Kingfisher */; };
 		DAC19F382B0B9E81002FE2E8 /* StringExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F372B0B9E81002FE2E8 /* StringExtensions.swift */; };
+		DAE140101400000000000001 /* ProfileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE140001400000000000001 /* ProfileStore.swift */; };
+		DAE140101400000000000002 /* PetSelectionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE140001400000000000002 /* PetSelectionStore.swift */; };
+		DAE140101400000000000003 /* WalkSessionMetadataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE140001400000000000003 /* WalkSessionMetadataStore.swift */; };
+		DAE140101400000000000004 /* ProfileSyncOutboxStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE140001400000000000004 /* ProfileSyncOutboxStore.swift */; };
+		DAE142101420000000000001 /* AppHapticFeedback.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE142001420000000000001 /* AppHapticFeedback.swift */; };
 		DAED24FB2AFA1C980044715A /* LottieView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAED24FA2AFA1C980044715A /* LottieView.swift */; };
 		DAED25022AFA1D430044715A /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAED25012AFA1D430044715A /* SplashView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		A84515EDA309F54D868A7F85 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = DA71C8312AD787AC00081ED0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DA71C8382AD787AC00081ED0;
+			remoteInfo = dogArea;
+		};
 		DA95CC6D2ADE0682004AD94D /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = DA71C8312AD787AC00081ED0 /* Project object */;
@@ -166,6 +176,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		1D982F3BFEE53C6D1333FF67 /* DesignAuditUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DesignAuditUITests.swift; sourceTree = "<group>"; };
+		626E89852AADA163B53AB03D /* dogAreaUITestsLaunchTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		688E8E192EA6BCB551D19759 /* dogAreaUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = dogAreaUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		D8458EB9DE9760D52537B4B6 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		DA0FB2082AD7B21C00B235CF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		DA16C1D82B05DCC8008FC133 /* CornerShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CornerShape.swift; sourceTree = "<group>"; };
 		DA16C1DB2B05E4DF008FC133 /* TimeCheckable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeCheckable.swift; sourceTree = "<group>"; };
@@ -249,11 +263,6 @@
 		DAC19F0D2B0AE5AC002FE2E8 /* ImagePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePicker.swift; sourceTree = "<group>"; };
 		DAC19F0F2B0AF661002FE2E8 /* TitleTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitleTextView.swift; sourceTree = "<group>"; };
 		DAC19F122B0AFCAC002FE2E8 /* UserdefaultSetting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserdefaultSetting.swift; sourceTree = "<group>"; };
-		DAE140001400000000000001 /* ProfileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileStore.swift; sourceTree = "<group>"; };
-		DAE140001400000000000002 /* PetSelectionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetSelectionStore.swift; sourceTree = "<group>"; };
-		DAE140001400000000000003 /* WalkSessionMetadataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkSessionMetadataStore.swift; sourceTree = "<group>"; };
-		DAE140001400000000000004 /* ProfileSyncOutboxStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileSyncOutboxStore.swift; sourceTree = "<group>"; };
-		DAE142001420000000000001 /* AppHapticFeedback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppHapticFeedback.swift; sourceTree = "<group>"; };
 		DAC19F152B0B3246002FE2E8 /* PetProfileSettingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetProfileSettingView.swift; sourceTree = "<group>"; };
 		DAC19F1D2B0B331A002FE2E8 /* SigningViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SigningViewModel.swift; sourceTree = "<group>"; };
 		DAC19F1F2B0B3798002FE2E8 /* LoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingView.swift; sourceTree = "<group>"; };
@@ -261,11 +270,24 @@
 		DAC19F272B0B37DA002FE2E8 /* LoadingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingViewModel.swift; sourceTree = "<group>"; };
 		DAC19F2B2B0B43BB002FE2E8 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
 		DAC19F372B0B9E81002FE2E8 /* StringExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringExtensions.swift; sourceTree = "<group>"; };
+		DAE140001400000000000001 /* ProfileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileStore.swift; sourceTree = "<group>"; };
+		DAE140001400000000000002 /* PetSelectionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetSelectionStore.swift; sourceTree = "<group>"; };
+		DAE140001400000000000003 /* WalkSessionMetadataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkSessionMetadataStore.swift; sourceTree = "<group>"; };
+		DAE140001400000000000004 /* ProfileSyncOutboxStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileSyncOutboxStore.swift; sourceTree = "<group>"; };
+		DAE142001420000000000001 /* AppHapticFeedback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppHapticFeedback.swift; sourceTree = "<group>"; };
 		DAED24FA2AFA1C980044715A /* LottieView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LottieView.swift; sourceTree = "<group>"; };
 		DAED25012AFA1D430044715A /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		CABA6EC005DFA1F24B97DA99 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8DD9CE63EA914575B4763A9F /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		DA71C8362AD787AC00081ED0 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -295,6 +317,16 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		28124A9857F1E4CF96CF6415 /* dogAreaUITests */ = {
+			isa = PBXGroup;
+			children = (
+				1D982F3BFEE53C6D1333FF67 /* DesignAuditUITests.swift */,
+				626E89852AADA163B53AB03D /* dogAreaUITestsLaunchTests.swift */,
+			);
+			name = dogAreaUITests;
+			path = dogAreaUITests;
+			sourceTree = "<group>";
+		};
 		DA1731742AE20A3600EF10C8 /* Resource */ = {
 			isa = PBXGroup;
 			children = (
@@ -347,6 +379,7 @@
 			children = (
 				DA3C140D2AF0847600324A14 /* ManagedSettings.framework */,
 				DA3C140F2AF0847600324A14 /* ManagedSettingsUI.framework */,
+				E59AA996CB706087B5029DE5 /* iOS */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -474,6 +507,7 @@
 				DA3C140C2AF0847600324A14 /* Frameworks */,
 				DA71C83A2AD787AC00081ED0 /* Products */,
 				DA933BC12AD7F0150029856C /* Recovered References */,
+				28124A9857F1E4CF96CF6415 /* dogAreaUITests */,
 			);
 			sourceTree = "<group>";
 		};
@@ -483,6 +517,7 @@
 				DA71C8392AD787AC00081ED0 /* dogArea.app */,
 				DA95CC692ADE0682004AD94D /* OpenAIClient.framework */,
 				DAB314AF2B3C1B4A000357C7 /* dogAreaWatch Watch App.app */,
+				688E8E192EA6BCB551D19759 /* dogAreaUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -606,6 +641,14 @@
 			path = Animations;
 			sourceTree = "<group>";
 		};
+		E59AA996CB706087B5029DE5 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				D8458EB9DE9760D52537B4B6 /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -620,6 +663,24 @@
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
+		67B229361805BD2029A9AB0C /* dogAreaUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CAFD91A5C821969382992731 /* Build configuration list for PBXNativeTarget "dogAreaUITests" */;
+			buildPhases = (
+				211EA59AD65CDBF5CE017649 /* Sources */,
+				CABA6EC005DFA1F24B97DA99 /* Frameworks */,
+				4470B2E14E0E00C98ED86996 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B22DD18A77E1500960C57B6F /* PBXTargetDependency */,
+			);
+			name = dogAreaUITests;
+			productName = dogAreaUITests;
+			productReference = 688E8E192EA6BCB551D19759 /* dogAreaUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		DA71C8382AD787AC00081ED0 /* dogArea */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = DA71C8492AD787AD00081ED0 /* Build configuration list for PBXNativeTarget "dogArea" */;
@@ -733,11 +794,19 @@
 				DA71C8382AD787AC00081ED0 /* dogArea */,
 				DA95CC682ADE0682004AD94D /* OpenAIClient */,
 				DAB314AE2B3C1B4A000357C7 /* dogAreaWatch Watch App */,
+				67B229361805BD2029A9AB0C /* dogAreaUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		4470B2E14E0E00C98ED86996 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		DA71C8372AD787AC00081ED0 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -788,6 +857,15 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		211EA59AD65CDBF5CE017649 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				23CB28F896D94B88CEF351F7 /* DesignAuditUITests.swift in Sources */,
+				22EA9355CC79568490A94348 /* dogAreaUITestsLaunchTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		DA71C8352AD787AC00081ED0 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -882,6 +960,12 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		B22DD18A77E1500960C57B6F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = dogArea;
+			target = DA71C8382AD787AC00081ED0 /* dogArea */;
+			targetProxy = A84515EDA309F54D868A7F85 /* PBXContainerItemProxy */;
+		};
 		DA95CC6E2ADE0682004AD94D /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = DA95CC682ADE0682004AD94D /* OpenAIClient */;
@@ -889,7 +973,7 @@
 		};
 		DA95CC7D2ADE0A28004AD94D /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			productRef = DA95CC7C2ADE0A28004AD94D /* OpenAPIGenerator */;
+			productRef = DA95CC7C2ADE0A28004AD94D /* plugin:OpenAPIGenerator */;
 		};
 		DAB314BB2B3C1B4B000357C7 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -899,6 +983,41 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		2D9C7C35EA9B548BECD4D7BF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.th.dogAreaUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = dogArea;
+			};
+			name = Debug;
+		};
+		2EC4D1F2B23D610778DC6E89 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.th.dogAreaUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = dogArea;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		DA71C8472AD787AD00081ED0 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = DA45137D2AFA6DC1007AD69B /* OpenAIConfiguration.xcconfig */;
@@ -1250,6 +1369,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		CAFD91A5C821969382992731 /* Build configuration list for PBXNativeTarget "dogAreaUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2EC4D1F2B23D610778DC6E89 /* Release */,
+				2D9C7C35EA9B548BECD4D7BF /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		DA71C8342AD787AC00081ED0 /* Build configuration list for PBXProject "dogArea" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -1350,7 +1478,7 @@
 			package = DA95CC792ADE0A07004AD94D /* XCRemoteSwiftPackageReference "swift-openapi-urlsession" */;
 			productName = OpenAPIURLSession;
 		};
-		DA95CC7C2ADE0A28004AD94D /* OpenAPIGenerator */ = {
+		DA95CC7C2ADE0A28004AD94D /* plugin:OpenAPIGenerator */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = DA95CC752ADE09AF004AD94D /* XCRemoteSwiftPackageReference "swift-openapi-generator" */;
 			productName = "plugin:OpenAPIGenerator";
@@ -1366,7 +1494,6 @@
 			productName = Kingfisher;
 		};
 /* End XCSwiftPackageProductDependency section */
-
 	};
 	rootObject = DA71C8312AD787AC00081ED0 /* Project object */;
 }

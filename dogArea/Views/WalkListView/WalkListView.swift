@@ -41,6 +41,7 @@ struct WalkListView: View {
                                         NavigationLink(value: walk) {
                                             WalkListCell(walkData: walk)
                                         }.padding()
+                                            .accessibilityIdentifier("walklist.cell")
                                             .cornerRadius(15)
                                             .overlay(
                                                 RoundedRectangle(cornerRadius: 15)
@@ -64,6 +65,7 @@ struct WalkListView: View {
                                         NavigationLink(value: walk) {
                                             WalkListCell(walkData: walk)
                                         }.padding()
+                                            .accessibilityIdentifier("walklist.cell")
                                             .cornerRadius(15)
                                             .overlay(
                                                 RoundedRectangle(cornerRadius: 15)
@@ -95,6 +97,7 @@ struct WalkListView: View {
                 WalkListDetailView(model: model)
             }.navigationTitle("산책 목록")
                 .font(.appFont(for: .ExtraBold, size: 36))
+                .accessibilityIdentifier("screen.walkList.content")
         }
     }
 
@@ -111,19 +114,10 @@ struct WalkListView: View {
             Button("로그인") {
                 _ = authFlow.requestAccess(feature: .cloudSync)
             }
-            .font(.appFont(for: .SemiBold, size: 12))
-            .padding(.horizontal, 12)
-            .padding(.vertical, 7)
-            .background(Color.appYellow)
-            .cornerRadius(8)
+            .buttonStyle(AppFilledButtonStyle(role: .secondary, fillsWidth: false))
         }
         .padding(10)
-        .background(Color.white)
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.appTextDarkGray, lineWidth: 0.25)
-        )
+        .appCardSurface()
     }
 
     var petContextSwitcher: some View {
@@ -132,12 +126,7 @@ struct WalkListView: View {
                 Text(viewModel.isShowingAllRecordsOverride
                      ? "전체 기록 보기 모드 · 선택 반려견 \(viewModel.selectedPetName)"
                      : "선택 반려견 기준 · \(viewModel.selectedPetName)")
-                .font(.appFont(for: .SemiBold, size: 12))
-                .foregroundStyle(Color.appTextDarkGray)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(Color.appYellowPale)
-                .cornerRadius(8)
+                .appPill(isActive: viewModel.isShowingAllRecordsOverride == false)
                 .accessibilityLabel(
                     viewModel.isShowingAllRecordsOverride
                         ? "전체 기록 보기 모드, 선택 반려견 \(viewModel.selectedPetName)"
@@ -147,11 +136,7 @@ struct WalkListView: View {
                     Button("기준으로 돌아가기") {
                         viewModel.showSelectedPetRecords()
                     }
-                    .font(.appFont(for: .SemiBold, size: 11))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(Color.appYellow)
-                    .cornerRadius(8)
+                    .buttonStyle(AppFilledButtonStyle(role: .secondary, fillsWidth: false))
                     .accessibilityLabel("선택 반려견 기준으로 돌아가기")
                 }
                 Spacer(minLength: 0)
@@ -160,13 +145,7 @@ struct WalkListView: View {
                 HStack(spacing: 8) {
                     ForEach(viewModel.pets, id: \.petId) { pet in
                         Text(pet.petName)
-                            .font(.appFont(for: .Regular, size: 12))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(
-                                viewModel.selectedPetId == pet.petId ? Color.appYellow : Color.appYellowPale
-                            )
-                            .cornerRadius(8)
+                            .appPill(isActive: viewModel.selectedPetId == pet.petId)
                             .onTapGesture {
                                 viewModel.selectPet(pet.petId)
                             }
@@ -186,21 +165,12 @@ struct WalkListView: View {
             Button("전체 기록 보기") {
                 viewModel.showAllRecordsTemporarily()
             }
-            .font(.appFont(for: .SemiBold, size: 12))
-            .padding(.horizontal, 12)
-            .padding(.vertical, 7)
-            .background(Color.appYellow)
-            .cornerRadius(8)
+            .buttonStyle(AppFilledButtonStyle(role: .secondary, fillsWidth: false))
             .accessibilityLabel("전체 기록 보기")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
-        .background(Color.white)
-        .cornerRadius(10)
-        .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(Color.appTextDarkGray, lineWidth: 0.25)
-        )
+        .appCardSurface()
         .padding(.horizontal, 16)
         .padding(.top, 12)
     }
@@ -215,12 +185,7 @@ struct WalkListView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
-        .background(Color.white)
-        .cornerRadius(10)
-        .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(Color.appTextDarkGray, lineWidth: 0.25)
-        )
+        .appCardSurface()
         .padding(.horizontal, 16)
         .padding(.top, 12)
     }

@@ -41,10 +41,9 @@ struct MapSubView: View {
             if viewModel.isWalking {
                 ForEach(viewModel.activeTrailMarkers) { trail in
                     Annotation("", coordinate: trail.coordinate) {
-                        Image(.dogPrint)
-                            .resizable()
-                            .frame(width: 12, height: 12)
-                            .foregroundStyle(Color.appTextDarkGray)
+                        Image(systemName: "pawprint.fill")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(Color.appInk.opacity(0.8))
                             .scaleEffect(trail.scale)
                             .opacity(trail.opacity)
                             .allowsHitTesting(false)
@@ -90,9 +89,10 @@ struct MapSubView: View {
                         .annotationTitles(.visible)
                     Annotation("", coordinate: walkArea.coordinate) {
                         VStack {
-                            Image(.dogPrint)
-                                .resizable()
-                                .frame(width: 20, height: 20)
+                            Image(systemName: "pawprint.fill")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(Color.white)
+                                .frame(width: 24, height: 24)
                                 .background(Color.appGreen)
                                 .cornerRadius(10)
                                 .shadow(radius: 5)
@@ -106,9 +106,10 @@ struct MapSubView: View {
                     ForEach(viewModel.centerLocations.indices, id:\.self) { index in
                         Annotation("", coordinate: viewModel.centerLocations[index].center) {
                             VStack {
-                                Image(.dogPrint)
-                                    .resizable()
-                                    .frame(width: 20, height: 20)
+                                Image(systemName: "pawprint.fill")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundStyle(Color.white)
+                                    .frame(width: 24, height: 24)
                                     .background(Color.appGreen)
                                     .cornerRadius(10)
                                     .shadow(radius: 5)
@@ -133,22 +134,6 @@ struct MapSubView: View {
                                 .stroke(Color.appYellow, lineWidth: 0.5)
                                 .foregroundStyle(Color.appYellow.opacity(0.3))
                                 .annotationTitles(.visible)
-//                            Annotation("", coordinate: p.coordinate) {
-//                                VStack {
-//                                    Image(.dogPrint)
-//                                        .resizable()
-//                                        .frame(width: 20, height: 20)
-//                                        .background(Color.appGreen)
-//                                        .cornerRadius(10)
-//                                        .shadow(radius: 5)
-//                                    Text("\(item.createdAt.createdAtTimeYYMMDD)")
-//                                        .font(.appFont(for: .Regular, size: 12))
-//                                        .foregroundColor(.appTextDarkGray)
-//                                }.onTapGesture {
-//                                    let distance = p.boundingMapRect.width
-//                                    viewModel.setRegion(p.coordinate, distance: distance)
-//                                }
-//                            }
                         }
                     }
                 }

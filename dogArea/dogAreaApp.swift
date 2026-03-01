@@ -70,6 +70,7 @@ struct dogAreaApp: App {
     
     @State var splash = true
     @StateObject private var authFlow = AuthFlowCoordinator()
+    private let launchArguments = ProcessInfo.processInfo.arguments
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
@@ -82,42 +83,94 @@ struct dogAreaApp: App {
             fatalError("Could not create ModelContainer: \(error)")
         }
     }()
+
+    /// UI 테스트 런치 인자에서 지정한 인터페이스 스타일을 해석합니다.
+    private var forcedInterfaceStyleForUITest: ColorScheme? {
+        guard let index = launchArguments.firstIndex(of: "-UITest.InterfaceStyle"),
+              launchArguments.indices.contains(index + 1) else {
+            return nil
+        }
+        switch launchArguments[index + 1].lowercased() {
+        case "dark":
+            return .dark
+        case "light":
+            return .light
+        default:
+            return nil
+        }
+    }
+
+    /// UI 테스트에서 스플래시 화면을 건너뛸지 여부를 반환합니다.
+    private var shouldSkipSplashForUITest: Bool {
+        launchArguments.contains("-UITest.SkipSplash")
+    }
+
+    /// UI 테스트에서 엔트리 선택 시트 없이 게스트로 바로 진입할지 여부를 반환합니다.
+    private var shouldAutoGuestForUITest: Bool {
+        launchArguments.contains("-UITest.AutoGuest")
+    }
     
     var body: some Scene {
         WindowGroup {
-            if splash {
-                SplashView().onAppear{
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.7) {
-                        withAnimation {
-                            splash = false
+            Group {
+                if splash && shouldSkipSplashForUITest == false {
+                    SplashView().onAppear{
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.7) {
+                            withAnimation {
+                                splash = false
+                            }
                         }
                     }
+                } else {
+                    rootContent
                 }
-            } else {
-                RootView()
-                    .environmentObject(CustomAlertViewModel())
-                    .environmentObject(authFlow)
-                    .onAppear {
-                        authFlow.refresh()
-                    }
-                    .sheet(isPresented: $authFlow.shouldShowEntryChoice) {
-                        GuestEntryChoiceSheet(
-                            onContinueAsGuest: { authFlow.continueAsGuest() },
-                            onSignIn: { authFlow.chooseSignInFromEntry() }
-                        )
-                        .presentationDetents([.medium])
-                        .interactiveDismissDisabled(true)
-                    }
-                    .fullScreenCover(isPresented: $authFlow.shouldShowSignIn, content: {
-                        SignInView(
-                            allowDismiss: true,
-                            onAuthenticated: { authFlow.completeSignIn() },
-                            onDismiss: { authFlow.dismissSignIn() }
-                        )
-                    })
             }
+            .preferredColorScheme(forcedInterfaceStyleForUITest)
         }
         .modelContainer(sharedModelContainer)
+    }
+
+    @ViewBuilder
+    private var rootContent: some View {
+        let baseRoot = RootView()
+            .environmentObject(CustomAlertViewModel())
+            .environmentObject(authFlow)
+            .onAppear {
+                authFlow.refresh()
+                if shouldAutoGuestForUITest {
+                    DispatchQueue.main.async {
+                        authFlow.continueAsGuest()
+                    }
+                }
+            }
+
+        if shouldAutoGuestForUITest {
+            baseRoot
+                .fullScreenCover(isPresented: $authFlow.shouldShowSignIn, content: {
+                    SignInView(
+                        allowDismiss: true,
+                        onAuthenticated: { authFlow.completeSignIn() },
+                        onDismiss: { authFlow.dismissSignIn() }
+                    )
+                })
+        } else {
+            baseRoot
+                .sheet(isPresented: $authFlow.shouldShowEntryChoice) {
+                    GuestEntryChoiceSheet(
+                        onContinueAsGuest: { authFlow.continueAsGuest() },
+                        onSignIn: { authFlow.chooseSignInFromEntry() }
+                    )
+                    .presentationDetents([.medium])
+                    .interactiveDismissDisabled(true)
+                }
+                .fullScreenCover(isPresented: $authFlow.shouldShowSignIn, content: {
+                    SignInView(
+                        allowDismiss: true,
+                        onAuthenticated: { authFlow.completeSignIn() },
+                        onDismiss: { authFlow.dismissSignIn() }
+                    )
+                })
+        }
     }
 }
 
@@ -135,6 +188,7 @@ private struct GuestEntryChoiceSheet: View {
             Button("바로 시작") {
                 onContinueAsGuest()
             }
+            .accessibilityIdentifier("entry.continueGuest")
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
             .background(Color.appYellowPale)
@@ -143,6 +197,7 @@ private struct GuestEntryChoiceSheet: View {
             Button("로그인하고 동기화") {
                 onSignIn()
             }
+            .accessibilityIdentifier("entry.openSignIn")
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
             .background(Color.appGreen)

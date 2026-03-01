@@ -861,6 +861,7 @@ struct HomeView: View {
                 .padding(.vertical, 6)
                 .background(Color.appYellowPale)
                 .cornerRadius(8)
+                .accessibilityIdentifier("home.season.detail")
                 if viewModel.lastSeasonResultPresentation != nil {
                     Button("지난 결과") {
                         viewModel.reopenLastSeasonResult()
@@ -1369,6 +1370,7 @@ struct HomeView: View {
                     Button("닫기") {
                         isSeasonDetailPresented = false
                     }
+                    .accessibilityIdentifier("home.season.detail.close")
                 }
             }
         }
@@ -1554,6 +1556,7 @@ struct HomeView: View {
                 }
             }
         }
+        .accessibilityIdentifier("home.quest.row.\(mission.id)")
     }
 }
 

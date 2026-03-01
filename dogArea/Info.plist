@@ -27,6 +27,16 @@
 	<string>산책 완료 카드 이미지를 사진 앱에 저장하기 위해 접근이 필요합니다.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>산책 완료 사진 선택 및 프로필 설정을 위해 접근이 필요합니다.</string>
+	<key>SUPABASE_URL</key>
+	<string>$(SUPABASE_URL)</string>
+	<key>SUPABASE_ANON_KEY</key>
+	<string>$(SUPABASE_ANON_KEY)</string>
+	<key>PROJECT_REF</key>
+	<string>$(PROJECT_REF)</string>
+	<key>STORAGE_BUCKETS</key>
+	<string>$(STORAGE_BUCKETS)</string>
+	<key>AUTH_REDIRECT_URL</key>
+	<string>$(AUTH_REDIRECT_URL)</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Pretendard-Black.otf</string>
