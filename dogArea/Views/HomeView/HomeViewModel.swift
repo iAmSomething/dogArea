@@ -52,6 +52,7 @@ struct SeasonMotionSummary: Equatable {
     let targetScore: Double
     let progress: Double
     let rankTier: SeasonRankTier
+    let todayScoreDelta: Int
     let contributionCount: Int
     let weatherShieldActive: Bool
     let weatherShieldApplyCount: Int
@@ -62,6 +63,7 @@ struct SeasonMotionSummary: Equatable {
         targetScore: 520,
         progress: 0,
         rankTier: .rookie,
+        todayScoreDelta: 0,
         contributionCount: 0,
         weatherShieldActive: false,
         weatherShieldApplyCount: 0
@@ -75,6 +77,12 @@ struct SeasonResultPresentation: Identifiable, Equatable {
     let totalScore: Int
     let contributionCount: Int
     let shieldApplyCount: Int
+}
+
+enum SeasonRewardClaimStatus: String, Codable, Equatable {
+    case pending
+    case claimed
+    case failed
 }
 
 struct WeatherMissionStatusSummary: Equatable {
@@ -139,6 +147,8 @@ final class HomeViewModel: ObservableObject {
     @Published var seasonMotionEvent: SeasonMotionEvent? = nil
     @Published var seasonResultPresentation: SeasonResultPresentation? = nil
     @Published var seasonResetTransitionToken: UUID? = nil
+    @Published var seasonRemainingTimeText: String = "-"
+    @Published var lastSeasonResultPresentation: SeasonResultPresentation? = nil
 
     private var allPolygons: [Polygon] = []
     private var cancellables: Set<AnyCancellable> = []
@@ -315,6 +325,20 @@ final class HomeViewModel: ObservableObject {
 
     func clearSeasonResetTransitionToken() {
         seasonResetTransitionToken = nil
+    }
+
+    func reopenLastSeasonResult() {
+        guard let last = lastSeasonResultPresentation else { return }
+        seasonResultPresentation = last
+    }
+
+    func seasonRewardStatus(for weekKey: String) -> SeasonRewardClaimStatus {
+        seasonMotionStore.rewardClaimStatus(for: weekKey)
+    }
+
+    func retrySeasonRewardClaim(for weekKey: String, cloudSyncAllowed: Bool) {
+        let claimResult = seasonMotionStore.claimReward(for: weekKey, cloudSyncAllowed: cloudSyncAllowed)
+        indoorMissionStatusMessage = claimResult.message
     }
 
     private func bindSeasonCatchupBuffStatusNotifications() {
@@ -868,8 +892,11 @@ final class HomeViewModel: ObservableObject {
             riskLevel: indoorMissionBoard.riskLevel
         )
         seasonMotionSummary = refresh.summary
+        seasonRemainingTimeText = seasonMotionStore.remainingTimeText(now: now)
+        lastSeasonResultPresentation = seasonMotionStore.loadLastCompletedSeason()
         if let completedSeason = refresh.completedSeason {
             seasonResultPresentation = completedSeason
+            lastSeasonResultPresentation = completedSeason
             seasonResetTransitionToken = UUID()
             seasonMotionEvent = SeasonMotionEvent(
                 type: .seasonReset,
@@ -2331,8 +2358,27 @@ private final class SeasonMotionStore {
         var updatedAt: TimeInterval
     }
 
+    private struct LastCompletedSeasonState: Codable, Equatable {
+        let weekKey: String
+        let rankTierRawValue: String
+        let totalScore: Int
+        let contributionCount: Int
+        let shieldApplyCount: Int
+        let completedAt: TimeInterval
+    }
+
+    private struct RewardClaimState: Codable, Equatable {
+        let weekKey: String
+        let status: SeasonRewardClaimStatus
+        let reason: String?
+        let updatedAt: TimeInterval
+    }
+
     private enum DefaultsKey {
         static let currentState = "season.motion.current.v1"
+        static let lastCompletedSeason = "season.motion.lastCompletedSeason.v1"
+        static let rewardClaimLedger = "season.motion.rewardClaimLedger.v1"
+        static let dailyScoreLedger = "season.motion.dailyScoreLedger.v1"
     }
 
     private static let weekFormatter: DateFormatter = {
@@ -2342,6 +2388,13 @@ private final class SeasonMotionStore {
         formatter.dateFormat = "YYYY-'W'ww"
         return formatter
     }()
+    private static let dayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.calendar = Calendar(identifier: .iso8601)
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
 
     private let targetScore: Double = 520
     private let defaults = UserDefaults.standard
@@ -2349,9 +2402,68 @@ private final class SeasonMotionStore {
     func refresh(now: Date, riskLevel: IndoorWeatherRiskLevel) -> SeasonMotionRefreshResult {
         let (state, completedSeason) = ensureCurrentState(now: now)
         return SeasonMotionRefreshResult(
-            summary: summary(from: state, riskLevel: riskLevel),
+            summary: summary(from: state, riskLevel: riskLevel, now: now),
             completedSeason: completedSeason
         )
+    }
+
+    func remainingTimeText(now: Date = Date()) -> String {
+        let calendar = Calendar(identifier: .iso8601)
+        guard let weekInterval = calendar.dateInterval(of: .weekOfYear, for: now) else {
+            return "-"
+        }
+        let remaining = max(0, Int(weekInterval.end.timeIntervalSince(now)))
+        if remaining <= 0 {
+            return "시즌 종료"
+        }
+        let days = remaining / 86_400
+        let hours = (remaining % 86_400) / 3_600
+        return "\(days)일 \(hours)시간 남음"
+    }
+
+    func loadLastCompletedSeason() -> SeasonResultPresentation? {
+        guard let data = defaults.data(forKey: DefaultsKey.lastCompletedSeason),
+              let decoded = try? JSONDecoder().decode(LastCompletedSeasonState.self, from: data),
+              let rankTier = SeasonRankTier(rawValue: decoded.rankTierRawValue) else {
+            return nil
+        }
+
+        return SeasonResultPresentation(
+            weekKey: decoded.weekKey,
+            rankTier: rankTier,
+            totalScore: decoded.totalScore,
+            contributionCount: decoded.contributionCount,
+            shieldApplyCount: decoded.shieldApplyCount
+        )
+    }
+
+    func rewardClaimStatus(for weekKey: String) -> SeasonRewardClaimStatus {
+        rewardClaimLedger()[weekKey]?.status ?? .pending
+    }
+
+    @discardableResult
+    func claimReward(for weekKey: String, cloudSyncAllowed: Bool, now: Date = Date()) -> (status: SeasonRewardClaimStatus, message: String) {
+        if rewardClaimStatus(for: weekKey) == .claimed {
+            return (.claimed, "이미 시즌 보상을 수령했어요.")
+        }
+
+        if cloudSyncAllowed == false {
+            updateRewardClaimState(
+                weekKey: weekKey,
+                status: .failed,
+                reason: "cloud_sync_disabled",
+                now: now
+            )
+            return (.failed, "보상 수령 실패: 로그인/동기화 활성화 후 재수령해주세요.")
+        }
+
+        updateRewardClaimState(
+            weekKey: weekKey,
+            status: .claimed,
+            reason: nil,
+            now: now
+        )
+        return (.claimed, "시즌 보상 수령 완료")
     }
 
     func recordMissionCompletion(
@@ -2370,6 +2482,7 @@ private final class SeasonMotionStore {
             scoreDelta = Double(max(1, rewardPoint))
             state.score += scoreDelta
             state.contributionCount += 1
+            addDailyScore(scoreDelta, weekKey: state.weekKey, now: now)
         }
 
         let shieldApplied = riskLevel != .clear && streakEligible
@@ -2382,7 +2495,7 @@ private final class SeasonMotionStore {
 
         let afterRank = rankTier(for: state.score)
         return SeasonMotionRecordResult(
-            summary: summary(from: state, riskLevel: riskLevel),
+            summary: summary(from: state, riskLevel: riskLevel, now: now),
             scoreDelta: scoreDelta,
             rankUp: afterRank != beforeRank,
             shieldApplied: shieldApplied,
@@ -2390,7 +2503,7 @@ private final class SeasonMotionStore {
         )
     }
 
-    private func summary(from state: State, riskLevel: IndoorWeatherRiskLevel) -> SeasonMotionSummary {
+    private func summary(from state: State, riskLevel: IndoorWeatherRiskLevel, now: Date) -> SeasonMotionSummary {
         let score = max(0, state.score)
         let progress = min(1, max(0, score / targetScore))
         return SeasonMotionSummary(
@@ -2399,6 +2512,7 @@ private final class SeasonMotionStore {
             targetScore: targetScore,
             progress: progress,
             rankTier: rankTier(for: score),
+            todayScoreDelta: dailyScore(for: state.weekKey, now: now),
             contributionCount: state.contributionCount,
             weatherShieldActive: riskLevel != .clear,
             weatherShieldApplyCount: state.weatherShieldApplyCount
@@ -2446,6 +2560,10 @@ private final class SeasonMotionStore {
             contributionCount: current.contributionCount,
             shieldApplyCount: current.weatherShieldApplyCount
         )
+        if completedSeason.totalScore > 0 || completedSeason.contributionCount > 0 {
+            persistLastCompletedSeason(completedSeason, completedAt: now)
+            ensureRewardPending(weekKey: completedSeason.weekKey, now: now)
+        }
 
         current = State(
             weekKey: weekKey,
@@ -2473,5 +2591,98 @@ private final class SeasonMotionStore {
     private func persist(_ state: State) {
         guard let data = try? JSONEncoder().encode(state) else { return }
         defaults.set(data, forKey: DefaultsKey.currentState)
+    }
+
+    private func dayKey(for date: Date) -> String {
+        Self.dayFormatter.string(from: date)
+    }
+
+    private func dailyLedgerEntryKey(weekKey: String, dayKey: String) -> String {
+        "\(weekKey)|\(dayKey)"
+    }
+
+    private func dailyScoreLedger() -> [String: Double] {
+        guard let data = defaults.data(forKey: DefaultsKey.dailyScoreLedger),
+              let decoded = try? JSONDecoder().decode([String: Double].self, from: data) else {
+            return [:]
+        }
+        return decoded
+    }
+
+    private func persistDailyScoreLedger(_ ledger: [String: Double]) {
+        let keys = ledger.keys.sorted()
+        let keysToKeep = Set(keys.suffix(84))
+        let trimmed = ledger.filter { keysToKeep.contains($0.key) }
+        guard let data = try? JSONEncoder().encode(trimmed) else { return }
+        defaults.set(data, forKey: DefaultsKey.dailyScoreLedger)
+    }
+
+    private func dailyScore(for weekKey: String, now: Date) -> Int {
+        let key = dailyLedgerEntryKey(weekKey: weekKey, dayKey: dayKey(for: now))
+        return Int((dailyScoreLedger()[key] ?? 0).rounded())
+    }
+
+    private func addDailyScore(_ delta: Double, weekKey: String, now: Date) {
+        guard delta > 0 else { return }
+        let key = dailyLedgerEntryKey(weekKey: weekKey, dayKey: dayKey(for: now))
+        var ledger = dailyScoreLedger()
+        ledger[key, default: 0] += delta
+        persistDailyScoreLedger(ledger)
+    }
+
+    private func persistLastCompletedSeason(_ result: SeasonResultPresentation, completedAt: Date) {
+        let encodedState = LastCompletedSeasonState(
+            weekKey: result.weekKey,
+            rankTierRawValue: result.rankTier.rawValue,
+            totalScore: result.totalScore,
+            contributionCount: result.contributionCount,
+            shieldApplyCount: result.shieldApplyCount,
+            completedAt: completedAt.timeIntervalSince1970
+        )
+        guard let data = try? JSONEncoder().encode(encodedState) else { return }
+        defaults.set(data, forKey: DefaultsKey.lastCompletedSeason)
+    }
+
+    private func rewardClaimLedger() -> [String: RewardClaimState] {
+        guard let data = defaults.data(forKey: DefaultsKey.rewardClaimLedger),
+              let decoded = try? JSONDecoder().decode([String: RewardClaimState].self, from: data) else {
+            return [:]
+        }
+        return decoded
+    }
+
+    private func persistRewardClaimLedger(_ ledger: [String: RewardClaimState]) {
+        let keys = ledger.keys.sorted()
+        let keysToKeep = Set(keys.suffix(20))
+        let trimmed = ledger.filter { keysToKeep.contains($0.key) }
+        guard let data = try? JSONEncoder().encode(trimmed) else { return }
+        defaults.set(data, forKey: DefaultsKey.rewardClaimLedger)
+    }
+
+    private func ensureRewardPending(weekKey: String, now: Date) {
+        let current = rewardClaimLedger()[weekKey]
+        guard current == nil else { return }
+        updateRewardClaimState(
+            weekKey: weekKey,
+            status: .pending,
+            reason: nil,
+            now: now
+        )
+    }
+
+    private func updateRewardClaimState(
+        weekKey: String,
+        status: SeasonRewardClaimStatus,
+        reason: String?,
+        now: Date
+    ) {
+        var ledger = rewardClaimLedger()
+        ledger[weekKey] = RewardClaimState(
+            weekKey: weekKey,
+            status: status,
+            reason: reason,
+            updatedAt: now.timeIntervalSince1970
+        )
+        persistRewardClaimLedger(ledger)
     }
 }

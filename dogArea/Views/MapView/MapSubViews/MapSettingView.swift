@@ -103,6 +103,33 @@ struct MapSettingView: View {
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(.horizontal, 16)
       .padding(.bottom, 8)
+      if viewModel.isHeatmapFeatureAvailable && viewModel.heatmapEnabled {
+          VStack(alignment: .leading, spacing: 6) {
+              Text(viewModel.seasonTileStatusSummaryText)
+                  .font(.appFont(for: .Medium, size: 12))
+                  .foregroundStyle(Color.appTextDarkGray)
+              ScrollView(.horizontal, showsIndicators: false) {
+                  HStack(spacing: 6) {
+                      ForEach(viewModel.seasonTileLegendItems) { item in
+                          HStack(spacing: 4) {
+                              Circle()
+                                  .fill(viewModel.heatmapColor(for: Double(item.level + 1) / 4.0))
+                                  .frame(width: 10, height: 10)
+                              Text("\(item.label) \(item.status)")
+                                  .font(.appFont(for: .Light, size: 10))
+                          }
+                          .padding(.horizontal, 8)
+                          .padding(.vertical, 5)
+                          .background(Color.appYellowPale.opacity(0.45))
+                          .cornerRadius(8)
+                      }
+                  }
+              }
+          }
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(.horizontal, 16)
+          .padding(.bottom, 8)
+      }
       List {
         Section(content: {
           ForEach(viewModel.polygonList) { item in
