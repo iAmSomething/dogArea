@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import Combine
+import UserNotifications
 
 enum QuestMotionEventType: String, Equatable {
     case progress
@@ -115,6 +116,117 @@ struct WeatherShieldDailySummary: Equatable {
     let lastAppliedAtText: String
 }
 
+private enum QuestReminderApplyResult: Equatable {
+    case enabled
+    case disabled
+    case permissionDenied
+    case requiresPermission
+}
+
+private protocol QuestReminderScheduling {
+    func applyDailyReminder(
+        enabled: Bool,
+        allowAuthorizationPrompt: Bool,
+        hour: Int,
+        minute: Int
+    ) async -> QuestReminderApplyResult
+}
+
+private final class QuestReminderPreferenceStore {
+    private let defaults = UserDefaults.standard
+    private let key = "home.quest.reminder.enabled.v1"
+
+    /// 저장된 퀘스트 리마인드 on/off 상태를 반환합니다.
+    var isEnabled: Bool {
+        defaults.object(forKey: key) as? Bool ?? false
+    }
+
+    /// 퀘스트 리마인드 on/off 상태를 저장합니다.
+    func setEnabled(_ enabled: Bool) {
+        defaults.set(enabled, forKey: key)
+    }
+}
+
+private final class LocalQuestReminderScheduler: QuestReminderScheduling {
+    private let center: UNUserNotificationCenter
+    private let requestId = "home.quest.daily.reminder.v1"
+
+    init(center: UNUserNotificationCenter = .current()) {
+        self.center = center
+    }
+
+    /// 하루 1회 퀘스트 리마인드 알림을 설정하거나 해제합니다.
+    func applyDailyReminder(
+        enabled: Bool,
+        allowAuthorizationPrompt: Bool,
+        hour: Int,
+        minute: Int
+    ) async -> QuestReminderApplyResult {
+        guard enabled else {
+            center.removePendingNotificationRequests(withIdentifiers: [requestId])
+            center.removeDeliveredNotifications(withIdentifiers: [requestId])
+            return .disabled
+        }
+
+        let authorization = await ensureAuthorization(allowPrompt: allowAuthorizationPrompt)
+        switch authorization {
+        case .enabled:
+            break
+        case .permissionDenied:
+            return .permissionDenied
+        case .requiresPermission:
+            return .requiresPermission
+        case .disabled:
+            return .permissionDenied
+        }
+
+        center.removePendingNotificationRequests(withIdentifiers: [requestId])
+
+        let content = UNMutableNotificationContent()
+        content.title = "오늘 산책 퀘스트 확인할 시간이에요"
+        content.body = "홈에서 오늘 미션을 확인하고, 짧게 기록해 진행도를 올려보세요."
+        content.sound = .default
+
+        var dateComponents = DateComponents()
+        dateComponents.hour = hour
+        dateComponents.minute = minute
+
+        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
+        let request = UNNotificationRequest(identifier: requestId, content: content, trigger: trigger)
+
+        return await withCheckedContinuation { continuation in
+            center.add(request) { error in
+                continuation.resume(returning: error == nil ? .enabled : .permissionDenied)
+            }
+        }
+    }
+
+    /// 알림 권한 상태를 확인하고 필요 시 사용자 권한 요청을 실행합니다.
+    private func ensureAuthorization(allowPrompt: Bool) async -> QuestReminderApplyResult {
+        let settings = await withCheckedContinuation { continuation in
+            center.getNotificationSettings { settings in
+                continuation.resume(returning: settings)
+            }
+        }
+
+        switch settings.authorizationStatus {
+        case .authorized, .provisional, .ephemeral:
+            return .enabled
+        case .denied:
+            return .permissionDenied
+        case .notDetermined:
+            guard allowPrompt else { return .requiresPermission }
+            return await withCheckedContinuation { continuation in
+                center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
+                    continuation.resume(returning: granted ? .enabled : .permissionDenied)
+                }
+            }
+        @unknown default:
+            return .permissionDenied
+        }
+    }
+}
+
 final class HomeViewModel: ObservableObject {
     @Published var polygonList: [Polygon] = []
     @Published var totalArea: Double = 0.0
@@ -143,6 +255,8 @@ final class HomeViewModel: ObservableObject {
     @Published private(set) var featuredAreaCount: Int = 0
     @Published var questMotionEvent: QuestMotionEvent? = nil
     @Published var questCompletionPresentation: QuestCompletionPresentation? = nil
+    @Published var questReminderEnabled: Bool
+    @Published var questAlternativeActionSuggestion: String? = nil
     @Published var seasonMotionSummary: SeasonMotionSummary = .empty
     @Published var seasonMotionEvent: SeasonMotionEvent? = nil
     @Published var seasonResultPresentation: SeasonResultPresentation? = nil
@@ -162,8 +276,12 @@ final class HomeViewModel: ObservableObject {
     private let userSessionStore: UserSessionStoreProtocol
     private let eventCenter: AppEventCenterProtocol
     private let seasonMotionStore = SeasonMotionStore()
+    private let questReminderScheduler: QuestReminderScheduling
+    private let questReminderPreferenceStore = QuestReminderPreferenceStore()
     private var featuredGoalAreas: [AreaMeter] = []
     private var areaReferenceTask: Task<Void, Never>? = nil
+    private static let questReminderHour = 20
+    private static let questReminderMinute = 0
     private static let catchupExpiryTimeFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ko_KR")
@@ -236,6 +354,9 @@ final class HomeViewModel: ObservableObject {
         self.walkRepository = walkRepository
         self.userSessionStore = userSessionStore
         self.eventCenter = eventCenter
+        self.questReminderScheduler = LocalQuestReminderScheduler()
+        self.questReminderEnabled = false
+        self.questReminderEnabled = questReminderPreferenceStore.isEnabled
         bindSelectedPetSync()
         bindTimeBoundaryNotifications()
         bindSeasonCatchupBuffStatusNotifications()
@@ -243,6 +364,9 @@ final class HomeViewModel: ObservableObject {
         reloadUserInfo()
         reloadSeasonCatchupBuffStatus()
         fetchData()
+        Task { [weak self] in
+            await self?.syncQuestReminderOnLaunch()
+        }
     }
 
     deinit {
@@ -325,6 +449,20 @@ final class HomeViewModel: ObservableObject {
 
     func clearSeasonResetTransitionToken() {
         seasonResetTransitionToken = nil
+    }
+
+    /// 퀘스트 리마인드 토글 상태를 저장하고 로컬 알림 스케줄을 반영합니다.
+    func setQuestReminderEnabled(_ enabled: Bool) {
+        guard questReminderEnabled != enabled else { return }
+        questReminderEnabled = enabled
+        questReminderPreferenceStore.setEnabled(enabled)
+
+        Task { [weak self] in
+            await self?.applyQuestReminderPreference(
+                enabled: enabled,
+                allowAuthorizationPrompt: true
+            )
+        }
     }
 
     func reopenLastSeasonResult() {
@@ -441,6 +579,63 @@ final class HomeViewModel: ObservableObject {
         default:
             return "운영 정책 조건을 만족하지 않았어요."
         }
+    }
+
+    /// 앱 진입 시 저장된 퀘스트 리마인드 설정을 로컬 알림 스케줄과 동기화합니다.
+    private func syncQuestReminderOnLaunch() async {
+        await applyQuestReminderPreference(
+            enabled: questReminderEnabled,
+            allowAuthorizationPrompt: false
+        )
+    }
+
+    /// 퀘스트 리마인드 설정 변경을 로컬 알림 스케줄에 적용하고 상태 메시지를 갱신합니다.
+    private func applyQuestReminderPreference(
+        enabled: Bool,
+        allowAuthorizationPrompt: Bool
+    ) async {
+        let result = await questReminderScheduler.applyDailyReminder(
+            enabled: enabled,
+            allowAuthorizationPrompt: allowAuthorizationPrompt,
+            hour: Self.questReminderHour,
+            minute: Self.questReminderMinute
+        )
+
+        await MainActor.run {
+            switch result {
+            case .enabled:
+                if allowAuthorizationPrompt {
+                    indoorMissionStatusMessage = "퀘스트 리마인드를 매일 \(Self.questReminderHour):\(String(format: "%02d", Self.questReminderMinute)) 1회로 설정했어요."
+                }
+            case .disabled:
+                if allowAuthorizationPrompt {
+                    indoorMissionStatusMessage = "퀘스트 리마인드를 껐어요."
+                }
+            case .permissionDenied:
+                questReminderEnabled = false
+                questReminderPreferenceStore.setEnabled(false)
+                indoorMissionStatusMessage = "알림 권한이 꺼져 있어 리마인드를 설정할 수 없어요. 설정 앱에서 알림을 허용한 뒤 다시 시도해주세요."
+            case .requiresPermission:
+                break
+            }
+        }
+    }
+
+    /// 실패/만료 상황에서 사용자가 다음으로 시도할 행동을 안내하는 문구를 생성합니다.
+    private func makeQuestAlternativeActionSuggestion(for board: IndoorMissionBoard) -> String? {
+        switch board.extensionState {
+        case .expired:
+            return "연장 미션이 만료됐어요. 오늘 기본 미션 1개를 먼저 완료해 내일 자동 연장 조건을 회복하세요."
+        case .cooldown:
+            return "연장 슬롯은 하루 쿨다운이에요. 기본 미션 행동량을 채워 오늘 점수를 먼저 확보하세요."
+        default:
+            break
+        }
+
+        if board.riskLevel != .clear {
+            return "악천후일 때는 실내 대체 미션을 우선 진행하세요. 완료 기준 미달이면 행동 +1을 먼저 채워보세요."
+        }
+        return nil
     }
 
     private func applySelectedPetStatistics(shouldUpdateMeter: Bool = false) {
@@ -560,6 +755,7 @@ final class HomeViewModel: ObservableObject {
     func refreshIndoorMissions(now: Date = Date()) {
         let missionContext = makeIndoorMissionPetContext(reference: now)
         indoorMissionBoard = indoorMissionStore.buildBoard(now: now, context: missionContext)
+        questAlternativeActionSuggestion = makeQuestAlternativeActionSuggestion(for: indoorMissionBoard)
         weatherFeedbackRemainingCount = indoorMissionStore.weatherFeedbackRemainingCount(now: now)
         let weatherStatus = indoorMissionStore.weatherStatus(now: now)
         weatherShieldDailySummary = indoorMissionStore.weatherShieldDailySummary(now: now)
@@ -640,6 +836,7 @@ final class HomeViewModel: ObservableObject {
             }
         }
 
+        syncSeasonScoreWithWalkSessions(now: now)
         refreshSeasonMotion(now: now)
     }
 
@@ -680,6 +877,7 @@ final class HomeViewModel: ObservableObject {
 
         switch result {
         case .completed:
+            questAlternativeActionSuggestion = nil
             let seasonUpdate = seasonMotionStore.recordMissionCompletion(
                 rewardPoint: mission.rewardPoint,
                 streakEligible: mission.streakEligible,
@@ -747,6 +945,7 @@ final class HomeViewModel: ObservableObject {
             refreshIndoorMissions()
         case .insufficientAction(let actionCount, let required):
             indoorMissionStatusMessage = "완료 기준 미달: \(actionCount)/\(required) 행동"
+            questAlternativeActionSuggestion = "행동 +1을 더 누르거나 지도 탭에서 포인트 수동 기록 후 다시 완료를 눌러보세요."
             questMotionEvent = QuestMotionEvent(
                 missionId: mission.id,
                 missionTitle: mission.title,
@@ -765,6 +964,7 @@ final class HomeViewModel: ObservableObject {
             )
         case .alreadyCompleted:
             indoorMissionStatusMessage = "이미 완료한 미션입니다."
+            questAlternativeActionSuggestion = "다른 미션 카드에서 행동량을 채운 뒤 즉시 수령 버튼으로 완료를 진행해보세요."
             questMotionEvent = QuestMotionEvent(
                 missionId: mission.id,
                 missionTitle: mission.title,
@@ -888,6 +1088,44 @@ final class HomeViewModel: ObservableObject {
         )
     }
 
+    /// 이번 주 완료된 산책 세션을 시즌 점수로 1회만 반영합니다.
+    private func syncSeasonScoreWithWalkSessions(now: Date) {
+        let weekInterval = currentWeekInterval(reference: now)
+        let inputs: [SeasonWalkContributionInput] = polygonList.compactMap { polygon in
+            guard sessionOverlaps(polygon, with: weekInterval) else { return nil }
+            let interval = sessionInterval(for: polygon)
+            return SeasonWalkContributionInput(
+                sessionId: polygon.id.uuidString.lowercased(),
+                areaM2: max(0, polygon.walkingArea),
+                durationSec: max(0, polygon.walkingTime),
+                eventAt: interval.end.timeIntervalSince1970
+            )
+        }
+
+        guard let update = seasonMotionStore.recordWalkContributions(
+            sessions: inputs,
+            riskLevel: indoorMissionBoard.riskLevel,
+            now: now
+        ) else {
+            return
+        }
+
+        seasonMotionSummary = update.summary
+        if let completedSeason = update.completedSeason {
+            seasonResultPresentation = completedSeason
+            lastSeasonResultPresentation = completedSeason
+            seasonResetTransitionToken = UUID()
+        }
+        if update.scoreDelta > 0 || update.rankUp {
+            seasonMotionEvent = SeasonMotionEvent(
+                type: update.rankUp ? .rankUp : .scoreIncreased,
+                scoreDelta: update.scoreDelta,
+                rankTier: update.summary.rankTier,
+                shieldApplied: false
+            )
+        }
+    }
+
     private func refreshSeasonMotion(now: Date) {
         let refresh = seasonMotionStore.refresh(
             now: now,
@@ -916,7 +1154,7 @@ final class HomeViewModel: ObservableObject {
     ) -> WeatherMissionStatusSummary {
         let badgeText: String
         if status.source == .fallback {
-            badgeText = localizedCopy(ko: "Fallback", en: "Fallback")
+            badgeText = localizedCopy(ko: "기본 모드", en: "Base Mode")
         } else if board.riskLevel == .clear {
             badgeText = localizedCopy(ko: "정상", en: "Normal")
         } else {
@@ -926,8 +1164,8 @@ final class HomeViewModel: ObservableObject {
         let reasonText: String
         if status.source == .fallback {
             reasonText = localizedCopy(
-                ko: "날씨 데이터 수신 실패로 기본 퀘스트를 유지합니다.",
-                en: "Weather feed unavailable. Keeping default quests."
+                ko: "날씨 연동이 아직 준비되지 않아 기본 퀘스트로 진행합니다.",
+                en: "Weather integration is not ready yet. Running default quests."
             )
         } else if board.riskLevel == .clear {
             reasonText = localizedCopy(
@@ -951,8 +1189,8 @@ final class HomeViewModel: ObservableObject {
         let fallbackNotice: String?
         if status.source == .fallback {
             fallbackNotice = localizedCopy(
-                ko: "오프라인/날씨 API 장애 시 기본 퀘스트로 자동 전환돼요.",
-                en: "Offline/API failure automatically falls back to default quests."
+                ko: "연동 전에도 산책/기록/퀘스트는 정상적으로 계속됩니다.",
+                en: "Walk, logs, and quests continue normally even before weather integration."
             )
         } else {
             fallbackNotice = nil
@@ -2351,6 +2589,13 @@ private struct SeasonMotionRecordResult {
     let completedSeason: SeasonResultPresentation?
 }
 
+private struct SeasonWalkContributionInput: Equatable {
+    let sessionId: String
+    let areaM2: Double
+    let durationSec: Double
+    let eventAt: TimeInterval
+}
+
 private final class SeasonMotionStore {
     private struct State: Codable, Equatable {
         let weekKey: String
@@ -2381,6 +2626,7 @@ private final class SeasonMotionStore {
         static let lastCompletedSeason = "season.motion.lastCompletedSeason.v1"
         static let rewardClaimLedger = "season.motion.rewardClaimLedger.v1"
         static let dailyScoreLedger = "season.motion.dailyScoreLedger.v1"
+        static let walkContributionLedger = "season.motion.walkContributionLedger.v1"
     }
 
     private static let weekFormatter: DateFormatter = {
@@ -2505,6 +2751,68 @@ private final class SeasonMotionStore {
         )
     }
 
+    /// 이번 주 산책 세션 중 아직 반영되지 않은 항목을 시즌 점수로 누적합니다.
+    func recordWalkContributions(
+        sessions: [SeasonWalkContributionInput],
+        riskLevel: IndoorWeatherRiskLevel,
+        now: Date = Date()
+    ) -> SeasonMotionRecordResult? {
+        let ensured = ensureCurrentState(now: now)
+        var state = ensured.0
+        let completedSeason = ensured.1
+        let beforeRank = rankTier(for: state.score)
+        let weekKey = state.weekKey
+
+        let sortedSessions = sessions.sorted { $0.eventAt < $1.eventAt }
+        var ledger = walkContributionLedger()
+        var processedIds = Set(ledger[weekKey] ?? [])
+        var scoreDelta = 0.0
+        var contributionDelta = 0
+
+        for session in sortedSessions {
+            let sessionId = session.sessionId.lowercased()
+            guard sessionId.isEmpty == false else { continue }
+            guard processedIds.contains(sessionId) == false else { continue }
+
+            let reward = walkRewardPoint(
+                areaM2: session.areaM2,
+                durationSec: session.durationSec
+            )
+            processedIds.insert(sessionId)
+            guard reward > 0 else { continue }
+
+            let rewardAsDouble = Double(reward)
+            scoreDelta += rewardAsDouble
+            contributionDelta += 1
+            state.score += rewardAsDouble
+            state.contributionCount += 1
+            addDailyScore(
+                rewardAsDouble,
+                weekKey: weekKey,
+                now: Date(timeIntervalSince1970: session.eventAt)
+            )
+        }
+
+        guard contributionDelta > 0 || completedSeason != nil else {
+            return nil
+        }
+
+        state.updatedAt = now.timeIntervalSince1970
+        persist(state)
+
+        ledger[weekKey] = Array(processedIds).sorted()
+        persistWalkContributionLedger(ledger)
+
+        let afterRank = rankTier(for: state.score)
+        return SeasonMotionRecordResult(
+            summary: summary(from: state, riskLevel: riskLevel, now: now),
+            scoreDelta: scoreDelta,
+            rankUp: afterRank != beforeRank,
+            shieldApplied: false,
+            completedSeason: completedSeason
+        )
+    }
+
     private func summary(from state: State, riskLevel: IndoorWeatherRiskLevel, now: Date) -> SeasonMotionSummary {
         let score = max(0, state.score)
         let progress = min(1, max(0, score / targetScore))
@@ -2601,6 +2909,36 @@ private final class SeasonMotionStore {
 
     private func dailyLedgerEntryKey(weekKey: String, dayKey: String) -> String {
         "\(weekKey)|\(dayKey)"
+    }
+
+    private func walkContributionLedger() -> [String: [String]] {
+        guard let data = defaults.data(forKey: DefaultsKey.walkContributionLedger),
+              let decoded = try? JSONDecoder().decode([String: [String]].self, from: data) else {
+            return [:]
+        }
+        return decoded
+    }
+
+    private func persistWalkContributionLedger(_ ledger: [String: [String]]) {
+        let keys = ledger.keys.sorted()
+        let keysToKeep = Set(keys.suffix(16))
+        let trimmed = ledger
+            .filter { keysToKeep.contains($0.key) }
+            .mapValues { Array(Set($0)).sorted() }
+        guard let data = try? JSONEncoder().encode(trimmed) else { return }
+        defaults.set(data, forKey: DefaultsKey.walkContributionLedger)
+    }
+
+    /// 산책 1세션의 면적/시간을 점수로 환산합니다.
+    private func walkRewardPoint(areaM2: Double, durationSec: Double) -> Int {
+        let safeArea = max(0, areaM2)
+        let safeDuration = max(0, durationSec)
+        var score = 8
+        if safeArea >= 2_000 { score += 4 }
+        if safeArea >= 8_000 { score += 4 }
+        if safeDuration >= 1_200 { score += 2 }    // 20분
+        if safeDuration >= 2_400 { score += 2 }    // 40분
+        return min(24, max(4, score))
     }
 
     private func dailyScoreLedger() -> [String: Double] {

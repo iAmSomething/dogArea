@@ -22,7 +22,10 @@
 - 캐리커처 비동기 파이프라인 명세 v1: `docs/caricature-async-pipeline-v1.md`
 - 근처 사용자 익명 핫스팟 명세 v1: `docs/nearby-anonymous-hotspot-v1.md`
 - 라이벌 프라이버시 하드 가드 v1: `docs/rival-privacy-hard-guard-v1.md`
+- 라이벌 프라이버시 정책 Stage1 v1: `docs/rival-privacy-policy-stage1-v1.md`
 - 라이벌 공정 리그 매칭 v1: `docs/rival-fair-league-v1.md`
+- 라이벌 Stage2 백엔드(리더보드/권리경로) v1: `docs/rival-stage2-backend-v1.md`
+- 라이벌 Stage3 클라이언트 UX v1: `docs/rival-stage3-client-ux-v1.md`
 - 시즌 안티 농사 규칙 v1: `docs/season-anti-farming-v1.md`
 - 시즌 복귀 캐치업 버프 v1: `docs/season-comeback-catchup-buff-v1.md`
 - 시즌 주간 정책 Stage1 v1: `docs/season-weekly-policy-stage1-v1.md`
@@ -32,6 +35,7 @@
 - 날씨 치환/스트릭 보호 서버 엔진 v1: `docs/weather-replacement-shield-engine-v1.md`
 - 날씨 연동 UX/fallback/접근성 v1: `docs/weather-ux-fallback-accessibility-v1.md`
 - 퀘스트 실패 완충(자동 연장 슬롯) v1: `docs/quest-failure-buffer-v1.md`
+- 퀘스트 Stage3 UX/리마인드 v1: `docs/quest-stage3-ux-reminder-v1.md`
 - 반려견 맞춤 난이도/쉬운 날 모드 v1: `docs/pet-adaptive-quest-difficulty-v1.md`
 - Feature Flag/롤아웃 모니터링 명세 v1: `docs/feature-flag-rollout-monitoring-v1.md`
 - ViewModel 현대화 리팩토링 명세 v1: `docs/viewmodel-modernization-v1.md`
@@ -57,6 +61,7 @@
 - Cycle #81 결과 보고서(2026-02-26): `docs/cycle-81-fault-injection-report-2026-02-26.md`
 - Cycle #78 결과 보고서(2026-02-26): `docs/cycle-78-auto-end-policy-report-2026-02-26.md`
 - Cycle #148 결과 보고서(2026-02-27): `docs/cycle-148-quest-failure-buffer-report-2026-02-27.md`
+- Cycle #170 결과 보고서(2026-03-01): `docs/cycle-170-quest-stage3-ux-reminder-report-2026-03-01.md`
 - Cycle #147 결과 보고서(2026-02-27): `docs/cycle-147-pet-adaptive-quest-report-2026-02-27.md`
 - Cycle #145 결과 보고서(2026-02-27): `docs/cycle-145-season-catchup-buff-report-2026-02-27.md`
 - Cycle #124 결과 보고서(2026-02-27): `docs/cycle-124-season-policy-report-2026-02-27.md`

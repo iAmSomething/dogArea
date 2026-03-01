@@ -8,6 +8,22 @@
 import SwiftUI
 
 struct HomeView: View {
+    private enum QuestWidgetTab: String, CaseIterable, Identifiable {
+        case daily
+        case weekly
+
+        var id: String { rawValue }
+
+        var title: String {
+            switch self {
+            case .daily:
+                return "일일"
+            case .weekly:
+                return "주간"
+            }
+        }
+    }
+
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @EnvironmentObject var authFlow: AuthFlowCoordinator
     @StateObject var viewModel = HomeViewModel()
@@ -26,6 +42,7 @@ struct HomeView: View {
     @State private var seasonResultRevealContribution: Bool = false
     @State private var seasonResultRevealShield: Bool = false
     @State private var seasonResetBannerVisible: Bool = false
+    @State private var questWidgetTab: QuestWidgetTab = .daily
     @State private var isSeasonCardCollapsed: Bool = false
     @State private var isSeasonDetailPresented: Bool = false
 
@@ -191,43 +208,43 @@ struct HomeView: View {
                 if viewModel.seasonMotionSummary.weatherShieldActive {
                     startSeasonShieldRingAnimationIfNeeded()
                 }
-            }.onChange(of: viewModel.aggregationStatusMessage) { newValue in
+            }.onChange(of: viewModel.aggregationStatusMessage) { _, newValue in
                 guard newValue != nil else { return }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
                     viewModel.clearAggregationStatusMessage()
                 }
-            }.onChange(of: viewModel.indoorMissionStatusMessage) { newValue in
+            }.onChange(of: viewModel.indoorMissionStatusMessage) { _, newValue in
                 guard newValue != nil else { return }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.8) {
                     viewModel.clearIndoorMissionStatusMessage()
                 }
-            }.onChange(of: viewModel.weatherFeedbackResultMessage) { newValue in
+            }.onChange(of: viewModel.weatherFeedbackResultMessage) { _, newValue in
                 guard newValue != nil else { return }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3.2) {
                     viewModel.clearWeatherFeedbackResultMessage()
                 }
-            }.onChange(of: viewModel.questMotionEvent) { event in
+            }.onChange(of: viewModel.questMotionEvent) { _, event in
                 handleQuestMotionEvent(event)
-            }.onChange(of: viewModel.questCompletionPresentation) { payload in
+            }.onChange(of: viewModel.questCompletionPresentation) { _, payload in
                 guard let payload else { return }
                 presentQuestCompletionModal(payload)
-            }.onChange(of: viewModel.seasonMotionSummary.progress) { progress in
+            }.onChange(of: viewModel.seasonMotionSummary.progress) { _, progress in
                 animateSeasonProgress(to: progress)
-            }.onChange(of: viewModel.seasonMotionSummary.weatherShieldActive) { active in
+            }.onChange(of: viewModel.seasonMotionSummary.weatherShieldActive) { _, active in
                 if active {
                     startSeasonShieldRingAnimationIfNeeded()
                 } else {
                     seasonShieldRotation = 0
                 }
-            }.onChange(of: viewModel.seasonMotionEvent) { event in
+            }.onChange(of: viewModel.seasonMotionEvent) { _, event in
                 handleSeasonMotionEvent(event)
-            }.onChange(of: viewModel.seasonResultPresentation) { payload in
+            }.onChange(of: viewModel.seasonResultPresentation) { _, payload in
                 guard let payload else { return }
                 presentSeasonResultModal(payload)
-            }.onChange(of: viewModel.seasonResetTransitionToken) { token in
+            }.onChange(of: viewModel.seasonResetTransitionToken) { _, token in
                 guard token != nil else { return }
                 presentSeasonResetTransitionBanner()
-            }.onChange(of: isLowPowerModeEnabled) { enabled in
+            }.onChange(of: isLowPowerModeEnabled) { _, enabled in
                 if enabled {
                     seasonShieldRotation = 0
                 } else if viewModel.seasonMotionSummary.weatherShieldActive {
@@ -558,10 +575,10 @@ struct HomeView: View {
     private func indoorMissionCard(board: IndoorMissionBoard) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text(board.riskLevel == .clear ? "데일리 미션 상태" : "악천후 실내 대체 미션")
+                Text(questWidgetTab == .daily ? (board.riskLevel == .clear ? "데일리 미션 상태" : "악천후 실내 대체 미션") : "주간 퀘스트 요약")
                     .font(.appFont(for: .SemiBold, size: 18))
                 Spacer()
-                if board.riskLevel != .clear {
+                if board.riskLevel != .clear && questWidgetTab == .daily {
                     Text(board.riskLevel.displayTitle)
                         .font(.appFont(for: .SemiBold, size: 11))
                         .padding(.horizontal, 8)
@@ -570,70 +587,81 @@ struct HomeView: View {
                         .cornerRadius(8)
                 }
             }
-            Text(viewModel.weatherMissionStatusSummary.reasonText)
-                .font(.appFont(for: .Light, size: 12))
-                .foregroundStyle(Color.appTextDarkGray)
-            HStack {
-                Text(viewModel.weatherMissionStatusSummary.appliedAtText)
-                    .font(.appFont(for: .Light, size: 11))
-                    .foregroundStyle(Color.appTextDarkGray)
-                Spacer()
-                Text(viewModel.weatherMissionStatusSummary.shieldUsageText)
-                    .font(.appFont(for: .SemiBold, size: 11))
-                    .foregroundStyle(Color.appTextDarkGray)
-            }
-            if board.riskLevel != .clear {
-                HStack(spacing: 8) {
-                    Button("체감 날씨 다름") {
-                        viewModel.submitWeatherMismatchFeedback()
-                    }
-                    .disabled(viewModel.canSubmitWeatherMismatchFeedback == false)
-                    .font(.appFont(for: .SemiBold, size: 11))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 7)
-                    .background(viewModel.canSubmitWeatherMismatchFeedback ? Color.appYellow : Color.appTextLightGray)
-                    .cornerRadius(8)
+            questWidgetTabSelector
+            questReminderToggleRow
 
-                    Text("주간 남은 반영 \(viewModel.weatherFeedbackRemainingCount)/\(viewModel.weatherFeedbackWeeklyLimit)")
-                        .font(.appFont(for: .Light, size: 11))
-                        .foregroundStyle(Color.appTextDarkGray)
-                }
-            }
-            if let difficulty = board.difficultySummary {
-                missionDifficultySummary(difficulty)
-            }
-            if let extensionMessage = board.extensionMessage {
-                Text(extensionMessage)
-                    .font(.appFont(for: .Light, size: 11))
-                    .foregroundStyle(Color.appTextDarkGray)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 6)
-                    .background(
-                        board.extensionState == .active || board.extensionState == .consumed
-                        ? Color.appYellowPale
-                        : Color.appTextLightGray.opacity(0.28)
-                    )
-                    .cornerRadius(8)
-            }
-            if let feedbackMessage = viewModel.weatherFeedbackResultMessage {
-                Text(feedbackMessage)
-                    .font(.appFont(for: .Light, size: 11))
-                    .foregroundStyle(Color.appTextDarkGray)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 6)
-                    .background(Color.appYellowPale)
-                    .cornerRadius(8)
-            }
-
-            if board.missions.isEmpty {
-                Text("오늘 활성화된 미션이 없어요.")
+            if questWidgetTab == .daily {
+                Text(viewModel.weatherMissionStatusSummary.reasonText)
                     .font(.appFont(for: .Light, size: 12))
                     .foregroundStyle(Color.appTextDarkGray)
-                    .padding(.vertical, 4)
-            } else {
-                ForEach(board.missions) { mission in
-                    indoorMissionRow(mission: mission)
+                HStack {
+                    Text(viewModel.weatherMissionStatusSummary.appliedAtText)
+                        .font(.appFont(for: .Light, size: 11))
+                        .foregroundStyle(Color.appTextDarkGray)
+                    Spacer()
+                    Text(viewModel.weatherMissionStatusSummary.shieldUsageText)
+                        .font(.appFont(for: .SemiBold, size: 11))
+                        .foregroundStyle(Color.appTextDarkGray)
                 }
+                if board.riskLevel != .clear {
+                    HStack(spacing: 8) {
+                        Button("체감 날씨 다름") {
+                            viewModel.submitWeatherMismatchFeedback()
+                        }
+                        .disabled(viewModel.canSubmitWeatherMismatchFeedback == false)
+                        .font(.appFont(for: .SemiBold, size: 11))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 7)
+                        .background(viewModel.canSubmitWeatherMismatchFeedback ? Color.appYellow : Color.appTextLightGray)
+                        .cornerRadius(8)
+
+                        Text("주간 남은 반영 \(viewModel.weatherFeedbackRemainingCount)/\(viewModel.weatherFeedbackWeeklyLimit)")
+                            .font(.appFont(for: .Light, size: 11))
+                            .foregroundStyle(Color.appTextDarkGray)
+                    }
+                }
+                if let difficulty = board.difficultySummary {
+                    missionDifficultySummary(difficulty)
+                }
+                if let extensionMessage = board.extensionMessage {
+                    Text(extensionMessage)
+                        .font(.appFont(for: .Light, size: 11))
+                        .foregroundStyle(Color.appTextDarkGray)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 6)
+                        .background(
+                            board.extensionState == .active || board.extensionState == .consumed
+                            ? Color.appYellowPale
+                            : Color.appTextLightGray.opacity(0.28)
+                        )
+                        .cornerRadius(8)
+                }
+                if let feedbackMessage = viewModel.weatherFeedbackResultMessage {
+                    Text(feedbackMessage)
+                        .font(.appFont(for: .Light, size: 11))
+                        .foregroundStyle(Color.appTextDarkGray)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 6)
+                        .background(Color.appYellowPale)
+                        .cornerRadius(8)
+                }
+
+                if board.missions.isEmpty {
+                    Text("오늘 활성화된 미션이 없어요.")
+                        .font(.appFont(for: .Light, size: 12))
+                        .foregroundStyle(Color.appTextDarkGray)
+                        .padding(.vertical, 4)
+                } else {
+                    ForEach(board.missions) { mission in
+                        indoorMissionRow(mission: mission)
+                    }
+                }
+            } else {
+                weeklyQuestSummary(board: board)
+            }
+
+            if let suggestion = viewModel.questAlternativeActionSuggestion {
+                questAlternativeSuggestionCard(suggestion)
             }
         }
         .padding(14)
@@ -644,6 +672,95 @@ struct HomeView: View {
                 .stroke(Color.appTextLightGray, lineWidth: 0.5)
         )
         .padding(.horizontal, 16)
+    }
+
+    /// 퀘스트 위젯에서 일일/주간 뷰를 전환하는 탭 선택 행입니다.
+    private var questWidgetTabSelector: some View {
+        HStack(spacing: 8) {
+            ForEach(QuestWidgetTab.allCases) { tab in
+                Button(tab.title) {
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        questWidgetTab = tab
+                    }
+                }
+                .font(.appFont(for: .SemiBold, size: 11))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(questWidgetTab == tab ? Color.appYellow : Color.appTextLightGray.opacity(0.35))
+                .cornerRadius(8)
+            }
+            Spacer()
+        }
+    }
+
+    /// 하루 1회 퀘스트 리마인드 알림 설정 토글 행입니다.
+    private var questReminderToggleRow: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("퀘스트 리마인드")
+                    .font(.appFont(for: .SemiBold, size: 12))
+                Text("매일 20:00 · 하루 최대 1회")
+                    .font(.appFont(for: .Light, size: 10))
+                    .foregroundStyle(Color.appTextDarkGray)
+            }
+            Spacer()
+            Toggle(
+                "",
+                isOn: Binding(
+                    get: { viewModel.questReminderEnabled },
+                    set: { viewModel.setQuestReminderEnabled($0) }
+                )
+            )
+            .labelsHidden()
+            .tint(Color.appYellow)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .background(Color.appTextLightGray.opacity(0.2))
+        .cornerRadius(8)
+    }
+
+    /// 주간 퀘스트 진행도와 완료 현황을 요약해서 보여줍니다.
+    private func weeklyQuestSummary(board: IndoorMissionBoard) -> some View {
+        let summary = viewModel.seasonMotionSummary
+        let completedDaily = board.missions.filter { $0.progress.isCompleted }.count
+        let totalDaily = board.missions.count
+
+        return VStack(alignment: .leading, spacing: 8) {
+            Text("이번 주 점수 \(Int(summary.score.rounded())) / \(Int(summary.targetScore.rounded()))")
+                .font(.appFont(for: .SemiBold, size: 13))
+            animatedSeasonGauge(progress: summary.progress)
+                .frame(height: 8)
+            HStack(spacing: 8) {
+                seasonMetricPill(
+                    title: "주간 기여",
+                    value: "\(summary.contributionCount)회",
+                    color: Color.appYellowPale
+                )
+                seasonMetricPill(
+                    title: "오늘 완료",
+                    value: "\(completedDaily)/\(totalDaily)",
+                    color: Color.appGreen.opacity(0.22)
+                )
+            }
+            Text("주간 점수는 미션 완료와 산책 기여로 누적됩니다.")
+                .font(.appFont(for: .Light, size: 11))
+                .foregroundStyle(Color.appTextDarkGray)
+        }
+    }
+
+    /// 퀘스트 실패/만료 시 다음 행동을 안내하는 제안 카드입니다.
+    private func questAlternativeSuggestionCard(_ text: String) -> some View {
+        HStack {
+            Text(text)
+                .font(.appFont(for: .Light, size: 11))
+                .foregroundStyle(Color.appTextDarkGray)
+            Spacer()
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 7)
+        .background(Color.appYellowPale.opacity(0.65))
+        .cornerRadius(8)
     }
 
     private func missionDifficultySummary(_ summary: IndoorMissionDifficultySummary) -> some View {
@@ -1428,7 +1545,7 @@ struct HomeView: View {
                 animatedQuestProgress[mission.id] = mission.progress.progressRatio
             }
         }
-        .onChange(of: mission.progress.progressRatio) { next in
+        .onChange(of: mission.progress.progressRatio) { _, next in
             if isQuestMotionReduced {
                 animatedQuestProgress[mission.id] = next
             } else {
