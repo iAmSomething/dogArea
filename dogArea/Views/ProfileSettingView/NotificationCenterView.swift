@@ -36,6 +36,14 @@ struct NotificationCenterView: View {
                    VStack(alignment: .leading) {
                        Text("\(viewModel.userInfo?.name ?? "산책꾼")")
                            .font(.appFont(for: .SemiBold, size: 20))
+                       if let season = viewModel.seasonProfileSummary {
+                           Text("Season \(season.rankTier.title)")
+                               .font(.appFont(for: .SemiBold, size: 11))
+                               .padding(.horizontal, 8)
+                               .padding(.vertical, 4)
+                               .background(SeasonProfileFrameStyle.style(for: season.rankTier).fill.opacity(0.2))
+                               .cornerRadius(8)
+                       }
                        if let profileMessage = viewModel.userInfo?.profileMessage,
                           profileMessage.isEmpty == false {
                            Text(profileMessage)
@@ -137,14 +145,17 @@ struct NotificationCenterView: View {
             Text("주차 \(summary.weekKey) · 기여 \(summary.contributionCount)회")
                 .font(.appFont(for: .Light, size: 11))
                 .foregroundStyle(Color.appTextDarkGray)
+            Text("프로필 프레임: \(summary.rankTier.title)")
+                .font(.appFont(for: .Light, size: 11))
+                .foregroundStyle(Color.appTextDarkGray)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(10)
-        .background(Color.appYellowPale.opacity(0.55))
+        .background(SeasonProfileFrameStyle.style(for: summary.rankTier).fill.opacity(0.2))
         .cornerRadius(10)
         .overlay(
             RoundedRectangle(cornerRadius: 10)
-                .stroke(Color.appTextLightGray, lineWidth: 0.4)
+                .stroke(SeasonProfileFrameStyle.style(for: summary.rankTier).stroke, lineWidth: 0.8)
         )
     }
 
@@ -252,6 +263,8 @@ struct ImageView: View {
 struct UserProfileImageView: View {
     @EnvironmentObject var viewModel: SettingViewModel
     var body: some View {
+        let rankTier = viewModel.seasonProfileSummary?.rankTier
+        let frameStyle = SeasonProfileFrameStyle.style(for: rankTier)
         if let url = viewModel.userInfo?.profile {
             KFImage(URL(string: url))
                 .resizable()
@@ -260,10 +273,20 @@ struct UserProfileImageView: View {
                 .myCornerRadius(radius: 15)
                 .overlay(
                     RoundedRectangle(cornerRadius: 15)
-                        .stroke(Color.appTextDarkGray, lineWidth: 0.8)
+                        .stroke(frameStyle.stroke, lineWidth: 1.4)
                         .foregroundStyle(Color.clear)
-                    
                 )
+                .overlay(alignment: .topTrailing) {
+                    if let rankTier {
+                        Text(rankTier.title)
+                            .font(.appFont(for: .SemiBold, size: 9))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 4)
+                            .background(frameStyle.fill.opacity(0.92))
+                            .cornerRadius(7)
+                            .offset(x: 6, y: -6)
+                    }
+                }
                 .padding()
         } else {
             Image(uiImage: .emptyImg)
@@ -273,10 +296,20 @@ struct UserProfileImageView: View {
                 .myCornerRadius(radius: 15)
                 .overlay(
                     RoundedRectangle(cornerRadius: 15)
-                        .stroke(Color.appTextDarkGray, lineWidth: 0.8)
+                        .stroke(frameStyle.stroke, lineWidth: 1.4)
                         .foregroundStyle(Color.clear)
-                    
                 )
+                .overlay(alignment: .topTrailing) {
+                    if let rankTier {
+                        Text(rankTier.title)
+                            .font(.appFont(for: .SemiBold, size: 9))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 4)
+                            .background(frameStyle.fill.opacity(0.92))
+                            .cornerRadius(7)
+                            .offset(x: 6, y: -6)
+                    }
+                }
                 .padding()
         }
     }
@@ -284,6 +317,8 @@ struct UserProfileImageView: View {
 struct PetProfileImageView: View {
     @EnvironmentObject var viewModel: SettingViewModel
     var body: some View {
+        let rankTier = viewModel.seasonProfileSummary?.rankTier
+        let frameStyle = SeasonProfileFrameStyle.style(for: rankTier)
         if let url = viewModel.selectedPet?.caricatureURL ?? viewModel.selectedPet?.petProfile {
             KFImage(URL(string: url))
                 .resizable()
@@ -292,10 +327,20 @@ struct PetProfileImageView: View {
                 .myCornerRadius(radius: 15)
                 .overlay(
                     RoundedRectangle(cornerRadius: 15)
-                        .stroke(Color.appTextDarkGray, lineWidth: 0.8)
+                        .stroke(frameStyle.stroke, lineWidth: 1.4)
                         .foregroundStyle(Color.clear)
-                    
                 )
+                .overlay(alignment: .topTrailing) {
+                    if let rankTier {
+                        Text(rankTier.title)
+                            .font(.appFont(for: .SemiBold, size: 9))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 4)
+                            .background(frameStyle.fill.opacity(0.92))
+                            .cornerRadius(7)
+                            .offset(x: 6, y: -6)
+                    }
+                }
                 .padding()
         } else {
             Image(uiImage: .emptyImg)
@@ -305,11 +350,43 @@ struct PetProfileImageView: View {
                 .myCornerRadius(radius: 15)
                 .overlay(
                     RoundedRectangle(cornerRadius: 15)
-                        .stroke(Color.appTextDarkGray, lineWidth: 0.8)
+                        .stroke(frameStyle.stroke, lineWidth: 1.4)
                         .foregroundStyle(Color.clear)
-                    
                 )
+                .overlay(alignment: .topTrailing) {
+                    if let rankTier {
+                        Text(rankTier.title)
+                            .font(.appFont(for: .SemiBold, size: 9))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 4)
+                            .background(frameStyle.fill.opacity(0.92))
+                            .cornerRadius(7)
+                            .offset(x: 6, y: -6)
+                    }
+                }
                 .padding()
+        }
+    }
+}
+
+private struct SeasonProfileFrameStyle {
+    let stroke: Color
+    let fill: Color
+
+    static func style(for rankTier: SeasonRankTier?) -> SeasonProfileFrameStyle {
+        switch rankTier {
+        case .some(.platinum):
+            return .init(stroke: Color.appRed, fill: Color.appRed)
+        case .some(.gold):
+            return .init(stroke: Color.appYellow, fill: Color.appYellow)
+        case .some(.silver):
+            return .init(stroke: Color.appTextLightGray, fill: Color.appTextLightGray)
+        case .some(.bronze):
+            return .init(stroke: Color.appPeach, fill: Color.appPeach)
+        case .some(.rookie):
+            return .init(stroke: Color.appGreen, fill: Color.appGreen)
+        case .none:
+            return .init(stroke: Color.appTextDarkGray, fill: Color.appYellowPale)
         }
     }
 }

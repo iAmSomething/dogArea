@@ -70,6 +70,19 @@ struct MapView : View{
                     Spacer()
                 }
                 .padding(.top, 6)
+                if !viewModel.isWalking && viewModel.isHeatmapFeatureAvailable && viewModel.heatmapEnabled {
+                    HStack {
+                        Text(viewModel.seasonTileStatusSummaryText)
+                            .font(.appFont(for: .Light, size: 11))
+                            .foregroundStyle(Color.appTextDarkGray)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(Color.white.opacity(0.9))
+                            .cornerRadius(8)
+                        Spacer()
+                    }
+                    .padding(.top, 2)
+                }
                 if let activeBanner {
                     topBannerView(for: activeBanner)
                 }

@@ -1313,23 +1313,64 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         return polygonList.filter { allowedIds.contains($0.id) }
     }
 
+    struct SeasonTileLegendItem: Identifiable, Equatable {
+        let level: Int
+        let label: String
+        let status: String
+
+        var id: Int { level }
+    }
+
+    func seasonTileIntensityLevel(for score: Double) -> Int {
+        guard score > 0 else { return 0 }
+        let level = Int(ceil(score * 4.0) - 1.0)
+        return min(3, max(0, level))
+    }
+
+    func seasonTileStatusText(for score: Double) -> String {
+        score >= 0.55 ? "점령" : "유지"
+    }
+
+    var seasonTileLegendItems: [SeasonTileLegendItem] {
+        [
+            .init(level: 0, label: "1단계", status: "유지"),
+            .init(level: 1, label: "2단계", status: "유지"),
+            .init(level: 2, label: "3단계", status: "점령"),
+            .init(level: 3, label: "4단계", status: "점령")
+        ]
+    }
+
+    var seasonOccupiedTileCount: Int {
+        heatmapCells.filter { seasonTileStatusText(for: $0.score) == "점령" }.count
+    }
+
+    var seasonMaintainedTileCount: Int {
+        heatmapCells.filter { seasonTileStatusText(for: $0.score) == "유지" }.count
+    }
+
+    var seasonTileStatusSummaryText: String {
+        "시즌 타일 4단계 · 점령 \(seasonOccupiedTileCount) · 유지 \(seasonMaintainedTileCount)"
+    }
+
     func heatmapColor(for score: Double) -> Color {
-        switch HeatmapCellDTO.intensityLevel(for: score) {
-        case 0: return Color.appGreen
-        case 1: return Color.appYellowPale
-        case 2: return Color.appYellow
-        case 3: return Color.appPeach
-        default: return Color.appRed
+        let level = seasonTileIntensityLevel(for: score)
+        let status = seasonTileStatusText(for: score)
+        switch (level, status) {
+        case (0, _): return Color.appGreen
+        case (1, _): return Color.appYellowPale
+        case (2, "점령"): return Color.appPeach
+        case (2, _): return Color.appYellow
+        case (3, "점령"): return Color.appRed
+        default: return Color.appPeach
         }
     }
 
     func heatmapOpacity(for score: Double) -> Double {
-        switch HeatmapCellDTO.intensityLevel(for: score) {
-        case 0: return 0.25
-        case 1: return 0.35
-        case 2: return 0.45
-        case 3: return 0.55
-        default: return 0.65
+        switch seasonTileIntensityLevel(for: score) {
+        case 0: return 0.28
+        case 1: return 0.38
+        case 2: return 0.50
+        default: return 0.62
         }
     }
 

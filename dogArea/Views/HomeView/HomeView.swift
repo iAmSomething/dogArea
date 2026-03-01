@@ -9,6 +9,7 @@ import SwiftUI
 
 struct HomeView: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+    @EnvironmentObject var authFlow: AuthFlowCoordinator
     @StateObject var viewModel = HomeViewModel()
     @State private var animatedQuestProgress: [String: Double] = [:]
     @State private var questProgressPulseMissionId: String? = nil
@@ -25,6 +26,8 @@ struct HomeView: View {
     @State private var seasonResultRevealContribution: Bool = false
     @State private var seasonResultRevealShield: Bool = false
     @State private var seasonResetBannerVisible: Bool = false
+    @State private var isSeasonCardCollapsed: Bool = false
+    @State private var isSeasonDetailPresented: Bool = false
 
     private var isQuestMotionReduced: Bool {
         accessibilityReduceMotion
@@ -232,6 +235,8 @@ struct HomeView: View {
                 }
             }.onReceive(NotificationCenter.default.publisher(for: .NSProcessInfoPowerStateDidChange)) { _ in
                 isLowPowerModeEnabled = ProcessInfo.processInfo.isLowPowerModeEnabled
+            }.sheet(isPresented: $isSeasonDetailPresented) {
+                seasonDetailSheet
             }.padding(.top,20)
 
             if let questCompletionModal {
@@ -702,7 +707,7 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("시즌 게이지")
                         .font(.appFont(for: .SemiBold, size: 18))
-                    Text("주간 점수 \(Int(summary.score.rounded())) / \(Int(summary.targetScore.rounded()))")
+                    Text("주간 점수 \(Int(summary.score.rounded())) / \(Int(summary.targetScore.rounded())) · 오늘 +\(summary.todayScoreDelta)")
                         .font(.appFont(for: .Light, size: 11))
                         .foregroundStyle(Color.appTextDarkGray)
                 }
@@ -714,27 +719,64 @@ struct HomeView: View {
                     .padding(.vertical, 6)
                     .background(Color.appYellowPale)
                     .cornerRadius(8)
+                Button(isSeasonCardCollapsed ? "펼치기" : "접기") {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isSeasonCardCollapsed.toggle()
+                    }
+                }
+                .font(.appFont(for: .SemiBold, size: 11))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background(Color.appTextLightGray.opacity(0.35))
+                .cornerRadius(8)
             }
 
-            animatedSeasonGauge(progress: seasonAnimatedProgress)
-                .frame(height: 12)
-
             HStack(spacing: 8) {
-                seasonMetricPill(
-                    title: "기여",
-                    value: "\(summary.contributionCount)회",
-                    color: Color.appYellowPale
-                )
-                seasonMetricPill(
-                    title: "Shield",
-                    value: "\(summary.weatherShieldApplyCount)회",
-                    color: Color.appGreen.opacity(0.22)
-                )
-                seasonMetricPill(
-                    title: "주차",
-                    value: summary.weekKey.isEmpty ? "-" : summary.weekKey,
-                    color: Color.appPinkYello.opacity(0.44)
-                )
+                Text("남은 시간 \(viewModel.seasonRemainingTimeText)")
+                    .font(.appFont(for: .Light, size: 11))
+                    .foregroundStyle(Color.appTextDarkGray)
+                Spacer()
+                Button("상세") {
+                    isSeasonDetailPresented = true
+                }
+                .font(.appFont(for: .SemiBold, size: 11))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background(Color.appYellowPale)
+                .cornerRadius(8)
+                if viewModel.lastSeasonResultPresentation != nil {
+                    Button("지난 결과") {
+                        viewModel.reopenLastSeasonResult()
+                    }
+                    .font(.appFont(for: .SemiBold, size: 11))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 6)
+                    .background(Color.appYellowPale)
+                    .cornerRadius(8)
+                }
+            }
+
+            if isSeasonCardCollapsed == false {
+                animatedSeasonGauge(progress: seasonAnimatedProgress)
+                    .frame(height: 12)
+
+                HStack(spacing: 8) {
+                    seasonMetricPill(
+                        title: "기여",
+                        value: "\(summary.contributionCount)회",
+                        color: Color.appYellowPale
+                    )
+                    seasonMetricPill(
+                        title: "Shield",
+                        value: "\(summary.weatherShieldApplyCount)회",
+                        color: Color.appGreen.opacity(0.22)
+                    )
+                    seasonMetricPill(
+                        title: "주차",
+                        value: summary.weekKey.isEmpty ? "-" : summary.weekKey,
+                        color: Color.appPinkYello.opacity(0.44)
+                    )
+                }
             }
         }
         .padding(14)
@@ -748,7 +790,7 @@ struct HomeView: View {
         .padding(.bottom, 10)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
-            "시즌 점수 \(Int(summary.score.rounded()))점, 랭크 \(summary.rankTier.title), 보호 \(summary.weatherShieldApplyCount)회"
+            "시즌 점수 \(Int(summary.score.rounded()))점, 랭크 \(summary.rankTier.title), 보호 \(summary.weatherShieldApplyCount)회, 남은 시간 \(viewModel.seasonRemainingTimeText)"
         )
     }
 
@@ -935,6 +977,12 @@ struct HomeView: View {
     }
 
     private func presentSeasonResultModal(_ payload: SeasonResultPresentation) {
+        if viewModel.seasonRewardStatus(for: payload.weekKey) == .pending {
+            viewModel.retrySeasonRewardClaim(
+                for: payload.weekKey,
+                cloudSyncAllowed: authFlow.canAccess(.cloudSync)
+            )
+        }
         seasonResultModal = payload
         seasonResultPop = false
         seasonResultRevealRank = false
@@ -1062,7 +1110,8 @@ struct HomeView: View {
     }
 
     private func seasonResultOverlay(payload: SeasonResultPresentation) -> some View {
-        VStack(spacing: 0) {
+        let rewardStatus = viewModel.seasonRewardStatus(for: payload.weekKey)
+        return VStack(spacing: 0) {
             Spacer()
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
@@ -1098,6 +1147,38 @@ struct HomeView: View {
                     value: "\(payload.shieldApplyCount)회",
                     isVisible: seasonResultRevealShield
                 )
+                HStack {
+                    Text("보상 상태")
+                        .font(.appFont(for: .Light, size: 12))
+                        .foregroundStyle(Color.appTextDarkGray)
+                    Spacer()
+                    Text(seasonRewardStatusText(rewardStatus))
+                        .font(.appFont(for: .SemiBold, size: 13))
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 6)
+                        .background(seasonRewardStatusColor(rewardStatus).opacity(0.18))
+                        .cornerRadius(8)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .background(Color.appYellowPale.opacity(0.45))
+                .cornerRadius(8)
+                if rewardStatus != .claimed {
+                    HStack {
+                        Spacer()
+                        Button(rewardStatus == .failed ? "재수령" : "수령 처리") {
+                            viewModel.retrySeasonRewardClaim(
+                                for: payload.weekKey,
+                                cloudSyncAllowed: authFlow.canAccess(.cloudSync)
+                            )
+                        }
+                        .font(.appFont(for: .SemiBold, size: 12))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color.appYellow)
+                        .cornerRadius(8)
+                    }
+                }
             }
             .padding(16)
             .background(Color.white)
@@ -1113,6 +1194,100 @@ struct HomeView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black.opacity(seasonResultPop ? 0.22 : 0.0))
+    }
+
+    private var seasonDetailSheet: some View {
+        let summary = viewModel.seasonMotionSummary
+        return NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("현재 시즌")
+                            .font(.appFont(for: .SemiBold, size: 16))
+                        Text("주차 \(summary.weekKey.isEmpty ? "-" : summary.weekKey)")
+                            .font(.appFont(for: .Light, size: 12))
+                            .foregroundStyle(Color.appTextDarkGray)
+                    }
+                    VStack(alignment: .leading, spacing: 8) {
+                        seasonDetailLine(title: "현재 티어", value: summary.rankTier.title)
+                        seasonDetailLine(title: "누적 점수", value: "\(Int(summary.score.rounded()))pt")
+                        seasonDetailLine(title: "오늘 증가", value: "+\(summary.todayScoreDelta)pt")
+                        seasonDetailLine(title: "기여 횟수", value: "\(summary.contributionCount)회")
+                        seasonDetailLine(title: "Shield 적용", value: "\(summary.weatherShieldApplyCount)회")
+                        seasonDetailLine(title: "남은 시간", value: viewModel.seasonRemainingTimeText)
+                    }
+                    .padding(12)
+                    .background(Color.appYellowPale.opacity(0.42))
+                    .cornerRadius(10)
+
+                    VStack(alignment: .leading, spacing: 7) {
+                        Text("랭크 구간")
+                            .font(.appFont(for: .SemiBold, size: 13))
+                        ForEach(SeasonRankTier.allCases, id: \.rawValue) { tier in
+                            HStack {
+                                Text(tier.title)
+                                    .font(.appFont(for: .Regular, size: 12))
+                                Spacer()
+                                Text("\(Int(tier.minimumScore))pt+")
+                                    .font(.appFont(for: .Light, size: 12))
+                                    .foregroundStyle(Color.appTextDarkGray)
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
+                            .background(summary.rankTier == tier ? Color.appYellowPale : Color.appTextLightGray.opacity(0.18))
+                            .cornerRadius(8)
+                        }
+                    }
+
+                    Text("점수는 미션 완료/기여 기준으로 누적되며, 결과는 시즌 종료 후 결과 모달에서 다시 확인할 수 있습니다.")
+                        .font(.appFont(for: .Light, size: 11))
+                        .foregroundStyle(Color.appTextDarkGray)
+                }
+                .padding(16)
+            }
+            .navigationTitle("시즌 상세")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("닫기") {
+                        isSeasonDetailPresented = false
+                    }
+                }
+            }
+        }
+    }
+
+    private func seasonDetailLine(title: String, value: String) -> some View {
+        HStack {
+            Text(title)
+                .font(.appFont(for: .Light, size: 12))
+                .foregroundStyle(Color.appTextDarkGray)
+            Spacer()
+            Text(value)
+                .font(.appFont(for: .SemiBold, size: 13))
+        }
+    }
+
+    private func seasonRewardStatusText(_ status: SeasonRewardClaimStatus) -> String {
+        switch status {
+        case .pending:
+            return "대기"
+        case .claimed:
+            return "수령 완료"
+        case .failed:
+            return "실패"
+        }
+    }
+
+    private func seasonRewardStatusColor(_ status: SeasonRewardClaimStatus) -> Color {
+        switch status {
+        case .pending:
+            return Color.appYellow
+        case .claimed:
+            return Color.appGreen
+        case .failed:
+            return Color.appRed
+        }
     }
 
     private func seasonResultRow(title: String, value: String, isVisible: Bool) -> some View {
