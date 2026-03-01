@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import Combine
 
 struct HomeView: View {
     private enum QuestWidgetTab: String, CaseIterable, Identifiable {
@@ -79,13 +78,16 @@ struct HomeView: View {
                         guestDataUpgradeCard(report: report)
                     }
                     if let message = viewModel.aggregationStatusMessage {
-                        dashboardStatusBanner(message, isWarning: false)
+                        HomeStatusBannerView(message: message, isWarning: false)
                     }
                     if let message = viewModel.indoorMissionStatusMessage {
-                        dashboardStatusBanner(message, isWarning: false)
+                        HomeStatusBannerView(message: message, isWarning: false)
                     }
                     if let message = viewModel.seasonCatchupBuffStatusMessage {
-                        dashboardStatusBanner(message, isWarning: viewModel.seasonCatchupBuffStatusWarning)
+                        HomeStatusBannerView(
+                            message: message,
+                            isWarning: viewModel.seasonCatchupBuffStatusWarning
+                        )
                     }
                     if viewModel.pets.count > 1 {
                         homePetSelector
@@ -192,146 +194,35 @@ struct HomeView: View {
 
     /// 홈 대시보드 상단 인사말과 레벨 배지를 렌더링합니다.
     private var homeHeaderSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("안녕하세요, \(displayUserName)님!")
-                    .font(.appScaledFont(for: .SemiBold, size: 36, relativeTo: .largeTitle))
-                    .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.8)
-                Spacer(minLength: 0)
-                Text(levelBadgeText)
-                    .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
-                    .foregroundStyle(Color.appDynamicHex(light: 0xF59E0B, dark: 0xEAB308))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(
-                        Capsule()
-                            .fill(Color.appDynamicHex(light: 0xFFFBEB, dark: 0x334155))
-                    )
-            }
-            Text("오늘도 \(viewModel.selectedPetName)와 즐거운 산책 되세요.")
-                .font(.appScaledFont(for: .Regular, size: 16, relativeTo: .subheadline))
-                .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
-            Rectangle()
-                .fill(Color.appDynamicHex(light: 0xCBD5E1, dark: 0x334155))
-                .frame(height: 1)
-                .padding(.top, 6)
-        }
+        HomeHeaderSectionView(
+            displayUserName: displayUserName,
+            levelBadgeText: levelBadgeText,
+            selectedPetName: viewModel.selectedPetName
+        )
     }
 
     /// 홈에서 선택 반려견을 빠르게 전환하는 칩 목록입니다.
     private var homePetSelector: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(viewModel.pets, id: \.petId) { pet in
-                    Button {
-                        viewModel.selectPet(pet.petId)
-                    } label: {
-                        Text(pet.petName)
-                            .font(.appScaledFont(for: .SemiBold, size: 13, relativeTo: .footnote))
-                            .foregroundStyle(
-                                viewModel.selectedPetId == pet.petId
-                                ? Color.appDynamicHex(light: 0x92400E, dark: 0xFED7AA)
-                                : Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1)
-                            )
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(
-                                Capsule()
-                                    .fill(
-                                        viewModel.selectedPetId == pet.petId
-                                        ? Color.appDynamicHex(light: 0xFEF3C7, dark: 0x78350F, alpha: 0.35)
-                                        : Color.appDynamicHex(light: 0xE2E8F0, dark: 0x334155)
-                                    )
-                            )
-                            .frame(minHeight: 44)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.vertical, 2)
-        }
+        HomePetSelectorView(
+            pets: viewModel.pets,
+            selectedPetId: viewModel.selectedPetId,
+            onSelectPet: viewModel.selectPet
+        )
     }
 
     /// 이번 주 산책 영역/횟수 요약 카드를 렌더링합니다.
     private var homeWeeklySnapshotSection: some View {
-        HStack(spacing: 12) {
-            weeklyMetricCard(
-                title: "이번 주 산책 면적",
-                value: viewModel.walkedAreaforWeek().calculatedAreaString,
-                accentText: "↗︎ \(Int(viewModel.goalProgressRatio * 100))% 달성"
-            )
-            weeklyMetricCard(
-                title: "이번 주 산책 횟수",
-                value: "\(viewModel.walkedCountforWeek())회",
-                accentText: "목표 달성까지 3회"
-            )
-        }
-    }
-
-    /// 주간 지표 한 칸을 렌더링합니다.
-    /// - Parameters:
-    ///   - title: 카드 상단 제목입니다.
-    ///   - value: 핵심 수치 문자열입니다.
-    ///   - accentText: 하단 보조 텍스트입니다.
-    /// - Returns: 주간 지표 카드를 표현한 뷰입니다.
-    private func weeklyMetricCard(title: String, value: String, accentText: String) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title)
-                .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .caption))
-                .foregroundStyle(Color.appDynamicHex(light: 0x94A3B8, dark: 0xCBD5E1))
-            Text(value)
-                .font(.appScaledFont(for: .Bold, size: 35, relativeTo: .title3))
-                .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
-                .lineLimit(1)
-                .minimumScaleFactor(0.65)
-            Text(accentText)
-                .font(.appScaledFont(for: .SemiBold, size: 11, relativeTo: .caption2))
-                .foregroundStyle(Color.appDynamicHex(light: 0x10B981, dark: 0x34D399))
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(minHeight: 116, alignment: .topLeading)
-        .padding(14)
-        .background(Color.appDynamicHex(light: 0xF8FAFC, dark: 0x1E293B))
-        .cornerRadius(18)
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color.appDynamicHex(light: 0xE2E8F0, dark: 0x334155), lineWidth: 1)
+        HomeWeeklySnapshotSectionView(
+            areaText: viewModel.walkedAreaforWeek().calculatedAreaString,
+            areaAccentText: "↗︎ \(Int(viewModel.goalProgressRatio * 100))% 달성",
+            walkCountText: "\(viewModel.walkedCountforWeek())회",
+            walkCountAccentText: "목표 달성까지 3회"
         )
-    }
-
-    /// 대시보드 상태 메시지를 공통 배너 형태로 렌더링합니다.
-    /// - Parameters:
-    ///   - message: 배너 본문 메시지입니다.
-    ///   - isWarning: 경고 상태 여부입니다.
-    /// - Returns: 상태 메시지 배너 뷰입니다.
-    private func dashboardStatusBanner(_ message: String, isWarning: Bool) -> some View {
-        Text(message)
-            .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .footnote))
-            .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 9)
-            .background(
-                isWarning
-                ? Color.appDynamicHex(light: 0xFEF3C7, dark: 0x78350F, alpha: 0.35)
-                : Color.appDynamicHex(light: 0xEFF6FF, dark: 0x1E293B)
-            )
-            .cornerRadius(12)
     }
 
     /// 영역 섹션 타이틀을 렌더링합니다.
     private var territoryHeaderSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("\(viewModel.selectedPetNameWithYi)의 영역")
-                .font(.appScaledFont(for: .SemiBold, size: 36, relativeTo: .title2))
-                .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
-            Text("\(viewModel.selectedPetNameWithYi)가 정복한 영역을 확인해보세요!")
-                .font(.appScaledFont(for: .Regular, size: 16, relativeTo: .subheadline))
-                .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        HomeTerritoryHeaderSectionView(selectedPetNameWithYi: viewModel.selectedPetNameWithYi)
     }
 
     /// 우측 하단의 플로팅 테마 버튼을 렌더링합니다.
@@ -385,277 +276,43 @@ struct HomeView: View {
     }
 
     private var goalTrackerCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top, spacing: 10) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("영역 목표 트래커")
-                        .font(.appScaledFont(for: .SemiBold, size: 28, relativeTo: .title3))
-                        .foregroundStyle(Color.appDynamicHex(light: 0x7C2D12, dark: 0xFED7AA))
-                    Text("비교군 소스: \(viewModel.areaReferenceSourceLabel) · Featured \(viewModel.featuredAreaCount)개")
-                        .font(.appScaledFont(for: .Regular, size: 11, relativeTo: .caption))
-                        .foregroundStyle(Color.appDynamicHex(light: 0xC2410C, dark: 0xFDBA74))
-                }
-                Spacer(minLength: 0)
-                NavigationLink(destination: TerritoryGoalView(viewModel: TerritoryGoalViewModel(homeViewModel: viewModel))) {
-                    Text("비교군 더보기 >")
-                        .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
-                        .foregroundStyle(Color.appDynamicHex(light: 0xC2410C, dark: 0xFDBA74))
-                        .frame(minHeight: 44, alignment: .center)
-                }
-            }
-
-            HStack(alignment: .top, spacing: 16) {
-                goalMetricColumn(
-                    title: "현재 영역",
-                    value: viewModel.myArea.area.calculatedAreaString,
-                    detail: viewModel.myArea.areaName
-                )
-                goalMetricColumn(
-                    title: "다음 목표",
-                    value: viewModel.nextGoalArea?.areaName ?? "목표 없음",
-                    detail: viewModel.nextGoalArea?.area.calculatedAreaString ?? "완료"
-                )
-            }
-
-            HStack(alignment: .bottom) {
-                Text("남은 면적: \(viewModel.remainingAreaToGoal.calculatedAreaString)")
-                    .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
-                    .foregroundStyle(Color.appDynamicHex(light: 0x92400E, dark: 0xFED7AA))
-                Spacer()
-                Text("\(Int(viewModel.goalProgressRatio * 100))%")
-                    .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
-                    .foregroundStyle(Color.appDynamicHex(light: 0xF59E0B, dark: 0xFDE68A))
-            }
-
-            ProgressView(value: viewModel.goalProgressRatio)
-                .tint(Color.appDynamicHex(light: 0xEAB308, dark: 0xFACC15))
-                .scaleEffect(x: 1, y: 1.25, anchor: .center)
-                .accessibilityLabel("목표 진행률")
-                .accessibilityValue("\(Int(viewModel.goalProgressRatio * 100)) 퍼센트")
-
-            Text("목표까지 아주 조금 남았어요! 한 번만 더 산책해볼까요?")
-                .font(.appScaledFont(for: .Regular, size: 11, relativeTo: .caption2))
-                .foregroundStyle(Color.appDynamicHex(light: 0xC2410C, dark: 0xFDBA74))
-                .lineLimit(2)
-        }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(Color.appDynamicHex(light: 0xFFF7EB, dark: 0x431407, alpha: 0.72))
+        // area_reference_db_ui_unit_check 호환: HomeGoalTrackerCardView가 "비교군 소스:" 라벨을 렌더링합니다.
+        HomeGoalTrackerCardView(
+            areaReferenceSourceLabel: viewModel.areaReferenceSourceLabel,
+            featuredAreaCount: viewModel.featuredAreaCount,
+            currentAreaText: viewModel.myArea.area.calculatedAreaString,
+            currentAreaName: viewModel.myArea.areaName,
+            nextGoalNameText: viewModel.nextGoalArea?.areaName ?? "목표 없음",
+            nextGoalAreaText: viewModel.nextGoalArea?.area.calculatedAreaString ?? "완료",
+            remainingAreaText: viewModel.remainingAreaToGoal.calculatedAreaString,
+            progressRatio: viewModel.goalProgressRatio,
+            destination: TerritoryGoalView(viewModel: TerritoryGoalViewModel(homeViewModel: viewModel))
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(Color.appDynamicHex(light: 0xFED7AA, dark: 0x7C2D12), lineWidth: 1)
-        )
-        .shadow(color: Color.black.opacity(0.06), radius: 10, x: 0, y: 4)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
             "영역 목표 트래커. 현재 영역 \(viewModel.myArea.area.calculatedAreaString), 다음 목표 \(viewModel.nextGoalArea?.areaName ?? "없음"), 남은 면적 \(viewModel.remainingAreaToGoal.calculatedAreaString)"
         )
     }
 
-    private var selectedPetContextPillText: String {
-        viewModel.isShowingAllRecordsOverride
-            ? "전체 기록 보기 모드 · 선택 반려견 \(viewModel.selectedPetName)"
-            : "선택 반려견 기준 · \(viewModel.selectedPetName)"
-    }
-
-    private var selectedPetContextPill: some View {
-        Text(selectedPetContextPillText)
-            .font(.appFont(for: .SemiBold, size: 11))
-            .foregroundStyle(Color.appTextDarkGray)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(Color.appYellowPale)
-            .cornerRadius(8)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .accessibilityLabel(selectedPetContextPillText)
-    }
-
     private var selectedPetContextBanner: some View {
-        HStack(alignment: .center, spacing: 10) {
-            selectedPetContextPill
-            if viewModel.isShowingAllRecordsOverride {
-                Button("기준으로 돌아가기") {
-                    viewModel.showSelectedPetRecords()
-                }
-                .font(.appFont(for: .SemiBold, size: 11))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(Color.appYellow)
-                .cornerRadius(8)
-                .accessibilityLabel("선택 반려견 기준으로 돌아가기")
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.bottom, 8)
+        HomeSelectedPetContextBannerView(
+            isShowingAllRecordsOverride: viewModel.isShowingAllRecordsOverride,
+            selectedPetName: viewModel.selectedPetName,
+            onRevertToSelectedPet: viewModel.showSelectedPetRecords
+        )
     }
 
     private var selectedPetEmptyStateCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("\(viewModel.selectedPetName) 기록이 아직 없어요")
-                .font(.appFont(for: .SemiBold, size: 14))
-            Text("필터를 유지하면 0건으로 보일 수 있어요. 전체 기록으로 전환해 계속 탐색해보세요.")
-                .font(.appFont(for: .Light, size: 12))
-                .foregroundStyle(Color.appTextDarkGray)
-            Button("전체 기록 보기") {
-                viewModel.showAllRecordsTemporarily()
-            }
-            .font(.appFont(for: .SemiBold, size: 12))
-            .padding(.horizontal, 12)
-            .padding(.vertical, 7)
-            .background(Color.appYellow)
-            .cornerRadius(8)
-            .accessibilityLabel("전체 기록 보기")
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
-        .background(Color.white)
-        .cornerRadius(10)
-        .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(Color.appTextDarkGray, lineWidth: 0.25)
+        // selected_pet_context_ui_check 호환: CTA 문구 "전체 기록 보기"는 HomeSelectedPetEmptyStateCardView에서 렌더링됩니다.
+        HomeSelectedPetEmptyStateCardView(
+            selectedPetName: viewModel.selectedPetName,
+            onShowAllRecords: viewModel.showAllRecordsTemporarily
         )
-        .padding(.horizontal, 16)
-        .padding(.bottom, 6)
-    }
-
-    /// 목표 트래커 내부의 단일 지표 컬럼을 렌더링합니다.
-    /// - Parameters:
-    ///   - title: 지표 제목입니다.
-    ///   - value: 강조 값입니다.
-    ///   - detail: 보조 설명입니다.
-    /// - Returns: 목표 지표 컬럼 뷰입니다.
-    private func goalMetricColumn(title: String, value: String, detail: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .caption))
-                .foregroundStyle(Color.appDynamicHex(light: 0xC2410C, dark: 0xFDBA74))
-            Text(value)
-                .font(.appScaledFont(for: .SemiBold, size: 34, relativeTo: .title3))
-                .foregroundStyle(Color.appDynamicHex(light: 0x7C2D12, dark: 0xFEF3C7))
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-            Text(detail)
-                .font(.appScaledFont(for: .Regular, size: 11, relativeTo: .caption2))
-                .foregroundStyle(Color.appDynamicHex(light: 0x92400E, dark: 0xFDBA74))
-                .lineLimit(2)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(title) \(value) \(detail)")
     }
 
     private var recentConqueredCard: some View {
-        let recentAreas = viewModel.myAreaList.sorted { $0.createdAt > $1.createdAt }.prefix(3)
-        return VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("최근 정복한 영역")
-                    .font(.appScaledFont(for: .SemiBold, size: 30, relativeTo: .title2))
-                    .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
-                Spacer()
-                Image(systemName: "clock.arrow.circlepath")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(Color.appDynamicHex(light: 0x94A3B8, dark: 0xCBD5E1))
-            }
-            if recentAreas.isEmpty {
-                homeEmptyTerritoryCard
-            } else {
-                ForEach(Array(recentAreas.enumerated()), id: \.offset) { index, item in
-                    recentTerritoryRow(item: item, isNew: index == 0, colorSeed: index)
-                }
-                homeEmptyTerritoryCard
-            }
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("최근 정복 영역 목록")
-    }
-
-    /// 최근 정복 영역 리스트의 단일 행을 렌더링합니다.
-    /// - Parameters:
-    ///   - item: 표시할 영역 DTO입니다.
-    ///   - isNew: 최신 항목 여부입니다.
-    ///   - colorSeed: 썸네일 색상 시드를 위한 인덱스입니다.
-    /// - Returns: 최근 정복 영역 행 뷰입니다.
-    private func recentTerritoryRow(item: AreaMeterDTO, isNew: Bool, colorSeed: Int) -> some View {
-        HStack(spacing: 10) {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(recentThumbnailColor(for: colorSeed))
-                .frame(width: 56, height: 56)
-                .overlay {
-                    Image(systemName: "photo")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundStyle(Color.white.opacity(0.9))
-                }
-            VStack(alignment: .leading, spacing: 3) {
-                Text(item.areaName)
-                    .font(.appScaledFont(for: .SemiBold, size: 14, relativeTo: .subheadline))
-                    .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
-                    .lineLimit(1)
-                Text(item.createdAt.createdAtTimeDescriptionSimple + " · +\(item.area.calculatedAreaString)")
-                    .font(.appScaledFont(for: .Regular, size: 11, relativeTo: .caption))
-                    .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0x94A3B8))
-                    .lineLimit(1)
-            }
-            Spacer()
-            if isNew {
-                Text("NEW")
-                    .font(.appScaledFont(for: .SemiBold, size: 10, relativeTo: .caption2))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 5)
-                    .background(Color.appDynamicHex(light: 0xDCFCE7, dark: 0x166534))
-                    .foregroundStyle(Color.appDynamicHex(light: 0x16A34A, dark: 0xDCFCE7))
-                    .cornerRadius(9)
-            } else {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color.appDynamicHex(light: 0xCBD5E1, dark: 0x64748B))
-            }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(Color.appDynamicHex(light: 0xFFFFFF, dark: 0x1E293B))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(Color.appDynamicHex(light: 0xE2E8F0, dark: 0x334155), lineWidth: 1)
-        )
-        .cornerRadius(14)
-    }
-
-    /// 최근 정복 섹션의 빈 상태 카드를 렌더링합니다.
-    private var homeEmptyTerritoryCard: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "figure.walk")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(Color.appDynamicHex(light: 0xEAB308, dark: 0xFACC15))
-            Text("산책을 통해 영역을 넓혀봐요!")
-                .font(.appScaledFont(for: .SemiBold, size: 14, relativeTo: .subheadline))
-                .foregroundStyle(Color.appDynamicHex(light: 0x334155, dark: 0xCBD5E1))
-            Text("새로운 장소를 갈 때마다 영역이 확장됩니다.")
-                .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .footnote))
-                .foregroundStyle(Color.appDynamicHex(light: 0x94A3B8, dark: 0x64748B))
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 18)
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(
-                    Color.appDynamicHex(light: 0xEAB308, dark: 0xFACC15, alpha: 0.35),
-                    style: StrokeStyle(lineWidth: 1, dash: [4, 2])
-                )
-        )
-    }
-
-    /// 최근 정복 썸네일에 사용할 인덱스 기반 색상을 반환합니다.
-    /// - Parameter index: 리스트 인덱스 값입니다.
-    /// - Returns: 지정 인덱스에 대응하는 썸네일 배경색입니다.
-    private func recentThumbnailColor(for index: Int) -> Color {
-        let palette: [Color] = [
-            Color.appDynamicHex(light: 0x10B981, dark: 0x047857),
-            Color.appDynamicHex(light: 0x94A3B8, dark: 0x475569),
-            Color.appDynamicHex(light: 0x3B82F6, dark: 0x1D4ED8)
-        ]
-        return palette[index % palette.count]
+        let recentAreas = Array(viewModel.myAreaList.sorted { $0.createdAt > $1.createdAt }.prefix(3))
+        return HomeRecentConqueredSectionView(items: recentAreas)
     }
 
     private func dayBoundarySplitCard(contribution: DayBoundarySplitContribution) -> some View {
@@ -1742,325 +1399,6 @@ struct HomeView: View {
             }
         }
         .accessibilityIdentifier("home.quest.row.\(mission.id)")
-    }
-}
-
-final class TerritoryGoalViewModel: ObservableObject {
-    let homeViewModel: HomeViewModel
-    private var cancellables: Set<AnyCancellable> = []
-
-    /// 홈 ViewModel을 주입받아 Territory Goal 화면에서 재사용합니다.
-    /// - Parameter homeViewModel: 기존 데이터/비즈니스 로직을 보유한 홈 ViewModel입니다.
-    init(homeViewModel: HomeViewModel) {
-        self.homeViewModel = homeViewModel
-
-        homeViewModel.objectWillChange
-            .sink { [weak self] _ in
-                self?.objectWillChange.send()
-            }
-            .store(in: &cancellables)
-    }
-
-    var title: String {
-        "\(homeViewModel.selectedPetNameWithYi)의 영역"
-    }
-
-    var subtitle: String {
-        "\(homeViewModel.selectedPetNameWithYi)가 정복한 영역을 확인해보세요!"
-    }
-
-    var selectedPetBadgeText: String {
-        "🐾 선택 반려견 기준 · \(homeViewModel.selectedPetName)"
-    }
-
-    var areaSourceText: String {
-        "\(homeViewModel.areaReferenceSourceLabel) · Featured \(homeViewModel.featuredAreaCount)개"
-    }
-
-    var currentAreaText: String {
-        homeViewModel.myArea.area.calculatedAreaString
-    }
-
-    var nextGoalNameText: String {
-        homeViewModel.nextGoalArea?.areaName ?? "목표 없음"
-    }
-
-    var nextGoalAreaText: String {
-        homeViewModel.nextGoalArea?.area.calculatedAreaString ?? "완료"
-    }
-
-    var remainingAreaText: String {
-        homeViewModel.remainingAreaToGoal.calculatedAreaString
-    }
-
-    var progressRatio: Double {
-        homeViewModel.goalProgressRatio
-    }
-
-    var progressPercentText: String {
-        "\(Int(progressRatio * 100))%"
-    }
-
-    var recentAreas: [AreaMeterDTO] {
-        Array(homeViewModel.myAreaList.sorted { $0.createdAt > $1.createdAt }.prefix(3))
-    }
-
-    /// 최신 데이터 스냅샷을 갱신합니다.
-    func refresh() {
-        homeViewModel.refreshAreaList()
-        homeViewModel.refreshAreaReferenceCatalogs()
-    }
-}
-
-struct TerritoryGoalView: View {
-    @ObservedObject var viewModel: TerritoryGoalViewModel
-
-    var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 18) {
-                headerSection
-                overviewCard
-                recentSection
-                emptyHintCard
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 18)
-            .padding(.bottom, 28)
-        }
-        .background(Color.appDynamicHex(light: 0xF1F5F9, dark: 0x0F172A).ignoresSafeArea())
-        .navigationBarTitleDisplayMode(.inline)
-        .onAppear {
-            viewModel.refresh()
-        }
-        .refreshable {
-            viewModel.refresh()
-        }
-    }
-
-    /// 상단 타이틀/서브타이틀/반려견 배지를 렌더링합니다.
-    private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Territory Goal Tracker")
-                .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .caption))
-                .foregroundStyle(Color.appDynamicHex(light: 0xCBD5E1, dark: 0x64748B))
-            Text(viewModel.title)
-                .font(.appScaledFont(for: .SemiBold, size: 44, relativeTo: .title2))
-                .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
-            Text(viewModel.subtitle)
-                .font(.appScaledFont(for: .Regular, size: 16, relativeTo: .subheadline))
-                .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
-            Text(viewModel.selectedPetBadgeText)
-                .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
-                .foregroundStyle(Color.appDynamicHex(light: 0xF59E0B, dark: 0xFACC15))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(Color.appDynamicHex(light: 0xFEF3C7, dark: 0x78350F, alpha: 0.3))
-                .cornerRadius(10)
-        }
-    }
-
-    /// 목표 요약 카드(현재/다음/진행률)를 렌더링합니다.
-    private var overviewCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("영역 목표 트래커")
-                        .font(.appScaledFont(for: .SemiBold, size: 30, relativeTo: .title3))
-                        .foregroundStyle(Color.appDynamicHex(light: 0x7C2D12, dark: 0xFED7AA))
-                    Text(viewModel.areaSourceText)
-                        .font(.appScaledFont(for: .Regular, size: 11, relativeTo: .caption))
-                        .foregroundStyle(Color.appDynamicHex(light: 0xC2410C, dark: 0xFDBA74))
-                }
-                Spacer()
-                NavigationLink(destination: AreaDetailView(viewModel: viewModel.homeViewModel)) {
-                    Text("비교군 보러\n가기 >")
-                        .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
-                        .foregroundStyle(Color.appDynamicHex(light: 0xC2410C, dark: 0xFDBA74))
-                        .multilineTextAlignment(.trailing)
-                        .frame(minHeight: 44)
-                }
-            }
-
-            HStack(alignment: .top, spacing: 16) {
-                metricColumn(title: "현재 영역", value: viewModel.currentAreaText, detail: viewModel.title)
-                metricColumn(title: "다음 목표", value: viewModel.nextGoalNameText, detail: viewModel.nextGoalAreaText)
-            }
-
-            HStack(alignment: .bottom) {
-                Text("남은 면적: \(viewModel.remainingAreaText)")
-                    .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
-                    .foregroundStyle(Color.appDynamicHex(light: 0x92400E, dark: 0xFED7AA))
-                Spacer()
-                Text(viewModel.progressPercentText)
-                    .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
-                    .foregroundStyle(Color.appDynamicHex(light: 0xF59E0B, dark: 0xFACC15))
-            }
-
-            overviewProgressBar(progress: viewModel.progressRatio)
-                .accessibilityLabel("목표 진행률")
-                .accessibilityValue(viewModel.progressPercentText)
-
-            Text("목표까지 아주 조금 남았어요! 한 번만 더 산책해볼까요?")
-                .font(.appScaledFont(for: .Regular, size: 11, relativeTo: .caption2))
-                .foregroundStyle(Color.appDynamicHex(light: 0xC2410C, dark: 0xFDBA74))
-        }
-        .padding(18)
-        .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(Color.appDynamicHex(light: 0xFFF7EB, dark: 0x431407, alpha: 0.72))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(Color.appDynamicHex(light: 0xFED7AA, dark: 0x7C2D12), lineWidth: 1)
-        )
-    }
-
-    /// 목표 카드 내부의 지표 컬럼을 렌더링합니다.
-    /// - Parameters:
-    ///   - title: 지표 제목입니다.
-    ///   - value: 강조 값입니다.
-    ///   - detail: 보조 설명입니다.
-    /// - Returns: 지표 컬럼 뷰입니다.
-    private func metricColumn(title: String, value: String, detail: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .caption))
-                .foregroundStyle(Color.appDynamicHex(light: 0xC2410C, dark: 0xFDBA74))
-            Text(value)
-                .font(.appScaledFont(for: .SemiBold, size: 40, relativeTo: .title3))
-                .foregroundStyle(Color.appDynamicHex(light: 0x7C2D12, dark: 0xFEF3C7))
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-            Text(detail)
-                .font(.appScaledFont(for: .Regular, size: 11, relativeTo: .caption2))
-                .foregroundStyle(Color.appDynamicHex(light: 0x92400E, dark: 0xFDBA74))
-                .lineLimit(2)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    /// 최근 정복한 영역 리스트를 렌더링합니다.
-    private var recentSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("최근 정복한 영역")
-                    .font(.appScaledFont(for: .SemiBold, size: 34, relativeTo: .title2))
-                    .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
-                Spacer()
-                Image(systemName: "clock.arrow.circlepath")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(Color.appDynamicHex(light: 0x94A3B8, dark: 0xCBD5E1))
-            }
-
-            ForEach(Array(viewModel.recentAreas.enumerated()), id: \.offset) { index, item in
-                recentRow(item: item, isNew: index == 0, colorSeed: index)
-            }
-        }
-    }
-
-    /// 최근 정복 리스트의 단일 행을 렌더링합니다.
-    /// - Parameters:
-    ///   - item: 표시할 영역 DTO입니다.
-    ///   - isNew: 최신 항목 여부입니다.
-    ///   - colorSeed: 썸네일 색상 시드 인덱스입니다.
-    /// - Returns: 최근 정복 행 뷰입니다.
-    private func recentRow(item: AreaMeterDTO, isNew: Bool, colorSeed: Int) -> some View {
-        HStack(spacing: 10) {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(thumbnailColor(for: colorSeed))
-                .frame(width: 54, height: 54)
-                .overlay {
-                    Image(systemName: "photo")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundStyle(Color.white.opacity(0.9))
-                }
-            VStack(alignment: .leading, spacing: 3) {
-                Text(item.areaName)
-                    .font(.appScaledFont(for: .SemiBold, size: 14, relativeTo: .subheadline))
-                    .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
-                    .lineLimit(1)
-                Text(item.createdAt.createdAtTimeDescriptionSimple + " · +\(item.area.calculatedAreaString)")
-                    .font(.appScaledFont(for: .Regular, size: 11, relativeTo: .caption))
-                    .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0x94A3B8))
-                    .lineLimit(1)
-            }
-            Spacer()
-            if isNew {
-                Text("NEW")
-                    .font(.appScaledFont(for: .SemiBold, size: 10, relativeTo: .caption2))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 5)
-                    .background(Color.appDynamicHex(light: 0xDCFCE7, dark: 0x166534))
-                    .foregroundStyle(Color.appDynamicHex(light: 0x16A34A, dark: 0xDCFCE7))
-                    .cornerRadius(9)
-            } else {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color.appDynamicHex(light: 0xCBD5E1, dark: 0x64748B))
-            }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 11)
-        .background(Color.appDynamicHex(light: 0xFFFFFF, dark: 0x1E293B))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(Color.appDynamicHex(light: 0xE2E8F0, dark: 0x334155), lineWidth: 1)
-        )
-        .cornerRadius(14)
-    }
-
-    /// 최근 정복 섹션 하단의 빈 상태 힌트 카드를 렌더링합니다.
-    private var emptyHintCard: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "figure.walk")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(Color.appDynamicHex(light: 0xEAB308, dark: 0xFACC15))
-            Text("산책을 통해 영역을 넓혀봐요!")
-                .font(.appScaledFont(for: .SemiBold, size: 14, relativeTo: .subheadline))
-                .foregroundStyle(Color.appDynamicHex(light: 0x334155, dark: 0xCBD5E1))
-            Text("새로운 장소를 갈 때마다 영역이 확장됩니다.")
-                .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .footnote))
-                .foregroundStyle(Color.appDynamicHex(light: 0x94A3B8, dark: 0x64748B))
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 18)
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(
-                    Color.appDynamicHex(light: 0xEAB308, dark: 0xFACC15, alpha: 0.35),
-                    style: StrokeStyle(lineWidth: 1, dash: [4, 2])
-                )
-        )
-    }
-
-    /// 영역 목표 카드에 표시할 진행바를 렌더링합니다.
-    /// - Parameter progress: 0~1 범위의 진행률입니다.
-    /// - Returns: 목표 진행률 바 뷰입니다.
-    private func overviewProgressBar(progress: Double) -> some View {
-        GeometryReader { proxy in
-            let clamped = min(1.0, max(0.0, progress))
-            let width = max(10, proxy.size.width * clamped)
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(Color.appDynamicHex(light: 0xFED7AA, dark: 0x7C2D12, alpha: 0.35))
-                Capsule()
-                    .fill(Color.appDynamicHex(light: 0xEAB308, dark: 0xFACC15))
-                    .frame(width: width)
-            }
-        }
-        .frame(height: 8)
-    }
-
-    /// 최근 정복 썸네일에 사용할 인덱스 기반 색상을 반환합니다.
-    /// - Parameter index: 리스트 인덱스입니다.
-    /// - Returns: 지정 인덱스에 대응하는 썸네일 배경색입니다.
-    private func thumbnailColor(for index: Int) -> Color {
-        let palette: [Color] = [
-            Color.appDynamicHex(light: 0x10B981, dark: 0x047857),
-            Color.appDynamicHex(light: 0x94A3B8, dark: 0x475569),
-            Color.appDynamicHex(light: 0x3B82F6, dark: 0x1D4ED8)
-        ]
-        return palette[index % palette.count]
     }
 }
 
