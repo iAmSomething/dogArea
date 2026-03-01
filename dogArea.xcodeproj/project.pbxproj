@@ -25,6 +25,7 @@
 		5951E893E8CBC77DCA82E00F /* WalkDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A775802DB2A590A7C7DA0978 /* WalkDetailViewModel.swift */; };
 		5F3ED37B0435F882BC90593E /* HomePetSelectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDA31AC1DF69B7CA85070D28 /* HomePetSelectorView.swift */; };
 		68DE48DFEF4001E3F518BF10 /* HomeTerritoryHeaderSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86FFE492DDD22A6AC1319D9D /* HomeTerritoryHeaderSectionView.swift */; };
+		6A18F6C8151D05B751F63179 /* HomeQuestReminderSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 363FE1044470B273CAB987E0 /* HomeQuestReminderSupport.swift */; };
 		6B1F802F9363A5DD652CA409 /* AreaDetailListHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C0C69DBDA661E0970F6A0BB /* AreaDetailListHeaderView.swift */; };
 		6B64A696910A6CBB2B3830E0 /* HomeWeeklySnapshotSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F59FE8AF61BF3AE3B6C99D77 /* HomeWeeklySnapshotSectionView.swift */; };
 		73816D222BB17958D198D1AC /* HomeStatusBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A1B2C487816AA2CCCA6186F /* HomeStatusBannerView.swift */; };
@@ -216,6 +217,7 @@
 		21CE83B02069A8E4171B35DE /* RivalTabView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RivalTabView.swift; path = dogArea/Views/ProfileSettingView/RivalTabView.swift; sourceTree = "<group>"; };
 		2615443270FF3222AEBDE893 /* ThumbnailImageView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ThumbnailImageView.swift; sourceTree = "<group>"; };
 		30BF0E17B2BF40E97DBA5E07 /* ProfileFieldEditSheetViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ProfileFieldEditSheetViewModel.swift; path = dogArea/Views/ProfileSettingView/ProfileFieldEditSheetViewModel.swift; sourceTree = "<group>"; };
+		363FE1044470B273CAB987E0 /* HomeQuestReminderSupport.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeQuestReminderSupport.swift; path = dogArea/Views/HomeView/HomeQuestReminderSupport.swift; sourceTree = "<group>"; };
 		376D30D4A7542596A014DEE1 /* SimpleKeyValueView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SimpleKeyValueView.swift; sourceTree = "<group>"; };
 		4A1B2C487816AA2CCCA6186F /* HomeStatusBannerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeStatusBannerView.swift; path = dogArea/Views/HomeView/HomeSubView/HomeStatusBannerView.swift; sourceTree = "<group>"; };
 		4D14629580BEDCDCAE5B9EC3 /* HomeSelectedPetEmptyStateCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeSelectedPetEmptyStateCardView.swift; path = dogArea/Views/HomeView/HomeSubView/HomeSelectedPetEmptyStateCardView.swift; sourceTree = "<group>"; };
@@ -596,6 +598,7 @@
 				F2D5D8D51AC30DA6DB60A871 /* RivalViewStateResolver.swift */,
 				E4548C0C604B933CC43644FA /* RivalNetworkErrorInterpreter.swift */,
 				8F2B2A868B6FD9035AC5214F /* RivalHotspotSummaryBuilder.swift */,
+				363FE1044470B273CAB987E0 /* HomeQuestReminderSupport.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -1068,6 +1071,7 @@
 				8A40430FD15CD439469AC981 /* RivalViewStateResolver.swift in Sources */,
 				106E27D50C08D7997FD7982D /* RivalNetworkErrorInterpreter.swift in Sources */,
 				C047F1CA5DC13CAE4F03AE90 /* RivalHotspotSummaryBuilder.swift in Sources */,
+				6A18F6C8151D05B751F63179 /* HomeQuestReminderSupport.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
