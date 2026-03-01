@@ -268,7 +268,7 @@ final class HomeViewModel: ObservableObject {
             guard Task.isCancelled == false else { return }
             await MainActor.run {
                 self.krAreas = AreaMeterCollection(areas: snapshot.allAreas)
-                self.featuredGoalAreas = snapshot.featuredAreas.sorted { $0.area > $1.area }
+                self.featuredGoalAreas = snapshot.featuredAreas.sorted { $0.area < $1.area }
                 self.featuredAreaCount = self.featuredGoalAreas.count
                 self.areaReferenceSections = snapshot.sections
                 self.areaReferenceSourceLabel = snapshot.source == .remote ? "DB 비교군" : "로컬 비교군 (Fallback)"
@@ -487,7 +487,7 @@ final class HomeViewModel: ObservableObject {
 
     private func findIndex() -> Int {
         guard let i = krAreas.areas.firstIndex(where: {
-            $0.area < myArea.area
+            $0.area > myArea.area
         }) else { return krAreas.areas.count }
         return i
     }
@@ -504,10 +504,12 @@ final class HomeViewModel: ObservableObject {
     }
 
     func nearlistMore() -> AreaMeter? {
-        if let featuredNext = featuredGoalAreas.last(where: { $0.area > myArea.area }) {
-            return featuredNext
+        let featuredNext = featuredGoalAreas.first(where: { $0.area > myArea.area })
+        let defaultNext = krAreas.closeArea(of: myArea.area)
+        if let featuredNext, let defaultNext {
+            return featuredNext.area <= defaultNext.area ? featuredNext : defaultNext
         }
-        return krAreas.closeArea(of: myArea.area)
+        return featuredNext ?? defaultNext
     }
 
     private func shouldUpdateMeter() -> Bool {
@@ -525,7 +527,7 @@ final class HomeViewModel: ObservableObject {
     private func updateCurrentMeter() {
         if shouldUpdateMeter() {
             let currents = krAreas.nearistArea(since: walkRepository.fetchAreas().last, from: myArea.area)
-            for c in currents.reversed() {
+            for c in currents {
                 if walkRepository.saveArea(.init(areaName: c.areaName, area: c.area, createdAt: Date().timeIntervalSince1970)) {
                 }
             }

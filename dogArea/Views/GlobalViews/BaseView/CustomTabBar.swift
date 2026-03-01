@@ -32,16 +32,10 @@ struct CustomTabBar: View {
       })
       .frame(maxWidth: .infinity)
       
-      // Ranking button
-      TabButtonView(selectedTab: $selectedTab,
-                    imageName: ("imageBtn","imageBtnGray"),
-                    tabId: 3,
-                    titleName: "이미지")
-      
       // Settings button
       TabButtonView(selectedTab: $selectedTab,
                     imageName: ("settingBtn","settingBtnGray"),
-                    tabId: 4,
+                    tabId: 3,
                     titleName: "설정")
       
     }.padding(.horizontal,30)
