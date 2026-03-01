@@ -26,6 +26,28 @@ extension Color {
     static let appSurface: Color = Color.white
     static let appInk: Color = Color(red: 0.11, green: 0.13, blue: 0.17)
 
+    /// 16진수 RGB 값을 SwiftUI 색상으로 변환합니다.
+    /// - Parameters:
+    ///   - hex: `0xRRGGBB` 형식의 색상 값입니다.
+    ///   - alpha: 알파(투명도) 값입니다.
+    /// - Returns: 지정한 색상 값을 가지는 `Color`입니다.
+    static func appHex(_ hex: UInt, alpha: Double = 1.0) -> Color {
+        Color(uiColor: UIColor(appHex: hex, alpha: CGFloat(alpha)))
+    }
+
+    /// 라이트/다크 모드에 따라 서로 다른 16진수 색상을 적용합니다.
+    /// - Parameters:
+    ///   - light: 라이트 모드의 `0xRRGGBB` 색상 값입니다.
+    ///   - dark: 다크 모드의 `0xRRGGBB` 색상 값입니다.
+    ///   - alpha: 알파(투명도) 값입니다.
+    /// - Returns: 인터페이스 스타일에 반응하는 동적 `Color`입니다.
+    static func appDynamicHex(light: UInt, dark: UInt, alpha: Double = 1.0) -> Color {
+        Color(uiColor: UIColor { trait in
+            let hex = trait.userInterfaceStyle == .dark ? dark : light
+            return UIColor(appHex: hex, alpha: CGFloat(alpha))
+        })
+    }
+
     static func appColor(type: appColorType, scheme: ColorScheme = .light) -> Color {
         scheme == .dark ? type.darkColor : type.color
     }
@@ -101,6 +123,17 @@ extension Color {
 
 extension UIColor {
     static let appYelloww: UIColor = UIColor(red: 0.93, green: 0.70, blue: 0.19, alpha: 1)
+
+    /// 16진수 RGB 값을 `UIColor`로 변환해 초기화합니다.
+    /// - Parameters:
+    ///   - appHex: `0xRRGGBB` 형식의 색상 값입니다.
+    ///   - alpha: 알파(투명도) 값입니다.
+    convenience init(appHex: UInt, alpha: CGFloat = 1.0) {
+        let red = CGFloat((appHex >> 16) & 0xFF) / 255.0
+        let green = CGFloat((appHex >> 8) & 0xFF) / 255.0
+        let blue = CGFloat(appHex & 0xFF) / 255.0
+        self.init(red: red, green: green, blue: blue, alpha: alpha)
+    }
 }
 
 enum AppButtonRole {

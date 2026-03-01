@@ -35,6 +35,16 @@ extension Font {
   static func appFont(for type : FontType, size: CGFloat) -> Font? {
     self.custom(type.rawValue, size: size)
   }
+
+  /// Dynamic Type 크기에 맞춰 스케일되는 앱 전용 폰트를 반환합니다.
+  /// - Parameters:
+  ///   - type: 적용할 폰트 패밀리 타입입니다.
+  ///   - size: 기준 폰트 크기입니다.
+  ///   - textStyle: Dynamic Type 스케일의 기준 텍스트 스타일입니다.
+  /// - Returns: 접근성 글꼴 크기에 반응하는 `Font`입니다.
+  static func appScaledFont(for type: FontType, size: CGFloat, relativeTo textStyle: Font.TextStyle) -> Font {
+    self.custom(type.rawValue, size: size, relativeTo: textStyle)
+  }
 }
 enum FontType: String {
   case Black = "Pretendard-Black"

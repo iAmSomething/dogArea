@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 struct HomeView: View {
     private enum QuestWidgetTab: String, CaseIterable, Identifiable {
@@ -25,6 +26,7 @@ struct HomeView: View {
     }
 
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+    @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject var authFlow: AuthFlowCoordinator
     @StateObject var viewModel = HomeViewModel()
     @State private var animatedQuestProgress: [String: Double] = [:]
@@ -52,156 +54,71 @@ struct HomeView: View {
     private var isSeasonMotionReduced: Bool {
         accessibilityReduceMotion || isLowPowerModeEnabled
     }
+
+    /// 홈 상단 인사말에 노출할 사용자 이름을 계산합니다.
+    private var displayUserName: String {
+        let fallback = viewModel.selectedPetName
+        return viewModel.userInfo?.name.nilIfBlank ?? fallback
+    }
+
+    /// 시즌 점수 기반 레벨 배지를 계산합니다.
+    private var levelBadgeText: String {
+        let level = max(1, Int(viewModel.seasonMotionSummary.score / 100) + 1)
+        return "Lv. \(level)"
+    }
+
     var body: some View {
-        ZStack {
-            ScrollView {
-                VStack{
-                    HStack(alignment: .bottom) {
-                        VStack(alignment: .leading, spacing: 0) {
-                            Text("산책 달력")
-                                .font(.appFont(for: .SemiBold, size: 40))
-                            Text("산책한 날을 표시해보아요!")
-                                .font(.appFont(for: .Light, size: 15))
-                                .foregroundStyle(Color.appTextDarkGray)
-                        }.padding()
-                        Spacer()
-                    }
+        ZStack(alignment: .bottomTrailing) {
+            Color.appDynamicHex(light: 0xF1F5F9, dark: 0x0F172A)
+                .ignoresSafeArea()
+
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 16) {
+                    homeHeaderSection
                     if let report = viewModel.guestDataUpgradeReport {
                         guestDataUpgradeCard(report: report)
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 8)
                     }
                     if let message = viewModel.aggregationStatusMessage {
-                        Text(message)
-                            .font(.appFont(for: .Light, size: 12))
-                            .foregroundStyle(Color.appTextDarkGray)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(Color.appYellowPale)
-                            .cornerRadius(8)
-                            .padding(.horizontal, 16)
+                        dashboardStatusBanner(message, isWarning: false)
                     }
                     if let message = viewModel.indoorMissionStatusMessage {
-                        Text(message)
-                            .font(.appFont(for: .Light, size: 12))
-                            .foregroundStyle(Color.appTextDarkGray)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(Color.appYellowPale)
-                            .cornerRadius(8)
-                            .padding(.horizontal, 16)
+                        dashboardStatusBanner(message, isWarning: false)
                     }
                     if let message = viewModel.seasonCatchupBuffStatusMessage {
-                        Text(message)
-                            .font(.appFont(for: .Light, size: 12))
-                            .foregroundStyle(Color.appTextDarkGray)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(viewModel.seasonCatchupBuffStatusWarning ? Color.appYellowPale : Color.appGreen.opacity(0.45))
-                            .cornerRadius(8)
-                            .padding(.horizontal, 16)
+                        dashboardStatusBanner(message, isWarning: viewModel.seasonCatchupBuffStatusWarning)
+                    }
+                    if viewModel.pets.count > 1 {
+                        homePetSelector
                     }
                     if viewModel.pets.isEmpty == false {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 8) {
-                                ForEach(viewModel.pets, id: \.petId) { pet in
-                                    Text(pet.petName)
-                                        .font(.appFont(for: .Regular, size: 13))
-                                        .padding(.horizontal, 10)
-                                        .padding(.vertical, 6)
-                                        .background(
-                                            viewModel.selectedPetId == pet.petId ? Color.appYellow : Color.appYellowPale
-                                        )
-                                        .cornerRadius(8)
-                                        .onTapGesture {
-                                            viewModel.selectPet(pet.petId)
-                                        }
-                                }
-                            }.padding(.horizontal, 16)
+                        if viewModel.isShowingAllRecordsOverride {
+                            selectedPetContextBanner
                         }
-                    }
-                    CalenderView(clickedDates: viewModel.walkedDates())
-                    UnderLine()
-                    if viewModel.pets.isEmpty == false {
-                        selectedPetContextBanner
                         if viewModel.shouldShowSelectedPetEmptyState {
+                            selectedPetContextBanner
                             selectedPetEmptyStateCard
                         }
                     }
-                    HStack {
-                        VStack{
-                            HStack {
-                                Text("이번 주 산책한 영역")
-                                    .font(.appFont(for: .SemiBold, size: 20))
-                                    .multilineTextAlignment(.center)
-                                    .padding()
-                            }
-                            Text("\(viewModel.walkedAreaforWeek().calculatedAreaString)")
-                                .font(.appFont(for: .Light, size: 15))
-                        }.frame(maxWidth: .infinity)
-                            .padding(.leading)
-                        Rectangle()
-                            .foregroundColor(.clear)
-                            .frame(width: 0.6)
-                            .frame(maxHeight: .infinity)
-                            .background(Color(red: 0.19, green: 0.19, blue: 0.19))
-                        VStack {
-                            HStack {
-                                Text("이번 주 산책 횟수")
-                                    .font(.appFont(for: .SemiBold, size: 20))
-                                    .multilineTextAlignment(.center)
-                                    .padding()
-                            }
-                            Text("\(viewModel.walkedCountforWeek()) 회")
-                                .font(.appFont(for: .Light, size: 15))
-
-                        }.frame(maxWidth: .infinity)
-                            .padding(.trailing)
-                    }
+                    homeWeeklySnapshotSection
                     seasonMotionCard(summary: viewModel.seasonMotionSummary)
-                    weatherMissionStatusCard(summary: viewModel.weatherMissionStatusSummary)
-                    if let shieldDaily = viewModel.weatherShieldDailySummary {
-                        weatherShieldSummaryCard(summary: shieldDaily)
-                    }
                     if viewModel.indoorMissionBoard.shouldDisplayCard {
+                        Text("데일리 미션 상태")
+                            .font(.appScaledFont(for: .SemiBold, size: 30, relativeTo: .title2))
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         indoorMissionCard(board: viewModel.indoorMissionBoard)
-                        UnderLine()
                     }
-                    if let contribution = viewModel.boundarySplitContribution {
-                        dayBoundarySplitCard(contribution: contribution)
-                    }
-                    HStack {
-                        let petNameWithYi = viewModel.selectedPetNameWithYi
-                        VStack(alignment: .leading, spacing: 0) {
-                            Text("\(petNameWithYi)의 영역")
-                                .font(.appFont(for: .SemiBold, size: 40))
-                            Text("\(petNameWithYi)가 정복한 영역을 확인해보세요!")
-                                .font(.appFont(for: .Light, size: 15))
-                                .foregroundStyle(Color.appTextDarkGray)
-                        }.padding()
-                        Spacer()
-                    }
+                    territoryHeaderSection
                     goalTrackerCard
-                    UnderLine()
                     recentConqueredCard
-                    UnderLine()
-                    
-                    Spacer()
-    //#if DEBUG
-    //                Button("영역 올리기") {
-    //                    viewModel.makeitup()
-    //                }
-    //                Button("초기화") {
-    //                    viewModel.reset()
-    //                }
-    //#endif
                 }
-            }.refreshable {
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 106)
+            }
+            .refreshable {
                 viewModel.fetchData()
-            }.onAppear{
+            }
+            .onAppear{
                 viewModel.reloadUserInfo()
                 viewModel.fetchData()
                 seasonAnimatedProgress = viewModel.seasonMotionSummary.progress
@@ -254,7 +171,9 @@ struct HomeView: View {
                 isLowPowerModeEnabled = ProcessInfo.processInfo.isLowPowerModeEnabled
             }.sheet(isPresented: $isSeasonDetailPresented) {
                 seasonDetailSheet
-            }.padding(.top,20)
+            }
+
+            themeFloatingButton
 
             if let questCompletionModal {
                 questCompletionOverlay(payload: questCompletionModal)
@@ -269,6 +188,170 @@ struct HomeView: View {
                     .zIndex(9)
             }
         }
+    }
+
+    /// 홈 대시보드 상단 인사말과 레벨 배지를 렌더링합니다.
+    private var homeHeaderSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("안녕하세요, \(displayUserName)님!")
+                    .font(.appScaledFont(for: .SemiBold, size: 36, relativeTo: .largeTitle))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.8)
+                Spacer(minLength: 0)
+                Text(levelBadgeText)
+                    .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
+                    .foregroundStyle(Color.appDynamicHex(light: 0xF59E0B, dark: 0xEAB308))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(
+                        Capsule()
+                            .fill(Color.appDynamicHex(light: 0xFFFBEB, dark: 0x334155))
+                    )
+            }
+            Text("오늘도 \(viewModel.selectedPetName)와 즐거운 산책 되세요.")
+                .font(.appScaledFont(for: .Regular, size: 16, relativeTo: .subheadline))
+                .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
+            Rectangle()
+                .fill(Color.appDynamicHex(light: 0xCBD5E1, dark: 0x334155))
+                .frame(height: 1)
+                .padding(.top, 6)
+        }
+    }
+
+    /// 홈에서 선택 반려견을 빠르게 전환하는 칩 목록입니다.
+    private var homePetSelector: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(viewModel.pets, id: \.petId) { pet in
+                    Button {
+                        viewModel.selectPet(pet.petId)
+                    } label: {
+                        Text(pet.petName)
+                            .font(.appScaledFont(for: .SemiBold, size: 13, relativeTo: .footnote))
+                            .foregroundStyle(
+                                viewModel.selectedPetId == pet.petId
+                                ? Color.appDynamicHex(light: 0x92400E, dark: 0xFED7AA)
+                                : Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1)
+                            )
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(
+                                Capsule()
+                                    .fill(
+                                        viewModel.selectedPetId == pet.petId
+                                        ? Color.appDynamicHex(light: 0xFEF3C7, dark: 0x78350F, alpha: 0.35)
+                                        : Color.appDynamicHex(light: 0xE2E8F0, dark: 0x334155)
+                                    )
+                            )
+                            .frame(minHeight: 44)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.vertical, 2)
+        }
+    }
+
+    /// 이번 주 산책 영역/횟수 요약 카드를 렌더링합니다.
+    private var homeWeeklySnapshotSection: some View {
+        HStack(spacing: 12) {
+            weeklyMetricCard(
+                title: "이번 주 산책 면적",
+                value: viewModel.walkedAreaforWeek().calculatedAreaString,
+                accentText: "↗︎ \(Int(viewModel.goalProgressRatio * 100))% 달성"
+            )
+            weeklyMetricCard(
+                title: "이번 주 산책 횟수",
+                value: "\(viewModel.walkedCountforWeek())회",
+                accentText: "목표 달성까지 3회"
+            )
+        }
+    }
+
+    /// 주간 지표 한 칸을 렌더링합니다.
+    /// - Parameters:
+    ///   - title: 카드 상단 제목입니다.
+    ///   - value: 핵심 수치 문자열입니다.
+    ///   - accentText: 하단 보조 텍스트입니다.
+    /// - Returns: 주간 지표 카드를 표현한 뷰입니다.
+    private func weeklyMetricCard(title: String, value: String, accentText: String) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .caption))
+                .foregroundStyle(Color.appDynamicHex(light: 0x94A3B8, dark: 0xCBD5E1))
+            Text(value)
+                .font(.appScaledFont(for: .Bold, size: 35, relativeTo: .title3))
+                .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
+                .lineLimit(1)
+                .minimumScaleFactor(0.65)
+            Text(accentText)
+                .font(.appScaledFont(for: .SemiBold, size: 11, relativeTo: .caption2))
+                .foregroundStyle(Color.appDynamicHex(light: 0x10B981, dark: 0x34D399))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(minHeight: 116, alignment: .topLeading)
+        .padding(14)
+        .background(Color.appDynamicHex(light: 0xF8FAFC, dark: 0x1E293B))
+        .cornerRadius(18)
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.appDynamicHex(light: 0xE2E8F0, dark: 0x334155), lineWidth: 1)
+        )
+    }
+
+    /// 대시보드 상태 메시지를 공통 배너 형태로 렌더링합니다.
+    /// - Parameters:
+    ///   - message: 배너 본문 메시지입니다.
+    ///   - isWarning: 경고 상태 여부입니다.
+    /// - Returns: 상태 메시지 배너 뷰입니다.
+    private func dashboardStatusBanner(_ message: String, isWarning: Bool) -> some View {
+        Text(message)
+            .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .footnote))
+            .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 9)
+            .background(
+                isWarning
+                ? Color.appDynamicHex(light: 0xFEF3C7, dark: 0x78350F, alpha: 0.35)
+                : Color.appDynamicHex(light: 0xEFF6FF, dark: 0x1E293B)
+            )
+            .cornerRadius(12)
+    }
+
+    /// 영역 섹션 타이틀을 렌더링합니다.
+    private var territoryHeaderSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("\(viewModel.selectedPetNameWithYi)의 영역")
+                .font(.appScaledFont(for: .SemiBold, size: 36, relativeTo: .title2))
+                .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
+            Text("\(viewModel.selectedPetNameWithYi)가 정복한 영역을 확인해보세요!")
+                .font(.appScaledFont(for: .Regular, size: 16, relativeTo: .subheadline))
+                .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// 우측 하단의 플로팅 테마 버튼을 렌더링합니다.
+    private var themeFloatingButton: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                isSeasonCardCollapsed.toggle()
+            }
+        } label: {
+            Image(systemName: colorScheme == .dark ? "sun.max.fill" : "moon.fill")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(Color.appDynamicHex(light: 0x334155, dark: 0xE2E8F0))
+                .frame(width: 44, height: 44)
+                .background(Color.appDynamicHex(light: 0xFFFFFF, dark: 0x1E293B))
+                .clipShape(Circle())
+                .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: 8)
+        }
+        .padding(.trailing, 20)
+        .padding(.bottom, 86)
+        .accessibilityLabel("시즌 카드 확장 상태 변경")
     }
 
     @ViewBuilder
@@ -302,52 +385,69 @@ struct HomeView: View {
     }
 
     private var goalTrackerCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            if viewModel.pets.isEmpty == false {
-                selectedPetContextPill
-            }
-            Text("비교군 소스: \(viewModel.areaReferenceSourceLabel) · featured \(viewModel.featuredAreaCount)개 우선")
-                .font(.appFont(for: .Light, size: 11))
-                .foregroundStyle(Color.appTextDarkGray)
-            HStack(alignment: .top) {
-                Text("영역 목표 트래커")
-                    .font(.appFont(for: .SemiBold, size: 20))
-                Spacer()
-                NavigationLink(destination: AreaDetailView(viewModel: viewModel)) {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 10) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("영역 목표 트래커")
+                        .font(.appScaledFont(for: .SemiBold, size: 28, relativeTo: .title3))
+                        .foregroundStyle(Color.appDynamicHex(light: 0x7C2D12, dark: 0xFED7AA))
+                    Text("비교군 소스: \(viewModel.areaReferenceSourceLabel) · Featured \(viewModel.featuredAreaCount)개")
+                        .font(.appScaledFont(for: .Regular, size: 11, relativeTo: .caption))
+                        .foregroundStyle(Color.appDynamicHex(light: 0xC2410C, dark: 0xFDBA74))
+                }
+                Spacer(minLength: 0)
+                NavigationLink(destination: TerritoryGoalView(viewModel: TerritoryGoalViewModel(homeViewModel: viewModel))) {
                     Text("비교군 더보기 >")
-                        .font(.appFont(for: .Light, size: 13))
-                        .foregroundStyle(Color.appTextDarkGray)
+                        .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
+                        .foregroundStyle(Color.appDynamicHex(light: 0xC2410C, dark: 0xFDBA74))
+                        .frame(minHeight: 44, alignment: .center)
                 }
             }
 
-            goalMetricRow(
-                title: "현재 영역",
-                value: viewModel.myArea.area.calculatedAreaString,
-                detail: viewModel.myArea.areaName
-            )
+            HStack(alignment: .top, spacing: 16) {
+                goalMetricColumn(
+                    title: "현재 영역",
+                    value: viewModel.myArea.area.calculatedAreaString,
+                    detail: viewModel.myArea.areaName
+                )
+                goalMetricColumn(
+                    title: "다음 목표",
+                    value: viewModel.nextGoalArea?.areaName ?? "목표 없음",
+                    detail: viewModel.nextGoalArea?.area.calculatedAreaString ?? "완료"
+                )
+            }
 
-            goalMetricRow(
-                title: "다음 목표",
-                value: viewModel.nextGoalArea?.areaName ?? "더 정복할 곳이 없어요!",
-                detail: viewModel.nextGoalArea?.area.calculatedAreaString ?? "목표 완료"
-            )
-
-            goalMetricRow(
-                title: "남은 면적",
-                value: viewModel.remainingAreaToGoal.calculatedAreaString,
-                detail: viewModel.nextGoalArea == nil ? "다음 목표 없음" : "목표까지 남은 면적"
-            )
+            HStack(alignment: .bottom) {
+                Text("남은 면적: \(viewModel.remainingAreaToGoal.calculatedAreaString)")
+                    .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x92400E, dark: 0xFED7AA))
+                Spacer()
+                Text("\(Int(viewModel.goalProgressRatio * 100))%")
+                    .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
+                    .foregroundStyle(Color.appDynamicHex(light: 0xF59E0B, dark: 0xFDE68A))
+            }
 
             ProgressView(value: viewModel.goalProgressRatio)
-                .tint(Color.appGreen)
+                .tint(Color.appDynamicHex(light: 0xEAB308, dark: 0xFACC15))
+                .scaleEffect(x: 1, y: 1.25, anchor: .center)
                 .accessibilityLabel("목표 진행률")
                 .accessibilityValue("\(Int(viewModel.goalProgressRatio * 100)) 퍼센트")
+
+            Text("목표까지 아주 조금 남았어요! 한 번만 더 산책해볼까요?")
+                .font(.appScaledFont(for: .Regular, size: 11, relativeTo: .caption2))
+                .foregroundStyle(Color.appDynamicHex(light: 0xC2410C, dark: 0xFDBA74))
+                .lineLimit(2)
         }
-        .padding(14)
-        .background(Color.appPeach)
-        .cornerRadius(12)
-        .shadow(radius: 3)
-        .padding(.horizontal, 16)
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color.appDynamicHex(light: 0xFFF7EB, dark: 0x431407, alpha: 0.72))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color.appDynamicHex(light: 0xFED7AA, dark: 0x7C2D12), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.06), radius: 10, x: 0, y: 4)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
             "영역 목표 트래커. 현재 영역 \(viewModel.myArea.area.calculatedAreaString), 다음 목표 \(viewModel.nextGoalArea?.areaName ?? "없음"), 남은 면적 \(viewModel.remainingAreaToGoal.calculatedAreaString)"
@@ -420,54 +520,142 @@ struct HomeView: View {
         .padding(.bottom, 6)
     }
 
-    private func goalMetricRow(title: String, value: String, detail: String) -> some View {
-        HStack(alignment: .top, spacing: 8) {
+    /// 목표 트래커 내부의 단일 지표 컬럼을 렌더링합니다.
+    /// - Parameters:
+    ///   - title: 지표 제목입니다.
+    ///   - value: 강조 값입니다.
+    ///   - detail: 보조 설명입니다.
+    /// - Returns: 목표 지표 컬럼 뷰입니다.
+    private func goalMetricColumn(title: String, value: String, detail: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
             Text(title)
-                .font(.appFont(for: .SemiBold, size: 13))
-                .foregroundStyle(Color.appTextDarkGray)
-                .frame(width: 66, alignment: .leading)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(value)
-                    .font(.appFont(for: .SemiBold, size: 17))
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.82)
-                Text(detail)
-                    .font(.appFont(for: .Light, size: 12))
-                    .foregroundStyle(Color.appTextDarkGray)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.85)
-            }
-            Spacer(minLength: 0)
+                .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .caption))
+                .foregroundStyle(Color.appDynamicHex(light: 0xC2410C, dark: 0xFDBA74))
+            Text(value)
+                .font(.appScaledFont(for: .SemiBold, size: 34, relativeTo: .title3))
+                .foregroundStyle(Color.appDynamicHex(light: 0x7C2D12, dark: 0xFEF3C7))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            Text(detail)
+                .font(.appScaledFont(for: .Regular, size: 11, relativeTo: .caption2))
+                .foregroundStyle(Color.appDynamicHex(light: 0x92400E, dark: 0xFDBA74))
+                .lineLimit(2)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(title) \(value) \(detail)")
     }
 
     private var recentConqueredCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("최근 정복")
-                .font(.appFont(for: .SemiBold, size: 20))
-                .padding(.horizontal, 4)
-            HStack(alignment: .bottom) {
-                if let area = viewModel.nearlistLess() {
-                    Text(area.areaName)
-                        .font(.appFont(for: .Bold, size: 32))
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.8)
-                } else {
-                    Text("산책을 통해 영역을 넓혀봐요!")
-                        .font(.appFont(for: .Medium, size: 20))
-                }
+        let recentAreas = viewModel.myAreaList.sorted { $0.createdAt > $1.createdAt }.prefix(3)
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("최근 정복한 영역")
+                    .font(.appScaledFont(for: .SemiBold, size: 30, relativeTo: .title2))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
                 Spacer()
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x94A3B8, dark: 0xCBD5E1))
+            }
+            if recentAreas.isEmpty {
+                homeEmptyTerritoryCard
+            } else {
+                ForEach(Array(recentAreas.enumerated()), id: \.offset) { index, item in
+                    recentTerritoryRow(item: item, isNew: index == 0, colorSeed: index)
+                }
+                homeEmptyTerritoryCard
             }
         }
-        .padding()
-        .background(Color.appPinkYello)
-        .cornerRadius(10)
-        .shadow(radius: 3)
-        .padding(.horizontal, 16)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("최근 정복 영역 \(viewModel.nearlistLess()?.areaName ?? "없음")")
+        .accessibilityLabel("최근 정복 영역 목록")
+    }
+
+    /// 최근 정복 영역 리스트의 단일 행을 렌더링합니다.
+    /// - Parameters:
+    ///   - item: 표시할 영역 DTO입니다.
+    ///   - isNew: 최신 항목 여부입니다.
+    ///   - colorSeed: 썸네일 색상 시드를 위한 인덱스입니다.
+    /// - Returns: 최근 정복 영역 행 뷰입니다.
+    private func recentTerritoryRow(item: AreaMeterDTO, isNew: Bool, colorSeed: Int) -> some View {
+        HStack(spacing: 10) {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(recentThumbnailColor(for: colorSeed))
+                .frame(width: 56, height: 56)
+                .overlay {
+                    Image(systemName: "photo")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(Color.white.opacity(0.9))
+                }
+            VStack(alignment: .leading, spacing: 3) {
+                Text(item.areaName)
+                    .font(.appScaledFont(for: .SemiBold, size: 14, relativeTo: .subheadline))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
+                    .lineLimit(1)
+                Text(item.createdAt.createdAtTimeDescriptionSimple + " · +\(item.area.calculatedAreaString)")
+                    .font(.appScaledFont(for: .Regular, size: 11, relativeTo: .caption))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0x94A3B8))
+                    .lineLimit(1)
+            }
+            Spacer()
+            if isNew {
+                Text("NEW")
+                    .font(.appScaledFont(for: .SemiBold, size: 10, relativeTo: .caption2))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                    .background(Color.appDynamicHex(light: 0xDCFCE7, dark: 0x166534))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x16A34A, dark: 0xDCFCE7))
+                    .cornerRadius(9)
+            } else {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.appDynamicHex(light: 0xCBD5E1, dark: 0x64748B))
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color.appDynamicHex(light: 0xFFFFFF, dark: 0x1E293B))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.appDynamicHex(light: 0xE2E8F0, dark: 0x334155), lineWidth: 1)
+        )
+        .cornerRadius(14)
+    }
+
+    /// 최근 정복 섹션의 빈 상태 카드를 렌더링합니다.
+    private var homeEmptyTerritoryCard: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "figure.walk")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(Color.appDynamicHex(light: 0xEAB308, dark: 0xFACC15))
+            Text("산책을 통해 영역을 넓혀봐요!")
+                .font(.appScaledFont(for: .SemiBold, size: 14, relativeTo: .subheadline))
+                .foregroundStyle(Color.appDynamicHex(light: 0x334155, dark: 0xCBD5E1))
+            Text("새로운 장소를 갈 때마다 영역이 확장됩니다.")
+                .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .footnote))
+                .foregroundStyle(Color.appDynamicHex(light: 0x94A3B8, dark: 0x64748B))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 18)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(
+                    Color.appDynamicHex(light: 0xEAB308, dark: 0xFACC15, alpha: 0.35),
+                    style: StrokeStyle(lineWidth: 1, dash: [4, 2])
+                )
+        )
+    }
+
+    /// 최근 정복 썸네일에 사용할 인덱스 기반 색상을 반환합니다.
+    /// - Parameter index: 리스트 인덱스 값입니다.
+    /// - Returns: 지정 인덱스에 대응하는 썸네일 배경색입니다.
+    private func recentThumbnailColor(for index: Int) -> Color {
+        let palette: [Color] = [
+            Color.appDynamicHex(light: 0x10B981, dark: 0x047857),
+            Color.appDynamicHex(light: 0x94A3B8, dark: 0x475569),
+            Color.appDynamicHex(light: 0x3B82F6, dark: 0x1D4ED8)
+        ]
+        return palette[index % palette.count]
     }
 
     private func dayBoundarySplitCard(contribution: DayBoundarySplitContribution) -> some View {
@@ -698,10 +886,10 @@ struct HomeView: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text("퀘스트 리마인드")
-                    .font(.appFont(for: .SemiBold, size: 12))
+                    .font(.appScaledFont(for: .SemiBold, size: 14, relativeTo: .subheadline))
                 Text("매일 20:00 · 하루 최대 1회")
-                    .font(.appFont(for: .Light, size: 10))
-                    .foregroundStyle(Color.appTextDarkGray)
+                    .font(.appScaledFont(for: .Regular, size: 11, relativeTo: .caption))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x94A3B8, dark: 0xCBD5E1))
             }
             Spacer()
             Toggle(
@@ -712,12 +900,16 @@ struct HomeView: View {
                 )
             )
             .labelsHidden()
-            .tint(Color.appYellow)
+            .tint(Color.appDynamicHex(light: 0xF59E0B, dark: 0xEAB308))
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
-        .background(Color.appTextLightGray.opacity(0.2))
-        .cornerRadius(8)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color.appDynamicHex(light: 0xF8FAFC, dark: 0x1E293B))
+        .cornerRadius(14)
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.appDynamicHex(light: 0xE2E8F0, dark: 0x334155), lineWidth: 1)
+        )
     }
 
     /// 주간 퀘스트 진행도와 완료 현황을 요약해서 보여줍니다.
@@ -819,93 +1011,86 @@ struct HomeView: View {
     }
 
     private func seasonMotionCard(summary: SeasonMotionSummary) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .center) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("시즌 게이지")
-                        .font(.appFont(for: .SemiBold, size: 18))
-                    Text("주간 점수 \(Int(summary.score.rounded())) / \(Int(summary.targetScore.rounded())) · 오늘 +\(summary.todayScoreDelta)")
-                        .font(.appFont(for: .Light, size: 11))
-                        .foregroundStyle(Color.appTextDarkGray)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .center, spacing: 10) {
+                ZStack {
+                    Circle()
+                        .fill(Color.appDynamicHex(light: 0xF59E0B, dark: 0xEAB308))
+                        .frame(width: 30, height: 30)
+                    Image(systemName: "medal.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.white)
                 }
+                Text("시즌 게이지")
+                    .font(.appScaledFont(for: .SemiBold, size: 24, relativeTo: .title3))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
                 Spacer()
-                seasonShieldBadge(active: summary.weatherShieldActive)
                 Text(summary.rankTier.title)
-                    .font(.appFont(for: .SemiBold, size: 12))
-                    .padding(.horizontal, 9)
+                    .font(.appScaledFont(for: .SemiBold, size: 11, relativeTo: .caption))
+                    .padding(.horizontal, 10)
                     .padding(.vertical, 6)
-                    .background(Color.appYellowPale)
-                    .cornerRadius(8)
-                Button(isSeasonCardCollapsed ? "펼치기" : "접기") {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        isSeasonCardCollapsed.toggle()
-                    }
-                }
-                .font(.appFont(for: .SemiBold, size: 11))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-                .background(Color.appTextLightGray.opacity(0.35))
-                .cornerRadius(8)
+                    .background(Color.appDynamicHex(light: 0xE2E8F0, dark: 0x334155))
+                    .cornerRadius(9)
             }
 
-            HStack(spacing: 8) {
-                Text("남은 시간 \(viewModel.seasonRemainingTimeText)")
-                    .font(.appFont(for: .Light, size: 11))
-                    .foregroundStyle(Color.appTextDarkGray)
+            HStack(alignment: .firstTextBaseline) {
+                Text("시즌 점수 \(Int(summary.score.rounded())) / \(Int(summary.targetScore.rounded()))")
+                    .font(.appScaledFont(for: .SemiBold, size: 15, relativeTo: .subheadline))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x334155, dark: 0xCBD5E1))
                 Spacer()
-                Button("상세") {
+                Text("+\(summary.todayScoreDelta) today")
+                    .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
+                    .foregroundStyle(Color.appDynamicHex(light: 0xF59E0B, dark: 0xFACC15))
+            }
+
+            animatedSeasonGauge(progress: seasonAnimatedProgress)
+                .frame(height: 10)
+
+            HStack(spacing: 8) {
+                Image(systemName: "clock")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x94A3B8, dark: 0xCBD5E1))
+                Text("남은 시간 \(viewModel.seasonRemainingTimeText)")
+                    .font(.appScaledFont(for: .Regular, size: 11, relativeTo: .caption))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x94A3B8, dark: 0xCBD5E1))
+                Spacer()
+                Button("상세보기 >") {
                     isSeasonDetailPresented = true
                 }
-                .font(.appFont(for: .SemiBold, size: 11))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-                .background(Color.appYellowPale)
-                .cornerRadius(8)
+                .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
+                .foregroundStyle(Color.appDynamicHex(light: 0x334155, dark: 0xE2E8F0))
                 .accessibilityIdentifier("home.season.detail")
-                if viewModel.lastSeasonResultPresentation != nil {
-                    Button("지난 결과") {
-                        viewModel.reopenLastSeasonResult()
-                    }
-                    .font(.appFont(for: .SemiBold, size: 11))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 6)
-                    .background(Color.appYellowPale)
-                    .cornerRadius(8)
-                }
+                .frame(minHeight: 44)
             }
 
             if isSeasonCardCollapsed == false {
-                animatedSeasonGauge(progress: seasonAnimatedProgress)
-                    .frame(height: 12)
-
                 HStack(spacing: 8) {
                     seasonMetricPill(
                         title: "기여",
                         value: "\(summary.contributionCount)회",
-                        color: Color.appYellowPale
+                        color: Color.appDynamicHex(light: 0xEFF6FF, dark: 0x1E3A8A, alpha: 0.24)
                     )
                     seasonMetricPill(
                         title: "Shield",
                         value: "\(summary.weatherShieldApplyCount)회",
-                        color: Color.appGreen.opacity(0.22)
+                        color: Color.appDynamicHex(light: 0xDCFCE7, dark: 0x14532D, alpha: 0.34)
                     )
                     seasonMetricPill(
                         title: "주차",
                         value: summary.weekKey.isEmpty ? "-" : summary.weekKey,
-                        color: Color.appPinkYello.opacity(0.44)
+                        color: Color.appDynamicHex(light: 0xFEF3C7, dark: 0x78350F, alpha: 0.34)
                     )
                 }
             }
         }
-        .padding(14)
-        .background(Color.white)
-        .cornerRadius(12)
+        .padding(16)
+        .background(Color.appDynamicHex(light: 0xFFFFFF, dark: 0x1E293B))
+        .cornerRadius(20)
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.appTextLightGray, lineWidth: 0.5)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color.appDynamicHex(light: 0xE2E8F0, dark: 0x334155), lineWidth: 1)
         )
-        .padding(.horizontal, 16)
-        .padding(.bottom, 10)
+        .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 3)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
             "시즌 점수 \(Int(summary.score.rounded()))점, 랭크 \(summary.rankTier.title), 보호 \(summary.weatherShieldApplyCount)회, 남은 시간 \(viewModel.seasonRemainingTimeText)"
@@ -1557,6 +1742,333 @@ struct HomeView: View {
             }
         }
         .accessibilityIdentifier("home.quest.row.\(mission.id)")
+    }
+}
+
+final class TerritoryGoalViewModel: ObservableObject {
+    let homeViewModel: HomeViewModel
+    private var cancellables: Set<AnyCancellable> = []
+
+    /// 홈 ViewModel을 주입받아 Territory Goal 화면에서 재사용합니다.
+    /// - Parameter homeViewModel: 기존 데이터/비즈니스 로직을 보유한 홈 ViewModel입니다.
+    init(homeViewModel: HomeViewModel) {
+        self.homeViewModel = homeViewModel
+
+        homeViewModel.objectWillChange
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
+    }
+
+    var title: String {
+        "\(homeViewModel.selectedPetNameWithYi)의 영역"
+    }
+
+    var subtitle: String {
+        "\(homeViewModel.selectedPetNameWithYi)가 정복한 영역을 확인해보세요!"
+    }
+
+    var selectedPetBadgeText: String {
+        "🐾 선택 반려견 기준 · \(homeViewModel.selectedPetName)"
+    }
+
+    var areaSourceText: String {
+        "\(homeViewModel.areaReferenceSourceLabel) · Featured \(homeViewModel.featuredAreaCount)개"
+    }
+
+    var currentAreaText: String {
+        homeViewModel.myArea.area.calculatedAreaString
+    }
+
+    var nextGoalNameText: String {
+        homeViewModel.nextGoalArea?.areaName ?? "목표 없음"
+    }
+
+    var nextGoalAreaText: String {
+        homeViewModel.nextGoalArea?.area.calculatedAreaString ?? "완료"
+    }
+
+    var remainingAreaText: String {
+        homeViewModel.remainingAreaToGoal.calculatedAreaString
+    }
+
+    var progressRatio: Double {
+        homeViewModel.goalProgressRatio
+    }
+
+    var progressPercentText: String {
+        "\(Int(progressRatio * 100))%"
+    }
+
+    var recentAreas: [AreaMeterDTO] {
+        Array(homeViewModel.myAreaList.sorted { $0.createdAt > $1.createdAt }.prefix(3))
+    }
+
+    /// 최신 데이터 스냅샷을 갱신합니다.
+    func refresh() {
+        homeViewModel.refreshAreaList()
+        homeViewModel.refreshAreaReferenceCatalogs()
+    }
+}
+
+struct TerritoryGoalView: View {
+    @ObservedObject var viewModel: TerritoryGoalViewModel
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 18) {
+                headerSection
+                overviewCard
+                recentSection
+                emptyHintCard
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 18)
+            .padding(.bottom, 28)
+        }
+        .background(Color.appDynamicHex(light: 0xF1F5F9, dark: 0x0F172A).ignoresSafeArea())
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            viewModel.refresh()
+        }
+        .refreshable {
+            viewModel.refresh()
+        }
+    }
+
+    /// 상단 타이틀/서브타이틀/반려견 배지를 렌더링합니다.
+    private var headerSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Territory Goal Tracker")
+                .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .caption))
+                .foregroundStyle(Color.appDynamicHex(light: 0xCBD5E1, dark: 0x64748B))
+            Text(viewModel.title)
+                .font(.appScaledFont(for: .SemiBold, size: 44, relativeTo: .title2))
+                .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
+            Text(viewModel.subtitle)
+                .font(.appScaledFont(for: .Regular, size: 16, relativeTo: .subheadline))
+                .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
+            Text(viewModel.selectedPetBadgeText)
+                .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
+                .foregroundStyle(Color.appDynamicHex(light: 0xF59E0B, dark: 0xFACC15))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Color.appDynamicHex(light: 0xFEF3C7, dark: 0x78350F, alpha: 0.3))
+                .cornerRadius(10)
+        }
+    }
+
+    /// 목표 요약 카드(현재/다음/진행률)를 렌더링합니다.
+    private var overviewCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("영역 목표 트래커")
+                        .font(.appScaledFont(for: .SemiBold, size: 30, relativeTo: .title3))
+                        .foregroundStyle(Color.appDynamicHex(light: 0x7C2D12, dark: 0xFED7AA))
+                    Text(viewModel.areaSourceText)
+                        .font(.appScaledFont(for: .Regular, size: 11, relativeTo: .caption))
+                        .foregroundStyle(Color.appDynamicHex(light: 0xC2410C, dark: 0xFDBA74))
+                }
+                Spacer()
+                NavigationLink(destination: AreaDetailView(viewModel: viewModel.homeViewModel)) {
+                    Text("비교군 보러\n가기 >")
+                        .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
+                        .foregroundStyle(Color.appDynamicHex(light: 0xC2410C, dark: 0xFDBA74))
+                        .multilineTextAlignment(.trailing)
+                        .frame(minHeight: 44)
+                }
+            }
+
+            HStack(alignment: .top, spacing: 16) {
+                metricColumn(title: "현재 영역", value: viewModel.currentAreaText, detail: viewModel.title)
+                metricColumn(title: "다음 목표", value: viewModel.nextGoalNameText, detail: viewModel.nextGoalAreaText)
+            }
+
+            HStack(alignment: .bottom) {
+                Text("남은 면적: \(viewModel.remainingAreaText)")
+                    .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x92400E, dark: 0xFED7AA))
+                Spacer()
+                Text(viewModel.progressPercentText)
+                    .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
+                    .foregroundStyle(Color.appDynamicHex(light: 0xF59E0B, dark: 0xFACC15))
+            }
+
+            overviewProgressBar(progress: viewModel.progressRatio)
+                .accessibilityLabel("목표 진행률")
+                .accessibilityValue(viewModel.progressPercentText)
+
+            Text("목표까지 아주 조금 남았어요! 한 번만 더 산책해볼까요?")
+                .font(.appScaledFont(for: .Regular, size: 11, relativeTo: .caption2))
+                .foregroundStyle(Color.appDynamicHex(light: 0xC2410C, dark: 0xFDBA74))
+        }
+        .padding(18)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color.appDynamicHex(light: 0xFFF7EB, dark: 0x431407, alpha: 0.72))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color.appDynamicHex(light: 0xFED7AA, dark: 0x7C2D12), lineWidth: 1)
+        )
+    }
+
+    /// 목표 카드 내부의 지표 컬럼을 렌더링합니다.
+    /// - Parameters:
+    ///   - title: 지표 제목입니다.
+    ///   - value: 강조 값입니다.
+    ///   - detail: 보조 설명입니다.
+    /// - Returns: 지표 컬럼 뷰입니다.
+    private func metricColumn(title: String, value: String, detail: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .caption))
+                .foregroundStyle(Color.appDynamicHex(light: 0xC2410C, dark: 0xFDBA74))
+            Text(value)
+                .font(.appScaledFont(for: .SemiBold, size: 40, relativeTo: .title3))
+                .foregroundStyle(Color.appDynamicHex(light: 0x7C2D12, dark: 0xFEF3C7))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            Text(detail)
+                .font(.appScaledFont(for: .Regular, size: 11, relativeTo: .caption2))
+                .foregroundStyle(Color.appDynamicHex(light: 0x92400E, dark: 0xFDBA74))
+                .lineLimit(2)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// 최근 정복한 영역 리스트를 렌더링합니다.
+    private var recentSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("최근 정복한 영역")
+                    .font(.appScaledFont(for: .SemiBold, size: 34, relativeTo: .title2))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
+                Spacer()
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x94A3B8, dark: 0xCBD5E1))
+            }
+
+            ForEach(Array(viewModel.recentAreas.enumerated()), id: \.offset) { index, item in
+                recentRow(item: item, isNew: index == 0, colorSeed: index)
+            }
+        }
+    }
+
+    /// 최근 정복 리스트의 단일 행을 렌더링합니다.
+    /// - Parameters:
+    ///   - item: 표시할 영역 DTO입니다.
+    ///   - isNew: 최신 항목 여부입니다.
+    ///   - colorSeed: 썸네일 색상 시드 인덱스입니다.
+    /// - Returns: 최근 정복 행 뷰입니다.
+    private func recentRow(item: AreaMeterDTO, isNew: Bool, colorSeed: Int) -> some View {
+        HStack(spacing: 10) {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(thumbnailColor(for: colorSeed))
+                .frame(width: 54, height: 54)
+                .overlay {
+                    Image(systemName: "photo")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(Color.white.opacity(0.9))
+                }
+            VStack(alignment: .leading, spacing: 3) {
+                Text(item.areaName)
+                    .font(.appScaledFont(for: .SemiBold, size: 14, relativeTo: .subheadline))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
+                    .lineLimit(1)
+                Text(item.createdAt.createdAtTimeDescriptionSimple + " · +\(item.area.calculatedAreaString)")
+                    .font(.appScaledFont(for: .Regular, size: 11, relativeTo: .caption))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0x94A3B8))
+                    .lineLimit(1)
+            }
+            Spacer()
+            if isNew {
+                Text("NEW")
+                    .font(.appScaledFont(for: .SemiBold, size: 10, relativeTo: .caption2))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                    .background(Color.appDynamicHex(light: 0xDCFCE7, dark: 0x166534))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x16A34A, dark: 0xDCFCE7))
+                    .cornerRadius(9)
+            } else {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.appDynamicHex(light: 0xCBD5E1, dark: 0x64748B))
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 11)
+        .background(Color.appDynamicHex(light: 0xFFFFFF, dark: 0x1E293B))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.appDynamicHex(light: 0xE2E8F0, dark: 0x334155), lineWidth: 1)
+        )
+        .cornerRadius(14)
+    }
+
+    /// 최근 정복 섹션 하단의 빈 상태 힌트 카드를 렌더링합니다.
+    private var emptyHintCard: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "figure.walk")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(Color.appDynamicHex(light: 0xEAB308, dark: 0xFACC15))
+            Text("산책을 통해 영역을 넓혀봐요!")
+                .font(.appScaledFont(for: .SemiBold, size: 14, relativeTo: .subheadline))
+                .foregroundStyle(Color.appDynamicHex(light: 0x334155, dark: 0xCBD5E1))
+            Text("새로운 장소를 갈 때마다 영역이 확장됩니다.")
+                .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .footnote))
+                .foregroundStyle(Color.appDynamicHex(light: 0x94A3B8, dark: 0x64748B))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 18)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(
+                    Color.appDynamicHex(light: 0xEAB308, dark: 0xFACC15, alpha: 0.35),
+                    style: StrokeStyle(lineWidth: 1, dash: [4, 2])
+                )
+        )
+    }
+
+    /// 영역 목표 카드에 표시할 진행바를 렌더링합니다.
+    /// - Parameter progress: 0~1 범위의 진행률입니다.
+    /// - Returns: 목표 진행률 바 뷰입니다.
+    private func overviewProgressBar(progress: Double) -> some View {
+        GeometryReader { proxy in
+            let clamped = min(1.0, max(0.0, progress))
+            let width = max(10, proxy.size.width * clamped)
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color.appDynamicHex(light: 0xFED7AA, dark: 0x7C2D12, alpha: 0.35))
+                Capsule()
+                    .fill(Color.appDynamicHex(light: 0xEAB308, dark: 0xFACC15))
+                    .frame(width: width)
+            }
+        }
+        .frame(height: 8)
+    }
+
+    /// 최근 정복 썸네일에 사용할 인덱스 기반 색상을 반환합니다.
+    /// - Parameter index: 리스트 인덱스입니다.
+    /// - Returns: 지정 인덱스에 대응하는 썸네일 배경색입니다.
+    private func thumbnailColor(for index: Int) -> Color {
+        let palette: [Color] = [
+            Color.appDynamicHex(light: 0x10B981, dark: 0x047857),
+            Color.appDynamicHex(light: 0x94A3B8, dark: 0x475569),
+            Color.appDynamicHex(light: 0x3B82F6, dark: 0x1D4ED8)
+        ]
+        return palette[index % palette.count]
+    }
+}
+
+private extension String {
+    /// 앞뒤 공백을 제거한 결과가 비어 있으면 `nil`을 반환합니다.
+    var nilIfBlank: String? {
+        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
     }
 }
 
