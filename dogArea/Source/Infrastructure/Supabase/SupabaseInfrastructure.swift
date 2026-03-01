@@ -31,6 +31,7 @@ enum HTTPMethod: String {
 enum SupabaseEndpoint {
     case function(name: String)
     case rest(path: String, query: String? = nil)
+    case auth(path: String, query: String? = nil)
 
     func resolveURL(baseURL: URL) -> URL {
         switch self {
@@ -51,6 +52,20 @@ enum SupabaseEndpoint {
             return components?.url
                 ?? baseURL
                     .appendingPathComponent("rest", isDirectory: true)
+                    .appendingPathComponent("v1", isDirectory: true)
+                    .appendingPathComponent(path, isDirectory: false)
+        case .auth(let path, let query):
+            var components = URLComponents(
+                url: baseURL
+                    .appendingPathComponent("auth", isDirectory: true)
+                    .appendingPathComponent("v1", isDirectory: true)
+                    .appendingPathComponent(path, isDirectory: false),
+                resolvingAgainstBaseURL: false
+            )
+            components?.percentEncodedQuery = query
+            return components?.url
+                ?? baseURL
+                    .appendingPathComponent("auth", isDirectory: true)
                     .appendingPathComponent("v1", isDirectory: true)
                     .appendingPathComponent(path, isDirectory: false)
         }
@@ -681,7 +696,7 @@ final class SupabaseAreaReferenceRepository: AreaReferenceRepository, AreaRefere
             let referencesData = try await client.request(
                 .rest(
                     path: "area_references",
-                    query: "select=id,catalog_id,reference_name,area_m2,is_featured,display_order,is_active&is_active=eq.true&order=display_order.asc,area_m2.desc"
+                    query: "select=id,catalog_id,reference_name,area_m2,is_featured,display_order,is_active&is_active=eq.true&order=display_order.asc,area_m2.asc"
                 ),
                 method: .get,
                 body: Optional<String>.none
@@ -724,13 +739,13 @@ final class SupabaseAreaReferenceRepository: AreaReferenceRepository, AreaRefere
                 let sectionItems = items
                     .filter { $0.catalogId == catalog.id }
                     .sorted { lhs, rhs in
-                        if lhs.isFeatured == rhs.isFeatured {
-                            if lhs.displayOrder == rhs.displayOrder {
-                                return lhs.areaM2 > rhs.areaM2
+                        if lhs.displayOrder == rhs.displayOrder {
+                            if lhs.areaM2 == rhs.areaM2 {
+                                return lhs.referenceName < rhs.referenceName
                             }
-                            return lhs.displayOrder < rhs.displayOrder
+                            return lhs.areaM2 < rhs.areaM2
                         }
-                        return lhs.isFeatured && !rhs.isFeatured
+                        return lhs.displayOrder < rhs.displayOrder
                     }
                 return AreaReferenceSection(
                     id: catalog.id,
@@ -744,12 +759,12 @@ final class SupabaseAreaReferenceRepository: AreaReferenceRepository, AreaRefere
 
         let allAreas = items
             .map { AreaMeter($0.referenceName, $0.areaM2) }
-            .sorted { $0.area > $1.area }
+            .sorted { $0.area < $1.area }
 
         let featuredAreas = items
             .filter(\.isFeatured)
             .map { AreaMeter($0.referenceName, $0.areaM2) }
-            .sorted { $0.area > $1.area }
+            .sorted { $0.area < $1.area }
 
         return AreaReferenceSnapshot(
             source: .remote,
@@ -767,7 +782,7 @@ final class SupabaseAreaReferenceRepository: AreaReferenceRepository, AreaRefere
                 catalogId: "legacy",
                 referenceName: area.areaName,
                 areaM2: area.area,
-                isFeatured: index < 10,
+                isFeatured: index >= max(legacy.count - 10, 0),
                 displayOrder: index
             )
         }
@@ -775,7 +790,7 @@ final class SupabaseAreaReferenceRepository: AreaReferenceRepository, AreaRefere
         return AreaReferenceSnapshot(
             source: .fallback,
             allAreas: legacy,
-            featuredAreas: Array(legacy.prefix(10)),
+            featuredAreas: Array(legacy.suffix(10)),
             sections: [
                 AreaReferenceSection(
                     id: "legacy",
@@ -813,13 +828,122 @@ enum SupabaseAssetError: LocalizedError {
     }
 }
 
+enum SupabaseAuthError: LocalizedError {
+    case notConfigured
+    case invalidCredentials
+    case userAlreadyExists
+    case responseDecodeFailed
+    case requestFailed(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .notConfigured:
+            return "Supabase 설정이 누락되어 로그인할 수 없습니다."
+        case .invalidCredentials:
+            return "이메일 또는 비밀번호가 올바르지 않습니다."
+        case .userAlreadyExists:
+            return "이미 가입된 이메일입니다. 로그인을 시도해주세요."
+        case .responseDecodeFailed:
+            return "인증 응답을 해석하지 못했습니다."
+        case .requestFailed(let message):
+            return message
+        }
+    }
+}
+
 final class DeviceAppleCredentialAuthService: AppleCredentialAuthServiceProtocol {
     static let shared = DeviceAppleCredentialAuthService()
 
+    private struct AuthUserDTO: Decodable {
+        let id: String?
+        let email: String?
+    }
+
+    private struct AuthResponseDTO: Decodable {
+        let user: AuthUserDTO?
+        let id: String?
+        let email: String?
+        let message: String?
+        let error: String?
+        let errorDescription: String?
+
+        enum CodingKeys: String, CodingKey {
+            case user
+            case id
+            case email
+            case message
+            case error
+            case errorDescription = "error_description"
+        }
+    }
+
+    /// Apple 로그인 토큰의 최소 유효성(빈 값 여부)을 확인합니다.
     func signInWithApple(identityToken: String) async throws {
         if identityToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             throw SupabaseAssetError.serverError("Apple identity token is missing.")
         }
+    }
+
+    /// Supabase Auth `token?grant_type=password` 엔드포인트로 이메일 로그인을 수행합니다.
+    func signInWithEmail(email: String, password: String) async throws -> AuthenticatedUserIdentity {
+        let payload = [
+            "email": email,
+            "password": password
+        ]
+        return try await requestAuthIdentity(path: "token", query: "grant_type=password", payload: payload)
+    }
+
+    /// Supabase Auth `signup` 엔드포인트로 이메일 회원가입을 수행합니다.
+    func signUpWithEmail(email: String, password: String) async throws -> AuthenticatedUserIdentity {
+        let payload = [
+            "email": email,
+            "password": password
+        ]
+        return try await requestAuthIdentity(path: "signup", query: nil, payload: payload)
+    }
+
+    /// 공통 Auth 요청을 수행하고 응답에서 사용자 식별 정보를 추출합니다.
+    private func requestAuthIdentity(
+        path: String,
+        query: String?,
+        payload: [String: String]
+    ) async throws -> AuthenticatedUserIdentity {
+        guard let config = SupabaseRuntimeConfig.load() else {
+            throw SupabaseAuthError.notConfigured
+        }
+
+        let endpoint = SupabaseEndpoint.auth(path: path, query: query)
+        let url = endpoint.resolveURL(baseURL: config.baseURL)
+        var request = URLRequest(url: url)
+        request.httpMethod = HTTPMethod.post.rawValue
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(config.anonKey, forHTTPHeaderField: "apikey")
+        request.setValue("Bearer \(config.anonKey)", forHTTPHeaderField: "Authorization")
+        request.httpBody = try JSONEncoder().encode(payload)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let statusCode = (response as? HTTPURLResponse)?.statusCode else {
+            throw SupabaseAuthError.responseDecodeFailed
+        }
+
+        let decoded = try? JSONDecoder().decode(AuthResponseDTO.self, from: data)
+        guard (200..<300).contains(statusCode) else {
+            if statusCode == 400 || statusCode == 401 {
+                throw SupabaseAuthError.invalidCredentials
+            }
+            let description = decoded?.errorDescription ?? decoded?.message ?? decoded?.error ?? "인증에 실패했습니다. (\(statusCode))"
+            if description.localizedCaseInsensitiveContains("already") {
+                throw SupabaseAuthError.userAlreadyExists
+            }
+            throw SupabaseAuthError.requestFailed(description)
+        }
+
+        let userId = decoded?.user?.id ?? decoded?.id
+        let userEmail = decoded?.user?.email ?? decoded?.email ?? payload["email"]
+        guard let userId, userId.isEmpty == false else {
+            throw SupabaseAuthError.responseDecodeFailed
+        }
+        return AuthenticatedUserIdentity(userId: userId, email: userEmail)
     }
 }
 
