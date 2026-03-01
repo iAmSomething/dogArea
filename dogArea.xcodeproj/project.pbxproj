@@ -8,12 +8,14 @@
 
 /* Begin PBXBuildFile section */
 		02B810B0791CFB600F8406EB /* HomeSelectedPetEmptyStateCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D14629580BEDCDCAE5B9EC3 /* HomeSelectedPetEmptyStateCardView.swift */; };
+		106E27D50C08D7997FD7982D /* RivalNetworkErrorInterpreter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4548C0C604B933CC43644FA /* RivalNetworkErrorInterpreter.swift */; };
 		1CCC7F48BF06FD4BCECF4286 /* TerritoryGoalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE5CB737B1C8D8A675B6A43B /* TerritoryGoalView.swift */; };
 		22EA9355CC79568490A94348 /* dogAreaUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 626E89852AADA163B53AB03D /* dogAreaUITestsLaunchTests.swift */; };
 		23CB28F896D94B88CEF351F7 /* DesignAuditUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D982F3BFEE53C6D1333FF67 /* DesignAuditUITests.swift */; };
 		260998357CBB95987A042E95 /* PetProfileImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FFD83BC3079033CF24E9D6A /* PetProfileImageView.swift */; };
 		28782FDF88C341A3A600D280 /* HomeWeeklyMetricCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEA093F2A0E2A16E5E116F3E /* HomeWeeklyMetricCardView.swift */; };
 		2FAF945E5AA7BC004D27C72E /* WalkDetailContextProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81CDB8AB4C8855FE6D106BF3 /* WalkDetailContextProvider.swift */; };
+		30B76E851C27574F5E5AC8A0 /* RivalModerationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 722875CA7B7EAB511CCC1590 /* RivalModerationStore.swift */; };
 		316EF137D15633B33FDB93A3 /* ProfileFieldEditSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C8E7D8185E273FFD5B84579 /* ProfileFieldEditSheet.swift */; };
 		32009EE2A174DAB07F3DD64D /* RivalTabViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70172018FBBE6C94AB182660 /* RivalTabViewModel.swift */; };
 		37382EBDCEA90A2E818A05BB /* ProfileFieldEditSheetViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30BF0E17B2BF40E97DBA5E07 /* ProfileFieldEditSheetViewModel.swift */; };
@@ -29,12 +31,14 @@
 		7FA65C0F2ACFFB5E341DAD07 /* AppleSigninButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 078B330462EB7C7D535B09F1 /* AppleSigninButton.swift */; };
 		82C0FE1F9DF4A147D4C6A02C /* RecoveryActionBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = C63D5D25262A8E2185005C50 /* RecoveryActionBanner.swift */; };
 		8705C4CE77BEE3DAEF07A78B /* SimpleKeyValueView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 376D30D4A7542596A014DEE1 /* SimpleKeyValueView.swift */; };
+		8A40430FD15CD439469AC981 /* RivalViewStateResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2D5D8D51AC30DA6DB60A871 /* RivalViewStateResolver.swift */; };
 		8AB9332023AB8DBFF5657767 /* HomeHeaderSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEBDE81DFC43DCD56546D775 /* HomeHeaderSectionView.swift */; };
 		8DD9CE63EA914575B4763A9F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D8458EB9DE9760D52537B4B6 /* Foundation.framework */; };
 		9D8804AD0F127C5DDDAEA597 /* ThumbnailImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2615443270FF3222AEBDE893 /* ThumbnailImageView.swift */; };
 		A0C814D250B8F26BDCC21F66 /* UserProfileImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F73B707BA77AC2C69A6BC62B /* UserProfileImageView.swift */; };
 		A83350BB79B3CBB09B4C4963 /* RivalTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21CE83B02069A8E4171B35DE /* RivalTabView.swift */; };
 		A9F5F361DE66BF266C36FED0 /* PositionMarkerViewWithSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92C5F96B5D23BD6D36935CA0 /* PositionMarkerViewWithSelection.swift */; };
+		C047F1CA5DC13CAE4F03AE90 /* RivalHotspotSummaryBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F2B2A868B6FD9035AC5214F /* RivalHotspotSummaryBuilder.swift */; };
 		CEDA085DD93B4102FE55229E /* HomeGoalTrackerCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C566C61F8B5520FEC3406DFF /* HomeGoalTrackerCardView.swift */; };
 		DA16C1D92B05DCC8008FC133 /* CornerShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA16C1D82B05DCC8008FC133 /* CornerShape.swift */; };
 		DA16C1DC2B05E4DF008FC133 /* TimeCheckable.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA16C1DB2B05E4DF008FC133 /* TimeCheckable.swift */; };
@@ -221,10 +225,12 @@
 		6C8E7D8185E273FFD5B84579 /* ProfileFieldEditSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ProfileFieldEditSheet.swift; path = dogArea/Views/ProfileSettingView/ProfileFieldEditSheet.swift; sourceTree = "<group>"; };
 		6E3FDEC98167CC2EA0DAFA5E /* HomeRecentConqueredSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeRecentConqueredSectionView.swift; sourceTree = "<group>"; };
 		70172018FBBE6C94AB182660 /* RivalTabViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RivalTabViewModel.swift; path = dogArea/Views/ProfileSettingView/RivalTabViewModel.swift; sourceTree = "<group>"; };
+		722875CA7B7EAB511CCC1590 /* RivalModerationStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RivalModerationStore.swift; path = dogArea/Views/ProfileSettingView/RivalModerationStore.swift; sourceTree = "<group>"; };
 		81CDB8AB4C8855FE6D106BF3 /* WalkDetailContextProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WalkDetailContextProvider.swift; path = dogArea/Views/MapView/WalkDetailContextProvider.swift; sourceTree = "<group>"; };
 		86FFE492DDD22A6AC1319D9D /* HomeTerritoryHeaderSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeTerritoryHeaderSectionView.swift; sourceTree = "<group>"; };
 		8B7738E4A04B406F4D70AE19 /* HomeSelectedPetContextBannerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeSelectedPetContextBannerView.swift; path = dogArea/Views/HomeView/HomeSubView/HomeSelectedPetContextBannerView.swift; sourceTree = "<group>"; };
 		8CEBC83AFF321A2E3D10E8A0 /* SeasonProfileFrameStyle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SeasonProfileFrameStyle.swift; path = dogArea/Views/ProfileSettingView/SeasonProfileFrameStyle.swift; sourceTree = "<group>"; };
+		8F2B2A868B6FD9035AC5214F /* RivalHotspotSummaryBuilder.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RivalHotspotSummaryBuilder.swift; path = dogArea/Views/ProfileSettingView/RivalHotspotSummaryBuilder.swift; sourceTree = "<group>"; };
 		92C5F96B5D23BD6D36935CA0 /* PositionMarkerViewWithSelection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PositionMarkerViewWithSelection.swift; sourceTree = "<group>"; };
 		9FFD83BC3079033CF24E9D6A /* PetProfileImageView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PetProfileImageView.swift; path = dogArea/Views/ProfileSettingView/PetProfileImageView.swift; sourceTree = "<group>"; };
 		A775802DB2A590A7C7DA0978 /* WalkDetailViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WalkDetailViewModel.swift; path = dogArea/Views/MapView/WalkDetailViewModel.swift; sourceTree = "<group>"; };
@@ -329,6 +335,8 @@
 		DAE142001420000000000001 /* AppHapticFeedback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppHapticFeedback.swift; sourceTree = "<group>"; };
 		DAED24FA2AFA1C980044715A /* LottieView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LottieView.swift; sourceTree = "<group>"; };
 		DAED25012AFA1D430044715A /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
+		E4548C0C604B933CC43644FA /* RivalNetworkErrorInterpreter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RivalNetworkErrorInterpreter.swift; path = dogArea/Views/ProfileSettingView/RivalNetworkErrorInterpreter.swift; sourceTree = "<group>"; };
+		F2D5D8D51AC30DA6DB60A871 /* RivalViewStateResolver.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RivalViewStateResolver.swift; path = dogArea/Views/ProfileSettingView/RivalViewStateResolver.swift; sourceTree = "<group>"; };
 		F54DF2E65C59A1E8B1F95D8A /* TerritoryGoalViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TerritoryGoalViewModel.swift; sourceTree = "<group>"; };
 		F59FE8AF61BF3AE3B6C99D77 /* HomeWeeklySnapshotSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeWeeklySnapshotSectionView.swift; sourceTree = "<group>"; };
 		F73B707BA77AC2C69A6BC62B /* UserProfileImageView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = UserProfileImageView.swift; path = dogArea/Views/ProfileSettingView/UserProfileImageView.swift; sourceTree = "<group>"; };
@@ -584,6 +592,10 @@
 				81CDB8AB4C8855FE6D106BF3 /* WalkDetailContextProvider.swift */,
 				70172018FBBE6C94AB182660 /* RivalTabViewModel.swift */,
 				19B0F89F9FF220625F0008DB /* RivalTabModels.swift */,
+				722875CA7B7EAB511CCC1590 /* RivalModerationStore.swift */,
+				F2D5D8D51AC30DA6DB60A871 /* RivalViewStateResolver.swift */,
+				E4548C0C604B933CC43644FA /* RivalNetworkErrorInterpreter.swift */,
+				8F2B2A868B6FD9035AC5214F /* RivalHotspotSummaryBuilder.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -1052,6 +1064,10 @@
 				2FAF945E5AA7BC004D27C72E /* WalkDetailContextProvider.swift in Sources */,
 				32009EE2A174DAB07F3DD64D /* RivalTabViewModel.swift in Sources */,
 				E1996670DB5AF8DEE4111010 /* RivalTabModels.swift in Sources */,
+				30B76E851C27574F5E5AC8A0 /* RivalModerationStore.swift in Sources */,
+				8A40430FD15CD439469AC981 /* RivalViewStateResolver.swift in Sources */,
+				106E27D50C08D7997FD7982D /* RivalNetworkErrorInterpreter.swift in Sources */,
+				C047F1CA5DC13CAE4F03AE90 /* RivalHotspotSummaryBuilder.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
