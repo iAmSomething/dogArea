@@ -163,6 +163,7 @@ final class HomeViewModel: ObservableObject {
     private let walkRepository: WalkRepositoryProtocol
     private let userSessionStore: UserSessionStoreProtocol
     private let eventCenter: AppEventCenterProtocol
+    private let weeklyStatisticsService: HomeWeeklyStatisticsServicing
     private let seasonMotionStore = SeasonMotionStore()
     private let questReminderScheduler: QuestReminderScheduling
     private let questReminderPreferenceStore = QuestReminderPreferenceStore()
@@ -236,12 +237,14 @@ final class HomeViewModel: ObservableObject {
         areaReferenceRepository: AreaReferenceRepository = SupabaseAreaReferenceRepository.shared,
         walkRepository: WalkRepositoryProtocol = WalkRepositoryContainer.shared,
         userSessionStore: UserSessionStoreProtocol = DefaultUserSessionStore.shared,
-        eventCenter: AppEventCenterProtocol = DefaultAppEventCenter.shared
+        eventCenter: AppEventCenterProtocol = DefaultAppEventCenter.shared,
+        weeklyStatisticsService: HomeWeeklyStatisticsServicing = HomeWeeklyStatisticsService()
     ) {
         self.areaReferenceRepository = areaReferenceRepository
         self.walkRepository = walkRepository
         self.userSessionStore = userSessionStore
         self.eventCenter = eventCenter
+        self.weeklyStatisticsService = weeklyStatisticsService
         self.questReminderScheduler = LocalQuestReminderScheduler()
         self.questReminderEnabled = false
         self.questReminderEnabled = questReminderPreferenceStore.isEnabled
@@ -619,25 +622,17 @@ final class HomeViewModel: ObservableObject {
 
     func walkedDates() -> [Date] {
         let calendar = currentCalendar()
-        var dayStarts: [TimeInterval: Date] = [:]
-        for polygon in polygonList {
-            for day in dayStartsCovered(by: polygon, calendar: calendar) {
-                dayStarts[day.timeIntervalSince1970] = day
-            }
-        }
-        return dayStarts.values.sorted()
+        return weeklyStatisticsService.walkedDates(from: polygonList, calendar: calendar)
     }
 
     func walkedAreaforWeek(reference: Date = Date()) -> Double {
-        let weekInterval = currentWeekInterval(reference: reference)
-        return polygonList.reduce(0.0) { partial, polygon in
-            partial + weightedAreaContribution(for: polygon, in: weekInterval)
-        }
+        let calendar = currentCalendar()
+        return weeklyStatisticsService.walkedAreaForWeek(from: polygonList, reference: reference, calendar: calendar)
     }
 
     func walkedCountforWeek(reference: Date = Date()) -> Int {
-        let weekInterval = currentWeekInterval(reference: reference)
-        return polygonList.filter { sessionOverlaps($0, with: weekInterval) }.count
+        let calendar = currentCalendar()
+        return weeklyStatisticsService.walkedCountForWeek(from: polygonList, reference: reference, calendar: calendar)
     }
 
     func refreshIndoorMissions(now: Date = Date()) {
@@ -1111,112 +1106,35 @@ final class HomeViewModel: ObservableObject {
 
     private func currentWeekInterval(reference: Date) -> DateInterval {
         let calendar = currentCalendar()
-        let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: reference)
-        let start = calendar.date(from: components) ?? calendar.startOfDay(for: reference)
-        let end = calendar.date(byAdding: .weekOfYear, value: 1, to: start) ?? start.addingTimeInterval(7 * 24 * 3600)
-        return DateInterval(start: start, end: end)
+        return weeklyStatisticsService.currentWeekInterval(reference: reference, calendar: calendar)
     }
 
     private func sessionInterval(for polygon: Polygon) -> DateInterval {
-        let start = Date(timeIntervalSince1970: polygon.createdAt)
-        let duration = max(0, polygon.walkingTime)
-        if duration <= 0 {
-            return DateInterval(start: start, end: start.addingTimeInterval(1))
-        }
-        return DateInterval(start: start, end: start.addingTimeInterval(duration))
-    }
-
-    private func overlapSeconds(_ lhs: DateInterval, _ rhs: DateInterval) -> TimeInterval {
-        let overlapStart = max(lhs.start, rhs.start)
-        let overlapEnd = min(lhs.end, rhs.end)
-        return max(0, overlapEnd.timeIntervalSince(overlapStart))
+        weeklyStatisticsService.sessionInterval(for: polygon)
     }
 
     private func weightedAreaContribution(for polygon: Polygon, in bucket: DateInterval) -> Double {
-        let duration = max(0, polygon.walkingTime)
-        let area = max(0, polygon.walkingArea)
-        if duration <= 0 {
-            let point = Date(timeIntervalSince1970: polygon.createdAt)
-            return bucket.contains(point) ? area : 0
-        }
-
-        let overlap = overlapSeconds(sessionInterval(for: polygon), bucket)
-        guard overlap > 0 else { return 0 }
-        let ratio = min(1, overlap / duration)
-        return area * ratio
+        weeklyStatisticsService.weightedAreaContribution(for: polygon, in: bucket)
     }
 
     private func weightedDurationContribution(for polygon: Polygon, in bucket: DateInterval) -> Double {
-        let duration = max(0, polygon.walkingTime)
-        if duration <= 0 {
-            let point = Date(timeIntervalSince1970: polygon.createdAt)
-            return bucket.contains(point) ? duration : 0
-        }
-
-        let overlap = overlapSeconds(sessionInterval(for: polygon), bucket)
-        guard overlap > 0 else { return 0 }
-        let ratio = min(1, overlap / duration)
-        return duration * ratio
+        weeklyStatisticsService.weightedDurationContribution(for: polygon, in: bucket)
     }
 
     private func sessionOverlaps(_ polygon: Polygon, with bucket: DateInterval) -> Bool {
-        if max(0, polygon.walkingTime) <= 0 {
-            return bucket.contains(Date(timeIntervalSince1970: polygon.createdAt))
-        }
-        return overlapSeconds(sessionInterval(for: polygon), bucket) > 0
+        weeklyStatisticsService.sessionOverlaps(polygon, with: bucket)
     }
 
     private func dayStartsCovered(by polygon: Polygon, calendar: Calendar) -> [Date] {
-        let interval = sessionInterval(for: polygon)
-        var dates: [Date] = []
-        var cursor = calendar.startOfDay(for: interval.start)
-        dates.append(cursor)
-
-        while let next = calendar.date(byAdding: .day, value: 1, to: cursor), next < interval.end {
-            dates.append(next)
-            cursor = next
-        }
-
-        return dates
+        weeklyStatisticsService.dayStartsCovered(by: polygon, calendar: calendar)
     }
 
     private func makeDayBoundarySplitContribution(reference: Date) -> DayBoundarySplitContribution? {
         let calendar = currentCalendar()
-        let todayStart = calendar.startOfDay(for: reference)
-        guard let yesterdayStart = calendar.date(byAdding: .day, value: -1, to: todayStart),
-              let tomorrowStart = calendar.date(byAdding: .day, value: 1, to: todayStart) else {
-            return nil
-        }
-
-        let previousInterval = DateInterval(start: yesterdayStart, end: todayStart)
-        let currentInterval = DateInterval(start: todayStart, end: tomorrowStart)
-
-        var previousArea = 0.0
-        var currentArea = 0.0
-        var previousDuration = 0.0
-        var currentDuration = 0.0
-
-        for polygon in polygonList {
-            let session = sessionInterval(for: polygon)
-            guard session.start < todayStart && session.end > todayStart else { continue }
-
-            previousArea += weightedAreaContribution(for: polygon, in: previousInterval)
-            currentArea += weightedAreaContribution(for: polygon, in: currentInterval)
-            previousDuration += weightedDurationContribution(for: polygon, in: previousInterval)
-            currentDuration += weightedDurationContribution(for: polygon, in: currentInterval)
-        }
-
-        guard previousArea > 0 || currentArea > 0 || previousDuration > 0 || currentDuration > 0 else {
-            return nil
-        }
-
-        return DayBoundarySplitContribution(
-            previousDay: yesterdayStart,
-            currentDay: todayStart,
-            previousArea: previousArea,
-            currentArea: currentArea,
-            previousDuration: previousDuration,
-            currentDuration: currentDuration
+        return weeklyStatisticsService.makeDayBoundarySplitContribution(
+            from: polygonList,
+            reference: reference,
+            calendar: calendar
         )
     }
 }

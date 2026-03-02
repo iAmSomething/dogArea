@@ -84,6 +84,7 @@
 		DA8BB9EE2B02F0CD00E350C4 /* AreaMeters.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA8BB9ED2B02F0CD00E350C4 /* AreaMeters.swift */; };
 		DA8BB9F22B02FE3A00E350C4 /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA8BB9F12B02FE3A00E350C4 /* HomeViewModel.swift */; };
 		DA8BB9F52B032AB000E350C4 /* Calender.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA8BB9F42B032AB000E350C4 /* Calender.swift */; };
+		DAE147A11420000000000001 /* HomeWeeklyStatisticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE147A01420000000000001 /* HomeWeeklyStatisticsService.swift */; };
 		DA933BE92ADD04E70029856C /* CustomAlertView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA933BE82ADD04E70029856C /* CustomAlertView.swift */; };
 		DA95CC6C2ADE0682004AD94D /* OpenAIClient.h in Headers */ = {isa = PBXBuildFile; fileRef = DA95CC6B2ADE0682004AD94D /* OpenAIClient.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		DA95CC6F2ADE0682004AD94D /* OpenAIClient.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DA95CC692ADE0682004AD94D /* OpenAIClient.framework */; };
@@ -290,6 +291,7 @@
 		DA8BB9ED2B02F0CD00E350C4 /* AreaMeters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMeters.swift; sourceTree = "<group>"; };
 		DA8BB9F12B02FE3A00E350C4 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
 		DA8BB9F42B032AB000E350C4 /* Calender.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Calender.swift; sourceTree = "<group>"; };
+		DAE147A01420000000000001 /* HomeWeeklyStatisticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeeklyStatisticsService.swift; sourceTree = "<group>"; };
 		DA933BE82ADD04E70029856C /* CustomAlertView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomAlertView.swift; sourceTree = "<group>"; };
 		DA95CC692ADE0682004AD94D /* OpenAIClient.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = OpenAIClient.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		DA95CC6B2ADE0682004AD94D /* OpenAIClient.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = OpenAIClient.h; sourceTree = "<group>"; };
@@ -430,6 +432,7 @@
 				DA8BB9ED2B02F0CD00E350C4 /* AreaMeters.swift */,
 				DA3EB0792B0344CD00AEA65D /* AreaDetailView.swift */,
 				DA8BB9F12B02FE3A00E350C4 /* HomeViewModel.swift */,
+				DAE147A01420000000000001 /* HomeWeeklyStatisticsService.swift */,
 			);
 			path = HomeView;
 			sourceTree = "<group>";
@@ -1019,6 +1022,7 @@
 				DA3F9BA52AE0F14F0048550C /* MapModel.swift in Sources */,
 				DA4513832AFB25C2007AD69B /* PositionMarkerView.swift in Sources */,
 				DA8BB9F22B02FE3A00E350C4 /* HomeViewModel.swift in Sources */,
+				DAE147A11420000000000001 /* HomeWeeklyStatisticsService.swift in Sources */,
 				DAED25022AFA1D430044715A /* SplashView.swift in Sources */,
 				DA99F9E62AFA4F3E00B1483F /* Color.swift in Sources */,
 				DA3F9BD32AE0FF8A0048550C /* RootView.swift in Sources */,
