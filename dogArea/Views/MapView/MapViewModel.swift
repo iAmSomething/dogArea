@@ -179,6 +179,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private let userSessionStore: UserSessionStoreProtocol
     private let authSessionStore: AuthSessionStoreProtocol
     private let preferenceStore: MapPreferenceStoreProtocol
+    private let clusterAnnotationService: MapClusterAnnotationServicing
     private let eventCenter: AppEventCenterProtocol
     private var lastCaptureHapticAt: Date = .distantPast
     private var lastWarningHapticAt: Date = .distantPast
@@ -271,12 +272,14 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         userSessionStore: UserSessionStoreProtocol = DefaultUserSessionStore.shared,
         authSessionStore: AuthSessionStoreProtocol = DefaultAuthSessionStore.shared,
         preferenceStore: MapPreferenceStoreProtocol = DefaultMapPreferenceStore.shared,
+        clusterAnnotationService: MapClusterAnnotationServicing = MapClusterAnnotationService(),
         eventCenter: AppEventCenterProtocol = DefaultAppEventCenter.shared
     ) {
         self.walkRepository = walkRepository
         self.userSessionStore = userSessionStore
         self.authSessionStore = authSessionStore
         self.preferenceStore = preferenceStore
+        self.clusterAnnotationService = clusterAnnotationService
         self.eventCenter = eventCenter
         super.init()
         self.locationManager.delegate = self
@@ -2014,63 +2017,15 @@ extension MapViewModel {
     private func hotspots() async { // 핫스팟 로직 고민해보기
 
     }
-    private struct ClusterBucketKey: Hashable {
-        let x: Int
-        let y: Int
-    }
 
-    private func clusterCellSizeMeters(for distance: Double) -> Double {
-        let raw = distance * clusterCellDistanceRatio
-        return min(clusterCellMaxMeters, max(clusterCellMinMeters, raw))
-    }
-
-    private func initialClusterByPolygon() -> [Cluster] {
-        return self.polygonList.compactMap { polygon in
-            guard let mapPolygon = polygon.polygon else { return nil }
-            return Cluster(center: mapPolygon.coordinate, id: polygon.id)
-        }
-    }
     private func cluster(distance: Double) -> [Cluster] {
-        let startCluster = initialClusterByPolygon()
-        let result = calculateDistance(from: startCluster, threshold: distance)
-        return result
-    }
-    
-    private func calculateDistance(from clusters: [Cluster], threshold: Double) -> [Cluster] {
-        guard clusters.count > 1 else { return clusters }
-
-        let referenceLatitude = clusters.map(\.center.latitude).reduce(0.0, +) / Double(clusters.count)
-        let cellMeters = clusterCellSizeMeters(for: threshold)
-        let metersPerMapPoint = MKMetersPerMapPointAtLatitude(referenceLatitude)
-        let cellMapPoints = max(1.0, cellMeters / max(0.0001, metersPerMapPoint))
-
-        var buckets: [ClusterBucketKey: Cluster] = [:]
-        buckets.reserveCapacity(clusters.count)
-
-        for cluster in clusters {
-            let point = MKMapPoint(cluster.center)
-            let key = ClusterBucketKey(
-                x: Int(floor(point.x / cellMapPoints)),
-                y: Int(floor(point.y / cellMapPoints))
-            )
-
-            if var existing = buckets[key] {
-                existing.updateCenter(with: cluster)
-                buckets[key] = existing
-            } else {
-                buckets[key] = cluster
-            }
-        }
-
-        return buckets.values.sorted { lhs, rhs in
-            if lhs.sumLocs.count != rhs.sumLocs.count {
-                return lhs.sumLocs.count > rhs.sumLocs.count
-            }
-            if lhs.center.latitude != rhs.center.latitude {
-                return lhs.center.latitude < rhs.center.latitude
-            }
-            return lhs.center.longitude < rhs.center.longitude
-        }
+        clusterAnnotationService.cluster(
+            polygons: polygonList,
+            cameraDistance: distance,
+            distanceRatio: clusterCellDistanceRatio,
+            minCellMeters: clusterCellMinMeters,
+            maxCellMeters: clusterCellMaxMeters
+        )
     }
 }
 
