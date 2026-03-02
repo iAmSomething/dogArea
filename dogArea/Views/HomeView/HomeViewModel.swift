@@ -164,6 +164,7 @@ final class HomeViewModel: ObservableObject {
     private let userSessionStore: UserSessionStoreProtocol
     private let eventCenter: AppEventCenterProtocol
     private let weeklyStatisticsService: HomeWeeklyStatisticsServicing
+    private let weatherMissionStatusBuilder: HomeWeatherMissionStatusBuilding
     private let seasonMotionStore = SeasonMotionStore()
     private let questReminderScheduler: QuestReminderScheduling
     private let questReminderPreferenceStore = QuestReminderPreferenceStore()
@@ -175,12 +176,6 @@ final class HomeViewModel: ObservableObject {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ko_KR")
         formatter.dateFormat = "M/d HH:mm"
-        return formatter
-    }()
-    private static let weatherAppliedTimeFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ko_KR")
-        formatter.dateFormat = "HH:mm"
         return formatter
     }()
 
@@ -238,13 +233,15 @@ final class HomeViewModel: ObservableObject {
         walkRepository: WalkRepositoryProtocol = WalkRepositoryContainer.shared,
         userSessionStore: UserSessionStoreProtocol = DefaultUserSessionStore.shared,
         eventCenter: AppEventCenterProtocol = DefaultAppEventCenter.shared,
-        weeklyStatisticsService: HomeWeeklyStatisticsServicing = HomeWeeklyStatisticsService()
+        weeklyStatisticsService: HomeWeeklyStatisticsServicing = HomeWeeklyStatisticsService(),
+        weatherMissionStatusBuilder: HomeWeatherMissionStatusBuilding = HomeWeatherMissionStatusBuilder()
     ) {
         self.areaReferenceRepository = areaReferenceRepository
         self.walkRepository = walkRepository
         self.userSessionStore = userSessionStore
         self.eventCenter = eventCenter
         self.weeklyStatisticsService = weeklyStatisticsService
+        self.weatherMissionStatusBuilder = weatherMissionStatusBuilder
         self.questReminderScheduler = LocalQuestReminderScheduler()
         self.questReminderEnabled = false
         self.questReminderEnabled = questReminderPreferenceStore.isEnabled
@@ -641,11 +638,14 @@ final class HomeViewModel: ObservableObject {
         questAlternativeActionSuggestion = makeQuestAlternativeActionSuggestion(for: indoorMissionBoard)
         weatherFeedbackRemainingCount = indoorMissionStore.weatherFeedbackRemainingCount(now: now)
         let weatherStatus = indoorMissionStore.weatherStatus(now: now)
-        weatherShieldDailySummary = indoorMissionStore.weatherShieldDailySummary(now: now)
-        weatherMissionStatusSummary = makeWeatherMissionStatusSummary(
+        let shieldDailySummary = indoorMissionStore.weatherShieldDailySummary(now: now)
+        weatherShieldDailySummary = shieldDailySummary
+        weatherMissionStatusSummary = weatherMissionStatusBuilder.makeStatusSummary(
             board: indoorMissionBoard,
             status: weatherStatus,
-            now: now
+            now: now,
+            shieldApplyCount: shieldDailySummary?.applyCount ?? 0,
+            localizedCopy: localizedCopy(ko:en:)
         )
         if indoorMissionBoard.isIndoorReplacementActive {
             let exposureKey = "\(indoorMissionBoard.dayKey)|\(indoorMissionBoard.riskLevel.rawValue)"
@@ -1028,74 +1028,6 @@ final class HomeViewModel: ObservableObject {
                 shieldApplied: false
             )
         }
-    }
-
-    private func makeWeatherMissionStatusSummary(
-        board: IndoorMissionBoard,
-        status: IndoorWeatherStatus,
-        now: Date
-    ) -> WeatherMissionStatusSummary {
-        let badgeText: String
-        if status.source == .fallback {
-            badgeText = localizedCopy(ko: "기본 모드", en: "Base Mode")
-        } else if board.riskLevel == .clear {
-            badgeText = localizedCopy(ko: "정상", en: "Normal")
-        } else {
-            badgeText = localizedCopy(ko: "치환", en: "Replaced")
-        }
-
-        let reasonText: String
-        if status.source == .fallback {
-            reasonText = localizedCopy(
-                ko: "날씨 연동이 아직 준비되지 않아 기본 퀘스트로 진행합니다.",
-                en: "Weather integration is not ready yet. Running default quests."
-            )
-        } else if board.riskLevel == .clear {
-            reasonText = localizedCopy(
-                ko: "날씨 안정 단계로 기본 퀘스트를 진행합니다.",
-                en: "Stable weather. Running default quests."
-            )
-        } else {
-            reasonText = localizedCopy(
-                ko: "\(board.riskLevel.displayTitle) 단계로 일부 실외 목표를 실내 미션으로 치환했어요.",
-                en: "Risk \(board.riskLevel.rawValue) replaced some outdoor goals with indoor missions."
-            )
-        }
-
-        let appliedTimestamp = status.lastUpdatedAt ?? now.timeIntervalSince1970
-        let appliedTime = Self.weatherAppliedTimeFormatter.string(from: Date(timeIntervalSince1970: appliedTimestamp))
-        let shieldCount = weatherShieldDailySummary?.applyCount ?? indoorMissionStore.weatherShieldDailySummary(now: now)?.applyCount ?? 0
-        let shieldText = localizedCopy(
-            ko: "보호 사용 \(shieldCount)회",
-            en: "Shield used \(shieldCount)x"
-        )
-        let fallbackNotice: String?
-        if status.source == .fallback {
-            fallbackNotice = localizedCopy(
-                ko: "연동 전에도 산책/기록/퀘스트는 정상적으로 계속됩니다.",
-                en: "Walk, logs, and quests continue normally even before weather integration."
-            )
-        } else {
-            fallbackNotice = nil
-        }
-
-        let appliedAtText = localizedCopy(
-            ko: "적용 시점 \(appliedTime)",
-            en: "Applied at \(appliedTime)"
-        )
-        let accessibilityText = "\(badgeText). \(reasonText). \(appliedAtText). \(shieldText)"
-
-        return WeatherMissionStatusSummary(
-            badgeText: badgeText,
-            title: localizedCopy(ko: "오늘 날씨 연동 상태", en: "Today's Weather Status"),
-            reasonText: reasonText,
-            appliedAtText: appliedAtText,
-            shieldUsageText: shieldText,
-            fallbackNotice: fallbackNotice,
-            accessibilityText: accessibilityText,
-            isFallback: status.source == .fallback,
-            riskLevel: board.riskLevel
-        )
     }
 
     private func currentCalendar() -> Calendar {
