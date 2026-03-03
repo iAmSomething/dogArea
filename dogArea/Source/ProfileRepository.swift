@@ -6,6 +6,30 @@ struct AuthenticatedUserIdentity: Equatable {
     let email: String?
 }
 
+/// Supabase 토큰 세션(Access/Refresh)의 로컬 보관 모델입니다.
+struct AuthTokenSession: Codable, Equatable {
+    let accessToken: String
+    let refreshToken: String
+    let expiresAt: TimeInterval
+    let tokenType: String
+
+    /// 현재 시각과 유효시간 버퍼를 기준으로 토큰 사용 가능 여부를 반환합니다.
+    /// - Parameters:
+    ///   - now: 비교 기준 epoch seconds입니다.
+    ///   - leeway: 만료 직전 경계 오차를 흡수하기 위한 버퍼(초)입니다.
+    /// - Returns: 현재 토큰을 바로 사용해도 되는지 여부입니다.
+    func isValid(at now: TimeInterval, leeway: TimeInterval = 30) -> Bool {
+        guard accessToken.isEmpty == false else { return false }
+        return expiresAt - leeway > now
+    }
+}
+
+/// 인증 요청 처리 결과(식별자 + 세션 토큰)를 나타냅니다.
+struct AuthCredentialResult: Equatable {
+    let identity: AuthenticatedUserIdentity
+    let tokenSession: AuthTokenSession?
+}
+
 /// 로그인 입력의 채널/의도를 표현합니다.
 enum AuthRequest: Equatable {
     case apple(identityToken: String, appleUserId: String, nameHint: String?)
@@ -23,8 +47,17 @@ struct AuthUseCaseOutcome: Equatable {
 protocol AuthSessionStoreProtocol {
     /// 현재 인증된 사용자 식별 정보를 로컬에 저장합니다.
     func persist(_ identity: AuthenticatedUserIdentity)
+    /// 현재 인증된 토큰 세션을 로컬에 저장합니다.
+    /// - Parameter tokenSession: Access/Refresh token과 만료 정보를 담은 세션입니다.
+    func persist(tokenSession: AuthTokenSession)
     /// 로컬에 저장된 사용자 식별 정보를 조회합니다.
+    /// - Returns: 사용자 식별 정보가 존재하면 해당 값을 반환하고, 없으면 `nil`을 반환합니다.
     func currentIdentity() -> AuthenticatedUserIdentity?
+    /// 로컬에 저장된 토큰 세션 정보를 조회합니다.
+    /// - Returns: 토큰 세션이 존재하면 해당 값을 반환하고, 없으면 `nil`을 반환합니다.
+    func currentTokenSession() -> AuthTokenSession?
+    /// 토큰 세션 정보만 제거합니다.
+    func clearTokenSession()
     /// 로컬 인증 식별 정보를 제거합니다.
     func clear()
 }
@@ -35,6 +68,10 @@ final class DefaultAuthSessionStore: AuthSessionStoreProtocol {
     private enum Key {
         static let userId = "auth.session.user_id.v1"
         static let email = "auth.session.email.v1"
+        static let accessToken = "auth.session.access_token.v1"
+        static let refreshToken = "auth.session.refresh_token.v1"
+        static let expiresAt = "auth.session.expires_at.v1"
+        static let tokenType = "auth.session.token_type.v1"
     }
 
     private let defaults: UserDefaults
@@ -49,6 +86,15 @@ final class DefaultAuthSessionStore: AuthSessionStoreProtocol {
         defaults.set(identity.email, forKey: Key.email)
     }
 
+    /// 현재 인증된 토큰 세션을 로컬에 저장합니다.
+    /// - Parameter tokenSession: Access/Refresh token과 만료 정보를 담은 세션입니다.
+    func persist(tokenSession: AuthTokenSession) {
+        defaults.set(tokenSession.accessToken, forKey: Key.accessToken)
+        defaults.set(tokenSession.refreshToken, forKey: Key.refreshToken)
+        defaults.set(tokenSession.expiresAt, forKey: Key.expiresAt)
+        defaults.set(tokenSession.tokenType, forKey: Key.tokenType)
+    }
+
     /// 로컬에 저장된 사용자 식별 정보를 조회합니다.
     func currentIdentity() -> AuthenticatedUserIdentity? {
         guard let userId = defaults.string(forKey: Key.userId), userId.isEmpty == false else {
@@ -60,16 +106,50 @@ final class DefaultAuthSessionStore: AuthSessionStoreProtocol {
         )
     }
 
+    /// 로컬에 저장된 토큰 세션 정보를 조회합니다.
+    /// - Returns: 토큰 세션이 존재하면 해당 값을 반환하고, 없으면 `nil`을 반환합니다.
+    func currentTokenSession() -> AuthTokenSession? {
+        guard
+            let accessToken = defaults.string(forKey: Key.accessToken),
+            let refreshToken = defaults.string(forKey: Key.refreshToken),
+            let tokenType = defaults.string(forKey: Key.tokenType),
+            accessToken.isEmpty == false,
+            refreshToken.isEmpty == false,
+            tokenType.isEmpty == false
+        else {
+            return nil
+        }
+        let expiresAt = defaults.double(forKey: Key.expiresAt)
+        guard expiresAt > 0 else { return nil }
+        return AuthTokenSession(
+            accessToken: accessToken,
+            refreshToken: refreshToken,
+            expiresAt: expiresAt,
+            tokenType: tokenType
+        )
+    }
+
+    /// 토큰 세션 정보만 제거합니다.
+    func clearTokenSession() {
+        defaults.removeObject(forKey: Key.accessToken)
+        defaults.removeObject(forKey: Key.refreshToken)
+        defaults.removeObject(forKey: Key.expiresAt)
+        defaults.removeObject(forKey: Key.tokenType)
+    }
+
     /// 로컬 인증 식별 정보를 제거합니다.
     func clear() {
         defaults.removeObject(forKey: Key.userId)
         defaults.removeObject(forKey: Key.email)
+        clearTokenSession()
     }
 }
 
 protocol AuthRepositoryProtocol {
     /// 입력된 인증 요청을 실제 인증 서비스로 위임하고 식별 정보를 반환합니다.
-    func authenticate(_ request: AuthRequest) async throws -> (identity: AuthenticatedUserIdentity, displayNameHint: String?)
+    /// - Parameter request: 인증 채널/의도를 포함한 인증 요청입니다.
+    /// - Returns: 인증에 성공한 사용자 식별 정보와 선택적 세션 토큰입니다.
+    func authenticate(_ request: AuthRequest) async throws -> (credential: AuthCredentialResult, displayNameHint: String?)
 }
 
 final class DefaultAuthRepository: AuthRepositoryProtocol {
@@ -80,20 +160,25 @@ final class DefaultAuthRepository: AuthRepositoryProtocol {
     }
 
     /// 입력된 인증 요청을 실제 인증 서비스로 위임하고 식별 정보를 반환합니다.
-    func authenticate(_ request: AuthRequest) async throws -> (identity: AuthenticatedUserIdentity, displayNameHint: String?) {
+    /// - Parameter request: 인증 채널/의도를 포함한 인증 요청입니다.
+    /// - Returns: 인증에 성공한 사용자 식별 정보와 선택적 세션 토큰입니다.
+    func authenticate(_ request: AuthRequest) async throws -> (credential: AuthCredentialResult, displayNameHint: String?) {
         switch request {
         case let .apple(identityToken, appleUserId, nameHint):
             try await credentialService.signInWithApple(identityToken: identityToken)
             return (
-                AuthenticatedUserIdentity(userId: appleUserId, email: nil),
+                AuthCredentialResult(
+                    identity: AuthenticatedUserIdentity(userId: appleUserId, email: nil),
+                    tokenSession: nil
+                ),
                 nameHint?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
             )
         case let .emailSignIn(email, password):
-            let identity = try await credentialService.signInWithEmail(email: email, password: password)
-            return (identity, email.emailNameHint)
+            let credential = try await credentialService.signInWithEmail(email: email, password: password)
+            return (credential, email.emailNameHint)
         case let .emailSignUp(email, password):
-            let identity = try await credentialService.signUpWithEmail(email: email, password: password)
-            return (identity, email.emailNameHint)
+            let credential = try await credentialService.signUpWithEmail(email: email, password: password)
+            return (credential, email.emailNameHint)
         }
     }
 }
@@ -121,12 +206,15 @@ final class DefaultAuthUseCase: AuthUseCaseProtocol {
     /// 인증 요청을 처리하고 기존 사용자/온보딩 필요 여부를 판정합니다.
     func execute(_ request: AuthRequest) async throws -> AuthUseCaseOutcome {
         let result = try await authRepository.authenticate(request)
-        sessionStore.persist(result.identity)
+        sessionStore.persist(result.credential.identity)
+        if let tokenSession = result.credential.tokenSession {
+            sessionStore.persist(tokenSession: tokenSession)
+        }
 
         let localProfileId = profileRepository.fetchUserInfo()?.id
-        let requiresOnboarding = localProfileId != result.identity.userId
+        let requiresOnboarding = localProfileId != result.credential.identity.userId
         return AuthUseCaseOutcome(
-            identity: result.identity,
+            identity: result.credential.identity,
             displayNameHint: result.displayNameHint,
             requiresOnboarding: requiresOnboarding
         )
@@ -136,10 +224,18 @@ final class DefaultAuthUseCase: AuthUseCaseProtocol {
 protocol AppleCredentialAuthServiceProtocol {
     /// Apple identity token 기반 로그인 검증을 수행합니다.
     func signInWithApple(identityToken: String) async throws
-    /// 이메일/비밀번호로 로그인하고 사용자 식별 정보를 반환합니다.
-    func signInWithEmail(email: String, password: String) async throws -> AuthenticatedUserIdentity
-    /// 이메일/비밀번호로 회원가입을 수행하고 사용자 식별 정보를 반환합니다.
-    func signUpWithEmail(email: String, password: String) async throws -> AuthenticatedUserIdentity
+    /// 이메일/비밀번호로 로그인하고 사용자 식별 정보 및 세션 토큰을 반환합니다.
+    /// - Parameters:
+    ///   - email: 로그인 이메일입니다.
+    ///   - password: 로그인 비밀번호입니다.
+    /// - Returns: 로그인 사용자 식별 정보 및 선택적 세션 토큰입니다.
+    func signInWithEmail(email: String, password: String) async throws -> AuthCredentialResult
+    /// 이메일/비밀번호로 회원가입을 수행하고 사용자 식별 정보 및 세션 토큰을 반환합니다.
+    /// - Parameters:
+    ///   - email: 회원가입 이메일입니다.
+    ///   - password: 회원가입 비밀번호입니다.
+    /// - Returns: 가입된 사용자 식별 정보 및 선택적 세션 토큰입니다.
+    func signUpWithEmail(email: String, password: String) async throws -> AuthCredentialResult
 }
 
 protocol ProfileImageRepository {
