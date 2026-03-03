@@ -28,6 +28,44 @@ struct WalkWidgetSnapshot: Codable, Equatable {
     )
 }
 
+enum TerritoryWidgetSnapshotStatus: String, Codable {
+    case memberReady = "member_ready"
+    case guestLocked = "guest_locked"
+    case emptyData = "empty_data"
+    case offlineCached = "offline_cached"
+    case syncDelayed = "sync_delayed"
+}
+
+struct TerritoryWidgetSummarySnapshot: Codable, Equatable {
+    let todayTileCount: Int
+    let weeklyTileCount: Int
+    let defenseScheduledTileCount: Int
+    let scoreUpdatedAt: TimeInterval?
+    let refreshedAt: TimeInterval
+
+    static let zero = TerritoryWidgetSummarySnapshot(
+        todayTileCount: 0,
+        weeklyTileCount: 0,
+        defenseScheduledTileCount: 0,
+        scoreUpdatedAt: nil,
+        refreshedAt: Date().timeIntervalSince1970
+    )
+}
+
+struct TerritoryWidgetSnapshot: Codable, Equatable {
+    let status: TerritoryWidgetSnapshotStatus
+    let message: String
+    let summary: TerritoryWidgetSummarySnapshot?
+    let updatedAt: TimeInterval
+
+    static let initial = TerritoryWidgetSnapshot(
+        status: .guestLocked,
+        message: "로그인 후 내 영역 현황을 위젯에서 빠르게 확인해보세요.",
+        summary: nil,
+        updatedAt: Date().timeIntervalSince1970
+    )
+}
+
 enum WalkLiveActivityAutoEndStage: String, Codable, Equatable, Hashable {
     case active = "active"
     case restCandidate = "rest_candidate"
@@ -151,6 +189,55 @@ final class DefaultWalkWidgetSnapshotStore: WalkWidgetSnapshotStoring {
     func save(_ snapshot: WalkWidgetSnapshot) {
         guard let data = try? encoder.encode(snapshot) else { return }
         storage.set(data, forKey: WalkWidgetBridgeContract.snapshotStorageKey)
+    }
+
+    /// App Group 저장소를 우선 사용하고, 실패 시 표준 저장소를 반환합니다.
+    /// - Returns: 위젯과 앱 간 공유 가능한 UserDefaults 인스턴스입니다.
+    private static func resolveStorage() -> UserDefaults {
+        UserDefaults(suiteName: WalkWidgetBridgeContract.appGroupIdentifier) ?? .standard
+    }
+}
+
+protocol TerritoryWidgetSnapshotStoring {
+    /// 영역 위젯 스냅샷을 조회합니다.
+    /// - Returns: 저장된 스냅샷이 있으면 해당 값, 없으면 기본 스냅샷을 반환합니다.
+    func load() -> TerritoryWidgetSnapshot
+
+    /// 영역 위젯 스냅샷을 저장합니다.
+    /// - Parameter snapshot: 위젯 표시용으로 직렬화할 최신 영역 스냅샷입니다.
+    func save(_ snapshot: TerritoryWidgetSnapshot)
+}
+
+final class DefaultTerritoryWidgetSnapshotStore: TerritoryWidgetSnapshotStoring {
+    static let shared = DefaultTerritoryWidgetSnapshotStore()
+
+    private let storage: UserDefaults
+    private let decoder = JSONDecoder()
+    private let encoder = JSONEncoder()
+
+    /// 영역 위젯 스냅샷 저장소를 초기화합니다.
+    /// - Parameter storage: 스냅샷 직렬화 데이터를 저장할 UserDefaults입니다.
+    init(storage: UserDefaults = DefaultTerritoryWidgetSnapshotStore.resolveStorage()) {
+        self.storage = storage
+    }
+
+    /// 영역 위젯 스냅샷을 조회합니다.
+    /// - Returns: 저장된 스냅샷이 있으면 해당 값, 없으면 기본 스냅샷을 반환합니다.
+    func load() -> TerritoryWidgetSnapshot {
+        guard
+            let data = storage.data(forKey: WalkWidgetBridgeContract.territorySnapshotStorageKey),
+            let decoded = try? decoder.decode(TerritoryWidgetSnapshot.self, from: data)
+        else {
+            return .initial
+        }
+        return decoded
+    }
+
+    /// 영역 위젯 스냅샷을 저장합니다.
+    /// - Parameter snapshot: 위젯 표시용으로 직렬화할 최신 영역 스냅샷입니다.
+    func save(_ snapshot: TerritoryWidgetSnapshot) {
+        guard let data = try? encoder.encode(snapshot) else { return }
+        storage.set(data, forKey: WalkWidgetBridgeContract.territorySnapshotStorageKey)
     }
 
     /// App Group 저장소를 우선 사용하고, 실패 시 표준 저장소를 반환합니다.
