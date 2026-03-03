@@ -129,7 +129,8 @@ struct WalkListDetailView: View {
                         SimpleMessageView(message: msg)
                             .transition(.opacity)
                     }
-                }.animation(.easeInOut(duration: 0.2))
+                }
+                .animation(.easeInOut(duration: 0.2), value: showSaveMessage)
             ).navigationBarBackButtonHidden()
         }.padding(.top, 20)
         .sheet(isPresented: $showShareSheet) {

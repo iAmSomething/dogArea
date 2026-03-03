@@ -159,13 +159,13 @@ struct MapView : View{
             recomputeBannerQueue()
             tabStatus.appear()
         }
-        .onChange(of: viewModel.walkStatusMessage) { newValue in
+        .onChange(of: viewModel.walkStatusMessage) { _, newValue in
             guard newValue != nil else { return }
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
                 viewModel.clearWalkStatusMessage()
             }
         }
-        .onChange(of: viewModel.runtimeGuardStatusText) { newValue in
+        .onChange(of: viewModel.runtimeGuardStatusText) { _, newValue in
             guard newValue.isEmpty == false else { return }
             recomputeBannerQueue()
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
@@ -173,31 +173,31 @@ struct MapView : View{
                 recomputeBannerQueue()
             }
         }
-        .onChange(of: viewModel.syncOutboxLastErrorCodeText) { _ in
+        .onChange(of: viewModel.syncOutboxLastErrorCodeText) {
             recomputeBannerQueue()
         }
-        .onChange(of: viewModel.syncOutboxPendingCount) { _ in
+        .onChange(of: viewModel.syncOutboxPendingCount) {
             recomputeBannerQueue()
         }
-        .onChange(of: viewModel.syncOutboxPermanentFailureCount) { _ in
+        .onChange(of: viewModel.syncOutboxPermanentFailureCount) {
             recomputeBannerQueue()
         }
-        .onChange(of: viewModel.hasRecoverableWalkSession) { _ in
+        .onChange(of: viewModel.hasRecoverableWalkSession) {
             recomputeBannerQueue()
         }
-        .onChange(of: viewModel.isWalking) { _ in
+        .onChange(of: viewModel.isWalking) {
             recomputeBannerQueue()
         }
-        .onChange(of: viewModel.watchSyncStatusText) { _ in
+        .onChange(of: viewModel.watchSyncStatusText) {
             recomputeBannerQueue()
         }
-        .onChange(of: viewModel.latestWatchActionText) { _ in
+        .onChange(of: viewModel.latestWatchActionText) {
             recomputeBannerQueue()
         }
-        .onChange(of: viewModel.polygonList.count) { _ in
+        .onChange(of: viewModel.polygonList.count) {
             recomputeBannerQueue()
         }
-        .onChange(of: viewModel.syncRecoveryToastMessage) { message in
+        .onChange(of: viewModel.syncRecoveryToastMessage) { _, message in
             guard let message else { return }
             viewModel.walkStatusMessage = message
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
