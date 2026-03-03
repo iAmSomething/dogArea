@@ -179,6 +179,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private let userSessionStore: UserSessionStoreProtocol
     private let authSessionStore: AuthSessionStoreProtocol
     private let preferenceStore: MapPreferenceStoreProtocol
+    private let areaCalculationService: MapAreaCalculationServicing
     private let clusterAnnotationService: MapClusterAnnotationServicing
     private let eventCenter: AppEventCenterProtocol
     private var lastCaptureHapticAt: Date = .distantPast
@@ -272,6 +273,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         userSessionStore: UserSessionStoreProtocol = DefaultUserSessionStore.shared,
         authSessionStore: AuthSessionStoreProtocol = DefaultAuthSessionStore.shared,
         preferenceStore: MapPreferenceStoreProtocol = DefaultMapPreferenceStore.shared,
+        areaCalculationService: MapAreaCalculationServicing = MapAreaCalculationService(),
         clusterAnnotationService: MapClusterAnnotationServicing = MapClusterAnnotationService(),
         eventCenter: AppEventCenterProtocol = DefaultAppEventCenter.shared
     ) {
@@ -279,6 +281,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         self.userSessionStore = userSessionStore
         self.authSessionStore = authSessionStore
         self.preferenceStore = preferenceStore
+        self.areaCalculationService = areaCalculationService
         self.clusterAnnotationService = clusterAnnotationService
         self.eventCenter = eventCenter
         super.init()
@@ -1890,49 +1893,16 @@ extension MapViewModel {
         timer = nil
     }
     func calculateArea() -> Double {
-         let points = self.polygon.locations
+        let points = self.polygon.locations
         return calculateArea(points: points)
     }
 
     func calculateArea(points: [Location]) -> Double {
-        guard points.count >= 3 else {return 0}
-        let earthRadius = 6371000.0  // in meters
-        var area: Double = 0
-        for i in 0..<points.count {
-            let currentPoint = points[i]
-            let nextPoint = points[(i + 1) % points.count]
-            
-            let latitude1 = currentPoint.coordinate.latitude * .pi / 180
-            let longitude1 = currentPoint.coordinate.longitude * .pi / 180
-            let latitude2 = nextPoint.coordinate.latitude * .pi / 180
-            let longitude2 = nextPoint.coordinate.longitude * .pi / 180
-            
-            let x1 = earthRadius * cos(latitude1) * cos(longitude1)
-            let y1 = earthRadius * cos(latitude1) * sin(longitude1)
-            let x2 = earthRadius * cos(latitude2) * cos(longitude2)
-            let y2 = earthRadius * cos(latitude2) * sin(longitude2)
-            
-            area += (x1 * y2 - x2 * y1) / 2
-        }
-        return abs(area)
+        areaCalculationService.calculateArea(points: points)
     }
     func calculatedAreaString(areaSize: Double? = nil , isPyong: Bool = false) -> String {
         let area = areaSize ?? calculateArea()
-        var str = String(format: "%.2f" , area) + "㎡"
-        if area > 10000.0 {
-            str = String(format: "%.2f" , area/10000) + "만 ㎡"
-        }
-        if area > 100000.0 {
-            str = String(format: "%.2f" , area/1000000) + "k㎡"
-        }
-        if isPyong {
-            if area/3.3 > 10000 {
-                str = String(format: "%.1f" , area/33333) + "만 평"
-            } else {
-                str = String(format: "%.1f" , area/3.3) + "평"
-            }
-        }
-        return str
+        return areaCalculationService.formattedAreaString(area: area, isPyong: isPyong)
     }
 }
 //MARK: - CLLocation 관련 로직
