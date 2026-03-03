@@ -278,6 +278,18 @@ erDiagram
 - 운영 관측:
   - `view_season_batch_status_14d`
 
+### 4.12 게임 레이어 KPI 대시보드(7d/24h)
+- `view_game_layer_kpis_7d`
+  - 최근 7일 KPI:
+    - `quest_completion_rate_7d`
+    - `quest_claim_duplicate_rate_7d`
+    - `season_participation_rate_7d`
+    - `rival_opt_in_rate_7d`
+    - `weather_replacement_acceptance_rate_7d`
+  - 최근 24시간 KPI:
+    - `sync_auth_refresh_failure_rate_24h`
+  - 운영/QA에서 단일 뷰 조회로 릴리즈 게이트 지표를 확인
+
 ## 5. RLS 정책 원칙
 - 사용자 데이터는 `auth.uid()` 소유 범위로만 접근
 - `area_references`는 읽기 공개(`anon`, `authenticated`)
@@ -314,6 +326,8 @@ erDiagram
   - `select`: 소유자
   - write: 서비스 경로(RPC/service role)
 - `view_weather_feedback_kpis_7d`
+  - `select`: 공개(운영 관측용)
+- `view_game_layer_kpis_7d`
   - `select`: 공개(운영 관측용)
 - `weather_replacement_runtime_policies`, `weather_replacement_mappings`
   - `select`: 공개(정책/매핑 조회)

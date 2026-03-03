@@ -55,6 +55,19 @@
 - `weather_feedback_submitted` 24h 급감(평균 대비 50% 이하): 피드백 파이프라인 경보(P2)
 - `sync_auth_refresh_failure_rate_24h > 0.03`: 인증 세션 경보(P1)
 
+### 4.3 단일 조회 뷰(운영/QA 공통)
+- `public.view_game_layer_kpis_7d`
+- 집계 기간:
+  - `quest_*`, `season_*`, `rival_*`, `weather_*` 지표는 최근 7일
+  - `sync_auth_refresh_failure_rate_24h`는 최근 24시간
+- 산식:
+  - `quest_completion_rate_7d = quest_reward_claimed / quest_progress_applied`
+  - `quest_claim_duplicate_rate_7d = quest_claim_duplicate_blocked / (quest_reward_claimed + quest_claim_duplicate_blocked)`
+  - `season_participation_rate_7d = season_participated_users / game_layer_active_users`
+  - `rival_opt_in_rate_7d = rival_opt_in_users / rival_touched_users`
+  - `weather_replacement_acceptance_rate_7d = weather_replacement_applied / (weather_replacement_applied + weather_shield_consumed)`
+  - `sync_auth_refresh_failure_rate_24h = sync_auth_refresh_failed / (sync_auth_refresh_failed + sync_auth_refresh_succeeded)`
+
 ## 5. QA 시나리오 게이트
 ### 5.1 공통 E2E
 1. 로그인(이메일) 후 앱 재실행 시 자동 로그인 유지 확인
@@ -71,7 +84,7 @@
 ## 6. 운영 런북 연결
 - 마이그레이션/운영 SQL: `docs/supabase-migration.md`
 - 릴리즈 회귀 게이트: `docs/release-regression-checklist-v1.md`
-- 에픽 추적: `#123`, 실행 태스크: `#206`
+- 에픽 추적: `#123`, 실행 태스크: `#206`, `#247`
 
 ## 7. 변경 관리
 - 본 문서 변경 시 `scripts/game_layer_observability_qa_unit_check.swift`를 함께 갱신한다.
