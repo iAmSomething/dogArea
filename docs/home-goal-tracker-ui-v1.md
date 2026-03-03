@@ -6,6 +6,9 @@
 연결 이슈:
 - 문서/구현: #67
 
+연결 문서:
+- `docs/territory-goal-view-detail-ui-v1.md` (홈 요약 카드와 상세 화면 역할 분리 스펙)
+
 ## 2. UI 정책
 - 제거:
   - 홈의 비활성 `inline Picker`
