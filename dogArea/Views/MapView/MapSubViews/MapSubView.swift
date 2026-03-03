@@ -54,7 +54,7 @@ struct MapSubView: View {
                 Annotation("", coordinate: currentLoc.coordinate) {
                     Circle().foregroundStyle(Color.appHotPink)
                         .frame(width: 20, height: 20)
-                        .animation(.linear(duration: 1), value: currentLoc.coordinate)
+                        .animation(.linear(duration: 1), value: currentLoc.timestamp)
                         .shadow(radius: 5)
                 }
             }

@@ -18,9 +18,6 @@ struct MapAlertSubView: View {
         ca = CustomAlert(presentAlert: $myAlert.isAlert,
                          alertModel: myAlert.alertType.model,
                          leftButtonAction: {
-          if let cam = viewModel.cameraPosition.camera {
-//            print("\(cam.centerCoordinate.latitude), \(cam.centerCoordinate.longitude)")
-          }
           viewModel.addLocation()
         },rightButtonAction: {
 //            print("right")

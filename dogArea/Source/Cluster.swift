@@ -12,7 +12,8 @@ struct Cluster: Equatable, CustomStringConvertible {
         return "센터 : \(self.center)\n 하위 클러스터 : \(sumLocs.count)개"
     }
     static func == (lhs: Cluster, rhs: Cluster) -> Bool {
-        lhs.center == rhs.center
+        lhs.center.latitude == rhs.center.latitude &&
+        lhs.center.longitude == rhs.center.longitude
     }
     var sumLocs: [(CLLocationCoordinate2D, UUID)]
     var center: CLLocationCoordinate2D
@@ -30,7 +31,7 @@ struct Cluster: Equatable, CustomStringConvertible {
         center = CLLocationCoordinate2D(latitude: sumloc.latitude / Double(count), longitude: sumloc.longitude / Double(count))
     }
 }
-final class Hiarachical: Operation {
+final class Hiarachical: Operation, @unchecked Sendable {
     private var polygons: [Polygon]
     private var distance: Double
     var clusters: [Cluster]

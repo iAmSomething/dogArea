@@ -160,6 +160,18 @@ struct HeatmapCellDTO: Identifiable, Equatable {
         let level = Int(ceil(score * 5.0) - 1.0)
         return min(4, max(0, level))
     }
+
+    /// Compares two heatmap cells by geohash, normalized score, and center coordinate values.
+    /// - Parameters:
+    ///   - lhs: The left-hand heatmap cell to compare.
+    ///   - rhs: The right-hand heatmap cell to compare.
+    /// - Returns: `true` when all semantic fields represent the same heatmap cell.
+    static func == (lhs: HeatmapCellDTO, rhs: HeatmapCellDTO) -> Bool {
+        lhs.geohash == rhs.geohash &&
+        lhs.score == rhs.score &&
+        lhs.centerCoordinate.latitude == rhs.centerCoordinate.latitude &&
+        lhs.centerCoordinate.longitude == rhs.centerCoordinate.longitude
+    }
 }
 
 struct NearbyHotspotDTO: Identifiable, Equatable {
@@ -169,6 +181,19 @@ struct NearbyHotspotDTO: Identifiable, Equatable {
     let centerCoordinate: CLLocationCoordinate2D
 
     var id: String { geohash }
+
+    /// Compares two nearby hotspots by bucket identity, metrics, and center coordinate values.
+    /// - Parameters:
+    ///   - lhs: The left-hand hotspot to compare.
+    ///   - rhs: The right-hand hotspot to compare.
+    /// - Returns: `true` when both hotspots describe the same aggregated result.
+    static func == (lhs: NearbyHotspotDTO, rhs: NearbyHotspotDTO) -> Bool {
+        lhs.geohash == rhs.geohash &&
+        lhs.count == rhs.count &&
+        lhs.intensity == rhs.intensity &&
+        lhs.centerCoordinate.latitude == rhs.centerCoordinate.latitude &&
+        lhs.centerCoordinate.longitude == rhs.centerCoordinate.longitude
+    }
 }
 
 enum HeatmapEngine {
