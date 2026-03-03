@@ -341,6 +341,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private var lastSyncFlushAt: Date = .distantPast
     private var lastSyncSummarySnapshot: SyncOutboxSummary? = nil
     private var lastWidgetSnapshotSyncAt: Date = .distantPast
+    private var lastLiveActivitySyncAt: Date = .distantPast
+    private var liveActivitySyncTask: Task<Void, Never>? = nil
+    private var lastLiveActivityFallbackReason: WalkLiveActivityFallbackReason? = nil
     private var syncFlushTask: Task<Void, Never>? = nil
     private let syncOutbox = SyncOutboxStore.shared
     private let syncTransport = SupabaseSyncOutboxTransport()
@@ -352,6 +355,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private let areaCalculationService: MapAreaCalculationServicing
     private let clusterAnnotationService: MapClusterAnnotationServicing
     private let widgetSnapshotStore: WalkWidgetSnapshotStoring
+    private let liveActivityService: WalkLiveActivityServicing
     private let eventCenter: AppEventCenterProtocol
     private var lastCaptureHapticAt: Date = .distantPast
     private var lastWarningHapticAt: Date = .distantPast
@@ -361,6 +365,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private var weatherFetchTask: Task<Void, Never>? = nil
     private var lastWeatherFetchAttemptAt: Date = .distantPast
     private let widgetSnapshotSyncInterval: TimeInterval = 5.0
+    private let liveActivitySyncInterval: TimeInterval = 2.0
 
     private enum WatchIncomingAction: String {
         case startWalk
@@ -451,6 +456,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         areaCalculationService: MapAreaCalculationServicing = MapAreaCalculationService(),
         clusterAnnotationService: MapClusterAnnotationServicing = MapClusterAnnotationService(),
         widgetSnapshotStore: WalkWidgetSnapshotStoring = DefaultWalkWidgetSnapshotStore.shared,
+        liveActivityService: WalkLiveActivityServicing = WalkLiveActivityService(),
         eventCenter: AppEventCenterProtocol = DefaultAppEventCenter.shared
     ) {
         self.walkRepository = walkRepository
@@ -461,6 +467,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         self.areaCalculationService = areaCalculationService
         self.clusterAnnotationService = clusterAnnotationService
         self.widgetSnapshotStore = widgetSnapshotStore
+        self.liveActivityService = liveActivityService
         self.eventCenter = eventCenter
         super.init()
         self.locationManager.delegate = self
@@ -499,11 +506,13 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         self.refreshWeatherOverlayRisk()
         self.refreshWeatherRiskFromProviderIfNeeded(location: self.locationManager.location, force: true)
         self.syncWalkWidgetSnapshot(force: true)
+        self.syncWalkLiveActivity(force: true)
     }
 
     deinit {
         timer?.invalidate()
         nearbyTickTimer?.invalidate()
+        liveActivitySyncTask?.cancel()
         syncFlushTask?.cancel()
         weatherFetchTask?.cancel()
         lifecycleObservers.forEach { eventCenter.removeObserver($0) }
@@ -622,6 +631,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         }
         self.syncWatchContext(force: true)
         self.syncWalkWidgetSnapshot(force: true)
+        self.syncWalkLiveActivity(force: true)
     }
 
     func startWalkNow() {
@@ -645,6 +655,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         }
         syncWatchContext(force: true)
         syncWalkWidgetSnapshot(force: true)
+        syncWalkLiveActivity(force: true)
     }
 
     func toggleWalkStartCountdown() {
@@ -950,6 +961,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         syncWatchContext(force: true)
         walkStatusMessage = "위치 권한이 해제되어 산책을 안전 일시중지했습니다."
         setRuntimeGuardStatus("권한 강등 감지로 세션 일시중지")
+        syncWalkWidgetSnapshot(force: true, statusOverride: .locationDenied, messageOverride: walkStatusMessage)
+        syncWalkLiveActivity(force: true)
     }
 
     private func prepareRecoverableSessionIfNeeded() {
@@ -1072,6 +1085,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         walkStatusMessage = autoRecovered ? "산책 세션을 자동 복구했습니다." : "이전 산책 세션을 복구했습니다."
         setRuntimeGuardStatus("세션 복구 완료")
         syncWatchContext(force: true)
+        syncWalkWidgetSnapshot(force: true)
+        syncWalkLiveActivity(force: true)
     }
 
     func discardRecoverableWalkSession() {
@@ -1085,6 +1100,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         recoverableWalkSummaryText = ""
         recoverableWalkEstimateText = ""
         clearActiveWalkSession()
+        syncWalkWidgetSnapshot(force: true)
+        syncWalkLiveActivity(force: true)
     }
 
     func finalizeRecoverableWalkSessionEstimated() {
@@ -1178,6 +1195,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             )
             applyPolygonList(updated)
             clearActiveWalkSession()
+            syncWalkWidgetSnapshot(force: true)
+            syncWalkLiveActivity(force: true)
         } else {
             walkStatusMessage = "미종료 산책 종료 저장에 실패했습니다."
             metricTracker.track(
@@ -1264,12 +1283,14 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             didNotifyInactivityWarning = true
             walkStatusMessage = "12분 무이동: 3분 후 자동 종료 예정입니다."
             triggerWarningHapticIfNeeded()
+            syncWalkLiveActivity(force: true)
             return
         }
 
         if inactivity >= restCandidateInterval, didNotifyRestCandidate == false {
             didNotifyRestCandidate = true
             walkStatusMessage = "5분 무이동: 휴식 상태로 감지했습니다."
+            syncWalkLiveActivity(force: true)
         }
     }
 
@@ -1283,6 +1304,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             self?.flushSyncOutboxIfNeeded(force: true)
             self?.syncVisibilitySettingIfNeeded()
             self?.refreshWeatherOverlayRisk()
+            self?.syncWalkLiveActivity(force: true)
         }
         let willResign = eventCenter.addObserver(
             forName: UIApplication.willResignActiveNotification,
@@ -1334,6 +1356,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         }
         persistActiveWalkSession(force: true)
         syncWatchContext(force: true)
+        syncWalkWidgetSnapshot()
+        syncWalkLiveActivity()
         compactMapMotionArtifacts(now: recordedAt)
         eventCenter.post(
             name: .walkPointRecordedForQuest,
@@ -1949,6 +1973,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
                 payload: ["action": route.kind.rawValue, "source": route.source]
             )
             syncWalkWidgetSnapshot(force: true)
+            syncWalkLiveActivity(force: true)
 
         case .endWalk:
             guard isWalking else {
@@ -1969,6 +1994,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
                 payload: ["action": route.kind.rawValue, "source": route.source]
             )
             syncWalkWidgetSnapshot(force: true)
+            syncWalkLiveActivity(force: true)
         }
     }
 
@@ -2015,6 +2041,82 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         lastWidgetSnapshotSyncAt = now
     }
 
+    /// 현재 자동 종료 정책 기준으로 Live Activity 단계 값을 계산합니다.
+    /// - Parameter now: 단계 계산 기준 시각입니다.
+    /// - Returns: 무이동 정책(5/12/15분)에 매핑된 단계 값입니다.
+    private func currentAutoEndStage(now: Date = Date()) -> WalkLiveActivityAutoEndStage {
+        guard isWalking else { return .ended }
+        let baseline = lastMovementAt ?? lastPointEventAt ?? startTime
+        let inactivity = max(0, now.timeIntervalSince(baseline))
+        if inactivity >= inactivityFinalizeInterval { return .autoEnding }
+        if inactivity >= inactivityWarningInterval { return .warning }
+        if inactivity >= restCandidateInterval { return .restCandidate }
+        return .active
+    }
+
+    /// 현재 ViewModel 상태를 Live Activity 서비스용 상태 모델로 변환합니다.
+    /// - Parameter now: 상태 스냅샷 기준 시각입니다.
+    /// - Returns: 세션 식별자/경과시간/포인트/자동종료 단계를 포함한 상태입니다.
+    private func makeWalkLiveActivityState(now: Date = Date()) -> WalkLiveActivityState {
+        WalkLiveActivityState(
+            sessionId: polygon.id.uuidString.lowercased(),
+            startedAt: startTime.timeIntervalSince1970,
+            isWalking: isWalking,
+            elapsedSeconds: Int(max(0, time.rounded(.down))),
+            pointCount: polygon.locations.count,
+            petName: currentWalkingPetName,
+            autoEndStage: currentAutoEndStage(now: now),
+            statusMessage: walkStatusMessage,
+            updatedAt: now.timeIntervalSince1970
+        )
+    }
+
+    /// Live Activity/대체 알림 상태를 주기적으로 동기화합니다.
+    /// - Parameter force: `true`면 최소 간격 제한 없이 즉시 동기화합니다.
+    private func syncWalkLiveActivity(force: Bool = false) {
+        let now = Date()
+        if force == false, now.timeIntervalSince(lastLiveActivitySyncAt) < liveActivitySyncInterval {
+            return
+        }
+        guard liveActivitySyncTask == nil else { return }
+        let state = makeWalkLiveActivityState(now: now)
+        lastLiveActivitySyncAt = now
+
+        liveActivitySyncTask = Task { [weak self] in
+            guard let self else { return }
+            let result: WalkLiveActivityServiceResult
+            if state.isWalking {
+                result = await liveActivityService.sync(state: state)
+            } else {
+                result = await liveActivityService.end(state: state, dismissImmediately: false)
+            }
+            await MainActor.run {
+                self.applyWalkLiveActivityResult(result)
+                self.liveActivitySyncTask = nil
+            }
+        }
+    }
+
+    /// Live Activity 동기화 결과를 배너 메시지 상태에 반영합니다.
+    /// - Parameter result: Live Activity 서비스 처리 결과입니다.
+    private func applyWalkLiveActivityResult(_ result: WalkLiveActivityServiceResult) {
+        switch result {
+        case .liveActivity, .ended:
+            lastLiveActivityFallbackReason = nil
+        case let .fallback(reason):
+            guard lastLiveActivityFallbackReason != reason else { return }
+            lastLiveActivityFallbackReason = reason
+            switch reason {
+            case .unsupportedOS:
+                walkStatusMessage = "Live Activity 미지원 환경이라 일반 알림으로 대체합니다."
+            case .activitiesDisabled:
+                walkStatusMessage = "Live Activity가 비활성화되어 일반 알림 + 앱 배너로 안내합니다."
+            case .requestFailed:
+                walkStatusMessage = "Live Activity 생성에 실패해 일반 알림으로 대체했습니다."
+            }
+        }
+    }
+
     func reloadSelectedPetContext() {
         let userInfo = userSessionStore.currentUserInfo()
         self.availablePets = userInfo?.pet ?? []
@@ -2025,6 +2127,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             self.currentWalkingPetName = self.selectedPetName
         }
         syncWalkWidgetSnapshot(force: true)
+        syncWalkLiveActivity(force: true)
     }
 
     var hasSelectedPet: Bool {
@@ -2253,6 +2356,7 @@ extension MapViewModel {
             self.persistActiveWalkSession()
             self.syncWatchContext()
             self.syncWalkWidgetSnapshot()
+            self.syncWalkLiveActivity()
             if self.time >= self.walkAutoTimeoutInterval {
                 self.forceQuit()
                 return
@@ -2284,19 +2388,23 @@ extension MapViewModel {
         case .notDetermined:
             locationManager.requestAlwaysAuthorization()
             syncWalkWidgetSnapshot(force: true)
+            syncWalkLiveActivity(force: true)
         case .restricted, .denied:
             pauseWalkForAuthorizationDowngrade()
             syncWalkWidgetSnapshot(force: true, statusOverride: .locationDenied)
+            syncWalkLiveActivity(force: true)
         case .authorizedAlways, .authorizedWhenInUse:
             if isWalking {
                 syncWatchContext(force: true)
             }
             refreshWeatherRiskFromProviderIfNeeded(location: manager.location, force: true)
             syncWalkWidgetSnapshot(force: true)
+            syncWalkLiveActivity(force: true)
             
         @unknown default:
             locationManager.requestAlwaysAuthorization()
             syncWalkWidgetSnapshot(force: true, statusOverride: .error, messageOverride: "위치 권한 상태를 확인해주세요.")
+            syncWalkLiveActivity(force: true)
         }
     }
     func locationManager(_ manager: CLLocationManager, didStartMonitoringFor region: CLRegion) {

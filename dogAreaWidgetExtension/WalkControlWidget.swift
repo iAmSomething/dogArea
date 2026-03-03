@@ -1,5 +1,8 @@
 import WidgetKit
 import SwiftUI
+#if canImport(ActivityKit)
+import ActivityKit
+#endif
 
 struct WalkControlTimelineEntry: TimelineEntry {
     let date: Date
@@ -57,7 +60,7 @@ struct WalkControlWidgetEntryView: View {
             HStack(spacing: 6) {
                 Image(systemName: "clock")
                     .foregroundStyle(.secondary)
-                Text(formattedElapsed(entry.snapshot.elapsedSeconds))
+                Text(Self.formattedElapsed(entry.snapshot.elapsedSeconds))
                     .font(.system(.body, design: .rounded).monospacedDigit())
             }
 
@@ -93,7 +96,7 @@ struct WalkControlWidgetEntryView: View {
     /// 경과 시간을 `HH:MM:SS` 형식으로 변환합니다.
     /// - Parameter elapsedSeconds: 경과 시간(초)입니다.
     /// - Returns: 위젯 표시용 시간 문자열입니다.
-    private func formattedElapsed(_ elapsedSeconds: Int) -> String {
+    fileprivate static func formattedElapsed(_ elapsedSeconds: Int) -> String {
         let total = max(0, elapsedSeconds)
         let hours = total / 3600
         let minutes = (total % 3600) / 60
@@ -114,6 +117,126 @@ struct WalkControlWidget: Widget {
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }
+
+#if canImport(ActivityKit)
+@available(iOSApplicationExtension 16.1, *)
+private struct WalkLiveActivityView: View {
+    let context: ActivityViewContext<WalkLiveActivityAttributes>
+
+    private var endRouteURL: URL? {
+        WalkWidgetActionRoute(
+            kind: .endWalk,
+            actionId: "live.end.\(Int(Date().timeIntervalSince1970))",
+            source: "live_activity"
+        ).makeURL()
+    }
+
+    private var openRouteURL: URL? {
+        WalkWidgetActionRoute(
+            kind: .startWalk,
+            actionId: "live.open.\(Int(Date().timeIntervalSince1970))",
+            source: "live_activity"
+        ).makeURL()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(context.state.petName)
+                    .font(.headline)
+                    .lineLimit(1)
+                Spacer(minLength: 8)
+                Text(context.state.autoEndStage.title)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            HStack(spacing: 10) {
+                Label(Self.formattedElapsed(context.state.elapsedSeconds), systemImage: "clock")
+                    .font(.system(.body, design: .rounded).monospacedDigit())
+                Label("포인트 \(context.state.pointCount)", systemImage: "mappin.and.ellipse")
+                    .font(.subheadline)
+            }
+            if let message = context.state.statusMessage,
+               message.isEmpty == false {
+                Text(message)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+            HStack(spacing: 8) {
+                if #available(iOSApplicationExtension 17.0, *) {
+                    Button(intent: EndWalkIntent()) {
+                        Label("종료", systemImage: "stop.fill")
+                            .font(.caption)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.red)
+                } else if let endRouteURL {
+                    Link(destination: endRouteURL) {
+                        Label("종료", systemImage: "stop.fill")
+                            .font(.caption)
+                    }
+                }
+
+                if let openRouteURL {
+                    Link(destination: openRouteURL) {
+                        Label("앱 열기", systemImage: "arrow.up.right.square")
+                            .font(.caption)
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .activityBackgroundTint(Color(.systemBackground))
+        .activitySystemActionForegroundColor(.primary)
+    }
+
+    /// 경과 시간을 `HH:MM:SS` 형식 문자열로 변환합니다.
+    /// - Parameter elapsedSeconds: 경과 시간(초)입니다.
+    /// - Returns: Live Activity 표시용 시간 문자열입니다.
+    fileprivate static func formattedElapsed(_ elapsedSeconds: Int) -> String {
+        let total = max(0, elapsedSeconds)
+        let hours = total / 3600
+        let minutes = (total % 3600) / 60
+        let seconds = total % 60
+        return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
+    }
+}
+
+@available(iOSApplicationExtension 16.1, *)
+struct WalkLiveActivityWidget: Widget {
+    var body: some WidgetConfiguration {
+        ActivityConfiguration(for: WalkLiveActivityAttributes.self) { context in
+            WalkLiveActivityView(context: context)
+        } dynamicIsland: { context in
+            DynamicIsland {
+                DynamicIslandExpandedRegion(.leading) {
+                    Text(context.state.petName)
+                        .font(.caption)
+                }
+                DynamicIslandExpandedRegion(.trailing) {
+                    Text(context.state.autoEndStage.title)
+                        .font(.caption2)
+                        .lineLimit(1)
+                }
+                DynamicIslandExpandedRegion(.center) {
+                    Text(WalkLiveActivityView.formattedElapsed(context.state.elapsedSeconds))
+                        .font(.system(.headline, design: .rounded).monospacedDigit())
+                }
+            } compactLeading: {
+                Text("🐾")
+            } compactTrailing: {
+                Text("\(context.state.pointCount)")
+            } minimal: {
+                Image(systemName: "figure.walk")
+            }
+            .keylineTint(.orange)
+        }
+    }
+}
+#endif
 
 #Preview(as: .systemSmall) {
     WalkControlWidget()

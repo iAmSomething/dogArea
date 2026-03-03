@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(ActivityKit)
+import ActivityKit
+#endif
 
 enum WalkWidgetSnapshotStatus: String, Codable {
     case ready = "ready"
@@ -24,6 +27,89 @@ struct WalkWidgetSnapshot: Codable, Equatable {
         updatedAt: Date().timeIntervalSince1970
     )
 }
+
+enum WalkLiveActivityAutoEndStage: String, Codable, Equatable, Hashable {
+    case active = "active"
+    case restCandidate = "rest_candidate"
+    case warning = "warning"
+    case autoEnding = "auto_ending"
+    case ended = "ended"
+
+    var title: String {
+        switch self {
+        case .active:
+            return "정상 기록 중"
+        case .restCandidate:
+            return "휴식 후보 (5분)"
+        case .warning:
+            return "자동 종료 경고 (12분)"
+        case .autoEnding:
+            return "자동 종료 단계 (15분)"
+        case .ended:
+            return "산책 종료"
+        }
+    }
+
+    var fallbackNotificationBody: String {
+        switch self {
+        case .active:
+            return "산책 상태가 정상적으로 기록되고 있어요."
+        case .restCandidate:
+            return "5분 무이동 상태예요. 산책을 이어가면 단계가 해제돼요."
+        case .warning:
+            return "12분 무이동 상태예요. 3분 뒤 자동 종료될 수 있어요."
+        case .autoEnding:
+            return "15분 무이동으로 자동 종료 단계가 적용됐어요."
+        case .ended:
+            return "산책 세션이 종료됐어요."
+        }
+    }
+}
+
+struct WalkLiveActivityState: Equatable {
+    let sessionId: String
+    let startedAt: TimeInterval
+    let isWalking: Bool
+    let elapsedSeconds: Int
+    let pointCount: Int
+    let petName: String
+    let autoEndStage: WalkLiveActivityAutoEndStage
+    let statusMessage: String?
+    let updatedAt: TimeInterval
+}
+
+#if canImport(ActivityKit)
+@available(iOS 16.1, *)
+struct WalkLiveActivityAttributes: ActivityAttributes {
+    struct ContentState: Codable, Hashable {
+        let elapsedSeconds: Int
+        let pointCount: Int
+        let petName: String
+        let autoEndStage: WalkLiveActivityAutoEndStage
+        let statusMessage: String?
+        let updatedAt: TimeInterval
+    }
+
+    let sessionId: String
+    let startedAt: TimeInterval
+}
+
+@available(iOS 16.1, *)
+extension WalkLiveActivityState {
+    /// Live Activity 업데이트에 필요한 ContentState를 생성합니다.
+    /// - Returns: 경과 시간/포인트/자동종료 단계를 포함한 상태 payload입니다.
+    func makeContentState() -> WalkLiveActivityAttributes.ContentState {
+        WalkLiveActivityAttributes.ContentState(
+            elapsedSeconds: elapsedSeconds,
+            pointCount: pointCount,
+            petName: petName,
+            autoEndStage: autoEndStage,
+            statusMessage: statusMessage,
+            updatedAt: updatedAt
+        )
+    }
+}
+#endif
 
 protocol WalkWidgetSnapshotStoring {
     /// 위젯 스냅샷을 조회합니다.
@@ -73,4 +159,3 @@ final class DefaultWalkWidgetSnapshotStore: WalkWidgetSnapshotStoring {
         UserDefaults(suiteName: WalkWidgetBridgeContract.appGroupIdentifier) ?? .standard
     }
 }
-

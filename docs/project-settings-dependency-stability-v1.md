@@ -9,7 +9,7 @@
 ## 2. 기준 툴체인/타깃
 - Xcode 기준: `LastUpgradeCheck = 1500` (Xcode 15 계열 기준)
 - Swift 언어 버전: `SWIFT_VERSION = 5.0`
-- iOS 최소 버전: `IPHONEOS_DEPLOYMENT_TARGET = 17.0`
+- iOS 최소 버전: `IPHONEOS_DEPLOYMENT_TARGET = 18.0`
 - watchOS 최소 버전: `WATCHOS_DEPLOYMENT_TARGET = 10.2`
 
 ## 3. 공통 빌드 스킴 기준
