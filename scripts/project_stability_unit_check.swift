@@ -22,7 +22,7 @@ let script = load("scripts/ios_pr_check.sh")
 let doc = load("docs/project-settings-dependency-stability-v1.md")
 let readme = load("README.md")
 
-assertTrue(pbxproj.contains("IPHONEOS_DEPLOYMENT_TARGET = 17.0;"), "project should pin iOS deployment target 17.0")
+assertTrue(pbxproj.contains("IPHONEOS_DEPLOYMENT_TARGET = 18.0;"), "project should pin iOS deployment target 18.0")
 assertTrue(pbxproj.contains("WATCHOS_DEPLOYMENT_TARGET = 10.2;"), "project should pin watchOS deployment target 10.2")
 assertTrue(pbxproj.contains("SWIFT_VERSION = 5.0;"), "project should pin Swift version 5.0")
 assertTrue(pbxproj.contains("path = dogAreaSplash.json;"), "project should use repo-relative splash animation path")
