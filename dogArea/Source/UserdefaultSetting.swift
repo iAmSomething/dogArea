@@ -567,18 +567,11 @@ final class FeatureFlagStore {
         let flags: [FeatureFlagRowDTO]
     }
 
-    private let lock = NSLock()
+    private let stateQueue = DispatchQueue(label: "com.th.dogArea.feature-flag-store.state")
     private let cacheStorageKey = "feature.flags.cache.v1"
     private let appInstanceStorageKey = "feature.flags.appInstance.v1"
     private var cached: [String: FeatureFlagValue] = [:]
-    private lazy var appInstance: String = {
-        if let existing = UserDefaults.standard.string(forKey: appInstanceStorageKey), existing.isEmpty == false {
-            return existing
-        }
-        let generated = UUID().uuidString.lowercased()
-        UserDefaults.standard.set(generated, forKey: appInstanceStorageKey)
-        return generated
-    }()
+    private let appInstance: String
 
     private let defaults: [String: FeatureFlagValue] = [
         AppFeatureFlagKey.heatmapV1.rawValue: .init(isEnabled: true, rolloutPercent: 100, updatedAt: nil),
@@ -590,16 +583,17 @@ final class FeatureFlagStore {
     ]
 
     private init() {
+        appInstance = Self.loadOrCreateAppInstance(storageKey: appInstanceStorageKey)
         loadCachedFlags()
     }
 
     var appInstanceId: String { appInstance }
 
     func isEnabled(_ key: AppFeatureFlagKey) -> Bool {
-        lock.lock()
-        defer { lock.unlock() }
-        let flag = cached[key.rawValue] ?? defaults[key.rawValue] ?? .init(isEnabled: true, rolloutPercent: 100, updatedAt: nil)
-        return isEnabled(flag: flag, key: key.rawValue)
+        stateQueue.sync {
+            let flag = cached[key.rawValue] ?? defaults[key.rawValue] ?? .init(isEnabled: true, rolloutPercent: 100, updatedAt: nil)
+            return isEnabled(flag: flag, key: key.rawValue)
+        }
     }
 
     @discardableResult
@@ -613,10 +607,10 @@ final class FeatureFlagStore {
             let newValues = Dictionary(uniqueKeysWithValues: decoded.flags.map {
                 ($0.key, FeatureFlagValue(isEnabled: $0.isEnabled, rolloutPercent: $0.rolloutPercent, updatedAt: $0.updatedAt))
             })
-            lock.lock()
-            cached.merge(newValues) { _, latest in latest }
-            persistCachedFlags()
-            lock.unlock()
+            stateQueue.sync {
+                cached.merge(newValues) { _, latest in latest }
+                persistCachedFlags()
+            }
             return true
         } catch {
             return false
@@ -636,6 +630,15 @@ final class FeatureFlagStore {
         let digest = SHA256.hash(data: Data(seed.utf8))
         guard let first = Array(digest).first else { return 0 }
         return Int(first) % 100
+    }
+
+    private static func loadOrCreateAppInstance(storageKey: String) -> String {
+        if let existing = UserDefaults.standard.string(forKey: storageKey), existing.isEmpty == false {
+            return existing
+        }
+        let generated = UUID().uuidString.lowercased()
+        UserDefaults.standard.set(generated, forKey: storageKey)
+        return generated
     }
 
     private func loadCachedFlags() {
@@ -764,7 +767,7 @@ protocol SyncOutboxTransporting {
 final class SyncOutboxStore {
     static let shared = SyncOutboxStore()
 
-    private let lock = NSLock()
+    private let stateQueue = DispatchQueue(label: "com.th.dogArea.sync-outbox-store.state")
     private let storageKey = "sync.outbox.items.v1"
     private var items: [SyncOutboxItem] = []
     private let maxItems = 500
@@ -820,49 +823,49 @@ final class SyncOutboxStore {
             ),
         ]
 
-        lock.lock()
-        var mutableItems = items
-        stagePayloads.forEach { stage, payload in
-            let idempotencyKey = "\(baseKey)-\(stage.rawValue)"
-            let exists = mutableItems.contains(where: { $0.idempotencyKey == idempotencyKey })
-            guard exists == false else { return }
-            mutableItems.append(
-                SyncOutboxItem(
-                    id: UUID().uuidString.lowercased(),
-                    walkSessionId: sessionId,
-                    stage: stage,
-                    idempotencyKey: idempotencyKey,
-                    payload: payload,
-                    status: .queued,
-                    retryCount: 0,
-                    nextRetryAt: now,
-                    lastErrorCode: nil,
-                    createdAt: now,
-                    updatedAt: now
+        stateQueue.sync {
+            var mutableItems = items
+            stagePayloads.forEach { stage, payload in
+                let idempotencyKey = "\(baseKey)-\(stage.rawValue)"
+                let exists = mutableItems.contains(where: { $0.idempotencyKey == idempotencyKey })
+                guard exists == false else { return }
+                mutableItems.append(
+                    SyncOutboxItem(
+                        id: UUID().uuidString.lowercased(),
+                        walkSessionId: sessionId,
+                        stage: stage,
+                        idempotencyKey: idempotencyKey,
+                        payload: payload,
+                        status: .queued,
+                        retryCount: 0,
+                        nextRetryAt: now,
+                        lastErrorCode: nil,
+                        createdAt: now,
+                        updatedAt: now
+                    )
                 )
-            )
+            }
+            if mutableItems.count > maxItems {
+                let overflow = mutableItems.count - maxItems
+                let removable = mutableItems
+                    .enumerated()
+                    .filter { _, item in item.status == .completed || item.status == .permanentFailed }
+                    .prefix(overflow)
+                    .map(\.offset)
+                removable.reversed().forEach { mutableItems.remove(at: $0) }
+            }
+            items = mutableItems
+            persistLocked()
         }
-        if mutableItems.count > maxItems {
-            let overflow = mutableItems.count - maxItems
-            let removable = mutableItems
-                .enumerated()
-                .filter { _, item in item.status == .completed || item.status == .permanentFailed }
-                .prefix(overflow)
-                .map(\.offset)
-            removable.reversed().forEach { mutableItems.remove(at: $0) }
-        }
-        items = mutableItems
-        persistLocked()
-        lock.unlock()
     }
 
     func summary() -> SyncOutboxSummary {
-        lock.lock()
-        defer { lock.unlock() }
-        let pending = items.filter { $0.status == .queued || $0.status == .retrying || $0.status == .processing }.count
-        let permanent = items.filter { $0.status == .permanentFailed }.count
-        let lastError = items.reversed().compactMap(\.lastErrorCode).first
-        return SyncOutboxSummary(pendingCount: pending, permanentFailureCount: permanent, lastErrorCode: lastError)
+        stateQueue.sync {
+            let pending = items.filter { $0.status == .queued || $0.status == .retrying || $0.status == .processing }.count
+            let permanent = items.filter { $0.status == .permanentFailed }.count
+            let lastError = items.reversed().compactMap(\.lastErrorCode).first
+            return SyncOutboxSummary(pendingCount: pending, permanentFailureCount: permanent, lastErrorCode: lastError)
+        }
     }
 
     @discardableResult
@@ -906,21 +909,21 @@ final class SyncOutboxStore {
     }
 
     func requeuePermanentFailures(walkSessionIds: Set<String>? = nil) {
-        lock.lock()
-        let now = Date().timeIntervalSince1970
-        for index in items.indices {
-            guard items[index].status == .permanentFailed else { continue }
-            if let walkSessionIds, walkSessionIds.contains(items[index].walkSessionId) == false {
-                continue
+        stateQueue.sync {
+            let now = Date().timeIntervalSince1970
+            for index in items.indices {
+                guard items[index].status == .permanentFailed else { continue }
+                if let walkSessionIds, walkSessionIds.contains(items[index].walkSessionId) == false {
+                    continue
+                }
+                items[index].status = .retrying
+                items[index].retryCount = 0
+                items[index].nextRetryAt = now
+                items[index].lastErrorCode = nil
+                items[index].updatedAt = now
             }
-            items[index].status = .retrying
-            items[index].retryCount = 0
-            items[index].nextRetryAt = now
-            items[index].lastErrorCode = nil
-            items[index].updatedAt = now
+            persistLocked()
         }
-        persistLocked()
-        lock.unlock()
     }
 
     private static func retryDelay(retryCount: Int) -> TimeInterval {
@@ -929,31 +932,31 @@ final class SyncOutboxStore {
     }
 
     private func nextDispatchableItem(now: TimeInterval) -> SyncOutboxItem? {
-        lock.lock()
-        defer { lock.unlock() }
-        return items
-            .sorted { lhs, rhs in
-                if lhs.createdAt == rhs.createdAt {
-                    if lhs.stage.order == rhs.stage.order {
-                        return lhs.id < rhs.id
+        stateQueue.sync {
+            return items
+                .sorted { lhs, rhs in
+                    if lhs.createdAt == rhs.createdAt {
+                        if lhs.stage.order == rhs.stage.order {
+                            return lhs.id < rhs.id
+                        }
+                        return lhs.stage.order < rhs.stage.order
                     }
-                    return lhs.stage.order < rhs.stage.order
+                    return lhs.createdAt < rhs.createdAt
                 }
-                return lhs.createdAt < rhs.createdAt
-            }
-            .first(where: {
-                ($0.status == .queued || $0.status == .retrying || $0.status == .processing) &&
-                $0.nextRetryAt <= now
-            })
+                .first(where: {
+                    ($0.status == .queued || $0.status == .retrying || $0.status == .processing) &&
+                    $0.nextRetryAt <= now
+                })
+        }
     }
 
     private func updateItem(id: String, _ block: (inout SyncOutboxItem) -> Void) {
-        lock.lock()
-        if let idx = items.firstIndex(where: { $0.id == id }) {
-            block(&items[idx])
-            persistLocked()
+        stateQueue.sync {
+            if let idx = items.firstIndex(where: { $0.id == id }) {
+                block(&items[idx])
+                persistLocked()
+            }
         }
-        lock.unlock()
     }
 
     private func load() {

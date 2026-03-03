@@ -34,7 +34,7 @@ protocol ProfileSyncOutboxTransporting {
 final class ProfileSyncOutboxStore {
     static let shared = ProfileSyncOutboxStore()
 
-    private let lock = NSLock()
+    private let stateQueue = DispatchQueue(label: "com.th.dogArea.profile-sync-outbox-store.state")
     private let storageKey = "sync.profile.outbox.items.v1"
     private var items: [ProfileSyncOutboxItem] = []
     private let maxItems = 500
@@ -44,89 +44,89 @@ final class ProfileSyncOutboxStore {
     }
 
     func enqueueSnapshot(userInfo: UserInfo) {
-        lock.lock()
-        var mutable = items
-        let now = Date().timeIntervalSince1970
+        stateQueue.sync {
+            var mutable = items
+            let now = Date().timeIntervalSince1970
 
-        let profilePayload: [String: String] = [
-            "display_name": userInfo.name,
-            "profile_image_url": userInfo.profile ?? "",
-            "profile_message": userInfo.profileMessage ?? ""
-        ]
-        let profileKey = "profile-\(userInfo.id)"
-        if mutable.contains(where: { $0.idempotencyKey == profileKey && $0.status != .completed }) == false {
-            mutable.append(
-                ProfileSyncOutboxItem(
-                    id: UUID().uuidString.lowercased(),
-                    userId: userInfo.id,
-                    petId: nil,
-                    stage: .profile,
-                    idempotencyKey: profileKey,
-                    payload: profilePayload,
-                    status: .queued,
-                    retryCount: 0,
-                    nextRetryAt: now,
-                    lastErrorCode: nil,
-                    createdAt: now,
-                    updatedAt: now
-                )
-            )
-        }
-
-        userInfo.pet.forEach { pet in
-            let petKey = "pet-\(userInfo.id)-\(pet.petId)"
-            guard mutable.contains(where: { $0.idempotencyKey == petKey && $0.status != .completed }) == false else {
-                return
-            }
-            let payload: [String: String] = [
-                "pet_id": pet.petId,
-                "name": pet.petName,
-                "photo_url": pet.petProfile ?? "",
-                "breed": pet.breed ?? "",
-                "age_years": pet.ageYears.map(String.init) ?? "",
-                "gender": pet.gender.rawValue,
-                "is_active": "true"
+            let profilePayload: [String: String] = [
+                "display_name": userInfo.name,
+                "profile_image_url": userInfo.profile ?? "",
+                "profile_message": userInfo.profileMessage ?? ""
             ]
-            mutable.append(
-                ProfileSyncOutboxItem(
-                    id: UUID().uuidString.lowercased(),
-                    userId: userInfo.id,
-                    petId: pet.petId,
-                    stage: .pet,
-                    idempotencyKey: petKey,
-                    payload: payload,
-                    status: .queued,
-                    retryCount: 0,
-                    nextRetryAt: now,
-                    lastErrorCode: nil,
-                    createdAt: now,
-                    updatedAt: now
+            let profileKey = "profile-\(userInfo.id)"
+            if mutable.contains(where: { $0.idempotencyKey == profileKey && $0.status != .completed }) == false {
+                mutable.append(
+                    ProfileSyncOutboxItem(
+                        id: UUID().uuidString.lowercased(),
+                        userId: userInfo.id,
+                        petId: nil,
+                        stage: .profile,
+                        idempotencyKey: profileKey,
+                        payload: profilePayload,
+                        status: .queued,
+                        retryCount: 0,
+                        nextRetryAt: now,
+                        lastErrorCode: nil,
+                        createdAt: now,
+                        updatedAt: now
+                    )
                 )
-            )
-        }
+            }
 
-        if mutable.count > maxItems {
-            let overflow = mutable.count - maxItems
-            let removable = mutable
-                .enumerated()
-                .filter { _, item in item.status == .completed || item.status == .permanentFailed }
-                .prefix(overflow)
-                .map(\.offset)
-            removable.reversed().forEach { mutable.remove(at: $0) }
-        }
+            userInfo.pet.forEach { pet in
+                let petKey = "pet-\(userInfo.id)-\(pet.petId)"
+                guard mutable.contains(where: { $0.idempotencyKey == petKey && $0.status != .completed }) == false else {
+                    return
+                }
+                let payload: [String: String] = [
+                    "pet_id": pet.petId,
+                    "name": pet.petName,
+                    "photo_url": pet.petProfile ?? "",
+                    "breed": pet.breed ?? "",
+                    "age_years": pet.ageYears.map(String.init) ?? "",
+                    "gender": pet.gender.rawValue,
+                    "is_active": "true"
+                ]
+                mutable.append(
+                    ProfileSyncOutboxItem(
+                        id: UUID().uuidString.lowercased(),
+                        userId: userInfo.id,
+                        petId: pet.petId,
+                        stage: .pet,
+                        idempotencyKey: petKey,
+                        payload: payload,
+                        status: .queued,
+                        retryCount: 0,
+                        nextRetryAt: now,
+                        lastErrorCode: nil,
+                        createdAt: now,
+                        updatedAt: now
+                    )
+                )
+            }
 
-        items = mutable
-        persistLocked()
-        lock.unlock()
+            if mutable.count > maxItems {
+                let overflow = mutable.count - maxItems
+                let removable = mutable
+                    .enumerated()
+                    .filter { _, item in item.status == .completed || item.status == .permanentFailed }
+                    .prefix(overflow)
+                    .map(\.offset)
+                removable.reversed().forEach { mutable.remove(at: $0) }
+            }
+
+            items = mutable
+            persistLocked()
+        }
     }
 
     func summary() -> SyncOutboxSummary {
-        lock.lock()
-        defer { lock.unlock() }
-        let pending = items.filter { $0.status == .queued || $0.status == .retrying || $0.status == .processing }.count
-        let permanent = items.filter { $0.status == .permanentFailed }.count
-        let lastError = items.reversed().compactMap(\.lastErrorCode).first
-        return SyncOutboxSummary(pendingCount: pending, permanentFailureCount: permanent, lastErrorCode: lastError)
+        stateQueue.sync {
+            let pending = items.filter { $0.status == .queued || $0.status == .retrying || $0.status == .processing }.count
+            let permanent = items.filter { $0.status == .permanentFailed }.count
+            let lastError = items.reversed().compactMap(\.lastErrorCode).first
+            return SyncOutboxSummary(pendingCount: pending, permanentFailureCount: permanent, lastErrorCode: lastError)
+        }
     }
 
     @discardableResult
@@ -175,31 +175,31 @@ final class ProfileSyncOutboxStore {
     }
 
     private func nextDispatchableItem(now: TimeInterval) -> ProfileSyncOutboxItem? {
-        lock.lock()
-        defer { lock.unlock() }
-        return items
-            .sorted { lhs, rhs in
-                if lhs.createdAt == rhs.createdAt {
-                    if lhs.stage.order == rhs.stage.order {
-                        return lhs.id < rhs.id
+        stateQueue.sync {
+            return items
+                .sorted { lhs, rhs in
+                    if lhs.createdAt == rhs.createdAt {
+                        if lhs.stage.order == rhs.stage.order {
+                            return lhs.id < rhs.id
+                        }
+                        return lhs.stage.order < rhs.stage.order
                     }
-                    return lhs.stage.order < rhs.stage.order
+                    return lhs.createdAt < rhs.createdAt
                 }
-                return lhs.createdAt < rhs.createdAt
-            }
-            .first(where: {
-                ($0.status == .queued || $0.status == .retrying || $0.status == .processing) &&
-                $0.nextRetryAt <= now
-            })
+                .first(where: {
+                    ($0.status == .queued || $0.status == .retrying || $0.status == .processing) &&
+                    $0.nextRetryAt <= now
+                })
+        }
     }
 
     private func updateItem(id: String, _ block: (inout ProfileSyncOutboxItem) -> Void) {
-        lock.lock()
-        if let idx = items.firstIndex(where: { $0.id == id }) {
-            block(&items[idx])
-            persistLocked()
+        stateQueue.sync {
+            if let idx = items.firstIndex(where: { $0.id == id }) {
+                block(&items[idx])
+                persistLocked()
+            }
         }
-        lock.unlock()
     }
 
     private func load() {
@@ -250,4 +250,3 @@ final class ProfileSyncCoordinator {
         outbox.summary()
     }
 }
-

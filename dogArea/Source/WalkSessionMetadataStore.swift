@@ -24,7 +24,7 @@ final class WalkSessionMetadataStore {
     }
 
     private let defaults: UserDefaults
-    private let lock = NSLock()
+    private let stateQueue = DispatchQueue(label: "com.th.dogArea.walk-session-metadata-store.state")
     private var cache: [String: WalkSessionMetadata] = [:]
 
     init(defaults: UserDefaults = .standard) {
@@ -43,34 +43,34 @@ final class WalkSessionMetadataStore {
         endedAt: TimeInterval,
         petId: String? = nil
     ) {
-        lock.lock()
-        cache[sessionId.uuidString.lowercased()] = WalkSessionMetadata(
-            endReason: reason,
-            endedAt: endedAt,
-            petId: petId,
-            updatedAt: Date().timeIntervalSince1970
-        )
-        persistLocked()
-        lock.unlock()
+        stateQueue.sync {
+            cache[sessionId.uuidString.lowercased()] = WalkSessionMetadata(
+                endReason: reason,
+                endedAt: endedAt,
+                petId: petId,
+                updatedAt: Date().timeIntervalSince1970
+            )
+            persistLocked()
+        }
     }
 
     func metadata(sessionId: UUID) -> WalkSessionMetadata? {
-        lock.lock()
-        defer { lock.unlock() }
-        return cache[sessionId.uuidString.lowercased()]
+        stateQueue.sync {
+            cache[sessionId.uuidString.lowercased()]
+        }
     }
 
     func petId(sessionId: UUID) -> String? {
-        lock.lock()
-        defer { lock.unlock() }
-        return cache[sessionId.uuidString.lowercased()]?.petId
+        stateQueue.sync {
+            cache[sessionId.uuidString.lowercased()]?.petId
+        }
     }
 
     func clear(sessionId: UUID) {
-        lock.lock()
-        cache.removeValue(forKey: sessionId.uuidString.lowercased())
-        persistLocked()
-        lock.unlock()
+        stateQueue.sync {
+            cache.removeValue(forKey: sessionId.uuidString.lowercased())
+            persistLocked()
+        }
     }
 
     func walkStartCountdownEnabled() -> Bool {

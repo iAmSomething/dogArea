@@ -71,7 +71,7 @@ final class WalkFileCacheDataSource: WalkLocalCacheDataSourceProtocol {
     private let fm: FileManager
     private let decoder = JSONDecoder()
     private let encoder = JSONEncoder()
-    private let lock = NSLock()
+    private let stateQueue = DispatchQueue(label: "com.th.dogArea.walk-file-cache.state")
     private let fileURL: URL
 
     init(
@@ -89,31 +89,31 @@ final class WalkFileCacheDataSource: WalkLocalCacheDataSourceProtocol {
     }
 
     func loadSnapshot() -> WalkCacheSnapshot {
-        lock.lock()
-        defer { lock.unlock() }
-        do {
-            guard fm.fileExists(atPath: fileURL.path) else { return .empty }
-            let data = try Data(contentsOf: fileURL)
-            let decoded = try decoder.decode(WalkCacheSnapshot.self, from: data)
-            if decoded.version == 1 { return decoded }
-            return WalkCacheSnapshot(version: 1, sessions: decoded.sessions, areas: decoded.areas, updatedAt: decoded.updatedAt)
-        } catch {
-            return .empty
+        stateQueue.sync {
+            do {
+                guard fm.fileExists(atPath: fileURL.path) else { return .empty }
+                let data = try Data(contentsOf: fileURL)
+                let decoded = try decoder.decode(WalkCacheSnapshot.self, from: data)
+                if decoded.version == 1 { return decoded }
+                return WalkCacheSnapshot(version: 1, sessions: decoded.sessions, areas: decoded.areas, updatedAt: decoded.updatedAt)
+            } catch {
+                return .empty
+            }
         }
     }
 
     func saveSnapshot(_ snapshot: WalkCacheSnapshot) {
-        lock.lock()
-        defer { lock.unlock() }
-        do {
-            ensureDirectory()
-            var mutable = snapshot
-            mutable.version = 1
-            mutable.updatedAt = Date().timeIntervalSince1970
-            let data = try encoder.encode(mutable)
-            try data.write(to: fileURL, options: [.atomic])
-        } catch {
-            // ignore local cache write failures to avoid blocking walk flow
+        stateQueue.sync {
+            do {
+                ensureDirectory()
+                var mutable = snapshot
+                mutable.version = 1
+                mutable.updatedAt = Date().timeIntervalSince1970
+                let data = try encoder.encode(mutable)
+                try data.write(to: fileURL, options: [.atomic])
+            } catch {
+                // ignore local cache write failures to avoid blocking walk flow
+            }
         }
     }
 
@@ -289,7 +289,7 @@ final class WalkRepository: WalkRepositoryProtocol {
     private let remote: WalkRemoteDataSourceProtocol
     private let outbox: WalkOutboxCoordinating
     private let userDefaults: UserDefaults
-    private let lock = NSLock()
+    private let stateQueue = DispatchQueue(label: "com.th.dogArea.walk-repository.state")
 
     private let supabaseReadFlagKey = "ff_supabase_read_v1"
     private let backfillFlagKey = "walk.cache.petid.backfill.v1.completed"
@@ -403,28 +403,28 @@ final class WalkRepository: WalkRepositoryProtocol {
     }
 
     func fetchPolygons() -> [Polygon] {
-        lock.lock()
-        defer { lock.unlock() }
-        var snapshot = local.loadSnapshot()
-        snapshot = backfillPetIdsIfNeeded(snapshot)
-        return snapshot.sessions
-            .sorted { $0.createdAt < $1.createdAt }
-            .compactMap(Self.polygon(from:))
+        stateQueue.sync {
+            var snapshot = local.loadSnapshot()
+            snapshot = backfillPetIdsIfNeeded(snapshot)
+            return snapshot.sessions
+                .sorted { $0.createdAt < $1.createdAt }
+                .compactMap(Self.polygon(from:))
+        }
     }
 
     func savePolygon(_ polygon: Polygon) -> [Polygon] {
-        lock.lock()
-        var snapshot = local.loadSnapshot()
-        let sessionId = polygon.id.uuidString.lowercased()
-        let record = Self.sessionRecord(from: polygon)
-        if let index = snapshot.sessions.firstIndex(where: { $0.id == sessionId }) {
-            snapshot.sessions[index] = record
-        } else {
-            snapshot.sessions.append(record)
+        stateQueue.sync {
+            var snapshot = local.loadSnapshot()
+            let sessionId = polygon.id.uuidString.lowercased()
+            let record = Self.sessionRecord(from: polygon)
+            if let index = snapshot.sessions.firstIndex(where: { $0.id == sessionId }) {
+                snapshot.sessions[index] = record
+            } else {
+                snapshot.sessions.append(record)
+            }
+            snapshot.sessions.sort { $0.createdAt < $1.createdAt }
+            local.saveSnapshot(snapshot)
         }
-        snapshot.sessions.sort { $0.createdAt < $1.createdAt }
-        local.saveSnapshot(snapshot)
-        lock.unlock()
 
         if let sessionDTO = WalkBackfillDTOConverter.makeSessionDTO(
             from: polygon,
@@ -441,37 +441,37 @@ final class WalkRepository: WalkRepositoryProtocol {
     }
 
     func deletePolygon(id: UUID) -> [Polygon] {
-        lock.lock()
-        var snapshot = local.loadSnapshot()
-        snapshot.sessions.removeAll { $0.id == id.uuidString.lowercased() }
-        local.saveSnapshot(snapshot)
-        lock.unlock()
+        stateQueue.sync {
+            var snapshot = local.loadSnapshot()
+            snapshot.sessions.removeAll { $0.id == id.uuidString.lowercased() }
+            local.saveSnapshot(snapshot)
+        }
         WalkSessionMetadataStore.shared.clear(sessionId: id)
         return fetchPolygons()
     }
 
     func saveArea(_ area: AreaMeterDTO) -> Bool {
-        lock.lock()
-        var snapshot = local.loadSnapshot()
-        snapshot.areas.append(
-            WalkAreaCacheRecord(
-                areaName: area.areaName,
-                area: area.area,
-                createdAt: area.createdAt
+        stateQueue.sync {
+            var snapshot = local.loadSnapshot()
+            snapshot.areas.append(
+                WalkAreaCacheRecord(
+                    areaName: area.areaName,
+                    area: area.area,
+                    createdAt: area.createdAt
+                )
             )
-        )
-        snapshot.areas.sort { $0.createdAt < $1.createdAt }
-        local.saveSnapshot(snapshot)
-        lock.unlock()
+            snapshot.areas.sort { $0.createdAt < $1.createdAt }
+            local.saveSnapshot(snapshot)
+        }
         return true
     }
 
     func fetchAreas() -> [AreaMeterDTO] {
-        lock.lock()
-        defer { lock.unlock() }
-        return local.loadSnapshot().areas
-            .sorted { $0.createdAt < $1.createdAt }
-            .map { AreaMeterDTO(areaName: $0.areaName, area: $0.area, createdAt: $0.createdAt) }
+        stateQueue.sync {
+            local.loadSnapshot().areas
+                .sorted { $0.createdAt < $1.createdAt }
+                .map { AreaMeterDTO(areaName: $0.areaName, area: $0.area, createdAt: $0.createdAt) }
+        }
     }
 
     private var shouldUseSupabaseRead: Bool {
@@ -507,27 +507,27 @@ final class WalkRepository: WalkRepositoryProtocol {
     }
 
     private func cache(remoteSessions: [WalkSessionDTO]) {
-        lock.lock()
-        var snapshot = local.loadSnapshot()
-        for session in remoteSessions {
-            let record = WalkSessionCacheRecord(
-                id: session.id.lowercased(),
-                createdAt: session.endedAt,
-                walkingTime: session.durationSec,
-                walkingArea: session.areaM2,
-                petId: normalizedPetUUIDString(session.petId),
-                imageDataBase64: nil,
-                points: []
-            )
-            if let idx = snapshot.sessions.firstIndex(where: { $0.id == record.id }) {
-                snapshot.sessions[idx] = record
-            } else {
-                snapshot.sessions.append(record)
+        stateQueue.sync {
+            var snapshot = local.loadSnapshot()
+            for session in remoteSessions {
+                let record = WalkSessionCacheRecord(
+                    id: session.id.lowercased(),
+                    createdAt: session.endedAt,
+                    walkingTime: session.durationSec,
+                    walkingArea: session.areaM2,
+                    petId: normalizedPetUUIDString(session.petId),
+                    imageDataBase64: nil,
+                    points: []
+                )
+                if let idx = snapshot.sessions.firstIndex(where: { $0.id == record.id }) {
+                    snapshot.sessions[idx] = record
+                } else {
+                    snapshot.sessions.append(record)
+                }
             }
+            snapshot.sessions.sort { $0.createdAt < $1.createdAt }
+            local.saveSnapshot(snapshot)
         }
-        snapshot.sessions.sort { $0.createdAt < $1.createdAt }
-        local.saveSnapshot(snapshot)
-        lock.unlock()
     }
 
     private static func sessionRecord(from polygon: Polygon) -> WalkSessionCacheRecord {
