@@ -37,55 +37,15 @@ struct RootView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            if self.selectedTab == 0 {
-                NavigationView {
-                    homeView.frame(maxWidth: .infinity,maxHeight: .infinity)
-                        .navigationBarHidden(selectedTab == 0)
-                        .accessibilityIdentifier("screen.home")
-                }
-            }
-            else if self.selectedTab == 1 {
-                NavigationView {
-                    walkListView.frame(maxWidth: .infinity,maxHeight: .infinity)
-                        .navigationBarHidden(selectedTab == 1)
-                        .accessibilityIdentifier("screen.walkList")
-                }
-            }
-            else if self.selectedTab == 2 {
-                NavigationView {
-                    mapView
-                        .environmentObject(loading)
-                        .navigationBarHidden(selectedTab == 2)
-                        .accessibilityIdentifier("screen.map")
-                }
-            }
-            else if self.selectedTab == 3 {
-                NavigationView {
-                    RivalTabView(
-                        onOpenMap: { selectedTab = 2 },
-                        onOpenSettings: { selectedTab = 4 }
-                    )
-                        .frame(maxWidth: .infinity,maxHeight: .infinity)
-                        .navigationBarHidden(selectedTab == 3)
-                        .accessibilityIdentifier("screen.rival")
-                }
-            }
-            else if self.selectedTab == 4 {
-                NavigationView {
-                    notificationCenterView.frame(maxWidth: .infinity,maxHeight: .infinity)
-                        .navigationBarHidden(selectedTab == 4)
-                        .accessibilityIdentifier("screen.settings")
-                }
-            }
+        ZStack(alignment: .bottom) {
+            tabContent
             if tabStatus.isTabAppear {
                 CustomTabBar(selectedTab: $selectedTab)
-                    .frame(maxHeight: .infinity)
-                    .aspectRatio(contentMode: .fit)
+                    .padding(.bottom, 2)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .background(Color.appBackground.ignoresSafeArea())
-        .edgesIgnoringSafeArea(.all)
+        .background(Color.appTabScaffoldBackground.ignoresSafeArea())
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .overlay(content: {
                 if loading.phase == .loading {
@@ -131,6 +91,49 @@ struct RootView: View {
                 .presentationDetents([.medium])
             }
 
+    }
+
+    @ViewBuilder
+    private var tabContent: some View {
+        if selectedTab == 0 {
+            NavigationView {
+                homeView
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .navigationBarHidden(selectedTab == 0)
+                    .accessibilityIdentifier("screen.home")
+            }
+        } else if selectedTab == 1 {
+            NavigationView {
+                walkListView
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .navigationBarHidden(selectedTab == 1)
+                    .accessibilityIdentifier("screen.walkList")
+            }
+        } else if selectedTab == 2 {
+            NavigationView {
+                mapView
+                    .environmentObject(loading)
+                    .navigationBarHidden(selectedTab == 2)
+                    .accessibilityIdentifier("screen.map")
+            }
+        } else if selectedTab == 3 {
+            NavigationView {
+                RivalTabView(
+                    onOpenMap: { selectedTab = 2 },
+                    onOpenSettings: { selectedTab = 4 }
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .navigationBarHidden(selectedTab == 3)
+                .accessibilityIdentifier("screen.rival")
+            }
+        } else if selectedTab == 4 {
+            NavigationView {
+                notificationCenterView
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .navigationBarHidden(selectedTab == 4)
+                    .accessibilityIdentifier("screen.settings")
+            }
+        }
     }
 }
 

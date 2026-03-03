@@ -68,7 +68,7 @@ struct HomeView: View {
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
-            Color.appDynamicHex(light: 0xF1F5F9, dark: 0x0F172A)
+            Color.appTabScaffoldBackground
                 .ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
@@ -104,9 +104,14 @@ struct HomeView: View {
                     homeWeeklySnapshotSection
                     seasonMotionCard(summary: viewModel.seasonMotionSummary)
                     if viewModel.indoorMissionBoard.shouldDisplayCard {
-                        Text("데일리 미션 상태")
-                            .font(.appScaledFont(for: .SemiBold, size: 30, relativeTo: .title2))
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("데일리 미션 상태")
+                                .font(.appScaledFont(for: .SemiBold, size: 30, relativeTo: .title2))
+                            Text("오늘 날씨·활동 상태를 반영한 추천 미션 진행 현황입니다.")
+                                .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .caption))
+                                .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         indoorMissionCard(board: viewModel.indoorMissionBoard)
                     }
                     territoryHeaderSection

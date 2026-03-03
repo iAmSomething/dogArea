@@ -1381,6 +1381,7 @@ private final class IndoorMissionStore {
 
     private enum DefaultsKey {
         static let weatherRiskOverride = "weather.risk.level.v1"
+        static let weatherRiskObservedAt = "weather.risk.observed_at.v1"
         static let actionCounts = "indoor.mission.actionCounts.v1"
         static let completionFlags = "indoor.mission.completed.v1"
         static let exposureHistory = "indoor.mission.exposureHistory.v1"
@@ -2121,6 +2122,16 @@ private final class IndoorMissionStore {
         }
         if let raw = UserDefaults.standard.string(forKey: DefaultsKey.weatherRiskOverride),
            let level = IndoorWeatherRiskLevel(rawValue: raw.lowercased()) {
+            let now = Date().timeIntervalSince1970
+            let observedAt = Double(UserDefaults.standard.string(forKey: DefaultsKey.weatherRiskObservedAt) ?? "") ?? 0
+            if observedAt > 0 {
+                let age = now - observedAt
+                if age <= 7200 {
+                    return (level, .userOverride)
+                }
+                let conservative = level == .clear ? IndoorWeatherRiskLevel.caution : level
+                return (conservative, .fallback)
+            }
             return (level, .userOverride)
         }
         return (.clear, .fallback)

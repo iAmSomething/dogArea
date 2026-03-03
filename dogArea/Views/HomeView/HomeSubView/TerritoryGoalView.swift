@@ -2,12 +2,14 @@ import SwiftUI
 
 struct TerritoryGoalView: View {
     @ObservedObject var viewModel: TerritoryGoalViewModel
+    @ObservedObject private var tabStatus = TabAppear.shared
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 18) {
                 headerSection
                 overviewCard
+                insightSection
                 recentSection
                 emptyHintCard
             }
@@ -15,13 +17,56 @@ struct TerritoryGoalView: View {
             .padding(.top, 18)
             .padding(.bottom, 28)
         }
-        .background(Color.appDynamicHex(light: 0xF1F5F9, dark: 0x0F172A).ignoresSafeArea())
+        .background(Color.appTabScaffoldBackground.ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("영역 목표 상세")
         .onAppear {
+            tabStatus.hide()
             viewModel.refresh()
+        }
+        .onDisappear {
+            tabStatus.appear()
         }
         .refreshable {
             viewModel.refresh()
+        }
+    }
+
+    private var insightSection: some View {
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("최근 정복")
+                    .font(.appScaledFont(for: .Regular, size: 11, relativeTo: .caption))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
+                Text("\(viewModel.recentAreas.count)개")
+                    .font(.appScaledFont(for: .SemiBold, size: 26, relativeTo: .title3))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(12)
+            .background(Color.appDynamicHex(light: 0xFFFFFF, dark: 0x1E293B))
+            .cornerRadius(14)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.appDynamicHex(light: 0xE2E8F0, dark: 0x334155), lineWidth: 1)
+            )
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("다음 목표까지")
+                    .font(.appScaledFont(for: .Regular, size: 11, relativeTo: .caption))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
+                Text(viewModel.remainingAreaText)
+                    .font(.appScaledFont(for: .SemiBold, size: 26, relativeTo: .title3))
+                    .foregroundStyle(Color.appDynamicHex(light: 0xF59E0B, dark: 0xFACC15))
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(12)
+            .background(Color.appDynamicHex(light: 0xFFFFFF, dark: 0x1E293B))
+            .cornerRadius(14)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.appDynamicHex(light: 0xE2E8F0, dark: 0x334155), lineWidth: 1)
+            )
         }
     }
 
@@ -44,6 +89,9 @@ struct TerritoryGoalView: View {
                 .padding(.vertical, 6)
                 .background(Color.appDynamicHex(light: 0xFEF3C7, dark: 0x78350F, alpha: 0.3))
                 .cornerRadius(10)
+            Text("비교군/최근 정복 이력/다음 목표까지 남은 면적을 한 번에 확인할 수 있어요.")
+                .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .caption))
+                .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
         }
     }
 

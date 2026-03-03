@@ -89,7 +89,9 @@ struct WalkListView: View {
                 }
             }.refreshable {
                 viewModel.fetchModel()
-            }.onAppear{
+            }
+            .background(Color.appTabScaffoldBackground)
+            .onAppear{
                 tabStatus.appear()
 
                 viewModel.fetchModel()
@@ -99,6 +101,7 @@ struct WalkListView: View {
                 .font(.appFont(for: .ExtraBold, size: 36))
                 .accessibilityIdentifier("screen.walkList.content")
         }
+        .background(Color.appTabScaffoldBackground.ignoresSafeArea())
     }
 
     var guestUpgradeCard: some View {

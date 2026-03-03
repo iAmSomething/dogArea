@@ -31,7 +31,7 @@ struct RivalTabView: View {
             }
             .padding(.bottom, 24)
         }
-        .background(Color.appYellowPale.opacity(0.35))
+        .background(Color.appTabScaffoldBackground)
         .accessibilityIdentifier("screen.rival.content")
         .onAppear {
             viewModel.start()

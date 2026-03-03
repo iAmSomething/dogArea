@@ -25,6 +25,10 @@ extension Color {
     static let appBackground: Color = Color(red: 0.96, green: 0.95, blue: 0.90)
     static let appSurface: Color = Color.white
     static let appInk: Color = Color(red: 0.11, green: 0.13, blue: 0.17)
+    static let appTabScaffoldBackground: Color = Color.appDynamicHex(
+        light: 0xFAFAF8,
+        dark: 0x1E293B
+    )
 
     /// 16진수 RGB 값을 SwiftUI 색상으로 변환합니다.
     /// - Parameters:

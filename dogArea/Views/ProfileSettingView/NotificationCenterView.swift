@@ -12,6 +12,7 @@ struct NotificationCenterView: View {
     @EnvironmentObject var authFlow: AuthFlowCoordinator
     @State private var isProfileEditPresented: Bool = false
     @State private var toastMessage: String? = nil
+    @State private var isLogoutAlertPresented: Bool = false
 
     var body: some View {
         Group {
@@ -20,6 +21,16 @@ struct NotificationCenterView: View {
             } else {
                 guestLockedContent
             }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(Color.appTabScaffoldBackground.ignoresSafeArea())
+        .alert("로그아웃할까요?", isPresented: $isLogoutAlertPresented) {
+            Button("취소", role: .cancel) { }
+            Button("로그아웃", role: .destructive) {
+                authFlow.signOut()
+            }
+        } message: {
+            Text("현재 기기의 인증 상태를 해제하고 게스트 모드로 전환합니다.")
         }
     }
 
@@ -119,6 +130,13 @@ struct NotificationCenterView: View {
                    }
                    .pickerStyle(.menu)
                }
+               Button("로그아웃") {
+                   isLogoutAlertPresented = true
+               }
+               .accessibilityIdentifier("settings.logout")
+               .buttonStyle(AppFilledButtonStyle(role: .destructive))
+               .padding(.top, 12)
+               .padding(.horizontal, 16)
                Spacer()
            }
            .onAppear {
