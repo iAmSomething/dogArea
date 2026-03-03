@@ -52,6 +52,18 @@ type SeasonPipelineSummaryDTO = {
   run_status: string;
 };
 
+type QuestProgressSummaryDTO = {
+  quest_instance_id: string;
+  owner_user_id: string;
+  event_id: string;
+  idempotent: boolean;
+  previous_progress: number;
+  current_progress: number;
+  target_progress: number;
+  status: string;
+  completed_at: string | null;
+};
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -319,6 +331,62 @@ Deno.serve(async (req) => {
       weatherReplacementSummary = weatherReplacementRows[0] as WeatherReplacementSummaryDTO;
     }
 
+    const uniqueTileCount = Math.max(0, Math.trunc(toNumber(payload.unique_tile_count, rows.length > 0 ? 1 : 0)));
+    const deltaByQuestType: Record<string, number> = {
+      walk_duration: Math.max(0, durationSec / 60.0),
+      linked_path: Math.max(0, rows.length - 1),
+      new_tile: uniqueTileCount,
+      streak_days: 0,
+    };
+
+    const questProgressSummary: QuestProgressSummaryDTO[] = [];
+    const { data: activeQuestRows, error: activeQuestError } = await userClient
+      .from("quest_instances")
+      .select("id,quest_type")
+      .eq("owner_user_id", userId)
+      .in("status", ["generated", "active", "completed"])
+      .limit(20);
+
+    if (activeQuestError) {
+      console.warn("quest active list query failed", activeQuestError.message);
+    } else if (Array.isArray(activeQuestRows) && activeQuestRows.length > 0) {
+      const questEventBaseId = `${walkSessionId}:points:${rows.length}:${Math.trunc(createdEpoch)}`;
+      for (const questRow of activeQuestRows) {
+        const record = asRecord(questRow);
+        const questInstanceId = toUUIDOrNull(record.id);
+        const questType = asString(record.quest_type);
+        if (!questInstanceId || !questType) continue;
+
+        const delta = deltaByQuestType[questType] ?? 0;
+        if (delta <= 0) continue;
+
+        const { data: progressRows, error: progressError } = await userClient.rpc(
+          "rpc_apply_quest_progress_event",
+          {
+            target_user_id: userId,
+            target_instance_id: questInstanceId,
+            event_id: `${questEventBaseId}:${questType}`,
+            event_type: "walk_sync_points",
+            delta_value: delta,
+            payload: {
+              walk_session_id: walkSessionId,
+              point_count: rows.length,
+              unique_tile_count: uniqueTileCount,
+            },
+            now_ts: new Date().toISOString(),
+          },
+        );
+
+        if (progressError) {
+          console.warn("quest progress rpc failed", progressError.message);
+          continue;
+        }
+        if (Array.isArray(progressRows) && progressRows.length > 0) {
+          questProgressSummary.push(progressRows[0] as QuestProgressSummaryDTO);
+        }
+      }
+    }
+
     return json({
       ok: true,
       stage,
@@ -327,6 +395,7 @@ Deno.serve(async (req) => {
       season_score_summary: seasonScoreSummary,
       season_pipeline_summary: seasonPipelineSummary,
       weather_replacement_summary: weatherReplacementSummary,
+      quest_progress_summary: questProgressSummary,
     });
   }
 

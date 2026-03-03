@@ -95,18 +95,120 @@ enum SupabaseHTTPError: Error, LocalizedError {
     }
 }
 
+private struct SupabaseAuthUserDTO: Decodable {
+    let id: String?
+    let email: String?
+}
+
+private struct SupabaseAuthResponseDTO: Decodable {
+    let user: SupabaseAuthUserDTO?
+    let id: String?
+    let email: String?
+    let message: String?
+    let error: String?
+    let errorDescription: String?
+    let accessToken: String?
+    let refreshToken: String?
+    let expiresIn: Int?
+    let expiresAt: TimeInterval?
+    let tokenType: String?
+
+    enum CodingKeys: String, CodingKey {
+        case user
+        case id
+        case email
+        case message
+        case error
+        case errorDescription = "error_description"
+        case accessToken = "access_token"
+        case refreshToken = "refresh_token"
+        case expiresIn = "expires_in"
+        case expiresAt = "expires_at"
+        case tokenType = "token_type"
+    }
+}
+
+private struct SupabaseRefreshTokenRequestDTO: Encodable {
+    let refreshToken: String
+
+    enum CodingKeys: String, CodingKey {
+        case refreshToken = "refresh_token"
+    }
+}
+
+private enum SupabaseRefreshCredentialOutcome {
+    case success(AuthCredentialResult)
+    case retryableFailure
+    case terminalFailure
+}
+
+private extension SupabaseAuthResponseDTO {
+    /// 디코딩된 Auth 응답을 앱 인증 결과 모델로 변환합니다.
+    /// - Parameters:
+    ///   - fallbackEmail: 응답에 이메일이 없을 때 사용할 대체 이메일입니다.
+    ///   - now: 토큰 만료시각 계산 기준 시각입니다.
+    /// - Returns: 변환 가능한 경우 사용자 식별 정보와 세션 토큰을 반환합니다.
+    func toCredentialResult(fallbackEmail: String?, now: Date) -> AuthCredentialResult? {
+        let userId = user?.id ?? id
+        guard let userId, userId.isEmpty == false else {
+            return nil
+        }
+        let email = user?.email ?? email ?? fallbackEmail
+        return AuthCredentialResult(
+            identity: AuthenticatedUserIdentity(userId: userId, email: email),
+            tokenSession: toTokenSession(now: now)
+        )
+    }
+
+    /// 디코딩된 Auth 응답에서 토큰 세션을 계산합니다.
+    /// - Parameter now: `expires_in` 기반 만료시각 계산 기준 시각입니다.
+    /// - Returns: 토큰 필드가 모두 유효하면 `AuthTokenSession`을 반환합니다.
+    func toTokenSession(now: Date) -> AuthTokenSession? {
+        guard
+            let accessToken,
+            let refreshToken,
+            let tokenType,
+            accessToken.isEmpty == false,
+            refreshToken.isEmpty == false,
+            tokenType.isEmpty == false
+        else {
+            return nil
+        }
+        let resolvedExpiresAt: TimeInterval
+        if let expiresAt {
+            resolvedExpiresAt = expiresAt
+        } else if let expiresIn {
+            resolvedExpiresAt = now.timeIntervalSince1970 + TimeInterval(expiresIn)
+        } else {
+            return nil
+        }
+        guard resolvedExpiresAt > now.timeIntervalSince1970 else {
+            return nil
+        }
+        return AuthTokenSession(
+            accessToken: accessToken,
+            refreshToken: refreshToken,
+            expiresAt: resolvedExpiresAt,
+            tokenType: tokenType
+        )
+    }
+}
+
 struct SupabaseHTTPClient {
     static let live = SupabaseHTTPClient()
 
     private let session: URLSession
     private let configLoader: () -> SupabaseRuntimeConfig?
+    private let authSessionStore: AuthSessionStoreProtocol
 
     init(
         session: URLSession = .shared,
-        configLoader: @escaping () -> SupabaseRuntimeConfig? = { SupabaseRuntimeConfig.load() }
+        configLoader: @escaping () -> SupabaseRuntimeConfig? = { SupabaseRuntimeConfig.load() },
+        authSessionStore: AuthSessionStoreProtocol = DefaultAuthSessionStore.shared
     ) {
         self.session = session
         self.configLoader = configLoader
+        self.authSessionStore = authSessionStore
     }
 
     func request<T: Encodable>(
@@ -141,7 +243,7 @@ struct SupabaseHTTPClient {
         request.httpMethod = method.rawValue
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(config.anonKey, forHTTPHeaderField: "apikey")
-        request.setValue("Bearer \(config.anonKey)", forHTTPHeaderField: "Authorization")
+        request.setValue(await authorizationHeaderValue(config: config), forHTTPHeaderField: "Authorization")
         request.httpBody = bodyData
 
         let (data, response) = try await session.data(for: request)
@@ -152,6 +254,89 @@ struct SupabaseHTTPClient {
             throw SupabaseHTTPError.unexpectedStatusCode(statusCode)
         }
         return data
+    }
+
+    /// 현재 저장된 사용자 세션을 기준으로 Authorization 헤더 값을 계산합니다.
+    /// - Parameter config: Supabase 런타임 기본 구성입니다.
+    /// - Returns: 사용자 토큰이 유효하면 사용자 Bearer, 아니면 anon Bearer 값을 반환합니다.
+    private func authorizationHeaderValue(config: SupabaseRuntimeConfig) async -> String {
+        guard let accessToken = await validAccessToken(config: config) else {
+            return "Bearer \(config.anonKey)"
+        }
+        return "Bearer \(accessToken)"
+    }
+
+    /// 저장된 access token의 유효성을 확인하고 필요 시 refresh를 수행합니다.
+    /// - Parameter config: Supabase 런타임 기본 구성입니다.
+    /// - Returns: 요청에 사용할 수 있는 access token 문자열 또는 `nil`입니다.
+    private func validAccessToken(config: SupabaseRuntimeConfig) async -> String? {
+        let now = Date().timeIntervalSince1970
+        if let tokenSession = authSessionStore.currentTokenSession(),
+           tokenSession.isValid(at: now) {
+            return tokenSession.accessToken
+        }
+        guard let current = authSessionStore.currentTokenSession(),
+              current.refreshToken.isEmpty == false else {
+            return nil
+        }
+        let refreshOutcome = await refreshCredential(config: config, refreshToken: current.refreshToken)
+        switch refreshOutcome {
+        case .success(let refreshed):
+            authSessionStore.persist(refreshed.identity)
+            if let tokenSession = refreshed.tokenSession {
+                authSessionStore.persist(tokenSession: tokenSession)
+                return tokenSession.accessToken
+            }
+            authSessionStore.clearTokenSession()
+            return nil
+        case .retryableFailure:
+            return nil
+        case .terminalFailure:
+            authSessionStore.clearTokenSession()
+            return nil
+        }
+    }
+
+    /// refresh token으로 새 세션 토큰을 발급받고 사용자 식별 정보를 복원합니다.
+    /// - Parameters:
+    ///   - config: Supabase 런타임 기본 구성입니다.
+    ///   - refreshToken: 만료된 access token과 짝을 이루는 refresh token입니다.
+    /// - Returns: refresh 성공/실패 성격(재시도 가능 여부 포함)을 반환합니다.
+    private func refreshCredential(
+        config: SupabaseRuntimeConfig,
+        refreshToken: String
+    ) async -> SupabaseRefreshCredentialOutcome {
+        let endpoint = SupabaseEndpoint.auth(path: "token", query: "grant_type=refresh_token")
+        let url = endpoint.resolveURL(baseURL: config.baseURL)
+        var request = URLRequest(url: url)
+        request.httpMethod = HTTPMethod.post.rawValue
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(config.anonKey, forHTTPHeaderField: "apikey")
+        request.setValue("Bearer \(config.anonKey)", forHTTPHeaderField: "Authorization")
+        request.httpBody = try? JSONEncoder().encode(
+            SupabaseRefreshTokenRequestDTO(refreshToken: refreshToken)
+        )
+
+        guard let (data, response) = try? await session.data(for: request),
+              let statusCode = (response as? HTTPURLResponse)?.statusCode else {
+            return .retryableFailure
+        }
+
+        guard (200..<300).contains(statusCode) else {
+            if statusCode == 400 || statusCode == 401 {
+                return .terminalFailure
+            }
+            return .retryableFailure
+        }
+
+        guard let decoded = try? JSONDecoder().decode(SupabaseAuthResponseDTO.self, from: data),
+              let credential = decoded.toCredentialResult(
+                fallbackEmail: authSessionStore.currentIdentity()?.email,
+                now: Date()
+              ) else {
+            return .terminalFailure
+        }
+        return .success(credential)
     }
 }
 
@@ -926,29 +1111,6 @@ enum SupabaseAuthError: LocalizedError {
 final class DeviceAppleCredentialAuthService: AppleCredentialAuthServiceProtocol {
     static let shared = DeviceAppleCredentialAuthService()
 
-    private struct AuthUserDTO: Decodable {
-        let id: String?
-        let email: String?
-    }
-
-    private struct AuthResponseDTO: Decodable {
-        let user: AuthUserDTO?
-        let id: String?
-        let email: String?
-        let message: String?
-        let error: String?
-        let errorDescription: String?
-
-        enum CodingKeys: String, CodingKey {
-            case user
-            case id
-            case email
-            case message
-            case error
-            case errorDescription = "error_description"
-        }
-    }
-
     /// Apple 로그인 토큰의 최소 유효성(빈 값 여부)을 확인합니다.
     func signInWithApple(identityToken: String) async throws {
         if identityToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -957,7 +1119,11 @@ final class DeviceAppleCredentialAuthService: AppleCredentialAuthServiceProtocol
     }
 
     /// Supabase Auth `token?grant_type=password` 엔드포인트로 이메일 로그인을 수행합니다.
-    func signInWithEmail(email: String, password: String) async throws -> AuthenticatedUserIdentity {
+    /// - Parameters:
+    ///   - email: 로그인 이메일입니다.
+    ///   - password: 로그인 비밀번호입니다.
+    /// - Returns: 사용자 식별 정보와 선택적 토큰 세션입니다.
+    func signInWithEmail(email: String, password: String) async throws -> AuthCredentialResult {
         let payload = [
             "email": email,
             "password": password
@@ -966,7 +1132,11 @@ final class DeviceAppleCredentialAuthService: AppleCredentialAuthServiceProtocol
     }
 
     /// Supabase Auth `signup` 엔드포인트로 이메일 회원가입을 수행합니다.
-    func signUpWithEmail(email: String, password: String) async throws -> AuthenticatedUserIdentity {
+    /// - Parameters:
+    ///   - email: 회원가입 이메일입니다.
+    ///   - password: 회원가입 비밀번호입니다.
+    /// - Returns: 사용자 식별 정보와 선택적 토큰 세션입니다.
+    func signUpWithEmail(email: String, password: String) async throws -> AuthCredentialResult {
         let payload = [
             "email": email,
             "password": password
@@ -979,7 +1149,7 @@ final class DeviceAppleCredentialAuthService: AppleCredentialAuthServiceProtocol
         path: String,
         query: String?,
         payload: [String: String]
-    ) async throws -> AuthenticatedUserIdentity {
+    ) async throws -> AuthCredentialResult {
         guard let config = SupabaseRuntimeConfig.load() else {
             throw SupabaseAuthError.notConfigured
         }
@@ -998,7 +1168,7 @@ final class DeviceAppleCredentialAuthService: AppleCredentialAuthServiceProtocol
             throw SupabaseAuthError.responseDecodeFailed
         }
 
-        let decoded = try? JSONDecoder().decode(AuthResponseDTO.self, from: data)
+        let decoded = try? JSONDecoder().decode(SupabaseAuthResponseDTO.self, from: data)
         guard (200..<300).contains(statusCode) else {
             if statusCode == 400 || statusCode == 401 {
                 throw SupabaseAuthError.invalidCredentials
@@ -1010,12 +1180,13 @@ final class DeviceAppleCredentialAuthService: AppleCredentialAuthServiceProtocol
             throw SupabaseAuthError.requestFailed(description)
         }
 
-        let userId = decoded?.user?.id ?? decoded?.id
-        let userEmail = decoded?.user?.email ?? decoded?.email ?? payload["email"]
-        guard let userId, userId.isEmpty == false else {
+        guard let result = decoded?.toCredentialResult(
+            fallbackEmail: payload["email"],
+            now: Date()
+        ) else {
             throw SupabaseAuthError.responseDecodeFailed
         }
-        return AuthenticatedUserIdentity(userId: userId, email: userEmail)
+        return result
     }
 }
 

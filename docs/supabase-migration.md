@@ -442,6 +442,92 @@ order by season_key desc;
 - 정산 재실행 시 `season_rewards` 중복 발급이 발생하지 않음
 - 리더보드 정렬이 정책 순서(`score -> active tile -> capture -> contribution time`)와 일치
 
+### 5.14 퀘스트 Stage2 진행/클레임 엔진 검증 (#128)
+일일 퀘스트 발급(멱등) 검증:
+```sql
+select *
+from public.rpc_issue_quest_instances(
+  ':user_uuid'::uuid,
+  'daily',
+  null,
+  null,
+  now()
+);
+```
+
+동일 이벤트 재처리 멱등 검증:
+```sql
+select *
+from public.rpc_apply_quest_progress_event(
+  ':user_uuid'::uuid,
+  ':quest_instance_uuid'::uuid,
+  'walk-session-1:points:42:walk_duration',
+  'walk_sync_points',
+  12,
+  jsonb_build_object('walk_session_id', ':walk_session_uuid'),
+  now()
+);
+```
+
+동일 요청 재호출 후 진행도 중복 검증:
+```sql
+select
+  quest_instance_id,
+  event_id,
+  count(*) as row_count
+from public.quest_progress
+where quest_instance_id = ':quest_instance_uuid'::uuid
+  and event_id = 'walk-session-1:points:42:walk_duration'
+group by quest_instance_id, event_id;
+```
+
+클레임 경쟁 조건 검증(동일 instance에 동시 호출):
+```sql
+select *
+from public.rpc_claim_quest_reward(
+  ':user_uuid'::uuid,
+  ':quest_instance_uuid'::uuid,
+  'claim-request-1',
+  now()
+);
+```
+
+중복 클레임 원장 확인:
+```sql
+select
+  quest_instance_id,
+  count(*) as claim_row_count
+from public.quest_claims
+where quest_instance_id = ':quest_instance_uuid'::uuid
+group by quest_instance_id;
+```
+
+상태 전이 검증(expire/reroll/replace):
+```sql
+select * from public.rpc_transition_quest_status(':user_uuid'::uuid, ':quest_instance_uuid'::uuid, 'expire', null, now());
+select * from public.rpc_transition_quest_status(':user_uuid'::uuid, ':quest_instance_uuid'::uuid, 'reroll', null, now());
+select * from public.rpc_transition_quest_status(':user_uuid'::uuid, ':quest_instance_uuid'::uuid, 'replace', 'daily.walk_duration.normal', now());
+```
+
+감사 로그 확인:
+```sql
+select
+  action,
+  detail,
+  created_at
+from public.quest_claim_audit_logs
+where owner_user_id = ':user_uuid'::uuid
+order by created_at desc
+limit 30;
+```
+
+기대값:
+- `quest_progress`에 `(quest_instance_id, event_id)` 중복이 0건
+- `quest_claims`에 `quest_instance_id`당 1행만 존재(중복 수령 0건)
+- `quest_claim_audit_logs`에 `claim_confirmed/duplicate_claim_blocked`가 요청 결과와 일치
+- `reroll_transition`은 사용자당 UTC 일자 기준 1회만 허용
+- `expire/reroll/replace` 상태 전이가 RPC 응답 `previous_status/current_status`와 동일
+
 ## 6. 운영 체크리스트
 - [ ] `migration list --local` / `migration list --linked` 결과 저장
 - [ ] User A/B 교차 접근 차단 SQL 결과 저장
@@ -452,6 +538,7 @@ order by season_key desc;
 - [ ] 시즌 안티 농사 RPC/감사 로그 검증 결과 첨부
 - [ ] 시즌 Stage1 정책 파라미터 검증 결과 첨부
 - [ ] 시즌 Stage2 집계/감쇠/정산/보상 파이프라인 검증 결과 첨부
+- [ ] 퀘스트 Stage2 발급/진행/클레임/상태전이 검증 결과 첨부
 - [ ] 체감 날씨 피드백 KPI 뷰 검증 결과 첨부
 - [ ] 날씨 치환/Shield RPC 및 이력 원장 검증 결과 첨부
 - [ ] 라이벌 리그 스냅샷/분포/히스토리 검증 결과 첨부
