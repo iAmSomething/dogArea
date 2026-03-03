@@ -97,9 +97,8 @@ struct MapView : View{
                 
                 if viewModel.isWalking {
                     HStack {
-                        if isCameraSeeingSomewhere,
-                           let loc = viewModel.location{
-                            Button(action: {viewModel.setRegion(loc,distance: 2000)}, label: {Text("내 위치 보기")})
+                        if isCameraSeeingSomewhere, viewModel.location != nil {
+                            Button(action: { viewModel.handleLocationButtonTap() }, label: {Text("내 위치 보기")})
                                 .buttonStyle(.borderedProminent)
                                 .padding(.leading)
                         }
@@ -108,9 +107,8 @@ struct MapView : View{
                     }
                 } else {
                     HStack {
-                        if isCameraSeeingSomewhere,
-                           let loc = viewModel.location{
-                            Button(action: {viewModel.setRegion(loc,distance: 2000)}, label: {Text("내 위치 보기")})
+                        if isCameraSeeingSomewhere, viewModel.location != nil {
+                            Button(action: { viewModel.handleLocationButtonTap() }, label: {Text("내 위치 보기")})
                                 .buttonStyle(.borderedProminent)
                                 .padding(.leading)
                         }
@@ -250,13 +248,16 @@ struct MapView : View{
             WalkListDetailView(model: model)
         })
         .onMapCameraChange{ context in
+            viewModel.recordCameraChange(context.camera)
             if let loc = viewModel.location {
                 self.isCameraSeeingSomewhere =  context.camera.centerCoordinate.clLocation.distance(from: loc) > 300
-                if !viewModel.showOnlyOne {
-                    if Int(context.camera.distance) != Int(self.distance) {
-                        self.distance = context.camera.distance
-                        viewModel.updateAnnotations(cameraDistance: context.camera.distance)
-                    }
+            } else {
+                self.isCameraSeeingSomewhere = false
+            }
+            if !viewModel.showOnlyOne {
+                if Int(context.camera.distance) != Int(self.distance) {
+                    self.distance = context.camera.distance
+                    viewModel.updateAnnotations(cameraDistance: context.camera.distance)
                 }
             }
         }
@@ -460,7 +461,7 @@ struct MapView : View{
                     .cornerRadius(6)
             }
             Button {
-                viewModel.setTrackingMode()
+                viewModel.preparePointAddCameraSnapshot()
                 myAlert.alertType = .addPoint
                 myAlert.callAlert(type: .addPoint)
             } label: {

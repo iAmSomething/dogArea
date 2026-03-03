@@ -18,7 +18,7 @@ struct MapAlertSubView: View {
         ca = CustomAlert(presentAlert: $myAlert.isAlert,
                          alertModel: myAlert.alertType.model,
                          leftButtonAction: {
-          viewModel.addLocation()
+          viewModel.addLocationPreservingCamera()
         },rightButtonAction: {
 //            print("right")
         })
