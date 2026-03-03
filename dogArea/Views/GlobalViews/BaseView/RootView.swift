@@ -20,6 +20,7 @@ struct RootView: View {
     @State private var tabbarHidden = false
     @StateObject var tabStatus = TabAppear.shared
     private let widgetActionStore: WalkWidgetActionRequestStoring = DefaultWalkWidgetActionRequestStore.shared
+    private let territoryWidgetSnapshotSyncService: TerritoryWidgetSnapshotSyncing = DefaultTerritoryWidgetSnapshotSyncService()
     private var homeView: HomeView
     private var walkListView: WalkListView    
     private var mapView: MapView
@@ -96,9 +97,11 @@ struct RootView: View {
             }
             .onAppear {
                 consumePendingWidgetActionIfNeeded()
+                syncTerritoryWidgetSnapshot(force: true)
             }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
                 consumePendingWidgetActionIfNeeded()
+                syncTerritoryWidgetSnapshot(force: false)
             }
             .onOpenURL { url in
                 routeWidgetDeepLinkIfNeeded(url)
@@ -176,6 +179,14 @@ struct RootView: View {
                     "source": route.source
                 ]
             )
+        }
+    }
+
+    /// 앱 생명주기 진입 시 영역 위젯 스냅샷 동기화를 요청합니다.
+    /// - Parameter force: `true`면 TTL을 무시하고 즉시 동기화합니다.
+    private func syncTerritoryWidgetSnapshot(force: Bool) {
+        Task(priority: .utility) {
+            await territoryWidgetSnapshotSyncService.sync(force: force, now: Date())
         }
     }
 }

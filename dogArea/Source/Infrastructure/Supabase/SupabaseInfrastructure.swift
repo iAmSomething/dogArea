@@ -1,5 +1,8 @@
 import Foundation
 import CoreLocation
+#if canImport(WidgetKit)
+import WidgetKit
+#endif
 
 struct SupabaseRuntimeConfig: Equatable {
     let baseURL: URL
@@ -412,6 +415,30 @@ protocol CaricatureServiceProtocol {
 
 protocol AreaReferenceServiceProtocol {
     func fetchSnapshot() async -> AreaReferenceSnapshot
+}
+
+struct TerritoryWidgetSummaryDTO: Equatable {
+    let todayTileCount: Int
+    let weeklyTileCount: Int
+    let defenseScheduledTileCount: Int
+    let scoreUpdatedAt: TimeInterval?
+    let refreshedAt: TimeInterval
+    let hasData: Bool
+}
+
+protocol TerritoryWidgetSummaryServiceProtocol {
+    /// 위젯용 영역 요약 지표를 서버 RPC에서 조회합니다.
+    /// - Parameter now: 서버 집계 기준 시각입니다.
+    /// - Returns: 오늘/주간/방어 예정 타일과 갱신 시각을 포함한 요약 DTO입니다.
+    func fetchSummary(now: Date) async throws -> TerritoryWidgetSummaryDTO
+}
+
+protocol TerritoryWidgetSnapshotSyncing {
+    /// 서버 요약을 조회해 위젯 공유 스냅샷을 갱신합니다.
+    /// - Parameters:
+    ///   - force: `true`면 TTL을 무시하고 즉시 갱신합니다.
+    ///   - now: TTL/상태 계산 기준 시각입니다.
+    func sync(force: Bool, now: Date) async
 }
 
 struct FeatureControlService: FeatureFlagRemoteServiceProtocol {
@@ -928,6 +955,213 @@ struct RivalLeagueService: RivalLeagueServiceProtocol {
                 isMe: row.isMe
             )
         }
+    }
+}
+
+struct TerritoryWidgetSummaryService: TerritoryWidgetSummaryServiceProtocol {
+    private struct ResponseDTO: Decodable {
+        let todayTileCount: Int?
+        let weeklyTileCount: Int?
+        let defenseScheduledTileCount: Int?
+        let scoreUpdatedAt: String?
+        let refreshedAt: String?
+        let hasData: Bool?
+
+        enum CodingKeys: String, CodingKey {
+            case todayTileCount = "today_tile_count"
+            case weeklyTileCount = "weekly_tile_count"
+            case defenseScheduledTileCount = "defense_scheduled_tile_count"
+            case scoreUpdatedAt = "score_updated_at"
+            case refreshedAt = "refreshed_at"
+            case hasData = "has_data"
+        }
+    }
+
+    private let client: SupabaseHTTPClient
+
+    init(client: SupabaseHTTPClient = .live) {
+        self.client = client
+    }
+
+    /// 위젯용 영역 요약 지표를 서버 RPC에서 조회합니다.
+    /// - Parameter now: 서버 집계 기준 시각입니다.
+    /// - Returns: 오늘/주간/방어 예정 타일과 갱신 시각을 포함한 요약 DTO입니다.
+    func fetchSummary(now: Date) async throws -> TerritoryWidgetSummaryDTO {
+        let payload: [String: Any] = [
+            "now_ts": ISO8601DateFormatter().string(from: now)
+        ]
+        let data = try await client.request(
+            .rest(path: "rpc/rpc_get_widget_territory_summary"),
+            method: .post,
+            bodyData: try JSONSerialization.data(withJSONObject: payload)
+        )
+        let decoded = try JSONDecoder().decode(ResponseDTO.self, from: data)
+        let refreshedAt = SupabaseISO8601.parseEpoch(decoded.refreshedAt) ?? now.timeIntervalSince1970
+        let summary = TerritoryWidgetSummaryDTO(
+            todayTileCount: max(0, decoded.todayTileCount ?? 0),
+            weeklyTileCount: max(0, decoded.weeklyTileCount ?? 0),
+            defenseScheduledTileCount: max(0, decoded.defenseScheduledTileCount ?? 0),
+            scoreUpdatedAt: SupabaseISO8601.parseEpoch(decoded.scoreUpdatedAt),
+            refreshedAt: refreshedAt,
+            hasData: decoded.hasData
+                ?? ((decoded.weeklyTileCount ?? 0) > 0 || (decoded.todayTileCount ?? 0) > 0)
+        )
+        return summary
+    }
+}
+
+final class DefaultTerritoryWidgetSnapshotSyncService: TerritoryWidgetSnapshotSyncing {
+    private let summaryService: TerritoryWidgetSummaryServiceProtocol
+    private let snapshotStore: TerritoryWidgetSnapshotStoring
+    private let userSessionStore: UserSessionStoreProtocol
+    private let preferenceStore: UserDefaults
+    private let syncTTL: TimeInterval
+    private let staleGraceInterval: TimeInterval
+
+    /// 영역 위젯 스냅샷 동기화 서비스를 생성합니다.
+    /// - Parameters:
+    ///   - summaryService: 서버 요약 RPC 호출 서비스입니다.
+    ///   - snapshotStore: 앱 그룹 기반 위젯 스냅샷 저장소입니다.
+    ///   - userSessionStore: 현재 로그인 사용자 컨텍스트 조회 저장소입니다.
+    ///   - preferenceStore: 마지막 동기화 메타데이터를 저장할 기본 설정 저장소입니다.
+    ///   - syncTTL: RPC 재조회 최소 간격(초)입니다.
+    ///   - staleGraceInterval: 오프라인 캐시를 허용할 최대 유예 시간(초)입니다.
+    init(
+        summaryService: TerritoryWidgetSummaryServiceProtocol = TerritoryWidgetSummaryService(),
+        snapshotStore: TerritoryWidgetSnapshotStoring = DefaultTerritoryWidgetSnapshotStore.shared,
+        userSessionStore: UserSessionStoreProtocol = DefaultUserSessionStore.shared,
+        preferenceStore: UserDefaults = .standard,
+        syncTTL: TimeInterval = 15 * 60,
+        staleGraceInterval: TimeInterval = 6 * 60 * 60
+    ) {
+        self.summaryService = summaryService
+        self.snapshotStore = snapshotStore
+        self.userSessionStore = userSessionStore
+        self.preferenceStore = preferenceStore
+        self.syncTTL = syncTTL
+        self.staleGraceInterval = staleGraceInterval
+    }
+
+    /// 서버 요약을 조회해 위젯 공유 스냅샷을 갱신합니다.
+    /// - Parameters:
+    ///   - force: `true`면 TTL을 무시하고 즉시 갱신합니다.
+    ///   - now: TTL/상태 계산 기준 시각입니다.
+    func sync(force: Bool, now: Date) async {
+        guard shouldSync(force: force, now: now) else { return }
+
+        guard let user = userSessionStore.currentUserInfo(),
+              user.id.isEmpty == false else {
+            saveGuestSnapshot(now: now)
+            return
+        }
+
+        do {
+            let summary = try await summaryService.fetchSummary(now: now)
+            saveMemberSnapshot(summary: summary, now: now)
+        } catch {
+            saveFailureSnapshot(now: now)
+        }
+    }
+
+    /// TTL과 이전 상태를 기준으로 이번 동기화를 수행할지 판단합니다.
+    /// - Parameters:
+    ///   - force: `true`면 즉시 동기화합니다.
+    ///   - now: 판단 기준 시각입니다.
+    /// - Returns: 동기화가 필요하면 `true`, 스킵 가능하면 `false`입니다.
+    private func shouldSync(force: Bool, now: Date) -> Bool {
+        if force { return true }
+        let snapshot = snapshotStore.load()
+        let age = now.timeIntervalSince1970 - snapshot.updatedAt
+        return age >= syncTTL
+    }
+
+    /// 비회원 상태 스냅샷을 저장합니다.
+    /// - Parameter now: 저장 시각입니다.
+    private func saveGuestSnapshot(now: Date) {
+        let snapshot = TerritoryWidgetSnapshot(
+            status: .guestLocked,
+            message: "로그인 후 오늘/주간 영역 현황을 위젯에서 확인할 수 있어요.",
+            summary: nil,
+            updatedAt: now.timeIntervalSince1970
+        )
+        save(snapshot, now: now)
+    }
+
+    /// 서버 요약 응답을 회원 상태 스냅샷으로 저장합니다.
+    /// - Parameters:
+    ///   - summary: 서버에서 조회한 최신 영역 요약 DTO입니다.
+    ///   - now: 저장 시각입니다.
+    private func saveMemberSnapshot(summary: TerritoryWidgetSummaryDTO, now: Date) {
+        let snapshotStatus: TerritoryWidgetSnapshotStatus = summary.hasData ? .memberReady : .emptyData
+        let snapshotMessage: String = summary.hasData
+            ? "오늘/주간/방어 예정 지표를 표시합니다."
+            : "아직 집계된 타일이 없어요. 첫 산책을 시작해보세요."
+
+        let snapshot = TerritoryWidgetSnapshot(
+            status: snapshotStatus,
+            message: snapshotMessage,
+            summary: TerritoryWidgetSummarySnapshot(
+                todayTileCount: summary.todayTileCount,
+                weeklyTileCount: summary.weeklyTileCount,
+                defenseScheduledTileCount: summary.defenseScheduledTileCount,
+                scoreUpdatedAt: summary.scoreUpdatedAt,
+                refreshedAt: summary.refreshedAt
+            ),
+            updatedAt: now.timeIntervalSince1970
+        )
+        save(snapshot, now: now)
+    }
+
+    /// 서버 조회 실패 시 마지막 성공 스냅샷 기반 상태로 저장합니다.
+    /// - Parameter now: 저장 시각입니다.
+    private func saveFailureSnapshot(now: Date) {
+        let current = snapshotStore.load()
+        let cachedSummary = current.summary
+
+        if let cachedSummary {
+            let cacheAge = now.timeIntervalSince1970 - cachedSummary.refreshedAt
+            let status: TerritoryWidgetSnapshotStatus = cacheAge <= staleGraceInterval ? .offlineCached : .syncDelayed
+            let message: String = cacheAge <= staleGraceInterval
+                ? "오프라인 상태예요. 마지막 성공 스냅샷을 표시 중입니다."
+                : "동기화가 지연되고 있어요. 앱을 열어 최신화해주세요."
+            save(
+                TerritoryWidgetSnapshot(
+                    status: status,
+                    message: message,
+                    summary: cachedSummary,
+                    updatedAt: now.timeIntervalSince1970
+                ),
+                now: now
+            )
+            return
+        }
+
+        save(
+            TerritoryWidgetSnapshot(
+                status: .syncDelayed,
+                message: "데이터를 아직 불러오지 못했어요. 앱을 열어 동기화해주세요.",
+                summary: nil,
+                updatedAt: now.timeIntervalSince1970
+            ),
+            now: now
+        )
+    }
+
+    /// 위젯 스냅샷 저장 후 재로딩을 요청하고 마지막 동기화 시각을 기록합니다.
+    /// - Parameters:
+    ///   - snapshot: 저장할 영역 위젯 스냅샷입니다.
+    ///   - now: 마지막 동기화 시각 기록 기준입니다.
+    private func save(_ snapshot: TerritoryWidgetSnapshot, now: Date) {
+        snapshotStore.save(snapshot)
+        preferenceStore.set(now.timeIntervalSince1970, forKey: "territory.widget.lastSyncAt.v1")
+        reloadTerritoryWidgetTimeline()
+    }
+
+    /// WidgetKit 타임라인을 즉시 재요청해 최신 스냅샷이 반영되도록 합니다.
+    private func reloadTerritoryWidgetTimeline() {
+        #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadTimelines(ofKind: WalkWidgetBridgeContract.territoryWidgetKind)
+        #endif
     }
 }
 

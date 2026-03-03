@@ -4,6 +4,8 @@ import Foundation
 enum WalkWidgetBridgeContract {
     static let appGroupIdentifier = "group.com.th.dogArea.shared"
     static let snapshotStorageKey = "walk.widget.snapshot.v1"
+    static let territorySnapshotStorageKey = "territory.widget.snapshot.v1"
+    static let territoryWidgetKind = "com.th.dogArea.territory-status"
     static let actionRequestStorageKey = "walk.widget.action.request.v1"
     static let deepLinkScheme = "dogarea"
     static let deepLinkHost = "widget"
