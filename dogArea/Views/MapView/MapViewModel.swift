@@ -14,6 +14,169 @@ import WatchConnectivity
 #if canImport(UIKit)
 import UIKit
 #endif
+
+enum WeatherRiskLevelValue: String, CaseIterable {
+    case clear
+    case caution
+    case bad
+    case severe
+}
+
+struct WeatherRiskSnapshot: Equatable {
+    let level: WeatherRiskLevelValue
+    let observedAt: TimeInterval
+}
+
+protocol WeatherRiskProviding {
+    /// 주어진 좌표의 현재 날씨를 조회해 위험도 레벨을 산출합니다.
+    /// - Parameters:
+    ///   - latitude: 조회 대상 위도입니다.
+    ///   - longitude: 조회 대상 경도입니다.
+    /// - Returns: 위험도 레벨과 관측 시각을 담은 스냅샷입니다.
+    func fetchRisk(latitude: Double, longitude: Double) async throws -> WeatherRiskSnapshot
+}
+
+final class OpenMeteoWeatherRiskProvider: WeatherRiskProviding {
+    private struct OpenMeteoResponse: Decodable {
+        struct Current: Decodable {
+            let time: String
+            let temperature2M: Double
+            let precipitation: Double
+            let windSpeed10M: Double
+
+            enum CodingKeys: String, CodingKey {
+                case time
+                case temperature2M = "temperature_2m"
+                case precipitation
+                case windSpeed10M = "wind_speed_10m"
+            }
+        }
+
+        let current: Current
+    }
+
+    private let session: URLSession
+    private let requestTimeout: TimeInterval
+
+    /// Open-Meteo 기반 날씨 위험도 조회기를 생성합니다.
+    /// - Parameters:
+    ///   - session: HTTP 요청에 사용할 URLSession입니다.
+    ///   - requestTimeout: 단건 요청 타임아웃(초)입니다.
+    init(session: URLSession = .shared, requestTimeout: TimeInterval = 2.5) {
+        self.session = session
+        self.requestTimeout = requestTimeout
+    }
+
+    /// 주어진 좌표의 현재 날씨를 조회해 위험도 레벨을 산출합니다.
+    /// - Parameters:
+    ///   - latitude: 조회 대상 위도입니다.
+    ///   - longitude: 조회 대상 경도입니다.
+    /// - Returns: 위험도 레벨과 관측 시각을 담은 스냅샷입니다.
+    func fetchRisk(latitude: Double, longitude: Double) async throws -> WeatherRiskSnapshot {
+        var components = URLComponents(string: "https://api.open-meteo.com/v1/forecast")
+        components?.queryItems = [
+            .init(name: "latitude", value: String(latitude)),
+            .init(name: "longitude", value: String(longitude)),
+            .init(name: "current", value: "temperature_2m,precipitation,wind_speed_10m"),
+            .init(name: "wind_speed_unit", value: "ms"),
+            .init(name: "timezone", value: "auto")
+        ]
+        guard let url = components?.url else {
+            throw URLError(.badURL)
+        }
+
+        var request = URLRequest(url: url)
+        request.timeoutInterval = requestTimeout
+        let (data, _) = try await session.data(for: request)
+        let decoded = try JSONDecoder().decode(OpenMeteoResponse.self, from: data)
+        let observedAt = Self.parseObservedAt(decoded.current.time)
+        let risk = Self.score(
+            precipitationMMPerHour: decoded.current.precipitation,
+            temperatureC: decoded.current.temperature2M,
+            windMps: decoded.current.windSpeed10M
+        )
+        return WeatherRiskSnapshot(level: risk, observedAt: observedAt)
+    }
+
+    /// Open-Meteo 시각 문자열을 epoch seconds로 변환합니다.
+    /// - Parameter value: Open-Meteo `current.time` 문자열입니다.
+    /// - Returns: 파싱된 epoch seconds이며, 실패 시 현재 시각을 반환합니다.
+    private static func parseObservedAt(_ value: String) -> TimeInterval {
+        let isoFormatter = ISO8601DateFormatter()
+        isoFormatter.formatOptions = [.withInternetDateTime]
+        if let date = isoFormatter.date(from: value) {
+            return date.timeIntervalSince1970
+        }
+        let fallbackFormatter = DateFormatter()
+        fallbackFormatter.locale = Locale(identifier: "en_US_POSIX")
+        fallbackFormatter.timeZone = TimeZone(secondsFromGMT: 0)
+        fallbackFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm"
+        if let date = fallbackFormatter.date(from: value) {
+            return date.timeIntervalSince1970
+        }
+        return Date().timeIntervalSince1970
+    }
+
+    /// 강수/기온/풍속 지표를 종합해 최종 날씨 위험도를 계산합니다.
+    /// - Parameters:
+    ///   - precipitationMMPerHour: 시간당 강수량(mm/h)입니다.
+    ///   - temperatureC: 기온(섭씨)입니다.
+    ///   - windMps: 풍속(m/s)입니다.
+    /// - Returns: 지표별 최대 위험도 규칙으로 계산된 최종 위험도입니다.
+    private static func score(
+        precipitationMMPerHour: Double,
+        temperatureC: Double,
+        windMps: Double
+    ) -> WeatherRiskLevelValue {
+        let precipitationRisk = riskForPrecipitation(precipitationMMPerHour)
+        let temperatureRisk = riskForTemperature(temperatureC)
+        let windRisk = riskForWind(windMps)
+        return [precipitationRisk, temperatureRisk, windRisk]
+            .max(by: { $0.severityRank < $1.severityRank }) ?? .clear
+    }
+
+    /// 강수량 임계값 기반 위험도를 계산합니다.
+    /// - Parameter value: 시간당 강수량(mm/h)입니다.
+    /// - Returns: 강수량 기준 위험도입니다.
+    private static func riskForPrecipitation(_ value: Double) -> WeatherRiskLevelValue {
+        if value >= 12 { return .severe }
+        if value >= 6 { return .bad }
+        if value >= 1 { return .caution }
+        return .clear
+    }
+
+    /// 기온 임계값 기반 위험도를 계산합니다.
+    /// - Parameter value: 섭씨 기온입니다.
+    /// - Returns: 기온 기준 위험도입니다.
+    private static func riskForTemperature(_ value: Double) -> WeatherRiskLevelValue {
+        if value >= 33 || value <= -8 { return .severe }
+        if value >= 30 || value <= -3 { return .bad }
+        if value >= 28 || value <= 0 { return .caution }
+        return .clear
+    }
+
+    /// 풍속 임계값 기반 위험도를 계산합니다.
+    /// - Parameter value: 풍속(m/s)입니다.
+    /// - Returns: 풍속 기준 위험도입니다.
+    private static func riskForWind(_ value: Double) -> WeatherRiskLevelValue {
+        if value >= 14 { return .severe }
+        if value >= 10 { return .bad }
+        if value >= 6 { return .caution }
+        return .clear
+    }
+}
+
+private extension WeatherRiskLevelValue {
+    var severityRank: Int {
+        switch self {
+        case .clear: return 0
+        case .caution: return 1
+        case .bad: return 2
+        case .severe: return 3
+        }
+    }
+}
+
 class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSessionDelegate {
     enum WalkEndReason: String {
         case manual = "manual"
@@ -144,6 +307,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private let nearbyPresenceUserIdKey = "nearby.presenceUserId"
     private let mapMotionReducedKey = "map.motion.reduced"
     private let weatherRiskOverrideKey = "weather.risk.level.v1"
+    private let weatherRiskObservedAtKey = "weather.risk.observed_at.v1"
+    private let weatherRiskCacheTTL: TimeInterval = 7200
+    private let weatherRiskRefreshInterval: TimeInterval = 3600
     private var lastAutoRecordedLocation: CLLocation?
     private var lastAutoRecordedAt: Date = .distantPast
     private let autoRecordMinDistance: CLLocationDistance = 12.0
@@ -179,6 +345,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private let userSessionStore: UserSessionStoreProtocol
     private let authSessionStore: AuthSessionStoreProtocol
     private let preferenceStore: MapPreferenceStoreProtocol
+    private let weatherRiskProvider: WeatherRiskProviding
     private let areaCalculationService: MapAreaCalculationServicing
     private let clusterAnnotationService: MapClusterAnnotationServicing
     private let eventCenter: AppEventCenterProtocol
@@ -187,6 +354,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private let maxCaptureRipples = 12
     private let trailLifetime: TimeInterval = 5.0
     private let trailLimit = 12
+    private var weatherFetchTask: Task<Void, Never>? = nil
+    private var lastWeatherFetchAttemptAt: Date = .distantPast
 
     private enum WatchIncomingAction: String {
         case startWalk
@@ -273,6 +442,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         userSessionStore: UserSessionStoreProtocol = DefaultUserSessionStore.shared,
         authSessionStore: AuthSessionStoreProtocol = DefaultAuthSessionStore.shared,
         preferenceStore: MapPreferenceStoreProtocol = DefaultMapPreferenceStore.shared,
+        weatherRiskProvider: WeatherRiskProviding = OpenMeteoWeatherRiskProvider(),
         areaCalculationService: MapAreaCalculationServicing = MapAreaCalculationService(),
         clusterAnnotationService: MapClusterAnnotationServicing = MapClusterAnnotationService(),
         eventCenter: AppEventCenterProtocol = DefaultAppEventCenter.shared
@@ -281,6 +451,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         self.userSessionStore = userSessionStore
         self.authSessionStore = authSessionStore
         self.preferenceStore = preferenceStore
+        self.weatherRiskProvider = weatherRiskProvider
         self.areaCalculationService = areaCalculationService
         self.clusterAnnotationService = clusterAnnotationService
         self.eventCenter = eventCenter
@@ -318,12 +489,14 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         self.refreshSyncOutboxSummary()
         self.flushSyncOutboxIfNeeded(force: true)
         self.refreshWeatherOverlayRisk()
+        self.refreshWeatherRiskFromProviderIfNeeded(location: self.locationManager.location, force: true)
     }
 
     deinit {
         timer?.invalidate()
         nearbyTickTimer?.invalidate()
         syncFlushTask?.cancel()
+        weatherFetchTask?.cancel()
         lifecycleObservers.forEach { eventCenter.removeObserver($0) }
     }
 
@@ -1590,16 +1763,27 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         }
     }
 
-    private func resolveWeatherOverlayRiskFromDefaults() -> (risk: WeatherOverlayRiskLevel, fallback: Bool) {
+    /// 저장된 날씨 위험도 캐시/환경값을 기준으로 현재 지도 오버레이 상태를 계산합니다.
+    /// - Parameter now: 캐시 만료 판단 기준 시각입니다.
+    /// - Returns: 적용할 위험도와 fallback 표시 여부입니다.
+    private func resolveWeatherOverlayRiskFromDefaults(now: Date = Date()) -> (risk: WeatherOverlayRiskLevel, fallback: Bool) {
         if let env = ProcessInfo.processInfo.environment["WEATHER_RISK_LEVEL"],
            let fromEnv = WeatherOverlayRiskLevel(rawValue: env.lowercased()) {
             return (fromEnv, false)
         }
         if let raw = preferenceStore.string(forKey: weatherRiskOverrideKey),
            let fromDefaults = WeatherOverlayRiskLevel(rawValue: raw.lowercased()) {
-            return (fromDefaults, false)
+            guard let observedAt = storedWeatherRiskObservedAt() else {
+                return (fromDefaults, false)
+            }
+            let age = now.timeIntervalSince1970 - observedAt
+            if age <= weatherRiskCacheTTL {
+                return (fromDefaults, false)
+            }
+            let conservativeRisk: WeatherOverlayRiskLevel = fromDefaults == .clear ? .caution : fromDefaults
+            return (conservativeRisk, true)
         }
-        return (.clear, true)
+        return (.caution, true)
     }
 
     func refreshWeatherOverlayRisk() {
@@ -1614,6 +1798,66 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             weatherOverlayRiskLevel = nextRisk
             weatherOverlayOpacity = nextRisk == .clear ? 0.0 : (isMapMotionReduced ? 0.12 : 0.18)
         }
+    }
+
+    /// 현재 위치를 기준으로 날씨 위험도를 비동기로 갱신하고 로컬 캐시에 반영합니다.
+    /// - Parameters:
+    ///   - location: 위험도 조회 기준 위치입니다.
+    ///   - force: `true`이면 주기 제한을 무시하고 즉시 갱신합니다.
+    private func refreshWeatherRiskFromProviderIfNeeded(location: CLLocation?, force: Bool) {
+        guard ProcessInfo.processInfo.environment["WEATHER_RISK_LEVEL"] == nil else { return }
+        guard let location else { return }
+        guard location.horizontalAccuracy >= 0, location.horizontalAccuracy <= 160 else { return }
+        guard weatherFetchTask == nil else { return }
+
+        let now = Date()
+        if force == false,
+           now.timeIntervalSince(lastWeatherFetchAttemptAt) < weatherRiskRefreshInterval {
+            return
+        }
+        lastWeatherFetchAttemptAt = now
+
+        let latitude = location.coordinate.latitude
+        let longitude = location.coordinate.longitude
+
+        weatherFetchTask = Task { [weak self] in
+            guard let self else { return }
+            do {
+                let snapshot = try await weatherRiskProvider.fetchRisk(
+                    latitude: latitude,
+                    longitude: longitude
+                )
+                await MainActor.run {
+                    self.applyWeatherRiskSnapshot(snapshot)
+                }
+            } catch {
+                await MainActor.run {
+                    self.refreshWeatherOverlayRisk()
+                }
+            }
+            await MainActor.run {
+                self.weatherFetchTask = nil
+            }
+        }
+    }
+
+    /// 날씨 공급자 응답을 저장소와 UI 상태에 반영합니다.
+    /// - Parameter snapshot: 공급자에서 계산된 날씨 위험도 스냅샷입니다.
+    private func applyWeatherRiskSnapshot(_ snapshot: WeatherRiskSnapshot) {
+        let next = WeatherOverlayRiskLevel(rawValue: snapshot.level.rawValue) ?? .clear
+        preferenceStore.set(next.rawValue, forKey: weatherRiskOverrideKey)
+        preferenceStore.set(String(snapshot.observedAt), forKey: weatherRiskObservedAtKey)
+        refreshWeatherOverlayRisk()
+    }
+
+    /// 저장소에 캐시된 날씨 위험도 관측 시각을 조회합니다.
+    /// - Returns: epoch seconds 관측 시각이며, 파싱 실패 시 `nil`을 반환합니다.
+    private func storedWeatherRiskObservedAt() -> TimeInterval? {
+        guard let raw = preferenceStore.string(forKey: weatherRiskObservedAtKey),
+              let value = Double(raw) else {
+            return nil
+        }
+        return value
     }
 
     private func currentPresenceUserId() -> String? {
@@ -1917,6 +2161,7 @@ extension MapViewModel {
             if isWalking {
                 syncWatchContext(force: true)
             }
+            refreshWeatherRiskFromProviderIfNeeded(location: manager.location, force: true)
             
         @unknown default:
             locationManager.requestAlwaysAuthorization()
@@ -1938,6 +2183,7 @@ extension MapViewModel {
             }
             self.nearbyTick()
             self.handleAutoPointRecord(with: location)
+            self.refreshWeatherRiskFromProviderIfNeeded(location: location, force: false)
             self.compactMapMotionArtifacts()
             self.persistActiveWalkSession()
             self.handleAutoEndIfNeeded()

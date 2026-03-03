@@ -61,8 +61,8 @@ final class HomeWeatherMissionStatusBuilder: HomeWeatherMissionStatusBuilding {
         let reasonText: String
         if status.source == .fallback {
             reasonText = localizedCopy(
-                "날씨 연동이 아직 준비되지 않아 기본 퀘스트로 진행합니다.",
-                "Weather integration is not ready yet. Running default quests."
+                "실시간 날씨 정보를 불러오지 못해 최근 안전 기준으로 미션을 조정했어요.",
+                "Live weather is unavailable. Missions are adjusted with a conservative safety baseline."
             )
         } else if board.riskLevel == .clear {
             reasonText = localizedCopy(
@@ -86,8 +86,8 @@ final class HomeWeatherMissionStatusBuilder: HomeWeatherMissionStatusBuilding {
         let fallbackNotice: String?
         if status.source == .fallback {
             fallbackNotice = localizedCopy(
-                "연동 전에도 산책/기록/퀘스트는 정상적으로 계속됩니다.",
-                "Walk, logs, and quests continue normally even before weather integration."
+                "연결이 복구되면 자동으로 최신 위험도를 다시 반영합니다.",
+                "When connectivity recovers, the latest risk will be applied automatically."
             )
         } else {
             fallbackNotice = nil

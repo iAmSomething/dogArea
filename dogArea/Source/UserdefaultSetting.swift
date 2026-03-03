@@ -1013,6 +1013,10 @@ enum AppFeatureGate {
     ]
 
     static func currentSession() -> AppSessionState {
+        if let identity = DefaultAuthSessionStore.shared.currentIdentity(),
+           identity.userId.isEmpty == false {
+            return .member(userId: identity.userId)
+        }
         guard let id = UserdefaultSetting.shared.getValue()?.id, id.isEmpty == false else {
             return .guest
         }
@@ -1292,7 +1296,29 @@ final class AuthFlowCoordinator: ObservableObject {
     private let guestModeKey = "auth.guest_mode.v1"
     private let entryChoiceCompletedKey = "auth.entry_choice_completed.v1"
     private let guestDataUpgradeService = GuestDataUpgradeService.shared
+    private let authSessionStore: AuthSessionStoreProtocol
+    private let profileStore: ProfileStoring
+    private let petSelectionStore: PetSelectionStoring
+    private let walkSessionMetadataStore: WalkSessionMetadataStore
     private var onAuthenticated: (() -> Void)?
+
+    /// 인증/프로필/선호 스토어 의존성을 주입해 인증 플로우 코디네이터를 초기화합니다.
+    /// - Parameters:
+    ///   - authSessionStore: 로그인 세션(토큰/사용자 식별자) 저장소입니다.
+    ///   - profileStore: 로컬 프로필 스냅샷 저장소입니다.
+    ///   - petSelectionStore: 반려견 선택 상태 저장소입니다.
+    ///   - walkSessionMetadataStore: 산책 메타데이터/선호 설정 저장소입니다.
+    init(
+        authSessionStore: AuthSessionStoreProtocol = DefaultAuthSessionStore.shared,
+        profileStore: ProfileStoring = ProfileStore.shared,
+        petSelectionStore: PetSelectionStoring = PetSelectionStore.shared,
+        walkSessionMetadataStore: WalkSessionMetadataStore = .shared
+    ) {
+        self.authSessionStore = authSessionStore
+        self.profileStore = profileStore
+        self.petSelectionStore = petSelectionStore
+        self.walkSessionMetadataStore = walkSessionMetadataStore
+    }
 
     var sessionState: AppSessionState {
         AppFeatureGate.currentSession()
@@ -1394,8 +1420,24 @@ final class AuthFlowCoordinator: ObservableObject {
         guestDataUpgradeResult = nil
     }
 
+    /// 현재 로그인 세션과 로컬 프로필 상태를 모두 정리하고 게스트 진입 상태로 전환합니다.
+    func signOut() {
+        authSessionStore.clear()
+        profileStore.removeAll()
+        petSelectionStore.clearSelectionState()
+        walkSessionMetadataStore.clearPreferences()
+        UserDefaults.standard.set(false, forKey: guestModeKey)
+        UserDefaults.standard.set(false, forKey: entryChoiceCompletedKey)
+        pendingUpgradeRequest = nil
+        pendingGuestDataUpgradePrompt = nil
+        guestDataUpgradeInProgress = false
+        guestDataUpgradeResult = nil
+        onAuthenticated = nil
+        refresh()
+    }
+
     func startGuestDataUpgrade(forceRetry: Bool = false) {
-        guard let userId = UserdefaultSetting.shared.getValue()?.id, userId.isEmpty == false else {
+        guard let userId = currentMemberUserId() else {
             return
         }
         pendingGuestDataUpgradePrompt = nil
@@ -1410,7 +1452,7 @@ final class AuthFlowCoordinator: ObservableObject {
     }
 
     func latestGuestDataUpgradeReport() -> GuestDataUpgradeReport? {
-        guard let userId = UserdefaultSetting.shared.getValue()?.id, userId.isEmpty == false else {
+        guard let userId = currentMemberUserId() else {
             return nil
         }
         return guestDataUpgradeService.latestReport(for: userId)
@@ -1422,13 +1464,27 @@ final class AuthFlowCoordinator: ObservableObject {
         shouldShowSignIn = false
         shouldShowEntryChoice = false
         pendingUpgradeRequest = nil
-        if let userId = UserdefaultSetting.shared.getValue()?.id, userId.isEmpty == false {
+        if let userId = currentMemberUserId() {
             pendingGuestDataUpgradePrompt = guestDataUpgradeService.pendingPrompt(for: userId)
             guestDataUpgradeResult = guestDataUpgradeService.latestReport(for: userId)
         }
         let completion = onAuthenticated
         onAuthenticated = nil
         completion?()
+    }
+
+    /// 현재 인증 세션/프로필 스토어에서 사용자 식별자를 조회합니다.
+    /// - Returns: 로그인 사용자 ID가 있으면 반환하고, 없으면 `nil`을 반환합니다.
+    private func currentMemberUserId() -> String? {
+        if let sessionUserId = authSessionStore.currentIdentity()?.userId,
+           sessionUserId.isEmpty == false {
+            return sessionUserId
+        }
+        if let profileUserId = UserdefaultSetting.shared.getValue()?.id,
+           profileUserId.isEmpty == false {
+            return profileUserId
+        }
+        return nil
     }
 }
 

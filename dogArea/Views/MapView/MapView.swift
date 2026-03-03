@@ -29,21 +29,22 @@ struct MapView : View{
     @ObservedObject var tabStatus = TabAppear.shared
     
     var body : some View {
-        ZStack{
-            MapSubView(myAlert: myAlert, viewModel: viewModel)
-            Rectangle()
-                .fill(viewModel.weatherOverlayTintColor)
-                .opacity(viewModel.weatherOverlayOpacity)
-                .ignoresSafeArea()
-                .allowsHitTesting(false)
-                .animation(
-                    .easeInOut(duration: viewModel.weatherOverlayAnimationDuration),
-                    value: viewModel.weatherOverlayRiskLevel
-                )
-            MapAlertSubView(viewModel: viewModel, myAlert: myAlert)
-            
-            VStack {
-                Spacer().frame(height: 50)
+        GeometryReader { proxy in
+            ZStack{
+                MapSubView(myAlert: myAlert, viewModel: viewModel)
+                Rectangle()
+                    .fill(viewModel.weatherOverlayTintColor)
+                    .opacity(viewModel.weatherOverlayOpacity)
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+                    .animation(
+                        .easeInOut(duration: viewModel.weatherOverlayAnimationDuration),
+                        value: viewModel.weatherOverlayRiskLevel
+                    )
+                MapAlertSubView(viewModel: viewModel, myAlert: myAlert)
+
+                VStack {
+                    Spacer().frame(height: max(proxy.safeAreaInsets.top, 0) + 8)
                 HStack {
                     Spacer()
                     Button(action:{
@@ -152,6 +153,7 @@ struct MapView : View{
                         .clipShape(RoundedCornersShape(radius: 20,corners: [.topLeft,.topRight]))
                 }
             }
+        }
         }
         .onAppear {
             viewModel.reloadSelectedPetContext()
