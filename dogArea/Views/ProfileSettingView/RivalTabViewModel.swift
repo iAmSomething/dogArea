@@ -233,7 +233,12 @@ final class RivalTabViewModel: NSObject, ObservableObject, @preconcurrency CLLoc
                     screenState = .ready
                 }
             } catch {
-                if RivalNetworkErrorInterpreter.isConnectivityError(error) {
+                if let supabaseError = error as? SupabaseHTTPError,
+                   case .unexpectedStatusCode(404) = supabaseError {
+                    hotspots = []
+                    updateHotspotSummary()
+                    screenState = .empty
+                } else if RivalNetworkErrorInterpreter.isConnectivityError(error) {
                     screenState = hotspots.isEmpty ? .offlineEmpty : .offlineCached
                 } else {
                     screenState = .errorRetryable

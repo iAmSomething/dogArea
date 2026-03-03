@@ -1705,6 +1705,13 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
                     self.nearbyHotspots = hotspots
                 }
             } catch {
+                if let supabaseError = error as? SupabaseHTTPError,
+                   case .unexpectedStatusCode(404) = supabaseError {
+                    await MainActor.run {
+                        self.nearbyHotspots = []
+                    }
+                    return
+                }
                 print("nearby hotspot fetch failed: \(error.localizedDescription)")
             }
         }
