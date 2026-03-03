@@ -441,6 +441,37 @@ protocol TerritoryWidgetSnapshotSyncing {
     func sync(force: Bool, now: Date) async
 }
 
+struct HotspotWidgetSummaryDTO: Equatable {
+    let signalLevel: HotspotWidgetSignalLevel
+    let highCellCount: Int
+    let mediumCellCount: Int
+    let lowCellCount: Int
+    let delayMinutes: Int
+    let privacyMode: String
+    let suppressionReason: String?
+    let guideCopy: String
+    let hasData: Bool
+    let isCached: Bool
+    let refreshedAt: TimeInterval
+}
+
+protocol HotspotWidgetSummaryServiceProtocol {
+    /// 위젯용 익명 핫스팟 요약 지표를 조회합니다.
+    /// - Parameters:
+    ///   - radiusKm: 사용자 주변 집계 반경(km)입니다.
+    ///   - now: 서버 집계 기준 시각입니다.
+    /// - Returns: 활성도 단계/억제 사유/안내 문구를 포함한 요약 DTO입니다.
+    func fetchSummary(radiusKm: Double, now: Date) async throws -> HotspotWidgetSummaryDTO
+}
+
+protocol HotspotWidgetSnapshotSyncing {
+    /// 서버 요약을 조회해 핫스팟 위젯 공유 스냅샷을 갱신합니다.
+    /// - Parameters:
+    ///   - force: `true`면 TTL을 무시하고 즉시 갱신합니다.
+    ///   - now: TTL/상태 계산 기준 시각입니다.
+    func sync(force: Bool, now: Date) async
+}
+
 struct FeatureControlService: FeatureFlagRemoteServiceProtocol {
     static let shared = FeatureControlService()
 
@@ -832,6 +863,10 @@ struct NearbyPresenceService: NearbyPresenceServiceProtocol {
         let intensity: Double
         let center_lat: Double
         let center_lng: Double
+        let privacy_mode: String?
+        let suppression_reason: String?
+        let delay_minutes: Int?
+        let required_min_sample: Int?
     }
 
     private struct HotspotEnvelope: Decodable {
@@ -899,7 +934,11 @@ struct NearbyPresenceService: NearbyPresenceServiceProtocol {
                 geohash: $0.geohash7,
                 count: $0.count,
                 intensity: max(0.0, min(1.0, $0.intensity)),
-                centerCoordinate: CLLocationCoordinate2D(latitude: $0.center_lat, longitude: $0.center_lng)
+                centerCoordinate: CLLocationCoordinate2D(latitude: $0.center_lat, longitude: $0.center_lng),
+                privacyMode: $0.privacy_mode,
+                suppressionReason: $0.suppression_reason,
+                delayMinutes: $0.delay_minutes,
+                requiredMinSample: $0.required_min_sample
             )
         }
     }
@@ -1161,6 +1200,286 @@ final class DefaultTerritoryWidgetSnapshotSyncService: TerritoryWidgetSnapshotSy
     private func reloadTerritoryWidgetTimeline() {
         #if canImport(WidgetKit)
         WidgetCenter.shared.reloadTimelines(ofKind: WalkWidgetBridgeContract.territoryWidgetKind)
+        #endif
+    }
+}
+
+struct HotspotWidgetSummaryService: HotspotWidgetSummaryServiceProtocol {
+    private struct ResponseDTO: Decodable {
+        let signalLevel: String?
+        let highCells: Int?
+        let mediumCells: Int?
+        let lowCells: Int?
+        let delayMinutes: Int?
+        let privacyMode: String?
+        let suppressionReason: String?
+        let guideCopy: String?
+        let hasData: Bool?
+        let isCached: Bool?
+        let refreshedAt: String?
+
+        enum CodingKeys: String, CodingKey {
+            case signalLevel = "signal_level"
+            case highCells = "high_cells"
+            case mediumCells = "medium_cells"
+            case lowCells = "low_cells"
+            case delayMinutes = "delay_minutes"
+            case privacyMode = "privacy_mode"
+            case suppressionReason = "suppression_reason"
+            case guideCopy = "guide_copy"
+            case hasData = "has_data"
+            case isCached = "is_cached"
+            case refreshedAt = "refreshed_at"
+        }
+    }
+
+    private let client: SupabaseHTTPClient
+
+    /// 익명 핫스팟 위젯 요약 서비스 인스턴스를 생성합니다.
+    /// - Parameter client: Supabase 요청을 수행하는 HTTP 클라이언트입니다.
+    init(client: SupabaseHTTPClient = .live) {
+        self.client = client
+    }
+
+    /// 위젯용 익명 핫스팟 요약 지표를 조회합니다.
+    /// - Parameters:
+    ///   - radiusKm: 사용자 주변 집계 반경(km)입니다.
+    ///   - now: 서버 집계 기준 시각입니다.
+    /// - Returns: 활성도 단계/억제 사유/안내 문구를 포함한 요약 DTO입니다.
+    func fetchSummary(radiusKm: Double, now: Date) async throws -> HotspotWidgetSummaryDTO {
+        let payload: [String: Any] = [
+            "radius_km": min(5.0, max(0.3, radiusKm)),
+            "now_ts": ISO8601DateFormatter().string(from: now)
+        ]
+        let data = try await client.request(
+            .rest(path: "rpc/rpc_get_widget_hotspot_summary"),
+            method: .post,
+            bodyData: try JSONSerialization.data(withJSONObject: payload)
+        )
+        let decoded = try JSONDecoder().decode(ResponseDTO.self, from: data)
+        return HotspotWidgetSummaryDTO(
+            signalLevel: mapSignalLevel(decoded.signalLevel),
+            highCellCount: max(0, decoded.highCells ?? 0),
+            mediumCellCount: max(0, decoded.mediumCells ?? 0),
+            lowCellCount: max(0, decoded.lowCells ?? 0),
+            delayMinutes: max(0, decoded.delayMinutes ?? 0),
+            privacyMode: decoded.privacyMode ?? "none",
+            suppressionReason: decoded.suppressionReason,
+            guideCopy: decoded.guideCopy ?? "개인 좌표 없이 익명 셀 신호만 제공됩니다.",
+            hasData: decoded.hasData ?? false,
+            isCached: decoded.isCached ?? false,
+            refreshedAt: SupabaseISO8601.parseEpoch(decoded.refreshedAt) ?? now.timeIntervalSince1970
+        )
+    }
+
+    /// 서버 응답의 문자열 값을 위젯 신호 레벨 열거형으로 변환합니다.
+    /// - Parameter rawValue: 서버에서 전달한 `signal_level` 원문 값입니다.
+    /// - Returns: 지원하지 않는 값은 `.none`으로 정규화한 신호 레벨입니다.
+    private func mapSignalLevel(_ rawValue: String?) -> HotspotWidgetSignalLevel {
+        guard let rawValue, let value = HotspotWidgetSignalLevel(rawValue: rawValue) else {
+            return .none
+        }
+        return value
+    }
+}
+
+final class DefaultHotspotWidgetSnapshotSyncService: HotspotWidgetSnapshotSyncing {
+    private let summaryService: HotspotWidgetSummaryServiceProtocol
+    private let snapshotStore: HotspotWidgetSnapshotStoring
+    private let userSessionStore: UserSessionStoreProtocol
+    private let preferenceStore: UserDefaults
+    private let syncTTL: TimeInterval
+    private let staleGraceInterval: TimeInterval
+    private let queryRadiusKm: Double
+
+    /// 핫스팟 위젯 스냅샷 동기화 서비스를 생성합니다.
+    /// - Parameters:
+    ///   - summaryService: 서버 요약 RPC 호출 서비스입니다.
+    ///   - snapshotStore: 앱 그룹 기반 핫스팟 스냅샷 저장소입니다.
+    ///   - userSessionStore: 현재 로그인 사용자 컨텍스트 조회 저장소입니다.
+    ///   - preferenceStore: 마지막 동기화 메타데이터를 저장할 기본 설정 저장소입니다.
+    ///   - syncTTL: RPC 재조회 최소 간격(초)입니다.
+    ///   - staleGraceInterval: 오프라인 캐시를 허용할 최대 유예 시간(초)입니다.
+    ///   - queryRadiusKm: 서버 요약 조회 시 사용할 반경(km)입니다.
+    init(
+        summaryService: HotspotWidgetSummaryServiceProtocol = HotspotWidgetSummaryService(),
+        snapshotStore: HotspotWidgetSnapshotStoring = DefaultHotspotWidgetSnapshotStore.shared,
+        userSessionStore: UserSessionStoreProtocol = DefaultUserSessionStore.shared,
+        preferenceStore: UserDefaults = .standard,
+        syncTTL: TimeInterval = 10 * 60,
+        staleGraceInterval: TimeInterval = 3 * 60 * 60,
+        queryRadiusKm: Double = 1.2
+    ) {
+        self.summaryService = summaryService
+        self.snapshotStore = snapshotStore
+        self.userSessionStore = userSessionStore
+        self.preferenceStore = preferenceStore
+        self.syncTTL = syncTTL
+        self.staleGraceInterval = staleGraceInterval
+        self.queryRadiusKm = queryRadiusKm
+    }
+
+    /// 서버 요약을 조회해 핫스팟 위젯 공유 스냅샷을 갱신합니다.
+    /// - Parameters:
+    ///   - force: `true`면 TTL을 무시하고 즉시 갱신합니다.
+    ///   - now: TTL/상태 계산 기준 시각입니다.
+    func sync(force: Bool, now: Date) async {
+        guard shouldSync(force: force, now: now) else { return }
+
+        guard let user = userSessionStore.currentUserInfo(),
+              user.id.isEmpty == false else {
+            saveGuestSnapshot(now: now)
+            return
+        }
+
+        do {
+            let summary = try await summaryService.fetchSummary(radiusKm: queryRadiusKm, now: now)
+            saveMemberSnapshot(summary: summary, now: now)
+        } catch {
+            saveFailureSnapshot(now: now)
+        }
+    }
+
+    /// TTL과 이전 상태를 기준으로 이번 동기화를 수행할지 판단합니다.
+    /// - Parameters:
+    ///   - force: `true`면 즉시 동기화합니다.
+    ///   - now: 판단 기준 시각입니다.
+    /// - Returns: 동기화가 필요하면 `true`, 스킵 가능하면 `false`입니다.
+    private func shouldSync(force: Bool, now: Date) -> Bool {
+        if force { return true }
+        let snapshot = snapshotStore.load()
+        let age = now.timeIntervalSince1970 - snapshot.updatedAt
+        return age >= syncTTL
+    }
+
+    /// 비회원 상태 스냅샷을 저장합니다.
+    /// - Parameter now: 저장 시각입니다.
+    private func saveGuestSnapshot(now: Date) {
+        save(
+            HotspotWidgetSnapshot(
+                status: .guestLocked,
+                message: "로그인 후 주변 익명 핫스팟 트렌드를 위젯에서 확인할 수 있어요.",
+                summary: nil,
+                updatedAt: now.timeIntervalSince1970
+            ),
+            now: now
+        )
+    }
+
+    /// 서버 요약 응답을 회원 상태 스냅샷으로 저장합니다.
+    /// - Parameters:
+    ///   - summary: 서버에서 조회한 최신 익명 핫스팟 요약 DTO입니다.
+    ///   - now: 저장 시각입니다.
+    private func saveMemberSnapshot(summary: HotspotWidgetSummaryDTO, now: Date) {
+        let status = resolveMemberStatus(summary)
+        let message = messageForMemberSummary(summary, status: status)
+        let snapshot = HotspotWidgetSnapshot(
+            status: status,
+            message: message,
+            summary: HotspotWidgetSummarySnapshot(
+                signalLevel: summary.signalLevel,
+                highCellCount: summary.highCellCount,
+                mediumCellCount: summary.mediumCellCount,
+                lowCellCount: summary.lowCellCount,
+                delayMinutes: summary.delayMinutes,
+                privacyMode: summary.privacyMode,
+                suppressionReason: summary.suppressionReason,
+                guideCopy: summary.guideCopy,
+                refreshedAt: summary.refreshedAt
+            ),
+            updatedAt: now.timeIntervalSince1970
+        )
+        save(snapshot, now: now)
+    }
+
+    /// 서버 요약을 위젯 상태 코드로 정규화합니다.
+    /// - Parameter summary: 서버에서 조회한 익명 핫스팟 요약 DTO입니다.
+    /// - Returns: 위젯 렌더링에 사용할 상태 코드입니다.
+    private func resolveMemberStatus(_ summary: HotspotWidgetSummaryDTO) -> HotspotWidgetSnapshotStatus {
+        if summary.hasData == false {
+            return .emptyData
+        }
+        if summary.suppressionReason != nil || summary.privacyMode != "full" {
+            return .privacyGuarded
+        }
+        return .memberReady
+    }
+
+    /// 회원 요약 상태별 사용자 안내 문구를 생성합니다.
+    /// - Parameters:
+    ///   - summary: 서버에서 조회한 익명 핫스팟 요약 DTO입니다.
+    ///   - status: 위젯 상태 코드입니다.
+    /// - Returns: 상태별 안내 메시지 문자열입니다.
+    private func messageForMemberSummary(
+        _ summary: HotspotWidgetSummaryDTO,
+        status: HotspotWidgetSnapshotStatus
+    ) -> String {
+        switch status {
+        case .memberReady:
+            return "개인 식별 정보 없이 익명 활성도 단계만 표시합니다."
+        case .privacyGuarded:
+            switch summary.suppressionReason {
+            case "sensitive_mask":
+                return "민감 지역은 보호 정책으로 마스킹되어 상세 표시를 제한합니다."
+            case "k_anon":
+                return "샘플 수가 부족한 지역은 백분위 단계로만 표시됩니다."
+            default:
+                return "프라이버시 가드가 적용되어 일부 신호가 축약 표시됩니다."
+            }
+        case .emptyData:
+            return "현재 주변 익명 핫스팟 데이터가 충분하지 않아요."
+        default:
+            return summary.guideCopy
+        }
+    }
+
+    /// 서버 조회 실패 시 마지막 성공 스냅샷 기반 상태로 저장합니다.
+    /// - Parameter now: 저장 시각입니다.
+    private func saveFailureSnapshot(now: Date) {
+        let current = snapshotStore.load()
+        guard let cachedSummary = current.summary else {
+            save(
+                HotspotWidgetSnapshot(
+                    status: .syncDelayed,
+                    message: "동기화가 지연되고 있어요. 앱을 열어 최신화해주세요.",
+                    summary: nil,
+                    updatedAt: now.timeIntervalSince1970
+                ),
+                now: now
+            )
+            return
+        }
+
+        let cacheAge = now.timeIntervalSince1970 - cachedSummary.refreshedAt
+        let status: HotspotWidgetSnapshotStatus = cacheAge <= staleGraceInterval ? .offlineCached : .syncDelayed
+        let message: String = cacheAge <= staleGraceInterval
+            ? "오프라인 상태예요. 마지막 익명 스냅샷을 표시 중입니다."
+            : "동기화가 지연되고 있어요. 앱을 열어 최신화해주세요."
+        save(
+            HotspotWidgetSnapshot(
+                status: status,
+                message: message,
+                summary: cachedSummary,
+                updatedAt: now.timeIntervalSince1970
+            ),
+            now: now
+        )
+    }
+
+    /// 위젯 스냅샷 저장 후 재로딩을 요청하고 마지막 동기화 시각을 기록합니다.
+    /// - Parameters:
+    ///   - snapshot: 저장할 핫스팟 위젯 스냅샷입니다.
+    ///   - now: 마지막 동기화 시각 기록 기준입니다.
+    private func save(_ snapshot: HotspotWidgetSnapshot, now: Date) {
+        snapshotStore.save(snapshot)
+        preferenceStore.set(now.timeIntervalSince1970, forKey: "hotspot.widget.lastSyncAt.v1")
+        reloadHotspotWidgetTimeline()
+    }
+
+    /// WidgetKit 타임라인을 즉시 재요청해 최신 스냅샷이 반영되도록 합니다.
+    private func reloadHotspotWidgetTimeline() {
+        #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadTimelines(ofKind: WalkWidgetBridgeContract.hotspotWidgetKind)
         #endif
     }
 }

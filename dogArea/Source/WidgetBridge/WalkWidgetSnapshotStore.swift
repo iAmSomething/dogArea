@@ -66,6 +66,60 @@ struct TerritoryWidgetSnapshot: Codable, Equatable {
     )
 }
 
+enum HotspotWidgetSignalLevel: String, Codable {
+    case high = "high"
+    case medium = "medium"
+    case low = "low"
+    case none = "none"
+}
+
+enum HotspotWidgetSnapshotStatus: String, Codable {
+    case memberReady = "member_ready"
+    case guestLocked = "guest_locked"
+    case privacyGuarded = "privacy_guarded"
+    case emptyData = "empty_data"
+    case offlineCached = "offline_cached"
+    case syncDelayed = "sync_delayed"
+}
+
+struct HotspotWidgetSummarySnapshot: Codable, Equatable {
+    let signalLevel: HotspotWidgetSignalLevel
+    let highCellCount: Int
+    let mediumCellCount: Int
+    let lowCellCount: Int
+    let delayMinutes: Int
+    let privacyMode: String
+    let suppressionReason: String?
+    let guideCopy: String
+    let refreshedAt: TimeInterval
+
+    static let zero = HotspotWidgetSummarySnapshot(
+        signalLevel: .none,
+        highCellCount: 0,
+        mediumCellCount: 0,
+        lowCellCount: 0,
+        delayMinutes: 0,
+        privacyMode: "none",
+        suppressionReason: nil,
+        guideCopy: "현재 주변 익명 핫스팟 신호가 충분하지 않습니다.",
+        refreshedAt: Date().timeIntervalSince1970
+    )
+}
+
+struct HotspotWidgetSnapshot: Codable, Equatable {
+    let status: HotspotWidgetSnapshotStatus
+    let message: String
+    let summary: HotspotWidgetSummarySnapshot?
+    let updatedAt: TimeInterval
+
+    static let initial = HotspotWidgetSnapshot(
+        status: .guestLocked,
+        message: "로그인 후 익명 핫스팟 활성도 단계를 확인할 수 있어요.",
+        summary: nil,
+        updatedAt: Date().timeIntervalSince1970
+    )
+}
+
 enum WalkLiveActivityAutoEndStage: String, Codable, Equatable, Hashable {
     case active = "active"
     case restCandidate = "rest_candidate"
@@ -238,6 +292,55 @@ final class DefaultTerritoryWidgetSnapshotStore: TerritoryWidgetSnapshotStoring 
     func save(_ snapshot: TerritoryWidgetSnapshot) {
         guard let data = try? encoder.encode(snapshot) else { return }
         storage.set(data, forKey: WalkWidgetBridgeContract.territorySnapshotStorageKey)
+    }
+
+    /// App Group 저장소를 우선 사용하고, 실패 시 표준 저장소를 반환합니다.
+    /// - Returns: 위젯과 앱 간 공유 가능한 UserDefaults 인스턴스입니다.
+    private static func resolveStorage() -> UserDefaults {
+        UserDefaults(suiteName: WalkWidgetBridgeContract.appGroupIdentifier) ?? .standard
+    }
+}
+
+protocol HotspotWidgetSnapshotStoring {
+    /// 핫스팟 위젯 스냅샷을 조회합니다.
+    /// - Returns: 저장된 스냅샷이 있으면 해당 값, 없으면 기본 스냅샷을 반환합니다.
+    func load() -> HotspotWidgetSnapshot
+
+    /// 핫스팟 위젯 스냅샷을 저장합니다.
+    /// - Parameter snapshot: 위젯 표시용으로 직렬화할 최신 핫스팟 스냅샷입니다.
+    func save(_ snapshot: HotspotWidgetSnapshot)
+}
+
+final class DefaultHotspotWidgetSnapshotStore: HotspotWidgetSnapshotStoring {
+    static let shared = DefaultHotspotWidgetSnapshotStore()
+
+    private let storage: UserDefaults
+    private let decoder = JSONDecoder()
+    private let encoder = JSONEncoder()
+
+    /// 핫스팟 위젯 스냅샷 저장소를 초기화합니다.
+    /// - Parameter storage: 스냅샷 직렬화 데이터를 저장할 UserDefaults입니다.
+    init(storage: UserDefaults = DefaultHotspotWidgetSnapshotStore.resolveStorage()) {
+        self.storage = storage
+    }
+
+    /// 핫스팟 위젯 스냅샷을 조회합니다.
+    /// - Returns: 저장된 스냅샷이 있으면 해당 값, 없으면 기본 스냅샷을 반환합니다.
+    func load() -> HotspotWidgetSnapshot {
+        guard
+            let data = storage.data(forKey: WalkWidgetBridgeContract.hotspotSnapshotStorageKey),
+            let decoded = try? decoder.decode(HotspotWidgetSnapshot.self, from: data)
+        else {
+            return .initial
+        }
+        return decoded
+    }
+
+    /// 핫스팟 위젯 스냅샷을 저장합니다.
+    /// - Parameter snapshot: 위젯 표시용으로 직렬화할 최신 핫스팟 스냅샷입니다.
+    func save(_ snapshot: HotspotWidgetSnapshot) {
+        guard let data = try? encoder.encode(snapshot) else { return }
+        storage.set(data, forKey: WalkWidgetBridgeContract.hotspotSnapshotStorageKey)
     }
 
     /// App Group 저장소를 우선 사용하고, 실패 시 표준 저장소를 반환합니다.

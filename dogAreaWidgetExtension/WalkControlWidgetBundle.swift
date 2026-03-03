@@ -7,6 +7,7 @@ struct WalkControlWidgetBundle: WidgetBundle {
     var body: some Widget {
         WalkControlWidget()
         TerritoryStatusWidget()
+        HotspotStatusWidget()
         if #available(iOSApplicationExtension 16.1, *) {
             WalkLiveActivityWidget()
         }
