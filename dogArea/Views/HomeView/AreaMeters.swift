@@ -37,7 +37,7 @@ struct AreaMeterCollection {
       if let customAreas, customAreas.isEmpty == false {
           return customAreas.sorted { $0.area < $1.area }
       }
-      var area: [AreaMeter] = [.init("강원특별자치도 홍천군" , 1820.58),
+      let area: [AreaMeter] = [.init("강원특별자치도 홍천군" , 1820.58),
         .init("강원특별자치도 인제군",1646.19),
         .init("경상북도 안동시",1522.21),
         .init("강원특별자치도 평창군",1464.19),

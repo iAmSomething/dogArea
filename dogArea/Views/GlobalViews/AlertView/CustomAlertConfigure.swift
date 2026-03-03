@@ -15,9 +15,9 @@ enum AlertActionType{
     case deletePolygon(UUID)
     var model: AlertModel {
         switch self {
-        case .custom(let model, let leftAction, let rightAction):
+        case .custom(let model, _, _):
             return model
-        case .customThreeButton(let model, let leftAction, let middleAction, let rightAction):
+        case .customThreeButton(let model, _, _, _):
             return model
         case .addPoint:
             return AlertModel(title: "영역 표시", message: "영역을 표시하겠습니까?", configure: .defaultType)
