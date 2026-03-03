@@ -541,6 +541,8 @@ enum AppMetricEvent: String {
     case weatherFeedbackSubmitted = "weather_feedback_submitted"
     case weatherFeedbackRateLimited = "weather_feedback_rate_limited"
     case weatherRiskReevaluated = "weather_risk_reevaluated"
+    case syncAuthRefreshSucceeded = "sync_auth_refresh_succeeded"
+    case syncAuthRefreshFailed = "sync_auth_refresh_failed"
 }
 
 final class FeatureFlagStore {
