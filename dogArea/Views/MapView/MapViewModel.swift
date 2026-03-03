@@ -196,6 +196,12 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         }
     }
 
+    enum CameraChangeReason: String {
+        case manualMove = "manual_move"
+        case locationButton = "location_button"
+        case systemFallback = "system_fallback"
+    }
+
     private struct ActiveWalkPointSnapshot: Codable {
         let latitude: Double
         let longitude: Double
@@ -213,6 +219,11 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         let lastMovementAt: TimeInterval?
         let points: [ActiveWalkPointSnapshot]
         let savedAt: TimeInterval
+    }
+
+    private struct CameraSnapshot {
+        let centerCoordinate: CLLocationCoordinate2D
+        let distance: Double
     }
 
     private enum MapOverlayLODTuning {
@@ -338,6 +349,15 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private var pendingRecoverableSession: ActiveWalkSessionSnapshot?
     private var lifecycleObservers: [NSObjectProtocol] = []
     private var lastAcceptedWalkLocation: CLLocation?
+    private var pendingCameraChangeReason: CameraChangeReason?
+    private var pendingCameraReasonSetAt: Date = .distantPast
+    private let pendingCameraReasonTTL: TimeInterval = 2.0
+    private var lastLoggedCameraCenter: CLLocationCoordinate2D?
+    private var lastLoggedCameraDistance: Double?
+    private var lastLoggedCameraReason: CameraChangeReason?
+    private let cameraLogCenterThreshold: CLLocationDistance = 40.0
+    private let cameraLogDistanceThreshold: Double = 120.0
+    private var pendingPointAddCameraSnapshot: CameraSnapshot?
     private var lastSyncFlushAt: Date = .distantPast
     private var lastSyncSummarySnapshot: SyncOutboxSummary? = nil
     private var lastWidgetSnapshotSyncAt: Date = .distantPast
@@ -554,6 +574,20 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     func addLocation(){
         guard let location = self.location else { return }
         appendWalkPoint(from: location, recordedAt: Date(), source: .manual)
+    }
+
+    /// 수동 포인트 추가 전에 현재 카메라 중심/거리 상태를 저장합니다.
+    func preparePointAddCameraSnapshot() {
+        pendingPointAddCameraSnapshot = CameraSnapshot(
+            centerCoordinate: camera.centerCoordinate,
+            distance: max(120.0, camera.distance)
+        )
+    }
+
+    /// 수동 포인트를 추가한 뒤 필요 시 저장된 카메라 상태를 복원합니다.
+    func addLocationPreservingCamera() {
+        addLocation()
+        restorePointAddCameraSnapshotIfNeeded()
     }
     func removeLocation(_ locationID : UUID){
         if polygon.locations.firstIndex(where:{ $0.id == locationID}) != nil {
@@ -1403,17 +1437,115 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 
         appendWalkPoint(from: location, recordedAt: now, source: .auto)
     }
-    func setTrackingMode() {
+    /// 지도 카메라를 내 위치 추적 모드로 전환합니다.
+    /// - Parameter reason: 추적 전환을 유발한 원인입니다. 전달 시 카메라 변경 로그 원인으로 사용됩니다.
+    func setTrackingMode(reason: CameraChangeReason? = nil) {
+        if let reason {
+            markPendingCameraChangeReason(reason)
+        }
         guard let location = self.location else {
-            withAnimation(.easeInOut(duration: 0.3)){ [weak self] in
-                self?.cameraPosition = MapCameraPosition.userLocation(followsHeading: true, fallback: .automatic)
+            markPendingCameraChangeReason(.systemFallback)
+            withAnimation(.easeInOut(duration: 0.3)) { [weak self] in
+                self?.cameraPosition = MapCameraPosition.userLocation(
+                    followsHeading: true,
+                    fallback: .automatic
+                )
             }
-            return }
-        withAnimation(.easeInOut(duration: 0.3)){ [weak self] in
-            self?.cameraPosition = MapCameraPosition.userLocation(followsHeading: true, fallback: MapCameraPosition.camera(.init(centerCoordinate: location.coordinate, distance: 2000)))
+            return
+        }
+        withAnimation(.easeInOut(duration: 0.3)) { [weak self] in
+            self?.cameraPosition = MapCameraPosition.userLocation(
+                followsHeading: true,
+                fallback: MapCameraPosition.camera(.init(centerCoordinate: location.coordinate, distance: 2000))
+            )
+        }
+    }
+
+    /// 사용자의 `내 위치 보기` 요청을 지도 추적 모드 전환으로 처리합니다.
+    func handleLocationButtonTap() {
+        setTrackingMode(reason: .locationButton)
+    }
+
+    /// 지도 카메라 변경 이벤트를 기록하고 원인별 디버그 로그를 남깁니다.
+    /// - Parameters:
+    ///   - camera: 현재 지도 카메라 상태입니다.
+    ///   - now: 로그 판정 기준 시각입니다.
+    func recordCameraChange(_ camera: MapCamera, now: Date = Date()) {
+        self.camera = camera
+        let reason = resolveCameraChangeReason(now: now)
+        guard shouldLogCameraChange(camera, reason: reason) else { return }
+        #if DEBUG
+        let latitude = String(format: "%.5f", camera.centerCoordinate.latitude)
+        let longitude = String(format: "%.5f", camera.centerCoordinate.longitude)
+        print(
+            "map camera change: reason=\(reason.rawValue) distance=\(Int(camera.distance)) center=(\(latitude),\(longitude))"
+        )
+        #endif
+        lastLoggedCameraCenter = camera.centerCoordinate
+        lastLoggedCameraDistance = camera.distance
+        lastLoggedCameraReason = reason
+    }
+
+    /// 수동 포인트 추가 후 카메라가 점프했을 때 직전 스냅샷으로 복원합니다.
+    private func restorePointAddCameraSnapshotIfNeeded() {
+        guard let snapshot = pendingPointAddCameraSnapshot else { return }
+        defer { pendingPointAddCameraSnapshot = nil }
+
+        let currentCenter = CLLocation(
+            latitude: camera.centerCoordinate.latitude,
+            longitude: camera.centerCoordinate.longitude
+        )
+        let preservedCenter = CLLocation(
+            latitude: snapshot.centerCoordinate.latitude,
+            longitude: snapshot.centerCoordinate.longitude
+        )
+        let centerDelta = currentCenter.distance(from: preservedCenter)
+        let distanceDelta = abs(camera.distance - snapshot.distance)
+        guard centerDelta > 15 || distanceDelta > 15 else { return }
+
+        setRegion(snapshot.centerCoordinate, distance: snapshot.distance, reason: .systemFallback)
+    }
+
+    /// 다음 카메라 변경 이벤트에 적용할 원인을 저장합니다.
+    /// - Parameter reason: 카메라 변경 원인입니다.
+    private func markPendingCameraChangeReason(_ reason: CameraChangeReason) {
+        pendingCameraChangeReason = reason
+        pendingCameraReasonSetAt = Date()
+    }
+
+    /// 저장된 카메라 변경 원인을 해석해 반환합니다.
+    /// - Parameter now: 원인 유효 시간 판정 기준 시각입니다.
+    /// - Returns: 저장된 원인이 유효하면 해당 값, 아니면 `.manualMove`입니다.
+    private func resolveCameraChangeReason(now: Date) -> CameraChangeReason {
+        guard let reason = pendingCameraChangeReason else { return .manualMove }
+        defer { pendingCameraChangeReason = nil }
+        if now.timeIntervalSince(pendingCameraReasonSetAt) > pendingCameraReasonTTL {
+            return .manualMove
+        }
+        return reason
+    }
+
+    /// 카메라 로그를 남길지 여부를 이전 로그 상태와 비교해 판단합니다.
+    /// - Parameters:
+    ///   - camera: 현재 지도 카메라 상태입니다.
+    ///   - reason: 이번 변경 원인입니다.
+    /// - Returns: 임계치를 넘는 변경이거나 원인이 바뀌었으면 `true`입니다.
+    private func shouldLogCameraChange(_ camera: MapCamera, reason: CameraChangeReason) -> Bool {
+        guard let lastCenter = lastLoggedCameraCenter,
+              let lastDistance = lastLoggedCameraDistance,
+              let lastReason = lastLoggedCameraReason else {
+            return true
         }
 
+        if lastReason != reason { return true }
+
+        let previous = CLLocation(latitude: lastCenter.latitude, longitude: lastCenter.longitude)
+        let current = CLLocation(latitude: camera.centerCoordinate.latitude, longitude: camera.centerCoordinate.longitude)
+        let centerDelta = current.distance(from: previous)
+        let distanceDelta = abs(camera.distance - lastDistance)
+        return centerDelta >= cameraLogCenterThreshold || distanceDelta >= cameraLogDistanceThreshold
     }
+
     private func forceQuit() {
         endWalk(reason: .autoTimeout)
         walkStatusMessage = "최대 산책 시간 도달로 자동 종료했습니다."
@@ -2437,25 +2569,34 @@ extension MapViewModel {
         }
     }
 
-    func setRegion(_ location : CLLocation?, distance: Double = 2000){
+    /// 위치 객체를 기준으로 지도의 중심/축척을 설정합니다.
+    /// - Parameters:
+    ///   - location: 중심으로 이동할 위치 객체입니다.
+    ///   - distance: 카메라 거리(미터)입니다.
+    ///   - reason: 카메라 변경 원인 로그에 사용할 선택값입니다.
+    func setRegion(_ location : CLLocation?, distance: Double = 2000, reason: CameraChangeReason? = nil){
         guard let coordinate=location?.coordinate else {return}
+        if let reason {
+            markPendingCameraChangeReason(reason)
+        }
         withAnimation(.easeInOut(duration: 0.3)){
             cameraPosition = MapCameraPosition.camera(.init(centerCoordinate: coordinate, distance: distance))
         }
     }
-    func setRegion(_ coordination : CLLocationCoordinate2D?, distance: Double = 2000){
+    /// 좌표를 기준으로 지도의 중심/축척을 설정합니다.
+    /// - Parameters:
+    ///   - coordination: 중심으로 이동할 좌표입니다.
+    ///   - distance: 카메라 거리(미터)입니다.
+    ///   - reason: 카메라 변경 원인 로그에 사용할 선택값입니다.
+    func setRegion(_ coordination : CLLocationCoordinate2D?, distance: Double = 2000, reason: CameraChangeReason? = nil){
         guard let coordinate=coordination else {return}
+        if let reason {
+            markPendingCameraChangeReason(reason)
+        }
         withAnimation(.easeInOut(duration: 0.3)){
             cameraPosition = MapCameraPosition.camera(.init(centerCoordinate: coordinate, distance: distance))
         }
     }
-    private func seeCurrentLocation(){
-        guard let location = self.location else {
-            cameraPosition = MapCameraPosition.userLocation(followsHeading: true, fallback: .automatic)
-            return }
-        cameraPosition = MapCameraPosition.userLocation(followsHeading: true, fallback: MapCameraPosition.camera(.init(centerCoordinate: location.coordinate, distance: 2000)))
-    }
-
 }
 //MARK: - 클러스터링 관련 내용
 extension MapViewModel {

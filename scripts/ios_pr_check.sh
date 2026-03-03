@@ -62,6 +62,7 @@ swift scripts/presentation_firebase_boundary_unit_check.swift
 swift scripts/supabase_profile_image_upload_unit_check.swift
 swift scripts/auth_session_autologin_unit_check.swift
 swift scripts/map_home_viewmodel_boundary_unit_check.swift
+swift scripts/map_camera_jump_fix_unit_check.swift
 swift scripts/map_area_calculation_service_unit_check.swift
 swift scripts/project_stability_unit_check.swift
 
