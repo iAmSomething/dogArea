@@ -162,8 +162,9 @@ struct MapView : View{
             tabStatus.appear()
         }
         .onChange(of: viewModel.walkStatusMessage) { _, newValue in
-            guard newValue != nil else { return }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            guard let newValue else { return }
+            let clearDelay: TimeInterval = shouldShowLocationSettingsAction(for: newValue) ? 6.0 : 2.5
+            DispatchQueue.main.asyncAfter(deadline: .now() + clearDelay) {
                 viewModel.clearWalkStatusMessage()
             }
         }
@@ -262,9 +263,22 @@ struct MapView : View{
         .overlay(alignment: .top) {
             VStack(spacing: 6) {
                 if let message = viewModel.walkStatusMessage {
-                    Text(message)
-                        .font(.appFont(for: .SemiBold, size: 13))
-                        .foregroundStyle(Color.black)
+                    HStack(spacing: 10) {
+                        Text(message)
+                            .font(.appFont(for: .SemiBold, size: 13))
+                            .foregroundStyle(Color.black)
+                        if shouldShowLocationSettingsAction(for: message) {
+                            Button("설정 열기") {
+                                openAppSettings()
+                            }
+                            .font(.appFont(for: .SemiBold, size: 12))
+                            .foregroundStyle(Color.appInk)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(Color.white.opacity(0.9))
+                            .cornerRadius(8)
+                        }
+                    }
                         .padding(.horizontal, 14)
                         .padding(.vertical, 8)
                         .background(Color.appYellow)
@@ -462,6 +476,21 @@ struct MapView : View{
             }
             .buttonStyle(.plain)
         }
+    }
+
+    /// 상태 메시지에 위치 권한 안내가 포함되어 설정 이동 버튼을 노출해야 하는지 판단합니다.
+    /// - Parameter message: 상단 토스트에 표시할 상태 메시지 문자열입니다.
+    /// - Returns: 위치 권한/설정 키워드가 포함되면 `true`, 아니면 `false`입니다.
+    private func shouldShowLocationSettingsAction(for message: String) -> Bool {
+        let normalized = message.lowercased()
+        return normalized.contains("위치 권한") || normalized.contains("설정")
+    }
+
+    /// iOS 앱 설정 화면을 열어 사용자가 위치 권한을 즉시 조정할 수 있게 합니다.
+    private func openAppSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        guard UIApplication.shared.canOpenURL(url) else { return }
+        UIApplication.shared.open(url)
     }
 
     private func recomputeBannerQueue() {
