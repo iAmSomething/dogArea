@@ -32,6 +32,7 @@ swift scripts/quest_stage1_policy_unit_check.swift
 swift scripts/quest_stage2_engine_unit_check.swift
 swift scripts/season_motion_pack_unit_check.swift
 swift scripts/release_regression_checklist_unit_check.swift
+swift scripts/game_layer_observability_qa_unit_check.swift
 swift scripts/fault_injection_matrix_unit_check.swift
 swift scripts/supabase_ops_hardening_unit_check.swift
 swift scripts/rival_privacy_policy_stage1_unit_check.swift
