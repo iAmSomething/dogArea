@@ -203,15 +203,18 @@ struct SupabaseHTTPClient {
     private let session: URLSession
     private let configLoader: () -> SupabaseRuntimeConfig?
     private let authSessionStore: AuthSessionStoreProtocol
+    private let metricTracker: AppMetricTracker
 
     init(
         session: URLSession = .shared,
         configLoader: @escaping () -> SupabaseRuntimeConfig? = { SupabaseRuntimeConfig.load() },
-        authSessionStore: AuthSessionStoreProtocol = DefaultAuthSessionStore.shared
+        authSessionStore: AuthSessionStoreProtocol = DefaultAuthSessionStore.shared,
+        metricTracker: AppMetricTracker = .shared
     ) {
         self.session = session
         self.configLoader = configLoader
         self.authSessionStore = authSessionStore
+        self.metricTracker = metricTracker
     }
 
     func request<T: Encodable>(
@@ -288,16 +291,41 @@ struct SupabaseHTTPClient {
             authSessionStore.persist(refreshed.identity)
             if let tokenSession = refreshed.tokenSession {
                 authSessionStore.persist(tokenSession: tokenSession)
+                metricTracker.track(
+                    .syncAuthRefreshSucceeded,
+                    userKey: refreshed.identity.userId
+                )
                 return tokenSession.accessToken
             }
+            metricTracker.track(
+                .syncAuthRefreshFailed,
+                userKey: refreshed.identity.userId,
+                payload: ["reason": "missing_token_session"]
+            )
             authSessionStore.clearTokenSession()
             return nil
         case .retryableFailure:
+            metricTracker.track(
+                .syncAuthRefreshFailed,
+                userKey: currentIdentityUserId(),
+                payload: ["reason": "retryable_failure"]
+            )
             return nil
         case .terminalFailure:
+            metricTracker.track(
+                .syncAuthRefreshFailed,
+                userKey: currentIdentityUserId(),
+                payload: ["reason": "terminal_failure"]
+            )
             authSessionStore.clearTokenSession()
             return nil
         }
+    }
+
+    /// 현재 저장된 인증 식별자에서 사용자 ID를 조회합니다.
+    /// - Returns: 로컬에 사용자 식별자가 있으면 해당 userId, 없으면 `nil`입니다.
+    private func currentIdentityUserId() -> String? {
+        authSessionStore.currentIdentity()?.userId
     }
 
     /// refresh token으로 새 세션 토큰을 발급받고 사용자 식별 정보를 복원합니다.

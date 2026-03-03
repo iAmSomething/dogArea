@@ -18,6 +18,7 @@ func load(_ relativePath: String) -> String {
 
 let auth = load("dogArea/Source/ProfileRepository.swift")
 let infra = load("dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift")
+let defaults = load("dogArea/Source/UserdefaultSetting.swift")
 
 assertTrue(auth.contains("struct AuthTokenSession"), "auth store should define token session model")
 assertTrue(auth.contains("persist(tokenSession:"), "auth session store should persist token sessions")
@@ -30,5 +31,9 @@ assertTrue(infra.contains("authorizationHeaderValue"), "supabase http client sho
 assertTrue(infra.contains("grant_type=refresh_token"), "supabase http client should refresh expired access tokens")
 assertTrue(infra.contains("SupabaseRefreshTokenRequestDTO"), "supabase http client should send refresh token payload")
 assertTrue(infra.contains("authSessionStore.persist(tokenSession:"), "refresh flow should persist rotated token session")
+assertTrue(infra.contains(".syncAuthRefreshSucceeded"), "refresh flow should track syncAuthRefreshSucceeded metric")
+assertTrue(infra.contains(".syncAuthRefreshFailed"), "refresh flow should track syncAuthRefreshFailed metric")
+assertTrue(defaults.contains("case syncAuthRefreshSucceeded = \"sync_auth_refresh_succeeded\""), "metric enum should define sync_auth_refresh_succeeded")
+assertTrue(defaults.contains("case syncAuthRefreshFailed = \"sync_auth_refresh_failed\""), "metric enum should define sync_auth_refresh_failed")
 
 print("PASS: auth session autologin unit checks")
