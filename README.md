@@ -69,6 +69,7 @@
 - Cycle #127 결과 보고서(2026-03-01): `docs/cycle-127-quest-stage1-policy-report-2026-03-01.md`
 - Cycle #205 결과 보고서(2026-03-03): `docs/cycle-205-quest-stage2-engine-report-2026-03-03.md`
 - Cycle #206 결과 보고서(2026-03-03): `docs/cycle-206-game-layer-observability-qa-report-2026-03-03.md`
+- Cycle #214 결과 보고서(2026-03-03): `docs/cycle-214-widget-epic-closure-report-2026-03-03.md`
 - Cycle #218 결과 보고서(2026-03-03): `docs/cycle-218-hotspot-widget-privacy-report-2026-03-03.md`
 - Cycle #147 결과 보고서(2026-02-27): `docs/cycle-147-pet-adaptive-quest-report-2026-02-27.md`
 - Cycle #145 결과 보고서(2026-02-27): `docs/cycle-145-season-catchup-buff-report-2026-02-27.md`
