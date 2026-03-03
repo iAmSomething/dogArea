@@ -8,6 +8,8 @@ enum WalkWidgetBridgeContract {
     static let territoryWidgetKind = "com.th.dogArea.territory-status"
     static let hotspotSnapshotStorageKey = "hotspot.widget.snapshot.v1"
     static let hotspotWidgetKind = "com.th.dogArea.hotspot-status"
+    static let questRivalSnapshotStorageKey = "quest.rival.widget.snapshot.v1"
+    static let questRivalWidgetKind = "com.th.dogArea.quest-rival-status"
     static let actionRequestStorageKey = "walk.widget.action.request.v1"
     static let deepLinkScheme = "dogarea"
     static let deepLinkHost = "widget"
@@ -15,11 +17,14 @@ enum WalkWidgetBridgeContract {
     static let deepLinkActionQueryName = "action"
     static let deepLinkActionIdQueryName = "action_id"
     static let deepLinkSourceQueryName = "source"
+    static let deepLinkContextQueryName = "context_id"
 }
 
 enum WalkWidgetActionKind: String, Codable, CaseIterable {
     case startWalk = "start_walk"
     case endWalk = "end_walk"
+    case claimQuestReward = "claim_quest_reward"
+    case openRivalTab = "open_rival_tab"
 
     var deepLinkValue: String {
         rawValue
@@ -30,6 +35,7 @@ struct WalkWidgetActionRoute: Equatable {
     let kind: WalkWidgetActionKind
     let actionId: String
     let source: String
+    let contextId: String?
 
     /// 위젯 액션 라우트를 앱 딥링크 URL로 직렬화합니다.
     /// - Returns: 앱 라우팅에 사용할 `dogarea://widget/walk?...` URL입니다.
@@ -38,7 +44,7 @@ struct WalkWidgetActionRoute: Equatable {
         components.scheme = WalkWidgetBridgeContract.deepLinkScheme
         components.host = WalkWidgetBridgeContract.deepLinkHost
         components.path = WalkWidgetBridgeContract.deepLinkPath
-        components.queryItems = [
+        var queryItems: [URLQueryItem] = [
             URLQueryItem(
                 name: WalkWidgetBridgeContract.deepLinkActionQueryName,
                 value: kind.deepLinkValue
@@ -52,6 +58,16 @@ struct WalkWidgetActionRoute: Equatable {
                 value: source
             )
         ]
+        if let contextId,
+           contextId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false {
+            queryItems.append(
+                URLQueryItem(
+                    name: WalkWidgetBridgeContract.deepLinkContextQueryName,
+                    value: contextId
+                )
+            )
+        }
+        components.queryItems = queryItems
         return components.url
     }
 
@@ -82,7 +98,9 @@ struct WalkWidgetActionRoute: Equatable {
             .flatMap { $0.isEmpty ? nil : $0 } ?? UUID().uuidString.lowercased()
         let source = queryByName[WalkWidgetBridgeContract.deepLinkSourceQueryName]
             .flatMap { $0.isEmpty ? nil : $0 } ?? "widget"
-        return .init(kind: kind, actionId: actionId, source: source)
+        let contextId = queryByName[WalkWidgetBridgeContract.deepLinkContextQueryName]
+            .flatMap { $0.isEmpty ? nil : $0 }
+        return .init(kind: kind, actionId: actionId, source: source, contextId: contextId)
     }
 }
 
@@ -90,12 +108,13 @@ struct WalkWidgetActionRequest: Codable, Equatable {
     let kind: WalkWidgetActionKind
     let actionId: String
     let source: String
+    let contextId: String?
     let requestedAt: TimeInterval
 
     /// 저장 요청 모델을 화면 라우팅 모델로 변환합니다.
     /// - Returns: 앱 내부 액션 적용용 라우트입니다.
     func asRoute() -> WalkWidgetActionRoute {
-        .init(kind: kind, actionId: actionId, source: source)
+        .init(kind: kind, actionId: actionId, source: source, contextId: contextId)
     }
 }
 

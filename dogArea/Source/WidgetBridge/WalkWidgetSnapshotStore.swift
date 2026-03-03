@@ -120,6 +120,61 @@ struct HotspotWidgetSnapshot: Codable, Equatable {
     )
 }
 
+enum QuestRivalWidgetSnapshotStatus: String, Codable {
+    case memberReady = "member_ready"
+    case guestLocked = "guest_locked"
+    case emptyData = "empty_data"
+    case offlineCached = "offline_cached"
+    case syncDelayed = "sync_delayed"
+    case claimInFlight = "claim_in_flight"
+    case claimFailed = "claim_failed"
+    case claimSucceeded = "claim_succeeded"
+}
+
+struct QuestRivalWidgetSummarySnapshot: Codable, Equatable {
+    let questInstanceId: String?
+    let questTitle: String
+    let questProgressValue: Double
+    let questTargetValue: Double
+    let questProgressRatio: Double
+    let questClaimable: Bool
+    let questRewardPoint: Int
+    let rivalRank: Int?
+    let rivalRankDelta: Int
+    let rivalLeague: String
+    let refreshedAt: TimeInterval
+
+    static let zero = QuestRivalWidgetSummarySnapshot(
+        questInstanceId: nil,
+        questTitle: "오늘의 퀘스트를 준비 중입니다.",
+        questProgressValue: 0,
+        questTargetValue: 1,
+        questProgressRatio: 0,
+        questClaimable: false,
+        questRewardPoint: 0,
+        rivalRank: nil,
+        rivalRankDelta: 0,
+        rivalLeague: "onboarding",
+        refreshedAt: Date().timeIntervalSince1970
+    )
+}
+
+struct QuestRivalWidgetSnapshot: Codable, Equatable {
+    let status: QuestRivalWidgetSnapshotStatus
+    let message: String
+    let summary: QuestRivalWidgetSummarySnapshot?
+    let contextKey: String
+    let updatedAt: TimeInterval
+
+    static let initial = QuestRivalWidgetSnapshot(
+        status: .guestLocked,
+        message: "로그인 후 퀘스트 진행률과 라이벌 지표를 위젯에서 확인할 수 있어요.",
+        summary: nil,
+        contextKey: "guest",
+        updatedAt: Date().timeIntervalSince1970
+    )
+}
+
 enum WalkLiveActivityAutoEndStage: String, Codable, Equatable, Hashable {
     case active = "active"
     case restCandidate = "rest_candidate"
@@ -341,6 +396,55 @@ final class DefaultHotspotWidgetSnapshotStore: HotspotWidgetSnapshotStoring {
     func save(_ snapshot: HotspotWidgetSnapshot) {
         guard let data = try? encoder.encode(snapshot) else { return }
         storage.set(data, forKey: WalkWidgetBridgeContract.hotspotSnapshotStorageKey)
+    }
+
+    /// App Group 저장소를 우선 사용하고, 실패 시 표준 저장소를 반환합니다.
+    /// - Returns: 위젯과 앱 간 공유 가능한 UserDefaults 인스턴스입니다.
+    private static func resolveStorage() -> UserDefaults {
+        UserDefaults(suiteName: WalkWidgetBridgeContract.appGroupIdentifier) ?? .standard
+    }
+}
+
+protocol QuestRivalWidgetSnapshotStoring {
+    /// 퀘스트/라이벌 위젯 스냅샷을 조회합니다.
+    /// - Returns: 저장된 스냅샷이 있으면 해당 값, 없으면 기본 스냅샷을 반환합니다.
+    func load() -> QuestRivalWidgetSnapshot
+
+    /// 퀘스트/라이벌 위젯 스냅샷을 저장합니다.
+    /// - Parameter snapshot: 위젯 표시용으로 직렬화할 최신 퀘스트/라이벌 스냅샷입니다.
+    func save(_ snapshot: QuestRivalWidgetSnapshot)
+}
+
+final class DefaultQuestRivalWidgetSnapshotStore: QuestRivalWidgetSnapshotStoring {
+    static let shared = DefaultQuestRivalWidgetSnapshotStore()
+
+    private let storage: UserDefaults
+    private let decoder = JSONDecoder()
+    private let encoder = JSONEncoder()
+
+    /// 퀘스트/라이벌 위젯 스냅샷 저장소를 초기화합니다.
+    /// - Parameter storage: 스냅샷 직렬화 데이터를 저장할 UserDefaults입니다.
+    init(storage: UserDefaults = DefaultQuestRivalWidgetSnapshotStore.resolveStorage()) {
+        self.storage = storage
+    }
+
+    /// 퀘스트/라이벌 위젯 스냅샷을 조회합니다.
+    /// - Returns: 저장된 스냅샷이 있으면 해당 값, 없으면 기본 스냅샷을 반환합니다.
+    func load() -> QuestRivalWidgetSnapshot {
+        guard
+            let data = storage.data(forKey: WalkWidgetBridgeContract.questRivalSnapshotStorageKey),
+            let decoded = try? decoder.decode(QuestRivalWidgetSnapshot.self, from: data)
+        else {
+            return .initial
+        }
+        return decoded
+    }
+
+    /// 퀘스트/라이벌 위젯 스냅샷을 저장합니다.
+    /// - Parameter snapshot: 위젯 표시용으로 직렬화할 최신 퀘스트/라이벌 스냅샷입니다.
+    func save(_ snapshot: QuestRivalWidgetSnapshot) {
+        guard let data = try? encoder.encode(snapshot) else { return }
+        storage.set(data, forKey: WalkWidgetBridgeContract.questRivalSnapshotStorageKey)
     }
 
     /// App Group 저장소를 우선 사용하고, 실패 시 표준 저장소를 반환합니다.

@@ -401,6 +401,54 @@ protocol RivalLeagueServiceProtocol {
     func fetchLeaderboard(period: RivalLeaderboardPeriod, topN: Int) async throws -> [RivalLeaderboardEntryDTO]
 }
 
+struct QuestRivalWidgetSummaryDTO: Equatable {
+    let questInstanceId: String?
+    let questTitle: String
+    let questProgressValue: Double
+    let questTargetValue: Double
+    let questProgressRatio: Double
+    let questClaimable: Bool
+    let questRewardPoint: Int
+    let rivalRank: Int?
+    let rivalRankDelta: Int
+    let rivalLeague: String
+    let refreshedAt: TimeInterval
+    let hasData: Bool
+}
+
+struct QuestRewardClaimDTO: Equatable {
+    let questInstanceId: String
+    let claimStatus: String
+    let alreadyClaimed: Bool
+    let rewardPoints: Int
+    let claimedAt: TimeInterval?
+}
+
+protocol QuestRivalWidgetSummaryServiceProtocol {
+    /// 위젯용 퀘스트/라이벌 결합 요약 지표를 조회합니다.
+    /// - Parameter now: 서버 집계 기준 시각입니다.
+    /// - Returns: 퀘스트 진행률, 보상 가능 여부, 라이벌 순위를 포함한 요약 DTO입니다.
+    func fetchSummary(now: Date) async throws -> QuestRivalWidgetSummaryDTO
+}
+
+protocol QuestRivalWidgetSnapshotSyncing {
+    /// 서버 요약을 조회해 퀘스트/라이벌 위젯 공유 스냅샷을 갱신합니다.
+    /// - Parameters:
+    ///   - force: `true`면 TTL을 무시하고 즉시 갱신합니다.
+    ///   - now: TTL/상태 계산 기준 시각입니다.
+    func sync(force: Bool, now: Date) async
+}
+
+protocol QuestRewardClaimServiceProtocol {
+    /// 퀘스트 보상 수령을 서버 RPC로 요청합니다.
+    /// - Parameters:
+    ///   - questInstanceId: 보상을 수령할 퀘스트 인스턴스 식별자입니다.
+    ///   - requestId: 멱등 처리를 위한 요청 식별자입니다.
+    ///   - now: 서버 처리 기준 시각입니다.
+    /// - Returns: 수령 상태/중복 여부/보상 포인트를 포함한 응답 DTO입니다.
+    func claimReward(questInstanceId: String, requestId: String, now: Date) async throws -> QuestRewardClaimDTO
+}
+
 protocol CaricatureServiceProtocol {
     func requestCaricature(
         petId: String,
@@ -994,6 +1042,541 @@ struct RivalLeagueService: RivalLeagueServiceProtocol {
                 isMe: row.isMe
             )
         }
+    }
+}
+
+struct QuestRewardClaimService: QuestRewardClaimServiceProtocol {
+    private struct ClaimEnvelopeDTO: Decodable {
+        let claim: ResponseRowDTO?
+    }
+
+    private struct ResponseRowDTO: Decodable {
+        let questInstanceId: String?
+        let claimStatus: String?
+        let alreadyClaimed: Bool?
+        let rewardPoints: Int?
+        let claimedAt: String?
+
+        enum CodingKeys: String, CodingKey {
+            case questInstanceId = "quest_instance_id"
+            case claimStatus = "claim_status"
+            case alreadyClaimed = "already_claimed"
+            case rewardPoints = "reward_points"
+            case claimedAt = "claimed_at"
+        }
+    }
+
+    private let client: SupabaseHTTPClient
+
+    /// 퀘스트 보상 수령 서비스 인스턴스를 생성합니다.
+    /// - Parameter client: Supabase 요청을 수행하는 HTTP 클라이언트입니다.
+    init(client: SupabaseHTTPClient = .live) {
+        self.client = client
+    }
+
+    /// 퀘스트 보상 수령을 서버 함수로 요청합니다.
+    /// - Parameters:
+    ///   - questInstanceId: 보상을 수령할 퀘스트 인스턴스 식별자입니다.
+    ///   - requestId: 멱등 처리를 위한 요청 식별자입니다.
+    ///   - now: 서버 처리 기준 시각입니다.
+    /// - Returns: 수령 상태/중복 여부/보상 포인트를 포함한 응답 DTO입니다.
+    func claimReward(questInstanceId: String, requestId: String, now: Date) async throws -> QuestRewardClaimDTO {
+        guard let canonicalQuestId = questInstanceId.canonicalUUIDString else {
+            throw SupabaseHTTPError.invalidBody
+        }
+        let normalizedRequestId = requestId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ? UUID().uuidString.lowercased()
+            : requestId.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let payload: [String: Any] = [
+            "action": "claim_reward",
+            "target_instance_id": canonicalQuestId,
+            "request_id": normalizedRequestId,
+            "now_ts": ISO8601DateFormatter().string(from: now)
+        ]
+        let data = try await client.request(
+            .function(name: "quest-engine"),
+            method: .post,
+            bodyData: try JSONSerialization.data(withJSONObject: payload)
+        )
+        let envelope = try JSONDecoder().decode(ClaimEnvelopeDTO.self, from: data)
+        guard let claim = envelope.claim else {
+            throw SupabaseHTTPError.invalidResponse
+        }
+        return QuestRewardClaimDTO(
+            questInstanceId: claim.questInstanceId ?? canonicalQuestId,
+            claimStatus: claim.claimStatus ?? "unknown",
+            alreadyClaimed: claim.alreadyClaimed ?? false,
+            rewardPoints: max(0, claim.rewardPoints ?? 0),
+            claimedAt: SupabaseISO8601.parseEpoch(claim.claimedAt)
+        )
+    }
+}
+
+struct QuestRivalWidgetSummaryService: QuestRivalWidgetSummaryServiceProtocol {
+    private struct ResponseDTO: Decodable {
+        let questInstanceId: String?
+        let questTitle: String?
+        let questProgressValue: Double?
+        let questTargetValue: Double?
+        let questClaimable: Bool?
+        let questRewardPoint: Int?
+        let rivalRank: Int?
+        let rivalLeague: String?
+        let refreshedAt: String?
+        let hasData: Bool?
+
+        enum CodingKeys: String, CodingKey {
+            case questInstanceId = "quest_instance_id"
+            case questTitle = "quest_title"
+            case questProgressValue = "quest_progress_value"
+            case questTargetValue = "quest_target_value"
+            case questClaimable = "quest_claimable"
+            case questRewardPoint = "quest_reward_point"
+            case rivalRank = "rival_rank"
+            case rivalLeague = "rival_league"
+            case refreshedAt = "refreshed_at"
+            case hasData = "has_data"
+        }
+    }
+
+    private struct QuestFallbackRowDTO: Decodable {
+        let id: String?
+        let titleSnapshot: String?
+        let targetValueSnapshot: Double?
+        let progressValue: Double?
+        let status: String?
+        let rewardPointsSnapshot: Int?
+        let claimedAt: String?
+        let expiresAt: String?
+
+        enum CodingKeys: String, CodingKey {
+            case id
+            case titleSnapshot = "title_snapshot"
+            case targetValueSnapshot = "target_value_snapshot"
+            case progressValue = "progress_value"
+            case status
+            case rewardPointsSnapshot = "reward_points_snapshot"
+            case claimedAt = "claimed_at"
+            case expiresAt = "expires_at"
+        }
+    }
+
+    private struct RivalFallbackRowDTO: Decodable {
+        let rankPosition: Int?
+        let effectiveLeague: String?
+        let isMe: Bool?
+
+        enum CodingKeys: String, CodingKey {
+            case rankPosition = "rank_position"
+            case effectiveLeague = "effective_league"
+            case isMe = "is_me"
+        }
+    }
+
+    private struct QuestFallbackSummary {
+        let instanceId: String?
+        let title: String
+        let progressValue: Double
+        let targetValue: Double
+        let claimable: Bool
+        let rewardPoint: Int
+    }
+
+    private struct RivalFallbackSummary {
+        let rank: Int?
+        let league: String
+    }
+
+    private let client: SupabaseHTTPClient
+
+    /// 퀘스트/라이벌 위젯 요약 서비스 인스턴스를 생성합니다.
+    /// - Parameter client: Supabase 요청을 수행하는 HTTP 클라이언트입니다.
+    init(client: SupabaseHTTPClient = .live) {
+        self.client = client
+    }
+
+    /// 위젯용 퀘스트/라이벌 결합 요약 지표를 조회합니다.
+    /// - Parameter now: 서버 집계 기준 시각입니다.
+    /// - Returns: 퀘스트 진행률, 보상 가능 여부, 라이벌 순위를 포함한 요약 DTO입니다.
+    func fetchSummary(now: Date) async throws -> QuestRivalWidgetSummaryDTO {
+        do {
+            return try await fetchFromSummaryRPC(now: now)
+        } catch {
+            return try await fetchFromFallback(now: now)
+        }
+    }
+
+    /// 전용 요약 RPC 응답을 조회해 위젯 DTO로 변환합니다.
+    /// - Parameter now: 서버 집계 기준 시각입니다.
+    /// - Returns: 서버 결합 집계 응답을 정규화한 위젯 요약 DTO입니다.
+    private func fetchFromSummaryRPC(now: Date) async throws -> QuestRivalWidgetSummaryDTO {
+        let payload: [String: Any] = [
+            "now_ts": ISO8601DateFormatter().string(from: now)
+        ]
+        let data = try await client.request(
+            .rest(path: "rpc/rpc_get_widget_quest_rival_summary"),
+            method: .post,
+            bodyData: try JSONSerialization.data(withJSONObject: payload)
+        )
+        let decoded = try decodeSummaryResponse(data: data)
+        let questTarget = max(1.0, decoded.questTargetValue ?? 1.0)
+        let questProgress = max(0.0, decoded.questProgressValue ?? 0.0)
+        let questRatio = min(1.0, max(0.0, questProgress / questTarget))
+        let questTitle = (decoded.questTitle ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let resolvedTitle = questTitle.isEmpty ? "오늘의 퀘스트를 준비 중입니다." : questTitle
+        let refreshedAt = SupabaseISO8601.parseEpoch(decoded.refreshedAt) ?? now.timeIntervalSince1970
+        return QuestRivalWidgetSummaryDTO(
+            questInstanceId: decoded.questInstanceId?.canonicalUUIDString,
+            questTitle: resolvedTitle,
+            questProgressValue: questProgress,
+            questTargetValue: questTarget,
+            questProgressRatio: questRatio,
+            questClaimable: decoded.questClaimable ?? false,
+            questRewardPoint: max(0, decoded.questRewardPoint ?? 0),
+            rivalRank: decoded.rivalRank,
+            rivalRankDelta: 0,
+            rivalLeague: decoded.rivalLeague ?? "onboarding",
+            refreshedAt: refreshedAt,
+            hasData: decoded.hasData
+                ?? (decoded.questInstanceId != nil || decoded.rivalRank != nil)
+        )
+    }
+
+    /// 요약 RPC 실패 시 기존 테이블/RPC를 조합해 fallback 요약을 생성합니다.
+    /// - Parameter now: 서버 집계 기준 시각입니다.
+    /// - Returns: 퀘스트/라이벌 fallback 조합 결과 DTO입니다.
+    private func fetchFromFallback(now: Date) async throws -> QuestRivalWidgetSummaryDTO {
+        async let questSummary = fetchQuestFallback(now: now)
+        async let rivalSummary = fetchRivalFallback(now: now)
+        let quest = try await questSummary
+        let rival = try await rivalSummary
+
+        let questTarget = max(1.0, quest.targetValue)
+        let questProgress = max(0.0, quest.progressValue)
+        let questRatio = min(1.0, max(0.0, questProgress / questTarget))
+        let hasData = quest.instanceId != nil || rival.rank != nil
+
+        return QuestRivalWidgetSummaryDTO(
+            questInstanceId: quest.instanceId,
+            questTitle: quest.title,
+            questProgressValue: questProgress,
+            questTargetValue: questTarget,
+            questProgressRatio: questRatio,
+            questClaimable: quest.claimable,
+            questRewardPoint: quest.rewardPoint,
+            rivalRank: rival.rank,
+            rivalRankDelta: 0,
+            rivalLeague: rival.league,
+            refreshedAt: now.timeIntervalSince1970,
+            hasData: hasData
+        )
+    }
+
+    /// RPC 응답이 객체/배열 어느 형태든 단일 요약 객체로 파싱합니다.
+    /// - Parameter data: RPC 원시 응답 데이터입니다.
+    /// - Returns: 단일 요약 응답 DTO입니다.
+    private func decodeSummaryResponse(data: Data) throws -> ResponseDTO {
+        let decoder = JSONDecoder()
+        if let object = try? decoder.decode(ResponseDTO.self, from: data) {
+            return object
+        }
+        if let rows = try? decoder.decode([ResponseDTO].self, from: data),
+           let first = rows.first {
+            return first
+        }
+        throw SupabaseHTTPError.invalidResponse
+    }
+
+    /// 퀘스트 인스턴스 목록에서 위젯 표시용 대표 퀘스트를 추출합니다.
+    /// - Parameter now: 만료 판정 기준 시각입니다.
+    /// - Returns: 위젯 표시용 퀘스트 fallback 요약입니다.
+    private func fetchQuestFallback(now: Date) async throws -> QuestFallbackSummary {
+        let query = "select=id,title_snapshot,target_value_snapshot,progress_value,status,reward_points_snapshot,claimed_at,expires_at&status=in.(active,completed,claimed)&order=updated_at.desc&limit=30"
+        let data = try await client.request(
+            .rest(path: "quest_instances", query: query),
+            method: .get,
+            body: Optional<String>.none
+        )
+        let rows = try JSONDecoder().decode([QuestFallbackRowDTO].self, from: data)
+        let nowEpoch = now.timeIntervalSince1970
+        let validRows = rows.filter { row in
+            guard let expiresAt = SupabaseISO8601.parseEpoch(row.expiresAt) else { return true }
+            return expiresAt >= nowEpoch
+        }
+        let selected = selectQuestRow(from: validRows) ?? validRows.first
+        guard let selected else {
+            return QuestFallbackSummary(
+                instanceId: nil,
+                title: "오늘의 퀘스트를 준비 중입니다.",
+                progressValue: 0,
+                targetValue: 1,
+                claimable: false,
+                rewardPoint: 0
+            )
+        }
+        let status = (selected.status ?? "").lowercased()
+        let target = max(1.0, selected.targetValueSnapshot ?? 1.0)
+        let progress = max(0.0, selected.progressValue ?? 0.0)
+        let claimable = status == "completed" && selected.claimedAt == nil
+        return QuestFallbackSummary(
+            instanceId: selected.id?.canonicalUUIDString,
+            title: (selected.titleSnapshot ?? "").isEmpty
+                ? "오늘의 퀘스트를 준비 중입니다."
+                : (selected.titleSnapshot ?? ""),
+            progressValue: progress,
+            targetValue: target,
+            claimable: claimable,
+            rewardPoint: max(0, selected.rewardPointsSnapshot ?? 0)
+        )
+    }
+
+    /// 퀘스트 행 목록에서 보상 가능 퀘스트를 우선 선택합니다.
+    /// - Parameter rows: 서버에서 조회한 퀘스트 인스턴스 행 목록입니다.
+    /// - Returns: 위젯 카드에 우선 노출할 퀘스트 행입니다.
+    private func selectQuestRow(from rows: [QuestFallbackRowDTO]) -> QuestFallbackRowDTO? {
+        if let claimable = rows.first(where: { row in
+            ((row.status ?? "").lowercased() == "completed") && row.claimedAt == nil
+        }) {
+            return claimable
+        }
+        if let active = rows.first(where: { row in
+            (row.status ?? "").lowercased() == "active"
+        }) {
+            return active
+        }
+        return rows.first
+    }
+
+    /// 라이벌 리더보드에서 현재 사용자의 순위/리그를 fallback 요약으로 추출합니다.
+    /// - Parameter now: 집계 기준 시각입니다.
+    /// - Returns: 순위와 리그를 담은 fallback 요약입니다.
+    private func fetchRivalFallback(now: Date) async throws -> RivalFallbackSummary {
+        let payload: [String: Any] = [
+            "period_type": RivalLeaderboardPeriod.week.rawValue,
+            "top_n": 50,
+            "now_ts": ISO8601DateFormatter().string(from: now)
+        ]
+        let data = try await client.request(
+            .rest(path: "rpc/rpc_get_rival_leaderboard"),
+            method: .post,
+            bodyData: try JSONSerialization.data(withJSONObject: payload)
+        )
+        let rows = try JSONDecoder().decode([RivalFallbackRowDTO].self, from: data)
+        if let me = rows.first(where: { $0.isMe == true }) {
+            return RivalFallbackSummary(
+                rank: me.rankPosition,
+                league: me.effectiveLeague ?? "onboarding"
+            )
+        }
+        return RivalFallbackSummary(rank: nil, league: "onboarding")
+    }
+}
+
+final class DefaultQuestRivalWidgetSnapshotSyncService: QuestRivalWidgetSnapshotSyncing {
+    private let summaryService: QuestRivalWidgetSummaryServiceProtocol
+    private let snapshotStore: QuestRivalWidgetSnapshotStoring
+    private let userSessionStore: UserSessionStoreProtocol
+    private let preferenceStore: UserDefaults
+    private let syncTTL: TimeInterval
+    private let staleGraceInterval: TimeInterval
+    private let lastSyncKey = "quest.rival.widget.lastSyncAt.v1"
+    private let contextKeyStorageKey = "quest.rival.widget.context.v1"
+
+    /// 퀘스트/라이벌 위젯 스냅샷 동기화 서비스를 생성합니다.
+    /// - Parameters:
+    ///   - summaryService: 서버 요약 RPC 호출 서비스입니다.
+    ///   - snapshotStore: 앱 그룹 기반 위젯 스냅샷 저장소입니다.
+    ///   - userSessionStore: 현재 로그인 사용자/반려견 컨텍스트 조회 저장소입니다.
+    ///   - preferenceStore: 마지막 동기화 메타데이터를 저장할 기본 설정 저장소입니다.
+    ///   - syncTTL: RPC 재조회 최소 간격(초)입니다.
+    ///   - staleGraceInterval: 오프라인 캐시를 허용할 최대 유예 시간(초)입니다.
+    init(
+        summaryService: QuestRivalWidgetSummaryServiceProtocol = QuestRivalWidgetSummaryService(),
+        snapshotStore: QuestRivalWidgetSnapshotStoring = DefaultQuestRivalWidgetSnapshotStore.shared,
+        userSessionStore: UserSessionStoreProtocol = DefaultUserSessionStore.shared,
+        preferenceStore: UserDefaults = .standard,
+        syncTTL: TimeInterval = 10 * 60,
+        staleGraceInterval: TimeInterval = 3 * 60 * 60
+    ) {
+        self.summaryService = summaryService
+        self.snapshotStore = snapshotStore
+        self.userSessionStore = userSessionStore
+        self.preferenceStore = preferenceStore
+        self.syncTTL = syncTTL
+        self.staleGraceInterval = staleGraceInterval
+    }
+
+    /// 서버 요약을 조회해 퀘스트/라이벌 위젯 공유 스냅샷을 갱신합니다.
+    /// - Parameters:
+    ///   - force: `true`면 TTL을 무시하고 즉시 갱신합니다.
+    ///   - now: TTL/상태 계산 기준 시각입니다.
+    func sync(force: Bool, now: Date) async {
+        let contextKey = resolveContextKey()
+        guard shouldSync(force: force, now: now, contextKey: contextKey) else { return }
+
+        guard let user = userSessionStore.currentUserInfo(),
+              user.id.isEmpty == false else {
+            saveGuestSnapshot(now: now)
+            return
+        }
+
+        do {
+            let summary = try await summaryService.fetchSummary(now: now)
+            saveMemberSnapshot(summary: summary, contextKey: contextKey, now: now)
+        } catch {
+            saveFailureSnapshot(contextKey: contextKey, now: now)
+        }
+    }
+
+    /// TTL/컨텍스트 변화를 기준으로 이번 동기화를 수행할지 판단합니다.
+    /// - Parameters:
+    ///   - force: `true`면 즉시 동기화합니다.
+    ///   - now: 판단 기준 시각입니다.
+    ///   - contextKey: 현재 로그인 사용자/반려견 컨텍스트 키입니다.
+    /// - Returns: 동기화가 필요하면 `true`, 스킵 가능하면 `false`입니다.
+    private func shouldSync(force: Bool, now: Date, contextKey: String) -> Bool {
+        if force { return true }
+        let snapshot = snapshotStore.load()
+        if snapshot.contextKey != contextKey {
+            return true
+        }
+        let age = now.timeIntervalSince1970 - snapshot.updatedAt
+        return age >= syncTTL
+    }
+
+    /// 현재 사용자/선택 반려견 조합으로 컨텍스트 식별 키를 생성합니다.
+    /// - Returns: 다계정/다견 전환 감지를 위한 컨텍스트 키 문자열입니다.
+    private func resolveContextKey() -> String {
+        guard let user = userSessionStore.currentUserInfo(),
+              user.id.isEmpty == false else {
+            return "guest"
+        }
+        let selectedPet = userSessionStore.selectedPet(from: user)
+        let petId = selectedPet?.petId.lowercased() ?? "none"
+        return "\(user.id.lowercased())|\(petId)"
+    }
+
+    /// 비회원 상태 스냅샷을 저장합니다.
+    /// - Parameter now: 저장 시각입니다.
+    private func saveGuestSnapshot(now: Date) {
+        save(
+            QuestRivalWidgetSnapshot(
+                status: .guestLocked,
+                message: "로그인 후 퀘스트 진행률과 라이벌 순위를 위젯에서 확인할 수 있어요.",
+                summary: nil,
+                contextKey: "guest",
+                updatedAt: now.timeIntervalSince1970
+            ),
+            now: now
+        )
+    }
+
+    /// 서버 요약 응답을 회원 상태 스냅샷으로 저장합니다.
+    /// - Parameters:
+    ///   - summary: 서버에서 조회한 최신 퀘스트/라이벌 요약 DTO입니다.
+    ///   - contextKey: 사용자/반려견 컨텍스트 키입니다.
+    ///   - now: 저장 시각입니다.
+    private func saveMemberSnapshot(summary: QuestRivalWidgetSummaryDTO, contextKey: String, now: Date) {
+        let status: QuestRivalWidgetSnapshotStatus = summary.hasData ? .memberReady : .emptyData
+        let rankDelta = resolveRankDelta(currentRank: summary.rivalRank, contextKey: contextKey)
+        let snapshot = QuestRivalWidgetSnapshot(
+            status: status,
+            message: summary.hasData
+                ? "퀘스트 진행률과 라이벌 순위를 최신 기준으로 표시합니다."
+                : "표시할 퀘스트/라이벌 데이터가 아직 없습니다.",
+            summary: QuestRivalWidgetSummarySnapshot(
+                questInstanceId: summary.questInstanceId,
+                questTitle: summary.questTitle,
+                questProgressValue: summary.questProgressValue,
+                questTargetValue: summary.questTargetValue,
+                questProgressRatio: summary.questProgressRatio,
+                questClaimable: summary.questClaimable,
+                questRewardPoint: summary.questRewardPoint,
+                rivalRank: summary.rivalRank,
+                rivalRankDelta: rankDelta,
+                rivalLeague: summary.rivalLeague,
+                refreshedAt: summary.refreshedAt
+            ),
+            contextKey: contextKey,
+            updatedAt: now.timeIntervalSince1970
+        )
+        save(snapshot, now: now)
+    }
+
+    /// 서버 조회 실패 시 마지막 성공 스냅샷 기반 상태로 저장합니다.
+    /// - Parameters:
+    ///   - contextKey: 사용자/반려견 컨텍스트 키입니다.
+    ///   - now: 저장 시각입니다.
+    private func saveFailureSnapshot(contextKey: String, now: Date) {
+        let current = snapshotStore.load()
+        guard current.contextKey == contextKey,
+              let cachedSummary = current.summary else {
+            save(
+                QuestRivalWidgetSnapshot(
+                    status: .syncDelayed,
+                    message: "위젯 요약 동기화가 지연되고 있어요. 앱을 열어 최신화해주세요.",
+                    summary: nil,
+                    contextKey: contextKey,
+                    updatedAt: now.timeIntervalSince1970
+                ),
+                now: now
+            )
+            return
+        }
+
+        let cacheAge = now.timeIntervalSince1970 - cachedSummary.refreshedAt
+        let status: QuestRivalWidgetSnapshotStatus = cacheAge <= staleGraceInterval ? .offlineCached : .syncDelayed
+        let message: String = cacheAge <= staleGraceInterval
+            ? "오프라인 상태예요. 마지막 성공 스냅샷을 표시 중입니다."
+            : "동기화가 지연되고 있어요. 앱을 열어 최신화해주세요."
+        save(
+            QuestRivalWidgetSnapshot(
+                status: status,
+                message: message,
+                summary: cachedSummary,
+                contextKey: contextKey,
+                updatedAt: now.timeIntervalSince1970
+            ),
+            now: now
+        )
+    }
+
+    /// 현재 랭크와 이전 저장 랭크를 비교해 순위 변화량을 계산합니다.
+    /// - Parameters:
+    ///   - currentRank: 이번 동기화에서 조회한 현재 랭크입니다.
+    ///   - contextKey: 사용자/반려견 컨텍스트 키입니다.
+    /// - Returns: 이전 랭크 대비 상승(+)/하락(-) 변화량입니다.
+    private func resolveRankDelta(currentRank: Int?, contextKey: String) -> Int {
+        let storageKey = "quest.rival.widget.lastRank.v1.\(contextKey)"
+        defer {
+            if let currentRank {
+                preferenceStore.set(currentRank, forKey: storageKey)
+            } else {
+                preferenceStore.removeObject(forKey: storageKey)
+            }
+        }
+        guard let currentRank else { return 0 }
+        guard preferenceStore.object(forKey: storageKey) != nil else { return 0 }
+        let previousRank = preferenceStore.integer(forKey: storageKey)
+        return previousRank - currentRank
+    }
+
+    /// 위젯 스냅샷 저장 후 재로딩을 요청하고 마지막 동기화 시각을 기록합니다.
+    /// - Parameters:
+    ///   - snapshot: 저장할 퀘스트/라이벌 위젯 스냅샷입니다.
+    ///   - now: 마지막 동기화 시각 기록 기준입니다.
+    private func save(_ snapshot: QuestRivalWidgetSnapshot, now: Date) {
+        snapshotStore.save(snapshot)
+        preferenceStore.set(now.timeIntervalSince1970, forKey: lastSyncKey)
+        preferenceStore.set(snapshot.contextKey, forKey: contextKeyStorageKey)
+        reloadQuestRivalWidgetTimeline()
+    }
+
+    /// WidgetKit 타임라인을 즉시 재요청해 최신 스냅샷이 반영되도록 합니다.
+    private func reloadQuestRivalWidgetTimeline() {
+        #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadTimelines(ofKind: WalkWidgetBridgeContract.questRivalWidgetKind)
+        #endif
     }
 }
 

@@ -216,7 +216,12 @@ struct MapView : View{
                 let actionId = notification.userInfo?["actionId"] as? String
             else { return }
             let source = (notification.userInfo?["source"] as? String) ?? "widget"
-            let route = WalkWidgetActionRoute(kind: kind, actionId: actionId, source: source)
+            let route = WalkWidgetActionRoute(
+                kind: kind,
+                actionId: actionId,
+                source: source,
+                contextId: notification.userInfo?["contextId"] as? String
+            )
             viewModel.applyWidgetWalkAction(route)
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in

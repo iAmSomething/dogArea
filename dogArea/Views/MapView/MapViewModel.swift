@@ -1995,6 +1995,13 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             )
             syncWalkWidgetSnapshot(force: true)
             syncWalkLiveActivity(force: true)
+
+        case .claimQuestReward, .openRivalTab:
+            metricTracker.track(
+                .widgetActionRejected,
+                userKey: currentMetricUserId(),
+                payload: ["action": route.kind.rawValue, "reason": "unsupported_on_map"]
+            )
         }
     }
 
