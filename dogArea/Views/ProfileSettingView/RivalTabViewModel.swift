@@ -65,6 +65,7 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
     private let locationManager: CLLocationManager
     private let authSessionStore: AuthSessionStoreProtocol
     private let sessionProvider: () -> AppSessionState
+    private let metricTracker: AppMetricTracker
     private let locationSharingKey = "nearby.locationSharingEnabled.v1"
     private var pollingTimer: Timer? = nil
     private var lastRefreshAt: Date = .distantPast
@@ -79,7 +80,8 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
         moderationStore: RivalModerationStoreProtocol? = nil,
         locationManager: CLLocationManager = CLLocationManager(),
         authSessionStore: AuthSessionStoreProtocol = DefaultAuthSessionStore.shared,
-        sessionProvider: @escaping () -> AppSessionState = { AppFeatureGate.currentSession() }
+        sessionProvider: @escaping () -> AppSessionState = { AppFeatureGate.currentSession() },
+        metricTracker: AppMetricTracker = .shared
     ) {
         self.nearbyService = nearbyService
         self.rivalLeagueService = rivalLeagueService
@@ -88,6 +90,7 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
         self.locationManager = locationManager
         self.authSessionStore = authSessionStore
         self.sessionProvider = sessionProvider
+        self.metricTracker = metricTracker
         super.init()
     }
 
@@ -144,6 +147,12 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
                 try await nearbyService.setVisibility(userId: currentUserId ?? "", enabled: true)
                 preferenceStore.set(true, forKey: locationSharingKey)
                 locationSharingEnabled = true
+                metricTracker.track(
+                    .rivalPrivacyOptInCompleted,
+                    userKey: currentUserId,
+                    featureKey: .nearbyHotspotV1,
+                    payload: ["source": "consent_sheet"]
+                )
                 showToast("익명 공유가 시작됐어요")
                 refreshViewState()
                 refreshHotspots(force: true)
@@ -224,6 +233,17 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
                     centerLongitude: coordinate.longitude,
                     radiusKm: 1.0
                 )
+                let maxIntensity = fetched.map(\.intensity).max() ?? 0
+                metricTracker.track(
+                    .rivalHotspotFetchSucceeded,
+                    userKey: userId,
+                    featureKey: .nearbyHotspotV1,
+                    eventValue: Double(fetched.count),
+                    payload: [
+                        "cell_count": "\(fetched.count)",
+                        "max_intensity": String(format: "%.4f", maxIntensity)
+                    ]
+                )
                 hotspots = fetched
                 lastRefreshAt = Date()
                 updateHotspotSummary()
@@ -233,6 +253,24 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
                     screenState = .ready
                 }
             } catch {
+                let metricErrorCode: String
+                if let supabaseError = error as? SupabaseHTTPError,
+                   case .unexpectedStatusCode(let statusCode) = supabaseError {
+                    metricErrorCode = "http_\(statusCode)"
+                } else if error is URLError {
+                    metricErrorCode = "network"
+                } else {
+                    metricErrorCode = "unknown"
+                }
+                metricTracker.track(
+                    .rivalHotspotFetchFailed,
+                    userKey: userId,
+                    featureKey: .nearbyHotspotV1,
+                    payload: [
+                        "error_code": metricErrorCode,
+                        "retryable": RivalNetworkErrorInterpreter.isConnectivityError(error) ? "true" : "false"
+                    ]
+                )
                 if let supabaseError = error as? SupabaseHTTPError,
                    case .unexpectedStatusCode(404) = supabaseError {
                     hotspots = []
@@ -293,6 +331,16 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
             defer { isLeaderboardRefreshing = false }
             do {
                 let rows = try await rivalLeagueService.fetchLeaderboard(period: leaderboardPeriod, topN: 20)
+                metricTracker.track(
+                    .rivalLeaderboardFetched,
+                    userKey: currentUserId,
+                    featureKey: .nearbyHotspotV1,
+                    eventValue: Double(rows.count),
+                    payload: [
+                        "period": leaderboardPeriod.rawValue,
+                        "row_count": "\(rows.count)"
+                    ]
+                )
                 latestRawLeaderboardEntries = rows
                 lastLeaderboardRefreshAt = Date()
                 applyLeaderboardModerationFilter()

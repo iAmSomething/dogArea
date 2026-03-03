@@ -543,6 +543,10 @@ enum AppMetricEvent: String {
     case weatherRiskReevaluated = "weather_risk_reevaluated"
     case syncAuthRefreshSucceeded = "sync_auth_refresh_succeeded"
     case syncAuthRefreshFailed = "sync_auth_refresh_failed"
+    case rivalPrivacyOptInCompleted = "rival_privacy_opt_in_completed"
+    case rivalLeaderboardFetched = "rival_leaderboard_fetched"
+    case rivalHotspotFetchSucceeded = "rival_hotspot_fetch_succeeded"
+    case rivalHotspotFetchFailed = "rival_hotspot_fetch_failed"
 }
 
 final class FeatureFlagStore {
