@@ -78,5 +78,5 @@ Rules:
 - `completed_at`
 
 ## Security
-- Model keys (`OPENAI_API_KEY`, `GEMINI_API_KEY`) are Edge Function secrets only.
+- Model keys (`OPENAI_API_KEY`, `GEMINI_API_KEY` or legacy `GEMINI_KEY`) are Edge Function secrets only.
 - App binary must not contain model provider keys.
