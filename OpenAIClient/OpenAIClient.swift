@@ -47,8 +47,8 @@ public struct OpenAIClient{
     }
     public func generateImage(prompt: String) async throws -> URL {
         let input = Operations.createImage.Input(body: .json(
-            .init(n: 1,
-                prompt: prompt,
+            .init(prompt: prompt,
+                  n: 1,
                   response_format: .url,
                   size: ._1024x1024)))
 
