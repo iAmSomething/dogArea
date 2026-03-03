@@ -7,6 +7,9 @@
 
 import Foundation
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 struct RootView: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -16,6 +19,7 @@ struct RootView: View {
     @State private var selectedTab = RootView.initialSelectedTabForRuntime()
     @State private var tabbarHidden = false
     @StateObject var tabStatus = TabAppear.shared
+    private let widgetActionStore: WalkWidgetActionRequestStoring = DefaultWalkWidgetActionRequestStore.shared
     private var homeView: HomeView
     private var walkListView: WalkListView    
     private var mapView: MapView
@@ -90,6 +94,15 @@ struct RootView: View {
                 )
                 .presentationDetents([.medium])
             }
+            .onAppear {
+                consumePendingWidgetActionIfNeeded()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+                consumePendingWidgetActionIfNeeded()
+            }
+            .onOpenURL { url in
+                routeWidgetDeepLinkIfNeeded(url)
+            }
 
     }
 
@@ -133,6 +146,36 @@ struct RootView: View {
                     .navigationBarHidden(selectedTab == 4)
                     .accessibilityIdentifier("screen.settings")
             }
+        }
+    }
+
+    /// 위젯에서 전달된 딥링크를 파싱해 지도 탭 액션으로 전달합니다.
+    /// - Parameter url: 앱으로 유입된 URL 스킴 딥링크입니다.
+    private func routeWidgetDeepLinkIfNeeded(_ url: URL) {
+        guard let route = WalkWidgetActionRoute.parse(from: url) else { return }
+        dispatchWidgetAction(route)
+    }
+
+    /// 공유 저장소에 대기 중인 위젯 액션 요청을 소비해 앱 내부 액션으로 전달합니다.
+    private func consumePendingWidgetActionIfNeeded() {
+        guard let request = widgetActionStore.consumePending() else { return }
+        dispatchWidgetAction(request.asRoute())
+    }
+
+    /// 위젯 액션 라우트를 지도 탭으로 전달합니다.
+    /// - Parameter route: 지도 화면에서 처리할 위젯 액션 라우트입니다.
+    private func dispatchWidgetAction(_ route: WalkWidgetActionRoute) {
+        selectedTab = 2
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            NotificationCenter.default.post(
+                name: .walkWidgetActionRequested,
+                object: nil,
+                userInfo: [
+                    "kind": route.kind.rawValue,
+                    "actionId": route.actionId,
+                    "source": route.source
+                ]
+            )
         }
     }
 }

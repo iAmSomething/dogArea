@@ -299,8 +299,10 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private let maxProcessedWatchActions = 500
     private var lastWatchContextSyncAt: Date = .distantPast
     private var lastAppliedWatchActionId: String = ""
+    private var lastAppliedWidgetActionId: String = ""
     private let processedWatchActionStorageKey = "watch.processedActionIds"
     private let activeWalkSessionStorageKey = "walk.activeSession.v1"
+    private let lastWidgetActionIdKey = "walk.widget.lastActionId.v1"
     private let heatmapEnabledKey = "heatmap.enabled"
     private let locationSharingKey = "nearby.locationSharingEnabled"
     private let nearbyHotspotEnabledKey = "nearby.hotspotEnabled"
@@ -338,6 +340,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private var lastAcceptedWalkLocation: CLLocation?
     private var lastSyncFlushAt: Date = .distantPast
     private var lastSyncSummarySnapshot: SyncOutboxSummary? = nil
+    private var lastWidgetSnapshotSyncAt: Date = .distantPast
     private var syncFlushTask: Task<Void, Never>? = nil
     private let syncOutbox = SyncOutboxStore.shared
     private let syncTransport = SupabaseSyncOutboxTransport()
@@ -348,6 +351,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private let weatherRiskProvider: WeatherRiskProviding
     private let areaCalculationService: MapAreaCalculationServicing
     private let clusterAnnotationService: MapClusterAnnotationServicing
+    private let widgetSnapshotStore: WalkWidgetSnapshotStoring
     private let eventCenter: AppEventCenterProtocol
     private var lastCaptureHapticAt: Date = .distantPast
     private var lastWarningHapticAt: Date = .distantPast
@@ -356,6 +360,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private let trailLimit = 12
     private var weatherFetchTask: Task<Void, Never>? = nil
     private var lastWeatherFetchAttemptAt: Date = .distantPast
+    private let widgetSnapshotSyncInterval: TimeInterval = 5.0
 
     private enum WatchIncomingAction: String {
         case startWalk
@@ -445,6 +450,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         weatherRiskProvider: WeatherRiskProviding = OpenMeteoWeatherRiskProvider(),
         areaCalculationService: MapAreaCalculationServicing = MapAreaCalculationService(),
         clusterAnnotationService: MapClusterAnnotationServicing = MapClusterAnnotationService(),
+        widgetSnapshotStore: WalkWidgetSnapshotStoring = DefaultWalkWidgetSnapshotStore.shared,
         eventCenter: AppEventCenterProtocol = DefaultAppEventCenter.shared
     ) {
         self.walkRepository = walkRepository
@@ -454,6 +460,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         self.weatherRiskProvider = weatherRiskProvider
         self.areaCalculationService = areaCalculationService
         self.clusterAnnotationService = clusterAnnotationService
+        self.widgetSnapshotStore = widgetSnapshotStore
         self.eventCenter = eventCenter
         super.init()
         self.locationManager.delegate = self
@@ -463,6 +470,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         self.locationManager.startUpdatingLocation() // 위치 업데이트 시작
         self.reloadPolygonState(restoreLatestPolygon: true)
         self.loadProcessedWatchActions()
+        self.lastAppliedWidgetActionId = preferenceStore.string(forKey: lastWidgetActionIdKey) ?? ""
 
         let storedHeatmapEnabled = preferenceStore.bool(forKey: heatmapEnabledKey, default: true)
         let storedNearbyHotspotEnabled = preferenceStore.bool(forKey: nearbyHotspotEnabledKey, default: true)
@@ -490,6 +498,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         self.flushSyncOutboxIfNeeded(force: true)
         self.refreshWeatherOverlayRisk()
         self.refreshWeatherRiskFromProviderIfNeeded(location: self.locationManager.location, force: true)
+        self.syncWalkWidgetSnapshot(force: true)
     }
 
     deinit {
@@ -612,6 +621,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             self?.isWalking.toggle()
         }
         self.syncWatchContext(force: true)
+        self.syncWalkWidgetSnapshot(force: true)
     }
 
     func startWalkNow() {
@@ -634,6 +644,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             self?.isWalking = false
         }
         syncWatchContext(force: true)
+        syncWalkWidgetSnapshot(force: true)
     }
 
     func toggleWalkStartCountdown() {
@@ -1896,6 +1907,114 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         return raw
     }
 
+    /// 위젯에서 전달된 산책 액션 딥링크를 적용합니다.
+    /// - Parameter route: 위젯 액션 종류/중복 방지 식별자를 담은 라우트입니다.
+    func applyWidgetWalkAction(_ route: WalkWidgetActionRoute) {
+        guard shouldProcessWidgetAction(actionId: route.actionId) else {
+            metricTracker.track(
+                .widgetActionDuplicate,
+                userKey: currentMetricUserId(),
+                payload: ["action": route.kind.rawValue, "source": route.source]
+            )
+            return
+        }
+
+        switch route.kind {
+        case .startWalk:
+            guard isWalking == false else {
+                walkStatusMessage = "이미 산책이 진행 중입니다."
+                metricTracker.track(
+                    .widgetActionRejected,
+                    userKey: currentMetricUserId(),
+                    payload: ["action": route.kind.rawValue, "reason": "already_walking"]
+                )
+                syncWalkWidgetSnapshot(force: true, statusOverride: .sessionConflict, messageOverride: walkStatusMessage)
+                return
+            }
+            guard isLocationPermissionDenied == false else {
+                walkStatusMessage = "위치 권한이 필요합니다. 설정에서 권한을 허용해주세요."
+                metricTracker.track(
+                    .widgetActionRejected,
+                    userKey: currentMetricUserId(),
+                    payload: ["action": route.kind.rawValue, "reason": "location_denied"]
+                )
+                syncWalkWidgetSnapshot(force: true, statusOverride: .locationDenied, messageOverride: walkStatusMessage)
+                return
+            }
+            startWalkNow()
+            walkStatusMessage = "위젯에서 산책을 시작했어요."
+            metricTracker.track(
+                .widgetActionApplied,
+                userKey: currentMetricUserId(),
+                payload: ["action": route.kind.rawValue, "source": route.source]
+            )
+            syncWalkWidgetSnapshot(force: true)
+
+        case .endWalk:
+            guard isWalking else {
+                walkStatusMessage = "종료할 산책 세션이 없습니다."
+                metricTracker.track(
+                    .widgetActionRejected,
+                    userKey: currentMetricUserId(),
+                    payload: ["action": route.kind.rawValue, "reason": "no_active_session"]
+                )
+                syncWalkWidgetSnapshot(force: true, statusOverride: .sessionConflict, messageOverride: walkStatusMessage)
+                return
+            }
+            endWalk()
+            walkStatusMessage = "위젯에서 산책을 종료했어요."
+            metricTracker.track(
+                .widgetActionApplied,
+                userKey: currentMetricUserId(),
+                payload: ["action": route.kind.rawValue, "source": route.source]
+            )
+            syncWalkWidgetSnapshot(force: true)
+        }
+    }
+
+    /// 중복 위젯 액션 식별자를 검사하고 최신 식별자를 저장합니다.
+    /// - Parameter actionId: 위젯 액션 요청 ID입니다.
+    /// - Returns: 처음 처리하는 요청이면 `true`, 중복 요청이면 `false`입니다.
+    private func shouldProcessWidgetAction(actionId: String) -> Bool {
+        let normalized = actionId.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard normalized.isEmpty == false else {
+            return true
+        }
+        guard normalized != lastAppliedWidgetActionId else {
+            return false
+        }
+        lastAppliedWidgetActionId = normalized
+        preferenceStore.set(normalized, forKey: lastWidgetActionIdKey)
+        return true
+    }
+
+    /// 현재 산책 상태를 위젯 공유 스냅샷으로 동기화합니다.
+    /// - Parameters:
+    ///   - force: `true`면 최소 간격 제한 없이 즉시 저장합니다.
+    ///   - statusOverride: 상태를 강제로 지정할 때 사용하는 값입니다.
+    ///   - messageOverride: 상태 메시지를 강제로 지정할 때 사용하는 값입니다.
+    private func syncWalkWidgetSnapshot(
+        force: Bool = false,
+        statusOverride: WalkWidgetSnapshotStatus? = nil,
+        messageOverride: String? = nil
+    ) {
+        let now = Date()
+        if force == false, now.timeIntervalSince(lastWidgetSnapshotSyncAt) < widgetSnapshotSyncInterval {
+            return
+        }
+
+        let snapshot = WalkWidgetSnapshot(
+            isWalking: isWalking,
+            elapsedSeconds: Int(max(0, time.rounded(.down))),
+            petName: currentWalkingPetName,
+            status: statusOverride ?? (isLocationPermissionDenied ? .locationDenied : .ready),
+            statusMessage: messageOverride,
+            updatedAt: now.timeIntervalSince1970
+        )
+        widgetSnapshotStore.save(snapshot)
+        lastWidgetSnapshotSyncAt = now
+    }
+
     func reloadSelectedPetContext() {
         let userInfo = userSessionStore.currentUserInfo()
         self.availablePets = userInfo?.pet ?? []
@@ -1905,6 +2024,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         if isWalking == false {
             self.currentWalkingPetName = self.selectedPetName
         }
+        syncWalkWidgetSnapshot(force: true)
     }
 
     var hasSelectedPet: Bool {
@@ -2132,6 +2252,7 @@ extension MapViewModel {
             self.time = max(0, Date().timeIntervalSince(self.startTime))
             self.persistActiveWalkSession()
             self.syncWatchContext()
+            self.syncWalkWidgetSnapshot()
             if self.time >= self.walkAutoTimeoutInterval {
                 self.forceQuit()
                 return
@@ -2162,16 +2283,20 @@ extension MapViewModel {
         switch manager.authorizationStatus {
         case .notDetermined:
             locationManager.requestAlwaysAuthorization()
+            syncWalkWidgetSnapshot(force: true)
         case .restricted, .denied:
             pauseWalkForAuthorizationDowngrade()
+            syncWalkWidgetSnapshot(force: true, statusOverride: .locationDenied)
         case .authorizedAlways, .authorizedWhenInUse:
             if isWalking {
                 syncWatchContext(force: true)
             }
             refreshWeatherRiskFromProviderIfNeeded(location: manager.location, force: true)
+            syncWalkWidgetSnapshot(force: true)
             
         @unknown default:
             locationManager.requestAlwaysAuthorization()
+            syncWalkWidgetSnapshot(force: true, statusOverride: .error, messageOverride: "위치 권한 상태를 확인해주세요.")
         }
     }
     func locationManager(_ manager: CLLocationManager, didStartMonitoringFor region: CLRegion) {

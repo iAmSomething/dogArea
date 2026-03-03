@@ -12,7 +12,11 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string></string>
+			<string>com.th.dogArea.widget</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>dogarea</string>
+			</array>
 		</dict>
 		<dict>
 			<key>CFBundleURLName</key>
