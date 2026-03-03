@@ -209,6 +209,16 @@ struct MapView : View{
         .onReceive(authFlow.objectWillChange) { _ in
             recomputeBannerQueue()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .walkWidgetActionRequested)) { notification in
+            guard
+                let rawKind = notification.userInfo?["kind"] as? String,
+                let kind = WalkWidgetActionKind(rawValue: rawKind),
+                let actionId = notification.userInfo?["actionId"] as? String
+            else { return }
+            let source = (notification.userInfo?["source"] as? String) ?? "widget"
+            let route = WalkWidgetActionRoute(kind: kind, actionId: actionId, source: source)
+            viewModel.applyWidgetWalkAction(route)
+        }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             recomputeBannerQueue()
         }

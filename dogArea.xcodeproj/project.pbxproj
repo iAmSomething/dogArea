@@ -9,11 +9,14 @@
 /* Begin PBXBuildFile section */
 		02B810B0791CFB600F8406EB /* HomeSelectedPetEmptyStateCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D14629580BEDCDCAE5B9EC3 /* HomeSelectedPetEmptyStateCardView.swift */; };
 		106E27D50C08D7997FD7982D /* RivalNetworkErrorInterpreter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4548C0C604B933CC43644FA /* RivalNetworkErrorInterpreter.swift */; };
+		1A87E29B8817434BC0210F5F /* WalkControlIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B86CA6EAAA6D2939A4516B9 /* WalkControlIntents.swift */; };
 		1CCC7F48BF06FD4BCECF4286 /* TerritoryGoalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE5CB737B1C8D8A675B6A43B /* TerritoryGoalView.swift */; };
 		22EA9355CC79568490A94348 /* dogAreaUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 626E89852AADA163B53AB03D /* dogAreaUITestsLaunchTests.swift */; };
 		23CB28F896D94B88CEF351F7 /* DesignAuditUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D982F3BFEE53C6D1333FF67 /* DesignAuditUITests.swift */; };
+		23F65BCBE5B31BA26CAFD1A5 /* WalkWidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9750A3E12F227C859B34AF85 /* WalkWidgetBridge.swift */; };
 		260998357CBB95987A042E95 /* PetProfileImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FFD83BC3079033CF24E9D6A /* PetProfileImageView.swift */; };
 		28782FDF88C341A3A600D280 /* HomeWeeklyMetricCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEA093F2A0E2A16E5E116F3E /* HomeWeeklyMetricCardView.swift */; };
+		2DBE51403AFB38FFC0B57074 /* WalkWidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9750A3E12F227C859B34AF85 /* WalkWidgetBridge.swift */; };
 		2FAF945E5AA7BC004D27C72E /* WalkDetailContextProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81CDB8AB4C8855FE6D106BF3 /* WalkDetailContextProvider.swift */; };
 		30B76E851C27574F5E5AC8A0 /* RivalModerationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 722875CA7B7EAB511CCC1590 /* RivalModerationStore.swift */; };
 		316EF137D15633B33FDB93A3 /* ProfileFieldEditSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C8E7D8185E273FFD5B84579 /* ProfileFieldEditSheet.swift */; };
@@ -21,6 +24,8 @@
 		37382EBDCEA90A2E818A05BB /* ProfileFieldEditSheetViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30BF0E17B2BF40E97DBA5E07 /* ProfileFieldEditSheetViewModel.swift */; };
 		3B09EF73E528C78FEEE2AB01 /* SeasonProfileFrameStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CEBC83AFF321A2E3D10E8A0 /* SeasonProfileFrameStyle.swift */; };
 		45CA89EBC76C1FE5200FD88D /* HomeSelectedPetContextBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B7738E4A04B406F4D70AE19 /* HomeSelectedPetContextBannerView.swift */; };
+		4C8C66B1707DD603359C2C39 /* dogAreaWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E916788F22F3DDF144CCE8D4 /* dogAreaWidgetExtension.appex */; };
+		4D741EB8E7EC826A55FCC5A5 /* WalkWidgetSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE5D5C2E004FD37BC9E65790 /* WalkWidgetSnapshotStore.swift */; };
 		541633F39AA01B555EA4A904 /* HomeRecentConqueredSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E3FDEC98167CC2EA0DAFA5E /* HomeRecentConqueredSectionView.swift */; };
 		5951E893E8CBC77DCA82E00F /* WalkDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A775802DB2A590A7C7DA0978 /* WalkDetailViewModel.swift */; };
 		5F3ED37B0435F882BC90593E /* HomePetSelectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDA31AC1DF69B7CA85070D28 /* HomePetSelectorView.swift */; };
@@ -31,10 +36,10 @@
 		73816D222BB17958D198D1AC /* HomeStatusBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A1B2C487816AA2CCCA6186F /* HomeStatusBannerView.swift */; };
 		7FA65C0F2ACFFB5E341DAD07 /* AppleSigninButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 078B330462EB7C7D535B09F1 /* AppleSigninButton.swift */; };
 		82C0FE1F9DF4A147D4C6A02C /* RecoveryActionBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = C63D5D25262A8E2185005C50 /* RecoveryActionBanner.swift */; };
-		DAF0A00A4200000000000001 /* RecoveryIssue.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAF0A0094200000000000001 /* RecoveryIssue.swift */; };
 		8705C4CE77BEE3DAEF07A78B /* SimpleKeyValueView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 376D30D4A7542596A014DEE1 /* SimpleKeyValueView.swift */; };
 		8A40430FD15CD439469AC981 /* RivalViewStateResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2D5D8D51AC30DA6DB60A871 /* RivalViewStateResolver.swift */; };
 		8AB9332023AB8DBFF5657767 /* HomeHeaderSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEBDE81DFC43DCD56546D775 /* HomeHeaderSectionView.swift */; };
+		8CEF03B12FF33C7B71CCE658 /* WalkWidgetSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE5D5C2E004FD37BC9E65790 /* WalkWidgetSnapshotStore.swift */; };
 		8DD9CE63EA914575B4763A9F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D8458EB9DE9760D52537B4B6 /* Foundation.framework */; };
 		9D8804AD0F127C5DDDAEA597 /* ThumbnailImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2615443270FF3222AEBDE893 /* ThumbnailImageView.swift */; };
 		A0C814D250B8F26BDCC21F66 /* UserProfileImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F73B707BA77AC2C69A6BC62B /* UserProfileImageView.swift */; };
@@ -64,8 +69,6 @@
 		DA3F9BA32AE0F14F0048550C /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9B9B2AE0F14F0048550C /* MapView.swift */; };
 		DA3F9BA42AE0F14F0048550C /* MapViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9B9C2AE0F14F0048550C /* MapViewModel.swift */; };
 		DA3F9BA52AE0F14F0048550C /* MapModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9B9D2AE0F14F0048550C /* MapModel.swift */; };
-		DAE148A11420000000000001 /* MapAreaCalculationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE148A01420000000000001 /* MapAreaCalculationService.swift */; };
-		DAE147B11420000000000001 /* MapClusterAnnotationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE147B01420000000000001 /* MapClusterAnnotationService.swift */; };
 		DA3F9BA62AE0F14F0048550C /* WalkListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9B9F2AE0F14F0048550C /* WalkListView.swift */; };
 		DA3F9BAE2AE0F2410048550C /* ViewUtility.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9BAD2AE0F2410048550C /* ViewUtility.swift */; };
 		DA3F9BD32AE0FF8A0048550C /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9BD22AE0FF8A0048550C /* RootView.swift */; };
@@ -87,8 +90,6 @@
 		DA8BB9EE2B02F0CD00E350C4 /* AreaMeters.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA8BB9ED2B02F0CD00E350C4 /* AreaMeters.swift */; };
 		DA8BB9F22B02FE3A00E350C4 /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA8BB9F12B02FE3A00E350C4 /* HomeViewModel.swift */; };
 		DA8BB9F52B032AB000E350C4 /* Calender.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA8BB9F42B032AB000E350C4 /* Calender.swift */; };
-		DAE147A11420000000000001 /* HomeWeeklyStatisticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE147A01420000000000001 /* HomeWeeklyStatisticsService.swift */; };
-		DAE147A31420000000000001 /* HomeWeatherMissionStatusBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE147A21420000000000001 /* HomeWeatherMissionStatusBuilder.swift */; };
 		DA933BE92ADD04E70029856C /* CustomAlertView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA933BE82ADD04E70029856C /* CustomAlertView.swift */; };
 		DA95CC6C2ADE0682004AD94D /* OpenAIClient.h in Headers */ = {isa = PBXBuildFile; fileRef = DA95CC6B2ADE0682004AD94D /* OpenAIClient.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		DA95CC6F2ADE0682004AD94D /* OpenAIClient.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DA95CC692ADE0682004AD94D /* OpenAIClient.framework */; };
@@ -148,14 +149,29 @@
 		DAE140101400000000000003 /* WalkSessionMetadataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE140001400000000000003 /* WalkSessionMetadataStore.swift */; };
 		DAE140101400000000000004 /* ProfileSyncOutboxStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE140001400000000000004 /* ProfileSyncOutboxStore.swift */; };
 		DAE142101420000000000001 /* AppHapticFeedback.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE142001420000000000001 /* AppHapticFeedback.swift */; };
+		DAE147A11420000000000001 /* HomeWeeklyStatisticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE147A01420000000000001 /* HomeWeeklyStatisticsService.swift */; };
+		DAE147A31420000000000001 /* HomeWeatherMissionStatusBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE147A21420000000000001 /* HomeWeatherMissionStatusBuilder.swift */; };
+		DAE147B11420000000000001 /* MapClusterAnnotationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE147B01420000000000001 /* MapClusterAnnotationService.swift */; };
+		DAE148A11420000000000001 /* MapAreaCalculationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE148A01420000000000001 /* MapAreaCalculationService.swift */; };
 		DAED24FB2AFA1C980044715A /* LottieView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAED24FA2AFA1C980044715A /* LottieView.swift */; };
 		DAED25022AFA1D430044715A /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAED25012AFA1D430044715A /* SplashView.swift */; };
+		DAF0A00A4200000000000001 /* RecoveryIssue.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAF0A0094200000000000001 /* RecoveryIssue.swift */; };
+		DF2852F26614BBE6698C20F6 /* WalkControlWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020BF5BBC530202A931EEA4B /* WalkControlWidgetBundle.swift */; };
 		E1996670DB5AF8DEE4111010 /* RivalTabModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19B0F89F9FF220625F0008DB /* RivalTabModels.swift */; };
+		EF2B6D25F54A7CAB5C1AF82B /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D8458EB9DE9760D52537B4B6 /* Foundation.framework */; };
 		F0290AA4477811F42F2A1827 /* HomeGoalMetricColumnView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 649E88696A0B4425210BB446 /* HomeGoalMetricColumnView.swift */; };
+		F8055CD421749F308FAF2E58 /* WalkControlWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D030E0DFD8D49558700ACB1 /* WalkControlWidget.swift */; };
 		F941737714116284FBF88EFF /* TerritoryGoalViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F54DF2E65C59A1E8B1F95D8A /* TerritoryGoalViewModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		63B2FA3744EAABB49938A241 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = DA71C8312AD787AC00081ED0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D7437394384DE78743CC3FA5;
+			remoteInfo = dogAreaWidgetExtension;
+		};
 		A84515EDA309F54D868A7F85 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = DA71C8312AD787AC00081ED0 /* Project object */;
@@ -186,6 +202,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
+				4C8C66B1707DD603359C2C39 /* dogAreaWidgetExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -215,14 +232,17 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		020BF5BBC530202A931EEA4B /* WalkControlWidgetBundle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/WalkControlWidgetBundle.swift; sourceTree = SOURCE_ROOT; };
 		078B330462EB7C7D535B09F1 /* AppleSigninButton.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppleSigninButton.swift; sourceTree = "<group>"; };
+		0B86CA6EAAA6D2939A4516B9 /* WalkControlIntents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/WalkControlIntents.swift; sourceTree = SOURCE_ROOT; };
 		19B0F89F9FF220625F0008DB /* RivalTabModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RivalTabModels.swift; path = dogArea/Views/ProfileSettingView/RivalTabModels.swift; sourceTree = "<group>"; };
 		1C0C69DBDA661E0970F6A0BB /* AreaDetailListHeaderView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AreaDetailListHeaderView.swift; sourceTree = "<group>"; };
 		1D982F3BFEE53C6D1333FF67 /* DesignAuditUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DesignAuditUITests.swift; sourceTree = "<group>"; };
 		21CE83B02069A8E4171B35DE /* RivalTabView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RivalTabView.swift; path = dogArea/Views/ProfileSettingView/RivalTabView.swift; sourceTree = "<group>"; };
 		2615443270FF3222AEBDE893 /* ThumbnailImageView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ThumbnailImageView.swift; sourceTree = "<group>"; };
+		2D030E0DFD8D49558700ACB1 /* WalkControlWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/WalkControlWidget.swift; sourceTree = SOURCE_ROOT; };
 		30BF0E17B2BF40E97DBA5E07 /* ProfileFieldEditSheetViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ProfileFieldEditSheetViewModel.swift; path = dogArea/Views/ProfileSettingView/ProfileFieldEditSheetViewModel.swift; sourceTree = "<group>"; };
-		363FE1044470B273CAB987E0 /* HomeQuestReminderSupport.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeQuestReminderSupport.swift; path = HomeQuestReminderSupport.swift; sourceTree = "<group>"; };
+		363FE1044470B273CAB987E0 /* HomeQuestReminderSupport.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeQuestReminderSupport.swift; sourceTree = "<group>"; };
 		376D30D4A7542596A014DEE1 /* SimpleKeyValueView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SimpleKeyValueView.swift; sourceTree = "<group>"; };
 		4A1B2C487816AA2CCCA6186F /* HomeStatusBannerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeStatusBannerView.swift; path = dogArea/Views/HomeView/HomeSubView/HomeStatusBannerView.swift; sourceTree = "<group>"; };
 		4D14629580BEDCDCAE5B9EC3 /* HomeSelectedPetEmptyStateCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeSelectedPetEmptyStateCardView.swift; path = dogArea/Views/HomeView/HomeSubView/HomeSelectedPetEmptyStateCardView.swift; sourceTree = "<group>"; };
@@ -239,10 +259,14 @@
 		8CEBC83AFF321A2E3D10E8A0 /* SeasonProfileFrameStyle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SeasonProfileFrameStyle.swift; path = dogArea/Views/ProfileSettingView/SeasonProfileFrameStyle.swift; sourceTree = "<group>"; };
 		8F2B2A868B6FD9035AC5214F /* RivalHotspotSummaryBuilder.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RivalHotspotSummaryBuilder.swift; path = dogArea/Views/ProfileSettingView/RivalHotspotSummaryBuilder.swift; sourceTree = "<group>"; };
 		92C5F96B5D23BD6D36935CA0 /* PositionMarkerViewWithSelection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PositionMarkerViewWithSelection.swift; sourceTree = "<group>"; };
+		94F1831B36AD06A464B77936 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		9750A3E12F227C859B34AF85 /* WalkWidgetBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogArea/Source/WidgetBridge/WalkWidgetBridge.swift; sourceTree = SOURCE_ROOT; };
+		983F00D4F1C80990F3FED2B2 /* dogAreaWidgetExtension.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = dogAreaWidgetExtension/dogAreaWidgetExtension.entitlements; sourceTree = SOURCE_ROOT; };
 		9FFD83BC3079033CF24E9D6A /* PetProfileImageView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PetProfileImageView.swift; path = dogArea/Views/ProfileSettingView/PetProfileImageView.swift; sourceTree = "<group>"; };
 		A775802DB2A590A7C7DA0978 /* WalkDetailViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WalkDetailViewModel.swift; path = dogArea/Views/MapView/WalkDetailViewModel.swift; sourceTree = "<group>"; };
 		C566C61F8B5520FEC3406DFF /* HomeGoalTrackerCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeGoalTrackerCardView.swift; sourceTree = "<group>"; };
-		C63D5D25262A8E2185005C50 /* RecoveryActionBanner.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RecoveryActionBanner.swift; path = RecoveryActionBanner.swift; sourceTree = "<group>"; };
+		C63D5D25262A8E2185005C50 /* RecoveryActionBanner.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RecoveryActionBanner.swift; sourceTree = "<group>"; };
+		CE5D5C2E004FD37BC9E65790 /* WalkWidgetSnapshotStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogArea/Source/WidgetBridge/WalkWidgetSnapshotStore.swift; sourceTree = SOURCE_ROOT; };
 		CEBDE81DFC43DCD56546D775 /* HomeHeaderSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeHeaderSectionView.swift; sourceTree = "<group>"; };
 		D8458EB9DE9760D52537B4B6 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		DA0FB2082AD7B21C00B235CF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -272,8 +296,6 @@
 		DA3F9B9B2AE0F14F0048550C /* MapView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MapView.swift; sourceTree = "<group>"; };
 		DA3F9B9C2AE0F14F0048550C /* MapViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MapViewModel.swift; sourceTree = "<group>"; };
 		DA3F9B9D2AE0F14F0048550C /* MapModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MapModel.swift; sourceTree = "<group>"; };
-		DAE148A01420000000000001 /* MapAreaCalculationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapAreaCalculationService.swift; sourceTree = "<group>"; };
-		DAE147B01420000000000001 /* MapClusterAnnotationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapClusterAnnotationService.swift; sourceTree = "<group>"; };
 		DA3F9B9F2AE0F14F0048550C /* WalkListView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WalkListView.swift; sourceTree = "<group>"; };
 		DA3F9BAD2AE0F2410048550C /* ViewUtility.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ViewUtility.swift; sourceTree = "<group>"; };
 		DA3F9BD22AE0FF8A0048550C /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
@@ -297,9 +319,6 @@
 		DA8BB9ED2B02F0CD00E350C4 /* AreaMeters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMeters.swift; sourceTree = "<group>"; };
 		DA8BB9F12B02FE3A00E350C4 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
 		DA8BB9F42B032AB000E350C4 /* Calender.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Calender.swift; sourceTree = "<group>"; };
-		DAE147A01420000000000001 /* HomeWeeklyStatisticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeeklyStatisticsService.swift; sourceTree = "<group>"; };
-		DAE147A21420000000000001 /* HomeWeatherMissionStatusBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherMissionStatusBuilder.swift; sourceTree = "<group>"; };
-		DAF0A0094200000000000001 /* RecoveryIssue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryIssue.swift; sourceTree = "<group>"; };
 		DA933BE82ADD04E70029856C /* CustomAlertView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomAlertView.swift; sourceTree = "<group>"; };
 		DA95CC692ADE0682004AD94D /* OpenAIClient.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = OpenAIClient.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		DA95CC6B2ADE0682004AD94D /* OpenAIClient.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = OpenAIClient.h; sourceTree = "<group>"; };
@@ -345,9 +364,15 @@
 		DAE140001400000000000003 /* WalkSessionMetadataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkSessionMetadataStore.swift; sourceTree = "<group>"; };
 		DAE140001400000000000004 /* ProfileSyncOutboxStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileSyncOutboxStore.swift; sourceTree = "<group>"; };
 		DAE142001420000000000001 /* AppHapticFeedback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppHapticFeedback.swift; sourceTree = "<group>"; };
+		DAE147A01420000000000001 /* HomeWeeklyStatisticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeeklyStatisticsService.swift; sourceTree = "<group>"; };
+		DAE147A21420000000000001 /* HomeWeatherMissionStatusBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherMissionStatusBuilder.swift; sourceTree = "<group>"; };
+		DAE147B01420000000000001 /* MapClusterAnnotationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapClusterAnnotationService.swift; sourceTree = "<group>"; };
+		DAE148A01420000000000001 /* MapAreaCalculationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapAreaCalculationService.swift; sourceTree = "<group>"; };
 		DAED24FA2AFA1C980044715A /* LottieView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LottieView.swift; sourceTree = "<group>"; };
 		DAED25012AFA1D430044715A /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
+		DAF0A0094200000000000001 /* RecoveryIssue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryIssue.swift; sourceTree = "<group>"; };
 		E4548C0C604B933CC43644FA /* RivalNetworkErrorInterpreter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RivalNetworkErrorInterpreter.swift; path = dogArea/Views/ProfileSettingView/RivalNetworkErrorInterpreter.swift; sourceTree = "<group>"; };
+		E916788F22F3DDF144CCE8D4 /* dogAreaWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = dogAreaWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		F2D5D8D51AC30DA6DB60A871 /* RivalViewStateResolver.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RivalViewStateResolver.swift; path = dogArea/Views/ProfileSettingView/RivalViewStateResolver.swift; sourceTree = "<group>"; };
 		F54DF2E65C59A1E8B1F95D8A /* TerritoryGoalViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TerritoryGoalViewModel.swift; sourceTree = "<group>"; };
 		F59FE8AF61BF3AE3B6C99D77 /* HomeWeeklySnapshotSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeWeeklySnapshotSectionView.swift; sourceTree = "<group>"; };
@@ -358,6 +383,14 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		2A0402CFE6FF4712E0CDA1F1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EF2B6D25F54A7CAB5C1AF82B /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		CABA6EC005DFA1F24B97DA99 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -401,8 +434,28 @@
 				1D982F3BFEE53C6D1333FF67 /* DesignAuditUITests.swift */,
 				626E89852AADA163B53AB03D /* dogAreaUITestsLaunchTests.swift */,
 			);
-			name = dogAreaUITests;
 			path = dogAreaUITests;
+			sourceTree = "<group>";
+		};
+		739206D93B3E1667D2A58593 /* dogAreaWidgetExtension */ = {
+			isa = PBXGroup;
+			children = (
+				020BF5BBC530202A931EEA4B /* WalkControlWidgetBundle.swift */,
+				2D030E0DFD8D49558700ACB1 /* WalkControlWidget.swift */,
+				0B86CA6EAAA6D2939A4516B9 /* WalkControlIntents.swift */,
+				94F1831B36AD06A464B77936 /* Info.plist */,
+				983F00D4F1C80990F3FED2B2 /* dogAreaWidgetExtension.entitlements */,
+			);
+			name = dogAreaWidgetExtension;
+			sourceTree = "<group>";
+		};
+		83572DCB08333E9BFA6B83E9 /* WidgetBridge */ = {
+			isa = PBXGroup;
+			children = (
+				9750A3E12F227C859B34AF85 /* WalkWidgetBridge.swift */,
+				CE5D5C2E004FD37BC9E65790 /* WalkWidgetSnapshotStore.swift */,
+			);
+			name = WidgetBridge;
 			sourceTree = "<group>";
 		};
 		DA1731742AE20A3600EF10C8 /* Resource */ = {
@@ -525,78 +578,9 @@
 				DAE140001400000000000004 /* ProfileSyncOutboxStore.swift */,
 				DAE142001420000000000001 /* AppHapticFeedback.swift */,
 				DAC19F372B0B9E81002FE2E8 /* StringExtensions.swift */,
+				83572DCB08333E9BFA6B83E9 /* WidgetBridge */,
 			);
 			path = Source;
-			sourceTree = "<group>";
-		};
-		DAF0A0014200000000000001 /* Domain */ = {
-			isa = PBXGroup;
-			children = (
-				DAF0A0024200000000000001 /* Home */,
-				DAF0A0044200000000000001 /* Map */,
-				DAF0A0074200000000000001 /* Recovery */,
-			);
-			path = Domain;
-			sourceTree = "<group>";
-		};
-		DAF0A0024200000000000001 /* Home */ = {
-			isa = PBXGroup;
-			children = (
-				DAF0A0034200000000000001 /* Services */,
-			);
-			path = Home;
-			sourceTree = "<group>";
-		};
-		DAF0A0034200000000000001 /* Services */ = {
-			isa = PBXGroup;
-			children = (
-				363FE1044470B273CAB987E0 /* HomeQuestReminderSupport.swift */,
-				DAE147A01420000000000001 /* HomeWeeklyStatisticsService.swift */,
-				DAE147A21420000000000001 /* HomeWeatherMissionStatusBuilder.swift */,
-			);
-			path = Services;
-			sourceTree = "<group>";
-		};
-		DAF0A0044200000000000001 /* Map */ = {
-			isa = PBXGroup;
-			children = (
-				DAF0A0054200000000000001 /* Models */,
-				DAF0A0064200000000000001 /* Services */,
-			);
-			path = Map;
-			sourceTree = "<group>";
-		};
-		DAF0A0054200000000000001 /* Models */ = {
-			isa = PBXGroup;
-			children = (
-				DA3F9B9D2AE0F14F0048550C /* MapModel.swift */,
-			);
-			path = Models;
-			sourceTree = "<group>";
-		};
-		DAF0A0064200000000000001 /* Services */ = {
-			isa = PBXGroup;
-			children = (
-				DAE148A01420000000000001 /* MapAreaCalculationService.swift */,
-				DAE147B01420000000000001 /* MapClusterAnnotationService.swift */,
-			);
-			path = Services;
-			sourceTree = "<group>";
-		};
-		DAF0A0074200000000000001 /* Recovery */ = {
-			isa = PBXGroup;
-			children = (
-				DAF0A0094200000000000001 /* RecoveryIssue.swift */,
-			);
-			path = Recovery;
-			sourceTree = "<group>";
-		};
-		DAF0A0084200000000000001 /* Recovery */ = {
-			isa = PBXGroup;
-			children = (
-				C63D5D25262A8E2185005C50 /* RecoveryActionBanner.swift */,
-			);
-			path = Recovery;
 			sourceTree = "<group>";
 		};
 		DA3F9BAF2AE0F24C0048550C /* AlertView */ = {
@@ -678,6 +662,7 @@
 				F2D5D8D51AC30DA6DB60A871 /* RivalViewStateResolver.swift */,
 				E4548C0C604B933CC43644FA /* RivalNetworkErrorInterpreter.swift */,
 				8F2B2A868B6FD9035AC5214F /* RivalHotspotSummaryBuilder.swift */,
+				739206D93B3E1667D2A58593 /* dogAreaWidgetExtension */,
 			);
 			sourceTree = "<group>";
 		};
@@ -688,6 +673,7 @@
 				DA95CC692ADE0682004AD94D /* OpenAIClient.framework */,
 				DAB314AF2B3C1B4A000357C7 /* dogAreaWatch Watch App.app */,
 				688E8E192EA6BCB551D19759 /* dogAreaUITests.xctest */,
+				E916788F22F3DDF144CCE8D4 /* dogAreaWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -822,6 +808,76 @@
 			path = Animations;
 			sourceTree = "<group>";
 		};
+		DAF0A0014200000000000001 /* Domain */ = {
+			isa = PBXGroup;
+			children = (
+				DAF0A0024200000000000001 /* Home */,
+				DAF0A0044200000000000001 /* Map */,
+				DAF0A0074200000000000001 /* Recovery */,
+			);
+			path = Domain;
+			sourceTree = "<group>";
+		};
+		DAF0A0024200000000000001 /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				DAF0A0034200000000000001 /* Services */,
+			);
+			path = Home;
+			sourceTree = "<group>";
+		};
+		DAF0A0034200000000000001 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				363FE1044470B273CAB987E0 /* HomeQuestReminderSupport.swift */,
+				DAE147A01420000000000001 /* HomeWeeklyStatisticsService.swift */,
+				DAE147A21420000000000001 /* HomeWeatherMissionStatusBuilder.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		DAF0A0044200000000000001 /* Map */ = {
+			isa = PBXGroup;
+			children = (
+				DAF0A0054200000000000001 /* Models */,
+				DAF0A0064200000000000001 /* Services */,
+			);
+			path = Map;
+			sourceTree = "<group>";
+		};
+		DAF0A0054200000000000001 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				DA3F9B9D2AE0F14F0048550C /* MapModel.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		DAF0A0064200000000000001 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				DAE148A01420000000000001 /* MapAreaCalculationService.swift */,
+				DAE147B01420000000000001 /* MapClusterAnnotationService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		DAF0A0074200000000000001 /* Recovery */ = {
+			isa = PBXGroup;
+			children = (
+				DAF0A0094200000000000001 /* RecoveryIssue.swift */,
+			);
+			path = Recovery;
+			sourceTree = "<group>";
+		};
+		DAF0A0084200000000000001 /* Recovery */ = {
+			isa = PBXGroup;
+			children = (
+				C63D5D25262A8E2185005C50 /* RecoveryActionBanner.swift */,
+			);
+			path = Recovery;
+			sourceTree = "<group>";
+		};
 		E59AA996CB706087B5029DE5 /* iOS */ = {
 			isa = PBXGroup;
 			children = (
@@ -862,6 +918,23 @@
 			productReference = 688E8E192EA6BCB551D19759 /* dogAreaUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		D7437394384DE78743CC3FA5 /* dogAreaWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4C9E9A833D26F90B3864A141 /* Build configuration list for PBXNativeTarget "dogAreaWidgetExtension" */;
+			buildPhases = (
+				C02757E15FAE412778086D53 /* Sources */,
+				2A0402CFE6FF4712E0CDA1F1 /* Frameworks */,
+				167C893D83543FCE2AC8187A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = dogAreaWidgetExtension;
+			productName = dogAreaWidgetExtension;
+			productReference = E916788F22F3DDF144CCE8D4 /* dogAreaWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		DA71C8382AD787AC00081ED0 /* dogArea */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = DA71C8492AD787AD00081ED0 /* Build configuration list for PBXNativeTarget "dogArea" */;
@@ -878,6 +951,7 @@
 			dependencies = (
 				DA95CC6E2ADE0682004AD94D /* PBXTargetDependency */,
 				DAB314BB2B3C1B4B000357C7 /* PBXTargetDependency */,
+				87CC42D22D04782F3CE1F8D1 /* PBXTargetDependency */,
 			);
 			name = dogArea;
 			packageProductDependencies = (
@@ -976,11 +1050,19 @@
 				DA95CC682ADE0682004AD94D /* OpenAIClient */,
 				DAB314AE2B3C1B4A000357C7 /* dogAreaWatch Watch App */,
 				67B229361805BD2029A9AB0C /* dogAreaUITests */,
+				D7437394384DE78743CC3FA5 /* dogAreaWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		167C893D83543FCE2AC8187A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		4470B2E14E0E00C98ED86996 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1044,6 +1126,18 @@
 			files = (
 				23CB28F896D94B88CEF351F7 /* DesignAuditUITests.swift in Sources */,
 				22EA9355CC79568490A94348 /* dogAreaUITestsLaunchTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C02757E15FAE412778086D53 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DF2852F26614BBE6698C20F6 /* WalkControlWidgetBundle.swift in Sources */,
+				F8055CD421749F308FAF2E58 /* WalkControlWidget.swift in Sources */,
+				1A87E29B8817434BC0210F5F /* WalkControlIntents.swift in Sources */,
+				23F65BCBE5B31BA26CAFD1A5 /* WalkWidgetBridge.swift in Sources */,
+				4D741EB8E7EC826A55FCC5A5 /* WalkWidgetSnapshotStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1156,6 +1250,8 @@
 				106E27D50C08D7997FD7982D /* RivalNetworkErrorInterpreter.swift in Sources */,
 				C047F1CA5DC13CAE4F03AE90 /* RivalHotspotSummaryBuilder.swift in Sources */,
 				6A18F6C8151D05B751F63179 /* HomeQuestReminderSupport.swift in Sources */,
+				2DBE51403AFB38FFC0B57074 /* WalkWidgetBridge.swift in Sources */,
+				8CEF03B12FF33C7B71CCE658 /* WalkWidgetSnapshotStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1180,6 +1276,12 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		87CC42D22D04782F3CE1F8D1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = dogAreaWidgetExtension;
+			target = D7437394384DE78743CC3FA5 /* dogAreaWidgetExtension */;
+			targetProxy = 63B2FA3744EAABB49938A241 /* PBXContainerItemProxy */;
+		};
 		B22DD18A77E1500960C57B6F /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = dogArea;
@@ -1203,6 +1305,33 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		06AA4BDDF59521F71E83475A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = dogAreaWidgetExtension/dogAreaWidgetExtension.entitlements;
+				EXECUTABLE_NAME = dogAreaWidgetExtension;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = dogAreaWidgetExtension/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.th.dogArea.widgetextension;
+				PRODUCT_NAME = dogAreaWidgetExtension;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+				WRAPPER_EXTENSION = appex;
+			};
+			name = Release;
+		};
 		2D9C7C35EA9B548BECD4D7BF /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1237,6 +1366,32 @@
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
+		};
+		86C6B8DCE09FB55103CC97C0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = dogAreaWidgetExtension/dogAreaWidgetExtension.entitlements;
+				EXECUTABLE_NAME = dogAreaWidgetExtension;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = dogAreaWidgetExtension/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.th.dogArea.widgetextension;
+				PRODUCT_NAME = dogAreaWidgetExtension;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				WRAPPER_EXTENSION = appex;
+			};
+			name = Debug;
 		};
 		DA71C8472AD787AD00081ED0 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -1368,12 +1523,10 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = dogArea/dogAreaDebug.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 14;
 				DEVELOPMENT_ASSET_PATHS = "\"dogArea/Preview Content\"";
-				DEVELOPMENT_TEAM = "";
-				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = 7Y3Y9M4N4F;
+				DEVELOPMENT_TEAM = 7Y3Y9M4N4F;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = dogArea/Info.plist;
@@ -1398,7 +1551,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.th.dogArea;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = dogArea;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -1414,12 +1566,10 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = dogArea/dogAreaRelease.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 14;
 				DEVELOPMENT_ASSET_PATHS = "\"dogArea/Preview Content\"";
-				DEVELOPMENT_TEAM = "";
-				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = 7Y3Y9M4N4F;
+				DEVELOPMENT_TEAM = 7Y3Y9M4N4F;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = dogArea/Info.plist;
@@ -1444,7 +1594,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.th.dogArea;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = dogAreaDist;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -1532,7 +1681,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"dogAreaWatch Watch App/Preview Content\"";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 7Y3Y9M4N4F;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = dogAreaWatch;
@@ -1560,11 +1709,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"dogAreaWatch Watch App/Preview Content\"";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 7Y3Y9M4N4F;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = dogAreaWatch;
@@ -1577,6 +1725,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.th.dogArea.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -1589,6 +1738,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		4C9E9A833D26F90B3864A141 /* Build configuration list for PBXNativeTarget "dogAreaWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				06AA4BDDF59521F71E83475A /* Release */,
+				86C6B8DCE09FB55103CC97C0 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		CAFD91A5C821969382992731 /* Build configuration list for PBXNativeTarget "dogAreaUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
