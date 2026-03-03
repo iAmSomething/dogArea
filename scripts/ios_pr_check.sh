@@ -45,6 +45,7 @@ swift scripts/season_comeback_catchup_unit_check.swift
 swift scripts/season_stage2_pipeline_unit_check.swift
 swift scripts/season_stage3_ui_unit_check.swift
 swift scripts/territory_status_widget_unit_check.swift
+swift scripts/hotspot_widget_privacy_unit_check.swift
 swift scripts/season_policy_stage1_unit_check.swift
 swift scripts/weather_risk_policy_stage1_unit_check.swift
 swift scripts/weather_stage2_engine_unit_check.swift

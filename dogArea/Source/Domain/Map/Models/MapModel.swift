@@ -179,6 +179,10 @@ struct NearbyHotspotDTO: Identifiable, Equatable {
     let count: Int
     let intensity: Double
     let centerCoordinate: CLLocationCoordinate2D
+    let privacyMode: String?
+    let suppressionReason: String?
+    let delayMinutes: Int?
+    let requiredMinSample: Int?
 
     var id: String { geohash }
 
@@ -191,6 +195,10 @@ struct NearbyHotspotDTO: Identifiable, Equatable {
         lhs.geohash == rhs.geohash &&
         lhs.count == rhs.count &&
         lhs.intensity == rhs.intensity &&
+        lhs.privacyMode == rhs.privacyMode &&
+        lhs.suppressionReason == rhs.suppressionReason &&
+        lhs.delayMinutes == rhs.delayMinutes &&
+        lhs.requiredMinSample == rhs.requiredMinSample &&
         lhs.centerCoordinate.latitude == rhs.centerCoordinate.latitude &&
         lhs.centerCoordinate.longitude == rhs.centerCoordinate.longitude
     }

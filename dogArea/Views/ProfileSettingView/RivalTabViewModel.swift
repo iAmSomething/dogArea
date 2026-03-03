@@ -5,7 +5,7 @@ import UIKit
 #endif
 
 @MainActor
-final class RivalTabViewModel: NSObject, ObservableObject, @preconcurrency CLLocationManagerDelegate {
+final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     struct HotspotPreviewRow {
         let title: String
         let value: String
@@ -441,10 +441,9 @@ final class RivalTabViewModel: NSObject, ObservableObject, @preconcurrency CLLoc
     private func startPollingIfNeeded() {
         pollingTimer?.invalidate()
         pollingTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                self?.refreshHotspots(force: false)
-                self?.refreshLeaderboard(force: false)
-            }
+            guard let self else { return }
+            self.refreshHotspots(force: false)
+            self.refreshLeaderboard(force: false)
         }
     }
 

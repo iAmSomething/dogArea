@@ -6,6 +6,8 @@ enum WalkWidgetBridgeContract {
     static let snapshotStorageKey = "walk.widget.snapshot.v1"
     static let territorySnapshotStorageKey = "territory.widget.snapshot.v1"
     static let territoryWidgetKind = "com.th.dogArea.territory-status"
+    static let hotspotSnapshotStorageKey = "hotspot.widget.snapshot.v1"
+    static let hotspotWidgetKind = "com.th.dogArea.hotspot-status"
     static let actionRequestStorageKey = "walk.widget.action.request.v1"
     static let deepLinkScheme = "dogarea"
     static let deepLinkHost = "widget"
