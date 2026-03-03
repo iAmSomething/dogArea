@@ -492,10 +492,10 @@ struct HotspotStatusWidgetEntryView: View {
             Text("활성도 \(signalTitle(summary.signalLevel))")
                 .font(.system(size: 22, weight: .bold, design: .rounded))
                 .lineLimit(1)
-            Text("높음 \(summary.highCellCount) · 보통 \(summary.mediumCellCount) · 낮음 \(summary.lowCellCount)")
+            Text(signalDistributionSummary(summary))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
-                .lineLimit(1)
+                .lineLimit(2)
             Text(policyFootnote(summary))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
@@ -505,16 +505,20 @@ struct HotspotStatusWidgetEntryView: View {
 
     /// 중형 위젯 본문을 렌더링합니다.
     /// - Parameter summary: 익명 핫스팟 요약 스냅샷입니다.
-    /// - Returns: 단계별 셀 수와 정책 안내를 담은 중형 본문 뷰입니다.
+    /// - Returns: 익명 단계 상태와 정책 안내를 담은 중형 본문 뷰입니다.
     private func mediumBody(summary: HotspotWidgetSummarySnapshot) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("익명 핫스팟 단계")
                 .font(.headline)
             HStack(spacing: 8) {
-                cellMetric(title: "높음", value: summary.highCellCount, tint: .red.opacity(0.75))
-                cellMetric(title: "보통", value: summary.mediumCellCount, tint: .orange.opacity(0.7))
-                cellMetric(title: "낮음", value: summary.lowCellCount, tint: .green.opacity(0.7))
+                stageChip(title: "높음", isActive: summary.highCellCount > 0, tint: .red)
+                stageChip(title: "보통", isActive: summary.mediumCellCount > 0, tint: .orange)
+                stageChip(title: "낮음", isActive: summary.lowCellCount > 0, tint: .green)
             }
+            Text(signalDistributionSummary(summary))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
             Text(policyFootnote(summary))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
@@ -522,27 +526,57 @@ struct HotspotStatusWidgetEntryView: View {
         }
     }
 
-    /// 단계별 셀 수 메트릭 타일을 렌더링합니다.
+    /// 단계 활성 여부를 표시하는 캡슐 배지를 렌더링합니다.
     /// - Parameters:
-    ///   - title: 메트릭 제목입니다.
-    ///   - value: 표시할 셀 수 값입니다.
-    ///   - tint: 강조 색상입니다.
-    /// - Returns: 제목/숫자/배경 강조가 적용된 메트릭 타일 뷰입니다.
-    private func cellMetric(title: String, value: Int, tint: Color) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(title)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-            Text("\(value)")
-                .font(.title3.weight(.bold))
-                .monospacedDigit()
-                .lineLimit(1)
+    ///   - title: 배지에 표시할 단계 텍스트입니다.
+    ///   - isActive: 해당 단계 신호가 감지되었는지 여부입니다.
+    ///   - tint: 활성 상태일 때 사용할 강조 색상입니다.
+    /// - Returns: 단계 상태를 나타내는 캡슐 배지 뷰입니다.
+    private func stageChip(title: String, isActive: Bool, tint: Color) -> some View {
+        Text(title)
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(isActive ? tint : .secondary)
+            .padding(.vertical, 6)
+            .padding(.horizontal, 10)
+            .background((isActive ? tint.opacity(0.18) : Color.secondary.opacity(0.12)))
+            .clipShape(Capsule())
+            .accessibilityLabel(isActive ? "\(title) 단계 감지됨" : "\(title) 단계 없음")
+    }
+
+    /// 익명 단계 분포를 숫자 없이 요약 문구로 변환합니다.
+    /// - Parameter summary: 익명 핫스팟 요약 스냅샷입니다.
+    /// - Returns: 우세 단계 중심의 분포 요약 문자열입니다.
+    private func signalDistributionSummary(_ summary: HotspotWidgetSummarySnapshot) -> String {
+        switch dominantSignalLevel(summary) {
+        case .high:
+            return "현재는 높음 단계 신호가 상대적으로 우세해요."
+        case .medium:
+            return "현재는 보통 단계 신호가 가장 많이 관측돼요."
+        case .low:
+            return "현재는 낮음 단계 신호가 중심이에요."
+        case .none:
+            return "아직 뚜렷한 단계 신호가 없어요."
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, 8)
-        .padding(.horizontal, 9)
-        .background(tint.opacity(0.18))
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    /// 단계별 집계를 바탕으로 우세 신호 단계를 계산합니다.
+    /// - Parameter summary: 익명 핫스팟 요약 스냅샷입니다.
+    /// - Returns: 우세한 익명 신호 단계입니다.
+    private func dominantSignalLevel(_ summary: HotspotWidgetSummarySnapshot) -> HotspotWidgetSignalLevel {
+        let high = summary.highCellCount
+        let medium = summary.mediumCellCount
+        let low = summary.lowCellCount
+
+        if high == 0, medium == 0, low == 0 {
+            return .none
+        }
+        if high >= medium, high >= low {
+            return .high
+        }
+        if medium >= high, medium >= low {
+            return .medium
+        }
+        return .low
     }
 
     /// 활성도 레벨을 사용자 표시 문자열로 변환합니다.

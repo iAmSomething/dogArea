@@ -21,6 +21,7 @@
 - Watch 액션 신뢰성 명세 v1: `docs/watch-connectivity-reliability-v1.md`
 - 캐리커처 비동기 파이프라인 명세 v1: `docs/caricature-async-pipeline-v1.md`
 - 근처 사용자 익명 핫스팟 명세 v1: `docs/nearby-anonymous-hotspot-v1.md`
+- 핫스팟 위젯 프라이버시 매핑 v1: `docs/hotspot-widget-privacy-mapping-v1.md`
 - 라이벌 프라이버시 하드 가드 v1: `docs/rival-privacy-hard-guard-v1.md`
 - 라이벌 프라이버시 정책 Stage1 v1: `docs/rival-privacy-policy-stage1-v1.md`
 - 라이벌 공정 리그 매칭 v1: `docs/rival-fair-league-v1.md`
@@ -68,6 +69,7 @@
 - Cycle #127 결과 보고서(2026-03-01): `docs/cycle-127-quest-stage1-policy-report-2026-03-01.md`
 - Cycle #205 결과 보고서(2026-03-03): `docs/cycle-205-quest-stage2-engine-report-2026-03-03.md`
 - Cycle #206 결과 보고서(2026-03-03): `docs/cycle-206-game-layer-observability-qa-report-2026-03-03.md`
+- Cycle #218 결과 보고서(2026-03-03): `docs/cycle-218-hotspot-widget-privacy-report-2026-03-03.md`
 - Cycle #147 결과 보고서(2026-02-27): `docs/cycle-147-pet-adaptive-quest-report-2026-02-27.md`
 - Cycle #145 결과 보고서(2026-02-27): `docs/cycle-145-season-catchup-buff-report-2026-02-27.md`
 - Cycle #124 결과 보고서(2026-02-27): `docs/cycle-124-season-policy-report-2026-02-27.md`
