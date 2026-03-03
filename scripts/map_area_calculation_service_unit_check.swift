@@ -16,7 +16,7 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
-let service = load("dogArea/Views/MapView/MapAreaCalculationService.swift")
+let service = load("dogArea/Source/Domain/Map/Services/MapAreaCalculationService.swift")
 let mapViewModel = load("dogArea/Views/MapView/MapViewModel.swift")
 
 assertTrue(service.contains("protocol MapAreaCalculationServicing"), "MapAreaCalculationServicing protocol should exist")

@@ -31,6 +31,7 @@
 		73816D222BB17958D198D1AC /* HomeStatusBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A1B2C487816AA2CCCA6186F /* HomeStatusBannerView.swift */; };
 		7FA65C0F2ACFFB5E341DAD07 /* AppleSigninButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 078B330462EB7C7D535B09F1 /* AppleSigninButton.swift */; };
 		82C0FE1F9DF4A147D4C6A02C /* RecoveryActionBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = C63D5D25262A8E2185005C50 /* RecoveryActionBanner.swift */; };
+		DAF0A00A4200000000000001 /* RecoveryIssue.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAF0A0094200000000000001 /* RecoveryIssue.swift */; };
 		8705C4CE77BEE3DAEF07A78B /* SimpleKeyValueView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 376D30D4A7542596A014DEE1 /* SimpleKeyValueView.swift */; };
 		8A40430FD15CD439469AC981 /* RivalViewStateResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2D5D8D51AC30DA6DB60A871 /* RivalViewStateResolver.swift */; };
 		8AB9332023AB8DBFF5657767 /* HomeHeaderSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEBDE81DFC43DCD56546D775 /* HomeHeaderSectionView.swift */; };
@@ -221,7 +222,7 @@
 		21CE83B02069A8E4171B35DE /* RivalTabView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RivalTabView.swift; path = dogArea/Views/ProfileSettingView/RivalTabView.swift; sourceTree = "<group>"; };
 		2615443270FF3222AEBDE893 /* ThumbnailImageView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ThumbnailImageView.swift; sourceTree = "<group>"; };
 		30BF0E17B2BF40E97DBA5E07 /* ProfileFieldEditSheetViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ProfileFieldEditSheetViewModel.swift; path = dogArea/Views/ProfileSettingView/ProfileFieldEditSheetViewModel.swift; sourceTree = "<group>"; };
-		363FE1044470B273CAB987E0 /* HomeQuestReminderSupport.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeQuestReminderSupport.swift; path = dogArea/Views/HomeView/HomeQuestReminderSupport.swift; sourceTree = "<group>"; };
+		363FE1044470B273CAB987E0 /* HomeQuestReminderSupport.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeQuestReminderSupport.swift; path = HomeQuestReminderSupport.swift; sourceTree = "<group>"; };
 		376D30D4A7542596A014DEE1 /* SimpleKeyValueView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SimpleKeyValueView.swift; sourceTree = "<group>"; };
 		4A1B2C487816AA2CCCA6186F /* HomeStatusBannerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeStatusBannerView.swift; path = dogArea/Views/HomeView/HomeSubView/HomeStatusBannerView.swift; sourceTree = "<group>"; };
 		4D14629580BEDCDCAE5B9EC3 /* HomeSelectedPetEmptyStateCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeSelectedPetEmptyStateCardView.swift; path = dogArea/Views/HomeView/HomeSubView/HomeSelectedPetEmptyStateCardView.swift; sourceTree = "<group>"; };
@@ -241,7 +242,7 @@
 		9FFD83BC3079033CF24E9D6A /* PetProfileImageView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PetProfileImageView.swift; path = dogArea/Views/ProfileSettingView/PetProfileImageView.swift; sourceTree = "<group>"; };
 		A775802DB2A590A7C7DA0978 /* WalkDetailViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WalkDetailViewModel.swift; path = dogArea/Views/MapView/WalkDetailViewModel.swift; sourceTree = "<group>"; };
 		C566C61F8B5520FEC3406DFF /* HomeGoalTrackerCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeGoalTrackerCardView.swift; sourceTree = "<group>"; };
-		C63D5D25262A8E2185005C50 /* RecoveryActionBanner.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RecoveryActionBanner.swift; path = dogArea/Views/MapView/RecoveryActionBanner.swift; sourceTree = "<group>"; };
+		C63D5D25262A8E2185005C50 /* RecoveryActionBanner.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RecoveryActionBanner.swift; path = RecoveryActionBanner.swift; sourceTree = "<group>"; };
 		CEBDE81DFC43DCD56546D775 /* HomeHeaderSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeHeaderSectionView.swift; sourceTree = "<group>"; };
 		D8458EB9DE9760D52537B4B6 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		DA0FB2082AD7B21C00B235CF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -298,6 +299,7 @@
 		DA8BB9F42B032AB000E350C4 /* Calender.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Calender.swift; sourceTree = "<group>"; };
 		DAE147A01420000000000001 /* HomeWeeklyStatisticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeeklyStatisticsService.swift; sourceTree = "<group>"; };
 		DAE147A21420000000000001 /* HomeWeatherMissionStatusBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherMissionStatusBuilder.swift; sourceTree = "<group>"; };
+		DAF0A0094200000000000001 /* RecoveryIssue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryIssue.swift; sourceTree = "<group>"; };
 		DA933BE82ADD04E70029856C /* CustomAlertView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomAlertView.swift; sourceTree = "<group>"; };
 		DA95CC692ADE0682004AD94D /* OpenAIClient.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = OpenAIClient.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		DA95CC6B2ADE0682004AD94D /* OpenAIClient.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = OpenAIClient.h; sourceTree = "<group>"; };
@@ -420,6 +422,7 @@
 				DA3F9BD12AE0FF7B0048550C /* BaseView */,
 				DA3F9BAF2AE0F24C0048550C /* AlertView */,
 				DAC19F222B0B379C002FE2E8 /* Loading */,
+				DAF0A0084200000000000001 /* Recovery */,
 				DA390A742AFE1AFC00BACF2B /* SimpleMessageView.swift */,
 				DA4513822AFB25C2007AD69B /* PositionMarkerView.swift */,
 				DA3550012B01E0F900E4094A /* UnderLine.swift */,
@@ -438,8 +441,6 @@
 				DA8BB9ED2B02F0CD00E350C4 /* AreaMeters.swift */,
 				DA3EB0792B0344CD00AEA65D /* AreaDetailView.swift */,
 				DA8BB9F12B02FE3A00E350C4 /* HomeViewModel.swift */,
-				DAE147A01420000000000001 /* HomeWeeklyStatisticsService.swift */,
-				DAE147A21420000000000001 /* HomeWeatherMissionStatusBuilder.swift */,
 			);
 			path = HomeView;
 			sourceTree = "<group>";
@@ -486,9 +487,6 @@
 				DAAE221E2AFCBDC4005FD096 /* StartModalView.swift */,
 				DAAE22222AFCC225005FD096 /* WalkDetailView.swift */,
 				DA3F9B9C2AE0F14F0048550C /* MapViewModel.swift */,
-				DA3F9B9D2AE0F14F0048550C /* MapModel.swift */,
-				DAE148A01420000000000001 /* MapAreaCalculationService.swift */,
-				DAE147B01420000000000001 /* MapClusterAnnotationService.swift */,
 				376D30D4A7542596A014DEE1 /* SimpleKeyValueView.swift */,
 			);
 			path = MapView;
@@ -509,6 +507,7 @@
 		DA3F9BAC2AE0F2410048550C /* Source */ = {
 			isa = PBXGroup;
 			children = (
+				DAF0A0014200000000000001 /* Domain */,
 				DA354FFC2B01DF1F00E4094A /* TimeIntervalExtensions.swift */,
 				DA3F9BAD2AE0F2410048550C /* ViewUtility.swift */,
 				DAA8E4F82B01A80C00F9190B /* TabAppear.swift */,
@@ -528,6 +527,76 @@
 				DAC19F372B0B9E81002FE2E8 /* StringExtensions.swift */,
 			);
 			path = Source;
+			sourceTree = "<group>";
+		};
+		DAF0A0014200000000000001 /* Domain */ = {
+			isa = PBXGroup;
+			children = (
+				DAF0A0024200000000000001 /* Home */,
+				DAF0A0044200000000000001 /* Map */,
+				DAF0A0074200000000000001 /* Recovery */,
+			);
+			path = Domain;
+			sourceTree = "<group>";
+		};
+		DAF0A0024200000000000001 /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				DAF0A0034200000000000001 /* Services */,
+			);
+			path = Home;
+			sourceTree = "<group>";
+		};
+		DAF0A0034200000000000001 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				363FE1044470B273CAB987E0 /* HomeQuestReminderSupport.swift */,
+				DAE147A01420000000000001 /* HomeWeeklyStatisticsService.swift */,
+				DAE147A21420000000000001 /* HomeWeatherMissionStatusBuilder.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		DAF0A0044200000000000001 /* Map */ = {
+			isa = PBXGroup;
+			children = (
+				DAF0A0054200000000000001 /* Models */,
+				DAF0A0064200000000000001 /* Services */,
+			);
+			path = Map;
+			sourceTree = "<group>";
+		};
+		DAF0A0054200000000000001 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				DA3F9B9D2AE0F14F0048550C /* MapModel.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		DAF0A0064200000000000001 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				DAE148A01420000000000001 /* MapAreaCalculationService.swift */,
+				DAE147B01420000000000001 /* MapClusterAnnotationService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		DAF0A0074200000000000001 /* Recovery */ = {
+			isa = PBXGroup;
+			children = (
+				DAF0A0094200000000000001 /* RecoveryIssue.swift */,
+			);
+			path = Recovery;
+			sourceTree = "<group>";
+		};
+		DAF0A0084200000000000001 /* Recovery */ = {
+			isa = PBXGroup;
+			children = (
+				C63D5D25262A8E2185005C50 /* RecoveryActionBanner.swift */,
+			);
+			path = Recovery;
 			sourceTree = "<group>";
 		};
 		DA3F9BAF2AE0F24C0048550C /* AlertView */ = {
@@ -595,7 +664,6 @@
 				8B7738E4A04B406F4D70AE19 /* HomeSelectedPetContextBannerView.swift */,
 				4D14629580BEDCDCAE5B9EC3 /* HomeSelectedPetEmptyStateCardView.swift */,
 				4A1B2C487816AA2CCCA6186F /* HomeStatusBannerView.swift */,
-				C63D5D25262A8E2185005C50 /* RecoveryActionBanner.swift */,
 				6C8E7D8185E273FFD5B84579 /* ProfileFieldEditSheet.swift */,
 				9FFD83BC3079033CF24E9D6A /* PetProfileImageView.swift */,
 				21CE83B02069A8E4171B35DE /* RivalTabView.swift */,
@@ -610,7 +678,6 @@
 				F2D5D8D51AC30DA6DB60A871 /* RivalViewStateResolver.swift */,
 				E4548C0C604B933CC43644FA /* RivalNetworkErrorInterpreter.swift */,
 				8F2B2A868B6FD9035AC5214F /* RivalHotspotSummaryBuilder.swift */,
-				363FE1044470B273CAB987E0 /* HomeQuestReminderSupport.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -1073,6 +1140,7 @@
 				02B810B0791CFB600F8406EB /* HomeSelectedPetEmptyStateCardView.swift in Sources */,
 				73816D222BB17958D198D1AC /* HomeStatusBannerView.swift in Sources */,
 				82C0FE1F9DF4A147D4C6A02C /* RecoveryActionBanner.swift in Sources */,
+				DAF0A00A4200000000000001 /* RecoveryIssue.swift in Sources */,
 				316EF137D15633B33FDB93A3 /* ProfileFieldEditSheet.swift in Sources */,
 				260998357CBB95987A042E95 /* PetProfileImageView.swift in Sources */,
 				A83350BB79B3CBB09B4C4963 /* RivalTabView.swift in Sources */,
