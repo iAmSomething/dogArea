@@ -156,7 +156,7 @@ struct MapSubView: View {
             motionNow = now
             viewModel.compactMapMotionArtifacts(now: now)
         }
-        .onChange(of: viewModel.clusterMotionToken) { _ in
+        .onChange(of: viewModel.clusterMotionToken) {
             guard viewModel.clusterMotionTransition != .none else { return }
             withAnimation(.easeOut(duration: viewModel.clusterMotionAnimationDuration)) {
                 clusterPulseActive = true

@@ -92,7 +92,7 @@ struct PetProfileSettingView: View {
                 .padding(.top, 12)
             }
         }
-        .onChange(of: viewModel.loading) { state in
+        .onChange(of: viewModel.loading) { _, state in
             guard didCompleteSignup == false else { return }
             if state == .success {
                 recoveryIssue = nil
