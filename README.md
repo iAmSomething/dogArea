@@ -47,6 +47,7 @@
 - Supabase 마이그레이션/운영 검증 v1: `docs/supabase-migration.md`
 - 릴리즈 회귀 체크리스트 v1: `docs/release-regression-checklist-v1.md`
 - 릴리즈 회귀 실행 리포트(2026-02-26): `docs/release-regression-report-2026-02-26.md`
+- 게임 레이어 공통 관측/QA 기준 v1: `docs/game-layer-observability-qa-v1.md`
 - 다중 반려견 산책 N:M 2차 설계 v2: `docs/multi-pet-session-nm-v2.md`
 - 다견 1차 선택 반려견 UX v1: `docs/multi-dog-selection-ux-v1.md`
 - 선택 반려견 컨텍스트 배지/빈 상태 UX v1: `docs/pet-context-badge-empty-state-v1.md`
@@ -66,6 +67,7 @@
 - Cycle #170 결과 보고서(2026-03-01): `docs/cycle-170-quest-stage3-ux-reminder-report-2026-03-01.md`
 - Cycle #127 결과 보고서(2026-03-01): `docs/cycle-127-quest-stage1-policy-report-2026-03-01.md`
 - Cycle #205 결과 보고서(2026-03-03): `docs/cycle-205-quest-stage2-engine-report-2026-03-03.md`
+- Cycle #206 결과 보고서(2026-03-03): `docs/cycle-206-game-layer-observability-qa-report-2026-03-03.md`
 - Cycle #147 결과 보고서(2026-02-27): `docs/cycle-147-pet-adaptive-quest-report-2026-02-27.md`
 - Cycle #145 결과 보고서(2026-02-27): `docs/cycle-145-season-catchup-buff-report-2026-02-27.md`
 - Cycle #124 결과 보고서(2026-02-27): `docs/cycle-124-season-policy-report-2026-02-27.md`
