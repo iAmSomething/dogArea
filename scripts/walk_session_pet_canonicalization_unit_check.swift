@@ -17,7 +17,7 @@ func load(_ relativePath: String) -> String {
 
 let walkRepository = load("dogArea/Source/Data/Walk/WalkRepository.swift")
 let walkBackfill = load("dogArea/Source/Data/Walk/WalkBackfillDTO.swift")
-let mapModel = load("dogArea/Views/MapView/MapModel.swift")
+let mapModel = load("dogArea/Source/Domain/Map/Models/MapModel.swift")
 let mapViewModel = load("dogArea/Views/MapView/MapViewModel.swift")
 let homeViewModel = load("dogArea/Views/HomeView/HomeViewModel.swift")
 let walkListModel = load("dogArea/Views/WalkListView/WalkListModel.swift")
