@@ -1,0 +1,37 @@
+name: realtime-ops-gate
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      metrics_file:
+        description: "Path to KPI JSON input"
+        required: false
+        default: "docs/realtime-ops-kpi-sample-pass.json"
+
+jobs:
+  realtime-ops-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "5.10"
+
+      - name: Validate Realtime Ops Docs/Workflow
+        run: swift scripts/realtime_ops_rollout_unit_check.swift
+
+      - name: Evaluate Realtime Ops Gate (PR sample)
+        if: github.event_name == 'pull_request'
+        run: swift scripts/realtime_ops_rollout_gate.swift --input docs/realtime-ops-kpi-sample-pass.json
+
+      - name: Evaluate Realtime Ops Gate (manual input)
+        if: github.event_name == 'workflow_dispatch'
+        run: swift scripts/realtime_ops_rollout_gate.swift --input "${{ inputs.metrics_file }}"

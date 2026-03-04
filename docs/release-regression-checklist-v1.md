@@ -155,6 +155,7 @@
 
 ### 7.4 배포 파이프라인
 - workflow 정의: `PASS | FAIL | BLOCKED`
+- realtime-ops-gate: `PASS | FAIL | BLOCKED`
 - 최근 실행 상태: `PASS | FAIL | BLOCKED`
 - 근거:
 
@@ -169,6 +170,7 @@
 
 ## 8. 배포 전/후 핵심 지표 비교
 - 기준 뷰: `public.view_rollout_kpis_24h`
+- 실시간 게이트 스크립트: `swift scripts/realtime_ops_rollout_gate.swift --input <kpi-json>`
 - 스냅샷 수집 규칙:
   - 배포 직전 24h: `T-24h ~ T0`
   - 배포 후 24h: `T0 ~ T+24h`
@@ -177,6 +179,11 @@
   - `watch_action_loss_rate` (목표: `<= 0.01`)
   - `caricature_success_rate` (목표: `>= 0.90`)
   - `nearby_opt_in_ratio` (관측 지표, 목표 없음)
+  - `active_sessions_5m` (stage 최소치 충족)
+  - `stale_ratio_5m` (목표: `< 0.12`)
+  - `p95_latency_ms` (목표: `< 350`)
+  - `error_rate_5m` (목표: `< 0.01`)
+  - `battery_impact_percent_per_hour` (목표: `< 2.5`)
 - SQL 예시:
 ```sql
 select

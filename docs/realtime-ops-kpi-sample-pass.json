@@ -1,0 +1,9 @@
+{
+  "stage": "10%",
+  "windowMinutes": 60,
+  "activeSessions": 120,
+  "staleRatio": 0.08,
+  "p95LatencyMs": 210,
+  "errorRate": 0.004,
+  "batteryImpactPercentPerHour": 1.4
+}
