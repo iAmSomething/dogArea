@@ -201,6 +201,8 @@ struct HomeView: View {
                 }.onChange(of: viewModel.seasonResetTransitionToken) { _, token in
                 guard token != nil else { return }
                 presentSeasonResetTransitionBanner()
+                }.onChange(of: authFlow.guestDataUpgradeResult?.id) { _, _ in
+                viewModel.refreshGuestDataUpgradeReport()
                 }.onChange(of: isLowPowerModeEnabled) { _, enabled in
                 if enabled {
                     seasonShieldRotation = 0
@@ -324,6 +326,14 @@ struct HomeView: View {
                     .font(.appFont(for: .Light, size: 11))
                     .foregroundStyle(report.validationPassed == true ? Color.appGreen : Color.appRed)
             }
+            if report.hasOutstandingWork {
+                Button(authFlow.guestDataUpgradeInProgress ? "재시도 중..." : "이관 재시도") {
+                    triggerGuestDataUpgradeRetry()
+                }
+                .accessibilityIdentifier("home.guestUpgrade.retry")
+                .disabled(authFlow.guestDataUpgradeInProgress)
+                .buttonStyle(AppFilledButtonStyle(role: .secondary, fillsWidth: false))
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(10)
@@ -360,6 +370,13 @@ struct HomeView: View {
         case .unknown:
             return "알 수 없는 동기화 오류가 발생했어요."
         }
+    }
+
+    /// 홈 게스트 데이터 이관 카드의 재시도 CTA를 실행합니다.
+    /// 재시도를 시작한 직후 최신 리포트를 다시 읽어 카드 상태를 갱신합니다.
+    private func triggerGuestDataUpgradeRetry() {
+        authFlow.startGuestDataUpgrade(forceRetry: true)
+        viewModel.refreshGuestDataUpgradeReport()
     }
 
     private var goalTrackerCard: some View {

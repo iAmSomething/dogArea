@@ -72,6 +72,7 @@ swift scripts/tabbar_safearea_regression_unit_check.swift
 swift scripts/map_camera_jump_fix_unit_check.swift
 swift scripts/map_area_calculation_service_unit_check.swift
 swift scripts/sync_walk_404_policy_unit_check.swift
+swift scripts/home_guest_upgrade_retry_cta_unit_check.swift
 swift scripts/settings_profile_account_actions_unit_check.swift
 swift scripts/profile_edit_userinfo_recovery_unit_check.swift
 swift scripts/project_stability_unit_check.swift
