@@ -190,16 +190,13 @@ protocol AuthUseCaseProtocol {
 
 final class DefaultAuthUseCase: AuthUseCaseProtocol {
     private let authRepository: AuthRepositoryProtocol
-    private let profileRepository: ProfileRepository
     private let sessionStore: AuthSessionStoreProtocol
 
     init(
         authRepository: AuthRepositoryProtocol = DefaultAuthRepository(),
-        profileRepository: ProfileRepository = DefaultProfileRepository.shared,
         sessionStore: AuthSessionStoreProtocol = DefaultAuthSessionStore.shared
     ) {
         self.authRepository = authRepository
-        self.profileRepository = profileRepository
         self.sessionStore = sessionStore
     }
 
@@ -211,8 +208,13 @@ final class DefaultAuthUseCase: AuthUseCaseProtocol {
             sessionStore.persist(tokenSession: tokenSession)
         }
 
-        let localProfileId = profileRepository.fetchUserInfo()?.id
-        let requiresOnboarding = localProfileId != result.credential.identity.userId
+        let requiresOnboarding: Bool
+        switch request {
+        case .emailSignUp:
+            requiresOnboarding = true
+        case .emailSignIn, .apple:
+            requiresOnboarding = false
+        }
         return AuthUseCaseOutcome(
             identity: result.credential.identity,
             displayNameHint: result.displayNameHint,

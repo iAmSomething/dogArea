@@ -64,6 +64,7 @@ swift scripts/walk_session_pet_canonicalization_unit_check.swift
 swift scripts/presentation_firebase_boundary_unit_check.swift
 swift scripts/supabase_profile_image_upload_unit_check.swift
 swift scripts/auth_session_autologin_unit_check.swift
+swift scripts/auth_onboarding_session_consistency_unit_check.swift
 swift scripts/security_key_exposure_unit_check.swift
 swift scripts/map_home_viewmodel_boundary_unit_check.swift
 swift scripts/tabbar_safearea_regression_unit_check.swift
