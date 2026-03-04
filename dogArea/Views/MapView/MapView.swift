@@ -65,6 +65,7 @@ struct MapView : View{
         composed = AnyView(composed.onChange(of: viewModel.syncOutboxPendingCount) { recomputeBannerQueue() })
         composed = AnyView(composed.onChange(of: viewModel.syncOutboxPermanentFailureCount) { recomputeBannerQueue() })
         composed = AnyView(composed.onChange(of: viewModel.hasRecoverableWalkSession) { recomputeBannerQueue() })
+        composed = AnyView(composed.onChange(of: viewModel.hasReturnToOriginSuggestion) { recomputeBannerQueue() })
         composed = AnyView(composed.onChange(of: viewModel.isWalking) { recomputeBannerQueue() })
         composed = AnyView(composed.onChange(of: viewModel.watchSyncStatusText) { recomputeBannerQueue() })
         composed = AnyView(composed.onChange(of: viewModel.latestWatchActionText) { recomputeBannerQueue() })
@@ -362,6 +363,8 @@ struct MapView : View{
             }
         case .recoverableSession:
             recoverableSessionBanner
+        case .returnToOrigin:
+            returnToOriginSuggestionBanner
         case .runtimeGuard:
             runtimeGuardBanner
         case .syncOutbox:
@@ -445,6 +448,47 @@ struct MapView : View{
         .background(Color.white.opacity(0.9))
         .cornerRadius(8)
         .padding(.top, 4)
+    }
+
+    var returnToOriginSuggestionBanner: some View {
+        Group {
+            if let context = viewModel.returnToOriginSuggestionContext {
+                HStack(spacing: 10) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("출발지 근처예요")
+                            .font(.appFont(for: .SemiBold, size: 13))
+                            .foregroundStyle(Color.appInk)
+                        Text("약 \(context.distanceFromOriginMeters)m · \(context.dwellSeconds)초 체류")
+                            .font(.appFont(for: .Light, size: 11))
+                            .foregroundStyle(Color.appTextDarkGray)
+                        Text("산책을 종료할까요?")
+                            .font(.appFont(for: .Light, size: 11))
+                            .foregroundStyle(Color.appTextDarkGray)
+                    }
+                    Spacer(minLength: 8)
+                    Button("계속") {
+                        viewModel.continueWalkAfterReturnToOriginSuggestion()
+                    }
+                    .font(.appFont(for: .SemiBold, size: 12))
+                    .frame(minHeight: 44)
+                    .padding(.horizontal, 10)
+                    .background(Color.appTextLightGray.opacity(0.85))
+                    .cornerRadius(8)
+                    Button("종료") {
+                        viewModel.endWalkAfterReturnToOriginSuggestion()
+                    }
+                    .font(.appFont(for: .SemiBold, size: 12))
+                    .frame(minHeight: 44)
+                    .padding(.horizontal, 10)
+                    .background(Color.appYellow)
+                    .cornerRadius(8)
+                }
+                .padding(10)
+                .background(Color.white.opacity(0.95))
+                .cornerRadius(12)
+                .padding(.horizontal, 12)
+            }
+        }
     }
 
     var runtimeGuardBanner: some View {
@@ -698,6 +742,17 @@ struct MapView : View{
             )
         }
 
+        if viewModel.isWalking && viewModel.hasReturnToOriginSuggestion {
+            candidates.append(
+                MapTopBannerCandidate(
+                    kind: .returnToOrigin,
+                    severity: .p0,
+                    autoDismissAfter: nil,
+                    suppressFor: 600
+                )
+            )
+        }
+
         if viewModel.syncOutboxPermanentFailureCount > 0 {
             candidates.append(
                 MapTopBannerCandidate(
@@ -796,6 +851,7 @@ struct MapView : View{
 private enum MapTopBannerKind: String, Hashable {
     case recoveryIssue
     case recoverableSession
+    case returnToOrigin
     case runtimeGuard
     case syncOutbox
     case offlineMode
@@ -835,12 +891,13 @@ private extension MapTopBannerKind {
     var priorityRank: Int {
         switch self {
         case .recoverableSession: return 0
-        case .recoveryIssue: return 1
-        case .syncOutbox: return 2
-        case .runtimeGuard: return 3
-        case .offlineMode: return 4
-        case .guestBackup: return 5
-        case .watchStatus: return 6
+        case .returnToOrigin: return 1
+        case .recoveryIssue: return 2
+        case .syncOutbox: return 3
+        case .runtimeGuard: return 4
+        case .offlineMode: return 5
+        case .guestBackup: return 6
+        case .watchStatus: return 7
         }
     }
 }

@@ -75,6 +75,7 @@ swift scripts/security_key_exposure_unit_check.swift
 swift scripts/map_home_viewmodel_boundary_unit_check.swift
 swift scripts/tabbar_safearea_regression_unit_check.swift
 swift scripts/map_camera_jump_fix_unit_check.swift
+swift scripts/walk_return_to_origin_suggestion_unit_check.swift
 swift scripts/map_area_calculation_service_unit_check.swift
 swift scripts/live_presence_uplink_policy_unit_check.swift
 swift scripts/sync_walk_404_policy_unit_check.swift
