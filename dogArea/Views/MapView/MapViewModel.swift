@@ -482,6 +482,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     @Published var watchSyncStatusText: String = "워치 동기화 대기"
     @Published var latestWatchActionText: String = ""
     @Published var walkStatusMessage: String? = nil
+    @Published private(set) var returnToOriginSuggestionContext: ReturnToOriginSuggestionContext? = nil
     @Published var runtimeGuardStatusText: String = ""
     @Published var syncOutboxPendingCount: Int = 0
     @Published var syncOutboxPermanentFailureCount: Int = 0
@@ -565,6 +566,20 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private let jumpSpeedThreshold: CLLocationSpeed = 12.0
     private let jumpDistanceThreshold: CLLocationDistance = 150.0
     private let jumpTimeWindow: TimeInterval = 10.0
+    private let returnToOriginMinimumElapsed: TimeInterval = 480.0
+    private let returnToOriginExcursionDistanceThreshold: CLLocationDistance = 120.0
+    private let returnToOriginEntryRadius: CLLocationDistance = 25.0
+    private let returnToOriginDwellDuration: TimeInterval = 20.0
+    private let returnToOriginCooldownDuration: TimeInterval = 600.0
+    private let returnToOriginLowSpeedThreshold: CLLocationSpeed = 1.2
+    private let returnToOriginMaximumSuggestionCount: Int = 2
+    private let returnToOriginSuggestionStatusMessage: String = "출발지 근처예요. 산책 종료할까요?"
+    private var returnToOriginOriginCheckpoint: CLLocation?
+    private var returnToOriginHasExcursionHistory: Bool = false
+    private var returnToOriginEntryStartedAt: Date?
+    private var returnToOriginSuggestionCount: Int = 0
+    private var returnToOriginDidReExcursionAfterFirstSuggestion: Bool = false
+    private var returnToOriginCooldownUntil: Date = .distantPast
     private let restCandidateInterval: TimeInterval = 300.0
     private let inactivityWarningInterval: TimeInterval = 720.0
     private let inactivityFinalizeInterval: TimeInterval = 900.0
@@ -702,6 +717,12 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             let ratio = min(1.0, max(0.0, age / 5.0))
             return 0.95 + ((1.0 - ratio) * 0.25)
         }
+    }
+
+    struct ReturnToOriginSuggestionContext: Equatable {
+        let distanceFromOriginMeters: Int
+        let dwellSeconds: Int
+        let suggestedAt: TimeInterval
     }
 
     init(
@@ -1012,6 +1033,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             self.currentWalkingPetName = self.selectedPetName
             self.resetAutoPointRecordState()
             self.resetInactivityTracking(now: Date(), clearAnchor: true)
+            self.resetReturnToOriginSuggestionState(clearOrigin: true)
             self.clearActiveWalkSession()
         }
         else {
@@ -1028,6 +1050,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             self.lastAcceptedWalkLocation = nil
             self.lastPointEventAt = Date()
             self.resetInactivityTracking(now: Date(), clearAnchor: true)
+            self.resetReturnToOriginSuggestionState(clearOrigin: true)
             self.refreshWalkHybridContributionSummary()
             self.beginLivePresenceSession(restoredSessionId: nil)
             self.persistActiveWalkSession(force: true)
@@ -1057,6 +1080,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         currentWalkingPetName = selectedPetName
         resetAutoPointRecordState()
         resetInactivityTracking(now: Date(), clearAnchor: true)
+        resetReturnToOriginSuggestionState(clearOrigin: true)
         lastAcceptedWalkLocation = nil
         clearActiveWalkSession()
         endLivePresenceSession(clearOutbox: true)
@@ -1101,6 +1125,10 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         isWalking || latestWatchActionText.isEmpty == false
     }
 
+    var hasReturnToOriginSuggestion: Bool {
+        returnToOriginSuggestionContext != nil
+    }
+
     var hasRuntimeGuardStatus: Bool {
         runtimeGuardStatusText.isEmpty == false
     }
@@ -1136,6 +1164,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     }
 
     func clearWalkStatusMessage() {
+        if hasReturnToOriginSuggestion, walkStatusMessage == returnToOriginSuggestionStatusMessage {
+            return
+        }
         walkStatusMessage = nil
     }
 
@@ -1145,6 +1176,28 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 
     func clearSyncRecoveryToastMessage() {
         syncRecoveryToastMessage = nil
+    }
+
+    /// 출발지 복귀 종료 제안에서 `계속`을 선택해 배너를 내리고 쿨다운을 시작합니다.
+    func continueWalkAfterReturnToOriginSuggestion() {
+        guard returnToOriginSuggestionContext != nil else { return }
+        hideReturnToOriginSuggestion(
+            applyingCooldown: true,
+            statusMessage: "산책을 계속 기록합니다."
+        )
+    }
+
+    /// 출발지 복귀 종료 제안에서 `종료`를 선택해 현재 산책을 즉시 종료합니다.
+    func endWalkAfterReturnToOriginSuggestion() {
+        guard returnToOriginSuggestionContext != nil else { return }
+        hideReturnToOriginSuggestion(
+            applyingCooldown: false,
+            statusMessage: nil
+        )
+        endWalk(reason: .manual)
+        walkStatusMessage = "출발지 복귀를 감지해 산책을 종료했어요."
+        syncWalkWidgetSnapshot(force: true, messageOverride: walkStatusMessage)
+        syncWalkLiveActivity(force: true)
     }
 
     func retrySyncNow() {
@@ -1375,6 +1428,187 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         return true
     }
 
+    /// 첫 유효 위치 샘플을 세션 출발지 체크포인트로 저장합니다.
+    /// - Parameter location: 출발지 후보로 사용할 위치 샘플입니다.
+    private func captureReturnToOriginCheckpointIfNeeded(from location: CLLocation) {
+        guard returnToOriginOriginCheckpoint == nil else { return }
+        returnToOriginOriginCheckpoint = CLLocation(
+            latitude: location.coordinate.latitude,
+            longitude: location.coordinate.longitude
+        )
+        returnToOriginEntryStartedAt = nil
+    }
+
+    /// 현재 위치 샘플을 기준으로 출발지 복귀 종료 제안 정책을 평가합니다.
+    /// - Parameters:
+    ///   - location: 정책 평가에 사용할 최신 위치 샘플입니다.
+    ///   - now: 평가 기준 시각입니다.
+    private func evaluateReturnToOriginSuggestionIfNeeded(with location: CLLocation, now: Date) {
+        guard isWalking else { return }
+        captureReturnToOriginCheckpointIfNeeded(from: location)
+        guard let origin = returnToOriginOriginCheckpoint else { return }
+
+        let elapsed = max(0, now.timeIntervalSince(startTime))
+        guard elapsed >= returnToOriginMinimumElapsed else {
+            returnToOriginEntryStartedAt = nil
+            return
+        }
+
+        let distanceFromOrigin = location.distance(from: origin)
+        if distanceFromOrigin >= returnToOriginExcursionDistanceThreshold {
+            returnToOriginHasExcursionHistory = true
+            if returnToOriginSuggestionCount > 0 {
+                returnToOriginDidReExcursionAfterFirstSuggestion = true
+            }
+        }
+
+        guard returnToOriginHasExcursionHistory else {
+            returnToOriginEntryStartedAt = nil
+            return
+        }
+        guard distanceFromOrigin <= returnToOriginEntryRadius else {
+            returnToOriginEntryStartedAt = nil
+            return
+        }
+        guard location.horizontalAccuracy > 0,
+              location.horizontalAccuracy <= locationAccuracyThreshold else {
+            returnToOriginEntryStartedAt = nil
+            return
+        }
+
+        let speed = location.speed >= 0 ? location.speed : 0
+        guard speed <= returnToOriginLowSpeedThreshold else {
+            returnToOriginEntryStartedAt = nil
+            return
+        }
+        guard canPresentReturnToOriginSuggestion(now: now) else { return }
+
+        if let entryStartedAt = returnToOriginEntryStartedAt {
+            let dwell = now.timeIntervalSince(entryStartedAt)
+            guard dwell >= returnToOriginDwellDuration else { return }
+            presentReturnToOriginSuggestion(
+                distanceFromOriginMeters: distanceFromOrigin,
+                dwellSeconds: Int(dwell.rounded(.down)),
+                now: now
+            )
+            return
+        }
+        returnToOriginEntryStartedAt = now
+    }
+
+    /// 출발지 복귀 종료 제안을 현재 시점에 노출할 수 있는지 판단합니다.
+    /// - Parameter now: 쿨다운 만료 여부를 평가할 현재 시각입니다.
+    /// - Returns: 제안 가능 상태면 `true`, 아니면 `false`입니다.
+    private func canPresentReturnToOriginSuggestion(now: Date) -> Bool {
+        guard returnToOriginSuggestionContext == nil else { return false }
+        guard now >= returnToOriginCooldownUntil else { return false }
+        guard returnToOriginSuggestionCount < returnToOriginMaximumSuggestionCount else { return false }
+        if returnToOriginSuggestionCount == 0 { return true }
+        if returnToOriginSuggestionCount == 1 {
+            return returnToOriginDidReExcursionAfterFirstSuggestion
+        }
+        return false
+    }
+
+    /// 정책을 충족한 출발지 복귀 종료 제안을 표시하고 위젯/라이브 액티비티 상태를 동기화합니다.
+    /// - Parameters:
+    ///   - distanceFromOriginMeters: 제안 시점의 출발지까지 거리(미터)입니다.
+    ///   - dwellSeconds: 출발지 반경 내 체류 시간(초)입니다.
+    ///   - now: 제안 생성 시각입니다.
+    private func presentReturnToOriginSuggestion(
+        distanceFromOriginMeters: CLLocationDistance,
+        dwellSeconds: Int,
+        now: Date
+    ) {
+        guard returnToOriginSuggestionContext == nil else { return }
+        returnToOriginSuggestionCount += 1
+        if returnToOriginSuggestionCount == 1 {
+            returnToOriginDidReExcursionAfterFirstSuggestion = false
+        }
+        returnToOriginEntryStartedAt = nil
+        returnToOriginSuggestionContext = ReturnToOriginSuggestionContext(
+            distanceFromOriginMeters: Int(distanceFromOriginMeters.rounded()),
+            dwellSeconds: dwellSeconds,
+            suggestedAt: now.timeIntervalSince1970
+        )
+        walkStatusMessage = returnToOriginSuggestionStatusMessage
+        syncWalkWidgetSnapshot(force: true, messageOverride: walkStatusMessage)
+        syncWalkLiveActivity(force: true)
+        triggerWarningHapticIfNeeded(now: now)
+        #if DEBUG
+        print(
+            "walk return-suggestion: distance=\(Int(distanceFromOriginMeters.rounded()))m dwell=\(dwellSeconds)s count=\(returnToOriginSuggestionCount)"
+        )
+        #endif
+    }
+
+    /// 현재 복귀 제안을 숨기고 필요 시 쿨다운/상태 메시지를 반영합니다.
+    /// - Parameters:
+    ///   - applyingCooldown: `true`면 10분 재노출 쿨다운을 적용합니다.
+    ///   - statusMessage: 사용자 피드백용 상태 메시지입니다. `nil`이면 기존 메시지를 정리합니다.
+    private func hideReturnToOriginSuggestion(
+        applyingCooldown: Bool,
+        statusMessage: String?
+    ) {
+        returnToOriginSuggestionContext = nil
+        returnToOriginEntryStartedAt = nil
+        if applyingCooldown {
+            returnToOriginCooldownUntil = Date().addingTimeInterval(returnToOriginCooldownDuration)
+        }
+        if walkStatusMessage == returnToOriginSuggestionStatusMessage {
+            walkStatusMessage = nil
+        }
+        if let statusMessage {
+            walkStatusMessage = statusMessage
+            syncWalkWidgetSnapshot(force: true, messageOverride: statusMessage)
+        } else {
+            syncWalkWidgetSnapshot(force: true)
+        }
+        syncWalkLiveActivity(force: true)
+    }
+
+    /// 새 세션 시작/종료/폐기 시 출발지 복귀 제안 상태를 초기화합니다.
+    /// - Parameter clearOrigin: `true`면 출발지 체크포인트까지 초기화합니다.
+    private func resetReturnToOriginSuggestionState(clearOrigin: Bool = true) {
+        if clearOrigin {
+            returnToOriginOriginCheckpoint = nil
+        }
+        returnToOriginHasExcursionHistory = false
+        returnToOriginEntryStartedAt = nil
+        returnToOriginSuggestionContext = nil
+        returnToOriginSuggestionCount = 0
+        returnToOriginDidReExcursionAfterFirstSuggestion = false
+        returnToOriginCooldownUntil = .distantPast
+    }
+
+    /// 복구 세션 포인트를 기반으로 출발지 복귀 추적 상태를 재구성합니다.
+    /// - Parameter points: 복구된 세션의 포인트 배열입니다.
+    private func rebuildReturnToOriginTracking(from points: [Location]) {
+        guard let firstPoint = points.first else {
+            resetReturnToOriginSuggestionState(clearOrigin: true)
+            return
+        }
+        let origin = CLLocation(
+            latitude: firstPoint.coordinate.latitude,
+            longitude: firstPoint.coordinate.longitude
+        )
+        returnToOriginOriginCheckpoint = origin
+        let maxDistance = points
+            .map {
+                CLLocation(
+                    latitude: $0.coordinate.latitude,
+                    longitude: $0.coordinate.longitude
+                ).distance(from: origin)
+            }
+            .max() ?? 0
+        returnToOriginHasExcursionHistory = maxDistance >= returnToOriginExcursionDistanceThreshold
+        returnToOriginEntryStartedAt = nil
+        returnToOriginSuggestionContext = nil
+        returnToOriginSuggestionCount = 0
+        returnToOriginDidReExcursionAfterFirstSuggestion = false
+        returnToOriginCooldownUntil = .distantPast
+    }
+
     private func resetInactivityTracking(now: Date, clearAnchor: Bool) {
         lastMovementAt = now
         if clearAnchor {
@@ -1527,6 +1761,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         lastAutoRecordedHeading = nil
         didNotifyRestCandidate = false
         didNotifyInactivityWarning = false
+        rebuildReturnToOriginTracking(from: restoredPoints)
         refreshWalkHybridContributionSummary()
 
         hasRecoverableWalkSession = false
@@ -1721,6 +1956,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         didNotifyInactivityWarning = false
         lastAcceptedWalkLocation = nil
         lastAutoRecordedHeading = nil
+        resetReturnToOriginSuggestionState(clearOrigin: true)
         walkHybridContributionSummary = .empty
     }
 
@@ -1832,6 +2068,10 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         )
         polygon.addPoint(appendedPoint)
         pushCaptureRipple(at: location.coordinate, source: source)
+        if source == .watch {
+            captureReturnToOriginCheckpointIfNeeded(from: location)
+            evaluateReturnToOriginSuggestionIfNeeded(with: location, now: recordedAt)
+        }
         if pointRole == .route {
             lastAutoRecordedLocation = location
             lastAutoRecordedAt = recordedAt
@@ -3737,6 +3977,9 @@ extension MapViewModel {
             self.syncWatchContext()
             self.syncWalkWidgetSnapshot()
             self.syncWalkLiveActivity()
+            if let location = self.location {
+                self.evaluateReturnToOriginSuggestionIfNeeded(with: location, now: Date())
+            }
             if self.time >= self.walkAutoTimeoutInterval {
                 self.forceQuit()
                 return
@@ -3884,6 +4127,8 @@ extension MapViewModel {
             guard let self else { return }
             if self.isWalking {
                 guard self.validateWalkLocationSample(location) else { return }
+                self.captureReturnToOriginCheckpointIfNeeded(from: location)
+                self.evaluateReturnToOriginSuggestionIfNeeded(with: location, now: Date())
                 self.updateMovementState(with: location)
             }
             self.location = location
