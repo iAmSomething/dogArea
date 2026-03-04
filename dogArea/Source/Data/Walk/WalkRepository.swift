@@ -35,6 +35,7 @@ struct WalkPointCacheRecord: Codable, Equatable {
     let lat: Double
     let lng: Double
     let createdAt: TimeInterval
+    let pointRole: String?
 }
 
 struct WalkSessionCacheRecord: Codable, Equatable, Identifiable {
@@ -169,12 +170,14 @@ struct WalkSupabaseRemoteDataSource: WalkRemoteDataSourceProtocol {
         let lat: Double
         let lng: Double
         let recordedAt: String?
+        let pointRole: String?
 
         enum CodingKeys: String, CodingKey {
             case seqNo = "seq_no"
             case lat
             case lng
             case recordedAt = "recorded_at"
+            case pointRole = "point_role"
         }
     }
 
@@ -224,7 +227,8 @@ struct WalkSupabaseRemoteDataSource: WalkRemoteDataSourceProtocol {
                 seqNo: row.seqNo ?? index,
                 lat: row.lat,
                 lng: row.lng,
-                recordedAt: SupabaseISO8601.parseEpoch(row.recordedAt) ?? 0
+                recordedAt: SupabaseISO8601.parseEpoch(row.recordedAt) ?? 0,
+                pointRole: row.pointRole ?? WalkPointRole.mark.rawValue
             )
         }
 
@@ -378,7 +382,8 @@ final class WalkRepository: WalkRepositoryProtocol {
             Location(
                 coordinate: CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lng),
                 id: UUID(),
-                createdAt: $0.recordedAt
+                createdAt: $0.recordedAt,
+                pointRole: WalkPointRole(rawValue: $0.pointRole) ?? .mark
             )
         }
         let polygon = Polygon(
@@ -543,7 +548,8 @@ final class WalkRepository: WalkRepositoryProtocol {
                     id: location.id.uuidString.lowercased(),
                     lat: location.coordinate.latitude,
                     lng: location.coordinate.longitude,
-                    createdAt: location.createdAt
+                    createdAt: location.createdAt,
+                    pointRole: location.pointRole.rawValue
                 )
             }
         )
@@ -556,7 +562,8 @@ final class WalkRepository: WalkRepositoryProtocol {
             return Location(
                 coordinate: CLLocationCoordinate2D(latitude: point.lat, longitude: point.lng),
                 id: pointId,
-                createdAt: point.createdAt
+                createdAt: point.createdAt,
+                pointRole: WalkPointRole(rawValue: point.pointRole ?? WalkPointRole.mark.rawValue) ?? .mark
             )
         }
 

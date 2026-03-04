@@ -13,6 +13,40 @@ struct WalkPointBackfillDTO: Codable, Equatable {
     let lat: Double
     let lng: Double
     let recordedAt: TimeInterval
+    let pointRole: String
+
+    /// 산책 포인트 백필 DTO를 생성합니다.
+    /// - Parameters:
+    ///   - seqNo: 세션 내 포인트 순번입니다.
+    ///   - lat: 포인트 위도입니다.
+    ///   - lng: 포인트 경도입니다.
+    ///   - recordedAt: 포인트 기록 시각(UNIX epoch)입니다.
+    ///   - pointRole: 포인트 역할(`mark`/`route`) 문자열입니다.
+    init(
+        seqNo: Int,
+        lat: Double,
+        lng: Double,
+        recordedAt: TimeInterval,
+        pointRole: String
+    ) {
+        self.seqNo = seqNo
+        self.lat = lat
+        self.lng = lng
+        self.recordedAt = recordedAt
+        self.pointRole = pointRole
+    }
+
+    /// 직렬화된 산책 포인트 데이터를 디코딩합니다.
+    /// - Parameter decoder: DTO 복원에 사용할 디코더입니다.
+    /// - Throws: 필수 필드가 없거나 타입이 맞지 않으면 디코딩 에러를 던집니다.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        seqNo = try container.decode(Int.self, forKey: .seqNo)
+        lat = try container.decode(Double.self, forKey: .lat)
+        lng = try container.decode(Double.self, forKey: .lng)
+        recordedAt = try container.decode(TimeInterval.self, forKey: .recordedAt)
+        pointRole = try container.decodeIfPresent(String.self, forKey: .pointRole) ?? WalkPointRole.mark.rawValue
+    }
 }
 
 struct WalkSessionBackfillDTO: Codable, Equatable {
@@ -31,8 +65,32 @@ struct WalkSessionBackfillDTO: Codable, Equatable {
 
     var pointCount: Int { points.count }
 
+    var routePoints: [WalkPointBackfillDTO] {
+        points.filter { $0.pointRole == WalkPointRole.route.rawValue }
+    }
+
+    var markPoints: [WalkPointBackfillDTO] {
+        points.filter { $0.pointRole == WalkPointRole.mark.rawValue }
+    }
+
     var pointsJSONString: String {
         guard let data = try? JSONEncoder().encode(points),
+              let string = String(data: data, encoding: .utf8) else {
+            return "[]"
+        }
+        return string
+    }
+
+    var routePointsJSONString: String {
+        guard let data = try? JSONEncoder().encode(routePoints),
+              let string = String(data: data, encoding: .utf8) else {
+            return "[]"
+        }
+        return string
+    }
+
+    var markPointsJSONString: String {
+        guard let data = try? JSONEncoder().encode(markPoints),
               let string = String(data: data, encoding: .utf8) else {
             return "[]"
         }
@@ -62,7 +120,8 @@ enum WalkBackfillDTOConverter {
                     seqNo: index,
                     lat: point.coordinate.latitude,
                     lng: point.coordinate.longitude,
-                    recordedAt: max(0, point.createdAt)
+                    recordedAt: max(0, point.createdAt),
+                    pointRole: point.pointRole.rawValue
                 )
             }
 

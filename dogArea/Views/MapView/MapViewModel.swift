@@ -301,6 +301,43 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         let latitude: Double
         let longitude: Double
         let createdAt: TimeInterval
+        let pointRole: WalkPointRole
+
+        enum CodingKeys: String, CodingKey {
+            case latitude
+            case longitude
+            case createdAt
+            case pointRole
+        }
+
+        /// 활성 산책 스냅샷 포인트를 생성합니다.
+        /// - Parameters:
+        ///   - latitude: 기록된 위도 값입니다.
+        ///   - longitude: 기록된 경도 값입니다.
+        ///   - createdAt: 포인트가 기록된 UNIX 타임스탬프(초)입니다.
+        ///   - pointRole: 포인트의 역할(`mark`/`route`)입니다.
+        init(
+            latitude: Double,
+            longitude: Double,
+            createdAt: TimeInterval,
+            pointRole: WalkPointRole
+        ) {
+            self.latitude = latitude
+            self.longitude = longitude
+            self.createdAt = createdAt
+            self.pointRole = pointRole
+        }
+
+        /// 저장된 산책 스냅샷 포인트를 디코딩합니다.
+        /// - Parameter decoder: JSON 키/값을 읽어올 디코더입니다.
+        /// - Throws: 필수 좌표/시각 필드 디코딩에 실패하면 에러를 던집니다.
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            latitude = try container.decode(Double.self, forKey: .latitude)
+            longitude = try container.decode(Double.self, forKey: .longitude)
+            createdAt = try container.decode(TimeInterval.self, forKey: .createdAt)
+            pointRole = try container.decodeIfPresent(WalkPointRole.self, forKey: .pointRole) ?? .mark
+        }
     }
 
     private struct ActiveWalkSessionSnapshot: Codable {
@@ -314,6 +351,22 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         let lastMovementAt: TimeInterval?
         let points: [ActiveWalkPointSnapshot]
         let savedAt: TimeInterval
+    }
+
+    struct WalkHybridContributionSummary: Equatable {
+        let markAreaM2: Double
+        let routeAreaM2: Double
+        let routeCappedAreaM2: Double
+        let finalAreaM2: Double
+        let routeContributionRatio: Double
+
+        static let empty = WalkHybridContributionSummary(
+            markAreaM2: 0,
+            routeAreaM2: 0,
+            routeCappedAreaM2: 0,
+            finalAreaM2: 0,
+            routeContributionRatio: 0
+        )
     }
 
     private struct CameraSnapshot {
@@ -402,8 +455,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     @Published var availablePets: [PetInfo] = []
     @Published var currentWalkingPetName: String = "강아지"
     @Published var walkStartCountdownEnabled: Bool = false
-    @Published var walkPointRecordMode: WalkPointRecordMode = .manual
+    @Published var walkPointRecordMode: WalkPointRecordMode = .auto
     @Published private(set) var walkAutoEndPolicyEnabled: Bool = true
+    @Published private(set) var walkHybridContributionSummary: WalkHybridContributionSummary = .empty
     @Published var hasRecoverableWalkSession: Bool = false
     @Published var recoverableWalkSummaryText: String = ""
     @Published var recoverableWalkEstimateText: String = ""
@@ -457,10 +511,14 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private let weatherRiskRefreshInterval: TimeInterval = 3600
     private var lastAutoRecordedLocation: CLLocation?
     private var lastAutoRecordedAt: Date = .distantPast
+    private var lastAutoRecordedHeading: CLLocationDirection?
     private let autoRecordMinDistance: CLLocationDistance = 12.0
     private let autoRecordMinInterval: TimeInterval = 8.0
+    private let autoRecordCornerHeadingDelta: CLLocationDirection = 35.0
     private let autoRecordNoiseDistance: CLLocationDistance = 4.0
-    private let locationAccuracyThreshold: CLLocationAccuracy = 65.0
+    private let locationAccuracyThreshold: CLLocationAccuracy = 40.0
+    private let hybridMarkWeight: Double = 0.8
+    private let hybridRouteWeight: Double = 0.2
     private let inactivityAccuracyThreshold: CLLocationAccuracy = 40.0
     private let inactivitySpeedThreshold: CLLocationSpeed = 0.3
     private let inactivityDistanceThreshold: CLLocationDistance = 25.0
@@ -546,7 +604,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         static let ackType = "watch_ack"
     }
 
-    private enum PointAppendSource {
+    private enum PointAppendSource: String {
         case manual
         case auto
         case watch
@@ -660,7 +718,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         self.walkAutoEndPolicyEnabled = true
         self.walkPointRecordMode = WalkPointRecordMode(
             rawValue: userSessionStore.walkPointRecordModeRawValue()
-        ) ?? .manual
+        ) ?? .auto
         self.prepareRecoverableSessionIfNeeded()
         self.reloadSelectedPetContext()
         self.setupWatchConnectivity()
@@ -689,6 +747,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         if restoreLatestPolygon {
             self.polygon = polygons.last ?? Polygon(walkingTime: 0.0, walkingArea: 0.0)
         }
+        refreshWalkHybridContributionSummary()
         self.refreshHeatmap()
     }
 
@@ -817,26 +876,35 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             polygon.makePolygon(walkArea: calculateArea(), walkTime: time)
         } else {
             polygon.polygon = nil
-            polygon.walkingArea = calculateArea(points: polygon.locations)
+            polygon.walkingArea = makeHybridContributionSummary(points: polygon.locations).finalAreaM2
             polygon.walkingTime = time
         }
 
         if let lastPoint = polygon.locations.last {
             let lastPointDate = Date(timeIntervalSince1970: lastPoint.createdAt)
-            lastAutoRecordedLocation = CLLocation(
-                latitude: lastPoint.coordinate.latitude,
-                longitude: lastPoint.coordinate.longitude
-            )
-            lastAutoRecordedAt = lastPointDate
+            if let lastRoutePoint = polygon.locations.last(where: { $0.pointRole == .route }) {
+                lastAutoRecordedLocation = CLLocation(
+                    latitude: lastRoutePoint.coordinate.latitude,
+                    longitude: lastRoutePoint.coordinate.longitude
+                )
+                lastAutoRecordedAt = Date(timeIntervalSince1970: lastRoutePoint.createdAt)
+                lastAutoRecordedHeading = nil
+            } else {
+                lastAutoRecordedLocation = nil
+                lastAutoRecordedAt = .distantPast
+                lastAutoRecordedHeading = nil
+            }
             lastPointEventAt = lastPointDate
             movementAnchorLocation = lastAutoRecordedLocation
         } else {
             lastAutoRecordedLocation = nil
             lastAutoRecordedAt = .distantPast
+            lastAutoRecordedHeading = nil
             lastPointEventAt = nil
             movementAnchorLocation = nil
         }
 
+        refreshWalkHybridContributionSummary()
         persistActiveWalkSession(force: true)
         syncWatchContext(force: true)
         syncWalkWidgetSnapshot(force: true)
@@ -856,6 +924,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         if self.polygon.locations.count > 2{
             polygon.makePolygon(walkArea: calculateArea(), walkTime: self.time)
         }
+        refreshWalkHybridContributionSummary()
     }
     func endWalk(
         img: UIImage? = nil,
@@ -870,6 +939,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
                     }
                     self.polygon.petId = selectedPetId
                     polygon.makePolygon(walkArea: calculateArea(), walkTime: self.time, img: img)
+                    refreshWalkHybridContributionSummary()
                     let completedPolygon = self.polygon
                     let updated = walkRepository.savePolygon(completedPolygon)
                     let saved = updated.contains(where: { $0.id == completedPolygon.id })
@@ -913,6 +983,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             self.lastAcceptedWalkLocation = nil
             self.lastPointEventAt = Date()
             self.resetInactivityTracking(now: Date(), clearAnchor: true)
+            self.refreshWalkHybridContributionSummary()
             self.persistActiveWalkSession(force: true)
         }
         withAnimation{ [weak self] in
@@ -1370,7 +1441,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             Location(
                 coordinate: CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude),
                 id: UUID(),
-                createdAt: $0.createdAt
+                createdAt: $0.createdAt,
+                pointRole: $0.pointRole
             )
         }
 
@@ -1394,19 +1466,21 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         }
         reloadSelectedPetContext()
         currentWalkingPetName = snapshot.currentWalkingPetName
-        walkPointRecordMode = WalkPointRecordMode(rawValue: snapshot.pointRecordMode) ?? .manual
+        walkPointRecordMode = WalkPointRecordMode(rawValue: snapshot.pointRecordMode) ?? .auto
         userSessionStore.setWalkPointRecordModeRawValue(walkPointRecordMode.rawValue)
 
         lastPointEventAt = snapshot.points.last.map { Date(timeIntervalSince1970: $0.createdAt) } ?? Date()
         lastMovementAt = snapshot.lastMovementAt.map { Date(timeIntervalSince1970: $0) } ?? lastPointEventAt
-        lastAutoRecordedLocation = snapshot.points.last.map {
+        lastAutoRecordedLocation = snapshot.points.last(where: { $0.pointRole == .route }).map {
             CLLocation(latitude: $0.latitude, longitude: $0.longitude)
         }
         lastAcceptedWalkLocation = lastAutoRecordedLocation
         movementAnchorLocation = lastAutoRecordedLocation
         lastAutoRecordedAt = lastPointEventAt ?? Date()
+        lastAutoRecordedHeading = nil
         didNotifyRestCandidate = false
         didNotifyInactivityWarning = false
+        refreshWalkHybridContributionSummary()
 
         hasRecoverableWalkSession = false
         recoverableWalkSummaryText = ""
@@ -1483,7 +1557,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             Location(
                 coordinate: CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude),
                 id: UUID(),
-                createdAt: $0.createdAt
+                createdAt: $0.createdAt,
+                pointRole: $0.pointRole
             )
         }
         guard restoredPoints.count > 2 else {
@@ -1508,7 +1583,10 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             petId: snapshot.selectedPetId
         )
         var finalized = completed
-        finalized.makePolygon(walkArea: calculateArea(points: restoredPoints), walkTime: walkTime)
+        finalized.makePolygon(
+            walkArea: makeHybridContributionSummary(points: restoredPoints).finalAreaM2,
+            walkTime: walkTime
+        )
         let updated = walkRepository.savePolygon(finalized)
         if updated.contains(where: { $0.id == finalized.id }) {
             WalkSessionMetadataStore.shared.set(
@@ -1569,7 +1647,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
                 ActiveWalkPointSnapshot(
                     latitude: $0.coordinate.latitude,
                     longitude: $0.coordinate.longitude,
-                    createdAt: $0.createdAt
+                    createdAt: $0.createdAt,
+                    pointRole: $0.pointRole
                 )
             },
             savedAt: now.timeIntervalSince1970
@@ -1593,6 +1672,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         didNotifyRestCandidate = false
         didNotifyInactivityWarning = false
         lastAcceptedWalkLocation = nil
+        lastAutoRecordedHeading = nil
+        walkHybridContributionSummary = .empty
     }
 
     private func handleAutoEndIfNeeded(now: Date = Date()) {
@@ -1678,19 +1759,31 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         #endif
     }
 
+    /// 산책 포인트를 추가하고 역할/상태 동기화를 한 번에 수행합니다.
+    /// - Parameters:
+    ///   - location: 추가할 위치 샘플입니다.
+    ///   - recordedAt: 포인트 기록 시각입니다.
+    ///   - source: 포인트가 추가된 입력 소스(수동/자동/워치)입니다.
+    /// - Returns: 세션에 반영된 최종 포인트 모델입니다.
     private func appendWalkPoint(from location: CLLocation, recordedAt: Date, source: PointAppendSource) -> Location {
+        let pointRole = pointRole(for: source)
         let appendedPoint = Location(
             coordinate: location.coordinate,
             id: UUID(),
-            createdAt: recordedAt.timeIntervalSince1970
+            createdAt: recordedAt.timeIntervalSince1970,
+            pointRole: pointRole
         )
         polygon.addPoint(appendedPoint)
         pushCaptureRipple(at: location.coordinate, source: source)
-        lastAutoRecordedLocation = location
-        lastAutoRecordedAt = recordedAt
+        if pointRole == .route {
+            lastAutoRecordedLocation = location
+            lastAutoRecordedAt = recordedAt
+            lastAutoRecordedHeading = heading(from: location)
+        }
         lastPointEventAt = recordedAt
         movementAnchorLocation = location
         resetInactivityTracking(now: recordedAt, clearAnchor: false)
+        refreshWalkHybridContributionSummary()
         if source == .watch {
             latestWatchActionText = "워치 포인트 반영 \(Self.statusTimeString(from: recordedAt))"
         }
@@ -1703,18 +1796,53 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             name: .walkPointRecordedForQuest,
             object: nil,
             userInfo: [
-                "source": "\(source)",
+                "source": source.rawValue,
                 "recordedAt": recordedAt.timeIntervalSince1970
             ]
         )
         return appendedPoint
     }
 
+    /// 포인트 입력 소스를 영역 점수 역할(`mark`/`route`)로 변환합니다.
+    /// - Parameter source: 포인트가 생성된 입력 소스입니다.
+    /// - Returns: 영역 핵심 기여 포인트인지, 경로 시각화 포인트인지 나타내는 역할 값입니다.
+    private func pointRole(for source: PointAppendSource) -> WalkPointRole {
+        switch source {
+        case .manual, .watch:
+            return .mark
+        case .auto:
+            return .route
+        }
+    }
+
+    /// CoreLocation 샘플에서 유효한 진행 방향(course)을 정규화해 반환합니다.
+    /// - Parameter location: 진행 방향을 판정할 위치 샘플입니다.
+    /// - Returns: 유효한 0~359도 방향 값, 없으면 `nil`입니다.
+    private func heading(from location: CLLocation) -> CLLocationDirection? {
+        let course = location.course
+        guard course >= 0 else { return nil }
+        let normalized = course.truncatingRemainder(dividingBy: 360)
+        return normalized >= 0 ? normalized : normalized + 360
+    }
+
+    /// 두 heading 값의 최소 각도 차이를 계산합니다.
+    /// - Parameters:
+    ///   - lhs: 기준 heading(도) 값입니다.
+    ///   - rhs: 비교할 heading(도) 값입니다.
+    /// - Returns: 0~180 범위의 최소 회전 각도 차이입니다.
+    private func headingDelta(lhs: CLLocationDirection, rhs: CLLocationDirection) -> CLLocationDirection {
+        let raw = abs(lhs - rhs)
+        return min(raw, 360 - raw)
+    }
+
     private func resetAutoPointRecordState() {
         lastAutoRecordedLocation = nil
         lastAutoRecordedAt = .distantPast
+        lastAutoRecordedHeading = nil
     }
 
+    /// 자동 경로 샘플링 정책(거리/시간/코너 보정)에 따라 route 포인트를 기록합니다.
+    /// - Parameter location: 위치 업데이트에서 전달된 최신 위치 샘플입니다.
     private func handleAutoPointRecord(with location: CLLocation) {
         guard isWalking, walkPointRecordMode == .auto else { return }
         let now = Date()
@@ -1724,25 +1852,39 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             return
         }
 
+        guard shouldAppendAutomaticRoutePoint(for: location, at: now) else { return }
+        appendWalkPoint(from: location, recordedAt: now, source: .auto)
+    }
+
+    /// 자동 경로 포인트를 추가할지 여부를 정책 기준으로 판정합니다.
+    /// - Parameters:
+    ///   - location: 새로 수신한 위치 샘플입니다.
+    ///   - now: 판정 시각입니다.
+    /// - Returns: 거리/시간/코너 보정 조건 중 하나를 충족하면 `true`를 반환합니다.
+    private func shouldAppendAutomaticRoutePoint(for location: CLLocation, at now: Date) -> Bool {
         if let lastPoint = polygon.locations.last {
             let lastPointLocation = CLLocation(
                 latitude: lastPoint.coordinate.latitude,
                 longitude: lastPoint.coordinate.longitude
             )
             if location.distance(from: lastPointLocation) < autoRecordNoiseDistance {
-                return
+                return false
             }
         }
 
-        if let lastAutoRecordedLocation {
-            let moved = location.distance(from: lastAutoRecordedLocation)
-            let elapsed = now.timeIntervalSince(lastAutoRecordedAt)
-            guard moved >= autoRecordMinDistance, elapsed >= autoRecordMinInterval else {
-                return
-            }
+        guard let lastAutoRecordedLocation else { return true }
+        let moved = location.distance(from: lastAutoRecordedLocation)
+        let elapsed = now.timeIntervalSince(lastAutoRecordedAt)
+
+        if moved >= autoRecordMinDistance || elapsed >= autoRecordMinInterval {
+            return true
         }
 
-        appendWalkPoint(from: location, recordedAt: now, source: .auto)
+        guard let previousHeading = lastAutoRecordedHeading,
+              let currentHeading = heading(from: location) else {
+            return false
+        }
+        return headingDelta(lhs: previousHeading, rhs: currentHeading) >= autoRecordCornerHeadingDelta
     }
     /// 지도 카메라를 내 위치 추적 모드로 전환합니다.
     /// - Parameter reason: 추적 전환을 유발한 원인입니다. 전달 시 카메라 변경 로그 원인으로 사용됩니다.
@@ -3169,9 +3311,87 @@ extension MapViewModel {
         timer?.invalidate()
         timer = nil
     }
+
+    /// 현재 산책 세션의 `mark/route` 포인트를 분리해 반환합니다.
+    /// - Parameter points: 분리할 전체 위치 포인트 목록입니다.
+    /// - Returns: `mark`와 `route` 역할별로 분리된 포인트 배열 튜플입니다.
+    private func splitWalkPointsByRole(_ points: [Location]) -> (mark: [Location], route: [Location]) {
+        let mark = points.filter { $0.pointRole == .mark }
+        let route = points.filter { $0.pointRole == .route }
+        return (mark, route)
+    }
+
+    /// 하이브리드 정책(`mark 80 / route 20`)을 적용한 영역 요약을 계산합니다.
+    /// - Parameter points: 산책 세션의 전체 포인트 목록입니다.
+    /// - Returns: mark/route 원본 면적, 캡 적용 route 면적, 최종 면적, route 기여 비율을 담은 요약입니다.
+    private func makeHybridContributionSummary(points: [Location]) -> WalkHybridContributionSummary {
+        let separated = splitWalkPointsByRole(points)
+        let markArea = calculateArea(points: separated.mark)
+        let routeArea = calculateArea(points: separated.route)
+        let cappedRouteArea = min(routeArea, markArea)
+        let weightedMark = markArea * hybridMarkWeight
+        let weightedRoute = cappedRouteArea * hybridRouteWeight
+        let weightedTotal = weightedMark + weightedRoute
+
+        let finalArea: Double
+        if hybridMarkWeight > 0 {
+            finalArea = weightedTotal / hybridMarkWeight
+        } else {
+            finalArea = weightedTotal
+        }
+        let routeContributionRatio = weightedTotal > 0 ? weightedRoute / weightedTotal : 0
+
+        return WalkHybridContributionSummary(
+            markAreaM2: markArea,
+            routeAreaM2: routeArea,
+            routeCappedAreaM2: cappedRouteArea,
+            finalAreaM2: max(0, finalArea),
+            routeContributionRatio: min(0.2, max(0, routeContributionRatio))
+        )
+    }
+
+    /// 현재 세션 포인트 기준으로 하이브리드 영역 요약과 표시용 면적을 갱신합니다.
+    private func refreshWalkHybridContributionSummary() {
+        let summary = makeHybridContributionSummary(points: polygon.locations)
+        walkHybridContributionSummary = summary
+        polygon.walkingArea = summary.finalAreaM2
+    }
+
+    /// 지정 세션 포인트에서 route 역할 좌표만 추출합니다.
+    /// - Parameter points: route 좌표를 추출할 원본 포인트 배열입니다.
+    /// - Returns: route 포인트만 순서대로 변환한 좌표 배열입니다.
+    private func routeCoordinates(from points: [Location]) -> [CLLocationCoordinate2D] {
+        points
+            .filter { $0.pointRole == .route }
+            .map(\.coordinate)
+    }
+
+    /// 현재 세션의 route 좌표 배열입니다.
+    var activeWalkRouteCoordinates: [CLLocationCoordinate2D] {
+        routeCoordinates(from: polygon.locations)
+    }
+
+    /// 현재 세션의 mark 포인트 배열입니다.
+    var activeWalkMarkLocations: [Location] {
+        polygon.locations.filter { $0.pointRole == .mark }
+    }
+
+    /// 특정 폴리곤 세션의 route 좌표 배열을 반환합니다.
+    /// - Parameter polygon: 조회 대상 산책 폴리곤입니다.
+    /// - Returns: 해당 세션의 route 포인트를 좌표로 변환한 배열입니다.
+    func routeCoordinates(for polygon: Polygon) -> [CLLocationCoordinate2D] {
+        routeCoordinates(from: polygon.locations)
+    }
+
+    /// 특정 폴리곤 세션의 mark 포인트 배열을 반환합니다.
+    /// - Parameter polygon: 조회 대상 산책 폴리곤입니다.
+    /// - Returns: 해당 세션의 mark 역할 포인트 배열입니다.
+    func markLocations(for polygon: Polygon) -> [Location] {
+        polygon.locations.filter { $0.pointRole == .mark }
+    }
+
     func calculateArea() -> Double {
-        let points = self.polygon.locations
-        return calculateArea(points: points)
+        makeHybridContributionSummary(points: self.polygon.locations).finalAreaM2
     }
 
     func calculateArea(points: [Location]) -> Double {

@@ -13,14 +13,21 @@ struct WalkPosition: Identifiable, Hashable, TimeCheckable {
     let id: UUID
     let coordinateX: Double
     let coordinateY: Double
+    let pointRole: WalkPointRole
     init(location: Location) {
         self.id = location.id
         self.createdAt = location.createdAt
         self.coordinateX = location.coordinate.latitude
         self.coordinateY = location.coordinate.longitude
+        self.pointRole = location.pointRole
     }
     func toLocation() -> Location {
-        .init(coordinate: .init(latitude: coordinateX, longitude: coordinateY), id: id, createdAt: createdAt)
+        .init(
+            coordinate: .init(latitude: coordinateX, longitude: coordinateY),
+            id: id,
+            createdAt: createdAt,
+            pointRole: pointRole
+        )
     }
     var coordinate: CLLocationCoordinate2D {
         return .init(latitude: self.coordinateX, longitude: self.coordinateY)
