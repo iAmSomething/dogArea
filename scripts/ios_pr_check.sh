@@ -39,6 +39,7 @@ swift scripts/supabase_ops_hardening_unit_check.swift
 swift scripts/rival_privacy_policy_stage1_unit_check.swift
 swift scripts/rival_privacy_hard_guard_unit_check.swift
 swift scripts/rival_observability_metrics_unit_check.swift
+swift scripts/rival_location_services_threading_unit_check.swift
 swift scripts/rival_league_matching_unit_check.swift
 swift scripts/rival_stage2_backend_unit_check.swift
 swift scripts/rival_stage3_client_ux_unit_check.swift
