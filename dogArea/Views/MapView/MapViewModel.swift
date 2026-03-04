@@ -305,6 +305,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private var nearbyTickTimer: Timer? = nil
     private var lastPresenceSentAt: Date = .distantPast
     private var lastNearbyFetchedAt: Date = .distantPast
+    private var lastNearbyHotspotErrorLogAt: Date = .distantPast
+    private var suppressedNearbyHotspotErrorCount: Int = 0
+    private let nearbyHotspotErrorLogInterval: TimeInterval = 60
     private var processedWatchActionIds: Set<String> = []
     private var processedWatchActionOrder: [String] = []
     private let maxProcessedWatchActions = 500
@@ -1872,16 +1875,50 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
                     self.nearbyHotspots = hotspots
                 }
             } catch {
-                if let supabaseError = error as? SupabaseHTTPError,
-                   case .unexpectedStatusCode(404) = supabaseError {
+                if self.isNearbyHotspotNotFoundError(error) {
                     await MainActor.run {
                         self.nearbyHotspots = []
                     }
                     return
                 }
-                print("nearby hotspot fetch failed: \(error.localizedDescription)")
+                self.logNearbyHotspotErrorIfNeeded(error)
             }
         }
+    }
+
+    /// 주변 핫스팟 조회 에러가 "리소스 없음(404)"인지 판별합니다.
+    /// - Parameter error: 조회 실패 시 전달된 원본 에러입니다.
+    /// - Returns: 404 계열 에러로 판단되면 `true`를 반환합니다.
+    private func isNearbyHotspotNotFoundError(_ error: Error) -> Bool {
+        if let supabaseError = error as? SupabaseHTTPError,
+           case .unexpectedStatusCode(404) = supabaseError {
+            return true
+        }
+
+        // SupabaseError가 래핑되어 올라오는 경우 localizedDescription 패턴으로 보조 판별합니다.
+        let message = error.localizedDescription
+        if message.contains("(404)") || message.contains(" 404") {
+            return true
+        }
+        return false
+    }
+
+    /// 주변 핫스팟 조회 에러 로그를 일정 주기로만 출력해 콘솔 노이즈를 줄입니다.
+    /// - Parameter error: 출력할 조회 실패 에러입니다.
+    private func logNearbyHotspotErrorIfNeeded(_ error: Error) {
+        let now = Date()
+        if now.timeIntervalSince(lastNearbyHotspotErrorLogAt) < nearbyHotspotErrorLogInterval {
+            suppressedNearbyHotspotErrorCount += 1
+            return
+        }
+
+        if suppressedNearbyHotspotErrorCount > 0 {
+            print("nearby hotspot fetch failed: \(error.localizedDescription) (+\(suppressedNearbyHotspotErrorCount) suppressed)")
+            suppressedNearbyHotspotErrorCount = 0
+        } else {
+            print("nearby hotspot fetch failed: \(error.localizedDescription)")
+        }
+        lastNearbyHotspotErrorLogAt = now
     }
 
     private func syncVisibilitySettingIfNeeded() {
