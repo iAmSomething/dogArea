@@ -128,7 +128,7 @@ struct HomeView: View {
                     recentConqueredCard
                 }
                 .padding(.horizontal, 16)
-                .padding(.top, 12)
+                .padding(.top, 20)
                 .padding(.bottom, CustomTabBar.reservedContentHeight + 12)
             }
             .refreshable {

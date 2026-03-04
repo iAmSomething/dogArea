@@ -21,29 +21,33 @@ struct CustomTabBar: View {
     ]
 
     var body: some View {
-        HStack(spacing: 8) {
-            tabItemButton(for: sideItems[0])
-            tabItemButton(for: sideItems[1])
+        ZStack(alignment: .bottom) {
+            HStack(spacing: 8) {
+                tabItemButton(for: sideItems[0])
+                tabItemButton(for: sideItems[1])
 
-            centerMapButton
+                centerMapButton
 
-            tabItemButton(for: sideItems[2])
-            tabItemButton(for: sideItems[3])
+                tabItemButton(for: sideItems[2])
+                tabItemButton(for: sideItems[3])
+            }
+            .padding(.horizontal, 12)
+            .padding(.top, 8)
+            .padding(.bottom, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    .fill(Color.appDynamicHex(light: 0xFFFFFF, dark: 0x1E293B, alpha: 0.98))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 26, style: .continuous)
+                            .stroke(Color.appDynamicHex(light: 0xE2E8F0, dark: 0x334155), lineWidth: 1)
+                    )
+                    .shadow(color: Color.black.opacity(0.09), radius: 18, x: 0, y: -6)
+            )
+            .padding(.horizontal, 10)
+            .padding(.bottom, 6)
         }
-        .padding(.horizontal, 12)
-        .padding(.top, 8)
-        .padding(.bottom, 10)
-        .background(
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .fill(Color.appDynamicHex(light: 0xFFFFFF, dark: 0x1E293B, alpha: 0.98))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 26, style: .continuous)
-                        .stroke(Color.appDynamicHex(light: 0xE2E8F0, dark: 0x334155), lineWidth: 1)
-                )
-                .shadow(color: Color.black.opacity(0.09), radius: 18, x: 0, y: -6)
-        )
-        .padding(.horizontal, 10)
-        .padding(.bottom, 6)
+        .frame(maxWidth: .infinity)
+        .frame(height: Self.reservedContentHeight, alignment: .bottom)
     }
 
     /// 일반 탭 아이템 버튼을 렌더링합니다.

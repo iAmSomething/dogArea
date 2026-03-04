@@ -22,22 +22,16 @@ struct RootView: View {
     @State private var selectedTab = RootView.initialSelectedTabForRuntime()
     @State private var tabbarHidden = false
     @StateObject var tabStatus = TabAppear.shared
+    @StateObject private var mapViewModel = MapViewModel()
     private let widgetActionStore: WalkWidgetActionRequestStoring = DefaultWalkWidgetActionRequestStore.shared
     private let territoryWidgetSnapshotSyncService: TerritoryWidgetSnapshotSyncing = DefaultTerritoryWidgetSnapshotSyncService()
     private let hotspotWidgetSnapshotSyncService: HotspotWidgetSnapshotSyncing = DefaultHotspotWidgetSnapshotSyncService()
     private let questRivalWidgetSnapshotSyncService: QuestRivalWidgetSnapshotSyncing = DefaultQuestRivalWidgetSnapshotSyncService()
     private let questRewardClaimService: QuestRewardClaimServiceProtocol = QuestRewardClaimService()
     private let questRivalSnapshotStore: QuestRivalWidgetSnapshotStoring = DefaultQuestRivalWidgetSnapshotStore.shared
-    private var homeView: HomeView
-    private var walkListView: WalkListView    
-    private var mapView: MapView
-    private var notificationCenterView: NotificationCenterView
-    init() {
-        self.homeView = HomeView()
-        self.walkListView = WalkListView()
-        self.mapView = MapView()
-        self.notificationCenterView = NotificationCenterView()
-    }
+    private var homeView = HomeView()
+    private var walkListView = WalkListView()
+    private var notificationCenterView = NotificationCenterView()
 
     /// UI 테스트 디자인 감사 모드에서는 기본 진입 탭을 홈으로 고정해 초기 렌더링 안정성을 높입니다.
     private static func initialSelectedTabForRuntime() -> Int {
@@ -142,7 +136,7 @@ struct RootView: View {
             }
         } else if selectedTab == 2 {
             NavigationView {
-                mapView
+                MapView(viewModel: mapViewModel)
                     .environmentObject(loading)
                     .navigationBarHidden(selectedTab == 2)
                     .accessibilityIdentifier("screen.map")

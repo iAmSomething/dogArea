@@ -29,8 +29,10 @@ struct RivalTabView: View {
                 safetyInfoCard
                 footerButtons
             }
-            .padding(.bottom, 24)
+            .padding(.top, 8)
+            .padding(.bottom, CustomTabBar.reservedContentHeight + 20)
         }
+        .scrollIndicators(.hidden)
         .background(Color.appTabScaffoldBackground)
         .accessibilityIdentifier("screen.rival.content")
         .onAppear {
