@@ -376,7 +376,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     }
     @Published var centerLocations: [Cluster] = []
     @Published private(set) var currentCameraDistance: Double = 2_000
-    @Published var camera: MapCamera = .init(.init())
+    var camera: MapCamera = .init(.init())
     @Published var cameraPosition = MapCameraPosition.automatic
     @Published var selectedMarker: Location? = nil
     @Published var showOnlyOne: Bool = true
@@ -477,6 +477,12 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private var lastLoggedCameraReason: CameraChangeReason?
     private let cameraLogCenterThreshold: CLLocationDistance = 40.0
     private let cameraLogDistanceThreshold: Double = 120.0
+    private var lastCachedCameraCenter: CLLocationCoordinate2D?
+    private var lastCachedCameraDistance: Double?
+    private var lastCachedCameraUpdatedAt: Date = .distantPast
+    private let cameraCacheCenterThreshold: CLLocationDistance = 12.0
+    private let cameraCacheDistanceThreshold: Double = 80.0
+    private let cameraCacheMinUpdateInterval: TimeInterval = 0.9
     private var pendingPointAddCameraSnapshot: CameraSnapshot?
     private var lastSyncFlushAt: Date = .distantPast
     private var lastSyncSummarySnapshot: SyncOutboxSummary? = nil
@@ -763,9 +769,15 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 
     /// 수동 포인트 추가 전에 현재 카메라 중심/거리 상태를 저장합니다.
     func preparePointAddCameraSnapshot() {
+        let fallbackCenter = location?.coordinate ?? camera.centerCoordinate
+        let resolvedCenter = lastCachedCameraCenter ?? fallbackCenter
+        let resolvedDistance = max(
+            120.0,
+            lastCachedCameraDistance ?? max(camera.distance, currentCameraDistance)
+        )
         pendingPointAddCameraSnapshot = CameraSnapshot(
-            centerCoordinate: camera.centerCoordinate,
-            distance: max(120.0, camera.distance)
+            centerCoordinate: resolvedCenter,
+            distance: resolvedDistance
         )
     }
 
@@ -1742,8 +1754,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     ///   - camera: 현재 지도 카메라 상태입니다.
     ///   - now: 로그 판정 기준 시각입니다.
     func recordCameraChange(_ camera: MapCamera, now: Date = Date()) {
-        self.camera = camera
         let reason = resolveCameraChangeReason(now: now)
+        updateCameraCacheIfNeeded(camera, now: now, force: reason != .manualMove)
         guard shouldLogCameraChange(camera, reason: reason) else { return }
         #if DEBUG
         let latitude = String(format: "%.5f", camera.centerCoordinate.latitude)
@@ -1755,6 +1767,48 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         lastLoggedCameraCenter = camera.centerCoordinate
         lastLoggedCameraDistance = camera.distance
         lastLoggedCameraReason = reason
+    }
+
+    /// 카메라 캐시는 유지하되 변화량/시간 임계치를 넘는 경우에만 갱신해 상태 쓰기 횟수를 줄입니다.
+    /// - Parameters:
+    ///   - camera: 이번 이벤트에서 전달된 최신 지도 카메라 상태입니다.
+    ///   - now: 캐시 갱신 여부를 판정할 기준 시각입니다.
+    ///   - force: 사용자 액션 기반 이동처럼 즉시 반영이 필요한 경우 `true`입니다.
+    private func updateCameraCacheIfNeeded(_ camera: MapCamera, now: Date, force: Bool) {
+        guard camera.centerCoordinate.latitude.isFinite,
+              camera.centerCoordinate.longitude.isFinite,
+              camera.distance.isFinite else { return }
+
+        if force {
+            self.camera = camera
+            lastCachedCameraCenter = camera.centerCoordinate
+            lastCachedCameraDistance = camera.distance
+            lastCachedCameraUpdatedAt = now
+            return
+        }
+
+        guard let lastCenter = lastCachedCameraCenter,
+              let lastDistance = lastCachedCameraDistance else {
+            self.camera = camera
+            lastCachedCameraCenter = camera.centerCoordinate
+            lastCachedCameraDistance = camera.distance
+            lastCachedCameraUpdatedAt = now
+            return
+        }
+
+        let centerDelta = greatCircleDistanceMeters(from: lastCenter, to: camera.centerCoordinate)
+        let distanceDelta = abs(camera.distance - lastDistance)
+        let elapsed = now.timeIntervalSince(lastCachedCameraUpdatedAt)
+        guard centerDelta >= cameraCacheCenterThreshold
+                || distanceDelta >= cameraCacheDistanceThreshold
+                || elapsed >= cameraCacheMinUpdateInterval else {
+            return
+        }
+
+        self.camera = camera
+        lastCachedCameraCenter = camera.centerCoordinate
+        lastCachedCameraDistance = camera.distance
+        lastCachedCameraUpdatedAt = now
     }
 
     /// 수동 포인트 추가 후 카메라가 점프했을 때 직전 스냅샷으로 복원합니다.
