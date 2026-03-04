@@ -2018,6 +2018,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
                 }
             } catch {
                 if self.isNearbyHotspotNotFoundError(error) {
+                    #if DEBUG
+                    print("nearby hotspot fetch failed (not found): \(error.localizedDescription)")
+                    #endif
                     await MainActor.run {
                         self.nearbyHotspots = []
                     }
@@ -2048,6 +2051,17 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     /// 주변 핫스팟 조회 에러 로그를 일정 주기로만 출력해 콘솔 노이즈를 줄입니다.
     /// - Parameter error: 출력할 조회 실패 에러입니다.
     private func logNearbyHotspotErrorIfNeeded(_ error: Error) {
+        #if DEBUG
+        if suppressedNearbyHotspotErrorCount > 0 {
+            print("nearby hotspot fetch failed: \(error.localizedDescription) (+\(suppressedNearbyHotspotErrorCount) suppressed)")
+            suppressedNearbyHotspotErrorCount = 0
+        } else {
+            print("nearby hotspot fetch failed: \(error.localizedDescription)")
+        }
+        lastNearbyHotspotErrorLogAt = Date()
+        return
+        #endif
+
         let now = Date()
         if now.timeIntervalSince(lastNearbyHotspotErrorLogAt) < nearbyHotspotErrorLogInterval {
             suppressedNearbyHotspotErrorCount += 1
@@ -2066,6 +2080,17 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     /// 가시성(Visibility) 동기화 에러 로그를 일정 주기로만 출력해 콘솔 노이즈를 줄입니다.
     /// - Parameter error: 출력할 동기화 실패 에러입니다.
     private func logVisibilitySyncErrorIfNeeded(_ error: Error) {
+        #if DEBUG
+        if suppressedVisibilitySyncErrorCount > 0 {
+            print("visibility sync failed: \(error.localizedDescription) (+\(suppressedVisibilitySyncErrorCount) suppressed)")
+            suppressedVisibilitySyncErrorCount = 0
+        } else {
+            print("visibility sync failed: \(error.localizedDescription)")
+        }
+        lastVisibilitySyncErrorLogAt = Date()
+        return
+        #endif
+
         let now = Date()
         if now.timeIntervalSince(lastVisibilitySyncErrorLogAt) < nearbyHotspotErrorLogInterval {
             suppressedVisibilitySyncErrorCount += 1
@@ -2095,6 +2120,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
                 }
             } catch {
                 if self.isNearbyHotspotNotFoundError(error) {
+                    #if DEBUG
+                    print("visibility sync failed (not found): \(error.localizedDescription)")
+                    #endif
                     return
                 }
                 self.logVisibilitySyncErrorIfNeeded(error)
