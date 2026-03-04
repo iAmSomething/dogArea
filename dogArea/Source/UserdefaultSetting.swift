@@ -1022,14 +1022,14 @@ enum AppFeatureGate {
     ]
 
     static func currentSession() -> AppSessionState {
-        if let identity = DefaultAuthSessionStore.shared.currentIdentity(),
-           identity.userId.isEmpty == false {
-            return .member(userId: identity.userId)
-        }
-        guard let id = UserdefaultSetting.shared.getValue()?.id, id.isEmpty == false else {
+        guard let identity = DefaultAuthSessionStore.shared.currentIdentity(),
+              identity.userId.isEmpty == false else {
             return .guest
         }
-        return .member(userId: id)
+        guard DefaultAuthSessionStore.shared.currentTokenSession() != nil else {
+            return .guest
+        }
+        return .member(userId: identity.userId)
     }
 
     static func decision(for capability: FeatureCapability, session: AppSessionState) -> FeatureGateDecision {
@@ -1485,15 +1485,14 @@ final class AuthFlowCoordinator: ObservableObject {
     /// 현재 인증 세션/프로필 스토어에서 사용자 식별자를 조회합니다.
     /// - Returns: 로그인 사용자 ID가 있으면 반환하고, 없으면 `nil`을 반환합니다.
     private func currentMemberUserId() -> String? {
-        if let sessionUserId = authSessionStore.currentIdentity()?.userId,
-           sessionUserId.isEmpty == false {
-            return sessionUserId
+        guard let sessionUserId = authSessionStore.currentIdentity()?.userId,
+              sessionUserId.isEmpty == false else {
+            return nil
         }
-        if let profileUserId = UserdefaultSetting.shared.getValue()?.id,
-           profileUserId.isEmpty == false {
-            return profileUserId
+        guard authSessionStore.currentTokenSession() != nil else {
+            return nil
         }
-        return nil
+        return sessionUserId
     }
 }
 

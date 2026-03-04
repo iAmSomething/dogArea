@@ -32,7 +32,6 @@ struct SignInView: View {
         onAuthenticated: @escaping () -> Void = {},
         onDismiss: @escaping () -> Void = {},
         authService: AppleCredentialAuthServiceProtocol = DeviceAppleCredentialAuthService.shared,
-        profileRepository: ProfileRepository = DefaultProfileRepository.shared,
         authSessionStore: AuthSessionStoreProtocol = DefaultAuthSessionStore.shared,
         isAppleSignInTemporarilyDisabled: Bool = true,
         authUseCase: AuthUseCaseProtocol? = nil
@@ -43,7 +42,6 @@ struct SignInView: View {
         self.isAppleSignInTemporarilyDisabled = isAppleSignInTemporarilyDisabled
         self.authUseCase = authUseCase ?? DefaultAuthUseCase(
             authRepository: DefaultAuthRepository(credentialService: authService),
-            profileRepository: profileRepository,
             sessionStore: authSessionStore
         )
     }
