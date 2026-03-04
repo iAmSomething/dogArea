@@ -102,8 +102,11 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
     func start() {
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyHundredMeters
-        if CLLocationManager.locationServicesEnabled() {
+        switch locationManager.authorizationStatus {
+        case .authorizedAlways, .authorizedWhenInUse:
             locationManager.startUpdatingLocation()
+        default:
+            locationManager.stopUpdatingLocation()
         }
         loadModerationPreferences()
         refreshSessionContext()
@@ -536,6 +539,12 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
     /// 위치 권한이 바뀌면 화면 상태를 즉시 재계산합니다.
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         updatePermissionState()
+        switch manager.authorizationStatus {
+        case .authorizedAlways, .authorizedWhenInUse:
+            manager.startUpdatingLocation()
+        default:
+            manager.stopUpdatingLocation()
+        }
         refreshViewState()
         refreshHotspots(force: true)
         refreshLeaderboard(force: true)
