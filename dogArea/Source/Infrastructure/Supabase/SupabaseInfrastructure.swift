@@ -456,10 +456,80 @@ protocol WalkSyncServiceProtocol: SyncOutboxTransporting {
 
 protocol ProfileSyncServiceProtocol: ProfileSyncOutboxTransporting {}
 
+struct WalkLivePresenceDTO: Identifiable, Equatable {
+    let ownerUserId: String
+    let sessionId: String
+    let coordinate: CLLocationCoordinate2D
+    let speedMetersPerSecond: Double?
+    let sequence: Int
+    let idempotencyKey: String
+    let updatedAtEpoch: TimeInterval
+    let expiresAtEpoch: TimeInterval
+    let privacyMode: String?
+    let writeApplied: Bool?
+
+    var id: String { ownerUserId }
+
+    /// 두 라이브 프레즌스 DTO가 동일 사용자 상태를 의미하는지 비교합니다.
+    /// - Parameters:
+    ///   - lhs: 좌측 비교 대상 DTO입니다.
+    ///   - rhs: 우측 비교 대상 DTO입니다.
+    /// - Returns: 핵심 식별자/좌표/상태 필드가 모두 같으면 `true`를 반환합니다.
+    static func == (lhs: WalkLivePresenceDTO, rhs: WalkLivePresenceDTO) -> Bool {
+        lhs.ownerUserId == rhs.ownerUserId &&
+        lhs.sessionId == rhs.sessionId &&
+        lhs.coordinate.latitude == rhs.coordinate.latitude &&
+        lhs.coordinate.longitude == rhs.coordinate.longitude &&
+        lhs.speedMetersPerSecond == rhs.speedMetersPerSecond &&
+        lhs.sequence == rhs.sequence &&
+        lhs.idempotencyKey == rhs.idempotencyKey &&
+        lhs.updatedAtEpoch == rhs.updatedAtEpoch &&
+        lhs.expiresAtEpoch == rhs.expiresAtEpoch &&
+        lhs.privacyMode == rhs.privacyMode &&
+        lhs.writeApplied == rhs.writeApplied
+    }
+}
+
 protocol NearbyPresenceServiceProtocol {
     func setVisibility(userId: String, enabled: Bool) async throws
     func upsertPresence(userId: String, latitude: Double, longitude: Double) async throws
     func getHotspots(userId: String?, centerLatitude: Double, centerLongitude: Double, radiusKm: Double) async throws -> [NearbyHotspotDTO]
+    /// 실시간 위치 표시용 원시 presence 레코드를 멱등 업서트합니다.
+    /// - Parameters:
+    ///   - userId: presence 소유 사용자 UUID 문자열입니다.
+    ///   - sessionId: 현재 산책 세션 UUID 문자열입니다. `nil`이면 서버가 사용자 ID를 대체 세션으로 사용합니다.
+    ///   - latitude: 업서트할 위도 값입니다.
+    ///   - longitude: 업서트할 경도 값입니다.
+    ///   - speedMetersPerSecond: 현재 이동 속도(m/s)입니다.
+    ///   - sequence: last-write-wins 비교용 단조 증가 시퀀스입니다.
+    ///   - idempotencyKey: 재전송 중복 제거를 위한 멱등 키입니다.
+    /// - Returns: 서버에 반영된 최신 라이브 프레즌스 행입니다. visibility OFF 등으로 저장이 생략되면 `nil`입니다.
+    func upsertLivePresence(
+        userId: String,
+        sessionId: String?,
+        latitude: Double,
+        longitude: Double,
+        speedMetersPerSecond: Double?,
+        sequence: Int?,
+        idempotencyKey: String?
+    ) async throws -> WalkLivePresenceDTO?
+    /// 지정한 viewport 범위의 실시간 프레즌스 목록을 조회합니다.
+    /// - Parameters:
+    ///   - minLatitude: 조회 최소 위도 경계입니다.
+    ///   - maxLatitude: 조회 최대 위도 경계입니다.
+    ///   - minLongitude: 조회 최소 경도 경계입니다.
+    ///   - maxLongitude: 조회 최대 경도 경계입니다.
+    ///   - maxRows: 최대 반환 row 수입니다.
+    ///   - privacyMode: 조회 프라이버시 모드(`public`/`private`/`all`)입니다.
+    /// - Returns: viewport 범위와 프라이버시 필터가 적용된 실시간 프레즌스 목록입니다.
+    func getLivePresence(
+        minLatitude: Double,
+        maxLatitude: Double,
+        minLongitude: Double,
+        maxLongitude: Double,
+        maxRows: Int,
+        privacyMode: String
+    ) async throws -> [WalkLivePresenceDTO]
 }
 
 enum RivalLeaderboardPeriod: String, CaseIterable {
@@ -1168,6 +1238,28 @@ struct NearbyPresenceService: NearbyPresenceServiceProtocol {
         let hotspots: [ResponseHotspotDTO]
     }
 
+    private struct ResponseLivePresenceDTO: Decodable {
+        let owner_user_id: String
+        let session_id: String
+        let lat_rounded: Double
+        let lng_rounded: Double
+        let speed_mps: Double?
+        let sequence: Int
+        let idempotency_key: String
+        let updated_at: String?
+        let expires_at: String?
+        let privacy_mode: String?
+        let write_applied: Bool?
+    }
+
+    private struct LivePresenceUpsertEnvelope: Decodable {
+        let live_presence: ResponseLivePresenceDTO?
+    }
+
+    private struct LivePresenceEnvelope: Decodable {
+        let presence: [ResponseLivePresenceDTO]
+    }
+
     private let client: SupabaseHTTPClient
 
     init(client: SupabaseHTTPClient = .live) {
@@ -1199,6 +1291,94 @@ struct NearbyPresenceService: NearbyPresenceServiceProtocol {
             method: .post,
             bodyData: try JSONSerialization.data(withJSONObject: body)
         )
+    }
+
+    /// 실시간 위치 표시용 원시 presence 레코드를 멱등 업서트합니다.
+    /// - Parameters:
+    ///   - userId: presence 소유 사용자 UUID 문자열입니다.
+    ///   - sessionId: 현재 산책 세션 UUID 문자열입니다. `nil`이면 서버 기본값을 사용합니다.
+    ///   - latitude: 업서트할 위도 값입니다.
+    ///   - longitude: 업서트할 경도 값입니다.
+    ///   - speedMetersPerSecond: 이동 속도(m/s)입니다.
+    ///   - sequence: last-write-wins 비교용 시퀀스입니다.
+    ///   - idempotencyKey: 재전송 중복 제거용 멱등 키입니다.
+    /// - Returns: 서버가 반영한 최신 라이브 presence 행입니다. 공유 OFF로 생략되면 `nil`입니다.
+    func upsertLivePresence(
+        userId: String,
+        sessionId: String?,
+        latitude: Double,
+        longitude: Double,
+        speedMetersPerSecond: Double?,
+        sequence: Int?,
+        idempotencyKey: String?
+    ) async throws -> WalkLivePresenceDTO? {
+        var payload: [String: Any] = [
+            "action": "upsert_live_presence",
+            "userId": userId,
+            "lat": latitude,
+            "lng": longitude
+        ]
+        if let sessionId, sessionId.isEmpty == false {
+            payload["sessionId"] = sessionId
+        }
+        if let speedMetersPerSecond {
+            payload["speedMps"] = speedMetersPerSecond
+        }
+        if let sequence {
+            payload["sequence"] = sequence
+        }
+        if let idempotencyKey, idempotencyKey.isEmpty == false {
+            payload["idempotencyKey"] = idempotencyKey
+        }
+
+        let data = try await client.request(
+            .function(name: "nearby-presence"),
+            method: .post,
+            bodyData: try JSONSerialization.data(withJSONObject: payload)
+        )
+
+        let decoded = try JSONDecoder().decode(LivePresenceUpsertEnvelope.self, from: data)
+        guard let row = decoded.live_presence else {
+            return nil
+        }
+        return Self.makeLivePresenceDTO(from: row)
+    }
+
+    /// 지정한 viewport 범위의 실시간 presence 목록을 조회합니다.
+    /// - Parameters:
+    ///   - minLatitude: 조회 최소 위도 경계입니다.
+    ///   - maxLatitude: 조회 최대 위도 경계입니다.
+    ///   - minLongitude: 조회 최소 경도 경계입니다.
+    ///   - maxLongitude: 조회 최대 경도 경계입니다.
+    ///   - maxRows: 조회 최대 반환 row 수입니다.
+    ///   - privacyMode: 조회 프라이버시 모드(`public`/`private`/`all`)입니다.
+    /// - Returns: 만료/프라이버시 필터가 적용된 실시간 presence 목록입니다.
+    func getLivePresence(
+        minLatitude: Double,
+        maxLatitude: Double,
+        minLongitude: Double,
+        maxLongitude: Double,
+        maxRows: Int = 200,
+        privacyMode: String = "public"
+    ) async throws -> [WalkLivePresenceDTO] {
+        let payload: [String: Any] = [
+            "action": "get_live_presence",
+            "minLat": minLatitude,
+            "maxLat": maxLatitude,
+            "minLng": minLongitude,
+            "maxLng": maxLongitude,
+            "maxRows": maxRows,
+            "privacyMode": privacyMode
+        ]
+
+        let data = try await client.request(
+            .function(name: "nearby-presence"),
+            method: .post,
+            bodyData: try JSONSerialization.data(withJSONObject: payload)
+        )
+
+        let decoded = try JSONDecoder().decode(LivePresenceEnvelope.self, from: data)
+        return decoded.presence.map(Self.makeLivePresenceDTO)
     }
 
     func getHotspots(
@@ -1236,6 +1416,24 @@ struct NearbyPresenceService: NearbyPresenceServiceProtocol {
                 requiredMinSample: $0.required_min_sample
             )
         }
+    }
+
+    /// Edge Function 응답 행을 앱 도메인용 라이브 프레즌스 DTO로 변환합니다.
+    /// - Parameter row: `rpc_get_walk_live_presence` 또는 `rpc_upsert_walk_live_presence` 응답 행입니다.
+    /// - Returns: UI/도메인 계층에서 바로 사용할 수 있는 라이브 프레즌스 DTO입니다.
+    private static func makeLivePresenceDTO(from row: ResponseLivePresenceDTO) -> WalkLivePresenceDTO {
+        WalkLivePresenceDTO(
+            ownerUserId: row.owner_user_id,
+            sessionId: row.session_id,
+            coordinate: CLLocationCoordinate2D(latitude: row.lat_rounded, longitude: row.lng_rounded),
+            speedMetersPerSecond: row.speed_mps,
+            sequence: row.sequence,
+            idempotencyKey: row.idempotency_key,
+            updatedAtEpoch: SupabaseISO8601.parseEpoch(row.updated_at) ?? 0,
+            expiresAtEpoch: SupabaseISO8601.parseEpoch(row.expires_at) ?? 0,
+            privacyMode: row.privacy_mode,
+            writeApplied: row.write_applied
+        )
     }
 }
 
