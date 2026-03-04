@@ -15,7 +15,7 @@ struct MapSubView: View {
     @ObservedObject var viewModel: MapViewModel
     @State private var motionNow: Date = Date()
     @State private var clusterPulseActive: Bool = false
-    private let motionTicker = Timer.publish(every: 0.12, on: .main, in: .common).autoconnect()
+    private let motionTicker = Timer.publish(every: 0.25, on: .main, in: .common).autoconnect()
 
     var body: some View {
         Map(position: $viewModel.cameraPosition,
@@ -153,6 +153,7 @@ struct MapSubView: View {
 //            mapControls
         }
         .onReceive(motionTicker) { now in
+            guard viewModel.shouldDriveMapMotionTicker else { return }
             motionNow = now
             viewModel.compactMapMotionArtifacts(now: now)
         }

@@ -1145,6 +1145,12 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         isMapMotionReduced ? 0.35 : 0.52
     }
 
+    /// 지도 모션 보조 타이머를 구동해야 하는지 반환합니다.
+    /// - Returns: 캡처 리플이 남아있거나 산책 중 궤적 애니메이션이 필요하면 `true`입니다.
+    var shouldDriveMapMotionTicker: Bool {
+        captureRipples.isEmpty == false || isWalking
+    }
+
     var activeTrailMarkers: [TrailMarker] {
         guard isWalking else { return [] }
         let now = Date().timeIntervalSince1970
