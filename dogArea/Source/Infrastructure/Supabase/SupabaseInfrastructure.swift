@@ -470,6 +470,10 @@ struct WalkLivePresenceDTO: Identifiable, Equatable {
     let delayMinutes: Int?
     let requiredMinSample: Int?
     let obfuscationMeters: Int?
+    let abuseReason: String?
+    let abuseScore: Double?
+    let sanctionLevel: String?
+    let sanctionUntilEpoch: TimeInterval?
     let writeApplied: Bool?
 
     var id: String { ownerUserId }
@@ -494,6 +498,10 @@ struct WalkLivePresenceDTO: Identifiable, Equatable {
         lhs.delayMinutes == rhs.delayMinutes &&
         lhs.requiredMinSample == rhs.requiredMinSample &&
         lhs.obfuscationMeters == rhs.obfuscationMeters &&
+        lhs.abuseReason == rhs.abuseReason &&
+        lhs.abuseScore == rhs.abuseScore &&
+        lhs.sanctionLevel == rhs.sanctionLevel &&
+        lhs.sanctionUntilEpoch == rhs.sanctionUntilEpoch &&
         lhs.writeApplied == rhs.writeApplied
     }
 }
@@ -511,6 +519,7 @@ protocol NearbyPresenceServiceProtocol {
     ///   - speedMetersPerSecond: 현재 이동 속도(m/s)입니다.
     ///   - sequence: last-write-wins 비교용 단조 증가 시퀀스입니다.
     ///   - idempotencyKey: 재전송 중복 제거를 위한 멱등 키입니다.
+    ///   - deviceKey: 사용자 디바이스/설치 단위 rate-limit 판정용 키입니다.
     /// - Returns: 서버에 반영된 최신 라이브 프레즌스 행입니다. visibility OFF 등으로 저장이 생략되면 `nil`입니다.
     func upsertLivePresence(
         userId: String,
@@ -519,7 +528,8 @@ protocol NearbyPresenceServiceProtocol {
         longitude: Double,
         speedMetersPerSecond: Double?,
         sequence: Int?,
-        idempotencyKey: String?
+        idempotencyKey: String?,
+        deviceKey: String?
     ) async throws -> WalkLivePresenceDTO?
     /// 지정한 viewport 범위의 실시간 프레즌스 목록을 조회합니다.
     /// - Parameters:
@@ -1265,6 +1275,10 @@ struct NearbyPresenceService: NearbyPresenceServiceProtocol {
         let delay_minutes: Int?
         let required_min_sample: Int?
         let obfuscation_meters: Int?
+        let abuse_reason: String?
+        let abuse_score: Double?
+        let sanction_level: String?
+        let sanction_until: String?
         let write_applied: Bool?
     }
 
@@ -1318,6 +1332,7 @@ struct NearbyPresenceService: NearbyPresenceServiceProtocol {
     ///   - speedMetersPerSecond: 이동 속도(m/s)입니다.
     ///   - sequence: last-write-wins 비교용 시퀀스입니다.
     ///   - idempotencyKey: 재전송 중복 제거용 멱등 키입니다.
+    ///   - deviceKey: 디바이스 단위 호출 빈도 방어를 위한 식별 키입니다.
     /// - Returns: 서버가 반영한 최신 라이브 presence 행입니다. 공유 OFF로 생략되면 `nil`입니다.
     func upsertLivePresence(
         userId: String,
@@ -1326,7 +1341,8 @@ struct NearbyPresenceService: NearbyPresenceServiceProtocol {
         longitude: Double,
         speedMetersPerSecond: Double?,
         sequence: Int?,
-        idempotencyKey: String?
+        idempotencyKey: String?,
+        deviceKey: String? = nil
     ) async throws -> WalkLivePresenceDTO? {
         var payload: [String: Any] = [
             "action": "upsert_live_presence",
@@ -1345,6 +1361,9 @@ struct NearbyPresenceService: NearbyPresenceServiceProtocol {
         }
         if let idempotencyKey, idempotencyKey.isEmpty == false {
             payload["idempotencyKey"] = idempotencyKey
+        }
+        if let deviceKey, deviceKey.isEmpty == false {
+            payload["deviceKey"] = deviceKey
         }
 
         let data = try await client.request(
@@ -1463,6 +1482,10 @@ struct NearbyPresenceService: NearbyPresenceServiceProtocol {
             delayMinutes: row.delay_minutes,
             requiredMinSample: row.required_min_sample,
             obfuscationMeters: row.obfuscation_meters,
+            abuseReason: row.abuse_reason,
+            abuseScore: row.abuse_score,
+            sanctionLevel: row.sanction_level,
+            sanctionUntilEpoch: SupabaseISO8601.parseEpoch(row.sanction_until),
             writeApplied: row.write_applied
         )
     }
