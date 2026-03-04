@@ -38,8 +38,105 @@ struct MapView : View{
     }
     
     var body : some View {
+        var composed = AnyView(mapContent)
+        composed = AnyView(composed.onAppear {
+            viewModel.activateMapRuntimeServices()
+            viewModel.reloadSelectedPetContext()
+            viewModel.updateAnnotations(cameraDistance: self.distance)
+            recomputeBannerQueue()
+            tabStatus.appear()
+        })
+        composed = AnyView(composed.onChange(of: viewModel.walkStatusMessage) { _, newValue in
+            guard let newValue else { return }
+            let clearDelay: TimeInterval = shouldShowLocationSettingsAction(for: newValue) ? 6.0 : 2.5
+            DispatchQueue.main.asyncAfter(deadline: .now() + clearDelay) {
+                viewModel.clearWalkStatusMessage()
+            }
+        })
+        composed = AnyView(composed.onChange(of: viewModel.runtimeGuardStatusText) { _, newValue in
+            guard newValue.isEmpty == false else { return }
+            recomputeBannerQueue()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                viewModel.clearRuntimeGuardStatus()
+                recomputeBannerQueue()
+            }
+        })
+        composed = AnyView(composed.onChange(of: viewModel.syncOutboxLastErrorCodeText) { recomputeBannerQueue() })
+        composed = AnyView(composed.onChange(of: viewModel.syncOutboxPendingCount) { recomputeBannerQueue() })
+        composed = AnyView(composed.onChange(of: viewModel.syncOutboxPermanentFailureCount) { recomputeBannerQueue() })
+        composed = AnyView(composed.onChange(of: viewModel.hasRecoverableWalkSession) { recomputeBannerQueue() })
+        composed = AnyView(composed.onChange(of: viewModel.isWalking) { recomputeBannerQueue() })
+        composed = AnyView(composed.onChange(of: viewModel.watchSyncStatusText) { recomputeBannerQueue() })
+        composed = AnyView(composed.onChange(of: viewModel.latestWatchActionText) { recomputeBannerQueue() })
+        composed = AnyView(composed.onChange(of: viewModel.polygonList.count) { recomputeBannerQueue() })
+        composed = AnyView(composed.onChange(of: viewModel.syncRecoveryToastMessage) { _, message in
+            guard let message else { return }
+            viewModel.walkStatusMessage = message
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                viewModel.clearSyncRecoveryToastMessage()
+            }
+        })
+        composed = AnyView(composed.onReceive(authFlow.objectWillChange) { _ in
+            recomputeBannerQueue()
+        })
+        composed = AnyView(composed.onReceive(NotificationCenter.default.publisher(for: .walkWidgetActionRequested)) { notification in
+            guard
+                let rawKind = notification.userInfo?["kind"] as? String,
+                let kind = WalkWidgetActionKind(rawValue: rawKind),
+                let actionId = notification.userInfo?["actionId"] as? String
+            else { return }
+            let source = (notification.userInfo?["source"] as? String) ?? "widget"
+            let route = WalkWidgetActionRoute(
+                kind: kind,
+                actionId: actionId,
+                source: source,
+                contextId: notification.userInfo?["contextId"] as? String
+            )
+            viewModel.applyWidgetWalkAction(route)
+        })
+        composed = AnyView(composed.onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            recomputeBannerQueue()
+        })
+        composed = AnyView(composed.onDisappear {
+            viewModel.deactivateMapRuntimeServices()
+            bannerAutoDismissTask?.cancel()
+            clearPendingAddPointUndo()
+        })
+        composed = AnyView(composed.sheet(isPresented: $isModalPresented) {
+            MapSettingView(viewModel: self.viewModel, myAlert: self.myAlert)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        })
+        composed = AnyView(composed.fullScreenCover(isPresented: $isWalkingViewPresented) {
+            StartModalView(
+                petName: viewModel.selectedPetName,
+                onCompleted: { viewModel.startWalkNow() }
+            )
+            .interactiveDismissDisabled(true)
+        })
+        composed = AnyView(composed.sheet(isPresented: $endWalkingViewPresented) {
+            WalkDetailView()
+                .environmentObject(loading)
+                .environmentObject(viewModel)
+                .interactiveDismissDisabled(true)
+        })
+        composed = AnyView(composed.fullScreenCover(item: $selectedPolygonData, onDismiss: {
+            self.selectedPolygonData = nil
+        }, content: { model in
+            WalkListDetailView(model: model)
+        }))
+        composed = AnyView(composed.onMapCameraChange(frequency: .onEnd) { context in
+            handleMapCameraChange(context)
+        })
+        composed = AnyView(composed.overlay(alignment: .top) {
+            statusOverlayView
+        })
+        return composed
+    }
+
+    private var mapContent: some View {
         GeometryReader { proxy in
-            ZStack{
+            ZStack {
                 MapSubView(myAlert: myAlert, viewModel: viewModel)
                 Rectangle()
                     .fill(viewModel.weatherOverlayTintColor)
@@ -54,288 +151,202 @@ struct MapView : View{
 
                 VStack {
                     Spacer().frame(height: max(proxy.safeAreaInsets.top, 0) + 8)
-                HStack {
-                    Spacer()
-                    Button(action:{
-                        viewModel.fetchPolygonList()
-                        isModalPresented.toggle()
-                    }, label: {
-                        Text("설정")
-                            .font(.appFont(for: .Bold, size: 16))
-                            .foregroundStyle(Color.appInk)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(Color.appSurface.opacity(0.95))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .stroke(Color.appTextLightGray.opacity(0.7), lineWidth: 1)
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                    })
-                    .accessibilityIdentifier("map.openSettings")
-                }
-                HStack {
-                    Text(viewModel.weatherOverlayStatusText)
-                        .font(.appFont(for: .SemiBold, size: 11))
-                        .foregroundStyle(Color.appTextDarkGray)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(viewModel.weatherOverlayFallbackActive ? Color.appTextLightGray.opacity(0.35) : Color.appYellowPale)
-                        .cornerRadius(8)
-                        .accessibilityLabel("지도 날씨 상태 \(viewModel.weatherOverlayStatusText)")
-                    Spacer()
-                }
-                .padding(.top, 6)
-                if !viewModel.isWalking && viewModel.isHeatmapFeatureAvailable && viewModel.heatmapEnabled {
                     HStack {
-                        Text(viewModel.seasonTileStatusSummaryText)
-                            .font(.appFont(for: .Light, size: 11))
+                        Spacer()
+                        Button(action:{
+                            viewModel.fetchPolygonList()
+                            isModalPresented.toggle()
+                        }, label: {
+                            Text("설정")
+                                .font(.appFont(for: .Bold, size: 16))
+                                .foregroundStyle(Color.appInk)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(Color.appSurface.opacity(0.95))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .stroke(Color.appTextLightGray.opacity(0.7), lineWidth: 1)
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                        })
+                        .accessibilityIdentifier("map.openSettings")
+                    }
+                    HStack {
+                        Text(viewModel.weatherOverlayStatusText)
+                            .font(.appFont(for: .SemiBold, size: 11))
                             .foregroundStyle(Color.appTextDarkGray)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 6)
-                            .background(Color.white.opacity(0.9))
+                            .background(viewModel.weatherOverlayFallbackActive ? Color.appTextLightGray.opacity(0.35) : Color.appYellowPale)
                             .cornerRadius(8)
+                            .accessibilityLabel("지도 날씨 상태 \(viewModel.weatherOverlayStatusText)")
                         Spacer()
                     }
-                    .padding(.top, 2)
-                }
-                if let activeBanner {
-                    topBannerView(for: activeBanner)
-                }
-                Spacer()
-                
-                if viewModel.isWalking {
-                    HStack {
-                        if isCameraSeeingSomewhere, viewModel.location != nil {
-                            Button(action: { viewModel.handleLocationButtonTap() }, label: {Text("내 위치 보기")})
-                                .buttonStyle(.borderedProminent)
-                                .padding(.leading)
+                    .padding(.top, 6)
+                    if !viewModel.isWalking && viewModel.isHeatmapFeatureAvailable && viewModel.heatmapEnabled {
+                        HStack {
+                            Text(viewModel.seasonTileStatusSummaryText)
+                                .font(.appFont(for: .Light, size: 11))
+                                .foregroundStyle(Color.appTextDarkGray)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(Color.white.opacity(0.9))
+                                .cornerRadius(8)
+                            Spacer()
                         }
-                        Spacer()
-                        addPointBtn
+                        .padding(.top, 2)
                     }
-                } else {
-                    HStack {
-                        if isCameraSeeingSomewhere, viewModel.location != nil {
-                            Button(action: { viewModel.handleLocationButtonTap() }, label: {Text("내 위치 보기")})
-                                .buttonStyle(.borderedProminent)
-                                .padding(.leading)
+                    if let activeBanner {
+                        topBannerView(for: activeBanner)
+                    }
+                    Spacer()
+
+                    if viewModel.isWalking {
+                        HStack {
+                            if isCameraSeeingSomewhere, viewModel.location != nil {
+                                Button(action: { viewModel.handleLocationButtonTap() }, label: {Text("내 위치 보기")})
+                                    .buttonStyle(.borderedProminent)
+                                    .padding(.leading)
+                            }
+                            Spacer()
+                            addPointBtn
                         }
-                        Spacer()
+                    } else {
+                        HStack {
+                            if isCameraSeeingSomewhere, viewModel.location != nil {
+                                Button(action: { viewModel.handleLocationButtonTap() }, label: {Text("내 위치 보기")})
+                                    .buttonStyle(.borderedProminent)
+                                    .padding(.leading)
+                            }
+                            Spacer()
+                        }
                     }
-                    
-                }
-                StartButtonView(viewModel: viewModel,
-                                myAlert: myAlert,
-                                isModalPresented: $isWalkingViewPresented,
-                                endWalkingViewPresented: $endWalkingViewPresented)
-                if !viewModel.selectedPolygonList.isEmpty && !viewModel.isWalking {
-                    VStack {
-                        Text("닫기")
-                            .frame(maxWidth: .infinity, maxHeight: 20)
-                            .onTapGesture {
-                                viewModel.selectedPolygonList = []
-                            }.padding()
-                            .aspectRatio(contentMode: .fit)
-                        UnderLine()
-                        ScrollView(.horizontal) {
-                            HStack{
-                                ForEach(viewModel.selectedPolygonList) { item in
-                                    SelectedPolygonCell(walkData: .init(polygon: item))
-                                        .onTapGesture {
-                                            self.selectedPolygonData = WalkDataModel(polygon: item)
-                                        }
-                                        .padding()
-                                        .myCornerRadius(radius: 15)
-                                        .overlay(                                        RoundedRectangle(cornerRadius: 15)
-                                            .stroke(Color.appTextDarkGray, lineWidth: 0.3))
-                                }.padding(10)
-                            }.frame(maxHeight: .infinity)
+
+                    StartButtonView(
+                        viewModel: viewModel,
+                        myAlert: myAlert,
+                        isModalPresented: $isWalkingViewPresented,
+                        endWalkingViewPresented: $endWalkingViewPresented
+                    )
+                    if !viewModel.selectedPolygonList.isEmpty && !viewModel.isWalking {
+                        VStack {
+                            Text("닫기")
+                                .frame(maxWidth: .infinity, maxHeight: 20)
+                                .onTapGesture {
+                                    viewModel.selectedPolygonList = []
+                                }.padding()
                                 .aspectRatio(contentMode: .fit)
-                        }.frame(width: screenSize.width)
-                        .aspectRatio(contentMode: .fit)
-                    }.frame(maxHeight: .infinity)
+                            UnderLine()
+                            ScrollView(.horizontal) {
+                                HStack{
+                                    ForEach(viewModel.selectedPolygonList) { item in
+                                        SelectedPolygonCell(walkData: .init(polygon: item))
+                                            .onTapGesture {
+                                                self.selectedPolygonData = WalkDataModel(polygon: item)
+                                            }
+                                            .padding()
+                                            .myCornerRadius(radius: 15)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 15)
+                                                    .stroke(Color.appTextDarkGray, lineWidth: 0.3)
+                                            )
+                                    }.padding(10)
+                                }
+                                .frame(maxHeight: .infinity)
+                                .aspectRatio(contentMode: .fit)
+                            }
+                            .frame(width: screenSize.width)
+                            .aspectRatio(contentMode: .fit)
+                        }
+                        .frame(maxHeight: .infinity)
                         .aspectRatio(contentMode: .fit)
                         .background(.white)
-                        .clipShape(RoundedCornersShape(radius: 20,corners: [.topLeft,.topRight]))
-                }
-            }
-                .padding(.bottom, CustomTabBar.reservedContentHeight + 8)
-        }
-        }
-        .onAppear {
-            viewModel.activateMapRuntimeServices()
-            viewModel.reloadSelectedPetContext()
-            viewModel.updateAnnotations(cameraDistance: self.distance)
-            recomputeBannerQueue()
-            tabStatus.appear()
-        }
-        .onChange(of: viewModel.walkStatusMessage) { _, newValue in
-            guard let newValue else { return }
-            let clearDelay: TimeInterval = shouldShowLocationSettingsAction(for: newValue) ? 6.0 : 2.5
-            DispatchQueue.main.asyncAfter(deadline: .now() + clearDelay) {
-                viewModel.clearWalkStatusMessage()
-            }
-        }
-        .onChange(of: viewModel.runtimeGuardStatusText) { _, newValue in
-            guard newValue.isEmpty == false else { return }
-            recomputeBannerQueue()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                viewModel.clearRuntimeGuardStatus()
-                recomputeBannerQueue()
-            }
-        }
-        .onChange(of: viewModel.syncOutboxLastErrorCodeText) {
-            recomputeBannerQueue()
-        }
-        .onChange(of: viewModel.syncOutboxPendingCount) {
-            recomputeBannerQueue()
-        }
-        .onChange(of: viewModel.syncOutboxPermanentFailureCount) {
-            recomputeBannerQueue()
-        }
-        .onChange(of: viewModel.hasRecoverableWalkSession) {
-            recomputeBannerQueue()
-        }
-        .onChange(of: viewModel.isWalking) {
-            recomputeBannerQueue()
-        }
-        .onChange(of: viewModel.watchSyncStatusText) {
-            recomputeBannerQueue()
-        }
-        .onChange(of: viewModel.latestWatchActionText) {
-            recomputeBannerQueue()
-        }
-        .onChange(of: viewModel.polygonList.count) {
-            recomputeBannerQueue()
-        }
-        .onChange(of: viewModel.syncRecoveryToastMessage) { _, message in
-            guard let message else { return }
-            viewModel.walkStatusMessage = message
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-                viewModel.clearSyncRecoveryToastMessage()
-            }
-        }
-        .onReceive(authFlow.objectWillChange) { _ in
-            recomputeBannerQueue()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .walkWidgetActionRequested)) { notification in
-            guard
-                let rawKind = notification.userInfo?["kind"] as? String,
-                let kind = WalkWidgetActionKind(rawValue: rawKind),
-                let actionId = notification.userInfo?["actionId"] as? String
-            else { return }
-            let source = (notification.userInfo?["source"] as? String) ?? "widget"
-            let route = WalkWidgetActionRoute(
-                kind: kind,
-                actionId: actionId,
-                source: source,
-                contextId: notification.userInfo?["contextId"] as? String
-            )
-            viewModel.applyWidgetWalkAction(route)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
-            recomputeBannerQueue()
-        }
-        .onDisappear {
-            viewModel.deactivateMapRuntimeServices()
-            bannerAutoDismissTask?.cancel()
-            clearPendingAddPointUndo()
-        }
-        .sheet(isPresented: $isModalPresented){
-            MapSettingView(viewModel: self.viewModel, myAlert: self.myAlert)
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-            
-        }.fullScreenCover(isPresented: $isWalkingViewPresented) {
-            StartModalView(
-                petName: viewModel.selectedPetName,
-                onCompleted: { viewModel.startWalkNow() }
-            )
-            .interactiveDismissDisabled(true)
-        }.sheet(isPresented: $endWalkingViewPresented) {
-            WalkDetailView()
-                .environmentObject(loading)
-                .environmentObject(viewModel).interactiveDismissDisabled(true)
-        }.fullScreenCover(item: $selectedPolygonData, onDismiss: {self.selectedPolygonData = nil}, content: {model in
-            WalkListDetailView(model: model)
-        })
-        .onMapCameraChange(frequency: .onEnd) { context in
-            viewModel.recordCameraChange(context.camera)
-            let now = Date()
-            guard now.timeIntervalSince(lastCameraEventProcessedAt) >= 0.15 else { return }
-            lastCameraEventProcessedAt = now
-
-            guard context.camera.centerCoordinate.latitude.isFinite,
-                  context.camera.centerCoordinate.longitude.isFinite else { return }
-
-            if let loc = viewModel.location {
-                let distanceMeters = greatCircleDistanceMeters(
-                    from: context.camera.centerCoordinate,
-                    to: loc.coordinate
-                )
-                self.isCameraSeeingSomewhere = distanceMeters > 300
-            } else {
-                self.isCameraSeeingSomewhere = false
-            }
-
-            guard !viewModel.showOnlyOne else { return }
-            let nextDistance = max(120.0, context.camera.distance)
-            guard abs(nextDistance - self.distance) >= 120 else { return }
-            self.distance = nextDistance
-            viewModel.updateAnnotations(cameraDistance: nextDistance)
-        }
-        .overlay(alignment: .top) {
-            VStack(spacing: 6) {
-                if let message = viewModel.walkStatusMessage {
-                    HStack(spacing: 10) {
-                        Text(message)
-                            .font(.appFont(for: .SemiBold, size: 13))
-                            .foregroundStyle(Color.black)
-                        if shouldShowLocationSettingsAction(for: message) {
-                            Button("설정 열기") {
-                                openAppSettings()
-                            }
-                            .font(.appFont(for: .SemiBold, size: 12))
-                            .foregroundStyle(Color.appInk)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(Color.white.opacity(0.9))
-                            .cornerRadius(8)
-                        }
+                        .clipShape(RoundedCornersShape(radius: 20, corners: [.topLeft, .topRight]))
                     }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(Color.appYellow)
-                        .cornerRadius(10)
-                        .padding(.top, 12)
                 }
+            }
+            .padding(.bottom, CustomTabBar.reservedContentHeight + 8)
+        }
+    }
 
-                if pendingUndoPointID != nil {
-                    HStack(spacing: 10) {
-                        Text("포인트를 추가했어요")
-                            .font(.appFont(for: .SemiBold, size: 13))
-                            .foregroundStyle(Color.black)
-                        Spacer()
-                        Button("실행 취소") {
-                            undoLastAddedPoint()
+    private var statusOverlayView: some View {
+        VStack(spacing: 6) {
+            if let message = viewModel.walkStatusMessage {
+                HStack(spacing: 10) {
+                    Text(message)
+                        .font(.appFont(for: .SemiBold, size: 13))
+                        .foregroundStyle(Color.black)
+                    if shouldShowLocationSettingsAction(for: message) {
+                        Button("설정 열기") {
+                            openAppSettings()
                         }
                         .font(.appFont(for: .SemiBold, size: 12))
                         .foregroundStyle(Color.appInk)
                         .padding(.horizontal, 10)
-                        .frame(minHeight: 44)
+                        .padding(.vertical, 6)
                         .background(Color.white.opacity(0.9))
                         .cornerRadius(8)
-                        .accessibilityLabel("포인트 추가 실행 취소")
                     }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(Color.appYellowPale)
-                    .cornerRadius(10)
                 }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(Color.appYellow)
+                .cornerRadius(10)
+                .padding(.top, 12)
             }
-            .padding(.horizontal, 12)
+
+            if pendingUndoPointID != nil {
+                HStack(spacing: 10) {
+                    Text("포인트를 추가했어요")
+                        .font(.appFont(for: .SemiBold, size: 13))
+                        .foregroundStyle(Color.black)
+                    Spacer()
+                    Button("실행 취소") {
+                        undoLastAddedPoint()
+                    }
+                    .font(.appFont(for: .SemiBold, size: 12))
+                    .foregroundStyle(Color.appInk)
+                    .padding(.horizontal, 10)
+                    .frame(minHeight: 44)
+                    .background(Color.white.opacity(0.9))
+                    .cornerRadius(8)
+                    .accessibilityLabel("포인트 추가 실행 취소")
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(Color.appYellowPale)
+                .cornerRadius(10)
+            }
         }
+        .padding(.horizontal, 12)
+    }
+
+    /// 지도 카메라 이벤트를 반영해 UI 상태와 클러스터 계산을 갱신합니다.
+    /// - Parameter context: `Map` 카메라 이벤트 컨텍스트입니다.
+    private func handleMapCameraChange(_ context: MapCameraUpdateContext) {
+        viewModel.recordCameraChange(context.camera)
+        let now = Date()
+        guard now.timeIntervalSince(lastCameraEventProcessedAt) >= 0.15 else { return }
+        lastCameraEventProcessedAt = now
+
+        guard context.camera.centerCoordinate.latitude.isFinite,
+              context.camera.centerCoordinate.longitude.isFinite else { return }
+
+        if let loc = viewModel.location {
+            let distanceMeters = greatCircleDistanceMeters(
+                from: context.camera.centerCoordinate,
+                to: loc.coordinate
+            )
+            self.isCameraSeeingSomewhere = distanceMeters > 300
+        } else {
+            self.isCameraSeeingSomewhere = false
+        }
+
+        guard !viewModel.showOnlyOne else { return }
+        let nextDistance = max(120.0, context.camera.distance)
+        guard abs(nextDistance - self.distance) >= 120 else { return }
+        self.distance = nextDistance
+        viewModel.updateAnnotations(cameraDistance: nextDistance)
     }
 
     @ViewBuilder
