@@ -278,6 +278,10 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 
     private let locationManager = CLLocationManager()
     private var timer: Timer? = nil
+    private var isLocationUpdatesRunning: Bool = false
+    private var isMapViewActive: Bool = false
+    private var lastLocationSideEffectAt: Date = .distantPast
+    private let locationSideEffectInterval: TimeInterval = 1.0
     @Published var time: TimeInterval = 0.0
     @Published var startTime = Date()
     @Published var location: CLLocation?
@@ -531,11 +535,11 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         self.eventCenter = eventCenter
         super.init()
         self.locationManager.delegate = self
-        self.locationManager.desiredAccuracy = kCLLocationAccuracyBest // 정확도 설정
+        self.locationManager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+        self.locationManager.distanceFilter = 8
+        self.locationManager.pausesLocationUpdatesAutomatically = true
         if isUITestRuntime == false {
             self.locationManager.allowsBackgroundLocationUpdates = true
-            self.locationManager.requestWhenInUseAuthorization() // 권한 요청
-            self.locationManager.startUpdatingLocation() // 위치 업데이트 시작
         }
         self.reloadPolygonState(restoreLatestPolygon: true)
         self.loadProcessedWatchActions()
@@ -567,12 +571,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         self.setupLifecycleObservers()
         self.refreshWeatherOverlayRisk()
         if isUITestRuntime == false {
-            self.startNearbyTicker()
-            self.syncVisibilitySettingIfNeeded()
             self.refreshFeatureFlagsFromRemote()
             self.refreshSyncOutboxSummary()
-            self.flushSyncOutboxIfNeeded(force: true)
-            self.refreshWeatherRiskFromProviderIfNeeded(location: self.locationManager.location, force: true)
         }
         self.syncWalkWidgetSnapshot(force: true)
         self.syncWalkLiveActivity(force: true)
@@ -581,6 +581,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     deinit {
         timer?.invalidate()
         nearbyTickTimer?.invalidate()
+        locationManager.stopUpdatingLocation()
         liveActivitySyncTask?.cancel()
         syncFlushTask?.cancel()
         weatherFetchTask?.cancel()
@@ -603,6 +604,44 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     func fetchPolygonList() {
         self.reloadPolygonState()
     }
+
+    /// 지도 탭이 화면에 노출될 때 위치/동기화 폴링을 활성화합니다.
+    func activateMapRuntimeServices() {
+        isMapViewActive = true
+        locationManager.requestWhenInUseAuthorization()
+        startLocationUpdatesIfAuthorized()
+        startNearbyTicker()
+        syncVisibilitySettingIfNeeded()
+        flushSyncOutboxIfNeeded(force: true)
+        refreshWeatherRiskFromProviderIfNeeded(location: locationManager.location, force: true)
+    }
+
+    /// 지도 탭이 화면에서 사라질 때 불필요한 위치/폴링 작업을 중단합니다.
+    func deactivateMapRuntimeServices() {
+        isMapViewActive = false
+        nearbyTickTimer?.invalidate()
+        nearbyTickTimer = nil
+        if isWalking == false {
+            stopLocationUpdatesIfNeeded()
+        }
+    }
+
+    /// 권한 상태가 허용일 때만 위치 업데이트를 시작합니다.
+    private func startLocationUpdatesIfAuthorized() {
+        guard isLocationUpdatesRunning == false else { return }
+        let status = locationManager.authorizationStatus
+        guard status == .authorizedAlways || status == .authorizedWhenInUse else { return }
+        locationManager.startUpdatingLocation()
+        isLocationUpdatesRunning = true
+    }
+
+    /// 현재 활성화된 위치 업데이트를 안전하게 중단합니다.
+    private func stopLocationUpdatesIfNeeded() {
+        guard isLocationUpdatesRunning else { return }
+        locationManager.stopUpdatingLocation()
+        isLocationUpdatesRunning = false
+    }
+
     func fetchSelectedPolygonList(for clusters: Cluster) {
         if clusters.sumLocs.count == self.selectedPolygonList.count {
             var isSame = true
@@ -745,6 +784,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         else {
             clearActiveWalkSession()
             self.reloadSelectedPetContext()
+            startLocationUpdatesIfAuthorized()
             setTrackingMode()
             startTime = Date()
             timerSet()
@@ -759,6 +799,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         }
         withAnimation{ [weak self] in
             self?.isWalking.toggle()
+        }
+        if self.isWalking == false, self.isMapViewActive == false {
+            stopLocationUpdatesIfNeeded()
         }
         self.syncWatchContext(force: true)
         self.syncWalkWidgetSnapshot(force: true)
@@ -2769,14 +2812,16 @@ extension MapViewModel {
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         switch manager.authorizationStatus {
         case .notDetermined:
-            locationManager.requestAlwaysAuthorization()
+            stopLocationUpdatesIfNeeded()
             syncWalkWidgetSnapshot(force: true)
             syncWalkLiveActivity(force: true)
         case .restricted, .denied:
             pauseWalkForAuthorizationDowngrade()
+            stopLocationUpdatesIfNeeded()
             syncWalkWidgetSnapshot(force: true, statusOverride: .locationDenied)
             syncWalkLiveActivity(force: true)
         case .authorizedAlways, .authorizedWhenInUse:
+            startLocationUpdatesIfAuthorized()
             if isWalking {
                 syncWatchContext(force: true)
             }
@@ -2785,7 +2830,7 @@ extension MapViewModel {
             syncWalkLiveActivity(force: true)
             
         @unknown default:
-            locationManager.requestAlwaysAuthorization()
+            stopLocationUpdatesIfNeeded()
             syncWalkWidgetSnapshot(force: true, statusOverride: .error, messageOverride: "위치 권한 상태를 확인해주세요.")
             syncWalkLiveActivity(force: true)
         }
@@ -2801,15 +2846,18 @@ extension MapViewModel {
                 guard self.validateWalkLocationSample(location) else { return }
                 self.updateMovementState(with: location)
             }
-            withAnimation() {
-                self.location = location
-            }
-            self.nearbyTick()
+            self.location = location
             self.handleAutoPointRecord(with: location)
-            self.refreshWeatherRiskFromProviderIfNeeded(location: location, force: false)
-            self.compactMapMotionArtifacts()
-            self.persistActiveWalkSession()
-            self.handleAutoEndIfNeeded()
+            let now = Date()
+            if now.timeIntervalSince(self.lastLocationSideEffectAt) >= self.locationSideEffectInterval {
+                self.lastLocationSideEffectAt = now
+                self.refreshWeatherRiskFromProviderIfNeeded(location: location, force: false)
+                self.persistActiveWalkSession()
+                self.handleAutoEndIfNeeded(now: now)
+                if self.isMapViewActive {
+                    self.flushSyncOutboxIfNeeded()
+                }
+            }
         }
     }
 

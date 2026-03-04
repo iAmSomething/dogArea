@@ -163,6 +163,7 @@ struct MapView : View{
         }
         }
         .onAppear {
+            viewModel.activateMapRuntimeServices()
             viewModel.reloadSelectedPetContext()
             viewModel.updateAnnotations(cameraDistance: self.distance)
             recomputeBannerQueue()
@@ -236,6 +237,7 @@ struct MapView : View{
             recomputeBannerQueue()
         }
         .onDisappear {
+            viewModel.deactivateMapRuntimeServices()
             bannerAutoDismissTask?.cancel()
             clearPendingAddPointUndo()
         }
