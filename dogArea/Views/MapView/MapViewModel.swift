@@ -359,7 +359,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     @Published var centerLocations: [Cluster] = []
     @Published private(set) var currentCameraDistance: Double = 2_000
     @Published var camera: MapCamera = .init(.init())
-    @Published var cameraPosition = MapCameraPosition.userLocation(followsHeading: false,fallback: .automatic)
+    @Published var cameraPosition = MapCameraPosition.automatic
     @Published var selectedMarker: Location? = nil
     @Published var showOnlyOne: Bool = true
     @Published var heatmapEnabled: Bool = true
@@ -1702,21 +1702,10 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             markPendingCameraChangeReason(reason)
         }
         guard let location = self.location else {
-            markPendingCameraChangeReason(.systemFallback)
-            withAnimation(.easeInOut(duration: 0.3)) { [weak self] in
-                self?.cameraPosition = MapCameraPosition.userLocation(
-                    followsHeading: true,
-                    fallback: .automatic
-                )
-            }
+            walkStatusMessage = "현재 위치를 아직 확인하지 못했어요."
             return
         }
-        withAnimation(.easeInOut(duration: 0.3)) { [weak self] in
-            self?.cameraPosition = MapCameraPosition.userLocation(
-                followsHeading: true,
-                fallback: MapCameraPosition.camera(.init(centerCoordinate: location.coordinate, distance: 2000))
-            )
-        }
+        setRegion(location, distance: 2000)
     }
 
     /// 사용자의 `내 위치 보기` 요청을 지도 추적 모드 전환으로 처리합니다.
