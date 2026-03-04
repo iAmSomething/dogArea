@@ -199,6 +199,8 @@ private enum MapCoreLocationCallTracer {
     private static let lock = NSLock()
     private static var eventCounts: [String: Int] = [:]
     private static var windowStartedAt: Date = Date()
+    private static var heartbeatTimer: DispatchSourceTimer?
+    private static var isHeartbeatStarted: Bool = false
 
     /// 지도 탭의 CoreLocation API 호출 이벤트를 1초 단위로 집계해 디버그 콘솔에 출력합니다.
     /// - Parameters:
@@ -212,23 +214,12 @@ private enum MapCoreLocationCallTracer {
         file: StaticString = #fileID,
         line: UInt = #line
     ) {
-        let now = Date()
-        var shouldPrintWindowSummary = false
-        var summaryText = ""
+        startHeartbeatIfNeeded()
         var occurrenceCount = 0
 
         lock.lock()
         eventCounts[event, default: 0] += 1
         occurrenceCount = eventCounts[event, default: 0]
-        if now.timeIntervalSince(windowStartedAt) >= 1.0 {
-            shouldPrintWindowSummary = true
-            summaryText = eventCounts
-                .sorted { lhs, rhs in lhs.value > rhs.value }
-                .map { "\($0.key)=\($0.value)" }
-                .joined(separator: ", ")
-            eventCounts.removeAll()
-            windowStartedAt = now
-        }
         lock.unlock()
 
         if occurrenceCount <= 2 {
@@ -239,8 +230,44 @@ private enum MapCoreLocationCallTracer {
             }
         }
 
-        if shouldPrintWindowSummary {
-            print("[CoreLocationTrace][Map][1s] \(summaryText)")
+    }
+
+    /// 트레이서가 활성화되면 1초 주기로 호출 집계를 출력하는 하트비트를 시작합니다.
+    private static func startHeartbeatIfNeeded() {
+        lock.lock()
+        if isHeartbeatStarted {
+            lock.unlock()
+            return
+        }
+        isHeartbeatStarted = true
+        let timer = DispatchSource.makeTimerSource(queue: .global(qos: .utility))
+        timer.schedule(deadline: .now() + 1.0, repeating: 1.0)
+        timer.setEventHandler {
+            flushWindowSummary()
+        }
+        heartbeatTimer = timer
+        lock.unlock()
+        timer.resume()
+    }
+
+    /// 최근 1초 구간의 이벤트 집계를 콘솔에 출력하고 카운터를 초기화합니다.
+    private static func flushWindowSummary() {
+        lock.lock()
+        let now = Date()
+        let elapsed = now.timeIntervalSince(windowStartedAt)
+        let summary = eventCounts
+            .sorted { lhs, rhs in lhs.value > rhs.value }
+            .map { "\($0.key)=\($0.value)" }
+            .joined(separator: ", ")
+        eventCounts.removeAll()
+        windowStartedAt = now
+        lock.unlock()
+
+        guard elapsed >= 0.95 else { return }
+        if summary.isEmpty {
+            print("[CoreLocationTrace][Map][1s] idle")
+        } else {
+            print("[CoreLocationTrace][Map][1s] \(summary)")
         }
     }
 }
