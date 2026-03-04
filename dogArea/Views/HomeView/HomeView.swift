@@ -140,6 +140,10 @@ struct HomeView: View {
                                     .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
+                            weatherMissionStatusCard(summary: viewModel.weatherMissionStatusSummary)
+                            if let shieldSummary = viewModel.weatherShieldDailySummary {
+                                weatherShieldSummaryCard(summary: shieldSummary)
+                            }
                             indoorMissionCard(board: viewModel.indoorMissionBoard)
                         }
                         territoryHeaderSection
