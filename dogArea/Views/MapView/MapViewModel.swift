@@ -195,6 +195,83 @@ private extension WeatherRiskLevelValue {
     }
 }
 
+private enum MapCoreLocationCallTracer {
+    private static let lock = NSLock()
+    private static var eventCounts: [String: Int] = [:]
+    private static var windowStartedAt: Date = Date()
+    private static var heartbeatTimer: DispatchSourceTimer?
+    private static var isHeartbeatStarted: Bool = false
+
+    /// 지도 탭의 CoreLocation API 호출 이벤트를 1초 단위로 집계해 디버그 콘솔에 출력합니다.
+    /// - Parameters:
+    ///   - event: 호출 지점을 구분하는 이벤트 식별자입니다.
+    ///   - detail: 호출 시점의 보조 상태 정보입니다.
+    ///   - file: 호출 파일 식별자입니다.
+    ///   - line: 호출 라인 번호입니다.
+    static func record(
+        _ event: String,
+        detail: String? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) {
+        startHeartbeatIfNeeded()
+        var occurrenceCount = 0
+
+        lock.lock()
+        eventCounts[event, default: 0] += 1
+        occurrenceCount = eventCounts[event, default: 0]
+        lock.unlock()
+
+        if occurrenceCount <= 2 {
+            if let detail, detail.isEmpty == false {
+                print("[CoreLocationTrace][Map] \(event) @\(file):\(line) detail=\(detail)")
+            } else {
+                print("[CoreLocationTrace][Map] \(event) @\(file):\(line)")
+            }
+        }
+
+    }
+
+    /// 트레이서가 활성화되면 1초 주기로 호출 집계를 출력하는 하트비트를 시작합니다.
+    private static func startHeartbeatIfNeeded() {
+        lock.lock()
+        if isHeartbeatStarted {
+            lock.unlock()
+            return
+        }
+        isHeartbeatStarted = true
+        let timer = DispatchSource.makeTimerSource(queue: .global(qos: .utility))
+        timer.schedule(deadline: .now() + 1.0, repeating: 1.0)
+        timer.setEventHandler {
+            flushWindowSummary()
+        }
+        heartbeatTimer = timer
+        lock.unlock()
+        timer.resume()
+    }
+
+    /// 최근 1초 구간의 이벤트 집계를 콘솔에 출력하고 카운터를 초기화합니다.
+    private static func flushWindowSummary() {
+        lock.lock()
+        let now = Date()
+        let elapsed = now.timeIntervalSince(windowStartedAt)
+        let summary = eventCounts
+            .sorted { lhs, rhs in lhs.value > rhs.value }
+            .map { "\($0.key)=\($0.value)" }
+            .joined(separator: ", ")
+        eventCounts.removeAll()
+        windowStartedAt = now
+        lock.unlock()
+
+        guard elapsed >= 0.95 else { return }
+        if summary.isEmpty {
+            print("[CoreLocationTrace][Map][1s] idle")
+        } else {
+            print("[CoreLocationTrace][Map][1s] \(summary)")
+        }
+    }
+}
+
 class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSessionDelegate {
     enum WalkEndReason: String {
         case manual = "manual"
@@ -278,6 +355,10 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 
     private let locationManager = CLLocationManager()
     private var timer: Timer? = nil
+    private var isLocationUpdatesRunning: Bool = false
+    private var isMapViewActive: Bool = false
+    private var lastLocationSideEffectAt: Date = .distantPast
+    private let locationSideEffectInterval: TimeInterval = 1.0
     @Published var time: TimeInterval = 0.0
     @Published var startTime = Date()
     @Published var location: CLLocation?
@@ -295,8 +376,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     }
     @Published var centerLocations: [Cluster] = []
     @Published private(set) var currentCameraDistance: Double = 2_000
-    @Published var camera: MapCamera = .init(.init())
-    @Published var cameraPosition = MapCameraPosition.userLocation(followsHeading: false,fallback: .automatic)
+    var camera: MapCamera = .init(.init())
+    @Published var cameraPosition = MapCameraPosition.automatic
     @Published var selectedMarker: Location? = nil
     @Published var showOnlyOne: Bool = true
     @Published var heatmapEnabled: Bool = true
@@ -396,6 +477,12 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private var lastLoggedCameraReason: CameraChangeReason?
     private let cameraLogCenterThreshold: CLLocationDistance = 40.0
     private let cameraLogDistanceThreshold: Double = 120.0
+    private var lastCachedCameraCenter: CLLocationCoordinate2D?
+    private var lastCachedCameraDistance: Double?
+    private var lastCachedCameraUpdatedAt: Date = .distantPast
+    private let cameraCacheCenterThreshold: CLLocationDistance = 12.0
+    private let cameraCacheDistanceThreshold: Double = 80.0
+    private let cameraCacheMinUpdateInterval: TimeInterval = 0.9
     private var pendingPointAddCameraSnapshot: CameraSnapshot?
     private var lastSyncFlushAt: Date = .distantPast
     private var lastSyncSummarySnapshot: SyncOutboxSummary? = nil
@@ -531,11 +618,11 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         self.eventCenter = eventCenter
         super.init()
         self.locationManager.delegate = self
-        self.locationManager.desiredAccuracy = kCLLocationAccuracyBest // 정확도 설정
+        self.locationManager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+        self.locationManager.distanceFilter = 8
+        self.locationManager.pausesLocationUpdatesAutomatically = true
         if isUITestRuntime == false {
             self.locationManager.allowsBackgroundLocationUpdates = true
-            self.locationManager.requestWhenInUseAuthorization() // 권한 요청
-            self.locationManager.startUpdatingLocation() // 위치 업데이트 시작
         }
         self.reloadPolygonState(restoreLatestPolygon: true)
         self.loadProcessedWatchActions()
@@ -567,12 +654,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         self.setupLifecycleObservers()
         self.refreshWeatherOverlayRisk()
         if isUITestRuntime == false {
-            self.startNearbyTicker()
-            self.syncVisibilitySettingIfNeeded()
             self.refreshFeatureFlagsFromRemote()
             self.refreshSyncOutboxSummary()
-            self.flushSyncOutboxIfNeeded(force: true)
-            self.refreshWeatherRiskFromProviderIfNeeded(location: self.locationManager.location, force: true)
         }
         self.syncWalkWidgetSnapshot(force: true)
         self.syncWalkLiveActivity(force: true)
@@ -581,6 +664,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     deinit {
         timer?.invalidate()
         nearbyTickTimer?.invalidate()
+        locationManager.stopUpdatingLocation()
         liveActivitySyncTask?.cancel()
         syncFlushTask?.cancel()
         weatherFetchTask?.cancel()
@@ -603,6 +687,60 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     func fetchPolygonList() {
         self.reloadPolygonState()
     }
+
+    /// 지도 탭이 화면에 노출될 때 위치/동기화 폴링을 활성화합니다.
+    func activateMapRuntimeServices() {
+        isMapViewActive = true
+        MapCoreLocationCallTracer.record(
+            "requestWhenInUseAuthorization",
+            detail: "source=activateMapRuntimeServices"
+        )
+        locationManager.requestWhenInUseAuthorization()
+        startLocationUpdatesIfAuthorized()
+        startNearbyTicker()
+        syncVisibilitySettingIfNeeded()
+        flushSyncOutboxIfNeeded(force: true)
+        refreshWeatherRiskFromProviderIfNeeded(location: locationManager.location, force: true)
+    }
+
+    /// 지도 탭이 화면에서 사라질 때 불필요한 위치/폴링 작업을 중단합니다.
+    func deactivateMapRuntimeServices() {
+        isMapViewActive = false
+        nearbyTickTimer?.invalidate()
+        nearbyTickTimer = nil
+        if isWalking == false {
+            stopLocationUpdatesIfNeeded()
+        }
+    }
+
+    /// 권한 상태가 허용일 때만 위치 업데이트를 시작합니다.
+    private func startLocationUpdatesIfAuthorized() {
+        guard isLocationUpdatesRunning == false else { return }
+        let status = locationManager.authorizationStatus
+        MapCoreLocationCallTracer.record(
+            "authorizationStatus.read",
+            detail: "source=startLocationUpdatesIfAuthorized status=\(status.rawValue)"
+        )
+        guard status == .authorizedAlways || status == .authorizedWhenInUse else { return }
+        MapCoreLocationCallTracer.record(
+            "startUpdatingLocation",
+            detail: "source=startLocationUpdatesIfAuthorized"
+        )
+        locationManager.startUpdatingLocation()
+        isLocationUpdatesRunning = true
+    }
+
+    /// 현재 활성화된 위치 업데이트를 안전하게 중단합니다.
+    private func stopLocationUpdatesIfNeeded() {
+        guard isLocationUpdatesRunning else { return }
+        MapCoreLocationCallTracer.record(
+            "stopUpdatingLocation",
+            detail: "source=stopLocationUpdatesIfNeeded"
+        )
+        locationManager.stopUpdatingLocation()
+        isLocationUpdatesRunning = false
+    }
+
     func fetchSelectedPolygonList(for clusters: Cluster) {
         if clusters.sumLocs.count == self.selectedPolygonList.count {
             var isSame = true
@@ -631,9 +769,15 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 
     /// 수동 포인트 추가 전에 현재 카메라 중심/거리 상태를 저장합니다.
     func preparePointAddCameraSnapshot() {
+        let fallbackCenter = location?.coordinate ?? camera.centerCoordinate
+        let resolvedCenter = lastCachedCameraCenter ?? fallbackCenter
+        let resolvedDistance = max(
+            120.0,
+            lastCachedCameraDistance ?? max(camera.distance, currentCameraDistance)
+        )
         pendingPointAddCameraSnapshot = CameraSnapshot(
-            centerCoordinate: camera.centerCoordinate,
-            distance: max(120.0, camera.distance)
+            centerCoordinate: resolvedCenter,
+            distance: resolvedDistance
         )
     }
 
@@ -745,6 +889,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         else {
             clearActiveWalkSession()
             self.reloadSelectedPetContext()
+            startLocationUpdatesIfAuthorized()
             setTrackingMode()
             startTime = Date()
             timerSet()
@@ -759,6 +904,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         }
         withAnimation{ [weak self] in
             self?.isWalking.toggle()
+        }
+        if self.isWalking == false, self.isMapViewActive == false {
+            stopLocationUpdatesIfNeeded()
         }
         self.syncWatchContext(force: true)
         self.syncWalkWidgetSnapshot(force: true)
@@ -832,6 +980,10 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 
     var isLocationPermissionDenied: Bool {
         let status = locationManager.authorizationStatus
+        MapCoreLocationCallTracer.record(
+            "authorizationStatus.read",
+            detail: "source=isLocationPermissionDenied status=\(status.rawValue)"
+        )
         return status == .restricted || status == .denied
     }
 
@@ -1003,6 +1155,12 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 
     var captureRippleDuration: Double {
         isMapMotionReduced ? 0.35 : 0.52
+    }
+
+    /// 지도 모션 보조 타이머를 구동해야 하는지 반환합니다.
+    /// - Returns: 캡처 리플이 남아있거나 산책 중 궤적 애니메이션이 필요하면 `true`입니다.
+    var shouldDriveMapMotionTicker: Bool {
+        captureRipples.isEmpty == false || isWalking
     }
 
     var activeTrailMarkers: [TrailMarker] {
@@ -1580,21 +1738,10 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             markPendingCameraChangeReason(reason)
         }
         guard let location = self.location else {
-            markPendingCameraChangeReason(.systemFallback)
-            withAnimation(.easeInOut(duration: 0.3)) { [weak self] in
-                self?.cameraPosition = MapCameraPosition.userLocation(
-                    followsHeading: true,
-                    fallback: .automatic
-                )
-            }
+            walkStatusMessage = "현재 위치를 아직 확인하지 못했어요."
             return
         }
-        withAnimation(.easeInOut(duration: 0.3)) { [weak self] in
-            self?.cameraPosition = MapCameraPosition.userLocation(
-                followsHeading: true,
-                fallback: MapCameraPosition.camera(.init(centerCoordinate: location.coordinate, distance: 2000))
-            )
-        }
+        setRegion(location, distance: 2000)
     }
 
     /// 사용자의 `내 위치 보기` 요청을 지도 추적 모드 전환으로 처리합니다.
@@ -1607,8 +1754,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     ///   - camera: 현재 지도 카메라 상태입니다.
     ///   - now: 로그 판정 기준 시각입니다.
     func recordCameraChange(_ camera: MapCamera, now: Date = Date()) {
-        self.camera = camera
         let reason = resolveCameraChangeReason(now: now)
+        updateCameraCacheIfNeeded(camera, now: now, force: reason != .manualMove)
         guard shouldLogCameraChange(camera, reason: reason) else { return }
         #if DEBUG
         let latitude = String(format: "%.5f", camera.centerCoordinate.latitude)
@@ -1622,20 +1769,57 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         lastLoggedCameraReason = reason
     }
 
+    /// 카메라 캐시는 유지하되 변화량/시간 임계치를 넘는 경우에만 갱신해 상태 쓰기 횟수를 줄입니다.
+    /// - Parameters:
+    ///   - camera: 이번 이벤트에서 전달된 최신 지도 카메라 상태입니다.
+    ///   - now: 캐시 갱신 여부를 판정할 기준 시각입니다.
+    ///   - force: 사용자 액션 기반 이동처럼 즉시 반영이 필요한 경우 `true`입니다.
+    private func updateCameraCacheIfNeeded(_ camera: MapCamera, now: Date, force: Bool) {
+        guard camera.centerCoordinate.latitude.isFinite,
+              camera.centerCoordinate.longitude.isFinite,
+              camera.distance.isFinite else { return }
+
+        if force {
+            self.camera = camera
+            lastCachedCameraCenter = camera.centerCoordinate
+            lastCachedCameraDistance = camera.distance
+            lastCachedCameraUpdatedAt = now
+            return
+        }
+
+        guard let lastCenter = lastCachedCameraCenter,
+              let lastDistance = lastCachedCameraDistance else {
+            self.camera = camera
+            lastCachedCameraCenter = camera.centerCoordinate
+            lastCachedCameraDistance = camera.distance
+            lastCachedCameraUpdatedAt = now
+            return
+        }
+
+        let centerDelta = greatCircleDistanceMeters(from: lastCenter, to: camera.centerCoordinate)
+        let distanceDelta = abs(camera.distance - lastDistance)
+        let elapsed = now.timeIntervalSince(lastCachedCameraUpdatedAt)
+        guard centerDelta >= cameraCacheCenterThreshold
+                || distanceDelta >= cameraCacheDistanceThreshold
+                || elapsed >= cameraCacheMinUpdateInterval else {
+            return
+        }
+
+        self.camera = camera
+        lastCachedCameraCenter = camera.centerCoordinate
+        lastCachedCameraDistance = camera.distance
+        lastCachedCameraUpdatedAt = now
+    }
+
     /// 수동 포인트 추가 후 카메라가 점프했을 때 직전 스냅샷으로 복원합니다.
     private func restorePointAddCameraSnapshotIfNeeded() {
         guard let snapshot = pendingPointAddCameraSnapshot else { return }
         defer { pendingPointAddCameraSnapshot = nil }
 
-        let currentCenter = CLLocation(
-            latitude: camera.centerCoordinate.latitude,
-            longitude: camera.centerCoordinate.longitude
+        let centerDelta = greatCircleDistanceMeters(
+            from: camera.centerCoordinate,
+            to: snapshot.centerCoordinate
         )
-        let preservedCenter = CLLocation(
-            latitude: snapshot.centerCoordinate.latitude,
-            longitude: snapshot.centerCoordinate.longitude
-        )
-        let centerDelta = currentCenter.distance(from: preservedCenter)
         let distanceDelta = abs(camera.distance - snapshot.distance)
         guard centerDelta > 15 || distanceDelta > 15 else { return }
 
@@ -1675,11 +1859,31 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 
         if lastReason != reason { return true }
 
-        let previous = CLLocation(latitude: lastCenter.latitude, longitude: lastCenter.longitude)
-        let current = CLLocation(latitude: camera.centerCoordinate.latitude, longitude: camera.centerCoordinate.longitude)
-        let centerDelta = current.distance(from: previous)
+        let centerDelta = greatCircleDistanceMeters(from: lastCenter, to: camera.centerCoordinate)
         let distanceDelta = abs(camera.distance - lastDistance)
         return centerDelta >= cameraLogCenterThreshold || distanceDelta >= cameraLogDistanceThreshold
+    }
+
+    /// 두 좌표 사이의 대권 거리(미터)를 계산합니다.
+    /// - Parameters:
+    ///   - from: 시작 좌표입니다.
+    ///   - to: 도착 좌표입니다.
+    /// - Returns: 두 좌표 간 거리(미터)입니다.
+    private func greatCircleDistanceMeters(
+        from: CLLocationCoordinate2D,
+        to: CLLocationCoordinate2D
+    ) -> Double {
+        let earthRadius = 6_371_000.0
+        let lat1 = from.latitude * .pi / 180
+        let lon1 = from.longitude * .pi / 180
+        let lat2 = to.latitude * .pi / 180
+        let lon2 = to.longitude * .pi / 180
+        let dLat = lat2 - lat1
+        let dLon = lon2 - lon1
+        let a = sin(dLat / 2) * sin(dLat / 2)
+            + cos(lat1) * cos(lat2) * sin(dLon / 2) * sin(dLon / 2)
+        let c = 2 * atan2(sqrt(a), sqrt(max(0, 1 - a)))
+        return earthRadius * c
     }
 
     private func forceQuit() {
@@ -2018,6 +2222,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
                 }
             } catch {
                 if self.isNearbyHotspotNotFoundError(error) {
+                    #if DEBUG
+                    print("nearby hotspot fetch failed (not found): \(error.localizedDescription)")
+                    #endif
                     await MainActor.run {
                         self.nearbyHotspots = []
                     }
@@ -2048,6 +2255,17 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     /// 주변 핫스팟 조회 에러 로그를 일정 주기로만 출력해 콘솔 노이즈를 줄입니다.
     /// - Parameter error: 출력할 조회 실패 에러입니다.
     private func logNearbyHotspotErrorIfNeeded(_ error: Error) {
+        #if DEBUG
+        if suppressedNearbyHotspotErrorCount > 0 {
+            print("nearby hotspot fetch failed: \(error.localizedDescription) (+\(suppressedNearbyHotspotErrorCount) suppressed)")
+            suppressedNearbyHotspotErrorCount = 0
+        } else {
+            print("nearby hotspot fetch failed: \(error.localizedDescription)")
+        }
+        lastNearbyHotspotErrorLogAt = Date()
+        return
+        #endif
+
         let now = Date()
         if now.timeIntervalSince(lastNearbyHotspotErrorLogAt) < nearbyHotspotErrorLogInterval {
             suppressedNearbyHotspotErrorCount += 1
@@ -2066,6 +2284,17 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     /// 가시성(Visibility) 동기화 에러 로그를 일정 주기로만 출력해 콘솔 노이즈를 줄입니다.
     /// - Parameter error: 출력할 동기화 실패 에러입니다.
     private func logVisibilitySyncErrorIfNeeded(_ error: Error) {
+        #if DEBUG
+        if suppressedVisibilitySyncErrorCount > 0 {
+            print("visibility sync failed: \(error.localizedDescription) (+\(suppressedVisibilitySyncErrorCount) suppressed)")
+            suppressedVisibilitySyncErrorCount = 0
+        } else {
+            print("visibility sync failed: \(error.localizedDescription)")
+        }
+        lastVisibilitySyncErrorLogAt = Date()
+        return
+        #endif
+
         let now = Date()
         if now.timeIntervalSince(lastVisibilitySyncErrorLogAt) < nearbyHotspotErrorLogInterval {
             suppressedVisibilitySyncErrorCount += 1
@@ -2095,6 +2324,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
                 }
             } catch {
                 if self.isNearbyHotspotNotFoundError(error) {
+                    #if DEBUG
+                    print("visibility sync failed (not found): \(error.localizedDescription)")
+                    #endif
                     return
                 }
                 self.logVisibilitySyncErrorIfNeeded(error)
@@ -2739,16 +2971,22 @@ extension MapViewModel {
 //MARK: - CLLocation 관련 로직
 extension MapViewModel {
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        MapCoreLocationCallTracer.record(
+            "locationManagerDidChangeAuthorization",
+            detail: "status=\(manager.authorizationStatus.rawValue)"
+        )
         switch manager.authorizationStatus {
         case .notDetermined:
-            locationManager.requestAlwaysAuthorization()
+            stopLocationUpdatesIfNeeded()
             syncWalkWidgetSnapshot(force: true)
             syncWalkLiveActivity(force: true)
         case .restricted, .denied:
             pauseWalkForAuthorizationDowngrade()
+            stopLocationUpdatesIfNeeded()
             syncWalkWidgetSnapshot(force: true, statusOverride: .locationDenied)
             syncWalkLiveActivity(force: true)
         case .authorizedAlways, .authorizedWhenInUse:
+            startLocationUpdatesIfAuthorized()
             if isWalking {
                 syncWatchContext(force: true)
             }
@@ -2757,7 +2995,7 @@ extension MapViewModel {
             syncWalkLiveActivity(force: true)
             
         @unknown default:
-            locationManager.requestAlwaysAuthorization()
+            stopLocationUpdatesIfNeeded()
             syncWalkWidgetSnapshot(force: true, statusOverride: .error, messageOverride: "위치 권한 상태를 확인해주세요.")
             syncWalkLiveActivity(force: true)
         }
@@ -2766,6 +3004,10 @@ extension MapViewModel {
 //        print(manager.location?.description)
     }
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        MapCoreLocationCallTracer.record(
+            "didUpdateLocations",
+            detail: "count=\(locations.count)"
+        )
         guard let location = locations.last else { return }
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
@@ -2773,15 +3015,18 @@ extension MapViewModel {
                 guard self.validateWalkLocationSample(location) else { return }
                 self.updateMovementState(with: location)
             }
-            withAnimation() {
-                self.location = location
-            }
-            self.nearbyTick()
+            self.location = location
             self.handleAutoPointRecord(with: location)
-            self.refreshWeatherRiskFromProviderIfNeeded(location: location, force: false)
-            self.compactMapMotionArtifacts()
-            self.persistActiveWalkSession()
-            self.handleAutoEndIfNeeded()
+            let now = Date()
+            if now.timeIntervalSince(self.lastLocationSideEffectAt) >= self.locationSideEffectInterval {
+                self.lastLocationSideEffectAt = now
+                self.refreshWeatherRiskFromProviderIfNeeded(location: location, force: false)
+                self.persistActiveWalkSession()
+                self.handleAutoEndIfNeeded(now: now)
+                if self.isMapViewActive {
+                    self.flushSyncOutboxIfNeeded()
+                }
+            }
         }
     }
 

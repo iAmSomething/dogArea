@@ -4,6 +4,83 @@ import CoreLocation
 import UIKit
 #endif
 
+private enum RivalCoreLocationCallTracer {
+    private static let lock = NSLock()
+    private static var eventCounts: [String: Int] = [:]
+    private static var windowStartedAt: Date = Date()
+    private static var heartbeatTimer: DispatchSourceTimer?
+    private static var isHeartbeatStarted: Bool = false
+
+    /// 라이벌 탭의 CoreLocation API 호출 이벤트를 1초 단위로 집계해 디버그 콘솔에 출력합니다.
+    /// - Parameters:
+    ///   - event: 호출 지점을 구분하는 이벤트 식별자입니다.
+    ///   - detail: 호출 시점의 보조 상태 정보입니다.
+    ///   - file: 호출 파일 식별자입니다.
+    ///   - line: 호출 라인 번호입니다.
+    static func record(
+        _ event: String,
+        detail: String? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) {
+        startHeartbeatIfNeeded()
+        var occurrenceCount = 0
+
+        lock.lock()
+        eventCounts[event, default: 0] += 1
+        occurrenceCount = eventCounts[event, default: 0]
+        lock.unlock()
+
+        if occurrenceCount <= 2 {
+            if let detail, detail.isEmpty == false {
+                print("[CoreLocationTrace][Rival] \(event) @\(file):\(line) detail=\(detail)")
+            } else {
+                print("[CoreLocationTrace][Rival] \(event) @\(file):\(line)")
+            }
+        }
+
+    }
+
+    /// 트레이서가 활성화되면 1초 주기로 호출 집계를 출력하는 하트비트를 시작합니다.
+    private static func startHeartbeatIfNeeded() {
+        lock.lock()
+        if isHeartbeatStarted {
+            lock.unlock()
+            return
+        }
+        isHeartbeatStarted = true
+        let timer = DispatchSource.makeTimerSource(queue: .global(qos: .utility))
+        timer.schedule(deadline: .now() + 1.0, repeating: 1.0)
+        timer.setEventHandler {
+            flushWindowSummary()
+        }
+        heartbeatTimer = timer
+        lock.unlock()
+        timer.resume()
+    }
+
+    /// 최근 1초 구간의 이벤트 집계를 콘솔에 출력하고 카운터를 초기화합니다.
+    private static func flushWindowSummary() {
+        lock.lock()
+        let now = Date()
+        let elapsed = now.timeIntervalSince(windowStartedAt)
+        let summary = eventCounts
+            .sorted { lhs, rhs in lhs.value > rhs.value }
+            .map { "\($0.key)=\($0.value)" }
+            .joined(separator: ", ")
+        eventCounts.removeAll()
+        windowStartedAt = now
+        lock.unlock()
+
+        guard elapsed >= 0.95 else { return }
+        if summary.isEmpty {
+            print("[CoreLocationTrace][Rival][1s] idle")
+        } else {
+            print("[CoreLocationTrace][Rival][1s] \(summary)")
+        }
+    }
+}
+
 @MainActor
 final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     struct HotspotPreviewRow {
@@ -102,10 +179,22 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
     func start() {
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+        RivalCoreLocationCallTracer.record(
+            "authorizationStatus.read",
+            detail: "source=start status=\(locationManager.authorizationStatus.rawValue)"
+        )
         switch locationManager.authorizationStatus {
         case .authorizedAlways, .authorizedWhenInUse:
+            RivalCoreLocationCallTracer.record(
+                "startUpdatingLocation",
+                detail: "source=start"
+            )
             locationManager.startUpdatingLocation()
         default:
+            RivalCoreLocationCallTracer.record(
+                "stopUpdatingLocation",
+                detail: "source=start"
+            )
             locationManager.stopUpdatingLocation()
         }
         loadModerationPreferences()
@@ -117,6 +206,10 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
     func stop() {
         pollingTimer?.invalidate()
         pollingTimer = nil
+        RivalCoreLocationCallTracer.record(
+            "stopUpdatingLocation",
+            detail: "source=stop"
+        )
         locationManager.stopUpdatingLocation()
     }
 
@@ -132,6 +225,10 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
 
     /// 위치 권한 요청을 수행합니다.
     func requestLocationPermission() {
+        RivalCoreLocationCallTracer.record(
+            "requestWhenInUseAuthorization",
+            detail: "source=requestLocationPermission"
+        )
         locationManager.requestWhenInUseAuthorization()
     }
 
@@ -467,6 +564,10 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
 
     /// 권한 상태를 iOS 시스템 값에서 앱 상태로 변환합니다.
     private func updatePermissionState() {
+        RivalCoreLocationCallTracer.record(
+            "authorizationStatus.read",
+            detail: "source=updatePermissionState status=\(locationManager.authorizationStatus.rawValue)"
+        )
         switch locationManager.authorizationStatus {
         case .authorizedAlways, .authorizedWhenInUse:
             permissionState = .authorized
@@ -584,11 +685,23 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
 
     /// 위치 권한이 바뀌면 화면 상태를 즉시 재계산합니다.
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        RivalCoreLocationCallTracer.record(
+            "locationManagerDidChangeAuthorization",
+            detail: "status=\(manager.authorizationStatus.rawValue)"
+        )
         updatePermissionState()
         switch manager.authorizationStatus {
         case .authorizedAlways, .authorizedWhenInUse:
+            RivalCoreLocationCallTracer.record(
+                "startUpdatingLocation",
+                detail: "source=locationManagerDidChangeAuthorization"
+            )
             manager.startUpdatingLocation()
         default:
+            RivalCoreLocationCallTracer.record(
+                "stopUpdatingLocation",
+                detail: "source=locationManagerDidChangeAuthorization"
+            )
             manager.stopUpdatingLocation()
         }
         refreshViewState()
@@ -598,6 +711,10 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
 
     /// 새 좌표를 받으면 공유 상태에서만 핫스팟을 즉시 갱신합니다.
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        RivalCoreLocationCallTracer.record(
+            "didUpdateLocations",
+            detail: "count=\(locations.count)"
+        )
         guard locations.isEmpty == false,
               locationSharingEnabled else { return }
         refreshHotspots(force: false)

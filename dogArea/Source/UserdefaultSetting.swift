@@ -834,6 +834,7 @@ final class SyncOutboxStore {
 
         stateQueue.sync {
             var mutableItems = items
+            var enqueuedCount = 0
             stagePayloads.forEach { stage, payload in
                 let idempotencyKey = "\(baseKey)-\(stage.rawValue)"
                 let exists = mutableItems.contains(where: { $0.idempotencyKey == idempotencyKey })
@@ -853,6 +854,7 @@ final class SyncOutboxStore {
                         updatedAt: now
                     )
                 )
+                enqueuedCount += 1
             }
             if mutableItems.count > maxItems {
                 let overflow = mutableItems.count - maxItems
@@ -865,6 +867,11 @@ final class SyncOutboxStore {
             }
             items = mutableItems
             persistLocked()
+            #if DEBUG
+            if enqueuedCount > 0 {
+                print("[SyncOutbox] enqueue session=\(sessionId) stages=\(enqueuedCount) total=\(mutableItems.count)")
+            }
+            #endif
         }
     }
 
@@ -880,7 +887,13 @@ final class SyncOutboxStore {
     @discardableResult
     func flush(using transport: SyncOutboxTransporting, now: Date = Date()) async -> SyncOutboxSummary {
         let nowTs = now.timeIntervalSince1970
+        #if DEBUG
+        print("[SyncOutbox] flush start now=\(nowTs)")
+        #endif
         while let next = nextDispatchableItem(now: nowTs) {
+            #if DEBUG
+            print("[SyncOutbox] dispatch stage=\(next.stage.rawValue) session=\(next.walkSessionId) retry=\(next.retryCount)")
+            #endif
             updateItem(id: next.id) { item in
                 item.status = .processing
                 item.updatedAt = Date().timeIntervalSince1970
@@ -890,12 +903,18 @@ final class SyncOutboxStore {
             let currentNow = Date().timeIntervalSince1970
             switch result {
             case .success:
+                #if DEBUG
+                print("[SyncOutbox] success stage=\(next.stage.rawValue) session=\(next.walkSessionId)")
+                #endif
                 updateItem(id: next.id) { item in
                     item.status = .completed
                     item.lastErrorCode = nil
                     item.updatedAt = currentNow
                 }
             case .retryable(let code):
+                #if DEBUG
+                print("[SyncOutbox] retryable stage=\(next.stage.rawValue) session=\(next.walkSessionId) code=\(code.rawValue)")
+                #endif
                 let delay = Self.retryDelay(retryCount: next.retryCount + 1)
                 updateItem(id: next.id) { item in
                     item.status = .retrying
@@ -906,6 +925,9 @@ final class SyncOutboxStore {
                 }
                 return summary()
             case .permanent(let code):
+                #if DEBUG
+                print("[SyncOutbox] permanent-failed stage=\(next.stage.rawValue) session=\(next.walkSessionId) code=\(code.rawValue)")
+                #endif
                 updateItem(id: next.id) { item in
                     item.status = .permanentFailed
                     item.lastErrorCode = code
@@ -1161,18 +1183,40 @@ final class GuestDataUpgradeService {
     func latestReport(for userId: String) -> GuestDataUpgradeReport? {
         guard let data = UserDefaults.standard.data(forKey: reportKey(for: userId)),
               let decoded = try? JSONDecoder().decode(GuestDataUpgradeReport.self, from: data) else {
+            #if DEBUG
+            print("[GuestUpgrade] latestReport: no cached report user=\(userId)")
+            #endif
             return nil
         }
+        #if DEBUG
+        print(
+            "[GuestUpgrade] latestReport: user=\(userId) pending=\(decoded.pendingCount) permanent=\(decoded.permanentFailureCount) lastError=\(decoded.lastErrorCode ?? "none")"
+        )
+        #endif
         return decoded
     }
 
     func runUpgrade(for userId: String, forceRetry: Bool = false) async -> GuestDataUpgradeReport? {
-        guard let snapshot = localSnapshot(), snapshot.sessionCount > 0 else { return nil }
+        guard let snapshot = localSnapshot(), snapshot.sessionCount > 0 else {
+            #if DEBUG
+            print("[GuestUpgrade] runUpgrade skipped: no local sessions user=\(userId)")
+            #endif
+            return nil
+        }
+        #if DEBUG
+        print(
+            "[GuestUpgrade] runUpgrade start user=\(userId) forceRetry=\(forceRetry) sessions=\(snapshot.sessionCount) points=\(snapshot.pointCount)"
+        )
+        #endif
 
         if forceRetry {
             syncOutbox.requeuePermanentFailures(walkSessionIds: Set(snapshot.sessionIds))
+            #if DEBUG
+            print("[GuestUpgrade] requeue permanent failures for \(snapshot.sessionIds.count) sessions")
+            #endif
         }
 
+        var enqueuedSessionCount = 0
         for polygon in walkRepository.fetchPolygons() {
             guard let sessionDTO = WalkBackfillDTOConverter.makeSessionDTO(
                 from: polygon,
@@ -1181,10 +1225,28 @@ final class GuestDataUpgradeService {
                 sourceDevice: "ios"
             ) else { continue }
             syncOutbox.enqueueWalkStages(sessionDTO: sessionDTO)
+            enqueuedSessionCount += 1
         }
+        #if DEBUG
+        print("[GuestUpgrade] enqueue completed: \(enqueuedSessionCount) sessions queued")
+        #endif
 
         let summary = await syncOutbox.flush(using: syncTransport, now: Date())
+        #if DEBUG
+        print(
+            "[GuestUpgrade] flush summary pending=\(summary.pendingCount) permanent=\(summary.permanentFailureCount) lastError=\(summary.lastErrorCode?.rawValue ?? "none")"
+        )
+        #endif
         let remoteSummary = await syncTransport.fetchBackfillValidationSummary(sessionIds: snapshot.sessionIds)
+        #if DEBUG
+        if let remoteSummary {
+            print(
+                "[GuestUpgrade] remote summary sessions=\(remoteSummary.sessionCount) points=\(remoteSummary.pointCount) area=\(remoteSummary.totalAreaM2) duration=\(remoteSummary.totalDurationSec)"
+            )
+        } else {
+            print("[GuestUpgrade] remote summary unavailable")
+        }
+        #endif
         let validation = validate(local: snapshot, remote: remoteSummary)
         let report = GuestDataUpgradeReport(
             userId: userId,
@@ -1209,6 +1271,15 @@ final class GuestDataUpgradeService {
         if report.hasOutstandingWork == false {
             UserDefaults.standard.set(snapshot.signature, forKey: signatureKey(for: userId))
         }
+        #if DEBUG
+        let validationText: String = {
+            guard let passed = report.validationPassed else { return "nil" }
+            return passed ? "true" : "false"
+        }()
+        print(
+            "[GuestUpgrade] runUpgrade done user=\(userId) outstanding=\(report.hasOutstandingWork) validation=\(validationText) message=\(report.validationMessage ?? "none")"
+        )
+        #endif
         return report
     }
 
@@ -1239,6 +1310,9 @@ final class GuestDataUpgradeService {
     private func persist(report: GuestDataUpgradeReport, for userId: String) {
         guard let data = try? JSONEncoder().encode(report) else { return }
         UserDefaults.standard.set(data, forKey: reportKey(for: userId))
+        #if DEBUG
+        print("[GuestUpgrade] report persisted user=\(userId) key=\(reportKey(for: userId))")
+        #endif
     }
 
     private func validate(
@@ -1450,8 +1524,14 @@ final class AuthFlowCoordinator: ObservableObject {
 
     func startGuestDataUpgrade(forceRetry: Bool = false) {
         guard let userId = currentMemberUserId() else {
+            #if DEBUG
+            print("[AuthFlow] startGuestDataUpgrade aborted: missing member session/token")
+            #endif
             return
         }
+        #if DEBUG
+        print("[AuthFlow] startGuestDataUpgrade user=\(userId) forceRetry=\(forceRetry)")
+        #endif
         pendingGuestDataUpgradePrompt = nil
         guestDataUpgradeInProgress = true
         Task {
@@ -1459,6 +1539,15 @@ final class AuthFlowCoordinator: ObservableObject {
             await MainActor.run {
                 self.guestDataUpgradeInProgress = false
                 self.guestDataUpgradeResult = report
+                #if DEBUG
+                if let report {
+                    print(
+                        "[AuthFlow] guest upgrade completed outstanding=\(report.hasOutstandingWork) pending=\(report.pendingCount) permanent=\(report.permanentFailureCount) lastError=\(report.lastErrorCode ?? "none")"
+                    )
+                } else {
+                    print("[AuthFlow] guest upgrade completed with nil report")
+                }
+                #endif
             }
         }
     }

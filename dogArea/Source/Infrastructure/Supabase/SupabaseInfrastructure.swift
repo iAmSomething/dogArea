@@ -107,7 +107,10 @@ private struct SupabaseAuthResponseDTO: Decodable {
     let user: SupabaseAuthUserDTO?
     let id: String?
     let email: String?
+    let code: Int?
+    let errorCode: String?
     let message: String?
+    let msg: String?
     let error: String?
     let errorDescription: String?
     let accessToken: String?
@@ -120,7 +123,10 @@ private struct SupabaseAuthResponseDTO: Decodable {
         case user
         case id
         case email
+        case code
+        case errorCode = "error_code"
         case message
+        case msg
         case error
         case errorDescription = "error_description"
         case accessToken = "access_token"
@@ -251,14 +257,40 @@ struct SupabaseHTTPClient {
         request.setValue(config.anonKey, forHTTPHeaderField: "apikey")
         request.setValue(await authorizationHeaderValue(config: config), forHTTPHeaderField: "Authorization")
         request.httpBody = bodyData
+        let startedAt = Date()
+        #if DEBUG
+        print("[SupabaseHTTP] -> \(method.rawValue) \(url.absoluteString) body=\(bodyData?.count ?? 0)B")
+        #endif
 
-        let (data, response) = try await session.data(for: request)
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch {
+            #if DEBUG
+            let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
+            print("[SupabaseHTTP] xx \(method.rawValue) \(url.absoluteString) elapsed=\(elapsedMs)ms error=\(error.localizedDescription)")
+            #endif
+            throw error
+        }
         guard let statusCode = (response as? HTTPURLResponse)?.statusCode else {
+            #if DEBUG
+            let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
+            print("[SupabaseHTTP] xx \(method.rawValue) \(url.absoluteString) elapsed=\(elapsedMs)ms invalid-response")
+            #endif
             throw SupabaseHTTPError.invalidResponse
         }
         guard (200..<300).contains(statusCode) else {
+            #if DEBUG
+            let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
+            print("[SupabaseHTTP] <- \(method.rawValue) \(url.absoluteString) status=\(statusCode) elapsed=\(elapsedMs)ms response=\(data.count)B")
+            #endif
             throw SupabaseHTTPError.unexpectedStatusCode(statusCode)
         }
+        #if DEBUG
+        let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
+        print("[SupabaseHTTP] <- \(method.rawValue) \(url.absoluteString) status=\(statusCode) elapsed=\(elapsedMs)ms response=\(data.count)B")
+        #endif
         return data
     }
 
@@ -347,13 +379,25 @@ struct SupabaseHTTPClient {
         request.httpBody = try? JSONEncoder().encode(
             SupabaseRefreshTokenRequestDTO(refreshToken: refreshToken)
         )
+        let startedAt = Date()
+        #if DEBUG
+        print("[SupabaseAuth] -> POST refresh-token")
+        #endif
 
         guard let (data, response) = try? await session.data(for: request),
               let statusCode = (response as? HTTPURLResponse)?.statusCode else {
+            #if DEBUG
+            let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
+            print("[SupabaseAuth] xx refresh-token elapsed=\(elapsedMs)ms request-failed")
+            #endif
             return .retryableFailure
         }
 
         guard (200..<300).contains(statusCode) else {
+            #if DEBUG
+            let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
+            print("[SupabaseAuth] <- refresh-token status=\(statusCode) elapsed=\(elapsedMs)ms")
+            #endif
             if statusCode == 400 || statusCode == 401 {
                 return .terminalFailure
             }
@@ -365,8 +409,16 @@ struct SupabaseHTTPClient {
                 fallbackEmail: authSessionStore.currentIdentity()?.email,
                 now: Date()
               ) else {
+            #if DEBUG
+            let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
+            print("[SupabaseAuth] xx refresh-token decode-failed elapsed=\(elapsedMs)ms")
+            #endif
             return .terminalFailure
         }
+        #if DEBUG
+        let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
+        print("[SupabaseAuth] <- refresh-token status=200 elapsed=\(elapsedMs)ms")
+        #endif
         return .success(credential)
     }
 }
@@ -815,9 +867,15 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
 
     func send(item: SyncOutboxItem) async -> SyncOutboxSendResult {
         guard AppFeatureGate.isAllowed(.cloudSync, session: AppFeatureGate.currentSession()) else {
+            #if DEBUG
+            print("[SyncTransport] blocked: cloudSync unavailable stage=\(item.stage.rawValue) session=\(item.walkSessionId)")
+            #endif
             return .retryable(.unauthorized)
         }
         guard isSyncWalkFunctionTemporarilyUnavailable() == false else {
+            #if DEBUG
+            print("[SyncTransport] blocked: sync-walk cooldown stage=\(item.stage.rawValue) session=\(item.walkSessionId)")
+            #endif
             return .permanent(.notConfigured)
         }
 
@@ -835,8 +893,14 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
             )
             clearSyncWalkFunctionUnavailableMarker()
             persistSeasonCatchupBuffSnapshotIfNeeded(item: item, data: data)
+            #if DEBUG
+            print("[SyncTransport] success stage=\(item.stage.rawValue) session=\(item.walkSessionId)")
+            #endif
             return .success
         } catch let error as SupabaseHTTPError {
+            #if DEBUG
+            print("[SyncTransport] http-error stage=\(item.stage.rawValue) session=\(item.walkSessionId) error=\(error.localizedDescription)")
+            #endif
             switch error {
             case .notConfigured:
                 markSyncWalkFunctionTemporarilyUnavailable()
@@ -863,6 +927,9 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
                 return .retryable(.unknown)
             }
         } catch let error as URLError {
+            #if DEBUG
+            print("[SyncTransport] url-error stage=\(item.stage.rawValue) session=\(item.walkSessionId) error=\(error.localizedDescription)")
+            #endif
             switch error.code {
             case .notConnectedToInternet, .networkConnectionLost, .timedOut, .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed:
                 return .retryable(.offline)
@@ -872,15 +939,24 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
                 return .retryable(.unknown)
             }
         } catch {
+            #if DEBUG
+            print("[SyncTransport] unknown-error stage=\(item.stage.rawValue) session=\(item.walkSessionId) error=\(error.localizedDescription)")
+            #endif
             return .retryable(.unknown)
         }
     }
 
     func fetchBackfillValidationSummary(sessionIds: [String]) async -> SyncBackfillValidationSummary? {
         guard AppFeatureGate.isAllowed(.cloudSync, session: AppFeatureGate.currentSession()) else {
+            #if DEBUG
+            print("[SyncTransport] validate-backfill blocked: cloudSync unavailable")
+            #endif
             return nil
         }
         guard isSyncWalkFunctionTemporarilyUnavailable() == false else {
+            #if DEBUG
+            print("[SyncTransport] validate-backfill blocked: sync-walk cooldown")
+            #endif
             return nil
         }
         let normalized = sessionIds
@@ -889,6 +965,9 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
         guard normalized.isEmpty == false else {
             return SyncBackfillValidationSummary(sessionCount: 0, pointCount: 0, totalAreaM2: 0, totalDurationSec: 0)
         }
+        #if DEBUG
+        print("[SyncTransport] validate-backfill request sessions=\(normalized.count)")
+        #endif
 
         let body: [String: Any] = [
             "action": "validate_backfill",
@@ -903,6 +982,9 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
             data = try await requestSyncWalkFunction(bodyData: bodyData)
             clearSyncWalkFunctionUnavailableMarker()
         } catch let error as SupabaseHTTPError {
+            #if DEBUG
+            print("[SyncTransport] validate-backfill http-error=\(error.localizedDescription)")
+            #endif
             if case .notConfigured = error {
                 markSyncWalkFunctionTemporarilyUnavailable()
             } else if case .unexpectedStatusCode(404) = error {
@@ -910,13 +992,24 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
             }
             return nil
         } catch {
+            #if DEBUG
+            print("[SyncTransport] validate-backfill unknown-error=\(error.localizedDescription)")
+            #endif
             return nil
         }
 
         guard let decoded = try? JSONDecoder().decode(BackfillSummaryResponseDTO.self, from: data),
               let summary = decoded.summary else {
+            #if DEBUG
+            print("[SyncTransport] validate-backfill decode-failed")
+            #endif
             return nil
         }
+        #if DEBUG
+        print(
+            "[SyncTransport] validate-backfill success sessions=\(summary.sessionCount) points=\(summary.pointCount)"
+        )
+        #endif
 
         return SyncBackfillValidationSummary(
             sessionCount: summary.sessionCount,
@@ -2379,6 +2472,7 @@ enum SupabaseAuthError: LocalizedError {
     case notConfigured
     case invalidCredentials
     case userAlreadyExists
+    case rateLimited(message: String?, errorCode: String?, retryAfterSeconds: Int?)
     case responseDecodeFailed
     case requestFailed(String)
 
@@ -2390,6 +2484,20 @@ enum SupabaseAuthError: LocalizedError {
             return "이메일 또는 비밀번호가 올바르지 않습니다."
         case .userAlreadyExists:
             return "이미 가입된 이메일입니다. 로그인을 시도해주세요."
+        case .rateLimited(let message, let errorCode, let retryAfterSeconds):
+            let retryText: String = {
+                guard let retryAfterSeconds, retryAfterSeconds > 0 else { return "" }
+                return " 약 \(retryAfterSeconds)초 후 다시 시도해주세요."
+            }()
+            switch errorCode {
+            case "over_email_send_rate_limit":
+                return "Supabase 이메일 발송 한도를 초과했습니다.\(retryText) 잠시 후 재시도하거나 SMTP/Rate Limit 설정을 확인해주세요."
+            default:
+                if let message, message.isEmpty == false {
+                    return "요청이 너무 많아 인증이 제한되었습니다: \(message)\(retryText)"
+                }
+                return "요청이 너무 많아 인증이 제한되었습니다.\(retryText)"
+            }
         case .responseDecodeFailed:
             return "인증 응답을 해석하지 못했습니다."
         case .requestFailed(let message):
@@ -2504,16 +2612,58 @@ final class DeviceAppleCredentialAuthService: AppleCredentialAuthServiceProtocol
         request.setValue("Bearer \(config.anonKey)", forHTTPHeaderField: "Authorization")
         request.httpBody = try JSONEncoder().encode(payload)
 
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard let statusCode = (response as? HTTPURLResponse)?.statusCode else {
-            throw SupabaseAuthError.responseDecodeFailed
+        #if DEBUG
+        print("[SupabaseAuth] -> \(path) query=\(query ?? "none") email=\(payload["email"] ?? "none")")
+        #endif
+        let startedAt = Date()
+
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await URLSession.shared.data(for: request)
+        } catch {
+            #if DEBUG
+            let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
+            print("[SupabaseAuth] xx \(path) elapsed=\(elapsedMs)ms error=\(error.localizedDescription)")
+            #endif
+            throw error
         }
 
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw SupabaseAuthError.responseDecodeFailed
+        }
+        let statusCode = httpResponse.statusCode
+
         let decoded = try? JSONDecoder().decode(SupabaseAuthResponseDTO.self, from: data)
+        let looseErrorPayload = decodeLooseAuthErrorPayload(from: data)
+        let responseErrorCode = decoded?.errorCode
+            ?? looseErrorPayload.errorCode
+            ?? httpResponse.value(forHTTPHeaderField: "x-sb-error-code")
+        let responseMessage = decoded?.errorDescription
+            ?? decoded?.message
+            ?? decoded?.msg
+            ?? decoded?.error
+            ?? looseErrorPayload.message
+
+        #if DEBUG
+        let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
+        let bodyPreview = String(decoding: data.prefix(220), as: UTF8.self)
+        print(
+            "[SupabaseAuth] <- \(path) status=\(statusCode) elapsed=\(elapsedMs)ms errorCode=\(responseErrorCode ?? "none") body=\(bodyPreview)"
+        )
+        #endif
+
         guard (200..<300).contains(statusCode) else {
-            let description = decoded?.errorDescription ?? decoded?.message ?? decoded?.error ?? "인증에 실패했습니다. (\(statusCode))"
+            let description = responseMessage ?? "인증에 실패했습니다. (\(statusCode))"
             if isDuplicateEmailErrorDescription(description) {
                 throw SupabaseAuthError.userAlreadyExists
+            }
+            if statusCode == 429 {
+                throw SupabaseAuthError.rateLimited(
+                    message: description,
+                    errorCode: responseErrorCode,
+                    retryAfterSeconds: retryAfterSeconds(from: httpResponse)
+                )
             }
             if statusCode == 400 || statusCode == 401 {
                 throw SupabaseAuthError.invalidCredentials
@@ -2539,6 +2689,36 @@ final class DeviceAppleCredentialAuthService: AppleCredentialAuthServiceProtocol
             || lowercased.contains("duplicate")
             || lowercased.contains("registered")
             || lowercased.contains("exists")
+    }
+
+    /// HTTP 응답에서 `Retry-After` 헤더를 초 단위로 해석합니다.
+    /// - Parameter response: Supabase Auth 응답 객체입니다.
+    /// - Returns: 재시도 대기 시간이 명시된 경우 초 단위 정수, 없으면 `nil`입니다.
+    private func retryAfterSeconds(from response: HTTPURLResponse) -> Int? {
+        guard let raw = response.value(forHTTPHeaderField: "Retry-After")?
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+              raw.isEmpty == false else {
+            return nil
+        }
+        if let seconds = Int(raw), seconds >= 0 {
+            return seconds
+        }
+        return nil
+    }
+
+    /// Auth 오류 바디를 느슨하게 파싱해 메시지/에러코드를 추출합니다.
+    /// - Parameter data: Auth 응답 원본 바디 데이터입니다.
+    /// - Returns: 추출된 오류 메시지와 오류 코드입니다.
+    private func decodeLooseAuthErrorPayload(from data: Data) -> (message: String?, errorCode: String?) {
+        guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return (nil, nil)
+        }
+        let message = (object["error_description"] as? String)
+            ?? (object["message"] as? String)
+            ?? (object["msg"] as? String)
+            ?? (object["error"] as? String)
+        let errorCode = object["error_code"] as? String
+        return (message, errorCode)
     }
 }
 

@@ -379,6 +379,9 @@ struct HomeView: View {
     /// 홈 게스트 데이터 이관 카드의 재시도 CTA를 실행합니다.
     /// 재시도를 시작한 직후 최신 리포트를 다시 읽어 카드 상태를 갱신합니다.
     private func triggerGuestDataUpgradeRetry() {
+        #if DEBUG
+        print("[Home] guest upgrade retry tapped")
+        #endif
         authFlow.startGuestDataUpgrade(forceRetry: true)
         viewModel.refreshGuestDataUpgradeReport()
     }

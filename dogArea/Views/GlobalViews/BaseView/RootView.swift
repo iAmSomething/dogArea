@@ -22,7 +22,7 @@ struct RootView: View {
     @State private var selectedTab = RootView.initialSelectedTabForRuntime()
     @State private var tabbarHidden = false
     @StateObject var tabStatus = TabAppear.shared
-    @StateObject private var mapViewModel = MapViewModel()
+    @StateObject private var mapViewModelStore = MapViewModelStore()
     private let widgetActionStore: WalkWidgetActionRequestStoring = DefaultWalkWidgetActionRequestStore.shared
     private let territoryWidgetSnapshotSyncService: TerritoryWidgetSnapshotSyncing = DefaultTerritoryWidgetSnapshotSyncService()
     private let hotspotWidgetSnapshotSyncService: HotspotWidgetSnapshotSyncing = DefaultHotspotWidgetSnapshotSyncService()
@@ -136,10 +136,22 @@ struct RootView: View {
             }
         } else if selectedTab == 2 {
             NavigationView {
-                MapView(viewModel: mapViewModel)
-                    .environmentObject(loading)
-                    .navigationBarHidden(selectedTab == 2)
-                    .accessibilityIdentifier("screen.map")
+                Group {
+                    if let mapViewModel = mapViewModelStore.mapViewModel {
+                        MapView(viewModel: mapViewModel)
+                            .environmentObject(loading)
+                            .accessibilityIdentifier("screen.map")
+                    } else {
+                        ProgressView("지도 준비 중...")
+                            .font(.appFont(for: .Regular, size: 14))
+                            .foregroundStyle(Color.appTextDarkGray)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .onAppear {
+                                mapViewModelStore.prepareIfNeeded()
+                            }
+                    }
+                }
+                .navigationBarHidden(selectedTab == 2)
             }
         } else if selectedTab == 3 {
             NavigationView {
@@ -191,6 +203,7 @@ struct RootView: View {
     /// 산책 관련 위젯 액션을 지도 탭으로 전달합니다.
     /// - Parameter route: 지도 화면에서 처리할 위젯 액션 라우트입니다.
     private func dispatchWalkWidgetAction(_ route: WalkWidgetActionRoute) {
+        mapViewModelStore.prepareIfNeeded()
         selectedTab = 2
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
             NotificationCenter.default.post(
@@ -304,6 +317,18 @@ struct RootView: View {
         Task(priority: .utility) {
             await questRivalWidgetSnapshotSyncService.sync(force: force, now: Date())
         }
+    }
+}
+
+@MainActor
+private final class MapViewModelStore: ObservableObject {
+    @Published private(set) var mapViewModel: MapViewModel?
+
+    /// 지도 탭 진입이나 위젯 액션 처리 직전에 지도 ViewModel을 지연 생성합니다.
+    /// - Important: 이미 생성된 인스턴스가 있으면 재생성하지 않아 탭 전환 중 상태를 유지합니다.
+    func prepareIfNeeded() {
+        guard mapViewModel == nil else { return }
+        mapViewModel = MapViewModel()
     }
 }
 
