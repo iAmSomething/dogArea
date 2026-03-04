@@ -10,6 +10,7 @@ type Action =
 type RequestDTO = {
   action: Action;
   userId?: string;
+  excludedUserIds?: string[];
   enabled?: boolean;
   lat?: number;
   lng?: number;
@@ -50,12 +51,16 @@ type ResponseLivePresenceDTO = {
   lng_rounded: number;
   geohash7: string;
   speed_mps?: number | null;
-  sequence: number;
-  idempotency_key: string;
+  sequence?: number;
+  idempotency_key?: string;
   updated_at: string;
   expires_at: string;
   write_applied?: boolean;
   privacy_mode?: string;
+  suppression_reason?: string | null;
+  delay_minutes?: number;
+  required_min_sample?: number;
+  obfuscation_meters?: number;
 };
 
 const json = (body: unknown, status = 200) =>
@@ -95,6 +100,13 @@ const asNonEmptyTextOrNull = (value: unknown): string | null => {
   if (typeof value !== "string") return null;
   const normalized = value.trim();
   return normalized.length > 0 ? normalized : null;
+};
+
+const asUUIDArray = (value: unknown): string[] => {
+  if (Array.isArray(value) === false) return [];
+  return value
+    .map((entry) => asUUIDOrNull(entry))
+    .filter((entry): entry is string => entry != null);
 };
 
 const geohashEncode = (lat: number, lng: number, precision = 7): string => {
@@ -374,6 +386,8 @@ Deno.serve(async (req) => {
     const normalizedPrivacyMode = body.privacyMode === "all" || body.privacyMode === "private"
       ? body.privacyMode
       : "public";
+    const requestUserId = asUUIDOrNull(body.userId);
+    const excludedUserIds = asUUIDArray(body.excludedUserIds);
     const nowTs = new Date().toISOString();
 
     const { data, error } = await client.rpc("rpc_get_walk_live_presence", {
@@ -384,10 +398,50 @@ Deno.serve(async (req) => {
       in_max_rows: maxRows,
       in_privacy_mode: normalizedPrivacyMode,
       in_now_ts: nowTs,
+      in_request_user_id: requestUserId,
+      in_excluded_user_ids: excludedUserIds,
     });
     if (error) return json({ error: error.message }, 500);
 
-    return json({ presence: (data ?? []) as ResponseLivePresenceDTO[] });
+    const presence = (data ?? []) as ResponseLivePresenceDTO[];
+    const suppressedCount = presence.filter((row) => row.suppression_reason != null).length;
+    const delayedCount = presence.filter((row) => row.suppression_reason === "delayed").length;
+    const sensitiveCount = presence.filter((row) => row.suppression_reason === "sensitive_mask").length;
+    const kAnonCount = presence.filter((row) => row.suppression_reason === "k_anon").length;
+    const excludedCount = excludedUserIds.length;
+    const obfuscationMeters = presence.reduce((max, row) => {
+      const value = typeof row.obfuscation_meters === "number" ? row.obfuscation_meters : 0;
+      return Math.max(max, value);
+    }, 0);
+
+    const { error: auditError } = await client.from("privacy_guard_audit_logs").insert({
+      policy_key: "walk_live_presence",
+      request_action: "get_live_presence",
+      request_user_id: requestUserId,
+      request_min_lat: body.minLat,
+      request_max_lat: body.maxLat,
+      request_min_lng: body.minLng,
+      request_max_lng: body.maxLng,
+      total_presence: presence.length,
+      suppressed_presence: suppressedCount,
+      delayed_presence: delayedCount,
+      sensitive_presence: sensitiveCount,
+      k_anon_presence: kAnonCount,
+      excluded_presence: excludedCount,
+      obfuscation_meters: obfuscationMeters,
+      delay_minutes: presence.find((row) => typeof row.delay_minutes === "number")?.delay_minutes ?? 0,
+      alert_level: "info",
+      payload: {
+        requested_max_rows: maxRows,
+        privacy_mode: normalizedPrivacyMode,
+      },
+    });
+
+    if (auditError) {
+      console.error("privacy live audit insert failed", auditError.message);
+    }
+
+    return json({ presence });
   }
 
   return json({ error: "UNSUPPORTED_ACTION" }, 400);
