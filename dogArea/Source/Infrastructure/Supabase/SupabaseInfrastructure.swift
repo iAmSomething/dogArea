@@ -466,6 +466,10 @@ struct WalkLivePresenceDTO: Identifiable, Equatable {
     let updatedAtEpoch: TimeInterval
     let expiresAtEpoch: TimeInterval
     let privacyMode: String?
+    let suppressionReason: String?
+    let delayMinutes: Int?
+    let requiredMinSample: Int?
+    let obfuscationMeters: Int?
     let writeApplied: Bool?
 
     var id: String { ownerUserId }
@@ -486,6 +490,10 @@ struct WalkLivePresenceDTO: Identifiable, Equatable {
         lhs.updatedAtEpoch == rhs.updatedAtEpoch &&
         lhs.expiresAtEpoch == rhs.expiresAtEpoch &&
         lhs.privacyMode == rhs.privacyMode &&
+        lhs.suppressionReason == rhs.suppressionReason &&
+        lhs.delayMinutes == rhs.delayMinutes &&
+        lhs.requiredMinSample == rhs.requiredMinSample &&
+        lhs.obfuscationMeters == rhs.obfuscationMeters &&
         lhs.writeApplied == rhs.writeApplied
     }
 }
@@ -521,6 +529,8 @@ protocol NearbyPresenceServiceProtocol {
     ///   - maxLongitude: 조회 최대 경도 경계입니다.
     ///   - maxRows: 최대 반환 row 수입니다.
     ///   - privacyMode: 조회 프라이버시 모드(`public`/`private`/`all`)입니다.
+    ///   - requesterUserId: 요청자 사용자 UUID 문자열입니다. 자기 row의 예외 처리 판단에 사용됩니다.
+    ///   - excludedUserIds: 차단/숨김 등으로 즉시 제외할 사용자 UUID 목록입니다.
     /// - Returns: viewport 범위와 프라이버시 필터가 적용된 실시간 프레즌스 목록입니다.
     func getLivePresence(
         minLatitude: Double,
@@ -528,7 +538,9 @@ protocol NearbyPresenceServiceProtocol {
         minLongitude: Double,
         maxLongitude: Double,
         maxRows: Int,
-        privacyMode: String
+        privacyMode: String,
+        requesterUserId: String?,
+        excludedUserIds: [String]
     ) async throws -> [WalkLivePresenceDTO]
 }
 
@@ -1244,11 +1256,15 @@ struct NearbyPresenceService: NearbyPresenceServiceProtocol {
         let lat_rounded: Double
         let lng_rounded: Double
         let speed_mps: Double?
-        let sequence: Int
-        let idempotency_key: String
+        let sequence: Int?
+        let idempotency_key: String?
         let updated_at: String?
         let expires_at: String?
         let privacy_mode: String?
+        let suppression_reason: String?
+        let delay_minutes: Int?
+        let required_min_sample: Int?
+        let obfuscation_meters: Int?
         let write_applied: Bool?
     }
 
@@ -1352,6 +1368,8 @@ struct NearbyPresenceService: NearbyPresenceServiceProtocol {
     ///   - maxLongitude: 조회 최대 경도 경계입니다.
     ///   - maxRows: 조회 최대 반환 row 수입니다.
     ///   - privacyMode: 조회 프라이버시 모드(`public`/`private`/`all`)입니다.
+    ///   - requesterUserId: 요청자 사용자 UUID 문자열입니다.
+    ///   - excludedUserIds: 즉시 비노출할 사용자 UUID 목록입니다.
     /// - Returns: 만료/프라이버시 필터가 적용된 실시간 presence 목록입니다.
     func getLivePresence(
         minLatitude: Double,
@@ -1359,9 +1377,11 @@ struct NearbyPresenceService: NearbyPresenceServiceProtocol {
         minLongitude: Double,
         maxLongitude: Double,
         maxRows: Int = 200,
-        privacyMode: String = "public"
+        privacyMode: String = "public",
+        requesterUserId: String? = nil,
+        excludedUserIds: [String] = []
     ) async throws -> [WalkLivePresenceDTO] {
-        let payload: [String: Any] = [
+        var payload: [String: Any] = [
             "action": "get_live_presence",
             "minLat": minLatitude,
             "maxLat": maxLatitude,
@@ -1370,6 +1390,12 @@ struct NearbyPresenceService: NearbyPresenceServiceProtocol {
             "maxRows": maxRows,
             "privacyMode": privacyMode
         ]
+        if let requesterUserId, requesterUserId.isEmpty == false {
+            payload["userId"] = requesterUserId
+        }
+        if excludedUserIds.isEmpty == false {
+            payload["excludedUserIds"] = excludedUserIds
+        }
 
         let data = try await client.request(
             .function(name: "nearby-presence"),
@@ -1422,16 +1448,21 @@ struct NearbyPresenceService: NearbyPresenceServiceProtocol {
     /// - Parameter row: `rpc_get_walk_live_presence` 또는 `rpc_upsert_walk_live_presence` 응답 행입니다.
     /// - Returns: UI/도메인 계층에서 바로 사용할 수 있는 라이브 프레즌스 DTO입니다.
     private static func makeLivePresenceDTO(from row: ResponseLivePresenceDTO) -> WalkLivePresenceDTO {
-        WalkLivePresenceDTO(
+        let effectiveIdempotencyKey = row.idempotency_key ?? "\(row.owner_user_id):\(row.session_id):\(row.updated_at ?? "0")"
+        return WalkLivePresenceDTO(
             ownerUserId: row.owner_user_id,
             sessionId: row.session_id,
             coordinate: CLLocationCoordinate2D(latitude: row.lat_rounded, longitude: row.lng_rounded),
             speedMetersPerSecond: row.speed_mps,
-            sequence: row.sequence,
-            idempotencyKey: row.idempotency_key,
+            sequence: row.sequence ?? 0,
+            idempotencyKey: effectiveIdempotencyKey,
             updatedAtEpoch: SupabaseISO8601.parseEpoch(row.updated_at) ?? 0,
             expiresAtEpoch: SupabaseISO8601.parseEpoch(row.expires_at) ?? 0,
             privacyMode: row.privacy_mode,
+            suppressionReason: row.suppression_reason,
+            delayMinutes: row.delay_minutes,
+            requiredMinSample: row.required_min_sample,
+            obfuscationMeters: row.obfuscation_meters,
             writeApplied: row.write_applied
         )
     }
