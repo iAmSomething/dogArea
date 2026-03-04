@@ -62,7 +62,7 @@ final class OpenMeteoWeatherRiskProvider: WeatherRiskProviding {
     /// - Parameters:
     ///   - session: HTTP 요청에 사용할 URLSession입니다.
     ///   - requestTimeout: 단건 요청 타임아웃(초)입니다.
-    init(session: URLSession = .shared, requestTimeout: TimeInterval = 2.5) {
+    init(session: URLSession = .shared, requestTimeout: TimeInterval = 6.0) {
         self.session = session
         self.requestTimeout = requestTimeout
     }
@@ -87,8 +87,26 @@ final class OpenMeteoWeatherRiskProvider: WeatherRiskProviding {
 
         var request = URLRequest(url: url)
         request.timeoutInterval = requestTimeout
-        let (data, _) = try await session.data(for: request)
-        let decoded = try JSONDecoder().decode(OpenMeteoResponse.self, from: data)
+
+        var decoded: OpenMeteoResponse?
+        var lastError: Error?
+        for attempt in 0...1 {
+            do {
+                let (data, _) = try await session.data(for: request)
+                decoded = try JSONDecoder().decode(OpenMeteoResponse.self, from: data)
+                break
+            } catch {
+                lastError = error
+                let urlError = error as? URLError
+                let shouldRetry = attempt == 0 && (urlError?.code == .timedOut || urlError?.code == .networkConnectionLost)
+                guard shouldRetry else { throw error }
+                try? await Task.sleep(nanoseconds: 350_000_000)
+            }
+        }
+
+        guard let decoded else {
+            throw lastError ?? URLError(.cannotParseResponse)
+        }
         let observedAt = Self.parseObservedAt(decoded.current.time)
         let risk = Self.score(
             precipitationMMPerHour: decoded.current.precipitation,
@@ -1895,7 +1913,16 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         }
     }
     private func publishWatchState() {
+        if Thread.isMainThread == false {
+            DispatchQueue.main.async { [weak self] in
+                self?.publishWatchState()
+            }
+            return
+        }
         guard let watchSession else { return }
+        #if os(iOS)
+        guard watchSession.isWatchAppInstalled else { return }
+        #endif
         let context: [String: Any] = [
             "isWalking": isWalking,
             "time": time,
@@ -1998,6 +2025,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
                     }
                 }
             } catch {
+                if self.isNearbyHotspotNotFoundError(error) {
+                    return
+                }
                 print("visibility sync failed: \(error.localizedDescription)")
             }
         }
@@ -2416,7 +2446,21 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     }
 
     private func syncWatchContext(force: Bool = false) {
+        if Thread.isMainThread == false {
+            DispatchQueue.main.async { [weak self] in
+                self?.syncWatchContext(force: force)
+            }
+            return
+        }
         guard let watchSession, watchSession.activationState == .activated else { return }
+        #if os(iOS)
+        guard watchSession.isWatchAppInstalled else {
+            if watchSyncStatusText != "워치 앱 미설치" {
+                watchSyncStatusText = "워치 앱 미설치"
+            }
+            return
+        }
+        #endif
 
         let now = Date()
         if force == false, now.timeIntervalSince(lastWatchContextSyncAt) < 1.0 {
@@ -2472,6 +2516,11 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 
     @discardableResult
     private func handleWatchPayload(_ payload: [String: Any]) -> [String: Any]? {
+        if Thread.isMainThread == false {
+            return DispatchQueue.main.sync { [weak self] in
+                self?.handleWatchPayload(payload)
+            }
+        }
         guard let envelope = parseWatchEnvelope(from: payload) else { return nil }
         let actionName = envelope.action.rawValue
         let sentAtLabel: String = {
@@ -2513,10 +2562,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
                 "actionId": envelope.actionId
             ]
         )
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            self.applyWatchAction(envelope)
-        }
+        self.applyWatchAction(envelope)
         return [
             "version": WatchContract.version,
             "type": WatchContract.ackType,
@@ -2741,11 +2787,14 @@ extension MapViewModel {
         activationDidCompleteWith activationState: WCSessionActivationState,
         error: Error?
     ) {
-        if let error {
-            print("watch activation failed: \(error.localizedDescription)")
-            return
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            if let error {
+                print("watch activation failed: \(error.localizedDescription)")
+                return
+            }
+            self.syncWatchContext(force: true)
         }
-        self.syncWatchContext(force: true)
     }
 
     #if os(iOS)
@@ -2756,7 +2805,9 @@ extension MapViewModel {
     #endif
 
     func sessionReachabilityDidChange(_ session: WCSession) {
-        self.syncWatchContext(force: true)
+        DispatchQueue.main.async { [weak self] in
+            self?.syncWatchContext(force: true)
+        }
     }
 
     func session(

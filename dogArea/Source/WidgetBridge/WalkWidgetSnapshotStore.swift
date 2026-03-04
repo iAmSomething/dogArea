@@ -303,7 +303,12 @@ final class DefaultWalkWidgetSnapshotStore: WalkWidgetSnapshotStoring {
     /// App Group 저장소를 우선 사용하고, 실패 시 표준 저장소를 반환합니다.
     /// - Returns: 위젯과 앱 간 공유 가능한 UserDefaults 인스턴스입니다.
     private static func resolveStorage() -> UserDefaults {
-        UserDefaults(suiteName: WalkWidgetBridgeContract.appGroupIdentifier) ?? .standard
+        guard FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: WalkWidgetBridgeContract.appGroupIdentifier
+        ) != nil else {
+            return .standard
+        }
+        return UserDefaults(suiteName: WalkWidgetBridgeContract.appGroupIdentifier) ?? .standard
     }
 }
 
@@ -352,7 +357,12 @@ final class DefaultTerritoryWidgetSnapshotStore: TerritoryWidgetSnapshotStoring 
     /// App Group 저장소를 우선 사용하고, 실패 시 표준 저장소를 반환합니다.
     /// - Returns: 위젯과 앱 간 공유 가능한 UserDefaults 인스턴스입니다.
     private static func resolveStorage() -> UserDefaults {
-        UserDefaults(suiteName: WalkWidgetBridgeContract.appGroupIdentifier) ?? .standard
+        guard FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: WalkWidgetBridgeContract.appGroupIdentifier
+        ) != nil else {
+            return .standard
+        }
+        return UserDefaults(suiteName: WalkWidgetBridgeContract.appGroupIdentifier) ?? .standard
     }
 }
 
@@ -401,7 +411,12 @@ final class DefaultHotspotWidgetSnapshotStore: HotspotWidgetSnapshotStoring {
     /// App Group 저장소를 우선 사용하고, 실패 시 표준 저장소를 반환합니다.
     /// - Returns: 위젯과 앱 간 공유 가능한 UserDefaults 인스턴스입니다.
     private static func resolveStorage() -> UserDefaults {
-        UserDefaults(suiteName: WalkWidgetBridgeContract.appGroupIdentifier) ?? .standard
+        guard FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: WalkWidgetBridgeContract.appGroupIdentifier
+        ) != nil else {
+            return .standard
+        }
+        return UserDefaults(suiteName: WalkWidgetBridgeContract.appGroupIdentifier) ?? .standard
     }
 }
 
@@ -450,6 +465,11 @@ final class DefaultQuestRivalWidgetSnapshotStore: QuestRivalWidgetSnapshotStorin
     /// App Group 저장소를 우선 사용하고, 실패 시 표준 저장소를 반환합니다.
     /// - Returns: 위젯과 앱 간 공유 가능한 UserDefaults 인스턴스입니다.
     private static func resolveStorage() -> UserDefaults {
-        UserDefaults(suiteName: WalkWidgetBridgeContract.appGroupIdentifier) ?? .standard
+        guard FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: WalkWidgetBridgeContract.appGroupIdentifier
+        ) != nil else {
+            return .standard
+        }
+        return UserDefaults(suiteName: WalkWidgetBridgeContract.appGroupIdentifier) ?? .standard
     }
 }
