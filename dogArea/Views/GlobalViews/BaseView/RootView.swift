@@ -49,14 +49,13 @@ struct RootView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            tabContent
-            if tabStatus.isTabAppear {
-                CustomTabBar(selectedTab: $selectedTab)
-                    .padding(.bottom, 2)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+        tabContent
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if tabStatus.isTabAppear {
+                    CustomTabBar(selectedTab: $selectedTab)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
             }
-        }
         .background(Color.appTabScaffoldBackground.ignoresSafeArea())
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .overlay(content: {
