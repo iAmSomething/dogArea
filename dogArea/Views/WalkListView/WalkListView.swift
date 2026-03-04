@@ -87,6 +87,8 @@ struct WalkListView: View {
                     }
                     
                 }
+                .padding(.top, 8)
+                .padding(.bottom, CustomTabBar.reservedContentHeight + 12)
             }.refreshable {
                 viewModel.fetchModel()
             }

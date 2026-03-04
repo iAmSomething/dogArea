@@ -54,8 +54,8 @@ struct NotificationCenterView: View {
                 accountActionCard
             }
             .padding(.horizontal, 16)
-            .padding(.top, 16)
-            .padding(.bottom, 24)
+            .padding(.top, 24)
+            .padding(.bottom, CustomTabBar.reservedContentHeight + 20)
         }
         .scrollIndicators(.hidden)
         .onAppear {
@@ -91,8 +91,8 @@ struct NotificationCenterView: View {
                 guestFeaturePreviewCard
             }
             .padding(.horizontal, 16)
-            .padding(.top, 16)
-            .padding(.bottom, 24)
+            .padding(.top, 24)
+            .padding(.bottom, CustomTabBar.reservedContentHeight + 20)
         }
         .scrollIndicators(.hidden)
     }

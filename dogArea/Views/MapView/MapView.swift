@@ -15,7 +15,7 @@ struct MapView : View{
     @EnvironmentObject var loading: LoadingViewModel
     @EnvironmentObject var authFlow: AuthFlowCoordinator
     @StateObject private var myAlert = CustomAlertViewModel()
-    @StateObject private var viewModel = MapViewModel()
+    @ObservedObject var viewModel: MapViewModel
     @State private var isModalPresented = false
     @State private var isWalkingViewPresented = false
     @State private var endWalkingViewPresented = false
@@ -29,6 +29,12 @@ struct MapView : View{
     @State private var pendingUndoPointID: UUID? = nil
     @State private var addPointUndoDismissTask: Task<Void, Never>? = nil
     @ObservedObject var tabStatus = TabAppear.shared
+
+    /// 지도 화면에 사용할 상태 객체를 주입해 탭 전환 후에도 카메라/산책 상태를 유지합니다.
+    /// - Parameter viewModel: 지도 상태를 보유하는 `MapViewModel`입니다.
+    init(viewModel: MapViewModel = MapViewModel()) {
+        self._viewModel = ObservedObject(wrappedValue: viewModel)
+    }
     
     var body : some View {
         GeometryReader { proxy in
@@ -153,7 +159,7 @@ struct MapView : View{
                         .clipShape(RoundedCornersShape(radius: 20,corners: [.topLeft,.topRight]))
                 }
             }
-                .padding(.bottom, CustomTabBar.reservedContentHeight - 8)
+                .padding(.bottom, CustomTabBar.reservedContentHeight + 8)
         }
         }
         .onAppear {
