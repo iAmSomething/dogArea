@@ -794,15 +794,31 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
         }
     }
 
-    private let client: SupabaseHTTPClient
+    private enum SyncWalkFunctionRoute {
+        static let primary = "sync-walk"
+        static let legacy = "sync_walk"
+    }
 
-    init(client: SupabaseHTTPClient = .live) {
+    private static let syncWalkFunctionUnavailableUntilKey = "sync.walk.function.unavailable.until.v1"
+    private static let syncWalkFunctionUnavailableCooldownSeconds: TimeInterval = 10 * 60
+
+    private let client: SupabaseHTTPClient
+    private let availabilityStore: UserDefaults
+
+    init(
+        client: SupabaseHTTPClient = .live,
+        availabilityStore: UserDefaults = .standard
+    ) {
         self.client = client
+        self.availabilityStore = availabilityStore
     }
 
     func send(item: SyncOutboxItem) async -> SyncOutboxSendResult {
         guard AppFeatureGate.isAllowed(.cloudSync, session: AppFeatureGate.currentSession()) else {
             return .retryable(.unauthorized)
+        }
+        guard isSyncWalkFunctionTemporarilyUnavailable() == false else {
+            return .permanent(.notConfigured)
         }
 
         let body: [String: Any] = [
@@ -814,17 +830,17 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
         ]
 
         do {
-            let data = try await client.request(
-                .function(name: "sync-walk"),
-                method: .post,
+            let data = try await requestSyncWalkFunction(
                 bodyData: try JSONSerialization.data(withJSONObject: body)
             )
+            clearSyncWalkFunctionUnavailableMarker()
             persistSeasonCatchupBuffSnapshotIfNeeded(item: item, data: data)
             return .success
         } catch let error as SupabaseHTTPError {
             switch error {
             case .notConfigured:
-                return .retryable(.notConfigured)
+                markSyncWalkFunctionTemporarilyUnavailable()
+                return .permanent(.notConfigured)
             case .unexpectedStatusCode(let statusCode):
                 switch statusCode {
                 case 401, 403:
@@ -834,7 +850,8 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
                 case 429, 500..<600:
                     return .retryable(.serverError)
                 case 404:
-                    return .retryable(.notConfigured)
+                    markSyncWalkFunctionTemporarilyUnavailable()
+                    return .permanent(.notConfigured)
                 case 400, 422:
                     return .permanent(.schemaMismatch)
                 case 507:
@@ -863,6 +880,9 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
         guard AppFeatureGate.isAllowed(.cloudSync, session: AppFeatureGate.currentSession()) else {
             return nil
         }
+        guard isSyncWalkFunctionTemporarilyUnavailable() == false else {
+            return nil
+        }
         let normalized = sessionIds
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
             .filter { $0.isEmpty == false }
@@ -875,11 +895,21 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
             "session_ids": normalized
         ]
 
-        guard let data = try? await client.request(
-            .function(name: "sync-walk"),
-            method: .post,
-            bodyData: try JSONSerialization.data(withJSONObject: body)
-        ) else {
+        guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
+            return nil
+        }
+        let data: Data
+        do {
+            data = try await requestSyncWalkFunction(bodyData: bodyData)
+            clearSyncWalkFunctionUnavailableMarker()
+        } catch let error as SupabaseHTTPError {
+            if case .notConfigured = error {
+                markSyncWalkFunctionTemporarilyUnavailable()
+            } else if case .unexpectedStatusCode(404) = error {
+                markSyncWalkFunctionTemporarilyUnavailable()
+            }
+            return nil
+        } catch {
             return nil
         }
 
@@ -894,6 +924,48 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
             totalAreaM2: summary.totalAreaM2,
             totalDurationSec: summary.totalDurationSec
         )
+    }
+
+    /// `sync-walk` 함수 호출을 수행하고 404 발생 시 legacy 라우트(`sync_walk`)로 한 번 더 시도합니다.
+    /// - Parameter bodyData: 함수 요청 본문(JSON) 데이터입니다.
+    /// - Returns: 함수 응답 데이터입니다.
+    private func requestSyncWalkFunction(bodyData: Data) async throws -> Data {
+        do {
+            return try await client.request(
+                .function(name: SyncWalkFunctionRoute.primary),
+                method: .post,
+                bodyData: bodyData
+            )
+        } catch let error as SupabaseHTTPError {
+            guard case .unexpectedStatusCode(404) = error else {
+                throw error
+            }
+            return try await client.request(
+                .function(name: SyncWalkFunctionRoute.legacy),
+                method: .post,
+                bodyData: bodyData
+            )
+        }
+    }
+
+    /// `sync-walk` 함수 404 감지 이후 쿨다운 중인지 확인합니다.
+    /// - Parameter now: 쿨다운 만료 판정 기준 시각입니다.
+    /// - Returns: 쿨다운이 남아 있으면 `true`입니다.
+    private func isSyncWalkFunctionTemporarilyUnavailable(now: Date = Date()) -> Bool {
+        let until = availabilityStore.double(forKey: Self.syncWalkFunctionUnavailableUntilKey)
+        return until > now.timeIntervalSince1970
+    }
+
+    /// `sync-walk` 함수 404 발생 시 재시도 폭주를 방지하기 위해 쿨다운 마커를 기록합니다.
+    /// - Parameter now: 쿨다운 만료시각 계산 기준 시각입니다.
+    private func markSyncWalkFunctionTemporarilyUnavailable(now: Date = Date()) {
+        let until = now.timeIntervalSince1970 + Self.syncWalkFunctionUnavailableCooldownSeconds
+        availabilityStore.set(until, forKey: Self.syncWalkFunctionUnavailableUntilKey)
+    }
+
+    /// `sync-walk` 호출 성공 시 비가용 쿨다운 마커를 제거합니다.
+    private func clearSyncWalkFunctionUnavailableMarker() {
+        availabilityStore.removeObject(forKey: Self.syncWalkFunctionUnavailableUntilKey)
     }
 
     private func persistSeasonCatchupBuffSnapshotIfNeeded(item: SyncOutboxItem, data: Data) {
