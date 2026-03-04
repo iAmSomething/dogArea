@@ -14,8 +14,8 @@ import UIKit
 struct MapView : View{
     @EnvironmentObject var loading: LoadingViewModel
     @EnvironmentObject var authFlow: AuthFlowCoordinator
-    @ObservedObject var myAlert: CustomAlertViewModel = .init()
-    @ObservedObject var viewModel: MapViewModel = .init()
+    @StateObject private var myAlert = CustomAlertViewModel()
+    @StateObject private var viewModel = MapViewModel()
     @State private var isModalPresented = false
     @State private var isWalkingViewPresented = false
     @State private var endWalkingViewPresented = false
@@ -151,6 +151,7 @@ struct MapView : View{
                         .clipShape(RoundedCornersShape(radius: 20,corners: [.topLeft,.topRight]))
                 }
             }
+                .padding(.bottom, CustomTabBar.reservedContentHeight - 8)
         }
         }
         .onAppear {
