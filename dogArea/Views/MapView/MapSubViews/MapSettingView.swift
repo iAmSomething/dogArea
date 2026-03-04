@@ -99,6 +99,12 @@ struct MapSettingView: View {
                 viewModel.toggleWalkPointRecordMode()
             }
             toggleChip(
+                title: viewModel.isAddPointLongPressModeEnabled ? "영역 추가: 길게 0.4s" : "영역 추가: 1탭+Undo",
+                isActive: viewModel.isAddPointLongPressModeEnabled
+            ) {
+                viewModel.toggleAddPointLongPressMode()
+            }
+            toggleChip(
                 title: "모션 축소",
                 isActive: viewModel.isMapMotionReduced
             ) {

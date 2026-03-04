@@ -298,6 +298,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     @Published private(set) var weatherOverlayStatusText: String = "날씨 상태 정상"
     @Published private(set) var weatherOverlayFallbackActive: Bool = false
     @Published var mapMotionReduced: Bool = false
+    @Published var isAddPointLongPressModeEnabled: Bool = false
     private let watchSession = WCSession.isSupported() ? WCSession.default : nil
     private let featureFlags = FeatureFlagStore.shared
     private let metricTracker = AppMetricTracker.shared
@@ -322,6 +323,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private let nearbyHotspotEnabledKey = "nearby.hotspotEnabled"
     private let nearbyPresenceUserIdKey = "nearby.presenceUserId"
     private let mapMotionReducedKey = "map.motion.reduced"
+    private let addPointLongPressModeKey = "map.addPoint.longPressModeEnabled"
     private let weatherRiskOverrideKey = "weather.risk.level.v1"
     private let weatherRiskObservedAtKey = "weather.risk.observed_at.v1"
     private let weatherRiskCacheTTL: TimeInterval = 7200
@@ -506,12 +508,14 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         let storedNearbyHotspotEnabled = preferenceStore.bool(forKey: nearbyHotspotEnabledKey, default: true)
         let storedLocationSharingEnabled = preferenceStore.bool(forKey: locationSharingKey, default: false)
         let storedMotionReduced = preferenceStore.bool(forKey: mapMotionReducedKey, default: false)
+        let storedAddPointLongPressMode = preferenceStore.bool(forKey: addPointLongPressModeKey, default: false)
 
         self.heatmapEnabled = featureFlags.isEnabled(.heatmapV1) ? storedHeatmapEnabled : false
         let nearbyFeatureOn = featureFlags.isEnabled(.nearbyHotspotV1)
         self.nearbyHotspotEnabled = nearbyFeatureOn ? storedNearbyHotspotEnabled : false
         self.locationSharingEnabled = nearbyFeatureOn ? storedLocationSharingEnabled : false
         self.mapMotionReduced = storedMotionReduced
+        self.isAddPointLongPressModeEnabled = storedAddPointLongPressMode
         self.walkStartCountdownEnabled = userSessionStore.walkStartCountdownEnabled()
         self.walkAutoEndPolicyEnabled = true
         self.walkPointRecordMode = WalkPointRecordMode(
@@ -574,9 +578,13 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             }
         }
     }
-    func addLocation(){
-        guard let location = self.location else { return }
-        appendWalkPoint(from: location, recordedAt: Date(), source: .manual)
+    /// 현재 위치를 수동 포인트로 즉시 추가합니다.
+    /// - Returns: 포인트가 추가되면 생성된 포인트 UUID, 위치 정보가 없으면 `nil`입니다.
+    @discardableResult
+    func addLocation() -> UUID? {
+        guard let location = self.location else { return nil }
+        let appendedPoint = appendWalkPoint(from: location, recordedAt: Date(), source: .manual)
+        return appendedPoint.id
     }
 
     /// 수동 포인트 추가 전에 현재 카메라 중심/거리 상태를 저장합니다.
@@ -588,9 +596,53 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     }
 
     /// 수동 포인트를 추가한 뒤 필요 시 저장된 카메라 상태를 복원합니다.
-    func addLocationPreservingCamera() {
-        addLocation()
+    /// - Returns: 포인트가 추가되면 생성된 포인트 UUID, 추가하지 못하면 `nil`입니다.
+    @discardableResult
+    func addLocationPreservingCamera() -> UUID? {
+        let addedPointId = addLocation()
         restorePointAddCameraSnapshotIfNeeded()
+        return addedPointId
+    }
+
+    /// 지정한 포인트 UUID를 현재 세션에서 롤백합니다.
+    /// - Parameter pointID: 실행 취소할 포인트 UUID입니다.
+    /// - Returns: 실제로 포인트가 롤백되면 `true`, 대상이 없으면 `false`입니다.
+    @discardableResult
+    func undoAddedPoint(_ pointID: UUID) -> Bool {
+        guard let targetIndex = polygon.locations.firstIndex(where: { $0.id == pointID }) else {
+            return false
+        }
+        polygon.locations.remove(at: targetIndex)
+
+        if polygon.locations.count > 2 {
+            polygon.makePolygon(walkArea: calculateArea(), walkTime: time)
+        } else {
+            polygon.polygon = nil
+            polygon.walkingArea = calculateArea(points: polygon.locations)
+            polygon.walkingTime = time
+        }
+
+        if let lastPoint = polygon.locations.last {
+            let lastPointDate = Date(timeIntervalSince1970: lastPoint.createdAt)
+            lastAutoRecordedLocation = CLLocation(
+                latitude: lastPoint.coordinate.latitude,
+                longitude: lastPoint.coordinate.longitude
+            )
+            lastAutoRecordedAt = lastPointDate
+            lastPointEventAt = lastPointDate
+            movementAnchorLocation = lastAutoRecordedLocation
+        } else {
+            lastAutoRecordedLocation = nil
+            lastAutoRecordedAt = .distantPast
+            lastPointEventAt = nil
+            movementAnchorLocation = nil
+        }
+
+        persistActiveWalkSession(force: true)
+        syncWatchContext(force: true)
+        syncWalkWidgetSnapshot(force: true)
+        syncWalkLiveActivity(force: true)
+        return true
     }
     func removeLocation(_ locationID : UUID){
         if polygon.locations.firstIndex(where:{ $0.id == locationID}) != nil {
@@ -704,6 +756,12 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         walkPointRecordMode = walkPointRecordMode == .manual ? .auto : .manual
         userSessionStore.setWalkPointRecordModeRawValue(walkPointRecordMode.rawValue)
         resetAutoPointRecordState()
+    }
+
+    /// 영역 추가 버튼 입력 방식을 1탭 모드와 길게 누르기 모드 사이에서 전환합니다.
+    func toggleAddPointLongPressMode() {
+        isAddPointLongPressModeEnabled.toggle()
+        preferenceStore.set(isAddPointLongPressModeEnabled, forKey: addPointLongPressModeKey)
     }
 
     var isAutoPointRecordMode: Bool {
@@ -1380,8 +1438,13 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         #endif
     }
 
-    private func appendWalkPoint(from location: CLLocation, recordedAt: Date, source: PointAppendSource) {
-        polygon.addPoint(.init(coordinate: location.coordinate))
+    private func appendWalkPoint(from location: CLLocation, recordedAt: Date, source: PointAppendSource) -> Location {
+        let appendedPoint = Location(
+            coordinate: location.coordinate,
+            id: UUID(),
+            createdAt: recordedAt.timeIntervalSince1970
+        )
+        polygon.addPoint(appendedPoint)
         pushCaptureRipple(at: location.coordinate, source: source)
         lastAutoRecordedLocation = location
         lastAutoRecordedAt = recordedAt
@@ -1404,6 +1467,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
                 "recordedAt": recordedAt.timeIntervalSince1970
             ]
         )
+        return appendedPoint
     }
 
     private func resetAutoPointRecordState() {

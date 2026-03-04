@@ -18,14 +18,12 @@ func load(_ relativePath: String) -> String {
 
 let mapView = load("dogArea/Views/MapView/MapView.swift")
 let mapViewModel = load("dogArea/Views/MapView/MapViewModel.swift")
-let mapAlertSubView = load("dogArea/Views/MapView/MapSubViews/MapAlertSubView.swift")
 
 assertTrue(mapView.contains("viewModel.preparePointAddCameraSnapshot()"), "MapView add-point action should prepare camera snapshot")
 assertTrue(!mapView.contains("viewModel.setTrackingMode()\n                myAlert.alertType = .addPoint"), "MapView add-point action should not switch tracking mode directly")
 assertTrue(mapView.contains("viewModel.handleLocationButtonTap()"), "MapView current-location button should delegate to tracking handler")
 assertTrue(mapView.contains("viewModel.recordCameraChange(context.camera)"), "MapView should forward camera change events for reason logging")
-
-assertTrue(mapAlertSubView.contains("viewModel.addLocationPreservingCamera()"), "MapAlertSubView should preserve camera while adding point")
+assertTrue(mapView.contains("handleAddPointRequest()"), "MapView add-point action should use one-tap request handler")
 
 assertTrue(mapViewModel.contains("enum CameraChangeReason"), "MapViewModel should define camera change reason enum")
 assertTrue(mapViewModel.contains("case manualMove = \"manual_move\""), "MapViewModel should log manual move reason")
