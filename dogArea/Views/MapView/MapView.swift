@@ -28,6 +28,7 @@ struct MapView : View{
     @State private var bannerAutoDismissTask: Task<Void, Never>? = nil
     @State private var pendingUndoPointID: UUID? = nil
     @State private var addPointUndoDismissTask: Task<Void, Never>? = nil
+    @State private var lastCameraEventProcessedAt: Date = .distantPast
     @ObservedObject var tabStatus = TabAppear.shared
 
     /// 지도 화면에 사용할 상태 객체를 주입해 탭 전환 후에도 카메라/산책 상태를 유지합니다.
@@ -261,17 +262,25 @@ struct MapView : View{
         })
         .onMapCameraChange{ context in
             viewModel.recordCameraChange(context.camera)
+            let now = Date()
+            guard now.timeIntervalSince(lastCameraEventProcessedAt) >= 0.15 else { return }
+            lastCameraEventProcessedAt = now
+
             if let loc = viewModel.location {
-                self.isCameraSeeingSomewhere =  context.camera.centerCoordinate.clLocation.distance(from: loc) > 300
+                let distanceMeters = greatCircleDistanceMeters(
+                    from: context.camera.centerCoordinate,
+                    to: loc.coordinate
+                )
+                self.isCameraSeeingSomewhere = distanceMeters > 300
             } else {
                 self.isCameraSeeingSomewhere = false
             }
-            if !viewModel.showOnlyOne {
-                if Int(context.camera.distance) != Int(self.distance) {
-                    self.distance = context.camera.distance
-                    viewModel.updateAnnotations(cameraDistance: context.camera.distance)
-                }
-            }
+
+            guard !viewModel.showOnlyOne else { return }
+            let nextDistance = max(120.0, context.camera.distance)
+            guard abs(nextDistance - self.distance) >= 120 else { return }
+            self.distance = nextDistance
+            viewModel.updateAnnotations(cameraDistance: nextDistance)
         }
         .overlay(alignment: .top) {
             VStack(spacing: 6) {
@@ -581,6 +590,28 @@ struct MapView : View{
         guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
         guard UIApplication.shared.canOpenURL(url) else { return }
         UIApplication.shared.open(url)
+    }
+
+    /// 두 좌표 사이의 대권 거리(미터)를 계산합니다.
+    /// - Parameters:
+    ///   - from: 시작 좌표입니다.
+    ///   - to: 도착 좌표입니다.
+    /// - Returns: 두 좌표 간 거리(미터)입니다.
+    private func greatCircleDistanceMeters(
+        from: CLLocationCoordinate2D,
+        to: CLLocationCoordinate2D
+    ) -> Double {
+        let earthRadius = 6_371_000.0
+        let lat1 = from.latitude * .pi / 180
+        let lon1 = from.longitude * .pi / 180
+        let lat2 = to.latitude * .pi / 180
+        let lon2 = to.longitude * .pi / 180
+        let dLat = lat2 - lat1
+        let dLon = lon2 - lon1
+        let a = sin(dLat / 2) * sin(dLat / 2)
+            + cos(lat1) * cos(lat2) * sin(dLon / 2) * sin(dLon / 2)
+        let c = 2 * atan2(sqrt(a), sqrt(max(0, 1 - a)))
+        return earthRadius * c
     }
 
     private func recomputeBannerQueue() {

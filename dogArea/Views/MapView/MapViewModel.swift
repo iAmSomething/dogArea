@@ -1670,15 +1670,10 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         guard let snapshot = pendingPointAddCameraSnapshot else { return }
         defer { pendingPointAddCameraSnapshot = nil }
 
-        let currentCenter = CLLocation(
-            latitude: camera.centerCoordinate.latitude,
-            longitude: camera.centerCoordinate.longitude
+        let centerDelta = greatCircleDistanceMeters(
+            from: camera.centerCoordinate,
+            to: snapshot.centerCoordinate
         )
-        let preservedCenter = CLLocation(
-            latitude: snapshot.centerCoordinate.latitude,
-            longitude: snapshot.centerCoordinate.longitude
-        )
-        let centerDelta = currentCenter.distance(from: preservedCenter)
         let distanceDelta = abs(camera.distance - snapshot.distance)
         guard centerDelta > 15 || distanceDelta > 15 else { return }
 
@@ -1718,11 +1713,31 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 
         if lastReason != reason { return true }
 
-        let previous = CLLocation(latitude: lastCenter.latitude, longitude: lastCenter.longitude)
-        let current = CLLocation(latitude: camera.centerCoordinate.latitude, longitude: camera.centerCoordinate.longitude)
-        let centerDelta = current.distance(from: previous)
+        let centerDelta = greatCircleDistanceMeters(from: lastCenter, to: camera.centerCoordinate)
         let distanceDelta = abs(camera.distance - lastDistance)
         return centerDelta >= cameraLogCenterThreshold || distanceDelta >= cameraLogDistanceThreshold
+    }
+
+    /// 두 좌표 사이의 대권 거리(미터)를 계산합니다.
+    /// - Parameters:
+    ///   - from: 시작 좌표입니다.
+    ///   - to: 도착 좌표입니다.
+    /// - Returns: 두 좌표 간 거리(미터)입니다.
+    private func greatCircleDistanceMeters(
+        from: CLLocationCoordinate2D,
+        to: CLLocationCoordinate2D
+    ) -> Double {
+        let earthRadius = 6_371_000.0
+        let lat1 = from.latitude * .pi / 180
+        let lon1 = from.longitude * .pi / 180
+        let lat2 = to.latitude * .pi / 180
+        let lon2 = to.longitude * .pi / 180
+        let dLat = lat2 - lat1
+        let dLon = lon2 - lon1
+        let a = sin(dLat / 2) * sin(dLat / 2)
+            + cos(lat1) * cos(lat2) * sin(dLon / 2) * sin(dLon / 2)
+        let c = 2 * atan2(sqrt(a), sqrt(max(0, 1 - a)))
+        return earthRadius * c
     }
 
     private func forceQuit() {
