@@ -26,6 +26,8 @@ struct MapView : View{
     @State private var activeBanner: MapTopBannerCandidate? = nil
     @State private var bannerSuppressedUntil: [MapTopBannerKind: Date] = [:]
     @State private var bannerAutoDismissTask: Task<Void, Never>? = nil
+    @State private var pendingUndoPointID: UUID? = nil
+    @State private var addPointUndoDismissTask: Task<Void, Never>? = nil
     @ObservedObject var tabStatus = TabAppear.shared
     
     var body : some View {
@@ -229,6 +231,7 @@ struct MapView : View{
         }
         .onDisappear {
             bannerAutoDismissTask?.cancel()
+            clearPendingAddPointUndo()
         }
         .sheet(isPresented: $isModalPresented){
             MapSettingView(viewModel: self.viewModel, myAlert: self.myAlert)
@@ -287,7 +290,31 @@ struct MapView : View{
                         .cornerRadius(10)
                         .padding(.top, 12)
                 }
+
+                if pendingUndoPointID != nil {
+                    HStack(spacing: 10) {
+                        Text("포인트를 추가했어요")
+                            .font(.appFont(for: .SemiBold, size: 13))
+                            .foregroundStyle(Color.black)
+                        Spacer()
+                        Button("실행 취소") {
+                            undoLastAddedPoint()
+                        }
+                        .font(.appFont(for: .SemiBold, size: 12))
+                        .foregroundStyle(Color.appInk)
+                        .padding(.horizontal, 10)
+                        .frame(minHeight: 44)
+                        .background(Color.white.opacity(0.9))
+                        .cornerRadius(8)
+                        .accessibilityLabel("포인트 추가 실행 취소")
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(Color.appYellowPale)
+                    .cornerRadius(10)
+                }
             }
+            .padding(.horizontal, 12)
         }
     }
 
@@ -461,10 +488,21 @@ struct MapView : View{
                     .background(Color.appGreen)
                     .cornerRadius(6)
             }
+            if viewModel.isAddPointLongPressModeEnabled {
+                Text("길게 0.4s")
+                    .font(.appFont(for: .SemiBold, size: 11))
+                    .foregroundStyle(Color.appTextDarkGray)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.white.opacity(0.9))
+                    .cornerRadius(6)
+            }
             Button {
-                viewModel.preparePointAddCameraSnapshot()
-                myAlert.alertType = .addPoint
-                myAlert.callAlert(type: .addPoint)
+                guard viewModel.isAddPointLongPressModeEnabled == false else {
+                    viewModel.walkStatusMessage = "길게 눌러 포인트를 추가하세요."
+                    return
+                }
+                handleAddPointRequest()
             } label: {
                 ZStack {
                     Circle()
@@ -477,7 +515,49 @@ struct MapView : View{
                 }
             }
             .buttonStyle(.plain)
+            .simultaneousGesture(
+                LongPressGesture(minimumDuration: 0.4)
+                    .onEnded { _ in
+                        guard viewModel.isAddPointLongPressModeEnabled else { return }
+                        handleAddPointRequest()
+                    }
+            )
+            .accessibilityLabel(viewModel.isAddPointLongPressModeEnabled ? "길게 눌러 영역 추가" : "영역 추가")
+            .accessibilityHint("추가 후 3초 안에 실행 취소할 수 있습니다")
         }
+    }
+
+    /// 영역 추가 버튼 요청을 처리하고 3초 Undo 토스트를 예약합니다.
+    private func handleAddPointRequest() {
+        viewModel.preparePointAddCameraSnapshot()
+        guard let addedPointID = viewModel.addLocationPreservingCamera() else { return }
+        scheduleAddPointUndo(for: addedPointID)
+    }
+
+    /// 방금 추가된 포인트에 대해 3초 실행 취소 윈도우를 시작합니다.
+    /// - Parameter pointID: 실행 취소 대상으로 추적할 포인트 UUID입니다.
+    private func scheduleAddPointUndo(for pointID: UUID) {
+        addPointUndoDismissTask?.cancel()
+        pendingUndoPointID = pointID
+        addPointUndoDismissTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            guard pendingUndoPointID == pointID else { return }
+            clearPendingAddPointUndo()
+        }
+    }
+
+    /// 활성화된 포인트 추가 Undo 요청을 실행합니다.
+    private func undoLastAddedPoint() {
+        guard let pointID = pendingUndoPointID else { return }
+        guard viewModel.undoAddedPoint(pointID) else { return }
+        clearPendingAddPointUndo()
+    }
+
+    /// 현재 표시 중인 포인트 추가 Undo 상태를 정리합니다.
+    private func clearPendingAddPointUndo() {
+        addPointUndoDismissTask?.cancel()
+        addPointUndoDismissTask = nil
+        pendingUndoPointID = nil
     }
 
     /// 상태 메시지에 위치 권한 안내가 포함되어 설정 이동 버튼을 노출해야 하는지 판단합니다.

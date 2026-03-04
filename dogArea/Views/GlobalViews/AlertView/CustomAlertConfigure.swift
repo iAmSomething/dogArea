@@ -9,7 +9,6 @@ import Foundation
 enum AlertActionType{
     case custom(AlertModel , () -> () , () -> ())
     case customThreeButton(AlertModel, () -> (), () -> (), () -> ())
-    case addPoint
     case logOut
     case annotationSelected(Location)
     case deletePolygon(UUID)
@@ -19,8 +18,6 @@ enum AlertActionType{
             return model
         case .customThreeButton(let model, _, _, _):
             return model
-        case .addPoint:
-            return AlertModel(title: "영역 표시", message: "영역을 표시하겠습니까?", configure: .defaultType)
         case .logOut:
             return AlertModel(title: "계정 오류", message: "로그아웃 되었습니다.", configure: .oneButton(buttonMsg: "로그인 하기"))
         case .annotationSelected(let location):

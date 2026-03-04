@@ -14,14 +14,6 @@ struct MapAlertSubView: View {
     if myAlert.isAlert {
       var ca : CustomAlert
       switch myAlert.alertType {
-      case .addPoint :
-        ca = CustomAlert(presentAlert: $myAlert.isAlert,
-                         alertModel: myAlert.alertType.model,
-                         leftButtonAction: {
-          viewModel.addLocationPreservingCamera()
-        },rightButtonAction: {
-//            print("right")
-        })
       case .annotationSelected(_) :
         ca = CustomAlert(presentAlert: $myAlert.isAlert,
                          alertModel: myAlert.alertType.model,
