@@ -78,6 +78,7 @@ swift scripts/map_area_calculation_service_unit_check.swift
 swift scripts/sync_walk_404_policy_unit_check.swift
 swift scripts/home_guest_upgrade_retry_cta_unit_check.swift
 swift scripts/home_weather_status_card_restore_unit_check.swift
+swift scripts/home_area_milestone_feedback_unit_check.swift
 swift scripts/settings_profile_account_actions_unit_check.swift
 swift scripts/profile_edit_userinfo_recovery_unit_check.swift
 swift scripts/project_stability_unit_check.swift
