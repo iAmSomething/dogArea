@@ -17,9 +17,11 @@ struct TerritoryGoalView: View {
             .padding(.top, 18)
             .padding(.bottom, 28)
         }
+        .safeAreaPadding(.top, 8)
         .background(Color.appTabScaffoldBackground.ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle("영역 목표 상세")
+        .accessibilityIdentifier("screen.territoryGoal")
         .onAppear {
             tabStatus.hide()
             viewModel.refresh()

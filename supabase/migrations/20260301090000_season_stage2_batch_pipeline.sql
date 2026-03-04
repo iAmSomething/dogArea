@@ -60,7 +60,7 @@ create table if not exists public.tile_events (
       coalesce(season_id::text, '') || ':' ||
       coalesce(owner_user_id::text, '') || ':' ||
       coalesce(tile_id, '') || ':' ||
-      coalesce(event_day::text, '')
+      coalesce((event_day - date '2000-01-01')::text, '')
     )
   ) stored,
   created_at timestamptz not null default now(),

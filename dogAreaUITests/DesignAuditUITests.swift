@@ -26,6 +26,96 @@ final class DesignAuditUITests: XCTestCase {
         try runDesignAudit(style: .dark)
     }
 
+    /// 지도 탭의 산책 시작 버튼이 하단 탭바와 겹치지 않고 탭 가능한지 검증합니다.
+    func testFeatureRegression_MapPrimaryActionIsNotObscuredByTabBar() throws {
+        let app = launchAppForFeatureRegression()
+        XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.")
+    }
+
+    /// 홈의 영역 목표 상세 진입 시 탭바가 숨겨지고 뒤로 복귀 시 다시 표시되는지 검증합니다.
+    func testFeatureRegression_TerritoryGoalNavigationHidesAndRestoresTabBar() throws {
+        let app = launchAppForFeatureRegression()
+        XCTAssertTrue(waitUntilExists(app.buttons["tab.0"], timeout: 12), "탭바가 렌더링되지 않았습니다.")
+        XCTAssertTrue(openTab(index: 0, app: app), "홈 탭 진입에 실패했습니다.")
+
+        let moreButton = app.descendants(matching: .any)
+            .matching(identifier: "home.goalTracker.more")
+            .firstMatch
+        XCTAssertTrue(
+            revealElementByVerticalScroll(moreButton, app: app, maxSwipes: 8),
+            "영역 목표 트래커의 비교군 더보기 버튼을 찾지 못했습니다."
+        )
+        XCTAssertTrue(tapIfExists(moreButton), "영역 목표 트래커의 비교군 더보기 버튼 탭에 실패했습니다.")
+
+        let didEnterTerritoryGoal =
+            waitUntilExists(app.otherElements["screen.territoryGoal"], timeout: 10) ||
+            waitUntilExists(app.staticTexts["Territory Goal Tracker"], timeout: 10) ||
+            waitUntilExists(app.staticTexts["나무의 영역"], timeout: 10)
+        XCTAssertTrue(didEnterTerritoryGoal, "영역 목표 상세 화면 진입에 실패했습니다.")
+        XCTAssertTrue(
+            waitUntilGone(app.buttons["tab.2"], timeout: 3),
+            "영역 목표 상세 화면에서는 하단 탭바가 숨겨져야 합니다."
+        )
+
+        navigateBackIfPossible(app)
+        XCTAssertTrue(waitUntilExists(app.buttons["tab.2"], timeout: 6), "상세 화면 복귀 후 하단 탭바가 다시 표시되지 않았습니다.")
+    }
+
+    /// 라이벌 탭 하단 푸터 버튼이 지도/설정 탭 라우팅을 정상 수행하는지 검증합니다.
+    func testFeatureRegression_RivalFooterButtonsRouteToMapAndSettings() throws {
+        let app = launchAppForFeatureRegression()
+        XCTAssertTrue(waitUntilExists(app.buttons["tab.3"], timeout: 12), "탭바가 렌더링되지 않았습니다.")
+        XCTAssertTrue(openTab(index: 3, app: app), "라이벌 탭 진입에 실패했습니다.")
+
+        let openMapButton = app.buttons["rival.footer.openMap"]
+        XCTAssertTrue(
+            revealElementByVerticalScroll(openMapButton, app: app, maxSwipes: 8),
+            "라이벌 푸터의 지도 이동 버튼을 찾지 못했습니다."
+        )
+        openMapButton.tap()
+        usleep(300_000)
+        XCTAssertTrue(openTab(index: 3, app: app), "라이벌 탭 재진입에 실패했습니다.")
+
+        let openSettingsButton = app.buttons["rival.footer.openSettings"]
+        XCTAssertTrue(
+            revealElementByVerticalScroll(openSettingsButton, app: app, maxSwipes: 8),
+            "라이벌 푸터의 설정 이동 버튼을 찾지 못했습니다."
+        )
+        openSettingsButton.tap()
+        let signInButton = app.buttons["settings.open.signin"]
+        let logoutButton = app.buttons["settings.logout"]
+
+        if waitUntilExists(signInButton, timeout: 3) == false &&
+            waitUntilExists(logoutButton, timeout: 3) == false {
+            XCTAssertTrue(openTab(index: 4, app: app), "설정 탭 진입에 실패했습니다.")
+        }
+        let hasSettingsEntryPoint =
+            waitUntilExists(signInButton, timeout: 4) ||
+            waitUntilExists(logoutButton, timeout: 4)
+        XCTAssertTrue(hasSettingsEntryPoint, "설정 탭 진입 화면 검증에 실패했습니다.")
+    }
+
+    /// 설정 탭에서 게스트/회원 상태별 핵심 진입점(로그인 또는 로그아웃)이 노출되는지 검증합니다.
+    func testFeatureRegression_SettingsAuthEntryPoints() throws {
+        let app = launchAppForFeatureRegression()
+        XCTAssertTrue(waitUntilExists(app.buttons["tab.4"], timeout: 12), "탭바가 렌더링되지 않았습니다.")
+        XCTAssertTrue(openTab(index: 4, app: app), "설정 탭 진입에 실패했습니다.")
+
+        let signInButton = app.buttons["settings.open.signin"]
+        let logoutButton = app.buttons["settings.logout"]
+
+        if waitUntilExists(signInButton, timeout: 3) {
+            signInButton.tap()
+            XCTAssertTrue(waitUntilExists(app.otherElements["screen.signin"], timeout: 6), "로그인 화면 진입에 실패했습니다.")
+            _ = tapIfExists(app.buttons["signin.dismiss"])
+            dismissTopModalIfNeeded(app)
+            return
+        }
+
+        XCTAssertTrue(waitUntilExists(logoutButton, timeout: 3), "회원 상태 설정 진입점(로그아웃 버튼)을 찾지 못했습니다.")
+        XCTAssertTrue(logoutButton.isHittable, "로그아웃 버튼이 탭 가능한 상태가 아닙니다.")
+    }
+
     /// 지정한 인터페이스 스타일로 앱을 실행하고 주요 화면/서브뷰를 순회해 스크린샷을 저장합니다.
     private func runDesignAudit(style: InterfaceStyle) throws {
         let outputDirectory = try prepareOutputDirectory(style: style)
@@ -148,6 +238,23 @@ final class DesignAuditUITests: XCTestCase {
             _ = tapIfExists(app.buttons["signin.dismiss"])
             dismissTopModalIfNeeded(app)
         }
+    }
+
+    /// 기능 회귀 검증용 런타임 인자로 앱을 실행합니다.
+    /// - Parameter style: 테스트에 적용할 인터페이스 스타일입니다.
+    /// - Returns: 실행 완료 후 포그라운드 상태로 진입한 `XCUIApplication` 인스턴스입니다.
+    private func launchAppForFeatureRegression(style: InterfaceStyle = .light) -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchArguments += [
+            "-UITest.FeatureRegression", "1",
+            "-UITest.DesignAudit", "1",
+            "-UITest.SkipSplash",
+            "-UITest.AutoGuest",
+            "-UITest.InterfaceStyle", style.rawValue
+        ]
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 12), "앱이 foreground 상태로 실행되지 않았습니다.")
+        return app
     }
 
     /// 라이벌 탭에서 로그인 유도 플로우(업그레이드 시트 -> 로그인 화면)를 처리하고 성공 여부를 반환합니다.
@@ -307,6 +414,26 @@ final class DesignAuditUITests: XCTestCase {
         return true
     }
 
+    /// 세로 스크롤을 반복해 대상 요소가 화면에 노출될 때까지 탐색합니다.
+    /// - Parameters:
+    ///   - element: 노출될 때까지 탐색할 대상 요소입니다.
+    ///   - app: 스와이프 제스처를 전달할 앱 인스턴스입니다.
+    ///   - maxSwipes: 최대 스와이프 횟수입니다.
+    /// - Returns: 제한 횟수 내 요소가 노출되면 `true`, 아니면 `false`입니다.
+    private func revealElementByVerticalScroll(
+        _ element: XCUIElement,
+        app: XCUIApplication,
+        maxSwipes: Int
+    ) -> Bool {
+        if element.exists { return true }
+        for _ in 0..<maxSwipes {
+            app.swipeUp()
+            usleep(260_000)
+            if element.exists { return true }
+        }
+        return element.exists
+    }
+
     /// 가능한 경우 단일 탭 동작을 수행하고 성공 여부를 반환합니다.
     @discardableResult
     private func tapIfExists(_ element: XCUIElement) -> Bool {
@@ -316,24 +443,24 @@ final class DesignAuditUITests: XCTestCase {
         return true
     }
 
-    /// `waitForExistence`의 디버그 덤프 정체를 피하기 위해 단순 폴링으로 존재 여부를 확인합니다.
+    /// UI 요소가 지정 시간 내에 화면에 나타나는지 대기합니다.
+    /// - Parameters:
+    ///   - element: 존재 여부를 확인할 UI 요소입니다.
+    ///   - timeout: 대기 최대 시간(초)입니다.
+    /// - Returns: 시간 내 요소가 나타나면 `true`, 아니면 `false`입니다.
     private func waitUntilExists(_ element: XCUIElement, timeout: TimeInterval) -> Bool {
-        let deadline = Date().addingTimeInterval(timeout)
-        while Date() < deadline {
-            if element.exists { return true }
-            usleep(120_000)
-        }
-        return element.exists
+        element.waitForExistence(timeout: timeout)
     }
 
-    /// 요소가 화면에서 사라질 때까지 폴링합니다.
+    /// UI 요소가 지정 시간 내에 화면에서 사라지는지 대기합니다.
+    /// - Parameters:
+    ///   - element: 사라짐 여부를 확인할 UI 요소입니다.
+    ///   - timeout: 대기 최대 시간(초)입니다.
+    /// - Returns: 시간 내 요소가 사라지면 `true`, 아니면 `false`입니다.
     private func waitUntilGone(_ element: XCUIElement, timeout: TimeInterval) -> Bool {
-        let deadline = Date().addingTimeInterval(timeout)
-        while Date() < deadline {
-            if element.exists == false { return true }
-            usleep(120_000)
-        }
-        return element.exists == false
+        let predicate = NSPredicate(format: "exists == false")
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
+        return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed
     }
 
     /// 로그인 성공 후 회원 상태 UI 표식(공유 버튼/프로필 편집 버튼) 등장 여부를 대기합니다.

@@ -50,6 +50,10 @@ struct StartButtonView: View {
                     }
                 }
                 .buttonStyle(.plain)
+                .accessibilityElement(children: .ignore)
+                .accessibilityIdentifier("map.walk.primaryAction")
+                .accessibilityLabel(viewModel.isWalking ? "산책 종료" : "산책 시작")
+                .accessibilityHint("산책 기록을 시작하거나 종료합니다.")
             }
             if viewModel.isWalking {
                 Spacer()

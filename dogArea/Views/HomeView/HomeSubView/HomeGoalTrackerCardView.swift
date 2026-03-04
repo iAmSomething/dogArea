@@ -29,6 +29,7 @@ struct HomeGoalTrackerCardView<Destination: View>: View {
                         .foregroundStyle(Color.appDynamicHex(light: 0xC2410C, dark: 0xFDBA74))
                         .frame(minHeight: 44, alignment: .center)
                 }
+                .accessibilityIdentifier("home.goalTracker.more")
             }
 
             HStack(alignment: .top, spacing: 16) {

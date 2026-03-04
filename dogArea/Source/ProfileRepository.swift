@@ -243,6 +243,11 @@ protocol ProfileImageRepository {
     func uploadPetProfileImage(data: Data, ownerId: String) async throws -> String
 }
 
+protocol AccountDeletionServiceProtocol {
+    /// 현재 로그인된 사용자의 계정을 서버에서 삭제합니다.
+    func deleteCurrentAccount() async throws
+}
+
 protocol ProfileRepository {
     func fetchUserInfo() -> UserInfo?
     func selectedPet(from userInfo: UserInfo?) -> PetInfo?

@@ -262,6 +262,20 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         static let clusterCellMaxMetersDefault = 500.0
     }
 
+    /// 런치 인자 기반으로 UI 테스트 런타임 여부를 판별합니다.
+    /// - Returns: 디자인 감사/기능 회귀 UI 테스트 실행 중이면 `true`, 아니면 `false`입니다.
+    private static func isRunningUITestRuntime() -> Bool {
+        let arguments = ProcessInfo.processInfo.arguments
+        return arguments.contains("-UITest.DesignAudit")
+            || arguments.contains("-UITest.FeatureRegression")
+    }
+
+    /// UI 테스트에서 산책 시작 카운트다운을 강제로 활성화할지 판별합니다.
+    /// - Returns: 런치 인자에 강제 카운트다운 플래그가 있으면 `true`, 아니면 `false`입니다.
+    private static func shouldForceWalkCountdownForUITest() -> Bool {
+        ProcessInfo.processInfo.arguments.contains("-UITest.ForceWalkCountdown")
+    }
+
     private let locationManager = CLLocationManager()
     private var timer: Timer? = nil
     @Published var time: TimeInterval = 0.0
@@ -326,6 +340,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private var lastNearbyFetchedAt: Date = .distantPast
     private var lastNearbyHotspotErrorLogAt: Date = .distantPast
     private var suppressedNearbyHotspotErrorCount: Int = 0
+    private var lastVisibilitySyncErrorLogAt: Date = .distantPast
+    private var suppressedVisibilitySyncErrorCount: Int = 0
     private let nearbyHotspotErrorLogInterval: TimeInterval = 60
     private var processedWatchActionIds: Set<String> = []
     private var processedWatchActionOrder: [String] = []
@@ -502,6 +518,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         liveActivityService: WalkLiveActivityServicing = WalkLiveActivityService(),
         eventCenter: AppEventCenterProtocol = DefaultAppEventCenter.shared
     ) {
+        let isUITestRuntime = Self.isRunningUITestRuntime()
         self.walkRepository = walkRepository
         self.userSessionStore = userSessionStore
         self.authSessionStore = authSessionStore
@@ -514,10 +531,12 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         self.eventCenter = eventCenter
         super.init()
         self.locationManager.delegate = self
-        self.locationManager.allowsBackgroundLocationUpdates = true
         self.locationManager.desiredAccuracy = kCLLocationAccuracyBest // 정확도 설정
-        self.locationManager.requestWhenInUseAuthorization() // 권한 요청
-        self.locationManager.startUpdatingLocation() // 위치 업데이트 시작
+        if isUITestRuntime == false {
+            self.locationManager.allowsBackgroundLocationUpdates = true
+            self.locationManager.requestWhenInUseAuthorization() // 권한 요청
+            self.locationManager.startUpdatingLocation() // 위치 업데이트 시작
+        }
         self.reloadPolygonState(restoreLatestPolygon: true)
         self.loadProcessedWatchActions()
         self.lastAppliedWidgetActionId = preferenceStore.string(forKey: lastWidgetActionIdKey) ?? ""
@@ -535,6 +554,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         self.mapMotionReduced = storedMotionReduced
         self.isAddPointLongPressModeEnabled = storedAddPointLongPressMode
         self.walkStartCountdownEnabled = userSessionStore.walkStartCountdownEnabled()
+        if Self.shouldForceWalkCountdownForUITest() {
+            self.walkStartCountdownEnabled = true
+        }
         self.walkAutoEndPolicyEnabled = true
         self.walkPointRecordMode = WalkPointRecordMode(
             rawValue: userSessionStore.walkPointRecordModeRawValue()
@@ -543,13 +565,15 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         self.reloadSelectedPetContext()
         self.setupWatchConnectivity()
         self.setupLifecycleObservers()
-        self.startNearbyTicker()
-        self.syncVisibilitySettingIfNeeded()
-        self.refreshFeatureFlagsFromRemote()
-        self.refreshSyncOutboxSummary()
-        self.flushSyncOutboxIfNeeded(force: true)
         self.refreshWeatherOverlayRisk()
-        self.refreshWeatherRiskFromProviderIfNeeded(location: self.locationManager.location, force: true)
+        if isUITestRuntime == false {
+            self.startNearbyTicker()
+            self.syncVisibilitySettingIfNeeded()
+            self.refreshFeatureFlagsFromRemote()
+            self.refreshSyncOutboxSummary()
+            self.flushSyncOutboxIfNeeded(force: true)
+            self.refreshWeatherRiskFromProviderIfNeeded(location: self.locationManager.location, force: true)
+        }
         self.syncWalkWidgetSnapshot(force: true)
         self.syncWalkLiveActivity(force: true)
     }
@@ -1988,7 +2012,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 
         // SupabaseError가 래핑되어 올라오는 경우 localizedDescription 패턴으로 보조 판별합니다.
         let message = error.localizedDescription
-        if message.contains("(404)") || message.contains(" 404") {
+        if message.contains("404") {
             return true
         }
         return false
@@ -2012,6 +2036,24 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         lastNearbyHotspotErrorLogAt = now
     }
 
+    /// 가시성(Visibility) 동기화 에러 로그를 일정 주기로만 출력해 콘솔 노이즈를 줄입니다.
+    /// - Parameter error: 출력할 동기화 실패 에러입니다.
+    private func logVisibilitySyncErrorIfNeeded(_ error: Error) {
+        let now = Date()
+        if now.timeIntervalSince(lastVisibilitySyncErrorLogAt) < nearbyHotspotErrorLogInterval {
+            suppressedVisibilitySyncErrorCount += 1
+            return
+        }
+
+        if suppressedVisibilitySyncErrorCount > 0 {
+            print("visibility sync failed: \(error.localizedDescription) (+\(suppressedVisibilitySyncErrorCount) suppressed)")
+            suppressedVisibilitySyncErrorCount = 0
+        } else {
+            print("visibility sync failed: \(error.localizedDescription)")
+        }
+        lastVisibilitySyncErrorLogAt = now
+    }
+
     private func syncVisibilitySettingIfNeeded() {
         guard let userId = currentPresenceUserId() else { return }
         let enabled = isNearbyHotspotFeatureAvailable ? self.locationSharingEnabled : false
@@ -2028,7 +2070,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
                 if self.isNearbyHotspotNotFoundError(error) {
                     return
                 }
-                print("visibility sync failed: \(error.localizedDescription)")
+                self.logVisibilitySyncErrorIfNeeded(error)
             }
         }
     }

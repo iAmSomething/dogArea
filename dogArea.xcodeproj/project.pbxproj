@@ -9,14 +9,14 @@
 /* Begin PBXBuildFile section */
 		02B810B0791CFB600F8406EB /* HomeSelectedPetEmptyStateCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D14629580BEDCDCAE5B9EC3 /* HomeSelectedPetEmptyStateCardView.swift */; };
 		106E27D50C08D7997FD7982D /* RivalNetworkErrorInterpreter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4548C0C604B933CC43644FA /* RivalNetworkErrorInterpreter.swift */; };
-		1A87E29B8817434BC0210F5F /* WalkControlIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B86CA6EAAA6D2939A4516B9 /* WalkControlIntents.swift */; };
+		1A87E29B8817434BC0210F5F /* dogAreaWidgetExtension/WalkControlIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B86CA6EAAA6D2939A4516B9 /* dogAreaWidgetExtension/WalkControlIntents.swift */; };
 		1CCC7F48BF06FD4BCECF4286 /* TerritoryGoalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE5CB737B1C8D8A675B6A43B /* TerritoryGoalView.swift */; };
 		22EA9355CC79568490A94348 /* dogAreaUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 626E89852AADA163B53AB03D /* dogAreaUITestsLaunchTests.swift */; };
 		23CB28F896D94B88CEF351F7 /* DesignAuditUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D982F3BFEE53C6D1333FF67 /* DesignAuditUITests.swift */; };
-		23F65BCBE5B31BA26CAFD1A5 /* WalkWidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9750A3E12F227C859B34AF85 /* WalkWidgetBridge.swift */; };
+		23F65BCBE5B31BA26CAFD1A5 /* dogArea/Source/WidgetBridge/WalkWidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9750A3E12F227C859B34AF85 /* dogArea/Source/WidgetBridge/WalkWidgetBridge.swift */; };
 		260998357CBB95987A042E95 /* PetProfileImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FFD83BC3079033CF24E9D6A /* PetProfileImageView.swift */; };
 		28782FDF88C341A3A600D280 /* HomeWeeklyMetricCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEA093F2A0E2A16E5E116F3E /* HomeWeeklyMetricCardView.swift */; };
-		2DBE51403AFB38FFC0B57074 /* WalkWidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9750A3E12F227C859B34AF85 /* WalkWidgetBridge.swift */; };
+		2DBE51403AFB38FFC0B57074 /* dogArea/Source/WidgetBridge/WalkWidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9750A3E12F227C859B34AF85 /* dogArea/Source/WidgetBridge/WalkWidgetBridge.swift */; };
 		2FAF945E5AA7BC004D27C72E /* WalkDetailContextProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81CDB8AB4C8855FE6D106BF3 /* WalkDetailContextProvider.swift */; };
 		30B76E851C27574F5E5AC8A0 /* RivalModerationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 722875CA7B7EAB511CCC1590 /* RivalModerationStore.swift */; };
 		316EF137D15633B33FDB93A3 /* ProfileFieldEditSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C8E7D8185E273FFD5B84579 /* ProfileFieldEditSheet.swift */; };
@@ -25,7 +25,7 @@
 		3B09EF73E528C78FEEE2AB01 /* SeasonProfileFrameStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CEBC83AFF321A2E3D10E8A0 /* SeasonProfileFrameStyle.swift */; };
 		45CA89EBC76C1FE5200FD88D /* HomeSelectedPetContextBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B7738E4A04B406F4D70AE19 /* HomeSelectedPetContextBannerView.swift */; };
 		4C8C66B1707DD603359C2C39 /* dogAreaWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E916788F22F3DDF144CCE8D4 /* dogAreaWidgetExtension.appex */; };
-		4D741EB8E7EC826A55FCC5A5 /* WalkWidgetSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE5D5C2E004FD37BC9E65790 /* WalkWidgetSnapshotStore.swift */; };
+		4D741EB8E7EC826A55FCC5A5 /* dogArea/Source/WidgetBridge/WalkWidgetSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE5D5C2E004FD37BC9E65790 /* dogArea/Source/WidgetBridge/WalkWidgetSnapshotStore.swift */; };
 		541633F39AA01B555EA4A904 /* HomeRecentConqueredSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E3FDEC98167CC2EA0DAFA5E /* HomeRecentConqueredSectionView.swift */; };
 		5951E893E8CBC77DCA82E00F /* WalkDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A775802DB2A590A7C7DA0978 /* WalkDetailViewModel.swift */; };
 		5F3ED37B0435F882BC90593E /* HomePetSelectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDA31AC1DF69B7CA85070D28 /* HomePetSelectorView.swift */; };
@@ -39,7 +39,7 @@
 		8705C4CE77BEE3DAEF07A78B /* SimpleKeyValueView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 376D30D4A7542596A014DEE1 /* SimpleKeyValueView.swift */; };
 		8A40430FD15CD439469AC981 /* RivalViewStateResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2D5D8D51AC30DA6DB60A871 /* RivalViewStateResolver.swift */; };
 		8AB9332023AB8DBFF5657767 /* HomeHeaderSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEBDE81DFC43DCD56546D775 /* HomeHeaderSectionView.swift */; };
-		8CEF03B12FF33C7B71CCE658 /* WalkWidgetSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE5D5C2E004FD37BC9E65790 /* WalkWidgetSnapshotStore.swift */; };
+		8CEF03B12FF33C7B71CCE658 /* dogArea/Source/WidgetBridge/WalkWidgetSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE5D5C2E004FD37BC9E65790 /* dogArea/Source/WidgetBridge/WalkWidgetSnapshotStore.swift */; };
 		8DD9CE63EA914575B4763A9F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D8458EB9DE9760D52537B4B6 /* Foundation.framework */; };
 		9D8804AD0F127C5DDDAEA597 /* ThumbnailImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2615443270FF3222AEBDE893 /* ThumbnailImageView.swift */; };
 		A0C814D250B8F26BDCC21F66 /* UserProfileImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F73B707BA77AC2C69A6BC62B /* UserProfileImageView.swift */; };
@@ -51,8 +51,8 @@
 		DA16C1DC2B05E4DF008FC133 /* TimeCheckable.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA16C1DB2B05E4DF008FC133 /* TimeCheckable.swift */; };
 		DA16C1E12B060C7B008FC133 /* SelectedPolygonCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA16C1E02B060C7B008FC133 /* SelectedPolygonCell.swift */; };
 		DA1731712AE200C100EF10C8 /* ProfileRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1731702AE200C100EF10C8 /* ProfileRepository.swift */; };
-		DA1731732AE2017500EF10C8 /* SupabaseInfrastructure.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1731722AE2017500EF10C8 /* SupabaseInfrastructure.swift */; };
-		DA1731762AE20A4D00EF10C8 /* WalkBackfillDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1731752AE20A4D00EF10C8 /* WalkBackfillDTO.swift */; };
+		DA1731732AE2017500EF10C8 /* Infrastructure/Supabase/SupabaseInfrastructure.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1731722AE2017500EF10C8 /* Infrastructure/Supabase/SupabaseInfrastructure.swift */; };
+		DA1731762AE20A4D00EF10C8 /* Data/Walk/WalkBackfillDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1731752AE20A4D00EF10C8 /* Data/Walk/WalkBackfillDTO.swift */; };
 		DA354FFD2B01DF1F00E4094A /* TimeIntervalExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA354FFC2B01DF1F00E4094A /* TimeIntervalExtensions.swift */; };
 		DA3550022B01E0F900E4094A /* UnderLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3550012B01E0F900E4094A /* UnderLine.swift */; };
 		DA390A6F2AFE027C00BACF2B /* MapSubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA390A6E2AFE027C00BACF2B /* MapSubView.swift */; };
@@ -76,7 +76,7 @@
 		DA4513802AFB1EC1007AD69B /* WalkListCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA45137F2AFB1EC1007AD69B /* WalkListCell.swift */; };
 		DA4513832AFB25C2007AD69B /* PositionMarkerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA4513822AFB25C2007AD69B /* PositionMarkerView.swift */; };
 		DA4513862AFB2CFC007AD69B /* WalkListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA4513852AFB2CFC007AD69B /* WalkListViewModel.swift */; };
-		DA4513892AFB2D68007AD69B /* WalkRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA4513882AFB2D68007AD69B /* WalkRepository.swift */; };
+		DA4513892AFB2D68007AD69B /* Data/Walk/WalkRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA4513882AFB2D68007AD69B /* Data/Walk/WalkRepository.swift */; };
 		DA45138C2AFB36D4007AD69B /* WalkListModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA45138B2AFB36D4007AD69B /* WalkListModel.swift */; };
 		DA56FFE82AE2B9890040855B /* MapAlertSubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA56FFE72AE2B9890040855B /* MapAlertSubView.swift */; };
 		DA71C83D2AD787AC00081ED0 /* dogAreaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA71C83C2AD787AC00081ED0 /* dogAreaApp.swift */; };
@@ -156,11 +156,11 @@
 		DAED24FB2AFA1C980044715A /* LottieView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAED24FA2AFA1C980044715A /* LottieView.swift */; };
 		DAED25022AFA1D430044715A /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAED25012AFA1D430044715A /* SplashView.swift */; };
 		DAF0A00A4200000000000001 /* RecoveryIssue.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAF0A0094200000000000001 /* RecoveryIssue.swift */; };
-		DF2852F26614BBE6698C20F6 /* WalkControlWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020BF5BBC530202A931EEA4B /* WalkControlWidgetBundle.swift */; };
+		DF2852F26614BBE6698C20F6 /* dogAreaWidgetExtension/WalkControlWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020BF5BBC530202A931EEA4B /* dogAreaWidgetExtension/WalkControlWidgetBundle.swift */; };
 		E1996670DB5AF8DEE4111010 /* RivalTabModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19B0F89F9FF220625F0008DB /* RivalTabModels.swift */; };
 		EF2B6D25F54A7CAB5C1AF82B /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D8458EB9DE9760D52537B4B6 /* Foundation.framework */; };
 		F0290AA4477811F42F2A1827 /* HomeGoalMetricColumnView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 649E88696A0B4425210BB446 /* HomeGoalMetricColumnView.swift */; };
-		F8055CD421749F308FAF2E58 /* WalkControlWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D030E0DFD8D49558700ACB1 /* WalkControlWidget.swift */; };
+		F8055CD421749F308FAF2E58 /* dogAreaWidgetExtension/WalkControlWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D030E0DFD8D49558700ACB1 /* dogAreaWidgetExtension/WalkControlWidget.swift */; };
 		F941737714116284FBF88EFF /* TerritoryGoalViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F54DF2E65C59A1E8B1F95D8A /* TerritoryGoalViewModel.swift */; };
 /* End PBXBuildFile section */
 
@@ -232,15 +232,15 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		020BF5BBC530202A931EEA4B /* WalkControlWidgetBundle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/WalkControlWidgetBundle.swift; sourceTree = SOURCE_ROOT; };
+		020BF5BBC530202A931EEA4B /* dogAreaWidgetExtension/WalkControlWidgetBundle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/WalkControlWidgetBundle.swift; sourceTree = SOURCE_ROOT; };
 		078B330462EB7C7D535B09F1 /* AppleSigninButton.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppleSigninButton.swift; sourceTree = "<group>"; };
-		0B86CA6EAAA6D2939A4516B9 /* WalkControlIntents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/WalkControlIntents.swift; sourceTree = SOURCE_ROOT; };
+		0B86CA6EAAA6D2939A4516B9 /* dogAreaWidgetExtension/WalkControlIntents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/WalkControlIntents.swift; sourceTree = SOURCE_ROOT; };
 		19B0F89F9FF220625F0008DB /* RivalTabModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RivalTabModels.swift; path = dogArea/Views/ProfileSettingView/RivalTabModels.swift; sourceTree = "<group>"; };
 		1C0C69DBDA661E0970F6A0BB /* AreaDetailListHeaderView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AreaDetailListHeaderView.swift; sourceTree = "<group>"; };
 		1D982F3BFEE53C6D1333FF67 /* DesignAuditUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DesignAuditUITests.swift; sourceTree = "<group>"; };
 		21CE83B02069A8E4171B35DE /* RivalTabView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RivalTabView.swift; path = dogArea/Views/ProfileSettingView/RivalTabView.swift; sourceTree = "<group>"; };
 		2615443270FF3222AEBDE893 /* ThumbnailImageView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ThumbnailImageView.swift; sourceTree = "<group>"; };
-		2D030E0DFD8D49558700ACB1 /* WalkControlWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/WalkControlWidget.swift; sourceTree = SOURCE_ROOT; };
+		2D030E0DFD8D49558700ACB1 /* dogAreaWidgetExtension/WalkControlWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/WalkControlWidget.swift; sourceTree = SOURCE_ROOT; };
 		30BF0E17B2BF40E97DBA5E07 /* ProfileFieldEditSheetViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ProfileFieldEditSheetViewModel.swift; path = dogArea/Views/ProfileSettingView/ProfileFieldEditSheetViewModel.swift; sourceTree = "<group>"; };
 		363FE1044470B273CAB987E0 /* HomeQuestReminderSupport.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeQuestReminderSupport.swift; sourceTree = "<group>"; };
 		376D30D4A7542596A014DEE1 /* SimpleKeyValueView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SimpleKeyValueView.swift; sourceTree = "<group>"; };
@@ -260,13 +260,13 @@
 		8F2B2A868B6FD9035AC5214F /* RivalHotspotSummaryBuilder.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RivalHotspotSummaryBuilder.swift; path = dogArea/Views/ProfileSettingView/RivalHotspotSummaryBuilder.swift; sourceTree = "<group>"; };
 		92C5F96B5D23BD6D36935CA0 /* PositionMarkerViewWithSelection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PositionMarkerViewWithSelection.swift; sourceTree = "<group>"; };
 		94F1831B36AD06A464B77936 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		9750A3E12F227C859B34AF85 /* WalkWidgetBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogArea/Source/WidgetBridge/WalkWidgetBridge.swift; sourceTree = SOURCE_ROOT; };
-		983F00D4F1C80990F3FED2B2 /* dogAreaWidgetExtension.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = dogAreaWidgetExtension/dogAreaWidgetExtension.entitlements; sourceTree = SOURCE_ROOT; };
+		9750A3E12F227C859B34AF85 /* dogArea/Source/WidgetBridge/WalkWidgetBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogArea/Source/WidgetBridge/WalkWidgetBridge.swift; sourceTree = SOURCE_ROOT; };
+		983F00D4F1C80990F3FED2B2 /* dogAreaWidgetExtension/dogAreaWidgetExtension.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = dogAreaWidgetExtension/dogAreaWidgetExtension.entitlements; sourceTree = SOURCE_ROOT; };
 		9FFD83BC3079033CF24E9D6A /* PetProfileImageView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PetProfileImageView.swift; path = dogArea/Views/ProfileSettingView/PetProfileImageView.swift; sourceTree = "<group>"; };
 		A775802DB2A590A7C7DA0978 /* WalkDetailViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WalkDetailViewModel.swift; path = dogArea/Views/MapView/WalkDetailViewModel.swift; sourceTree = "<group>"; };
 		C566C61F8B5520FEC3406DFF /* HomeGoalTrackerCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeGoalTrackerCardView.swift; sourceTree = "<group>"; };
 		C63D5D25262A8E2185005C50 /* RecoveryActionBanner.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RecoveryActionBanner.swift; sourceTree = "<group>"; };
-		CE5D5C2E004FD37BC9E65790 /* WalkWidgetSnapshotStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogArea/Source/WidgetBridge/WalkWidgetSnapshotStore.swift; sourceTree = SOURCE_ROOT; };
+		CE5D5C2E004FD37BC9E65790 /* dogArea/Source/WidgetBridge/WalkWidgetSnapshotStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogArea/Source/WidgetBridge/WalkWidgetSnapshotStore.swift; sourceTree = SOURCE_ROOT; };
 		CEBDE81DFC43DCD56546D775 /* HomeHeaderSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeHeaderSectionView.swift; sourceTree = "<group>"; };
 		D8458EB9DE9760D52537B4B6 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		DA0FB2082AD7B21C00B235CF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -274,8 +274,8 @@
 		DA16C1DB2B05E4DF008FC133 /* TimeCheckable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeCheckable.swift; sourceTree = "<group>"; };
 		DA16C1E02B060C7B008FC133 /* SelectedPolygonCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectedPolygonCell.swift; sourceTree = "<group>"; };
 		DA1731702AE200C100EF10C8 /* ProfileRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileRepository.swift; sourceTree = "<group>"; };
-		DA1731722AE2017500EF10C8 /* SupabaseInfrastructure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Infrastructure/Supabase/SupabaseInfrastructure.swift; sourceTree = "<group>"; };
-		DA1731752AE20A4D00EF10C8 /* WalkBackfillDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Data/Walk/WalkBackfillDTO.swift; sourceTree = "<group>"; };
+		DA1731722AE2017500EF10C8 /* Infrastructure/Supabase/SupabaseInfrastructure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Infrastructure/Supabase/SupabaseInfrastructure.swift; sourceTree = "<group>"; };
+		DA1731752AE20A4D00EF10C8 /* Data/Walk/WalkBackfillDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Data/Walk/WalkBackfillDTO.swift; sourceTree = "<group>"; };
 		DA27AD832B061A1B001283D4 /* dogAreaRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = dogAreaRelease.entitlements; sourceTree = "<group>"; };
 		DA27AD842B061AC5001283D4 /* dogAreaDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = dogAreaDebug.entitlements; sourceTree = "<group>"; };
 		DA354FFC2B01DF1F00E4094A /* TimeIntervalExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeIntervalExtensions.swift; sourceTree = "<group>"; };
@@ -304,7 +304,7 @@
 		DA45137F2AFB1EC1007AD69B /* WalkListCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkListCell.swift; sourceTree = "<group>"; };
 		DA4513822AFB25C2007AD69B /* PositionMarkerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PositionMarkerView.swift; sourceTree = "<group>"; };
 		DA4513852AFB2CFC007AD69B /* WalkListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkListViewModel.swift; sourceTree = "<group>"; };
-		DA4513882AFB2D68007AD69B /* WalkRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Data/Walk/WalkRepository.swift; sourceTree = "<group>"; };
+		DA4513882AFB2D68007AD69B /* Data/Walk/WalkRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Data/Walk/WalkRepository.swift; sourceTree = "<group>"; };
 		DA45138B2AFB36D4007AD69B /* WalkListModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkListModel.swift; sourceTree = "<group>"; };
 		DA56FFE72AE2B9890040855B /* MapAlertSubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapAlertSubView.swift; sourceTree = "<group>"; };
 		DA71C8392AD787AC00081ED0 /* dogArea.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = dogArea.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -440,11 +440,11 @@
 		739206D93B3E1667D2A58593 /* dogAreaWidgetExtension */ = {
 			isa = PBXGroup;
 			children = (
-				020BF5BBC530202A931EEA4B /* WalkControlWidgetBundle.swift */,
-				2D030E0DFD8D49558700ACB1 /* WalkControlWidget.swift */,
-				0B86CA6EAAA6D2939A4516B9 /* WalkControlIntents.swift */,
+				020BF5BBC530202A931EEA4B /* dogAreaWidgetExtension/WalkControlWidgetBundle.swift */,
+				2D030E0DFD8D49558700ACB1 /* dogAreaWidgetExtension/WalkControlWidget.swift */,
+				0B86CA6EAAA6D2939A4516B9 /* dogAreaWidgetExtension/WalkControlIntents.swift */,
 				94F1831B36AD06A464B77936 /* Info.plist */,
-				983F00D4F1C80990F3FED2B2 /* dogAreaWidgetExtension.entitlements */,
+				983F00D4F1C80990F3FED2B2 /* dogAreaWidgetExtension/dogAreaWidgetExtension.entitlements */,
 			);
 			name = dogAreaWidgetExtension;
 			sourceTree = "<group>";
@@ -452,8 +452,8 @@
 		83572DCB08333E9BFA6B83E9 /* WidgetBridge */ = {
 			isa = PBXGroup;
 			children = (
-				9750A3E12F227C859B34AF85 /* WalkWidgetBridge.swift */,
-				CE5D5C2E004FD37BC9E65790 /* WalkWidgetSnapshotStore.swift */,
+				9750A3E12F227C859B34AF85 /* dogArea/Source/WidgetBridge/WalkWidgetBridge.swift */,
+				CE5D5C2E004FD37BC9E65790 /* dogArea/Source/WidgetBridge/WalkWidgetSnapshotStore.swift */,
 			);
 			name = WidgetBridge;
 			sourceTree = "<group>";
@@ -564,9 +564,9 @@
 				DA354FFC2B01DF1F00E4094A /* TimeIntervalExtensions.swift */,
 				DA3F9BAD2AE0F2410048550C /* ViewUtility.swift */,
 				DAA8E4F82B01A80C00F9190B /* TabAppear.swift */,
-				DA4513882AFB2D68007AD69B /* WalkRepository.swift */,
-				DA1731752AE20A4D00EF10C8 /* WalkBackfillDTO.swift */,
-				DA1731722AE2017500EF10C8 /* SupabaseInfrastructure.swift */,
+				DA4513882AFB2D68007AD69B /* Data/Walk/WalkRepository.swift */,
+				DA1731752AE20A4D00EF10C8 /* Data/Walk/WalkBackfillDTO.swift */,
+				DA1731722AE2017500EF10C8 /* Infrastructure/Supabase/SupabaseInfrastructure.swift */,
 				DA3EB0AC2B04A1E100AEA65D /* Cluster.swift */,
 				DA16C1D82B05DCC8008FC133 /* CornerShape.swift */,
 				DA16C1DB2B05E4DF008FC133 /* TimeCheckable.swift */,
@@ -1070,13 +1070,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		DA71C8372AD787AC00081ED0 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				DA99F9FD2AFA50D700B1483F /* Pretendard-ExtraLight.otf in Resources */,
-				DA99F9FF2AFA50D700B1483F /* Pretendard-Bold.otf in Resources */,
-				DA99F9F92AFA50D700B1483F /* Pretendard-Medium.otf in Resources */,
+			DA71C8372AD787AC00081ED0 /* Resources */ = {
+				isa = PBXResourcesBuildPhase;
+				buildActionMask = 2147483647;
+				files = (
+					DA99F9FD2AFA50D700B1483F /* Pretendard-ExtraLight.otf in Resources */,
+					DA99F9FF2AFA50D700B1483F /* Pretendard-Bold.otf in Resources */,
+					DA99F9F92AFA50D700B1483F /* Pretendard-Medium.otf in Resources */,
 				DA71C8462AD787AD00081ED0 /* Preview Assets.xcassets in Resources */,
 				DA3EB07E2B03545E00AEA65D /* Launch Screen.storyboard in Resources */,
 				DA99F9FB2AFA50D700B1483F /* Pretendard-ExtraBold.otf in Resources */,
@@ -1133,11 +1133,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				DF2852F26614BBE6698C20F6 /* WalkControlWidgetBundle.swift in Sources */,
-				F8055CD421749F308FAF2E58 /* WalkControlWidget.swift in Sources */,
-				1A87E29B8817434BC0210F5F /* WalkControlIntents.swift in Sources */,
-				23F65BCBE5B31BA26CAFD1A5 /* WalkWidgetBridge.swift in Sources */,
-				4D741EB8E7EC826A55FCC5A5 /* WalkWidgetSnapshotStore.swift in Sources */,
+				DF2852F26614BBE6698C20F6 /* dogAreaWidgetExtension/WalkControlWidgetBundle.swift in Sources */,
+				F8055CD421749F308FAF2E58 /* dogAreaWidgetExtension/WalkControlWidget.swift in Sources */,
+				1A87E29B8817434BC0210F5F /* dogAreaWidgetExtension/WalkControlIntents.swift in Sources */,
+				23F65BCBE5B31BA26CAFD1A5 /* dogArea/Source/WidgetBridge/WalkWidgetBridge.swift in Sources */,
+				4D741EB8E7EC826A55FCC5A5 /* dogArea/Source/WidgetBridge/WalkWidgetSnapshotStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1187,7 +1187,7 @@
 				DAC19F252B0B37B1002FE2E8 /* LoadingPhase.swift in Sources */,
 				DA822CDD2AFB60B6001EC94D /* MapSettingView.swift in Sources */,
 				DA71C83D2AD787AC00081ED0 /* dogAreaApp.swift in Sources */,
-				DA1731732AE2017500EF10C8 /* SupabaseInfrastructure.swift in Sources */,
+				DA1731732AE2017500EF10C8 /* Infrastructure/Supabase/SupabaseInfrastructure.swift in Sources */,
 				DAA8E4F92B01A80C00F9190B /* TabAppear.swift in Sources */,
 				DA3F9BA52AE0F14F0048550C /* MapModel.swift in Sources */,
 				DAE148A11420000000000001 /* MapAreaCalculationService.swift in Sources */,
@@ -1203,10 +1203,10 @@
 				DA3F9B362ADE7C100048550C /* CustomAlertViewModel.swift in Sources */,
 				DAA8E4D62B01A03700F9190B /* WalkListDetailView.swift in Sources */,
 				DA3F9BA02AE0F14F0048550C /* ProfileSettingsView.swift in Sources */,
-				DA4513892AFB2D68007AD69B /* WalkRepository.swift in Sources */,
+				DA4513892AFB2D68007AD69B /* Data/Walk/WalkRepository.swift in Sources */,
 				DA16C1E12B060C7B008FC133 /* SelectedPolygonCell.swift in Sources */,
 				DAED24FB2AFA1C980044715A /* LottieView.swift in Sources */,
-				DA1731762AE20A4D00EF10C8 /* WalkBackfillDTO.swift in Sources */,
+				DA1731762AE20A4D00EF10C8 /* Data/Walk/WalkBackfillDTO.swift in Sources */,
 				DA822CD62AFB5E21001EC94D /* StartButtonView.swift in Sources */,
 				DA390A752AFE1AFC00BACF2B /* SimpleMessageView.swift in Sources */,
 				DAC19F2C2B0B43BB002FE2E8 /* SignInView.swift in Sources */,
@@ -1250,8 +1250,8 @@
 				106E27D50C08D7997FD7982D /* RivalNetworkErrorInterpreter.swift in Sources */,
 				C047F1CA5DC13CAE4F03AE90 /* RivalHotspotSummaryBuilder.swift in Sources */,
 				6A18F6C8151D05B751F63179 /* HomeQuestReminderSupport.swift in Sources */,
-				2DBE51403AFB38FFC0B57074 /* WalkWidgetBridge.swift in Sources */,
-				8CEF03B12FF33C7B71CCE658 /* WalkWidgetSnapshotStore.swift in Sources */,
+				2DBE51403AFB38FFC0B57074 /* dogArea/Source/WidgetBridge/WalkWidgetBridge.swift in Sources */,
+				8CEF03B12FF33C7B71CCE658 /* dogArea/Source/WidgetBridge/WalkWidgetSnapshotStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1295,7 +1295,7 @@
 		};
 		DA95CC7D2ADE0A28004AD94D /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			productRef = DA95CC7C2ADE0A28004AD94D /* plugin:OpenAPIGenerator */;
+			productRef = DA95CC7C2ADE0A28004AD94D /* OpenAPIGenerator */;
 		};
 		DAB314BB2B3C1B4B000357C7 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -1311,6 +1311,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = dogAreaWidgetExtension/dogAreaWidgetExtension.entitlements;
+				DEVELOPMENT_TEAM = 7Y3Y9M4N4F;
 				EXECUTABLE_NAME = dogAreaWidgetExtension;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = dogAreaWidgetExtension/Info.plist;
@@ -1337,7 +1338,7 @@
 			buildSettings = {
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 7Y3Y9M4N4F;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.th.dogAreaUITests;
@@ -1354,7 +1355,7 @@
 			buildSettings = {
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 7Y3Y9M4N4F;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.th.dogAreaUITests;
@@ -1373,6 +1374,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = dogAreaWidgetExtension/dogAreaWidgetExtension.entitlements;
+				DEVELOPMENT_TEAM = 7Y3Y9M4N4F;
 				EXECUTABLE_NAME = dogAreaWidgetExtension;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = dogAreaWidgetExtension/Info.plist;
@@ -1856,7 +1858,7 @@
 			package = DA95CC792ADE0A07004AD94D /* XCRemoteSwiftPackageReference "swift-openapi-urlsession" */;
 			productName = OpenAPIURLSession;
 		};
-		DA95CC7C2ADE0A28004AD94D /* plugin:OpenAPIGenerator */ = {
+		DA95CC7C2ADE0A28004AD94D /* OpenAPIGenerator */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = DA95CC752ADE09AF004AD94D /* XCRemoteSwiftPackageReference "swift-openapi-generator" */;
 			productName = "plugin:OpenAPIGenerator";

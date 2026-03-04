@@ -25,8 +25,10 @@ struct StartModalView: View {
                 cancelCountdown()
             }
             .font(.appFont(for: .SemiBold, size: 18))
+            .accessibilityIdentifier("map.startModal.cancel")
             .padding(.top, 20)
         }
+        .accessibilityIdentifier("screen.map.startModal")
         .onAppear {
             startCountdown()
         }

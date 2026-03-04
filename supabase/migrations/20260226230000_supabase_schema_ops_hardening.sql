@@ -519,8 +519,26 @@ end $$;
 
 -- 5) Storage buckets + object policies
 do $$
+declare
+  storage_objects_owner text;
+  storage_buckets_owner text;
 begin
   if to_regclass('storage.buckets') is null or to_regclass('storage.objects') is null then
+    return;
+  end if;
+
+  select pg_get_userbyid(c.relowner)
+    into storage_objects_owner
+  from pg_class c
+  where c.oid = 'storage.objects'::regclass;
+
+  select pg_get_userbyid(c.relowner)
+    into storage_buckets_owner
+  from pg_class c
+  where c.oid = 'storage.buckets'::regclass;
+
+  if storage_objects_owner is distinct from current_user
+     or storage_buckets_owner is distinct from current_user then
     return;
   end if;
 
@@ -539,8 +557,19 @@ begin
 end $$;
 
 do $$
+declare
+  storage_objects_owner text;
 begin
   if to_regclass('storage.objects') is null then
+    return;
+  end if;
+
+  select pg_get_userbyid(c.relowner)
+    into storage_objects_owner
+  from pg_class c
+  where c.oid = 'storage.objects'::regclass;
+
+  if storage_objects_owner is distinct from current_user then
     return;
   end if;
 

@@ -92,6 +92,7 @@ struct WalkListView: View {
             }.refreshable {
                 viewModel.fetchModel()
             }
+            .safeAreaPadding(.top, 8)
             .background(Color.appTabScaffoldBackground)
             .onAppear{
                 tabStatus.appear()

@@ -33,6 +33,7 @@ struct RivalTabView: View {
             .padding(.bottom, CustomTabBar.reservedContentHeight + 20)
         }
         .scrollIndicators(.hidden)
+        .safeAreaPadding(.top, 8)
         .background(Color.appTabScaffoldBackground)
         .accessibilityIdentifier("screen.rival.content")
         .onAppear {
@@ -342,11 +343,13 @@ struct RivalTabView: View {
             Button("설정에서 상세 관리") {
                 onOpenSettings()
             }
+            .accessibilityIdentifier("rival.footer.openSettings")
             .buttonStyle(AppFilledButtonStyle(role: .neutral, fillsWidth: false))
 
             Button("지도 이동") {
                 onOpenMap()
             }
+            .accessibilityIdentifier("rival.footer.openMap")
             .buttonStyle(AppFilledButtonStyle(role: .secondary, fillsWidth: false))
         }
     }

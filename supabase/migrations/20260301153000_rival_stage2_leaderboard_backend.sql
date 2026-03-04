@@ -112,9 +112,9 @@ as $$
 $$;
 
 create or replace function public.rpc_get_rival_leaderboard(
-  period_type text default 'week',
-  top_n integer default 50,
-  now_ts timestamptz default now()
+  in_period_type text default 'week',
+  in_top_n integer default 50,
+  in_now_ts timestamptz default now()
 )
 returns table (
   period_type text,
@@ -137,8 +137,8 @@ set search_path = public
 as $$
 declare
   requester_uid uuid;
-  normalized_period text := lower(coalesce(period_type, 'week'));
-  limited_top_n integer := greatest(1, least(coalesce(top_n, 50), 200));
+  normalized_period text := lower(coalesce(in_period_type, 'week'));
+  limited_top_n integer := greatest(1, least(coalesce(in_top_n, 50), 200));
   v_period_start timestamptz;
   v_period_end timestamptz;
   v_season_id uuid;
@@ -159,11 +159,11 @@ begin
   limit 1;
 
   if normalized_period = 'day' then
-    v_period_start := date_trunc('day', now_ts);
+    v_period_start := date_trunc('day', in_now_ts);
     v_period_end := v_period_start + interval '1 day';
     v_season_key := 'daily_' || to_char(v_period_start, 'YYYYMMDD');
   elsif normalized_period = 'week' then
-    v_period_start := date_trunc('week', now_ts);
+    v_period_start := date_trunc('week', in_now_ts);
     v_period_end := v_period_start + interval '7 days';
     v_season_key := 'weekly_' || to_char(v_period_start, 'YYYYMMDD');
   else
@@ -180,7 +180,7 @@ begin
     limit 1;
 
     if run_row.id is null then
-      v_period_start := date_trunc('week', now_ts);
+      v_period_start := date_trunc('week', in_now_ts);
       v_period_end := v_period_start + interval '7 days';
       v_season_key := 'weekly_' || to_char(v_period_start, 'YYYYMMDD');
       normalized_period := 'week';
@@ -238,7 +238,7 @@ begin
       count(*)::int as blocked_count
     from public.season_score_audit_logs l
     where l.blocked = true
-      and l.created_at >= now_ts - interval '14 days'
+      and l.created_at >= in_now_ts - interval '14 days'
     group by l.owner_user_id
   ),
   excluded_candidates as (
@@ -270,7 +270,7 @@ begin
         'source', 'season_score_audit_logs',
         'blocked_count', e.blocked_count
       ),
-      now_ts
+      in_now_ts
     from excluded_candidates e
     on conflict (user_id, period_type, period_start, reason)
     do update set
@@ -321,16 +321,16 @@ begin
       v_season_key,
       'R-' || upper(substr(md5(t.user_id::text || ':' || v_season_key), 1, 6)),
       substr(md5('avatar:' || t.user_id::text || ':' || v_season_key), 1, 12),
-      now_ts,
-      now_ts,
-      now_ts
+      in_now_ts,
+      in_now_ts,
+      in_now_ts
     from top_rows t
     on conflict (user_id) do update set
       season_key = excluded.season_key,
       alias_code = excluded.alias_code,
       avatar_seed = excluded.avatar_seed,
       rotated_at = excluded.rotated_at,
-      updated_at = now_ts
+      updated_at = in_now_ts
     where public.rival_alias_profiles.season_key is distinct from excluded.season_key
     returning user_id
   )

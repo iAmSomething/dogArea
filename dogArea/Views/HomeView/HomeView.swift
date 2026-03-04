@@ -7,6 +7,18 @@
 
 import SwiftUI
 
+private struct HomeScrollOffsetPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+
+    /// 최신 스크롤 오프셋 값을 preference 시스템에 병합합니다.
+    /// - Parameters:
+    ///   - value: 현재까지 누적된 preference 값입니다.
+    ///   - nextValue: 이번 레이아웃 패스에서 전달된 다음 preference 값 클로저입니다.
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
 struct HomeView: View {
     private enum QuestWidgetTab: String, CaseIterable, Identifiable {
         case daily
@@ -43,7 +55,7 @@ struct HomeView: View {
     @State private var seasonResultRevealShield: Bool = false
     @State private var seasonResetBannerVisible: Bool = false
     @State private var questWidgetTab: QuestWidgetTab = .daily
-    @State private var isSeasonCardCollapsed: Bool = false
+    @State private var homeScrollOffsetY: CGFloat = 0
     @State private var isSeasonDetailPresented: Bool = false
 
     private var isQuestMotionReduced: Bool {
@@ -65,143 +77,156 @@ struct HomeView: View {
         return "Lv. \(level)"
     }
 
-    /// 시즌 카드 토글 버튼에 노출할 액션 타이틀을 계산합니다.
-    private var seasonCardToggleTitle: String {
-        isSeasonCardCollapsed ? "시즌 카드 펼치기" : "시즌 카드 접기"
-    }
-
-    /// 시즌 카드 토글 버튼에 노출할 SF Symbol 이름을 계산합니다.
-    private var seasonCardToggleIconName: String {
-        isSeasonCardCollapsed ? "rectangle.expand.vertical" : "rectangle.compress.vertical"
+    /// 홈 스크롤 최상단 복귀 버튼 노출 여부를 계산합니다.
+    private var shouldShowScrollToTopButton: Bool {
+        homeScrollOffsetY < -220
     }
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            Color.appTabScaffoldBackground
-                .ignoresSafeArea()
+        ScrollViewReader { scrollProxy in
+            ZStack(alignment: .bottomTrailing) {
+                Color.appTabScaffoldBackground
+                    .ignoresSafeArea()
 
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 16) {
-                    homeHeaderSection
-                    if let report = viewModel.guestDataUpgradeReport {
-                        guestDataUpgradeCard(report: report)
-                    }
-                    if let message = viewModel.aggregationStatusMessage {
-                        HomeStatusBannerView(message: message, isWarning: false)
-                    }
-                    if let message = viewModel.indoorMissionStatusMessage {
-                        HomeStatusBannerView(message: message, isWarning: false)
-                    }
-                    if let message = viewModel.seasonCatchupBuffStatusMessage {
-                        HomeStatusBannerView(
-                            message: message,
-                            isWarning: viewModel.seasonCatchupBuffStatusWarning
-                        )
-                    }
-                    if viewModel.pets.count > 1 {
-                        homePetSelector
-                    }
-                    if viewModel.pets.isEmpty == false {
-                        if viewModel.isShowingAllRecordsOverride {
-                            selectedPetContextBanner
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 16) {
+                        Color.clear
+                            .frame(height: 0)
+                            .id("home.scroll.top")
+                        GeometryReader { proxy in
+                            Color.clear.preference(
+                                key: HomeScrollOffsetPreferenceKey.self,
+                                value: proxy.frame(in: .named("home.scroll")).minY
+                            )
                         }
-                        if viewModel.shouldShowSelectedPetEmptyState {
-                            selectedPetContextBanner
-                            selectedPetEmptyStateCard
+                        .frame(height: 0)
+
+                        homeHeaderSection
+                        if let report = viewModel.guestDataUpgradeReport {
+                            guestDataUpgradeCard(report: report)
                         }
-                    }
-                    homeWeeklySnapshotSection
-                    seasonMotionCard(summary: viewModel.seasonMotionSummary)
-                    if viewModel.indoorMissionBoard.shouldDisplayCard {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("데일리 미션 상태")
-                                .font(.appScaledFont(for: .SemiBold, size: 30, relativeTo: .title2))
-                            Text("오늘 날씨·활동 상태를 반영한 추천 미션 진행 현황입니다.")
-                                .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .caption))
-                                .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
+                        if let message = viewModel.aggregationStatusMessage {
+                            HomeStatusBannerView(message: message, isWarning: false)
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        indoorMissionCard(board: viewModel.indoorMissionBoard)
+                        if let message = viewModel.indoorMissionStatusMessage {
+                            HomeStatusBannerView(message: message, isWarning: false)
+                        }
+                        if let message = viewModel.seasonCatchupBuffStatusMessage {
+                            HomeStatusBannerView(
+                                message: message,
+                                isWarning: viewModel.seasonCatchupBuffStatusWarning
+                            )
+                        }
+                        if viewModel.pets.count > 1 {
+                            homePetSelector
+                        }
+                        if viewModel.pets.isEmpty == false {
+                            if viewModel.isShowingAllRecordsOverride {
+                                selectedPetContextBanner
+                            }
+                            if viewModel.shouldShowSelectedPetEmptyState {
+                                selectedPetContextBanner
+                                selectedPetEmptyStateCard
+                            }
+                        }
+                        homeWeeklySnapshotSection
+                        seasonMotionCard(summary: viewModel.seasonMotionSummary)
+                        if viewModel.indoorMissionBoard.shouldDisplayCard {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("데일리 미션 상태")
+                                    .font(.appScaledFont(for: .SemiBold, size: 30, relativeTo: .title2))
+                                Text("오늘 날씨·활동 상태를 반영한 추천 미션 진행 현황입니다.")
+                                    .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .caption))
+                                    .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            indoorMissionCard(board: viewModel.indoorMissionBoard)
+                        }
+                        territoryHeaderSection
+                        goalTrackerCard
+                        recentConqueredCard
                     }
-                    territoryHeaderSection
-                    goalTrackerCard
-                    recentConqueredCard
+                    .padding(.horizontal, 16)
+                    .padding(.top, 20)
+                    .padding(.bottom, CustomTabBar.reservedContentHeight + 12)
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 20)
-                .padding(.bottom, CustomTabBar.reservedContentHeight + 12)
-            }
-            .refreshable {
-                viewModel.fetchData()
-            }
-            .onAppear{
-                viewModel.reloadUserInfo()
-                viewModel.fetchData()
-                seasonAnimatedProgress = viewModel.seasonMotionSummary.progress
-                if viewModel.seasonMotionSummary.weatherShieldActive {
-                    startSeasonShieldRingAnimationIfNeeded()
+                .coordinateSpace(name: "home.scroll")
+                .safeAreaPadding(.top, 8)
+                .onPreferenceChange(HomeScrollOffsetPreferenceKey.self) { value in
+                    homeScrollOffsetY = value
                 }
-            }.onChange(of: viewModel.aggregationStatusMessage) { _, newValue in
+                .refreshable {
+                    viewModel.fetchData()
+                }
+                .onAppear{
+                    viewModel.reloadUserInfo()
+                    viewModel.fetchData()
+                    seasonAnimatedProgress = viewModel.seasonMotionSummary.progress
+                    if viewModel.seasonMotionSummary.weatherShieldActive {
+                        startSeasonShieldRingAnimationIfNeeded()
+                    }
+                }.onChange(of: viewModel.aggregationStatusMessage) { _, newValue in
                 guard newValue != nil else { return }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
                     viewModel.clearAggregationStatusMessage()
                 }
-            }.onChange(of: viewModel.indoorMissionStatusMessage) { _, newValue in
+                }.onChange(of: viewModel.indoorMissionStatusMessage) { _, newValue in
                 guard newValue != nil else { return }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.8) {
                     viewModel.clearIndoorMissionStatusMessage()
                 }
-            }.onChange(of: viewModel.weatherFeedbackResultMessage) { _, newValue in
+                }.onChange(of: viewModel.weatherFeedbackResultMessage) { _, newValue in
                 guard newValue != nil else { return }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3.2) {
                     viewModel.clearWeatherFeedbackResultMessage()
                 }
-            }.onChange(of: viewModel.questMotionEvent) { _, event in
+                }.onChange(of: viewModel.questMotionEvent) { _, event in
                 handleQuestMotionEvent(event)
-            }.onChange(of: viewModel.questCompletionPresentation) { _, payload in
+                }.onChange(of: viewModel.questCompletionPresentation) { _, payload in
                 guard let payload else { return }
                 presentQuestCompletionModal(payload)
-            }.onChange(of: viewModel.seasonMotionSummary.progress) { _, progress in
+                }.onChange(of: viewModel.seasonMotionSummary.progress) { _, progress in
                 animateSeasonProgress(to: progress)
-            }.onChange(of: viewModel.seasonMotionSummary.weatherShieldActive) { _, active in
+                }.onChange(of: viewModel.seasonMotionSummary.weatherShieldActive) { _, active in
                 if active {
                     startSeasonShieldRingAnimationIfNeeded()
                 } else {
                     seasonShieldRotation = 0
                 }
-            }.onChange(of: viewModel.seasonMotionEvent) { _, event in
+                }.onChange(of: viewModel.seasonMotionEvent) { _, event in
                 handleSeasonMotionEvent(event)
-            }.onChange(of: viewModel.seasonResultPresentation) { _, payload in
+                }.onChange(of: viewModel.seasonResultPresentation) { _, payload in
                 guard let payload else { return }
                 presentSeasonResultModal(payload)
-            }.onChange(of: viewModel.seasonResetTransitionToken) { _, token in
+                }.onChange(of: viewModel.seasonResetTransitionToken) { _, token in
                 guard token != nil else { return }
                 presentSeasonResetTransitionBanner()
-            }.onChange(of: isLowPowerModeEnabled) { _, enabled in
+                }.onChange(of: isLowPowerModeEnabled) { _, enabled in
                 if enabled {
                     seasonShieldRotation = 0
                 } else if viewModel.seasonMotionSummary.weatherShieldActive {
                     startSeasonShieldRingAnimationIfNeeded()
                 }
-            }.onReceive(NotificationCenter.default.publisher(for: .NSProcessInfoPowerStateDidChange)) { _ in
+                }.onReceive(NotificationCenter.default.publisher(for: .NSProcessInfoPowerStateDidChange)) { _ in
                 isLowPowerModeEnabled = ProcessInfo.processInfo.isLowPowerModeEnabled
-            }.sheet(isPresented: $isSeasonDetailPresented) {
+                }.sheet(isPresented: $isSeasonDetailPresented) {
                 seasonDetailSheet
-            }
+                }
 
-            themeFloatingButton
+                scrollToTopFloatingButton(proxy: scrollProxy)
 
-            if let questCompletionModal {
-                questCompletionOverlay(payload: questCompletionModal)
-                    .zIndex(10)
-            }
-            if let seasonResultModal {
-                seasonResultOverlay(payload: seasonResultModal)
-                    .zIndex(11)
-            }
-            if seasonResetBannerVisible {
-                seasonResetTransitionBanner
-                    .zIndex(9)
+                if let questCompletionModal {
+                    questCompletionOverlay(payload: questCompletionModal)
+                        .zIndex(10)
+                }
+                if let seasonResultModal {
+                    seasonResultOverlay(payload: seasonResultModal)
+                        .zIndex(11)
+                }
+                if seasonResetBannerVisible {
+                    seasonResetTransitionBanner
+                        .zIndex(9)
+                }
             }
         }
     }
@@ -239,32 +264,38 @@ struct HomeView: View {
         HomeTerritoryHeaderSectionView(selectedPetNameWithYi: viewModel.selectedPetNameWithYi)
     }
 
-    /// 우측 하단의 시즌 카드 표시 토글 버튼을 렌더링합니다.
-    private var themeFloatingButton: some View {
-        Button {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                isSeasonCardCollapsed.toggle()
+    /// 홈 스크롤이 내려갔을 때 상단 복귀 플로팅 버튼을 렌더링합니다.
+    /// - Parameter proxy: 홈 스크롤 앵커 이동을 담당하는 스크롤 프록시입니다.
+    /// - Returns: 조건부 노출되는 상단 복귀 버튼 뷰입니다.
+    @ViewBuilder
+    private func scrollToTopFloatingButton(proxy: ScrollViewProxy) -> some View {
+        if shouldShowScrollToTopButton {
+            Button {
+                withAnimation(.easeInOut(duration: 0.24)) {
+                    proxy.scrollTo("home.scroll.top", anchor: .top)
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.up")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text("맨 위로")
+                        .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.86)
+                }
+                .foregroundStyle(Color.appDynamicHex(light: 0x334155, dark: 0xE2E8F0))
+                .padding(.horizontal, 12)
+                .frame(minHeight: 44)
+                .background(Color.appDynamicHex(light: 0xFFFFFF, dark: 0x1E293B))
+                .clipShape(Capsule())
+                .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: 8)
             }
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: seasonCardToggleIconName)
-                    .font(.system(size: 14, weight: .semibold))
-                Text(seasonCardToggleTitle)
-                    .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.86)
-            }
-            .foregroundStyle(Color.appDynamicHex(light: 0x334155, dark: 0xE2E8F0))
-            .padding(.horizontal, 12)
-            .frame(minHeight: 44)
-            .background(Color.appDynamicHex(light: 0xFFFFFF, dark: 0x1E293B))
-            .clipShape(Capsule())
-            .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: 8)
+            .padding(.trailing, 20)
+            .padding(.bottom, CustomTabBar.reservedContentHeight - 20)
+            .accessibilityLabel("홈 상단으로 이동")
+            .accessibilityHint("스크롤 위치를 맨 위로 이동합니다")
+            .transition(.move(edge: .trailing).combined(with: .opacity))
         }
-        .padding(.trailing, 20)
-        .padding(.bottom, CustomTabBar.reservedContentHeight - 20)
-        .accessibilityLabel(seasonCardToggleTitle)
-        .accessibilityHint("시즌 카드 표시 상태를 전환합니다")
     }
 
     @ViewBuilder
@@ -310,10 +341,7 @@ struct HomeView: View {
             progressRatio: viewModel.goalProgressRatio,
             destination: TerritoryGoalView(viewModel: TerritoryGoalViewModel(homeViewModel: viewModel))
         )
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(
-            "영역 목표 트래커. 현재 영역 \(viewModel.myArea.area.calculatedAreaString), 다음 목표 \(viewModel.nextGoalArea?.areaName ?? "없음"), 남은 면적 \(viewModel.remainingAreaToGoal.calculatedAreaString)"
-        )
+        .accessibilityElement(children: .contain)
     }
 
     private var selectedPetContextBanner: some View {
@@ -742,24 +770,22 @@ struct HomeView: View {
                 .frame(minHeight: 44)
             }
 
-            if isSeasonCardCollapsed == false {
-                HStack(spacing: 8) {
-                    seasonMetricPill(
-                        title: "기여",
-                        value: "\(summary.contributionCount)회",
-                        color: Color.appDynamicHex(light: 0xEFF6FF, dark: 0x1E3A8A, alpha: 0.24)
-                    )
-                    seasonMetricPill(
-                        title: "Shield",
-                        value: "\(summary.weatherShieldApplyCount)회",
-                        color: Color.appDynamicHex(light: 0xDCFCE7, dark: 0x14532D, alpha: 0.34)
-                    )
-                    seasonMetricPill(
-                        title: "주차",
-                        value: summary.weekKey.isEmpty ? "-" : summary.weekKey,
-                        color: Color.appDynamicHex(light: 0xFEF3C7, dark: 0x78350F, alpha: 0.34)
-                    )
-                }
+            HStack(spacing: 8) {
+                seasonMetricPill(
+                    title: "기여",
+                    value: "\(summary.contributionCount)회",
+                    color: Color.appDynamicHex(light: 0xEFF6FF, dark: 0x1E3A8A, alpha: 0.24)
+                )
+                seasonMetricPill(
+                    title: "Shield",
+                    value: "\(summary.weatherShieldApplyCount)회",
+                    color: Color.appDynamicHex(light: 0xDCFCE7, dark: 0x14532D, alpha: 0.34)
+                )
+                seasonMetricPill(
+                    title: "주차",
+                    value: summary.weekKey.isEmpty ? "-" : summary.weekKey,
+                    color: Color.appDynamicHex(light: 0xFEF3C7, dark: 0x78350F, alpha: 0.34)
+                )
             }
         }
         .padding(16)

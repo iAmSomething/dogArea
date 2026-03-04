@@ -358,11 +358,11 @@ as $$
 $$;
 
 create or replace function public.rpc_issue_quest_instances(
-  target_user_id uuid default auth.uid(),
-  target_scope text default 'daily',
-  target_cycle_key text default null,
-  expires_at timestamptz default null,
-  now_ts timestamptz default now()
+  in_target_user_id uuid default auth.uid(),
+  in_target_scope text default 'daily',
+  in_target_cycle_key text default null,
+  in_expires_at timestamptz default null,
+  in_now_ts timestamptz default now()
 )
 returns table (
   quest_instance_id uuid,
@@ -389,8 +389,8 @@ declare
 begin
   requester_uid := auth.uid();
   requester_role := auth.role();
-  effective_user_id := coalesce(target_user_id, requester_uid);
-  normalized_scope := lower(coalesce(target_scope, 'daily'));
+  effective_user_id := coalesce(in_target_user_id, requester_uid);
+  normalized_scope := lower(coalesce(in_target_scope, 'daily'));
 
   if normalized_scope not in ('daily', 'weekly') then
     raise exception 'invalid target_scope: %', normalized_scope;
@@ -402,8 +402,8 @@ begin
     end if;
   end if;
 
-  effective_cycle_key := coalesce(nullif(trim(target_cycle_key), ''), public.quest_cycle_key(normalized_scope, now_ts));
-  effective_expires_at := coalesce(expires_at, public.quest_scope_expires_at(normalized_scope, now_ts));
+  effective_cycle_key := coalesce(nullif(trim(in_target_cycle_key), ''), public.quest_cycle_key(normalized_scope, in_now_ts));
+  effective_expires_at := coalesce(in_expires_at, public.quest_scope_expires_at(normalized_scope, in_now_ts));
 
   insert into public.quest_instances (
     owner_user_id,
@@ -437,7 +437,7 @@ begin
     effective_expires_at,
     jsonb_build_object(
       'issued_by', 'rpc_issue_quest_instances',
-      'issued_at', now_ts,
+      'issued_at', in_now_ts,
       'snapshot_fixed', true
     )
   from public.quest_templates t
@@ -474,13 +474,13 @@ end;
 $$;
 
 create or replace function public.rpc_apply_quest_progress_event(
-  target_user_id uuid default auth.uid(),
-  target_instance_id uuid default null,
-  event_id text default null,
-  event_type text default 'walk_event',
-  delta_value double precision default 1,
-  payload jsonb default '{}'::jsonb,
-  now_ts timestamptz default now()
+  in_target_user_id uuid default auth.uid(),
+  in_target_instance_id uuid default null,
+  in_event_id text default null,
+  in_event_type text default 'walk_event',
+  in_delta_value double precision default 1,
+  in_payload jsonb default '{}'::jsonb,
+  in_now_ts timestamptz default now()
 )
 returns table (
   quest_instance_id uuid,
@@ -512,10 +512,10 @@ declare
 begin
   requester_uid := auth.uid();
   requester_role := auth.role();
-  effective_user_id := coalesce(target_user_id, requester_uid);
-  normalized_event_id := nullif(trim(coalesce(event_id, '')), '');
-  normalized_event_type := coalesce(nullif(trim(event_type), ''), 'walk_event');
-  normalized_delta := greatest(coalesce(delta_value, 0), 0);
+  effective_user_id := coalesce(in_target_user_id, requester_uid);
+  normalized_event_id := nullif(trim(coalesce(in_event_id, '')), '');
+  normalized_event_type := coalesce(nullif(trim(in_event_type), ''), 'walk_event');
+  normalized_delta := greatest(coalesce(in_delta_value, 0), 0);
 
   if requester_role <> 'service_role' then
     if requester_uid is null or effective_user_id is null or requester_uid <> effective_user_id then
@@ -523,7 +523,7 @@ begin
     end if;
   end if;
 
-  if target_instance_id is null then
+  if in_target_instance_id is null then
     raise exception 'target_instance_id is required';
   end if;
 
@@ -534,11 +534,11 @@ begin
   select *
   into instance_row
   from public.quest_instances
-  where id = target_instance_id
+  where id = in_target_instance_id
   for update;
 
   if instance_row.id is null then
-    raise exception 'quest instance not found: %', target_instance_id;
+    raise exception 'quest instance not found: %', in_target_instance_id;
   end if;
 
   if requester_role <> 'service_role' and instance_row.owner_user_id <> effective_user_id then
@@ -590,8 +590,8 @@ begin
     normalized_event_id,
     normalized_event_type,
     normalized_delta,
-    coalesce(payload, '{}'::jsonb),
-    now_ts
+    coalesce(in_payload, '{}'::jsonb),
+    in_now_ts
   )
   on conflict (quest_instance_id, event_id) do nothing
   returning id into inserted_progress_id;
@@ -623,7 +623,7 @@ begin
     progress_value = next_progress,
     status = next_status,
     completed_at = case
-      when next_status = 'completed' then coalesce(completed_at, now_ts)
+      when next_status = 'completed' then coalesce(completed_at, in_now_ts)
       else completed_at
     end,
     updated_at = now()
@@ -871,11 +871,11 @@ end;
 $$;
 
 create or replace function public.rpc_transition_quest_status(
-  target_user_id uuid default auth.uid(),
-  target_instance_id uuid default null,
-  transition_action text default null,
-  replacement_template_id text default null,
-  now_ts timestamptz default now()
+  in_target_user_id uuid default auth.uid(),
+  in_target_instance_id uuid default null,
+  in_transition_action text default null,
+  in_replacement_template_id text default null,
+  in_now_ts timestamptz default now()
 )
 returns table (
   quest_instance_id uuid,
@@ -904,9 +904,9 @@ declare
 begin
   requester_uid := auth.uid();
   requester_role := auth.role();
-  effective_user_id := coalesce(target_user_id, requester_uid);
-  normalized_action := lower(coalesce(transition_action, ''));
-  normalized_replacement_template_id := nullif(trim(coalesce(replacement_template_id, '')), '');
+  effective_user_id := coalesce(in_target_user_id, requester_uid);
+  normalized_action := lower(coalesce(in_transition_action, ''));
+  normalized_replacement_template_id := nullif(trim(coalesce(in_replacement_template_id, '')), '');
 
   if requester_role <> 'service_role' then
     if requester_uid is null or effective_user_id is null or requester_uid <> effective_user_id then
@@ -914,22 +914,22 @@ begin
     end if;
   end if;
 
-  if target_instance_id is null then
+  if in_target_instance_id is null then
     raise exception 'target_instance_id is required';
   end if;
 
   if normalized_action not in ('expire', 'reroll', 'replace') then
-    raise exception 'invalid transition_action: %', transition_action;
+    raise exception 'invalid transition_action: %', in_transition_action;
   end if;
 
   select *
   into instance_row
   from public.quest_instances
-  where id = target_instance_id
+  where id = in_target_instance_id
   for update;
 
   if instance_row.id is null then
-    raise exception 'quest instance not found: %', target_instance_id;
+    raise exception 'quest instance not found: %', in_target_instance_id;
   end if;
 
   if requester_role <> 'service_role' and instance_row.owner_user_id <> effective_user_id then
@@ -961,7 +961,7 @@ begin
       instance_row.id,
       'expire_transition',
       'quest moved to expired status',
-      jsonb_build_object('requested_at', now_ts)
+      jsonb_build_object('requested_at', in_now_ts)
     );
 
     return query
@@ -976,7 +976,7 @@ begin
   end if;
 
   if normalized_action = 'reroll' then
-    cycle_date := (timezone('utc', now_ts))::date;
+    cycle_date := (timezone('utc', in_now_ts))::date;
 
     select exists(
       select 1
@@ -1060,7 +1060,7 @@ begin
         instance_row.cycle_key,
         instance_row.expires_at,
         instance_row.id,
-        jsonb_build_object('transition', 'reroll', 'source_instance_id', instance_row.id, 'requested_at', now_ts)
+        jsonb_build_object('transition', 'reroll', 'source_instance_id', instance_row.id, 'requested_at', in_now_ts)
       )
       on conflict (owner_user_id, template_id, cycle_key) do update
       set
@@ -1158,7 +1158,7 @@ begin
       instance_row.cycle_key,
       instance_row.expires_at,
       instance_row.id,
-      jsonb_build_object('transition', 'replace', 'source_instance_id', instance_row.id, 'requested_at', now_ts)
+      jsonb_build_object('transition', 'replace', 'source_instance_id', instance_row.id, 'requested_at', in_now_ts)
     )
     on conflict (owner_user_id, template_id, cycle_key) do update
     set

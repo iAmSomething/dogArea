@@ -14,6 +14,7 @@ struct NotificationCenterView: View {
     @State private var isProfileEditPresented: Bool = false
     @State private var toastMessage: String? = nil
     @State private var isLogoutAlertPresented: Bool = false
+    @State private var isAccountDeleteAlertPresented: Bool = false
 
     var body: some View {
         Group {
@@ -32,6 +33,16 @@ struct NotificationCenterView: View {
             }
         } message: {
             Text("현재 기기의 인증 상태를 해제하고 게스트 모드로 전환합니다.")
+        }
+        .alert("회원탈퇴할까요?", isPresented: $isAccountDeleteAlertPresented) {
+            Button("취소", role: .cancel) { }
+            Button("회원탈퇴", role: .destructive) {
+                Task {
+                    await handleAccountDeletion()
+                }
+            }
+        } message: {
+            Text("탈퇴 시 계정 정보와 프로필 데이터가 삭제되며 복구할 수 없습니다.")
         }
     }
 
@@ -58,6 +69,7 @@ struct NotificationCenterView: View {
             .padding(.bottom, CustomTabBar.reservedContentHeight + 20)
         }
         .scrollIndicators(.hidden)
+        .safeAreaPadding(.top, 8)
         .onAppear {
             viewModel.reloadUserInfo()
         }
@@ -95,13 +107,20 @@ struct NotificationCenterView: View {
             .padding(.bottom, CustomTabBar.reservedContentHeight + 20)
         }
         .scrollIndicators(.hidden)
+        .safeAreaPadding(.top, 8)
     }
 
     private var memberProfileCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .center, spacing: 14) {
-                UserProfileImageView()
-                    .environmentObject(viewModel)
+                Button {
+                    isProfileEditPresented = true
+                } label: {
+                    UserProfileImageView()
+                        .environmentObject(viewModel)
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("settings.profile.image")
 
                 VStack(alignment: .leading, spacing: 6) {
                     Text(viewModel.userInfo?.name ?? "산책꾼")
@@ -250,6 +269,21 @@ struct NotificationCenterView: View {
             .accessibilityIdentifier("settings.logout")
             .buttonStyle(AppFilledButtonStyle(role: .destructive))
             .frame(minHeight: 44)
+
+            Divider()
+
+            Text("회원탈퇴 시 계정 데이터가 서버에서 삭제되고 현재 기기 인증도 즉시 해제됩니다.")
+                .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .body))
+                .foregroundStyle(Color.appDynamicHex(light: 0x92400E, dark: 0xFDBA74))
+                .fixedSize(horizontal: false, vertical: true)
+
+            Button(viewModel.isAccountDeletionInProgress ? "회원탈퇴 처리 중..." : "회원탈퇴") {
+                isAccountDeleteAlertPresented = true
+            }
+            .accessibilityIdentifier("settings.account.delete")
+            .disabled(viewModel.isAccountDeletionInProgress)
+            .buttonStyle(AppFilledButtonStyle(role: .destructive))
+            .frame(minHeight: 44)
         }
         .appCardSurface()
     }
@@ -345,6 +379,23 @@ struct NotificationCenterView: View {
         let age = pet.ageYears.map { "\($0)세" } ?? "나이 미입력"
         let gender = pet.gender.title
         return "\(breed) · \(age) · \(gender)"
+    }
+
+    /// 회원탈퇴 요청을 수행하고 성공 시 인증 상태를 정리합니다.
+    /// - Returns: 없음. 처리 결과는 토스트 메시지와 인증 상태에 반영됩니다.
+    @MainActor
+    private func handleAccountDeletion() async {
+        let result = await viewModel.deleteAccount()
+        switch result {
+        case .success:
+            authFlow.signOut()
+            toastMessage = "회원탈퇴가 완료되었습니다."
+        case .failure(let error):
+            toastMessage = error.localizedDescription
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
+            toastMessage = nil
+        }
     }
 }
 

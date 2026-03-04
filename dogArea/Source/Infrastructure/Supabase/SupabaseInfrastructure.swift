@@ -2326,6 +2326,57 @@ enum SupabaseAuthError: LocalizedError {
     }
 }
 
+enum SupabaseAccountDeletionError: LocalizedError {
+    case unauthorized
+    case requestFailed(statusCode: Int)
+    case unknown
+
+    var errorDescription: String? {
+        switch self {
+        case .unauthorized:
+            return "인증이 만료되어 회원탈퇴를 진행할 수 없습니다. 다시 로그인 후 시도해주세요."
+        case .requestFailed(let statusCode):
+            return "회원탈퇴 요청에 실패했습니다. (\(statusCode))"
+        case .unknown:
+            return "회원탈퇴 요청에 실패했습니다. 잠시 후 다시 시도해주세요."
+        }
+    }
+}
+
+final class SupabaseAccountDeletionService: AccountDeletionServiceProtocol {
+    static let shared = SupabaseAccountDeletionService()
+
+    private let client: SupabaseHTTPClient
+
+    /// Supabase Auth 기반 회원탈퇴 서비스를 초기화합니다.
+    /// - Parameter client: Auth API 요청에 사용할 HTTP 클라이언트입니다.
+    init(client: SupabaseHTTPClient = .live) {
+        self.client = client
+    }
+
+    /// 현재 로그인된 사용자의 계정을 삭제합니다.
+    func deleteCurrentAccount() async throws {
+        do {
+            _ = try await client.request(
+                .auth(path: "user"),
+                method: .delete,
+                bodyData: nil
+            )
+        } catch let httpError as SupabaseHTTPError {
+            switch httpError {
+            case .unexpectedStatusCode(let code) where code == 401 || code == 403:
+                throw SupabaseAccountDeletionError.unauthorized
+            case .unexpectedStatusCode(let code):
+                throw SupabaseAccountDeletionError.requestFailed(statusCode: code)
+            default:
+                throw SupabaseAccountDeletionError.unknown
+            }
+        } catch {
+            throw SupabaseAccountDeletionError.unknown
+        }
+    }
+}
+
 final class DeviceAppleCredentialAuthService: AppleCredentialAuthServiceProtocol {
     static let shared = DeviceAppleCredentialAuthService()
 

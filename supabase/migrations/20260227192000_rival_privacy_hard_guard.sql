@@ -139,10 +139,10 @@ $$;
 drop function if exists public.rpc_get_nearby_hotspots(double precision, double precision, double precision, timestamptz);
 
 create or replace function public.rpc_get_nearby_hotspots(
-  center_lat double precision,
-  center_lng double precision,
-  radius_km double precision default 1.0,
-  now_ts timestamptz default now()
+  in_center_lat double precision,
+  in_center_lng double precision,
+  in_radius_km double precision default 1.0,
+  in_now_ts timestamptz default now()
 )
 returns table (
   geohash7 text,
@@ -186,7 +186,7 @@ begin
     effective_delay := 30;
     active_window := 10;
     mask_enabled := true;
-    local_now := now_ts at time zone 'Asia/Seoul';
+    local_now := in_now_ts at time zone 'Asia/Seoul';
     local_hour := extract(hour from local_now)::integer;
     is_night := local_hour >= 22 or local_hour < 6;
     if is_night then
@@ -198,7 +198,7 @@ begin
     active_window := greatest(1, coalesce(policy_row.active_window_minutes, 10));
     mask_enabled := coalesce(policy_row.sensitive_mask_enabled, true);
 
-    local_now := now_ts at time zone coalesce(nullif(policy_row.policy_timezone, ''), 'Asia/Seoul');
+    local_now := in_now_ts at time zone coalesce(nullif(policy_row.policy_timezone, ''), 'Asia/Seoul');
     local_hour := extract(hour from local_now)::integer;
 
     if policy_row.night_start_hour = policy_row.night_end_hour then
@@ -217,16 +217,16 @@ begin
     end;
   end if;
 
-  clamped_radius := least(5.0, greatest(0.1, coalesce(radius_km, 1.0)));
-  query_center_lat := center_lat;
-  query_center_lng := center_lng;
+  clamped_radius := least(5.0, greatest(0.1, coalesce(in_radius_km, 1.0)));
+  query_center_lat := in_center_lat;
+  query_center_lng := in_center_lng;
 
   return query
   with delayed as (
     select p.*
     from public.nearby_presence p
-    where p.last_seen_at <= now_ts - make_interval(mins => effective_delay)
-      and p.last_seen_at >= now_ts - make_interval(mins => (effective_delay + active_window))
+    where p.last_seen_at <= in_now_ts - make_interval(mins => effective_delay)
+      and p.last_seen_at >= in_now_ts - make_interval(mins => (effective_delay + active_window))
   ),
   grouped as (
     select
