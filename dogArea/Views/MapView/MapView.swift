@@ -260,11 +260,14 @@ struct MapView : View{
         }.fullScreenCover(item: $selectedPolygonData, onDismiss: {self.selectedPolygonData = nil}, content: {model in
             WalkListDetailView(model: model)
         })
-        .onMapCameraChange{ context in
+        .onMapCameraChange(frequency: .onEnd) { context in
             viewModel.recordCameraChange(context.camera)
             let now = Date()
             guard now.timeIntervalSince(lastCameraEventProcessedAt) >= 0.15 else { return }
             lastCameraEventProcessedAt = now
+
+            guard context.camera.centerCoordinate.latitude.isFinite,
+                  context.camera.centerCoordinate.longitude.isFinite else { return }
 
             if let loc = viewModel.location {
                 let distanceMeters = greatCircleDistanceMeters(
