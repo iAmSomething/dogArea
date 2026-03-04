@@ -37,6 +37,9 @@ Check.assertTrue(functionReadme.contains("Request Schema"), "README should defin
 Check.assertTrue(functionReadme.contains("Error Codes"), "README should define error codes")
 
 Check.assertTrue(supabaseInfrastructure.contains("struct CaricatureEdgeClient"), "app should use shared caricature edge client")
+Check.assertTrue(supabaseInfrastructure.contains("case functionUnavailable"), "edge client should classify function unavailable")
+Check.assertTrue(supabaseInfrastructure.contains("caricature.edge.unavailable.until.v1"), "edge client should persist temporary unavailable marker")
+Check.assertTrue(supabaseInfrastructure.contains("캐리커처 서버 기능이 아직 배포되지 않았습니다"), "edge client should expose user-friendly unavailable message")
 Check.assertTrue(imageVM.contains("CaricatureEdgeClient"), "image generator vm should call edge client")
 Check.assertTrue(imageVM.contains("retryLastRequest"), "image generator vm should support retry")
 Check.assertTrue(imageVM.contains("AppFeatureGate.isAllowed(.aiGeneration"), "image vm should enforce ai feature gate")

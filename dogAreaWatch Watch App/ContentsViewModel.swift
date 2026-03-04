@@ -203,4 +203,20 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
     func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String : Any]) {
         applyContext(applicationContext)
     }
+
+    #if os(iOS)
+    /// iOS 쪽 세션이 비활성 상태로 전환될 때 도달 가능 상태를 갱신합니다.
+    /// - Parameter session: 상태 전환이 발생한 WatchConnectivity 세션입니다.
+    func sessionDidBecomeInactive(_ session: WCSession) {
+        DispatchQueue.main.async { [weak self] in
+            self?.isReachable = session.isReachable
+        }
+    }
+
+    /// iOS 쪽 세션 비활성 이후 재활성화를 트리거합니다.
+    /// - Parameter session: 비활성화된 WatchConnectivity 세션입니다.
+    func sessionDidDeactivate(_ session: WCSession) {
+        session.activate()
+    }
+    #endif
 }
