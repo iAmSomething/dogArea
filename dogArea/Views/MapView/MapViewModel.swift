@@ -507,6 +507,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private var livePresenceOutbox: [LivePresenceOutboxItem] = []
     private var livePresenceSessionId: String?
     private var livePresenceSequence: Int = 0
+    private var lastAcceptedLivePresenceLocation: CLLocation?
+    private var lastAcceptedLivePresenceAt: Date = .distantPast
     private var isPresenceFlushInFlight: Bool = false
     private var lastNearbyFetchedAt: Date = .distantPast
     private var lastNearbyHotspotErrorLogAt: Date = .distantPast
@@ -530,6 +532,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private let livePresenceSessionIdKey = "nearby.livePresence.sessionId.v1"
     private let livePresenceSequenceKey = "nearby.livePresence.sequence.v1"
     private let livePresenceOutboxKey = "nearby.livePresence.outbox.v1"
+    private let livePresenceDeviceKeyKey = "nearby.livePresence.deviceKey.v1"
     private let mapMotionReducedKey = "map.motion.reduced"
     private let addPointLongPressModeKey = "map.addPoint.longPressModeEnabled"
     private let weatherRiskOverrideKey = "weather.risk.level.v1"
@@ -548,6 +551,10 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private let livePresenceUploadLowPowerInterval: TimeInterval = 30.0
     private let livePresenceUploadBackgroundInterval: TimeInterval = 20.0
     private let livePresenceUploadMinDistance: CLLocationDistance = 15.0
+    private let livePresenceClientMinInterval: TimeInterval = 1.8
+    private let livePresenceClientMaxSpeed: CLLocationSpeed = 16.0
+    private let livePresenceClientJumpDistanceThreshold: CLLocationDistance = 250.0
+    private let livePresenceClientJumpTimeWindow: TimeInterval = 12.0
     private let livePresenceHeartbeatStaleThreshold: TimeInterval = 35.0
     private let livePresenceMaxQueuedItems: Int = 240
     private let hybridMarkWeight: Double = 0.8
@@ -2610,6 +2617,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     ///   - location: 적재할 현재 위치 샘플입니다.
     ///   - queuedAt: 큐 적재 시각입니다.
     private func enqueueLivePresence(location: CLLocation, queuedAt: Date) {
+        guard validateLivePresenceSample(location: location, queuedAt: queuedAt) else { return }
         if livePresenceSessionId == nil {
             beginLivePresenceSession(restoredSessionId: nil)
         }
@@ -2682,15 +2690,28 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     /// - Throws: 네트워크/인증/서버 오류 시 에러를 던집니다.
     private func uploadLivePresence(item: LivePresenceOutboxItem, userId: String) async throws -> Bool {
         do {
-            _ = try await nearbyService.upsertLivePresence(
+            let response = try await nearbyService.upsertLivePresence(
                 userId: userId,
                 sessionId: item.sessionId,
                 latitude: item.latitude,
                 longitude: item.longitude,
                 speedMetersPerSecond: item.speedMetersPerSecond,
                 sequence: item.sequence,
-                idempotencyKey: item.idempotencyKey
+                idempotencyKey: item.idempotencyKey,
+                deviceKey: resolvedLivePresenceDeviceKey()
             )
+            if let response, response.writeApplied == false {
+                if let reason = response.abuseReason, reason.isEmpty == false {
+                    await MainActor.run {
+                        self.walkStatusMessage = "위치 샘플이 보호 정책으로 제외되었습니다. (\(reason))"
+                    }
+                }
+                if response.sanctionLevel == "block" {
+                    await MainActor.run {
+                        self.walkStatusMessage = "비정상 패턴이 감지되어 실시간 공유가 일시 차단됐습니다."
+                    }
+                }
+            }
             return true
         } catch let error as SupabaseHTTPError {
             if case .unexpectedStatusCode(404) = error {
@@ -2723,6 +2744,51 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         return interval
     }
 
+    /// 라이브 프레즌스 업링크에 사용할 디바이스 키를 반환합니다.
+    /// - Returns: 설치 단위로 유지되는 UUID 문자열입니다.
+    private func resolvedLivePresenceDeviceKey() -> String {
+        if let existing = preferenceStore.string(forKey: livePresenceDeviceKeyKey), existing.isEmpty == false {
+            return existing
+        }
+        let generated = UUID().uuidString.lowercased()
+        preferenceStore.set(generated, forKey: livePresenceDeviceKeyKey)
+        return generated
+    }
+
+    /// 라이브 프레즌스 샘플의 점프/초고속/초단기 반복 패턴을 검사합니다.
+    /// - Parameters:
+    ///   - location: 큐 적재 후보 위치 샘플입니다.
+    ///   - queuedAt: 큐 적재 시각입니다.
+    /// - Returns: 보호 정책을 통과한 정상 샘플이면 `true`, 폐기 대상이면 `false`입니다.
+    private func validateLivePresenceSample(location: CLLocation, queuedAt: Date) -> Bool {
+        if location.speed >= 0, location.speed > livePresenceClientMaxSpeed {
+            setRuntimeGuardStatus("실시간 공유: 비정상 고속 샘플 폐기")
+            return false
+        }
+
+        if let lastLocation = lastAcceptedLivePresenceLocation {
+            let delta = max(0.001, queuedAt.timeIntervalSince(lastAcceptedLivePresenceAt))
+            let distance = location.distance(from: lastLocation)
+            let inferredSpeed = distance / delta
+            if delta < livePresenceClientMinInterval, distance < 2 {
+                setRuntimeGuardStatus("실시간 공유: 과도한 반복 샘플 폐기")
+                return false
+            }
+            if inferredSpeed > livePresenceClientMaxSpeed && distance > livePresenceUploadMinDistance {
+                setRuntimeGuardStatus("실시간 공유: 속도 이상 샘플 폐기")
+                return false
+            }
+            if distance > livePresenceClientJumpDistanceThreshold && delta <= livePresenceClientJumpTimeWindow {
+                setRuntimeGuardStatus("실시간 공유: 점프 샘플 폐기")
+                return false
+            }
+        }
+
+        lastAcceptedLivePresenceLocation = location
+        lastAcceptedLivePresenceAt = queuedAt
+        return true
+    }
+
     /// 라이브 프레즌스 세션을 시작하거나 복원합니다.
     /// - Parameter restoredSessionId: 복구할 세션 식별자입니다. `nil`이면 새 UUID를 생성합니다.
     private func beginLivePresenceSession(restoredSessionId: String?) {
@@ -2735,6 +2801,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         lastPresenceSentAt = .distantPast
         lastPresenceSentCoordinate = nil
         lastPresenceSuccessfulAt = .distantPast
+        lastAcceptedLivePresenceLocation = nil
+        lastAcceptedLivePresenceAt = .distantPast
         setPresenceHeartbeatState(.stale)
         persistLivePresenceStateToDefaults()
     }
@@ -2747,6 +2815,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         lastPresenceSentAt = .distantPast
         lastPresenceSentCoordinate = nil
         lastPresenceSuccessfulAt = .distantPast
+        lastAcceptedLivePresenceLocation = nil
+        lastAcceptedLivePresenceAt = .distantPast
         if clearOutbox {
             livePresenceOutbox.removeAll()
         }

@@ -11,6 +11,7 @@ type RequestDTO = {
   action: Action;
   userId?: string;
   excludedUserIds?: string[];
+  deviceKey?: string;
   enabled?: boolean;
   lat?: number;
   lng?: number;
@@ -61,6 +62,10 @@ type ResponseLivePresenceDTO = {
   delay_minutes?: number;
   required_min_sample?: number;
   obfuscation_meters?: number;
+  abuse_reason?: string | null;
+  abuse_score?: number;
+  sanction_level?: string | null;
+  sanction_until?: string | null;
 };
 
 const json = (body: unknown, status = 200) =>
@@ -154,6 +159,7 @@ const upsertLivePresence = async (
   payload: {
     userId: string;
     sessionId?: string;
+    deviceKey?: string;
     latitude: number;
     longitude: number;
     speedMps?: number;
@@ -174,6 +180,7 @@ const upsertLivePresence = async (
     90,
     Math.max(60, asPositiveIntegerOrNull(payload.ttlSeconds) ?? 90),
   );
+  const normalizedDeviceKey = asNonEmptyTextOrNull(payload.deviceKey);
   const geohash7 = geohashEncode(latRounded, lngRounded, 7);
 
   const { data, error } = await client.rpc("rpc_upsert_walk_live_presence", {
@@ -187,6 +194,7 @@ const upsertLivePresence = async (
     in_idempotency_key: normalizedIdempotencyKey,
     in_updated_at: normalizedUpdatedAt,
     in_ttl_seconds: normalizedTtlSeconds,
+    in_device_key: normalizedDeviceKey,
   });
 
   const rows = ((data ?? []) as ResponseLivePresenceDTO[]);
@@ -265,6 +273,7 @@ Deno.serve(async (req) => {
     const livePresenceResult = await upsertLivePresence(client, {
       userId,
       sessionId: body.sessionId,
+      deviceKey: body.deviceKey,
       latitude: latRounded,
       longitude: lngRounded,
       speedMps: body.speedMps,
@@ -302,6 +311,7 @@ Deno.serve(async (req) => {
     const livePresenceResult = await upsertLivePresence(client, {
       userId,
       sessionId: body.sessionId,
+      deviceKey: body.deviceKey,
       latitude: body.lat,
       longitude: body.lng,
       speedMps: body.speedMps,
