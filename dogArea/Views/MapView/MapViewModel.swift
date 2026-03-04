@@ -196,11 +196,9 @@ private extension WeatherRiskLevelValue {
 }
 
 private enum MapCoreLocationCallTracer {
-    #if DEBUG
     private static let lock = NSLock()
     private static var eventCounts: [String: Int] = [:]
     private static var windowStartedAt: Date = Date()
-    #endif
 
     /// 지도 탭의 CoreLocation API 호출 이벤트를 1초 단위로 집계해 디버그 콘솔에 출력합니다.
     /// - Parameters:
@@ -214,7 +212,6 @@ private enum MapCoreLocationCallTracer {
         file: StaticString = #fileID,
         line: UInt = #line
     ) {
-        #if DEBUG
         let now = Date()
         var shouldPrintWindowSummary = false
         var summaryText = ""
@@ -245,12 +242,6 @@ private enum MapCoreLocationCallTracer {
         if shouldPrintWindowSummary {
             print("[CoreLocationTrace][Map][1s] \(summaryText)")
         }
-        #else
-        _ = event
-        _ = detail
-        _ = file
-        _ = line
-        #endif
     }
 }
 

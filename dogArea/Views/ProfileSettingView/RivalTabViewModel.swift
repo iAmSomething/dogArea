@@ -5,11 +5,9 @@ import UIKit
 #endif
 
 private enum RivalCoreLocationCallTracer {
-    #if DEBUG
     private static let lock = NSLock()
     private static var eventCounts: [String: Int] = [:]
     private static var windowStartedAt: Date = Date()
-    #endif
 
     /// 라이벌 탭의 CoreLocation API 호출 이벤트를 1초 단위로 집계해 디버그 콘솔에 출력합니다.
     /// - Parameters:
@@ -23,7 +21,6 @@ private enum RivalCoreLocationCallTracer {
         file: StaticString = #fileID,
         line: UInt = #line
     ) {
-        #if DEBUG
         let now = Date()
         var shouldPrintWindowSummary = false
         var summaryText = ""
@@ -54,12 +51,6 @@ private enum RivalCoreLocationCallTracer {
         if shouldPrintWindowSummary {
             print("[CoreLocationTrace][Rival][1s] \(summaryText)")
         }
-        #else
-        _ = event
-        _ = detail
-        _ = file
-        _ = line
-        #endif
     }
 }
 
