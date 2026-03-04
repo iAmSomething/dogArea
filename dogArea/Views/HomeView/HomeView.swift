@@ -120,7 +120,7 @@ struct HomeView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
-                .padding(.bottom, 106)
+                .padding(.bottom, CustomTabBar.reservedContentHeight + 12)
             }
             .refreshable {
                 viewModel.fetchData()
@@ -246,7 +246,7 @@ struct HomeView: View {
                 .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: 8)
         }
         .padding(.trailing, 20)
-        .padding(.bottom, 86)
+        .padding(.bottom, CustomTabBar.reservedContentHeight - 20)
         .accessibilityLabel("시즌 카드 확장 상태 변경")
     }
 

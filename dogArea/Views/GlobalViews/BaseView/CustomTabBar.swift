@@ -9,6 +9,8 @@ import Foundation
 import SwiftUI
 
 struct CustomTabBar: View {
+    static let reservedContentHeight: CGFloat = 124
+
     @Binding var selectedTab: Int
 
     private let sideItems: [TabVisualItem] = [
