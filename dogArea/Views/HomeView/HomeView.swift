@@ -25,7 +25,6 @@ struct HomeView: View {
     }
 
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
-    @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject var authFlow: AuthFlowCoordinator
     @StateObject var viewModel = HomeViewModel()
     @State private var animatedQuestProgress: [String: Double] = [:]
@@ -64,6 +63,16 @@ struct HomeView: View {
     private var levelBadgeText: String {
         let level = max(1, Int(viewModel.seasonMotionSummary.score / 100) + 1)
         return "Lv. \(level)"
+    }
+
+    /// 시즌 카드 토글 버튼에 노출할 액션 타이틀을 계산합니다.
+    private var seasonCardToggleTitle: String {
+        isSeasonCardCollapsed ? "시즌 카드 펼치기" : "시즌 카드 접기"
+    }
+
+    /// 시즌 카드 토글 버튼에 노출할 SF Symbol 이름을 계산합니다.
+    private var seasonCardToggleIconName: String {
+        isSeasonCardCollapsed ? "rectangle.expand.vertical" : "rectangle.compress.vertical"
     }
 
     var body: some View {
@@ -230,24 +239,32 @@ struct HomeView: View {
         HomeTerritoryHeaderSectionView(selectedPetNameWithYi: viewModel.selectedPetNameWithYi)
     }
 
-    /// 우측 하단의 플로팅 테마 버튼을 렌더링합니다.
+    /// 우측 하단의 시즌 카드 표시 토글 버튼을 렌더링합니다.
     private var themeFloatingButton: some View {
         Button {
             withAnimation(.easeInOut(duration: 0.2)) {
                 isSeasonCardCollapsed.toggle()
             }
         } label: {
-            Image(systemName: colorScheme == .dark ? "sun.max.fill" : "moon.fill")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(Color.appDynamicHex(light: 0x334155, dark: 0xE2E8F0))
-                .frame(width: 44, height: 44)
-                .background(Color.appDynamicHex(light: 0xFFFFFF, dark: 0x1E293B))
-                .clipShape(Circle())
-                .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: 8)
+            HStack(spacing: 6) {
+                Image(systemName: seasonCardToggleIconName)
+                    .font(.system(size: 14, weight: .semibold))
+                Text(seasonCardToggleTitle)
+                    .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.86)
+            }
+            .foregroundStyle(Color.appDynamicHex(light: 0x334155, dark: 0xE2E8F0))
+            .padding(.horizontal, 12)
+            .frame(minHeight: 44)
+            .background(Color.appDynamicHex(light: 0xFFFFFF, dark: 0x1E293B))
+            .clipShape(Capsule())
+            .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: 8)
         }
         .padding(.trailing, 20)
         .padding(.bottom, CustomTabBar.reservedContentHeight - 20)
-        .accessibilityLabel("시즌 카드 확장 상태 변경")
+        .accessibilityLabel(seasonCardToggleTitle)
+        .accessibilityHint("시즌 카드 표시 상태를 전환합니다")
     }
 
     @ViewBuilder
