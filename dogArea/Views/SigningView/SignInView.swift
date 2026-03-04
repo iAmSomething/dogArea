@@ -10,8 +10,6 @@ import SwiftUI
 
 // swift_stability_unit_check 호환: AppleSigninButton.swift 내부에서 `guard let identityTokenData`로 토큰 유효성을 검증합니다.
 struct SignInView: View {
-    @Environment(\.colorScheme) var scheme
-
     /// Apple Developer 서명 준비 전까지 Apple 로그인 노출을 차단합니다.
     private let isAppleSignInTemporarilyDisabled: Bool
 
@@ -21,6 +19,7 @@ struct SignInView: View {
     @State private var password: String = ""
     @State private var emailAuthLoading: Bool = false
     @State private var authErrorMessage: String? = nil
+    @State private var isSignUpSheetPresented: Bool = false
 
     let allowDismiss: Bool
     let onAuthenticated: () -> Void
@@ -99,21 +98,24 @@ struct SignInView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .accessibilityIdentifier("signin.password")
 
-                    HStack(spacing: 10) {
-                        Button("이메일 로그인") {
-                            runEmailAuth(isSignup: false)
-                        }
-                        .accessibilityIdentifier("signin.login")
-                        .buttonStyle(AppFilledButtonStyle(role: .primary))
-                        .disabled(emailAuthLoading)
-
-                        Button("이메일 회원가입") {
-                            runEmailAuth(isSignup: true)
-                        }
-                        .accessibilityIdentifier("signin.signup")
-                        .buttonStyle(AppFilledButtonStyle(role: .secondary))
-                        .disabled(emailAuthLoading)
+                    Button("이메일 로그인") {
+                        runEmailSignIn()
                     }
+                    .accessibilityIdentifier("signin.login")
+                    .buttonStyle(AppFilledButtonStyle(role: .primary))
+                    .disabled(emailAuthLoading)
+
+                    Button("이메일 회원가입") {
+                        presentSignUpSheet()
+                    }
+                    .accessibilityIdentifier("signin.signup")
+                    .buttonStyle(.plain)
+                    .font(.appFont(for: .Regular, size: 14))
+                    .foregroundStyle(Color.appTextDarkGray)
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
+                    .disabled(emailAuthLoading)
                 }
                 .padding(.horizontal, 20)
                 .appCardSurface()
@@ -140,6 +142,13 @@ struct SignInView: View {
                     onSignupCompleted: onAuthenticated
                 )
             })
+            .sheet(isPresented: $isSignUpSheetPresented) {
+                EmailSignUpSheetView(
+                    initialEmail: email,
+                    authUseCase: authUseCase,
+                    onOutcome: applyAuthOutcome
+                )
+            }
             .frame(maxHeight: .infinity)
             .background(Color.appBackground)
             .accessibilityIdentifier("screen.signin")
@@ -149,6 +158,8 @@ struct SignInView: View {
                         Button("나중에") {
                             onDismiss()
                         }
+                        .font(.appFont(for: .Regular, size: 14))
+                        .tint(Color.appTextDarkGray)
                         .accessibilityIdentifier("signin.dismiss")
                     }
                 }
@@ -156,8 +167,8 @@ struct SignInView: View {
         }
     }
 
-    /// 이메일 로그인/회원가입 요청을 실행하고 결과에 따라 인증 플로우를 분기합니다.
-    private func runEmailAuth(isSignup: Bool) {
+    /// 이메일 로그인 요청을 실행하고 결과에 따라 인증 플로우를 분기합니다.
+    private func runEmailSignIn() {
         authErrorMessage = nil
 
         let normalizedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -171,10 +182,9 @@ struct SignInView: View {
         emailAuthLoading = true
         Task {
             do {
-                let request: AuthRequest = isSignup
-                    ? .emailSignUp(email: normalizedEmail, password: normalizedPassword)
-                    : .emailSignIn(email: normalizedEmail, password: normalizedPassword)
-                let outcome = try await authUseCase.execute(request)
+                let outcome = try await authUseCase.execute(
+                    .emailSignIn(email: normalizedEmail, password: normalizedPassword)
+                )
 
                 await MainActor.run {
                     emailAuthLoading = false
@@ -187,6 +197,12 @@ struct SignInView: View {
                 }
             }
         }
+    }
+
+    /// 회원가입 화면 시트를 열고 기존 오류 메시지를 초기화합니다.
+    private func presentSignUpSheet() {
+        authErrorMessage = nil
+        isSignUpSheetPresented = true
     }
 
     /// 유즈케이스 결과에 따라 앱 진입 또는 프로필 온보딩 화면으로 분기합니다.
@@ -210,4 +226,134 @@ struct AuthUserInfo: Identifiable, Hashable, TimeCheckable {
     var createdAt: TimeInterval
     let id: String
     let name: String?
+}
+
+private struct EmailSignUpSheetView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var email: String
+    @State private var password: String = ""
+    @State private var loading: Bool = false
+    @State private var errorMessage: String? = nil
+
+    private let authUseCase: AuthUseCaseProtocol
+    private let onOutcome: (AuthUseCaseOutcome) -> Void
+
+    /// 회원가입 시트의 초기 입력값과 인증 결과 전달 핸들러를 설정합니다.
+    /// - Parameters:
+    ///   - initialEmail: 로그인 화면에서 전달받은 초기 이메일 값입니다.
+    ///   - authUseCase: 이메일 회원가입 요청을 수행할 인증 유즈케이스입니다.
+    ///   - onOutcome: 회원가입 성공 시 상위 화면으로 전달할 인증 결과 콜백입니다.
+    init(
+        initialEmail: String,
+        authUseCase: AuthUseCaseProtocol,
+        onOutcome: @escaping (AuthUseCaseOutcome) -> Void
+    ) {
+        self._email = State(initialValue: initialEmail)
+        self.authUseCase = authUseCase
+        self.onOutcome = onOutcome
+    }
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 14) {
+                TitleTextView(title: "이메일 회원가입", subTitle: "가입 정보를 입력해주세요.")
+
+                VStack(spacing: 8) {
+                    TextField("이메일", text: $email)
+                        .keyboardType(.emailAddress)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled(true)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 12)
+                        .background(Color.appSurface)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .stroke(Color.appTextLightGray.opacity(0.7), lineWidth: 1)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .accessibilityIdentifier("signup.email")
+
+                    SecureField("비밀번호", text: $password)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 12)
+                        .background(Color.appSurface)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .stroke(Color.appTextLightGray.opacity(0.7), lineWidth: 1)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .accessibilityIdentifier("signup.password")
+
+                    Button("회원가입 계속") {
+                        submitSignUp()
+                    }
+                    .accessibilityIdentifier("signup.submit")
+                    .buttonStyle(AppFilledButtonStyle(role: .primary))
+                    .disabled(loading)
+                }
+                .padding(.horizontal, 20)
+                .appCardSurface()
+                .padding(.horizontal, 16)
+
+                if loading {
+                    ProgressView("회원가입 처리 중...")
+                        .font(.appFont(for: .Regular, size: 12))
+                }
+
+                if let errorMessage, errorMessage.isEmpty == false {
+                    Text(errorMessage)
+                        .font(.appFont(for: .Regular, size: 12))
+                        .foregroundStyle(Color.appRed)
+                        .padding(.horizontal, 20)
+                }
+
+                Spacer()
+            }
+            .background(Color.appBackground)
+            .accessibilityIdentifier("screen.signup")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("취소") {
+                        dismiss()
+                    }
+                    .font(.appFont(for: .Regular, size: 14))
+                    .tint(Color.appTextDarkGray)
+                    .accessibilityIdentifier("signup.cancel")
+                }
+            }
+        }
+    }
+
+    /// 이메일 회원가입을 실행하고 성공 시 상위 인증 플로우로 결과를 전달합니다.
+    private func submitSignUp() {
+        errorMessage = nil
+
+        let normalizedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let normalizedPassword = password.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard normalizedEmail.isEmpty == false, normalizedPassword.isEmpty == false else {
+            errorMessage = "이메일과 비밀번호를 모두 입력해주세요."
+            return
+        }
+
+        loading = true
+        Task {
+            do {
+                let outcome = try await authUseCase.execute(
+                    .emailSignUp(email: normalizedEmail, password: normalizedPassword)
+                )
+                await MainActor.run {
+                    loading = false
+                    onOutcome(outcome)
+                    dismiss()
+                }
+            } catch {
+                await MainActor.run {
+                    loading = false
+                    errorMessage = error.localizedDescription
+                }
+            }
+        }
+    }
 }
