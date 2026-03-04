@@ -43,6 +43,7 @@ swift scripts/rival_location_services_threading_unit_check.swift
 swift scripts/rival_league_matching_unit_check.swift
 swift scripts/rival_stage2_backend_unit_check.swift
 swift scripts/rival_stage3_client_ux_unit_check.swift
+swift scripts/rival_auth_session_guard_unit_check.swift
 swift scripts/season_anti_farming_unit_check.swift
 swift scripts/season_comeback_catchup_unit_check.swift
 swift scripts/season_stage2_pipeline_unit_check.swift
