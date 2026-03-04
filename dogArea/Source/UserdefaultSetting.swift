@@ -815,7 +815,11 @@ final class SyncOutboxStore {
                 basePayload.merging(
                     [
                         "point_count": String(sessionDTO.pointCount),
-                        "points_json": sessionDTO.pointsJSONString
+                        "points_json": sessionDTO.pointsJSONString,
+                        "route_point_count": String(sessionDTO.routePoints.count),
+                        "mark_point_count": String(sessionDTO.markPoints.count),
+                        "route_points_json": sessionDTO.routePointsJSONString,
+                        "mark_points_json": sessionDTO.markPointsJSONString
                     ],
                     uniquingKeysWith: { _, latest in latest }
                 )

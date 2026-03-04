@@ -11,19 +11,33 @@ import SwiftUI
 import MapKit
 import _MapKit_SwiftUI
 
+enum WalkPointRole: String, Codable {
+    case mark
+    case route
+}
+
 struct Location: Identifiable, TimeCheckable {
     var createdAt: Double
     let id: UUID
     let coordinate: CLLocationCoordinate2D
-    init(coordinate: CLLocationCoordinate2D, id: UUID, createdAt: Double) {
+    let pointRole: WalkPointRole
+
+    init(
+        coordinate: CLLocationCoordinate2D,
+        id: UUID,
+        createdAt: Double,
+        pointRole: WalkPointRole = .mark
+    ) {
         self.id = id
         self.coordinate = coordinate
         self.createdAt = createdAt
+        self.pointRole = pointRole
     }
-    init(coordinate: CLLocationCoordinate2D) {
+    init(coordinate: CLLocationCoordinate2D, pointRole: WalkPointRole = .mark) {
         self.id = UUID()
         self.coordinate = coordinate
         self.createdAt = Date().timeIntervalSince1970
+        self.pointRole = pointRole
     }
 }
 extension Location : Equatable {

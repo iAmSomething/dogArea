@@ -20,6 +20,10 @@ struct MapSubView: View {
     var body: some View {
         Map(position: $viewModel.cameraPosition,
             interactionModes: .all){
+            if viewModel.isWalking, viewModel.activeWalkRouteCoordinates.count > 1 {
+                MapPolyline(coordinates: viewModel.activeWalkRouteCoordinates)
+                    .stroke(routeStrokeColor, style: routeStrokeStyle)
+            }
             ForEach(viewModel.activeCaptureRipples(at: motionNow)) { ripple in
                 let progress = viewModel.captureRippleProgress(for: ripple, now: motionNow)
                 Annotation("", coordinate: ripple.coordinate) {
@@ -76,7 +80,11 @@ struct MapSubView: View {
             }
             if let walkArea = viewModel.polygon.polygon{
                 if viewModel.showOnlyOne {
-                    ForEach(viewModel.polygon.locations) { location in
+                    if viewModel.routeCoordinates(for: viewModel.polygon).count > 1 {
+                        MapPolyline(coordinates: viewModel.routeCoordinates(for: viewModel.polygon))
+                            .stroke(routeStrokeColor, style: routeStrokeStyle)
+                    }
+                    ForEach(viewModel.markLocations(for: viewModel.polygon)) { location in
                         Annotation("", coordinate: location.coordinate) {
                             PositionMarkerView()
                         }
@@ -137,7 +145,11 @@ struct MapSubView: View {
                 }
             }
             else { 
-                ForEach(viewModel.polygon.locations) { location in
+                if viewModel.isWalking == false, viewModel.activeWalkRouteCoordinates.count > 1 {
+                    MapPolyline(coordinates: viewModel.activeWalkRouteCoordinates)
+                        .stroke(routeStrokeColor, style: routeStrokeStyle)
+                }
+                ForEach(viewModel.activeWalkMarkLocations) { location in
                     Annotation("", coordinate: location.coordinate) {
                         PositionMarkerView()
                             .onTapGesture {
@@ -180,6 +192,14 @@ struct MapSubView: View {
     private var clusterPulseOpacity: Double {
         guard clusterPulseActive else { return 1.0 }
         return viewModel.isMapMotionReduced ? 0.92 : 0.82
+    }
+
+    private var routeStrokeStyle: StrokeStyle {
+        StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round, dash: [9, 6])
+    }
+
+    private var routeStrokeColor: Color {
+        Color.appGreen.opacity(0.9)
     }
 
     /// 핫스팟 렌더 노드를 지도 어노테이션 뷰로 구성합니다.
