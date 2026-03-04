@@ -161,6 +161,9 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
                 refreshHotspots(force: true)
                 refreshLeaderboard(force: true)
             } catch {
+                if handleAuthFailureIfNeeded(error) {
+                    return
+                }
                 preferenceStore.set(false, forKey: locationSharingKey)
                 locationSharingEnabled = false
                 refreshViewState()
@@ -194,6 +197,9 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
             do {
                 try await nearbyService.setVisibility(userId: userId, enabled: false)
             } catch {
+                if handleAuthFailureIfNeeded(error) {
+                    return
+                }
                 preferenceStore.set(previous, forKey: locationSharingKey)
                 locationSharingEnabled = previous
                 refreshViewState()
@@ -274,6 +280,9 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
                         "retryable": RivalNetworkErrorInterpreter.isConnectivityError(error) ? "true" : "false"
                     ]
                 )
+                if handleAuthFailureIfNeeded(error) {
+                    return
+                }
                 if let supabaseError = error as? SupabaseHTTPError,
                    case .unexpectedStatusCode(404) = supabaseError {
                     hotspots = []
@@ -348,6 +357,9 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
                 lastLeaderboardRefreshAt = Date()
                 applyLeaderboardModerationFilter()
             } catch {
+                if handleAuthFailureIfNeeded(error) {
+                    return
+                }
                 leaderboardState = .errorRetryable
             }
         }
@@ -439,6 +451,9 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
     }
 
     private var currentUserId: String? {
+        guard authSessionStore.currentTokenSession() != nil else {
+            return nil
+        }
         if let authUserId = authSessionStore.currentIdentity()?.userId,
            let canonical = authUserId.canonicalUUIDString {
             return canonical
@@ -534,6 +549,37 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
     /// 신고/차단/숨김 이력을 로컬 JSON 로그에 누적합니다.
     private func appendModerationLog(action: String, aliasCode: String, reason: String?) {
         moderationStore.appendLog(action: action, aliasCode: aliasCode, reason: reason)
+    }
+
+    /// Supabase 응답이 인증 실패(401/403)인지 판정합니다.
+    /// - Parameter error: 판정할 원본 오류입니다.
+    /// - Returns: 인증 실패 계열이면 `true`, 아니면 `false`입니다.
+    private func isAuthFailure(_ error: Error) -> Bool {
+        guard let supabaseError = error as? SupabaseHTTPError,
+              case .unexpectedStatusCode(let statusCode) = supabaseError else {
+            return false
+        }
+        return statusCode == 401 || statusCode == 403
+    }
+
+    /// 인증 실패를 감지하면 세션/공유 상태를 정리하고 재로그인 안내 UX로 전환합니다.
+    /// - Parameter error: 네트워크 요청에서 발생한 원본 오류입니다.
+    /// - Returns: 인증 실패를 처리해 호출 측이 추가 처리를 중단해야 하면 `true`입니다.
+    @discardableResult
+    private func handleAuthFailureIfNeeded(_ error: Error) -> Bool {
+        guard isAuthFailure(error) else {
+            return false
+        }
+        authSessionStore.clearTokenSession()
+        preferenceStore.set(false, forKey: locationSharingKey)
+        locationSharingEnabled = false
+        hotspots = []
+        updateHotspotSummary()
+        leaderboardEntries = []
+        latestRawLeaderboardEntries = []
+        refreshViewState()
+        showToast("인증 세션이 만료됐어요. 다시 로그인 후 시도해주세요.")
+        return true
     }
 
     /// 위치 권한이 바뀌면 화면 상태를 즉시 재계산합니다.
