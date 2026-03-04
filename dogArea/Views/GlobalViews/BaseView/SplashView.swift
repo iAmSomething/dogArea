@@ -6,17 +6,29 @@
 //
 
 import SwiftUI
-import Lottie
 struct SplashView: View {
   @State private var firstText = false
   @State private var secondText = false
+  @State private var pulse = false
   var body: some View {
     ZStack {
-      LottieView(jsonName: "dogAreaSplash", loopMode: .loop)
-        .background(Color.appYellowPale)
+      LinearGradient(
+        colors: [Color.appYellowPale, Color.appSurface.opacity(0.95)],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+      )
+        .overlay(
+          Circle()
+            .fill(Color.appYellow.opacity(0.2))
+            .frame(width: 220, height: 220)
+            .scaleEffect(pulse ? 1.05 : 0.92)
+            .animation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true), value: pulse)
+            .offset(x: 90, y: 160)
+        )
         .ignoresSafeArea()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear{
+          pulse = true
           DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             withAnimation {firstText = true}
           }
@@ -59,4 +71,3 @@ struct SplashView: View {
 #Preview {
   SplashView()
 }
-
