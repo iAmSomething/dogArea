@@ -195,6 +195,65 @@ private extension WeatherRiskLevelValue {
     }
 }
 
+private enum MapCoreLocationCallTracer {
+    #if DEBUG
+    private static let lock = NSLock()
+    private static var eventCounts: [String: Int] = [:]
+    private static var windowStartedAt: Date = Date()
+    #endif
+
+    /// 지도 탭의 CoreLocation API 호출 이벤트를 1초 단위로 집계해 디버그 콘솔에 출력합니다.
+    /// - Parameters:
+    ///   - event: 호출 지점을 구분하는 이벤트 식별자입니다.
+    ///   - detail: 호출 시점의 보조 상태 정보입니다.
+    ///   - file: 호출 파일 식별자입니다.
+    ///   - line: 호출 라인 번호입니다.
+    static func record(
+        _ event: String,
+        detail: String? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) {
+        #if DEBUG
+        let now = Date()
+        var shouldPrintWindowSummary = false
+        var summaryText = ""
+        var occurrenceCount = 0
+
+        lock.lock()
+        eventCounts[event, default: 0] += 1
+        occurrenceCount = eventCounts[event, default: 0]
+        if now.timeIntervalSince(windowStartedAt) >= 1.0 {
+            shouldPrintWindowSummary = true
+            summaryText = eventCounts
+                .sorted { lhs, rhs in lhs.value > rhs.value }
+                .map { "\($0.key)=\($0.value)" }
+                .joined(separator: ", ")
+            eventCounts.removeAll()
+            windowStartedAt = now
+        }
+        lock.unlock()
+
+        if occurrenceCount <= 2 {
+            if let detail, detail.isEmpty == false {
+                print("[CoreLocationTrace][Map] \(event) @\(file):\(line) detail=\(detail)")
+            } else {
+                print("[CoreLocationTrace][Map] \(event) @\(file):\(line)")
+            }
+        }
+
+        if shouldPrintWindowSummary {
+            print("[CoreLocationTrace][Map][1s] \(summaryText)")
+        }
+        #else
+        _ = event
+        _ = detail
+        _ = file
+        _ = line
+        #endif
+    }
+}
+
 class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSessionDelegate {
     enum WalkEndReason: String {
         case manual = "manual"
@@ -608,6 +667,10 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     /// 지도 탭이 화면에 노출될 때 위치/동기화 폴링을 활성화합니다.
     func activateMapRuntimeServices() {
         isMapViewActive = true
+        MapCoreLocationCallTracer.record(
+            "requestWhenInUseAuthorization",
+            detail: "source=activateMapRuntimeServices"
+        )
         locationManager.requestWhenInUseAuthorization()
         startLocationUpdatesIfAuthorized()
         startNearbyTicker()
@@ -630,7 +693,15 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private func startLocationUpdatesIfAuthorized() {
         guard isLocationUpdatesRunning == false else { return }
         let status = locationManager.authorizationStatus
+        MapCoreLocationCallTracer.record(
+            "authorizationStatus.read",
+            detail: "source=startLocationUpdatesIfAuthorized status=\(status.rawValue)"
+        )
         guard status == .authorizedAlways || status == .authorizedWhenInUse else { return }
+        MapCoreLocationCallTracer.record(
+            "startUpdatingLocation",
+            detail: "source=startLocationUpdatesIfAuthorized"
+        )
         locationManager.startUpdatingLocation()
         isLocationUpdatesRunning = true
     }
@@ -638,6 +709,10 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     /// 현재 활성화된 위치 업데이트를 안전하게 중단합니다.
     private func stopLocationUpdatesIfNeeded() {
         guard isLocationUpdatesRunning else { return }
+        MapCoreLocationCallTracer.record(
+            "stopUpdatingLocation",
+            detail: "source=stopLocationUpdatesIfNeeded"
+        )
         locationManager.stopUpdatingLocation()
         isLocationUpdatesRunning = false
     }
@@ -875,6 +950,10 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 
     var isLocationPermissionDenied: Bool {
         let status = locationManager.authorizationStatus
+        MapCoreLocationCallTracer.record(
+            "authorizationStatus.read",
+            detail: "source=isLocationPermissionDenied status=\(status.rawValue)"
+        )
         return status == .restricted || status == .denied
     }
 
@@ -2825,6 +2904,10 @@ extension MapViewModel {
 //MARK: - CLLocation 관련 로직
 extension MapViewModel {
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        MapCoreLocationCallTracer.record(
+            "locationManagerDidChangeAuthorization",
+            detail: "status=\(manager.authorizationStatus.rawValue)"
+        )
         switch manager.authorizationStatus {
         case .notDetermined:
             stopLocationUpdatesIfNeeded()
@@ -2854,6 +2937,10 @@ extension MapViewModel {
 //        print(manager.location?.description)
     }
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        MapCoreLocationCallTracer.record(
+            "didUpdateLocations",
+            detail: "count=\(locations.count)"
+        )
         guard let location = locations.last else { return }
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }

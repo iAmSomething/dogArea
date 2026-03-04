@@ -4,6 +4,65 @@ import CoreLocation
 import UIKit
 #endif
 
+private enum RivalCoreLocationCallTracer {
+    #if DEBUG
+    private static let lock = NSLock()
+    private static var eventCounts: [String: Int] = [:]
+    private static var windowStartedAt: Date = Date()
+    #endif
+
+    /// 라이벌 탭의 CoreLocation API 호출 이벤트를 1초 단위로 집계해 디버그 콘솔에 출력합니다.
+    /// - Parameters:
+    ///   - event: 호출 지점을 구분하는 이벤트 식별자입니다.
+    ///   - detail: 호출 시점의 보조 상태 정보입니다.
+    ///   - file: 호출 파일 식별자입니다.
+    ///   - line: 호출 라인 번호입니다.
+    static func record(
+        _ event: String,
+        detail: String? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) {
+        #if DEBUG
+        let now = Date()
+        var shouldPrintWindowSummary = false
+        var summaryText = ""
+        var occurrenceCount = 0
+
+        lock.lock()
+        eventCounts[event, default: 0] += 1
+        occurrenceCount = eventCounts[event, default: 0]
+        if now.timeIntervalSince(windowStartedAt) >= 1.0 {
+            shouldPrintWindowSummary = true
+            summaryText = eventCounts
+                .sorted { lhs, rhs in lhs.value > rhs.value }
+                .map { "\($0.key)=\($0.value)" }
+                .joined(separator: ", ")
+            eventCounts.removeAll()
+            windowStartedAt = now
+        }
+        lock.unlock()
+
+        if occurrenceCount <= 2 {
+            if let detail, detail.isEmpty == false {
+                print("[CoreLocationTrace][Rival] \(event) @\(file):\(line) detail=\(detail)")
+            } else {
+                print("[CoreLocationTrace][Rival] \(event) @\(file):\(line)")
+            }
+        }
+
+        if shouldPrintWindowSummary {
+            print("[CoreLocationTrace][Rival][1s] \(summaryText)")
+        }
+        #else
+        _ = event
+        _ = detail
+        _ = file
+        _ = line
+        #endif
+    }
+}
+
 @MainActor
 final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     struct HotspotPreviewRow {
@@ -102,10 +161,22 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
     func start() {
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+        RivalCoreLocationCallTracer.record(
+            "authorizationStatus.read",
+            detail: "source=start status=\(locationManager.authorizationStatus.rawValue)"
+        )
         switch locationManager.authorizationStatus {
         case .authorizedAlways, .authorizedWhenInUse:
+            RivalCoreLocationCallTracer.record(
+                "startUpdatingLocation",
+                detail: "source=start"
+            )
             locationManager.startUpdatingLocation()
         default:
+            RivalCoreLocationCallTracer.record(
+                "stopUpdatingLocation",
+                detail: "source=start"
+            )
             locationManager.stopUpdatingLocation()
         }
         loadModerationPreferences()
@@ -117,6 +188,10 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
     func stop() {
         pollingTimer?.invalidate()
         pollingTimer = nil
+        RivalCoreLocationCallTracer.record(
+            "stopUpdatingLocation",
+            detail: "source=stop"
+        )
         locationManager.stopUpdatingLocation()
     }
 
@@ -132,6 +207,10 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
 
     /// 위치 권한 요청을 수행합니다.
     func requestLocationPermission() {
+        RivalCoreLocationCallTracer.record(
+            "requestWhenInUseAuthorization",
+            detail: "source=requestLocationPermission"
+        )
         locationManager.requestWhenInUseAuthorization()
     }
 
@@ -467,6 +546,10 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
 
     /// 권한 상태를 iOS 시스템 값에서 앱 상태로 변환합니다.
     private func updatePermissionState() {
+        RivalCoreLocationCallTracer.record(
+            "authorizationStatus.read",
+            detail: "source=updatePermissionState status=\(locationManager.authorizationStatus.rawValue)"
+        )
         switch locationManager.authorizationStatus {
         case .authorizedAlways, .authorizedWhenInUse:
             permissionState = .authorized
@@ -584,11 +667,23 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
 
     /// 위치 권한이 바뀌면 화면 상태를 즉시 재계산합니다.
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        RivalCoreLocationCallTracer.record(
+            "locationManagerDidChangeAuthorization",
+            detail: "status=\(manager.authorizationStatus.rawValue)"
+        )
         updatePermissionState()
         switch manager.authorizationStatus {
         case .authorizedAlways, .authorizedWhenInUse:
+            RivalCoreLocationCallTracer.record(
+                "startUpdatingLocation",
+                detail: "source=locationManagerDidChangeAuthorization"
+            )
             manager.startUpdatingLocation()
         default:
+            RivalCoreLocationCallTracer.record(
+                "stopUpdatingLocation",
+                detail: "source=locationManagerDidChangeAuthorization"
+            )
             manager.stopUpdatingLocation()
         }
         refreshViewState()
@@ -598,6 +693,10 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
 
     /// 새 좌표를 받으면 공유 상태에서만 핫스팟을 즉시 갱신합니다.
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        RivalCoreLocationCallTracer.record(
+            "didUpdateLocations",
+            detail: "count=\(locations.count)"
+        )
         guard locations.isEmpty == false,
               locationSharingEnabled else { return }
         refreshHotspots(force: false)
