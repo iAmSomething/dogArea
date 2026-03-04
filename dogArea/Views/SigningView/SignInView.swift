@@ -233,11 +233,13 @@ private struct EmailSignUpSheetView: View {
 
     @State private var email: String
     @State private var password: String = ""
+    @State private var confirmPassword: String = ""
     @State private var loading: Bool = false
     @State private var errorMessage: String? = nil
 
     private let authUseCase: AuthUseCaseProtocol
     private let onOutcome: (AuthUseCaseOutcome) -> Void
+    private let minimumPasswordLength: Int = 8
 
     /// 회원가입 시트의 초기 입력값과 인증 결과 전달 핸들러를 설정합니다.
     /// - Parameters:
@@ -275,6 +277,7 @@ private struct EmailSignUpSheetView: View {
                         .accessibilityIdentifier("signup.email")
 
                     SecureField("비밀번호", text: $password)
+                        .textContentType(.newPassword)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 12)
                         .background(Color.appSurface)
@@ -284,6 +287,18 @@ private struct EmailSignUpSheetView: View {
                         )
                         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .accessibilityIdentifier("signup.password")
+
+                    SecureField("비밀번호 확인", text: $confirmPassword)
+                        .textContentType(.newPassword)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 12)
+                        .background(Color.appSurface)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .stroke(Color.appTextLightGray.opacity(0.7), lineWidth: 1)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .accessibilityIdentifier("signup.passwordConfirm")
 
                     Button("회원가입 계속") {
                         submitSignUp()
@@ -331,9 +346,14 @@ private struct EmailSignUpSheetView: View {
 
         let normalizedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let normalizedPassword = password.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedConfirmPassword = confirmPassword.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        guard normalizedEmail.isEmpty == false, normalizedPassword.isEmpty == false else {
-            errorMessage = "이메일과 비밀번호를 모두 입력해주세요."
+        if let validationError = validateSignUpInput(
+            email: normalizedEmail,
+            password: normalizedPassword,
+            confirmPassword: normalizedConfirmPassword
+        ) {
+            errorMessage = validationError
             return
         }
 
@@ -355,5 +375,39 @@ private struct EmailSignUpSheetView: View {
                 }
             }
         }
+    }
+
+    /// 회원가입 입력값을 로컬에서 검증하고 실패 사유를 반환합니다.
+    /// - Parameters:
+    ///   - email: 공백 정리 후 검증할 이메일 문자열입니다.
+    ///   - password: 공백 정리 후 검증할 비밀번호 문자열입니다.
+    ///   - confirmPassword: 비밀번호 확인 입력값입니다.
+    /// - Returns: 검증 실패 시 사용자에게 노출할 메시지이며, 통과하면 `nil`입니다.
+    private func validateSignUpInput(
+        email: String,
+        password: String,
+        confirmPassword: String
+    ) -> String? {
+        guard email.isEmpty == false, password.isEmpty == false, confirmPassword.isEmpty == false else {
+            return "이메일, 비밀번호, 비밀번호 확인을 모두 입력해주세요."
+        }
+        guard isValidEmailFormat(email) else {
+            return "올바른 이메일 형식을 입력해주세요."
+        }
+        guard password.count >= minimumPasswordLength else {
+            return "비밀번호는 \(minimumPasswordLength)자 이상 입력해주세요."
+        }
+        guard password == confirmPassword else {
+            return "비밀번호 확인이 일치하지 않습니다."
+        }
+        return nil
+    }
+
+    /// 이메일 문자열이 기본 형식을 만족하는지 검사합니다.
+    /// - Parameter email: 형식 검증 대상 이메일 문자열입니다.
+    /// - Returns: 기본 이메일 형식을 만족하면 `true`, 아니면 `false`입니다.
+    private func isValidEmailFormat(_ email: String) -> Bool {
+        let pattern = #"^[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$"#
+        return email.range(of: pattern, options: .regularExpression) != nil
     }
 }

@@ -2511,12 +2511,12 @@ final class DeviceAppleCredentialAuthService: AppleCredentialAuthServiceProtocol
 
         let decoded = try? JSONDecoder().decode(SupabaseAuthResponseDTO.self, from: data)
         guard (200..<300).contains(statusCode) else {
+            let description = decoded?.errorDescription ?? decoded?.message ?? decoded?.error ?? "인증에 실패했습니다. (\(statusCode))"
+            if isDuplicateEmailErrorDescription(description) {
+                throw SupabaseAuthError.userAlreadyExists
+            }
             if statusCode == 400 || statusCode == 401 {
                 throw SupabaseAuthError.invalidCredentials
-            }
-            let description = decoded?.errorDescription ?? decoded?.message ?? decoded?.error ?? "인증에 실패했습니다. (\(statusCode))"
-            if description.localizedCaseInsensitiveContains("already") {
-                throw SupabaseAuthError.userAlreadyExists
             }
             throw SupabaseAuthError.requestFailed(description)
         }
@@ -2528,6 +2528,17 @@ final class DeviceAppleCredentialAuthService: AppleCredentialAuthServiceProtocol
             throw SupabaseAuthError.responseDecodeFailed
         }
         return result
+    }
+
+    /// Auth 실패 응답 설명이 이메일 중복 상황인지 판별합니다.
+    /// - Parameter description: Auth 응답에서 추출한 오류 설명 문자열입니다.
+    /// - Returns: 이메일 중복으로 해석되면 `true`, 아니면 `false`입니다.
+    private func isDuplicateEmailErrorDescription(_ description: String) -> Bool {
+        let lowercased = description.lowercased()
+        return lowercased.contains("already")
+            || lowercased.contains("duplicate")
+            || lowercased.contains("registered")
+            || lowercased.contains("exists")
     }
 }
 
