@@ -297,6 +297,23 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         case systemFallback = "system_fallback"
     }
 
+    enum PresenceHeartbeatState: String, Codable {
+        case active
+        case stale
+        case ended
+    }
+
+    private struct LivePresenceOutboxItem: Codable {
+        let sessionId: String
+        let sequence: Int
+        let latitude: Double
+        let longitude: Double
+        let speedMetersPerSecond: Double?
+        let idempotencyKey: String
+        let heartbeatState: PresenceHeartbeatState
+        let queuedAt: TimeInterval
+    }
+
     private struct ActiveWalkPointSnapshot: Codable {
         let latitude: Double
         let longitude: Double
@@ -450,6 +467,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     }
     @Published private(set) var renderableNearbyHotspotNodes: [NearbyHotspotRenderNode] = []
     @Published var selectedNearbyHotspotID: String? = nil
+    @Published private(set) var presenceHeartbeatState: PresenceHeartbeatState = .ended
     @Published var selectedPetId: String? = nil
     @Published var selectedPetName: String = "강아지"
     @Published var availablePets: [PetInfo] = []
@@ -484,6 +502,12 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private let nearbyService = NearbyPresenceService()
     private var nearbyTickTimer: Timer? = nil
     private var lastPresenceSentAt: Date = .distantPast
+    private var lastPresenceSentCoordinate: CLLocationCoordinate2D?
+    private var lastPresenceSuccessfulAt: Date = .distantPast
+    private var livePresenceOutbox: [LivePresenceOutboxItem] = []
+    private var livePresenceSessionId: String?
+    private var livePresenceSequence: Int = 0
+    private var isPresenceFlushInFlight: Bool = false
     private var lastNearbyFetchedAt: Date = .distantPast
     private var lastNearbyHotspotErrorLogAt: Date = .distantPast
     private var suppressedNearbyHotspotErrorCount: Int = 0
@@ -503,6 +527,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private let locationSharingKey = "nearby.locationSharingEnabled"
     private let nearbyHotspotEnabledKey = "nearby.hotspotEnabled"
     private let nearbyPresenceUserIdKey = "nearby.presenceUserId"
+    private let livePresenceSessionIdKey = "nearby.livePresence.sessionId.v1"
+    private let livePresenceSequenceKey = "nearby.livePresence.sequence.v1"
+    private let livePresenceOutboxKey = "nearby.livePresence.outbox.v1"
     private let mapMotionReducedKey = "map.motion.reduced"
     private let addPointLongPressModeKey = "map.addPoint.longPressModeEnabled"
     private let weatherRiskOverrideKey = "weather.risk.level.v1"
@@ -517,6 +544,12 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private let autoRecordCornerHeadingDelta: CLLocationDirection = 35.0
     private let autoRecordNoiseDistance: CLLocationDistance = 4.0
     private let locationAccuracyThreshold: CLLocationAccuracy = 40.0
+    private let livePresenceUploadBaseInterval: TimeInterval = 10.0
+    private let livePresenceUploadLowPowerInterval: TimeInterval = 30.0
+    private let livePresenceUploadBackgroundInterval: TimeInterval = 20.0
+    private let livePresenceUploadMinDistance: CLLocationDistance = 15.0
+    private let livePresenceHeartbeatStaleThreshold: TimeInterval = 35.0
+    private let livePresenceMaxQueuedItems: Int = 240
     private let hybridMarkWeight: Double = 0.8
     private let hybridRouteWeight: Double = 0.2
     private let inactivityAccuracyThreshold: CLLocationAccuracy = 40.0
@@ -711,6 +744,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         self.locationSharingEnabled = nearbyFeatureOn ? storedLocationSharingEnabled : false
         self.mapMotionReduced = storedMotionReduced
         self.isAddPointLongPressModeEnabled = storedAddPointLongPressMode
+        self.loadLivePresenceStateFromDefaults()
         self.walkStartCountdownEnabled = userSessionStore.walkStartCountdownEnabled()
         if Self.shouldForceWalkCountdownForUITest() {
             self.walkStartCountdownEnabled = true
@@ -730,6 +764,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         }
         self.syncWalkWidgetSnapshot(force: true)
         self.syncWalkLiveActivity(force: true)
+        self.refreshPresenceHeartbeatState()
     }
 
     deinit {
@@ -772,6 +807,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         startNearbyTicker()
         syncVisibilitySettingIfNeeded()
         flushSyncOutboxIfNeeded(force: true)
+        flushLivePresenceOutboxIfNeeded()
         refreshWeatherRiskFromProviderIfNeeded(location: locationManager.location, force: true)
     }
 
@@ -780,6 +816,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         isMapViewActive = false
         nearbyTickTimer?.invalidate()
         nearbyTickTimer = nil
+        refreshPresenceHeartbeatState()
         if isWalking == false {
             stopLocationUpdatesIfNeeded()
         }
@@ -963,6 +1000,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
                     }
                     self.applyPolygonList(updated)
                 }
+            endLivePresenceSession(clearOutbox: true)
             time = 0.0
             self.currentWalkingPetName = self.selectedPetName
             self.resetAutoPointRecordState()
@@ -984,6 +1022,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             self.lastPointEventAt = Date()
             self.resetInactivityTracking(now: Date(), clearAnchor: true)
             self.refreshWalkHybridContributionSummary()
+            self.beginLivePresenceSession(restoredSessionId: nil)
             self.persistActiveWalkSession(force: true)
         }
         withAnimation{ [weak self] in
@@ -1013,6 +1052,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         resetInactivityTracking(now: Date(), clearAnchor: true)
         lastAcceptedWalkLocation = nil
         clearActiveWalkSession()
+        endLivePresenceSession(clearOutbox: true)
         withAnimation { [weak self] in
             self?.isWalking = false
         }
@@ -1489,6 +1529,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         withAnimation { [weak self] in
             self?.isWalking = true
         }
+        beginLivePresenceSession(restoredSessionId: snapshot.sessionId)
         timerSet()
         persistActiveWalkSession(force: true)
         walkStatusMessage = autoRecovered ? "산책 세션을 자동 복구했습니다." : "이전 산책 세션을 복구했습니다."
@@ -1718,6 +1759,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             queue: .main
         ) { [weak self] _ in
             self?.flushSyncOutboxIfNeeded(force: true)
+            self?.flushLivePresenceOutboxIfNeeded()
             self?.syncVisibilitySettingIfNeeded()
             self?.refreshWeatherOverlayRisk()
             self?.syncWalkLiveActivity(force: true)
@@ -1752,7 +1794,15 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             self?.objectWillChange.send()
             self?.refreshWeatherOverlayRisk()
         }
-        lifecycleObservers = [didBecomeActive, willResign, willTerminate, petContextChanged, reduceMotionChanged]
+        let lowPowerChanged = eventCenter.addObserver(
+            forName: .NSProcessInfoPowerStateDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.flushLivePresenceOutboxIfNeeded()
+            self?.refreshPresenceHeartbeatState()
+        }
+        lifecycleObservers = [didBecomeActive, willResign, willTerminate, petContextChanged, reduceMotionChanged, lowPowerChanged]
         #else
         lifecycleObservers = [didBecomeActive, willResign, willTerminate, petContextChanged]
         #endif
@@ -2458,6 +2508,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             self.locationSharingEnabled = false
             preferenceStore.set(false, forKey: locationSharingKey)
             self.syncVisibilitySettingIfNeeded()
+            self.handleLivePresenceSharingStateChanged()
             return
         }
         self.locationSharingEnabled.toggle()
@@ -2468,6 +2519,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             featureKey: .nearbyHotspotV1
         )
         self.syncVisibilitySettingIfNeeded()
+        self.handleLivePresenceSharingStateChanged()
     }
 
     func toggleNearbyHotspotEnabled() {
@@ -2494,12 +2546,14 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private func nearbyTick() {
         flushSyncOutboxIfNeeded()
         refreshWeatherOverlayRisk()
-        guard let location else { return }
         let now = Date()
+        refreshPresenceHeartbeatState(now: now)
+        flushLivePresenceOutboxIfNeeded()
+        guard let location else { return }
 
-        if isNearbyHotspotFeatureAvailable && locationSharingEnabled && isWalking && now.timeIntervalSince(lastPresenceSentAt) >= 30 {
-            lastPresenceSentAt = now
-            sendPresence(location: location.coordinate)
+        if shouldEnqueueLivePresence(now: now, coordinate: location.coordinate) {
+            enqueueLivePresence(location: location, queuedAt: now)
+            flushLivePresenceOutboxIfNeeded()
         }
 
         if isNearbyHotspotFeatureAvailable && nearbyHotspotEnabled && now.timeIntervalSince(lastNearbyFetchedAt) >= 10 {
@@ -2508,20 +2562,332 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         }
     }
 
-    private func sendPresence(location: CLLocationCoordinate2D) {
+    /// 위치 공유 토글/피처 플래그 변경 시 라이브 프레즌스 세션 상태를 정리합니다.
+    private func handleLivePresenceSharingStateChanged() {
+        guard isNearbyHotspotFeatureAvailable, locationSharingEnabled, isWalking else {
+            endLivePresenceSession(clearOutbox: true)
+            return
+        }
+        beginLivePresenceSession(restoredSessionId: livePresenceSessionId)
+        refreshPresenceHeartbeatState()
+        flushLivePresenceOutboxIfNeeded()
+    }
+
+    /// 현재 위치 샘플이 업링크 큐에 적재되어야 하는지 판정합니다.
+    /// - Parameters:
+    ///   - now: 업로드 정책 판단 기준 시각입니다.
+    ///   - coordinate: 현재 디바이스 위치 좌표입니다.
+    /// - Returns: `10초` 주기 또는 `15m` 이동 조건을 만족하면 `true`를 반환합니다.
+    private func shouldEnqueueLivePresence(now: Date, coordinate: CLLocationCoordinate2D) -> Bool {
+        guard isNearbyHotspotFeatureAvailable, locationSharingEnabled, isWalking else {
+            return false
+        }
+        guard currentPresenceUserId() != nil else {
+            return false
+        }
+        if livePresenceSessionId == nil {
+            beginLivePresenceSession(restoredSessionId: nil)
+        }
+
+        let elapsed = now.timeIntervalSince(lastPresenceSentAt)
+        if elapsed >= resolvedLivePresenceUploadInterval() {
+            return true
+        }
+
+        guard let lastPresenceSentCoordinate else {
+            return true
+        }
+        let lastLocation = CLLocation(
+            latitude: lastPresenceSentCoordinate.latitude,
+            longitude: lastPresenceSentCoordinate.longitude
+        )
+        let currentLocation = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+        return currentLocation.distance(from: lastLocation) >= livePresenceUploadMinDistance
+    }
+
+    /// 라이브 프레즌스 업로드 요청을 오프라인 재전송 큐에 적재합니다.
+    /// - Parameters:
+    ///   - location: 적재할 현재 위치 샘플입니다.
+    ///   - queuedAt: 큐 적재 시각입니다.
+    private func enqueueLivePresence(location: CLLocation, queuedAt: Date) {
+        if livePresenceSessionId == nil {
+            beginLivePresenceSession(restoredSessionId: nil)
+        }
+        guard let sessionId = livePresenceSessionId else { return }
+        livePresenceSequence += 1
+        let speed = location.speed >= 0 ? location.speed : nil
+        let idempotencyKey = "\(sessionId)-\(livePresenceSequence)"
+        let item = LivePresenceOutboxItem(
+            sessionId: sessionId,
+            sequence: livePresenceSequence,
+            latitude: location.coordinate.latitude,
+            longitude: location.coordinate.longitude,
+            speedMetersPerSecond: speed,
+            idempotencyKey: idempotencyKey,
+            heartbeatState: presenceHeartbeatState == .ended ? .stale : presenceHeartbeatState,
+            queuedAt: queuedAt.timeIntervalSince1970
+        )
+        livePresenceOutbox.append(item)
+        trimLivePresenceOutboxIfNeeded()
+        lastPresenceSentAt = queuedAt
+        lastPresenceSentCoordinate = location.coordinate
+        persistLivePresenceStateToDefaults()
+    }
+
+    /// 큐의 첫 라이브 프레즌스 이벤트를 서버로 전송하고 성공 시 제거합니다.
+    private func flushLivePresenceOutboxIfNeeded() {
+        guard isNearbyHotspotFeatureAvailable, locationSharingEnabled, isWalking else {
+            return
+        }
+        guard isPresenceFlushInFlight == false else { return }
         guard let userId = currentPresenceUserId() else { return }
+        guard let next = livePresenceOutbox.first else { return }
+
+        isPresenceFlushInFlight = true
         Task { [weak self] in
             guard let self else { return }
             do {
-                try await self.nearbyService.upsertPresence(
-                    userId: userId,
-                    latitude: location.latitude,
-                    longitude: location.longitude
-                )
+                _ = try await uploadLivePresence(item: next, userId: userId)
+                await MainActor.run {
+                    guard self.livePresenceOutbox.isEmpty == false else {
+                        self.isPresenceFlushInFlight = false
+                        return
+                    }
+                    self.livePresenceOutbox.removeFirst()
+                    self.lastPresenceSuccessfulAt = Date()
+                    self.setPresenceHeartbeatState(.active)
+                    self.persistLivePresenceStateToDefaults()
+                    self.isPresenceFlushInFlight = false
+                }
             } catch {
-                print("presence upsert failed: \(error.localizedDescription)")
+                await MainActor.run {
+                    if self.shouldQueueLivePresenceRetry(for: error) == false,
+                       self.livePresenceOutbox.isEmpty == false {
+                        self.livePresenceOutbox.removeFirst()
+                    }
+                    self.setPresenceHeartbeatState(.stale)
+                    self.walkStatusMessage = self.livePresenceFailureMessage(for: error)
+                    self.persistLivePresenceStateToDefaults()
+                    self.isPresenceFlushInFlight = false
+                }
             }
         }
+    }
+
+    /// 단일 큐 항목을 서버에 업로드합니다.
+    /// - Parameters:
+    ///   - item: 전송할 라이브 프레즌스 큐 항목입니다.
+    ///   - userId: 업로드 소유 사용자 UUID 문자열입니다.
+    /// - Returns: 업로드 요청이 완료되면 `true`를 반환합니다.
+    /// - Throws: 네트워크/인증/서버 오류 시 에러를 던집니다.
+    private func uploadLivePresence(item: LivePresenceOutboxItem, userId: String) async throws -> Bool {
+        do {
+            _ = try await nearbyService.upsertLivePresence(
+                userId: userId,
+                sessionId: item.sessionId,
+                latitude: item.latitude,
+                longitude: item.longitude,
+                speedMetersPerSecond: item.speedMetersPerSecond,
+                sequence: item.sequence,
+                idempotencyKey: item.idempotencyKey
+            )
+            return true
+        } catch let error as SupabaseHTTPError {
+            if case .unexpectedStatusCode(404) = error {
+                try await nearbyService.upsertPresence(
+                    userId: userId,
+                    latitude: item.latitude,
+                    longitude: item.longitude
+                )
+                return true
+            }
+            throw error
+        }
+    }
+
+    /// 업링크 정책에 적용할 현재 전송 간격을 계산합니다.
+    /// - Returns: 저전력/비활성 상태를 반영한 전송 간격(초)입니다.
+    private func resolvedLivePresenceUploadInterval() -> TimeInterval {
+        var interval = livePresenceUploadBaseInterval
+        #if canImport(UIKit)
+        if ProcessInfo.processInfo.isLowPowerModeEnabled {
+            interval = max(interval, livePresenceUploadLowPowerInterval)
+        }
+        if UIApplication.shared.applicationState != .active {
+            interval = max(interval, livePresenceUploadBackgroundInterval)
+        }
+        #endif
+        if isMapViewActive == false {
+            interval = max(interval, livePresenceUploadBackgroundInterval)
+        }
+        return interval
+    }
+
+    /// 라이브 프레즌스 세션을 시작하거나 복원합니다.
+    /// - Parameter restoredSessionId: 복구할 세션 식별자입니다. `nil`이면 새 UUID를 생성합니다.
+    private func beginLivePresenceSession(restoredSessionId: String?) {
+        let normalized = restoredSessionId?.canonicalUUIDString ?? UUID().uuidString.lowercased()
+        if livePresenceSessionId != normalized {
+            livePresenceOutbox.removeAll()
+            livePresenceSequence = 0
+        }
+        livePresenceSessionId = normalized
+        lastPresenceSentAt = .distantPast
+        lastPresenceSentCoordinate = nil
+        lastPresenceSuccessfulAt = .distantPast
+        setPresenceHeartbeatState(.stale)
+        persistLivePresenceStateToDefaults()
+    }
+
+    /// 라이브 프레즌스 세션을 종료하고 상태를 초기화합니다.
+    /// - Parameter clearOutbox: `true`면 대기 큐를 비웁니다.
+    private func endLivePresenceSession(clearOutbox: Bool) {
+        livePresenceSessionId = nil
+        livePresenceSequence = 0
+        lastPresenceSentAt = .distantPast
+        lastPresenceSentCoordinate = nil
+        lastPresenceSuccessfulAt = .distantPast
+        if clearOutbox {
+            livePresenceOutbox.removeAll()
+        }
+        setPresenceHeartbeatState(.ended)
+        persistLivePresenceStateToDefaults()
+    }
+
+    /// 업링크 성공 시각/큐 상태를 기준으로 heartbeat 상태를 갱신합니다.
+    /// - Parameter now: heartbeat 판단 기준 시각입니다.
+    private func refreshPresenceHeartbeatState(now: Date = Date()) {
+        guard isNearbyHotspotFeatureAvailable, locationSharingEnabled, isWalking else {
+            setPresenceHeartbeatState(.ended)
+            return
+        }
+        if livePresenceOutbox.isEmpty == false {
+            setPresenceHeartbeatState(.stale)
+            return
+        }
+        guard lastPresenceSuccessfulAt != .distantPast else {
+            setPresenceHeartbeatState(.stale)
+            return
+        }
+        if now.timeIntervalSince(lastPresenceSuccessfulAt) > livePresenceHeartbeatStaleThreshold {
+            setPresenceHeartbeatState(.stale)
+            return
+        }
+        setPresenceHeartbeatState(.active)
+    }
+
+    /// 내부 heartbeat 상태 값을 변경합니다.
+    /// - Parameter state: 적용할 heartbeat 상태입니다.
+    private func setPresenceHeartbeatState(_ state: PresenceHeartbeatState) {
+        guard presenceHeartbeatState != state else { return }
+        presenceHeartbeatState = state
+    }
+
+    /// 라이브 프레즌스 전송 실패 시 사용자에게 보여줄 복구 메시지를 생성합니다.
+    /// - Parameter error: 전송 실패 원본 에러입니다.
+    /// - Returns: 실패 원인별 복구 안내 메시지입니다.
+    private func livePresenceFailureMessage(for error: Error) -> String {
+        if let supabaseError = error as? SupabaseHTTPError {
+            switch supabaseError {
+            case .notConfigured:
+                return "근처 공유 서버 설정을 확인해주세요."
+            case .unexpectedStatusCode(let code):
+                switch code {
+                case 401, 403:
+                    return "인증 세션 확인이 필요합니다. 다시 로그인 후 재시도해주세요."
+                case 404:
+                    return "근처 공유 기능이 아직 서버에 배포되지 않았어요."
+                case 429:
+                    return "요청이 많아 잠시 후 자동 재시도합니다."
+                case 500..<600:
+                    return "서버가 불안정합니다. 자동으로 재시도합니다."
+                default:
+                    return "위치 공유 전송에 실패했습니다. 자동 복구를 시도합니다."
+                }
+            default:
+                return "위치 공유 전송에 실패했습니다. 자동 복구를 시도합니다."
+            }
+        }
+        if let urlError = error as? URLError {
+            switch urlError.code {
+            case .notConnectedToInternet, .networkConnectionLost, .timedOut, .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed:
+                return "오프라인 상태입니다. 연결 복구 시 자동 재전송합니다."
+            default:
+                return "네트워크 연결이 불안정합니다. 자동으로 다시 시도합니다."
+            }
+        }
+        return "위치 공유 전송에 실패했습니다. 잠시 후 자동으로 다시 시도합니다."
+    }
+
+    /// 전송 실패 항목을 큐에 유지해 재시도할지 판정합니다.
+    /// - Parameter error: 업로드 실패 에러입니다.
+    /// - Returns: 재시도 대상이면 `true`, 즉시 폐기 대상이면 `false`입니다.
+    private func shouldQueueLivePresenceRetry(for error: Error) -> Bool {
+        if let supabaseError = error as? SupabaseHTTPError {
+            switch supabaseError {
+            case .notConfigured:
+                return true
+            case .unexpectedStatusCode(let code):
+                switch code {
+                case 400, 401, 403, 422:
+                    return false
+                default:
+                    return true
+                }
+            default:
+                return true
+            }
+        }
+        if let urlError = error as? URLError {
+            switch urlError.code {
+            case .notConnectedToInternet, .networkConnectionLost, .timedOut, .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed:
+                return true
+            default:
+                return true
+            }
+        }
+        return true
+    }
+
+    /// 라이브 프레즌스 큐 길이를 상한 내로 유지합니다.
+    private func trimLivePresenceOutboxIfNeeded() {
+        guard livePresenceOutbox.count > livePresenceMaxQueuedItems else { return }
+        let overflow = livePresenceOutbox.count - livePresenceMaxQueuedItems
+        livePresenceOutbox.removeFirst(overflow)
+    }
+
+    /// 라이브 프레즌스 세션/큐 상태를 UserDefaults에 저장합니다.
+    private func persistLivePresenceStateToDefaults() {
+        preferenceStore.set(livePresenceSessionId, forKey: livePresenceSessionIdKey)
+        preferenceStore.set(String(livePresenceSequence), forKey: livePresenceSequenceKey)
+        if let encoded = try? JSONEncoder().encode(livePresenceOutbox) {
+            preferenceStore.set(encoded, forKey: livePresenceOutboxKey)
+        } else {
+            preferenceStore.removeObject(forKey: livePresenceOutboxKey)
+        }
+    }
+
+    /// 저장소에서 라이브 프레즌스 세션/큐 상태를 복원합니다.
+    private func loadLivePresenceStateFromDefaults() {
+        livePresenceSessionId = preferenceStore.string(forKey: livePresenceSessionIdKey)?.canonicalUUIDString
+        if let rawSequence = preferenceStore.string(forKey: livePresenceSequenceKey),
+           let parsed = Int(rawSequence), parsed >= 0 {
+            livePresenceSequence = parsed
+        } else {
+            livePresenceSequence = 0
+        }
+
+        guard let data = preferenceStore.data(forKey: livePresenceOutboxKey) else {
+            livePresenceOutbox = []
+            return
+        }
+        guard let decoded = try? JSONDecoder().decode([LivePresenceOutboxItem].self, from: data) else {
+            livePresenceOutbox = []
+            preferenceStore.removeObject(forKey: livePresenceOutboxKey)
+            return
+        }
+        livePresenceOutbox = decoded
+        trimLivePresenceOutboxIfNeeded()
     }
     private func publishWatchState() {
         if Thread.isMainThread == false {
@@ -2723,6 +3089,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             preferenceStore.set(false, forKey: locationSharingKey)
             self.syncVisibilitySettingIfNeeded()
         }
+        handleLivePresenceSharingStateChanged()
     }
 
     /// 저장된 날씨 위험도 캐시/환경값을 기준으로 현재 지도 오버레이 상태를 계산합니다.
