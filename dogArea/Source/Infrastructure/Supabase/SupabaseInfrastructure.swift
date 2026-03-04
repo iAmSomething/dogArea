@@ -251,14 +251,40 @@ struct SupabaseHTTPClient {
         request.setValue(config.anonKey, forHTTPHeaderField: "apikey")
         request.setValue(await authorizationHeaderValue(config: config), forHTTPHeaderField: "Authorization")
         request.httpBody = bodyData
+        let startedAt = Date()
+        #if DEBUG
+        print("[SupabaseHTTP] -> \(method.rawValue) \(url.absoluteString) body=\(bodyData?.count ?? 0)B")
+        #endif
 
-        let (data, response) = try await session.data(for: request)
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch {
+            #if DEBUG
+            let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
+            print("[SupabaseHTTP] xx \(method.rawValue) \(url.absoluteString) elapsed=\(elapsedMs)ms error=\(error.localizedDescription)")
+            #endif
+            throw error
+        }
         guard let statusCode = (response as? HTTPURLResponse)?.statusCode else {
+            #if DEBUG
+            let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
+            print("[SupabaseHTTP] xx \(method.rawValue) \(url.absoluteString) elapsed=\(elapsedMs)ms invalid-response")
+            #endif
             throw SupabaseHTTPError.invalidResponse
         }
         guard (200..<300).contains(statusCode) else {
+            #if DEBUG
+            let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
+            print("[SupabaseHTTP] <- \(method.rawValue) \(url.absoluteString) status=\(statusCode) elapsed=\(elapsedMs)ms response=\(data.count)B")
+            #endif
             throw SupabaseHTTPError.unexpectedStatusCode(statusCode)
         }
+        #if DEBUG
+        let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
+        print("[SupabaseHTTP] <- \(method.rawValue) \(url.absoluteString) status=\(statusCode) elapsed=\(elapsedMs)ms response=\(data.count)B")
+        #endif
         return data
     }
 
@@ -347,13 +373,25 @@ struct SupabaseHTTPClient {
         request.httpBody = try? JSONEncoder().encode(
             SupabaseRefreshTokenRequestDTO(refreshToken: refreshToken)
         )
+        let startedAt = Date()
+        #if DEBUG
+        print("[SupabaseAuth] -> POST refresh-token")
+        #endif
 
         guard let (data, response) = try? await session.data(for: request),
               let statusCode = (response as? HTTPURLResponse)?.statusCode else {
+            #if DEBUG
+            let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
+            print("[SupabaseAuth] xx refresh-token elapsed=\(elapsedMs)ms request-failed")
+            #endif
             return .retryableFailure
         }
 
         guard (200..<300).contains(statusCode) else {
+            #if DEBUG
+            let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
+            print("[SupabaseAuth] <- refresh-token status=\(statusCode) elapsed=\(elapsedMs)ms")
+            #endif
             if statusCode == 400 || statusCode == 401 {
                 return .terminalFailure
             }
@@ -365,8 +403,16 @@ struct SupabaseHTTPClient {
                 fallbackEmail: authSessionStore.currentIdentity()?.email,
                 now: Date()
               ) else {
+            #if DEBUG
+            let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
+            print("[SupabaseAuth] xx refresh-token decode-failed elapsed=\(elapsedMs)ms")
+            #endif
             return .terminalFailure
         }
+        #if DEBUG
+        let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
+        print("[SupabaseAuth] <- refresh-token status=200 elapsed=\(elapsedMs)ms")
+        #endif
         return .success(credential)
     }
 }
@@ -815,9 +861,15 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
 
     func send(item: SyncOutboxItem) async -> SyncOutboxSendResult {
         guard AppFeatureGate.isAllowed(.cloudSync, session: AppFeatureGate.currentSession()) else {
+            #if DEBUG
+            print("[SyncTransport] blocked: cloudSync unavailable stage=\(item.stage.rawValue) session=\(item.walkSessionId)")
+            #endif
             return .retryable(.unauthorized)
         }
         guard isSyncWalkFunctionTemporarilyUnavailable() == false else {
+            #if DEBUG
+            print("[SyncTransport] blocked: sync-walk cooldown stage=\(item.stage.rawValue) session=\(item.walkSessionId)")
+            #endif
             return .permanent(.notConfigured)
         }
 
@@ -835,8 +887,14 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
             )
             clearSyncWalkFunctionUnavailableMarker()
             persistSeasonCatchupBuffSnapshotIfNeeded(item: item, data: data)
+            #if DEBUG
+            print("[SyncTransport] success stage=\(item.stage.rawValue) session=\(item.walkSessionId)")
+            #endif
             return .success
         } catch let error as SupabaseHTTPError {
+            #if DEBUG
+            print("[SyncTransport] http-error stage=\(item.stage.rawValue) session=\(item.walkSessionId) error=\(error.localizedDescription)")
+            #endif
             switch error {
             case .notConfigured:
                 markSyncWalkFunctionTemporarilyUnavailable()
@@ -863,6 +921,9 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
                 return .retryable(.unknown)
             }
         } catch let error as URLError {
+            #if DEBUG
+            print("[SyncTransport] url-error stage=\(item.stage.rawValue) session=\(item.walkSessionId) error=\(error.localizedDescription)")
+            #endif
             switch error.code {
             case .notConnectedToInternet, .networkConnectionLost, .timedOut, .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed:
                 return .retryable(.offline)
@@ -872,15 +933,24 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
                 return .retryable(.unknown)
             }
         } catch {
+            #if DEBUG
+            print("[SyncTransport] unknown-error stage=\(item.stage.rawValue) session=\(item.walkSessionId) error=\(error.localizedDescription)")
+            #endif
             return .retryable(.unknown)
         }
     }
 
     func fetchBackfillValidationSummary(sessionIds: [String]) async -> SyncBackfillValidationSummary? {
         guard AppFeatureGate.isAllowed(.cloudSync, session: AppFeatureGate.currentSession()) else {
+            #if DEBUG
+            print("[SyncTransport] validate-backfill blocked: cloudSync unavailable")
+            #endif
             return nil
         }
         guard isSyncWalkFunctionTemporarilyUnavailable() == false else {
+            #if DEBUG
+            print("[SyncTransport] validate-backfill blocked: sync-walk cooldown")
+            #endif
             return nil
         }
         let normalized = sessionIds
@@ -889,6 +959,9 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
         guard normalized.isEmpty == false else {
             return SyncBackfillValidationSummary(sessionCount: 0, pointCount: 0, totalAreaM2: 0, totalDurationSec: 0)
         }
+        #if DEBUG
+        print("[SyncTransport] validate-backfill request sessions=\(normalized.count)")
+        #endif
 
         let body: [String: Any] = [
             "action": "validate_backfill",
@@ -903,6 +976,9 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
             data = try await requestSyncWalkFunction(bodyData: bodyData)
             clearSyncWalkFunctionUnavailableMarker()
         } catch let error as SupabaseHTTPError {
+            #if DEBUG
+            print("[SyncTransport] validate-backfill http-error=\(error.localizedDescription)")
+            #endif
             if case .notConfigured = error {
                 markSyncWalkFunctionTemporarilyUnavailable()
             } else if case .unexpectedStatusCode(404) = error {
@@ -910,13 +986,24 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
             }
             return nil
         } catch {
+            #if DEBUG
+            print("[SyncTransport] validate-backfill unknown-error=\(error.localizedDescription)")
+            #endif
             return nil
         }
 
         guard let decoded = try? JSONDecoder().decode(BackfillSummaryResponseDTO.self, from: data),
               let summary = decoded.summary else {
+            #if DEBUG
+            print("[SyncTransport] validate-backfill decode-failed")
+            #endif
             return nil
         }
+        #if DEBUG
+        print(
+            "[SyncTransport] validate-backfill success sessions=\(summary.sessionCount) points=\(summary.pointCount)"
+        )
+        #endif
 
         return SyncBackfillValidationSummary(
             sessionCount: summary.sessionCount,
