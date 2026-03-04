@@ -911,6 +911,9 @@ final class SyncOutboxStore {
                     item.lastErrorCode = code
                     item.updatedAt = currentNow
                 }
+                if code == .notConfigured {
+                    continue
+                }
                 return summary()
             }
         }

@@ -842,7 +842,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     var syncOutboxStatusText: String {
         if syncOutboxPermanentFailureCount > 0 {
             if syncOutboxLastErrorCodeText.isEmpty == false {
-                return "동기화 영구실패 \(syncOutboxPermanentFailureCount)건 (\(syncOutboxLastErrorCodeText))"
+                return "동기화 영구실패 \(syncOutboxPermanentFailureCount)건 (\(syncOutboxErrorDescription(rawValue: syncOutboxLastErrorCodeText)))"
             }
             return "동기화 영구실패 \(syncOutboxPermanentFailureCount)건"
         }
@@ -884,6 +884,33 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             syncRecoveryToastMessage = "온라인 복구: 대기 중 기록 동기화를 완료했어요."
         }
         lastSyncSummarySnapshot = summary
+    }
+
+    /// 동기화 오류 코드를 사용자에게 읽기 쉬운 상태 문구로 변환합니다.
+    /// - Parameter rawValue: `SyncOutboxErrorCode`의 raw 문자열입니다.
+    /// - Returns: 상태 표시용 오류 문구입니다.
+    private func syncOutboxErrorDescription(rawValue: String) -> String {
+        guard let code = SyncOutboxErrorCode(rawValue: rawValue) else {
+            return rawValue
+        }
+        switch code {
+        case .notConfigured:
+            return "서버 기능 미배포(404)"
+        case .offline:
+            return "오프라인"
+        case .tokenExpired, .unauthorized:
+            return "인증 만료"
+        case .serverError:
+            return "서버 오류"
+        case .schemaMismatch:
+            return "스키마 불일치"
+        case .storageQuota:
+            return "저장소 한도"
+        case .conflict:
+            return "충돌"
+        case .unknown:
+            return "알 수 없음"
+        }
     }
 
     private func enqueueSyncOutbox(for polygon: Polygon, hasImage: Bool) {

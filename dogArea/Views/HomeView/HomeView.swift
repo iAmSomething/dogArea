@@ -312,6 +312,13 @@ struct HomeView: View {
             )
             .font(.appFont(for: .Light, size: 11))
             .foregroundStyle(Color.appTextDarkGray)
+            if report.hasOutstandingWork,
+               let rawError = report.lastErrorCode,
+               rawError.isEmpty == false {
+                Text("최근 오류: \(guestDataUpgradeErrorMessage(rawValue: rawError))")
+                    .font(.appFont(for: .Light, size: 11))
+                    .foregroundStyle(Color.appRed)
+            }
             if let validationText {
                 Text(validationText)
                     .font(.appFont(for: .Light, size: 11))
@@ -326,6 +333,33 @@ struct HomeView: View {
             RoundedRectangle(cornerRadius: 10)
                 .stroke(report.hasOutstandingWork ? Color.appRed : Color.appGreen, lineWidth: 0.4)
         )
+    }
+
+    /// 게스트 데이터 이관 리포트의 아웃박스 오류 코드를 사용자 노출 문구로 변환합니다.
+    /// - Parameter rawValue: `SyncOutboxErrorCode` raw 문자열입니다.
+    /// - Returns: 이관 상태 카드에 표시할 오류 설명입니다.
+    private func guestDataUpgradeErrorMessage(rawValue: String) -> String {
+        guard let code = SyncOutboxErrorCode(rawValue: rawValue) else {
+            return rawValue
+        }
+        switch code {
+        case .notConfigured:
+            return "동기화 서버 기능이 아직 준비되지 않았어요(404)."
+        case .offline:
+            return "네트워크 오프라인 상태예요."
+        case .tokenExpired, .unauthorized:
+            return "인증 세션이 만료됐어요. 다시 로그인해주세요."
+        case .serverError:
+            return "서버가 일시적으로 불안정해요."
+        case .schemaMismatch:
+            return "앱/서버 스키마 버전 확인이 필요해요."
+        case .storageQuota:
+            return "서버 저장소 한도를 초과했어요."
+        case .conflict:
+            return "동기화 데이터 충돌이 발생했어요."
+        case .unknown:
+            return "알 수 없는 동기화 오류가 발생했어요."
+        }
     }
 
     private var goalTrackerCard: some View {
