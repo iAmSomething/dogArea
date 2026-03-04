@@ -27,7 +27,7 @@ final class SettingViewModel: ObservableObject {
         var errorDescription: String? {
             switch self {
             case .userNotFound:
-                return "사용자 정보를 불러오지 못했습니다."
+                return "사용자 정보를 불러오지 못했습니다. 다시 로그인한 뒤 시도해주세요."
             case .invalidAgeRange:
                 return "나이는 0~30 사이 숫자로 입력해주세요."
             case .invalidDisplayName:
@@ -52,6 +52,7 @@ final class SettingViewModel: ObservableObject {
     private let profileRepository: ProfileRepository
     private let imageRepository: ProfileImageRepository
     private let accountDeletionService: AccountDeletionServiceProtocol
+    private let authSessionStore: AuthSessionStoreProtocol
     private let walkRepository: WalkRepositoryProtocol
     private let featureFlags = FeatureFlagStore.shared
     private let metricTracker = AppMetricTracker.shared
@@ -66,11 +67,13 @@ final class SettingViewModel: ObservableObject {
         profileRepository: ProfileRepository = DefaultProfileRepository.shared,
         imageRepository: ProfileImageRepository = SupabaseProfileImageRepository.shared,
         accountDeletionService: AccountDeletionServiceProtocol = SupabaseAccountDeletionService.shared,
+        authSessionStore: AuthSessionStoreProtocol = DefaultAuthSessionStore.shared,
         walkRepository: WalkRepositoryProtocol = WalkRepositoryContainer.shared
     ) {
         self.profileRepository = profileRepository
         self.imageRepository = imageRepository
         self.accountDeletionService = accountDeletionService
+        self.authSessionStore = authSessionStore
         self.walkRepository = walkRepository
         bindSelectedPetSync()
         fetchModel()
@@ -164,10 +167,6 @@ final class SettingViewModel: ObservableObject {
         userProfileImage: UIImage?,
         petProfileImage: UIImage?
     ) async -> Result<Void, Error> {
-        guard let current = profileRepository.fetchUserInfo() else {
-            return .failure(ProfileEditValidationError.userNotFound)
-        }
-
         let normalizedProfileName = profileName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard normalizedProfileName.isEmpty == false else {
             return .failure(ProfileEditValidationError.invalidDisplayName)
@@ -183,6 +182,13 @@ final class SettingViewModel: ObservableObject {
             normalizedAgeYears = parsed
         } else {
             return .failure(ProfileEditValidationError.invalidAgeRange)
+        }
+
+        guard let current = currentEditableUserInfo(
+            fallbackDisplayName: normalizedProfileName,
+            fallbackProfileMessage: normalizedProfileMessage
+        ) else {
+            return .failure(ProfileEditValidationError.userNotFound)
         }
 
         var pets = current.pet
@@ -328,6 +334,48 @@ final class SettingViewModel: ObservableObject {
     /// - Returns: 인코딩 성공 시 JPEG 데이터, 실패 시 `nil`입니다.
     private func compressedJPEGData(for image: UIImage) -> Data? {
         image.jpegData(compressionQuality: 0.35)
+    }
+
+    /// 저장 시점에 편집 가능한 사용자 스냅샷을 조회하고, 누락 시 인증 세션 기반으로 최소 스냅샷을 복구합니다.
+    /// - Parameters:
+    ///   - fallbackDisplayName: 로컬 스냅샷이 없을 때 사용할 표시 이름입니다.
+    ///   - fallbackProfileMessage: 로컬 스냅샷이 없을 때 사용할 프로필 메시지입니다.
+    /// - Returns: 저장 가능한 사용자 스냅샷이며, 복구 불가 시 `nil`입니다.
+    private func currentEditableUserInfo(
+        fallbackDisplayName: String,
+        fallbackProfileMessage: String?
+    ) -> UserInfo? {
+        if let current = profileRepository.fetchUserInfo() {
+            return current
+        }
+        reloadUserInfo()
+        if let current = profileRepository.fetchUserInfo() {
+            return current
+        }
+        guard let identity = authSessionStore.currentIdentity(),
+              identity.userId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false else {
+            return nil
+        }
+
+        let selectedPetSnapshot = selectedPet ?? profileRepository.selectedPet(from: userInfo)
+        let recoveredPets: [PetInfo]
+        if let selectedPetSnapshot {
+            recoveredPets = [selectedPetSnapshot]
+        } else {
+            recoveredPets = [PetInfo(petName: "강아지", petProfile: nil)]
+        }
+        let recoveredSelectedPetId = selectedPetId.isEmpty == false
+        ? selectedPetId
+        : recoveredPets.first?.petId
+        return UserInfo(
+            id: identity.userId,
+            name: fallbackDisplayName,
+            profile: nil,
+            profileMessage: fallbackProfileMessage,
+            pet: recoveredPets,
+            selectedPetId: recoveredSelectedPetId,
+            createdAt: Date().timeIntervalSince1970
+        )
     }
 
     private func bindSelectedPetSync() {
