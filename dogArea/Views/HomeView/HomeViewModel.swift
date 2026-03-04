@@ -8,6 +8,9 @@
 import Foundation
 import SwiftUI
 import Combine
+#if canImport(UIKit)
+import UIKit
+#endif
 
 enum QuestMotionEventType: String, Equatable {
     case progress
@@ -151,6 +154,7 @@ final class HomeViewModel: ObservableObject {
     @Published var seasonResetTransitionToken: UUID? = nil
     @Published var seasonRemainingTimeText: String = "-"
     @Published var lastSeasonResultPresentation: SeasonResultPresentation? = nil
+    @Published var areaMilestonePresentation: AreaMilestoneEvent? = nil
 
     private var allPolygons: [Polygon] = []
     private var cancellables: Set<AnyCancellable> = []
@@ -165,10 +169,13 @@ final class HomeViewModel: ObservableObject {
     private let eventCenter: AppEventCenterProtocol
     private let weeklyStatisticsService: HomeWeeklyStatisticsServicing
     private let weatherMissionStatusBuilder: HomeWeatherMissionStatusBuilding
+    private let areaMilestoneDetector: AreaMilestoneDetecting
+    private let areaMilestoneNotificationScheduler: AreaMilestoneNotificationScheduling
     private let seasonMotionStore = SeasonMotionStore()
     private let questReminderScheduler: QuestReminderScheduling
     private let questReminderPreferenceStore = QuestReminderPreferenceStore()
     private var featuredGoalAreas: [AreaMeter] = []
+    private var areaMilestoneQueue: [AreaMilestoneEvent] = []
     private var areaReferenceTask: Task<Void, Never>? = nil
     private static let questReminderHour = 20
     private static let questReminderMinute = 0
@@ -234,7 +241,9 @@ final class HomeViewModel: ObservableObject {
         userSessionStore: UserSessionStoreProtocol = DefaultUserSessionStore.shared,
         eventCenter: AppEventCenterProtocol = DefaultAppEventCenter.shared,
         weeklyStatisticsService: HomeWeeklyStatisticsServicing = HomeWeeklyStatisticsService(),
-        weatherMissionStatusBuilder: HomeWeatherMissionStatusBuilding = HomeWeatherMissionStatusBuilder()
+        weatherMissionStatusBuilder: HomeWeatherMissionStatusBuilding = HomeWeatherMissionStatusBuilder(),
+        areaMilestoneDetector: AreaMilestoneDetecting = AreaMilestoneDetector(),
+        areaMilestoneNotificationScheduler: AreaMilestoneNotificationScheduling = LocalAreaMilestoneNotificationScheduler()
     ) {
         self.areaReferenceRepository = areaReferenceRepository
         self.walkRepository = walkRepository
@@ -242,6 +251,8 @@ final class HomeViewModel: ObservableObject {
         self.eventCenter = eventCenter
         self.weeklyStatisticsService = weeklyStatisticsService
         self.weatherMissionStatusBuilder = weatherMissionStatusBuilder
+        self.areaMilestoneDetector = areaMilestoneDetector
+        self.areaMilestoneNotificationScheduler = areaMilestoneNotificationScheduler
         self.questReminderScheduler = LocalQuestReminderScheduler()
         self.questReminderEnabled = false
         self.questReminderEnabled = questReminderPreferenceStore.isEnabled
@@ -286,6 +297,7 @@ final class HomeViewModel: ObservableObject {
                 self.areaReferenceSourceLabel = snapshot.source == .remote ? "DB 비교군" : "로컬 비교군 (Fallback)"
                 self.updateCurrentMeter()
                 self.refreshAreaList()
+                self.evaluateAreaMilestones()
             }
         }
     }
@@ -337,6 +349,12 @@ final class HomeViewModel: ObservableObject {
 
     func clearSeasonResetTransitionToken() {
         seasonResetTransitionToken = nil
+    }
+
+    /// 현재 표시 중인 영역 마일스톤 배지 팝업을 해제하고 다음 큐를 표시합니다.
+    func clearAreaMilestonePresentation() {
+        areaMilestonePresentation = nil
+        presentNextAreaMilestoneIfNeeded()
     }
 
     /// 퀘스트 리마인드 토글 상태를 저장하고 로컬 알림 스케줄을 반영합니다.
@@ -533,6 +551,7 @@ final class HomeViewModel: ObservableObject {
         myArea = .init("\(selectedPetNameWithYi)의 영역", totalArea)
         boundarySplitContribution = makeDayBoundarySplitContribution(reference: Date())
         refreshIndoorMissions()
+        evaluateAreaMilestones()
         if shouldUpdateMeter {
             updateCurrentMeter()
         }
@@ -615,6 +634,83 @@ final class HomeViewModel: ObservableObject {
                 }
             }
         }
+    }
+
+    /// 현재 누적 영역을 기준으로 새로 달성한 영역 마일스톤을 감지하고 UI/알림 큐에 반영합니다.
+    /// - Parameter now: 마일스톤 달성 시각 계산 기준입니다.
+    private func evaluateAreaMilestones(now: Date = Date()) {
+        guard let ownerUserId = userInfo?.id, ownerUserId.isEmpty == false else { return }
+        let candidates = milestoneCandidates()
+        guard candidates.isEmpty == false else { return }
+
+        let events = areaMilestoneDetector.detectNewMilestones(
+            currentArea: myArea.area,
+            ownerUserId: ownerUserId,
+            candidates: candidates,
+            source: areaReferenceSourceLabel,
+            achievedAt: now
+        )
+        guard events.isEmpty == false else { return }
+
+        enqueueAreaMilestones(events)
+
+        let appIsActive = isApplicationActive()
+        for event in events {
+            Task { [areaMilestoneNotificationScheduler] in
+                await areaMilestoneNotificationScheduler.scheduleFallbackNotificationIfNeeded(
+                    for: event,
+                    appIsActive: appIsActive,
+                    now: now
+                )
+            }
+        }
+    }
+
+    /// 마일스톤 감지에 사용할 비교군 후보를 계산합니다.
+    /// - Returns: featured 우선 정책이 적용된 마일스톤 후보 목록입니다.
+    private func milestoneCandidates() -> [AreaMilestoneCandidate] {
+        let sourceAreas: [AreaMeter]
+        if featuredGoalAreas.isEmpty {
+            sourceAreas = Array(krAreas.areas.suffix(10))
+        } else {
+            sourceAreas = featuredGoalAreas
+        }
+        return sourceAreas.map { area in
+            AreaMilestoneCandidate(
+                landmarkName: area.areaName,
+                thresholdArea: area.area
+            )
+        }
+    }
+
+    /// 새 마일스톤 이벤트를 큐에 누적하고 즉시 표시 가능한 경우 팝업을 노출합니다.
+    /// - Parameter events: 이번 계산에서 새로 달성한 마일스톤 이벤트 목록입니다.
+    private func enqueueAreaMilestones(_ events: [AreaMilestoneEvent]) {
+        let ordered = events.sorted { lhs, rhs in
+            if lhs.thresholdArea == rhs.thresholdArea {
+                return lhs.landmarkName < rhs.landmarkName
+            }
+            return lhs.thresholdArea < rhs.thresholdArea
+        }
+        areaMilestoneQueue.append(contentsOf: ordered)
+        presentNextAreaMilestoneIfNeeded()
+    }
+
+    /// 표시 중인 배지가 없으면 큐의 첫 이벤트를 현재 프레젠테이션 상태로 승격합니다.
+    private func presentNextAreaMilestoneIfNeeded() {
+        guard areaMilestonePresentation == nil else { return }
+        guard areaMilestoneQueue.isEmpty == false else { return }
+        areaMilestonePresentation = areaMilestoneQueue.removeFirst()
+    }
+
+    /// 앱 포그라운드 활성 상태 여부를 반환합니다.
+    /// - Returns: 포그라운드 활성 상태면 `true`, 아니면 `false`입니다.
+    private func isApplicationActive() -> Bool {
+        #if canImport(UIKit)
+        return UIApplication.shared.applicationState == .active
+        #else
+        return true
+        #endif
     }
 
     func walkedDates() -> [Date] {

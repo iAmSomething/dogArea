@@ -54,6 +54,7 @@ struct HomeView: View {
     @State private var seasonResultRevealContribution: Bool = false
     @State private var seasonResultRevealShield: Bool = false
     @State private var seasonResetBannerVisible: Bool = false
+    @State private var areaMilestonePop: Bool = false
     @State private var questWidgetTab: QuestWidgetTab = .daily
     @State private var homeScrollOffsetY: CGFloat = 0
     @State private var isSeasonDetailPresented: Bool = false
@@ -205,6 +206,9 @@ struct HomeView: View {
                 }.onChange(of: viewModel.seasonResetTransitionToken) { _, token in
                 guard token != nil else { return }
                 presentSeasonResetTransitionBanner()
+                }.onChange(of: viewModel.areaMilestonePresentation) { _, event in
+                guard event != nil else { return }
+                presentAreaMilestoneOverlay()
                 }.onChange(of: authFlow.guestDataUpgradeResult?.id) { _, _ in
                 viewModel.refreshGuestDataUpgradeReport()
                 }.onChange(of: isLowPowerModeEnabled) { _, enabled in
@@ -228,6 +232,13 @@ struct HomeView: View {
                 if let seasonResultModal {
                     seasonResultOverlay(payload: seasonResultModal)
                         .zIndex(11)
+                }
+                if let milestoneEvent = viewModel.areaMilestonePresentation {
+                    HomeAreaMilestoneBadgeOverlayView(
+                        event: milestoneEvent,
+                        isVisible: areaMilestonePop
+                    )
+                    .zIndex(12)
                 }
                 if seasonResetBannerVisible {
                     seasonResetTransitionBanner
@@ -1118,6 +1129,38 @@ struct HomeView: View {
         }
     }
 
+    /// 영역 마일스톤 배지 오버레이를 표시하고 자동 종료 타이머를 시작합니다.
+    private func presentAreaMilestoneOverlay() {
+        AppHapticFeedback.questCompleted()
+        areaMilestonePop = false
+        if isQuestMotionReduced {
+            areaMilestonePop = true
+        } else {
+            withAnimation(.spring(response: 0.28, dampingFraction: 0.76)) {
+                areaMilestonePop = true
+            }
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
+            dismissAreaMilestoneOverlay()
+        }
+    }
+
+    /// 영역 마일스톤 배지 오버레이를 닫고 ViewModel 큐의 다음 이벤트를 진행합니다.
+    private func dismissAreaMilestoneOverlay() {
+        if isQuestMotionReduced {
+            areaMilestonePop = false
+            viewModel.clearAreaMilestonePresentation()
+            return
+        }
+        withAnimation(.easeOut(duration: 0.2)) {
+            areaMilestonePop = false
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            viewModel.clearAreaMilestonePresentation()
+        }
+    }
+
     private func presentQuestCompletionModal(_ payload: QuestCompletionPresentation) {
         questCompletionModal = payload
         questCompletionPop = false
@@ -1505,6 +1548,67 @@ struct HomeView: View {
             }
         }
         .accessibilityIdentifier("home.quest.row.\(mission.id)")
+    }
+}
+
+private struct HomeAreaMilestoneBadgeOverlayView: View {
+    let event: AreaMilestoneEvent
+    let isVisible: Bool
+
+    /// 목표 임계값을 사용자 표시용 문자열로 변환합니다.
+    private var thresholdText: String {
+        event.thresholdArea.calculatedAreaString
+    }
+
+    var body: some View {
+        VStack {
+            Spacer().frame(height: 116)
+
+            VStack(spacing: 10) {
+                Image(systemName: "rosette")
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundStyle(Color.appYellow)
+                    .accessibilityHidden(true)
+
+                Text("영역 달성 배지 획득")
+                    .font(.appScaledFont(for: .SemiBold, size: 18, relativeTo: .headline))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xE2E8F0))
+                    .multilineTextAlignment(.center)
+
+                Text(event.landmarkName)
+                    .font(.appScaledFont(for: .SemiBold, size: 20, relativeTo: .title3))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x92400E, dark: 0xFDE68A))
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.85)
+
+                Text("누적 \(thresholdText) 돌파")
+                    .font(.appScaledFont(for: .Regular, size: 13, relativeTo: .subheadline))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+            }
+            .padding(.horizontal, 22)
+            .padding(.vertical, 18)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(Color.appDynamicHex(light: 0xFFFFFF, dark: 0x1E293B))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(Color.appDynamicHex(light: 0xFDE68A, dark: 0x92400E), lineWidth: 1)
+            )
+            .scaleEffect(isVisible ? 1.0 : 0.9)
+            .opacity(isVisible ? 1.0 : 0.0)
+
+            Spacer()
+        }
+        .padding(.horizontal, 24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black.opacity(isVisible ? 0.2 : 0))
+        .allowsHitTesting(false)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(event.landmarkName) 영역 달성 배지를 획득했습니다. 누적 \(thresholdText) 돌파")
     }
 }
 
