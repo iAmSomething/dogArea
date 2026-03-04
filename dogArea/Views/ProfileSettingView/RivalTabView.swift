@@ -325,10 +325,10 @@ struct RivalTabView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("안전 안내")
                 .font(.appFont(for: .SemiBold, size: 16))
-            Text("비교 지도는 geohash7 격자 단위로 집계되며, 정밀 이동 경로/닉네임/강아지명은 노출되지 않아요.")
+            Text("비회원에게는 300m 저해상도 격자 요약만 노출되며, 정밀 좌표/실시간 점 위치는 공개되지 않아요.")
                 .font(.appFont(for: .Regular, size: 12))
                 .foregroundStyle(Color.appTextDarkGray)
-            Text("신고·차단·숨김은 즉시 UI에 반영되고, 공유를 끄면 비교 화면이 바로 비활성화됩니다.")
+            Text("공유 OFF는 앱에서 즉시 반영되고 서버 반영은 최대 30초 내 동기화를 재시도해요. 철회/탈퇴 데이터는 7일 보존 후 삭제돼요.")
                 .font(.appFont(for: .Regular, size: 12))
                 .foregroundStyle(Color.appTextDarkGray)
         }
@@ -358,10 +358,10 @@ struct RivalTabView: View {
         VStack(alignment: .leading, spacing: 14) {
             Text("익명 위치 공유 동의")
                 .font(.appFont(for: .SemiBold, size: 22))
-            Text("닉네임/강아지명/정밀 좌표는 표시되지 않고, 10분 TTL 집계로만 사용돼요.")
+            Text("닉네임/강아지명/정밀 좌표는 표시되지 않고, 300m 저해상도 격자 요약으로만 노출돼요.")
                 .font(.appFont(for: .Regular, size: 13))
                 .foregroundStyle(Color.appTextDarkGray)
-            Text("언제든 라이벌 탭에서 공유를 끌 수 있어요.")
+            Text("언제든 라이벌 탭에서 공유를 끌 수 있고, OFF 전환은 최대 30초 내 서버/지도에 반영돼요.")
                 .font(.appFont(for: .Regular, size: 13))
                 .foregroundStyle(Color.appTextDarkGray)
 

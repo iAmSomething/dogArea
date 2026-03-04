@@ -143,7 +143,12 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
     private let authSessionStore: AuthSessionStoreProtocol
     private let sessionProvider: () -> AppSessionState
     private let metricTracker: AppMetricTracker
-    private let locationSharingKey = "nearby.locationSharingEnabled.v1"
+    private let locationSharingKeyPrefix = "nearby.locationSharingEnabled.v1"
+    private let locationSharingLegacyGlobalKey = "nearby.locationSharingEnabled.v1"
+    private let locationSharingPolicyInitializedKeyPrefix = "nearby.locationSharingPolicyInitialized.v1"
+    private let visibilityOffPropagationDeadline: TimeInterval = 30
+    private let visibilityOffRetryInterval: TimeInterval = 10
+    private let visibilityOffMaxRetries: Int = 3
     private var pollingTimer: Timer? = nil
     private var lastRefreshAt: Date = .distantPast
     private var lastLeaderboardRefreshAt: Date = .distantPast
@@ -215,7 +220,7 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
 
     /// 로그인/로그아웃 직후 세션 컨텍스트를 다시 읽고 UI 상태를 즉시 갱신합니다.
     func refreshSessionContext() {
-        locationSharingEnabled = preferenceStore.bool(forKey: locationSharingKey, default: false)
+        locationSharingEnabled = loadLocationSharingPreference(for: currentUserId)
         loadModerationPreferences()
         updatePermissionState()
         refreshViewState()
@@ -234,7 +239,7 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
 
     /// 동의 시트 완료 후 익명 공유를 활성화합니다.
     func enableSharingWithConsent() {
-        guard currentUserId != nil else {
+        guard let userId = currentUserId else {
             showToast("회원 전용 기능입니다. 로그인 후 다시 시도해주세요.")
             refreshViewState()
             return
@@ -244,12 +249,12 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
         Task {
             defer { isSharingInFlight = false }
             do {
-                try await nearbyService.setVisibility(userId: currentUserId ?? "", enabled: true)
-                preferenceStore.set(true, forKey: locationSharingKey)
+                try await nearbyService.setVisibility(userId: userId, enabled: true)
+                persistLocationSharingPreference(true, for: userId)
                 locationSharingEnabled = true
                 metricTracker.track(
                     .rivalPrivacyOptInCompleted,
-                    userKey: currentUserId,
+                    userKey: userId,
                     featureKey: .nearbyHotspotV1,
                     payload: ["source": "consent_sheet"]
                 )
@@ -261,7 +266,7 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
                 if handleAuthFailureIfNeeded(error) {
                     return
                 }
-                preferenceStore.set(false, forKey: locationSharingKey)
+                persistLocationSharingPreference(false, for: userId)
                 locationSharingEnabled = false
                 refreshViewState()
                 showToast(RivalNetworkErrorInterpreter.visibilityFailureMessage(from: error))
@@ -272,7 +277,7 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
     /// 익명 공유를 비활성화하고 핫스팟을 초기화합니다.
     func disableSharing() {
         guard let userId = currentUserId else {
-            preferenceStore.set(false, forKey: locationSharingKey)
+            persistLocationSharingPreference(false, for: nil)
             locationSharingEnabled = false
             hotspots = []
             refreshViewState()
@@ -280,8 +285,7 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
         }
 
         isSharingInFlight = true
-        let previous = locationSharingEnabled
-        preferenceStore.set(false, forKey: locationSharingKey)
+        persistLocationSharingPreference(false, for: userId)
         locationSharingEnabled = false
         hotspots = []
         leaderboardEntries = []
@@ -291,17 +295,7 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
 
         Task {
             defer { isSharingInFlight = false }
-            do {
-                try await nearbyService.setVisibility(userId: userId, enabled: false)
-            } catch {
-                if handleAuthFailureIfNeeded(error) {
-                    return
-                }
-                preferenceStore.set(previous, forKey: locationSharingKey)
-                locationSharingEnabled = previous
-                refreshViewState()
-                showToast(RivalNetworkErrorInterpreter.visibilityFailureMessage(from: error))
-            }
+            await syncVisibilityOffWithRetry(userId: userId, startedAt: Date(), attempt: 0)
         }
     }
 
@@ -547,6 +541,116 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
         return permissionState == .authorized ? Color.appGreen : Color.appRed
     }
 
+    /// 사용자 ID 범위에 맞는 위치 공유 설정 키를 생성합니다.
+    /// - Parameter userId: 현재 인증 사용자 ID입니다.
+    /// - Returns: 사용자 범위가 포함된 저장 키 문자열입니다.
+    private func locationSharingPreferenceKey(for userId: String?) -> String {
+        let scope: String
+        if let userId {
+            let normalized = userId.trimmingCharacters(in: .whitespacesAndNewlines)
+            scope = normalized.isEmpty ? "guest" : normalized
+        } else {
+            scope = "guest"
+        }
+        return "\(locationSharingKeyPrefix).\(scope)"
+    }
+
+    /// 사용자별 위치 공유 기본 정책 초기화 여부 키를 생성합니다.
+    /// - Parameter userId: 현재 인증 사용자 ID입니다.
+    /// - Returns: 정책 초기화 여부를 저장할 키 문자열입니다.
+    private func locationSharingPolicyInitializedKey(for userId: String) -> String {
+        "\(locationSharingPolicyInitializedKeyPrefix).\(userId)"
+    }
+
+    /// 특정 키에 저장된 Bool 값이 존재할 때만 해당 값을 반환합니다.
+    /// - Parameter key: 조회할 UserDefaults 키입니다.
+    /// - Returns: 저장된 값이 있으면 `Bool`, 없으면 `nil`입니다.
+    private func storedBoolIfExists(forKey key: String) -> Bool? {
+        let whenDefaultTrue = preferenceStore.bool(forKey: key, default: true)
+        let whenDefaultFalse = preferenceStore.bool(forKey: key, default: false)
+        guard whenDefaultTrue == whenDefaultFalse else {
+            return nil
+        }
+        return whenDefaultTrue
+    }
+
+    /// 정책(회원 기본 ON)에 따라 현재 세션의 공유 상태를 로드합니다.
+    /// - Parameter userId: 현재 인증 사용자 ID입니다.
+    /// - Returns: 현재 사용자에게 적용할 익명 공유 활성 상태입니다.
+    private func loadLocationSharingPreference(for userId: String?) -> Bool {
+        guard let userId else {
+            return false
+        }
+
+        let normalizedUserId = userId.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard normalizedUserId.isEmpty == false else { return false }
+        let key = locationSharingPreferenceKey(for: normalizedUserId)
+        let initializedKey = locationSharingPolicyInitializedKey(for: normalizedUserId)
+        let isInitialized = preferenceStore.bool(forKey: initializedKey, default: false)
+        if isInitialized {
+            return preferenceStore.bool(forKey: key, default: true)
+        }
+
+        let seededValue: Bool
+        if let legacyValue = storedBoolIfExists(forKey: locationSharingLegacyGlobalKey) {
+            seededValue = legacyValue
+        } else {
+            seededValue = true
+        }
+
+        preferenceStore.set(seededValue, forKey: key)
+        preferenceStore.set(true, forKey: initializedKey)
+        preferenceStore.removeObject(forKey: locationSharingLegacyGlobalKey)
+        return seededValue
+    }
+
+    /// 현재 사용자 범위에 익명 공유 상태를 저장합니다.
+    /// - Parameters:
+    ///   - enabled: 저장할 공유 활성 상태입니다.
+    ///   - userId: 저장 대상 사용자 ID입니다.
+    private func persistLocationSharingPreference(_ enabled: Bool, for userId: String?) {
+        guard let userId else { return }
+        let normalizedUserId = userId.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard normalizedUserId.isEmpty == false else { return }
+        preferenceStore.set(enabled, forKey: locationSharingPreferenceKey(for: normalizedUserId))
+        preferenceStore.set(true, forKey: locationSharingPolicyInitializedKey(for: normalizedUserId))
+    }
+
+    /// 공유 OFF 요청을 최대 30초 창 내에서 재시도해 서버 반영 성공 확률을 높입니다.
+    /// - Parameters:
+    ///   - userId: 공유 비활성화를 적용할 사용자 ID입니다.
+    ///   - startedAt: OFF 처리 시작 시각입니다.
+    ///   - attempt: 현재 재시도 시도 횟수입니다.
+    private func syncVisibilityOffWithRetry(userId: String, startedAt: Date, attempt: Int) async {
+        if attempt > visibilityOffMaxRetries {
+            showToast("공유 OFF 서버 반영이 지연되고 있어요. 네트워크 확인 후 다시 시도해주세요.")
+            return
+        }
+        do {
+            try await nearbyService.setVisibility(userId: userId, enabled: false)
+        } catch {
+            if handleAuthFailureIfNeeded(error) {
+                return
+            }
+
+            let elapsed = Date().timeIntervalSince(startedAt)
+            let remaining = visibilityOffPropagationDeadline - elapsed
+            guard remaining > 0 else {
+                showToast("공유 OFF 서버 반영이 지연되고 있어요. 네트워크 확인 후 다시 시도해주세요.")
+                return
+            }
+
+            let delay = min(visibilityOffRetryInterval, remaining)
+            let nanos = UInt64(max(1, delay * 1_000_000_000))
+            try? await Task.sleep(nanoseconds: nanos)
+            await syncVisibilityOffWithRetry(
+                userId: userId,
+                startedAt: startedAt,
+                attempt: attempt + 1
+            )
+        }
+    }
+
     private var currentUserId: String? {
         guard authSessionStore.currentTokenSession() != nil else {
             return nil
@@ -671,8 +775,9 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
         guard isAuthFailure(error) else {
             return false
         }
+        let affectedUserId = currentUserId
         authSessionStore.clearTokenSession()
-        preferenceStore.set(false, forKey: locationSharingKey)
+        persistLocationSharingPreference(false, for: affectedUserId)
         locationSharingEnabled = false
         hotspots = []
         updateHotspotSummary()
