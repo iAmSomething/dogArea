@@ -28,12 +28,76 @@ protocol MapClusterAnnotationServicing {
         minCellMeters: Double,
         maxCellMeters: Double
     ) -> [Cluster]
+
+    /// 실시간 핫스팟 렌더링 후보를 뷰포트/캡/LOD 규칙으로 계산합니다.
+    /// - Parameters:
+    ///   - hotspots: 렌더링 원본 핫스팟 목록입니다.
+    ///   - viewportCenter: 현재 지도 중심 좌표입니다. `nil`이면 뷰포트 필터를 건너뜁니다.
+    ///   - cameraDistance: 현재 카메라 거리(미터)입니다.
+    ///   - maxVisible: 최종 렌더링 최대 개수입니다.
+    ///   - pageMultiplier: 뷰포트 내부 후보 풀 확장 배수입니다.
+    ///   - clusterDistanceThreshold: 클러스터 모드로 전환할 최소 카메라 거리(미터)입니다.
+    ///   - distanceRatio: 카메라 거리 대비 클러스터 셀 크기 비율입니다.
+    ///   - minCellMeters: 셀 크기의 최소값(미터)입니다.
+    ///   - maxCellMeters: 셀 크기의 최대값(미터)입니다.
+    /// - Returns: LOD/캡 규칙이 반영된 최종 렌더링 노드 목록입니다.
+    func renderHotspots(
+        hotspots: [NearbyHotspotRenderInput],
+        viewportCenter: CLLocationCoordinate2D?,
+        cameraDistance: Double,
+        maxVisible: Int,
+        pageMultiplier: Int,
+        clusterDistanceThreshold: Double,
+        distanceRatio: Double,
+        minCellMeters: Double,
+        maxCellMeters: Double
+    ) -> [NearbyHotspotRenderNode]
 }
 
 final class MapClusterAnnotationService: MapClusterAnnotationServicing {
     private struct ClusterBucketKey: Hashable {
         let x: Int
         let y: Int
+    }
+
+    private struct HotspotBucketValue {
+        var memberCount: Int
+        var weightedLatitudeSum: Double
+        var weightedLongitudeSum: Double
+        var activityCountSum: Int
+        var maxIntensity: Double
+        var visualState: NearbyHotspotVisualState
+        var representativeID: String
+
+        /// 버킷에 핫스팟 샘플을 누적 병합합니다.
+        /// - Parameter hotspot: 같은 셀로 분류된 핫스팟 입력입니다.
+        mutating func merge(with hotspot: NearbyHotspotRenderInput) {
+            let weight = max(1.0, Double(hotspot.count))
+            memberCount += 1
+            weightedLatitudeSum += hotspot.centerCoordinate.latitude * weight
+            weightedLongitudeSum += hotspot.centerCoordinate.longitude * weight
+            activityCountSum += max(1, hotspot.count)
+            maxIntensity = max(maxIntensity, hotspot.intensity)
+            visualState = visualState.merged(with: hotspot.visualState)
+        }
+
+        /// 누적 버킷 값을 렌더 노드로 변환합니다.
+        /// - Parameter bucketKey: 버킷 좌표 키입니다.
+        /// - Returns: 지도에 직접 그릴 수 있는 핫스팟 렌더 노드입니다.
+        func asNode(bucketKey: ClusterBucketKey) -> NearbyHotspotRenderNode {
+            let weight = max(1.0, Double(activityCountSum))
+            return NearbyHotspotRenderNode(
+                id: "cluster-\(bucketKey.x)-\(bucketKey.y)-\(representativeID)",
+                centerCoordinate: .init(
+                    latitude: weightedLatitudeSum / weight,
+                    longitude: weightedLongitudeSum / weight
+                ),
+                count: activityCountSum,
+                intensity: maxIntensity,
+                visualState: visualState,
+                isCluster: memberCount > 1
+            )
+        }
     }
 
     /// 현재 폴리곤 목록과 카메라 거리 기반 설정으로 클러스터 배열을 계산합니다.
@@ -59,6 +123,73 @@ final class MapClusterAnnotationService: MapClusterAnnotationServicing {
             minCellMeters: minCellMeters,
             maxCellMeters: maxCellMeters
         )
+    }
+
+    /// 실시간 핫스팟 렌더링 후보를 뷰포트/캡/LOD 규칙으로 계산합니다.
+    /// - Parameters:
+    ///   - hotspots: 렌더링 원본 핫스팟 목록입니다.
+    ///   - viewportCenter: 현재 지도 중심 좌표입니다. `nil`이면 뷰포트 필터를 건너뜁니다.
+    ///   - cameraDistance: 현재 카메라 거리(미터)입니다.
+    ///   - maxVisible: 최종 렌더링 최대 개수입니다.
+    ///   - pageMultiplier: 뷰포트 내부 후보 풀 확장 배수입니다.
+    ///   - clusterDistanceThreshold: 클러스터 모드로 전환할 최소 카메라 거리(미터)입니다.
+    ///   - distanceRatio: 카메라 거리 대비 클러스터 셀 크기 비율입니다.
+    ///   - minCellMeters: 셀 크기의 최소값(미터)입니다.
+    ///   - maxCellMeters: 셀 크기의 최대값(미터)입니다.
+    /// - Returns: LOD/캡 규칙이 반영된 최종 렌더링 노드 목록입니다.
+    func renderHotspots(
+        hotspots: [NearbyHotspotRenderInput],
+        viewportCenter: CLLocationCoordinate2D?,
+        cameraDistance: Double,
+        maxVisible: Int,
+        pageMultiplier: Int,
+        clusterDistanceThreshold: Double,
+        distanceRatio: Double,
+        minCellMeters: Double,
+        maxCellMeters: Double
+    ) -> [NearbyHotspotRenderNode] {
+        guard hotspots.isEmpty == false else { return [] }
+
+        let visibleCap = max(8, maxVisible)
+        let candidateLimit = max(visibleCap, visibleCap * max(1, pageMultiplier))
+        let viewportRadius = max(240.0, min(10_000.0, cameraDistance * 1.35))
+        let scoped = filterByViewport(
+            hotspots: hotspots,
+            center: viewportCenter,
+            radiusMeters: viewportRadius
+        )
+        let source = scoped.isEmpty ? hotspots : scoped
+        let ranked = rankedHotspots(
+            source,
+            center: viewportCenter
+        )
+        let candidates = Array(ranked.prefix(candidateLimit))
+        guard candidates.isEmpty == false else { return [] }
+
+        let nodes: [NearbyHotspotRenderNode]
+        if cameraDistance >= clusterDistanceThreshold {
+            nodes = clusterHotspots(
+                candidates,
+                cameraDistance: cameraDistance,
+                distanceRatio: distanceRatio,
+                minCellMeters: minCellMeters,
+                maxCellMeters: maxCellMeters
+            )
+        } else {
+            nodes = candidates.map {
+                NearbyHotspotRenderNode(
+                    id: $0.id,
+                    centerCoordinate: $0.centerCoordinate,
+                    count: $0.count,
+                    intensity: $0.intensity,
+                    visualState: $0.visualState,
+                    isCluster: false
+                )
+            }
+        }
+
+        let resorted = rankedRenderNodes(nodes, center: viewportCenter)
+        return Array(resorted.prefix(visibleCap))
     }
 
     /// 폴리곤 중심점을 단일 클러스터로 초기화합니다.
@@ -143,6 +274,204 @@ final class MapClusterAnnotationService: MapClusterAnnotationServicing {
         let raw = cameraDistance * distanceRatio
         return min(maxCellMeters, max(minCellMeters, raw))
     }
+
+    /// 뷰포트 중심/반경 기준으로 핫스팟 목록을 필터링합니다.
+    /// - Parameters:
+    ///   - hotspots: 필터링할 원본 핫스팟 목록입니다.
+    ///   - center: 현재 지도 중심 좌표입니다.
+    ///   - radiusMeters: 뷰포트 반경(미터)입니다.
+    /// - Returns: 뷰포트 반경 안에 포함된 핫스팟 목록입니다.
+    private func filterByViewport(
+        hotspots: [NearbyHotspotRenderInput],
+        center: CLLocationCoordinate2D?,
+        radiusMeters: CLLocationDistance
+    ) -> [NearbyHotspotRenderInput] {
+        guard let center else { return hotspots }
+        return hotspots.filter {
+            greatCircleDistanceMeters(from: center, to: $0.centerCoordinate) <= radiusMeters
+        }
+    }
+
+    /// 핫스팟 목록을 거리/강도/활동 수 기준으로 정렬합니다.
+    /// - Parameters:
+    ///   - hotspots: 정렬할 핫스팟 목록입니다.
+    ///   - center: 현재 지도 중심 좌표입니다.
+    /// - Returns: 렌더 우선순위가 반영된 정렬 결과입니다.
+    private func rankedHotspots(
+        _ hotspots: [NearbyHotspotRenderInput],
+        center: CLLocationCoordinate2D?
+    ) -> [NearbyHotspotRenderInput] {
+        hotspots.sorted { lhs, rhs in
+            if let center {
+                let lhsDistance = greatCircleDistanceMeters(from: center, to: lhs.centerCoordinate)
+                let rhsDistance = greatCircleDistanceMeters(from: center, to: rhs.centerCoordinate)
+                if abs(lhsDistance - rhsDistance) >= 8 {
+                    return lhsDistance < rhsDistance
+                }
+            }
+            if lhs.intensity != rhs.intensity {
+                return lhs.intensity > rhs.intensity
+            }
+            if lhs.count != rhs.count {
+                return lhs.count > rhs.count
+            }
+            return lhs.id < rhs.id
+        }
+    }
+
+    /// 원거리 모드에서 핫스팟을 버킷 단위로 병합합니다.
+    /// - Parameters:
+    ///   - hotspots: 병합 대상 핫스팟 목록입니다.
+    ///   - cameraDistance: 현재 카메라 거리(미터)입니다.
+    ///   - distanceRatio: 카메라 거리 대비 셀 크기 비율입니다.
+    ///   - minCellMeters: 셀 크기의 최소값(미터)입니다.
+    ///   - maxCellMeters: 셀 크기의 최대값(미터)입니다.
+    /// - Returns: 버킷 병합 결과 노드 목록입니다.
+    private func clusterHotspots(
+        _ hotspots: [NearbyHotspotRenderInput],
+        cameraDistance: Double,
+        distanceRatio: Double,
+        minCellMeters: Double,
+        maxCellMeters: Double
+    ) -> [NearbyHotspotRenderNode] {
+        guard hotspots.count > 1 else {
+            return hotspots.map {
+                NearbyHotspotRenderNode(
+                    id: $0.id,
+                    centerCoordinate: $0.centerCoordinate,
+                    count: $0.count,
+                    intensity: $0.intensity,
+                    visualState: $0.visualState,
+                    isCluster: false
+                )
+            }
+        }
+
+        let referenceLatitude = hotspots.map(\.centerCoordinate.latitude).reduce(0.0, +) / Double(hotspots.count)
+        let cellMeters = clusterCellSizeMeters(
+            cameraDistance: cameraDistance,
+            distanceRatio: distanceRatio,
+            minCellMeters: minCellMeters,
+            maxCellMeters: maxCellMeters
+        )
+        let metersPerMapPoint = MKMetersPerMapPointAtLatitude(referenceLatitude)
+        let cellMapPoints = max(1.0, cellMeters / max(0.0001, metersPerMapPoint))
+
+        var buckets: [ClusterBucketKey: HotspotBucketValue] = [:]
+        buckets.reserveCapacity(hotspots.count)
+
+        for hotspot in hotspots {
+            let point = MKMapPoint(hotspot.centerCoordinate)
+            let key = ClusterBucketKey(
+                x: Int(floor(point.x / cellMapPoints)),
+                y: Int(floor(point.y / cellMapPoints))
+            )
+            if var existing = buckets[key] {
+                existing.merge(with: hotspot)
+                buckets[key] = existing
+            } else {
+                let weight = max(1.0, Double(hotspot.count))
+                buckets[key] = HotspotBucketValue(
+                    memberCount: 1,
+                    weightedLatitudeSum: hotspot.centerCoordinate.latitude * weight,
+                    weightedLongitudeSum: hotspot.centerCoordinate.longitude * weight,
+                    activityCountSum: max(1, hotspot.count),
+                    maxIntensity: hotspot.intensity,
+                    visualState: hotspot.visualState,
+                    representativeID: hotspot.id
+                )
+            }
+        }
+
+        return buckets
+            .sorted { lhs, rhs in
+                lhs.value.activityCountSum > rhs.value.activityCountSum
+            }
+            .map { key, value in
+                value.asNode(bucketKey: key)
+            }
+    }
+
+    /// 렌더링 노드를 거리/강도 기준으로 정렬합니다.
+    /// - Parameters:
+    ///   - nodes: 정렬할 렌더링 노드 목록입니다.
+    ///   - center: 현재 지도 중심 좌표입니다.
+    /// - Returns: 정렬된 렌더링 노드 목록입니다.
+    private func rankedRenderNodes(
+        _ nodes: [NearbyHotspotRenderNode],
+        center: CLLocationCoordinate2D?
+    ) -> [NearbyHotspotRenderNode] {
+        nodes.sorted { lhs, rhs in
+            if let center {
+                let lhsDistance = greatCircleDistanceMeters(from: center, to: lhs.centerCoordinate)
+                let rhsDistance = greatCircleDistanceMeters(from: center, to: rhs.centerCoordinate)
+                if abs(lhsDistance - rhsDistance) >= 8 {
+                    return lhsDistance < rhsDistance
+                }
+            }
+            if lhs.intensity != rhs.intensity {
+                return lhs.intensity > rhs.intensity
+            }
+            if lhs.count != rhs.count {
+                return lhs.count > rhs.count
+            }
+            return lhs.id < rhs.id
+        }
+    }
+
+    /// 두 좌표 사이 대권 거리를 미터 단위로 계산합니다.
+    /// - Parameters:
+    ///   - from: 시작 좌표입니다.
+    ///   - to: 도착 좌표입니다.
+    /// - Returns: 두 좌표 사이 거리(미터)입니다.
+    private func greatCircleDistanceMeters(
+        from: CLLocationCoordinate2D,
+        to: CLLocationCoordinate2D
+    ) -> CLLocationDistance {
+        let earthRadius = 6_371_000.0
+        let lat1 = from.latitude * .pi / 180
+        let lon1 = from.longitude * .pi / 180
+        let lat2 = to.latitude * .pi / 180
+        let lon2 = to.longitude * .pi / 180
+        let dLat = lat2 - lat1
+        let dLon = lon2 - lon1
+        let a = sin(dLat / 2) * sin(dLat / 2)
+            + cos(lat1) * cos(lat2) * sin(dLon / 2) * sin(dLon / 2)
+        let c = 2 * atan2(sqrt(a), sqrt(max(0, 1 - a)))
+        return earthRadius * c
+    }
+}
+
+enum NearbyHotspotVisualState: String, Codable, CaseIterable {
+    case normal
+    case stale
+    case lowConfidence
+
+    /// 두 시각 상태를 병합할 때 더 보수적인 상태를 우선합니다.
+    /// - Parameter other: 병합 대상 상태입니다.
+    /// - Returns: stale > lowConfidence > normal 우선순위로 병합된 상태입니다.
+    fileprivate func merged(with other: NearbyHotspotVisualState) -> NearbyHotspotVisualState {
+        if self == .stale || other == .stale { return .stale }
+        if self == .lowConfidence || other == .lowConfidence { return .lowConfidence }
+        return .normal
+    }
+}
+
+struct NearbyHotspotRenderInput: Identifiable {
+    let id: String
+    let centerCoordinate: CLLocationCoordinate2D
+    let count: Int
+    let intensity: Double
+    let visualState: NearbyHotspotVisualState
+}
+
+struct NearbyHotspotRenderNode: Identifiable {
+    let id: String
+    let centerCoordinate: CLLocationCoordinate2D
+    let count: Int
+    let intensity: Double
+    let visualState: NearbyHotspotVisualState
+    let isCluster: Bool
 }
 
 enum WalkLiveActivityFallbackReason: String, Equatable {

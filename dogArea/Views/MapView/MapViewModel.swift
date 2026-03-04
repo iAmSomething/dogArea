@@ -329,6 +329,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         static let clusterCellDistanceRatioKey = "map.lod.cluster.cellDistanceRatio"
         static let clusterCellMinMetersKey = "map.lod.cluster.cellMinMeters"
         static let clusterCellMaxMetersKey = "map.lod.cluster.cellMaxMeters"
+        static let hotspotMaxVisibleKey = "map.hotspot.maxVisible"
+        static let hotspotPageMultiplierKey = "map.hotspot.pageMultiplier"
+        static let hotspotClusterDistanceThresholdKey = "map.hotspot.clusterDistanceThreshold"
 
         static let overlayMaxCameraDistanceDefault = 4_500.0
         static let overlayClusterThresholdDefault = 24
@@ -337,6 +340,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         static let clusterCellDistanceRatioDefault = 0.08
         static let clusterCellMinMetersDefault = 80.0
         static let clusterCellMaxMetersDefault = 500.0
+        static let hotspotMaxVisibleDefault = 36
+        static let hotspotPageMultiplierDefault = 3
+        static let hotspotClusterDistanceThresholdDefault = 1_900.0
     }
 
     /// 런치 인자 기반으로 UI 테스트 런타임 여부를 판별합니다.
@@ -384,7 +390,13 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     @Published var heatmapCells: [HeatmapCellDTO] = []
     @Published var nearbyHotspotEnabled: Bool = true
     @Published var locationSharingEnabled: Bool = false
-    @Published var nearbyHotspots: [NearbyHotspotDTO] = []
+    @Published var nearbyHotspots: [NearbyHotspotDTO] = [] {
+        didSet {
+            refreshRenderableNearbyHotspots()
+        }
+    }
+    @Published private(set) var renderableNearbyHotspotNodes: [NearbyHotspotRenderNode] = []
+    @Published var selectedNearbyHotspotID: String? = nil
     @Published var selectedPetId: String? = nil
     @Published var selectedPetName: String = "강아지"
     @Published var availablePets: [PetInfo] = []
@@ -508,6 +520,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private let maxCaptureRipples = 12
     private let trailLifetime: TimeInterval = 5.0
     private let trailLimit = 12
+    private let trailVisibleMaxCameraDistance: Double = 2_600
     private var weatherFetchTask: Task<Void, Never>? = nil
     private var lastWeatherFetchAttemptAt: Date = .distantPast
     private let widgetSnapshotSyncInterval: TimeInterval = 5.0
@@ -1164,7 +1177,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     }
 
     var activeTrailMarkers: [TrailMarker] {
-        guard isWalking else { return [] }
+        guard isWalking, currentCameraDistance <= trailVisibleMaxCameraDistance else { return [] }
         let now = Date().timeIntervalSince1970
         return Array(
             polygon.locations
@@ -1755,7 +1768,10 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     ///   - now: 로그 판정 기준 시각입니다.
     func recordCameraChange(_ camera: MapCamera, now: Date = Date()) {
         let reason = resolveCameraChangeReason(now: now)
-        updateCameraCacheIfNeeded(camera, now: now, force: reason != .manualMove)
+        let didUpdateCache = updateCameraCacheIfNeeded(camera, now: now, force: reason != .manualMove)
+        if didUpdateCache {
+            refreshRenderableNearbyHotspots()
+        }
         guard shouldLogCameraChange(camera, reason: reason) else { return }
         #if DEBUG
         let latitude = String(format: "%.5f", camera.centerCoordinate.latitude)
@@ -1774,17 +1790,18 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     ///   - camera: 이번 이벤트에서 전달된 최신 지도 카메라 상태입니다.
     ///   - now: 캐시 갱신 여부를 판정할 기준 시각입니다.
     ///   - force: 사용자 액션 기반 이동처럼 즉시 반영이 필요한 경우 `true`입니다.
-    private func updateCameraCacheIfNeeded(_ camera: MapCamera, now: Date, force: Bool) {
+    /// - Returns: 카메라 캐시가 실제로 갱신되면 `true`입니다.
+    private func updateCameraCacheIfNeeded(_ camera: MapCamera, now: Date, force: Bool) -> Bool {
         guard camera.centerCoordinate.latitude.isFinite,
               camera.centerCoordinate.longitude.isFinite,
-              camera.distance.isFinite else { return }
+              camera.distance.isFinite else { return false }
 
         if force {
             self.camera = camera
             lastCachedCameraCenter = camera.centerCoordinate
             lastCachedCameraDistance = camera.distance
             lastCachedCameraUpdatedAt = now
-            return
+            return true
         }
 
         guard let lastCenter = lastCachedCameraCenter,
@@ -1793,7 +1810,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             lastCachedCameraCenter = camera.centerCoordinate
             lastCachedCameraDistance = camera.distance
             lastCachedCameraUpdatedAt = now
-            return
+            return true
         }
 
         let centerDelta = greatCircleDistanceMeters(from: lastCenter, to: camera.centerCoordinate)
@@ -1802,13 +1819,14 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         guard centerDelta >= cameraCacheCenterThreshold
                 || distanceDelta >= cameraCacheDistanceThreshold
                 || elapsed >= cameraCacheMinUpdateInterval else {
-            return
+            return false
         }
 
         self.camera = camera
         lastCachedCameraCenter = camera.centerCoordinate
         lastCachedCameraDistance = camera.distance
         lastCachedCameraUpdatedAt = now
+        return true
     }
 
     /// 수동 포인트 추가 후 카메라가 점프했을 때 직전 스냅샷으로 복원합니다.
@@ -1979,6 +1997,27 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         )
     }
 
+    private var hotspotMaxVisible: Int {
+        lodIntValue(
+            key: MapOverlayLODTuning.hotspotMaxVisibleKey,
+            defaultValue: MapOverlayLODTuning.hotspotMaxVisibleDefault
+        )
+    }
+
+    private var hotspotPageMultiplier: Int {
+        lodIntValue(
+            key: MapOverlayLODTuning.hotspotPageMultiplierKey,
+            defaultValue: MapOverlayLODTuning.hotspotPageMultiplierDefault
+        )
+    }
+
+    private var hotspotClusterDistanceThreshold: Double {
+        lodDoubleValue(
+            key: MapOverlayLODTuning.hotspotClusterDistanceThresholdKey,
+            defaultValue: MapOverlayLODTuning.hotspotClusterDistanceThresholdDefault
+        )
+    }
+
     var shouldRenderFullPolygonOverlays: Bool {
         guard showOnlyOne == false else { return true }
         guard currentCameraDistance <= overlayMaxCameraDistance else { return false }
@@ -2080,6 +2119,181 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         case ..<0.8: return 0.50
         default: return 0.60
         }
+    }
+
+    /// 핫스팟 원본 데이터를 시각 상태로 분류합니다.
+    /// - Parameter hotspot: 분류할 원본 핫스팟입니다.
+    /// - Returns: `normal/stale/lowConfidence` 중 렌더링 상태입니다.
+    func nearbyHotspotVisualState(for hotspot: NearbyHotspotDTO) -> NearbyHotspotVisualState {
+        let suppression = (hotspot.suppressionReason ?? "").lowercased()
+        if suppression.contains("stale")
+            || suppression.contains("delay")
+            || (hotspot.delayMinutes ?? 0) > 0 {
+            return .stale
+        }
+        if let required = hotspot.requiredMinSample, hotspot.count < required {
+            return .lowConfidence
+        }
+        if suppression.contains("low_confidence")
+            || suppression.contains("min_sample")
+            || suppression.contains("low") {
+            return .lowConfidence
+        }
+        return .normal
+    }
+
+    /// 뷰포트/LOD/캡 규칙으로 근처 핫스팟 렌더링 노드를 계산합니다.
+    func refreshRenderableNearbyHotspots() {
+        guard isNearbyHotspotFeatureAvailable, nearbyHotspotEnabled else {
+            renderableNearbyHotspotNodes = []
+            selectedNearbyHotspotID = nil
+            return
+        }
+
+        let inputs: [NearbyHotspotRenderInput] = nearbyHotspots.map { hotspot in
+            NearbyHotspotRenderInput(
+                id: hotspot.id,
+                centerCoordinate: hotspot.centerCoordinate,
+                count: max(1, hotspot.count),
+                intensity: hotspot.intensity,
+                visualState: nearbyHotspotVisualState(for: hotspot)
+            )
+        }
+
+        let viewportCenter = resolvedHotspotViewportCenter()
+        let distance = max(180.0, resolvedHotspotViewportDistance())
+        let nodes = clusterAnnotationService.renderHotspots(
+            hotspots: inputs,
+            viewportCenter: viewportCenter,
+            cameraDistance: distance,
+            maxVisible: hotspotMaxVisible,
+            pageMultiplier: hotspotPageMultiplier,
+            clusterDistanceThreshold: hotspotClusterDistanceThreshold,
+            distanceRatio: clusterCellDistanceRatio,
+            minCellMeters: clusterCellMinMeters,
+            maxCellMeters: clusterCellMaxMeters
+        )
+
+        renderableNearbyHotspotNodes = nodes
+        if let selectedNearbyHotspotID,
+           nodes.contains(where: { $0.id == selectedNearbyHotspotID }) == false {
+            self.selectedNearbyHotspotID = nil
+        }
+    }
+
+    /// 핫스팟 렌더링 계산에 사용할 뷰포트 중심 좌표를 해석합니다.
+    /// - Returns: 유효한 중심 좌표가 있으면 반환하고, 없으면 `nil`을 반환합니다.
+    private func resolvedHotspotViewportCenter() -> CLLocationCoordinate2D? {
+        if let cached = lastCachedCameraCenter,
+           cached.latitude.isFinite,
+           cached.longitude.isFinite {
+            return cached
+        }
+        if let current = location?.coordinate,
+           current.latitude.isFinite,
+           current.longitude.isFinite {
+            return current
+        }
+        if camera.centerCoordinate.latitude.isFinite,
+           camera.centerCoordinate.longitude.isFinite {
+            return camera.centerCoordinate
+        }
+        return nil
+    }
+
+    /// 핫스팟 렌더링 계산에 사용할 현재 카메라 거리(미터)를 해석합니다.
+    /// - Returns: 뷰포트 계산에 사용할 거리(미터)입니다.
+    private func resolvedHotspotViewportDistance() -> Double {
+        if let cached = lastCachedCameraDistance, cached.isFinite {
+            return cached
+        }
+        if camera.distance.isFinite, camera.distance > 0 {
+            return camera.distance
+        }
+        return currentCameraDistance
+    }
+
+    /// 핫스팟 시각 상태와 강도에 맞는 마커 채움 색상을 반환합니다.
+    /// - Parameters:
+    ///   - intensity: 핫스팟 강도(0...1)입니다.
+    ///   - visualState: stale/lowConfidence 분류 상태입니다.
+    /// - Returns: 렌더링에 사용할 채움 색상입니다.
+    func nearbyHotspotMarkerColor(for intensity: Double, visualState: NearbyHotspotVisualState) -> Color {
+        switch visualState {
+        case .normal:
+            return nearbyHotspotColor(for: intensity)
+        case .stale:
+            return Color.appTextLightGray
+        case .lowConfidence:
+            return Color.appYellowPale
+        }
+    }
+
+    /// 핫스팟 시각 상태에 맞는 마커 테두리 색상을 반환합니다.
+    /// - Parameter visualState: stale/lowConfidence 분류 상태입니다.
+    /// - Returns: 마커 테두리 색상입니다.
+    func nearbyHotspotMarkerBorderColor(for visualState: NearbyHotspotVisualState) -> Color {
+        switch visualState {
+        case .normal: return Color.appInk.opacity(0.6)
+        case .stale: return Color.appTextDarkGray.opacity(0.55)
+        case .lowConfidence: return Color.appYellow.opacity(0.85)
+        }
+    }
+
+    /// 핫스팟 시각 상태에 맞는 마커 테두리 대시 패턴을 반환합니다.
+    /// - Parameter visualState: stale/lowConfidence 분류 상태입니다.
+    /// - Returns: 실선은 빈 배열, 구분 상태는 점선 배열을 반환합니다.
+    func nearbyHotspotMarkerDashPattern(for visualState: NearbyHotspotVisualState) -> [CGFloat] {
+        switch visualState {
+        case .normal: return []
+        case .stale: return [4, 4]
+        case .lowConfidence: return [2, 3]
+        }
+    }
+
+    /// 핫스팟 시각 상태와 강도에 맞는 마커 투명도를 반환합니다.
+    /// - Parameters:
+    ///   - intensity: 핫스팟 강도(0...1)입니다.
+    ///   - visualState: stale/lowConfidence 분류 상태입니다.
+    /// - Returns: 렌더링에 사용할 마커 불투명도입니다.
+    func nearbyHotspotMarkerOpacity(for intensity: Double, visualState: NearbyHotspotVisualState) -> Double {
+        switch visualState {
+        case .normal:
+            return nearbyHotspotOpacity(for: intensity)
+        case .stale:
+            return 0.26
+        case .lowConfidence:
+            return 0.32
+        }
+    }
+
+    /// 핫스팟 선택 시 노출할 보조 메시지를 생성합니다.
+    /// - Parameter hotspot: 선택된 핫스팟 렌더 노드입니다.
+    /// - Returns: 상단 상태 배너에 표시할 메시지입니다.
+    func nearbyHotspotStatusText(for hotspot: NearbyHotspotRenderNode) -> String {
+        let base = hotspot.isCluster
+            ? "주변 활동 \(hotspot.count)건이 묶인 구역입니다."
+            : "주변 활동 \(hotspot.count)건이 관측된 지점입니다."
+        switch hotspot.visualState {
+        case .normal:
+            return base
+        case .stale:
+            return "\(base) 데이터가 지연되어 최신성과 정확도가 낮을 수 있어요."
+        case .lowConfidence:
+            return "\(base) 표본 수가 적어 참고용으로 확인해주세요."
+        }
+    }
+
+    /// 핫스팟 마커 선택 상태를 토글합니다.
+    /// - Parameter hotspot: 탭된 핫스팟 렌더 노드입니다.
+    func toggleNearbyHotspotSelection(_ hotspot: NearbyHotspotRenderNode) {
+        if selectedNearbyHotspotID == hotspot.id {
+            selectedNearbyHotspotID = nil
+            walkStatusMessage = nil
+            return
+        }
+        selectedNearbyHotspotID = hotspot.id
+        walkStatusMessage = nearbyHotspotStatusText(for: hotspot)
     }
 
     func toggleHeatmapEnabled() {

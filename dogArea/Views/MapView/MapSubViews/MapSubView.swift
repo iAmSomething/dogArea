@@ -68,12 +68,10 @@ struct MapSubView: View {
                 }
             }
             if viewModel.isNearbyHotspotFeatureAvailable && viewModel.nearbyHotspotEnabled {
-                ForEach(viewModel.nearbyHotspots) { spot in
-                    MapCircle(center: spot.centerCoordinate, radius: 100)
-                        .foregroundStyle(
-                            viewModel.nearbyHotspotColor(for: spot.intensity)
-                                .opacity(viewModel.nearbyHotspotOpacity(for: spot.intensity))
-                        )
+                ForEach(viewModel.renderableNearbyHotspotNodes) { hotspot in
+                    Annotation("", coordinate: hotspot.centerCoordinate) {
+                        nearbyHotspotAnnotationView(for: hotspot)
+                    }
                 }
             }
             if let walkArea = viewModel.polygon.polygon{
@@ -182,6 +180,74 @@ struct MapSubView: View {
     private var clusterPulseOpacity: Double {
         guard clusterPulseActive else { return 1.0 }
         return viewModel.isMapMotionReduced ? 0.92 : 0.82
+    }
+
+    /// 핫스팟 렌더 노드를 지도 어노테이션 뷰로 구성합니다.
+    /// - Parameter hotspot: 렌더링할 핫스팟 노드입니다.
+    /// - Returns: 선택 상태/시각 상태가 반영된 어노테이션 뷰입니다.
+    @ViewBuilder
+    private func nearbyHotspotAnnotationView(for hotspot: NearbyHotspotRenderNode) -> some View {
+        let isSelected = viewModel.selectedNearbyHotspotID == hotspot.id
+        let diameter = nearbyHotspotMarkerDiameter(for: hotspot)
+        let fill = viewModel.nearbyHotspotMarkerColor(for: hotspot.intensity, visualState: hotspot.visualState)
+        let border = viewModel.nearbyHotspotMarkerBorderColor(for: hotspot.visualState)
+        let dashPattern = viewModel.nearbyHotspotMarkerDashPattern(for: hotspot.visualState)
+        let opacity = viewModel.nearbyHotspotMarkerOpacity(for: hotspot.intensity, visualState: hotspot.visualState)
+
+        ZStack {
+            if isSelected {
+                Circle()
+                    .stroke(Color.appYellow.opacity(0.95), lineWidth: 2.6)
+                    .frame(width: diameter + 12, height: diameter + 12)
+            }
+
+            Circle()
+                .fill(fill.opacity(opacity))
+                .frame(width: diameter, height: diameter)
+
+            Circle()
+                .stroke(
+                    border,
+                    style: StrokeStyle(
+                        lineWidth: isSelected ? 2.2 : 1.5,
+                        dash: dashPattern
+                    )
+                )
+                .frame(width: diameter, height: diameter)
+
+            if hotspot.isCluster {
+                Text("\(hotspot.count)")
+                    .font(.appFont(for: .SemiBold, size: 12))
+                    .foregroundStyle(Color.appInk)
+                    .minimumScaleFactor(0.7)
+            } else {
+                Image(systemName: "dot.radiowaves.left.and.right")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(Color.appInk.opacity(0.92))
+            }
+        }
+        .frame(
+            minWidth: 44,
+            idealWidth: max(44, diameter),
+            minHeight: 44,
+            idealHeight: max(44, diameter)
+        )
+        .contentShape(Circle())
+        .onTapGesture {
+            viewModel.toggleNearbyHotspotSelection(hotspot)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(viewModel.nearbyHotspotStatusText(for: hotspot))
+    }
+
+    /// 핫스팟 유형에 따라 마커 직경을 계산합니다.
+    /// - Parameter hotspot: 렌더링 대상 핫스팟 노드입니다.
+    /// - Returns: 클러스터 여부/활동 수가 반영된 마커 직경 포인트 값입니다.
+    private func nearbyHotspotMarkerDiameter(for hotspot: NearbyHotspotRenderNode) -> CGFloat {
+        if hotspot.isCluster {
+            return min(58, 42 + CGFloat(min(16, hotspot.count / 3)))
+        }
+        return 40
     }
 
     var mapControls: some View {
