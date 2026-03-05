@@ -184,9 +184,44 @@ while [[ "$iteration" -le "$ITERATIONS" ]]; do
     exit 1
   fi
 
+  feature_control_member="$(request_json \
+    "POST" \
+    "$SUPABASE_URL/functions/v1/feature-control" \
+    "$SUPABASE_ANON_KEY" \
+    "Bearer $access_token" \
+    "{\"action\":\"health_check\",\"source\":\"auth_smoke\"}")"
+  feature_control_member_status="$(printf '%s' "$feature_control_member" | head -n 1)"
+  feature_control_app="$(request_json \
+    "POST" \
+    "$SUPABASE_URL/functions/v1/feature-control" \
+    "$SUPABASE_ANON_KEY" \
+    "Bearer $SUPABASE_ANON_KEY" \
+    "{\"action\":\"health_check\",\"source\":\"auth_smoke\"}")"
+  feature_control_app_status="$(printf '%s' "$feature_control_app" | head -n 1)"
+  if [[ "$feature_control_app_status" == "401" ]]; then
+    echo "[AuthSmoke] FAIL feature-control returned 401 with app authorization policy"
+    exit 1
+  fi
+
+  now_ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  rpc_payload="{\"payload\":{\"period_type\":\"week\",\"top_n\":20,\"now_ts\":\"$now_ts\"}}"
+  rival_rpc_member="$(request_json \
+    "POST" \
+    "$SUPABASE_URL/rest/v1/rpc/rpc_get_rival_leaderboard" \
+    "$SUPABASE_ANON_KEY" \
+    "Bearer $access_token" \
+    "$rpc_payload")"
+  rival_rpc_member_status="$(printf '%s' "$rival_rpc_member" | head -n 1)"
+  if [[ "$rival_rpc_member_status" == "401" ]]; then
+    echo "[AuthSmoke] FAIL rpc_get_rival_leaderboard returned 401 with member token"
+    exit 1
+  fi
+
   echo "[AuthSmoke] nearby_visibility member=$nearby_visibility_member_status app=$nearby_visibility_app_status"
   echo "[AuthSmoke] nearby_hotspots member=$nearby_hotspots_member_status app=$nearby_hotspots_app_status"
   echo "[AuthSmoke] upload_profile member=$upload_profile_member_status app=$upload_profile_app_status"
+  echo "[AuthSmoke] feature_control member=$feature_control_member_status app=$feature_control_app_status"
+  echo "[AuthSmoke] rival_rpc member=$rival_rpc_member_status"
   iteration=$((iteration + 1))
 done
 
