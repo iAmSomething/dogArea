@@ -10,6 +10,8 @@ private enum RivalCoreLocationCallTracer {
     private static var windowStartedAt: Date = Date()
     private static var heartbeatTimer: DispatchSourceTimer?
     private static var isHeartbeatStarted: Bool = false
+    private static var consecutiveIdleWindows: Int = 0
+    private static let idleWindowStopThreshold: Int = 30
 
     /// 라이벌 탭의 CoreLocation API 호출 이벤트를 1초 단위로 집계해 디버그 콘솔에 출력합니다.
     /// - Parameters:
@@ -49,6 +51,7 @@ private enum RivalCoreLocationCallTracer {
             return
         }
         isHeartbeatStarted = true
+        consecutiveIdleWindows = 0
         let timer = DispatchSource.makeTimerSource(queue: .global(qos: .utility))
         timer.schedule(deadline: .now() + 1.0, repeating: 1.0)
         timer.setEventHandler {
@@ -64,16 +67,35 @@ private enum RivalCoreLocationCallTracer {
         lock.lock()
         let now = Date()
         let elapsed = now.timeIntervalSince(windowStartedAt)
-        let summary = eventCounts
+        let snapshot = eventCounts
+        eventCounts.removeAll()
+        windowStartedAt = now
+
+        if snapshot.isEmpty {
+            consecutiveIdleWindows += 1
+        } else {
+            consecutiveIdleWindows = 0
+        }
+
+        let shouldStopHeartbeat = consecutiveIdleWindows >= idleWindowStopThreshold
+        let timerToCancel = shouldStopHeartbeat ? heartbeatTimer : nil
+        if shouldStopHeartbeat {
+            heartbeatTimer = nil
+            isHeartbeatStarted = false
+            consecutiveIdleWindows = 0
+        }
+        lock.unlock()
+
+        if shouldStopHeartbeat {
+            timerToCancel?.cancel()
+        }
+
+        guard elapsed >= 0.95 else { return }
+        guard snapshot.isEmpty == false else { return }
+        let summary = snapshot
             .sorted { lhs, rhs in lhs.value > rhs.value }
             .map { "\($0.key)=\($0.value)" }
             .joined(separator: ", ")
-        eventCounts.removeAll()
-        windowStartedAt = now
-        lock.unlock()
-
-        guard elapsed >= 0.95 else { return }
-        guard summary.isEmpty == false else { return }
         print("[CoreLocationTrace][Rival][1s] \(summary)")
     }
 }

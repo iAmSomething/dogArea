@@ -20,11 +20,11 @@ let mapSource = load("dogArea/Views/MapView/MapViewModel.swift")
 let rivalSource = load("dogArea/Views/ProfileSettingView/RivalTabViewModel.swift")
 
 assertTrue(
-    mapSource.contains("guard summary.isEmpty == false else { return }"),
+    mapSource.contains("guard snapshot.isEmpty == false else { return }"),
     "Map tracer should skip empty 1-second summary windows"
 )
 assertTrue(
-    rivalSource.contains("guard summary.isEmpty == false else { return }"),
+    rivalSource.contains("guard snapshot.isEmpty == false else { return }"),
     "Rival tracer should skip empty 1-second summary windows"
 )
 assertTrue(
