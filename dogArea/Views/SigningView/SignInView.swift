@@ -151,7 +151,12 @@ struct SignInView: View {
             }
             .frame(maxHeight: .infinity)
             .background(Color.appBackground)
-            .accessibilityIdentifier("screen.signin")
+            .overlay(alignment: .topLeading) {
+                Color.clear
+                    .frame(width: 2, height: 2)
+                    .allowsHitTesting(false)
+                    .accessibilityIdentifier("screen.signin")
+            }
             .toolbar {
                 if allowDismiss {
                     ToolbarItem(placement: .topBarTrailing) {
