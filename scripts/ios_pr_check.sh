@@ -101,6 +101,7 @@ swift scripts/settings_profile_account_actions_unit_check.swift
 swift scripts/settings_auth_session_sync_unit_check.swift
 swift scripts/profile_edit_userinfo_recovery_unit_check.swift
 swift scripts/ios_pr_check_derived_data_path_unit_check.swift
+swift scripts/ios_pr_check_skip_watch_build_unit_check.swift
 swift scripts/project_stability_unit_check.swift
 
 if [[ "${DOGAREA_SKIP_BUILD:-0}" == "1" ]]; then
@@ -123,6 +124,11 @@ xcodebuild \
   -destination "generic/platform=iOS Simulator" \
   CODE_SIGNING_ALLOWED=NO \
   build
+
+if [[ "${DOGAREA_SKIP_WATCH_BUILD:-0}" == "1" ]]; then
+  echo "[dogArea] DOGAREA_SKIP_WATCH_BUILD=1, skipping watchOS xcodebuild"
+  exit 0
+fi
 
 echo "[dogArea] building watchOS target"
 xcodebuild \
