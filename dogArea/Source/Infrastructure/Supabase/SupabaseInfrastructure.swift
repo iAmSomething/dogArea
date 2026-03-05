@@ -3022,8 +3022,13 @@ final class DeviceAppleCredentialAuthService: AppleCredentialAuthServiceProtocol
                 throw SupabaseAuthError.userAlreadyExists
             }
             if statusCode == 429 {
+                let normalizedRateLimitMessage = normalizedAuthRateLimitMessage(
+                    path: path,
+                    upstreamMessage: responseMessage,
+                    errorCode: responseErrorCode
+                )
                 throw SupabaseAuthError.rateLimited(
-                    message: description,
+                    message: normalizedRateLimitMessage,
                     errorCode: responseErrorCode,
                     retryAfterSeconds: retryAfterSeconds(from: httpResponse)
                 )
@@ -3052,6 +3057,44 @@ final class DeviceAppleCredentialAuthService: AppleCredentialAuthServiceProtocol
             || lowercased.contains("duplicate")
             || lowercased.contains("registered")
             || lowercased.contains("exists")
+    }
+
+    /// Auth 429 응답을 사용자 안내용 메시지로 정규화합니다.
+    /// - Parameters:
+    ///   - path: 요청한 Auth 엔드포인트 경로(`signup`, `token` 등)입니다.
+    ///   - upstreamMessage: 서버 응답 본문에서 추출한 원본 메시지입니다.
+    ///   - errorCode: Supabase 오류 코드(`x-sb-error-code` 포함)입니다.
+    /// - Returns: 사용자에게 노출할 429 안내 메시지입니다.
+    private func normalizedAuthRateLimitMessage(
+        path: String,
+        upstreamMessage: String?,
+        errorCode: String?
+    ) -> String? {
+        let trimmedMessage: String? = {
+            guard let raw = upstreamMessage?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  raw.isEmpty == false else {
+                return nil
+            }
+            return raw
+        }()
+
+        if errorCode == "over_email_send_rate_limit" {
+            return trimmedMessage ?? "회원가입 인증 메일 발송 한도를 초과했습니다."
+        }
+
+        if let trimmedMessage,
+           trimmedMessage.contains("인증에 실패했습니다") == false {
+            return trimmedMessage
+        }
+
+        switch path {
+        case "signup":
+            return "회원가입 요청이 너무 자주 발생해 일시적으로 제한되었습니다."
+        case "token":
+            return "로그인 요청이 너무 자주 발생해 일시적으로 제한되었습니다."
+        default:
+            return "인증 요청이 너무 많아 일시적으로 제한되었습니다."
+        }
     }
 
     /// HTTP 응답에서 `Retry-After` 헤더를 초 단위로 해석합니다.
