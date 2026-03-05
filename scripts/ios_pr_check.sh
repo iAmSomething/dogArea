@@ -75,6 +75,7 @@ swift scripts/auth_signup_validation_unit_check.swift
 swift scripts/signin_metal_overlay_guard_unit_check.swift
 swift scripts/auth_overlay_widget_action_defer_unit_check.swift
 swift scripts/feature_flag_refresh_throttle_unit_check.swift
+swift scripts/feature_flag_refresh_singleflight_unit_check.swift
 swift scripts/security_key_exposure_unit_check.swift
 swift scripts/map_home_viewmodel_boundary_unit_check.swift
 swift scripts/tabbar_safearea_regression_unit_check.swift
