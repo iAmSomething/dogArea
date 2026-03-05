@@ -150,6 +150,7 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
     private let visibilityOffRetryInterval: TimeInterval = 10
     private let visibilityOffMaxRetries: Int = 3
     private var pollingTimer: Timer? = nil
+    private var authSessionObserver: NSObjectProtocol? = nil
     private var lastRefreshAt: Date = .distantPast
     private var lastLeaderboardRefreshAt: Date = .distantPast
     private var latestRawLeaderboardEntries: [RivalLeaderboardEntryDTO] = []
@@ -178,12 +179,16 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
 
     deinit {
         pollingTimer?.invalidate()
+        if let authSessionObserver {
+            NotificationCenter.default.removeObserver(authSessionObserver)
+        }
     }
 
     /// 탭 진입 시 권한/공유 상태를 불러오고 폴링을 시작합니다.
     func start() {
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+        startAuthSessionObserverIfNeeded()
         RivalCoreLocationCallTracer.record(
             "authorizationStatus.read",
             detail: "source=start status=\(locationManager.authorizationStatus.rawValue)"
@@ -211,6 +216,7 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
     func stop() {
         pollingTimer?.invalidate()
         pollingTimer = nil
+        stopAuthSessionObserver()
         RivalCoreLocationCallTracer.record(
             "stopUpdatingLocation",
             detail: "source=stop"
@@ -716,6 +722,30 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
             self.refreshHotspots(force: false)
             self.refreshLeaderboard(force: false)
         }
+    }
+
+    /// 라이벌 탭 활성화 동안 인증 세션 변경 알림을 구독합니다.
+    private func startAuthSessionObserverIfNeeded() {
+        guard authSessionObserver == nil else { return }
+        authSessionObserver = NotificationCenter.default.addObserver(
+            forName: .authSessionDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.handleAuthSessionDidChange()
+        }
+    }
+
+    /// 라이벌 탭 비활성화 시 인증 세션 변경 알림 구독을 해제합니다.
+    private func stopAuthSessionObserver() {
+        guard let authSessionObserver else { return }
+        NotificationCenter.default.removeObserver(authSessionObserver)
+        self.authSessionObserver = nil
+    }
+
+    /// 인증 세션 변경 이벤트를 반영해 라이벌 탭 상태를 즉시 동기화합니다.
+    private func handleAuthSessionDidChange() {
+        refreshSessionContext()
     }
 
     /// 저장된 숨김/차단 익명 코드 목록을 불러옵니다.
