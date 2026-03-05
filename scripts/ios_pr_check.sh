@@ -96,6 +96,7 @@ swift scripts/home_area_milestone_feedback_unit_check.swift
 swift scripts/settings_profile_account_actions_unit_check.swift
 swift scripts/settings_auth_session_sync_unit_check.swift
 swift scripts/profile_edit_userinfo_recovery_unit_check.swift
+swift scripts/ios_pr_check_derived_data_path_unit_check.swift
 swift scripts/project_stability_unit_check.swift
 
 if [[ "${DOGAREA_SKIP_BUILD:-0}" == "1" ]]; then
@@ -103,12 +104,18 @@ if [[ "${DOGAREA_SKIP_BUILD:-0}" == "1" ]]; then
   exit 0
 fi
 
+RUN_STAMP="$(date +%s)"
+DERIVED_DATA_PATH="${DOGAREA_DERIVED_DATA_PATH:-$ROOT_DIR/.build/ios_pr_check_derived_data_${RUN_STAMP}_$$}"
+mkdir -p "$DERIVED_DATA_PATH"
+echo "[dogArea] using DerivedData path: $DERIVED_DATA_PATH"
+
 echo "[dogArea] building iOS target"
 xcodebuild \
   -skipPackagePluginValidation \
   -project dogArea.xcodeproj \
   -scheme dogArea \
   -configuration Debug \
+  -derivedDataPath "$DERIVED_DATA_PATH" \
   -destination "generic/platform=iOS Simulator" \
   CODE_SIGNING_ALLOWED=NO \
   build
@@ -119,6 +126,7 @@ xcodebuild \
   -project dogArea.xcodeproj \
   -scheme "dogAreaWatch Watch App" \
   -configuration Debug \
+  -derivedDataPath "$DERIVED_DATA_PATH" \
   -destination "generic/platform=watchOS Simulator" \
   CODE_SIGNING_ALLOWED=NO \
   build
