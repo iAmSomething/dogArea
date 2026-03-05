@@ -64,9 +64,11 @@ Deno.serve(async (req) => {
       const periodType = body.periodType ?? "week";
       const topN = Math.max(1, Math.min(Number(body.topN ?? 20), 200));
       const { data, error } = await userClient.rpc("rpc_get_rival_leaderboard", {
-        period_type: periodType,
-        top_n: topN,
-        now_ts: nowISO,
+        payload: {
+          period_type: periodType,
+          top_n: topN,
+          now_ts: nowISO,
+        },
       });
       if (error) return json({ error: error.message }, 500);
       return json({ leaderboard: Array.isArray(data) ? data : [] });

@@ -1792,9 +1792,11 @@ struct RivalLeagueService: RivalLeagueServiceProtocol {
     func fetchLeaderboard(period: RivalLeaderboardPeriod, topN: Int = 20) async throws -> [RivalLeaderboardEntryDTO] {
         let safeTopN = max(1, min(topN, 200))
         let payload: [String: Any] = [
-            "period_type": period.rawValue,
-            "top_n": safeTopN,
-            "now_ts": ISO8601DateFormatter().string(from: Date())
+            "payload": [
+                "period_type": period.rawValue,
+                "top_n": safeTopN,
+                "now_ts": ISO8601DateFormatter().string(from: Date())
+            ]
         ]
         let data = try await client.request(
             .rest(path: "rpc/rpc_get_rival_leaderboard"),
@@ -1982,7 +1984,7 @@ struct QuestRivalWidgetSummaryService: QuestRivalWidgetSummaryServiceProtocol {
     /// - Returns: 서버 결합 집계 응답을 정규화한 위젯 요약 DTO입니다.
     private func fetchFromSummaryRPC(now: Date) async throws -> QuestRivalWidgetSummaryDTO {
         let payload: [String: Any] = [
-            "now_ts": ISO8601DateFormatter().string(from: now)
+            "in_now_ts": ISO8601DateFormatter().string(from: now)
         ]
         let data = try await client.request(
             .rest(path: "rpc/rpc_get_widget_quest_rival_summary"),
@@ -2123,9 +2125,11 @@ struct QuestRivalWidgetSummaryService: QuestRivalWidgetSummaryServiceProtocol {
     /// - Returns: 순위와 리그를 담은 fallback 요약입니다.
     private func fetchRivalFallback(now: Date) async throws -> RivalFallbackSummary {
         let payload: [String: Any] = [
-            "period_type": RivalLeaderboardPeriod.week.rawValue,
-            "top_n": 50,
-            "now_ts": ISO8601DateFormatter().string(from: now)
+            "payload": [
+                "period_type": RivalLeaderboardPeriod.week.rawValue,
+                "top_n": 50,
+                "now_ts": ISO8601DateFormatter().string(from: now)
+            ]
         ]
         let data = try await client.request(
             .rest(path: "rpc/rpc_get_rival_leaderboard"),
