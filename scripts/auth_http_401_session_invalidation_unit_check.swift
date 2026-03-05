@@ -22,7 +22,8 @@ assertTrue(
     "http client should resolve authorization context before request"
 )
 assertTrue(
-    infra.contains("usedAuthenticatedAccessToken: authorization.usedAuthenticatedAccessToken"),
+    infra.contains("usedAuthenticatedAccessToken: authorization.usedAuthenticatedAccessToken")
+        || infra.contains("usedAuthenticatedAccessToken: authorizationContext.usedAuthenticatedAccessToken"),
     "http client should pass authenticated-token context to invalidation guard"
 )
 assertTrue(

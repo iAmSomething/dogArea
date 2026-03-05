@@ -81,6 +81,7 @@ swift scripts/auth_reauth_session_downgrade_unit_check.swift
 swift scripts/auth_flow_session_snapshot_unit_check.swift
 swift scripts/auth_flow_session_observer_unit_check.swift
 swift scripts/auth_http_401_session_invalidation_unit_check.swift
+swift scripts/auth_401_refresh_retry_unit_check.swift
 swift scripts/auth_edge_function_anon_retry_unit_check.swift
 swift scripts/rival_rpc_param_compat_unit_check.swift
 swift scripts/feature_flag_refresh_throttle_unit_check.swift

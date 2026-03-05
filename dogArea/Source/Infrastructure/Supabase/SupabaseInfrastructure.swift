@@ -217,6 +217,11 @@ struct SupabaseHTTPClient {
         case inconclusive
     }
 
+    private enum UnauthorizedRetryRecoveryResult {
+        case recovered(data: Data, accessToken: String)
+        case unrecovered(statusCode: Int, data: Data, accessToken: String?)
+    }
+
     private let session: URLSession
     private let configLoader: () -> SupabaseRuntimeConfig?
     private let authSessionStore: AuthSessionStoreProtocol
@@ -267,7 +272,14 @@ struct SupabaseHTTPClient {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(config.anonKey, forHTTPHeaderField: "apikey")
         let authorization = await resolvedAuthorizationHeader(config: config)
-        request.setValue(authorization.headerValue, forHTTPHeaderField: "Authorization")
+        let authorizationContext: (
+            headerValue: String,
+            usedAuthenticatedAccessToken: Bool,
+            accessToken: String?
+        ) = shouldPreferAnonymousAuthorizationForEndpoint(endpoint)
+            ? ("Bearer \(config.anonKey)", false, nil)
+            : authorization
+        request.setValue(authorizationContext.headerValue, forHTTPHeaderField: "Authorization")
         request.httpBody = bodyData
         let startedAt = Date()
         #if DEBUG
@@ -293,10 +305,40 @@ struct SupabaseHTTPClient {
             throw SupabaseHTTPError.invalidResponse
         }
         guard (200..<300).contains(statusCode) else {
+            var resolvedStatusCode = statusCode
+            var resolvedData = data
+            var resolvedAccessToken = authorization.accessToken
+
+            if let recoveryResult = await retryUnauthorizedRequestWithRefreshedSessionIfNeeded(
+                request: request,
+                endpoint: endpoint,
+                method: method,
+                url: url,
+                statusCode: statusCode,
+                data: data,
+                usedAuthenticatedAccessToken: authorizationContext.usedAuthenticatedAccessToken,
+                accessToken: authorizationContext.accessToken,
+                config: config,
+                startedAt: startedAt
+            ) {
+                switch recoveryResult {
+                case .recovered(let recoveredData, _):
+                    #if DEBUG
+                    let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
+                    print("[SupabaseHTTP] <- \(method.rawValue) \(url.absoluteString) status=200 elapsed=\(elapsedMs)ms response=\(recoveredData.count)B (refresh-retry)")
+                    #endif
+                    return recoveredData
+                case .unrecovered(let retryStatusCode, let retryData, let refreshedAccessToken):
+                    resolvedStatusCode = retryStatusCode
+                    resolvedData = retryData
+                    resolvedAccessToken = refreshedAccessToken ?? resolvedAccessToken
+                }
+            }
+
             if shouldRetryWithAnonAuthorization(
                 endpoint: endpoint,
-                statusCode: statusCode,
-                usedAuthenticatedAccessToken: authorization.usedAuthenticatedAccessToken
+                statusCode: resolvedStatusCode,
+                usedAuthenticatedAccessToken: authorizationContext.usedAuthenticatedAccessToken
             ) {
                 var anonRequest = request
                 anonRequest.setValue("Bearer \(config.anonKey)", forHTTPHeaderField: "Authorization")
@@ -305,45 +347,158 @@ struct SupabaseHTTPClient {
                 #endif
                 do {
                     let (retryData, retryResponse) = try await session.data(for: anonRequest)
-                    if let retryStatusCode = (retryResponse as? HTTPURLResponse)?.statusCode,
-                       (200..<300).contains(retryStatusCode) {
+                    guard let retryStatusCode = (retryResponse as? HTTPURLResponse)?.statusCode else {
+                        #if DEBUG
+                        let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
+                        print("[SupabaseHTTP] xx retry-anon \(method.rawValue) \(url.absoluteString) elapsed=\(elapsedMs)ms invalid-response")
+                        #endif
+                        throw SupabaseHTTPError.invalidResponse
+                    }
+                    if (200..<300).contains(retryStatusCode) {
                         #if DEBUG
                         let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
                         print("[SupabaseHTTP] <- \(method.rawValue) \(url.absoluteString) status=\(retryStatusCode) elapsed=\(elapsedMs)ms response=\(retryData.count)B (anon-retry)")
                         #endif
                         return retryData
                     }
+                    resolvedStatusCode = retryStatusCode
+                    resolvedData = retryData
+                    #if DEBUG
+                    let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
+                    print("[SupabaseHTTP] <- \(method.rawValue) \(url.absoluteString) status=\(retryStatusCode) elapsed=\(elapsedMs)ms response=\(retryData.count)B (anon-retry-non2xx)")
+                    #endif
                 } catch {
                     #if DEBUG
                     let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
                     print("[SupabaseHTTP] xx retry-anon \(method.rawValue) \(url.absoluteString) elapsed=\(elapsedMs)ms error=\(error.localizedDescription)")
                     #endif
+                    throw error
                 }
             }
 
             if await shouldInvalidateTokenSession(
-                statusCode: statusCode,
+                statusCode: resolvedStatusCode,
                 endpoint: endpoint,
-                usedAuthenticatedAccessToken: authorization.usedAuthenticatedAccessToken,
-                accessToken: authorization.accessToken,
+                usedAuthenticatedAccessToken: authorizationContext.usedAuthenticatedAccessToken,
+                accessToken: resolvedAccessToken,
                 config: config
             ) {
                 authSessionStore.clearTokenSession()
                 #if DEBUG
-                print("[SupabaseAuth] invalidate local token session from response status=\(statusCode)")
+                print("[SupabaseAuth] invalidate local token session from response status=\(resolvedStatusCode)")
                 #endif
             }
             #if DEBUG
             let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
-            print("[SupabaseHTTP] <- \(method.rawValue) \(url.absoluteString) status=\(statusCode) elapsed=\(elapsedMs)ms response=\(data.count)B")
+            print("[SupabaseHTTP] <- \(method.rawValue) \(url.absoluteString) status=\(resolvedStatusCode) elapsed=\(elapsedMs)ms response=\(resolvedData.count)B")
             #endif
-            throw SupabaseHTTPError.unexpectedStatusCode(statusCode)
+            throw SupabaseHTTPError.unexpectedStatusCode(resolvedStatusCode)
         }
         #if DEBUG
         let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
         print("[SupabaseHTTP] <- \(method.rawValue) \(url.absoluteString) status=\(statusCode) elapsed=\(elapsedMs)ms response=\(data.count)B")
         #endif
         return data
+    }
+
+    /// 사용자 토큰 요청이 401/403일 때 refresh token으로 세션을 갱신한 뒤 동일 요청을 1회 재시도합니다.
+    /// - Parameters:
+    ///   - request: 원본 HTTP 요청입니다.
+    ///   - endpoint: 호출 대상 Supabase 엔드포인트입니다.
+    ///   - method: HTTP 메서드입니다.
+    ///   - url: 호출 대상 URL입니다.
+    ///   - statusCode: 최초 응답의 HTTP 상태 코드입니다.
+    ///   - data: 최초 응답 바디 데이터입니다.
+    ///   - usedAuthenticatedAccessToken: 최초 요청이 사용자 access token을 사용했는지 여부입니다.
+    ///   - accessToken: 최초 요청에 사용한 사용자 access token 문자열입니다.
+    ///   - config: Supabase 런타임 기본 구성입니다.
+    ///   - startedAt: 최초 요청 시작 시각입니다.
+    /// - Returns: refresh 재시도 결과가 있으면 성공/실패 결과를 반환하고, 시도 조건이 아니면 `nil`을 반환합니다.
+    private func retryUnauthorizedRequestWithRefreshedSessionIfNeeded(
+        request: URLRequest,
+        endpoint: SupabaseEndpoint,
+        method: HTTPMethod,
+        url: URL,
+        statusCode: Int,
+        data: Data,
+        usedAuthenticatedAccessToken: Bool,
+        accessToken: String?,
+        config: SupabaseRuntimeConfig,
+        startedAt: Date
+    ) async -> UnauthorizedRetryRecoveryResult? {
+        guard usedAuthenticatedAccessToken else { return nil }
+        guard statusCode == 401 || statusCode == 403 else { return nil }
+        guard case .function = endpoint else { return nil }
+        guard let currentSession = authSessionStore.currentTokenSession(),
+              currentSession.refreshToken.isEmpty == false else {
+            return nil
+        }
+
+        #if DEBUG
+        print("[SupabaseAuth] retry-with-refresh \(method.rawValue) \(url.absoluteString)")
+        #endif
+
+        let refreshOutcome = await refreshCredential(config: config, refreshToken: currentSession.refreshToken)
+        switch refreshOutcome {
+        case .success(let refreshed):
+            authSessionStore.persist(refreshed.identity)
+            guard let tokenSession = refreshed.tokenSession else {
+                return .unrecovered(
+                    statusCode: statusCode,
+                    data: data,
+                    accessToken: accessToken
+                )
+            }
+            authSessionStore.persist(tokenSession: tokenSession)
+
+            var retryRequest = request
+            retryRequest.setValue("Bearer \(tokenSession.accessToken)", forHTTPHeaderField: "Authorization")
+            do {
+                let (retryData, retryResponse) = try await session.data(for: retryRequest)
+                guard let retryStatusCode = (retryResponse as? HTTPURLResponse)?.statusCode else {
+                    #if DEBUG
+                    let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
+                    print("[SupabaseHTTP] xx refresh-retry \(method.rawValue) \(url.absoluteString) elapsed=\(elapsedMs)ms invalid-response")
+                    #endif
+                    return .unrecovered(
+                        statusCode: statusCode,
+                        data: data,
+                        accessToken: tokenSession.accessToken
+                    )
+                }
+                if (200..<300).contains(retryStatusCode) {
+                    return .recovered(data: retryData, accessToken: tokenSession.accessToken)
+                }
+                return .unrecovered(
+                    statusCode: retryStatusCode,
+                    data: retryData,
+                    accessToken: tokenSession.accessToken
+                )
+            } catch {
+                #if DEBUG
+                let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
+                print("[SupabaseHTTP] xx refresh-retry \(method.rawValue) \(url.absoluteString) elapsed=\(elapsedMs)ms error=\(error.localizedDescription)")
+                #endif
+                return .unrecovered(
+                    statusCode: statusCode,
+                    data: data,
+                    accessToken: tokenSession.accessToken
+                )
+            }
+        case .retryableFailure:
+            return .unrecovered(
+                statusCode: statusCode,
+                data: data,
+                accessToken: accessToken
+            )
+        case .terminalFailure:
+            authSessionStore.clearTokenSession()
+            return .unrecovered(
+                statusCode: statusCode,
+                data: data,
+                accessToken: accessToken
+            )
+        }
     }
 
     /// 현재 저장된 사용자 세션을 기준으로 Authorization 헤더 값을 계산합니다.
@@ -418,6 +573,14 @@ struct SupabaseHTTPClient {
     ) -> Bool {
         guard usedAuthenticatedAccessToken else { return false }
         guard statusCode == 401 || statusCode == 403 else { return false }
+        guard case .function(let functionName) = endpoint else { return false }
+        return Self.edgeFunctionAnonRetryAllowlist.contains(functionName)
+    }
+
+    /// Edge Function별 인증 우선순위를 판단해 익명 키 선적용 여부를 결정합니다.
+    /// - Parameter endpoint: 호출 대상 Supabase 엔드포인트입니다.
+    /// - Returns: 익명 키 우선 호출이 필요한 함수면 `true`, 아니면 `false`입니다.
+    private func shouldPreferAnonymousAuthorizationForEndpoint(_ endpoint: SupabaseEndpoint) -> Bool {
         guard case .function(let functionName) = endpoint else { return false }
         return Self.edgeFunctionAnonRetryAllowlist.contains(functionName)
     }
