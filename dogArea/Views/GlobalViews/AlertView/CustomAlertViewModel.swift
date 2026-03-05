@@ -35,13 +35,3 @@ extension CustomAlertViewModel {
         isAlert = true
     }
 }
-
-struct AlertViewModifier: ViewModifier {
-  @EnvironmentObject var AlertVM: CustomAlertViewModel
-  func body(content: Content) -> some View {
-    content
-  }
-}
-protocol AlertCallable {
-  var AlertVM: CustomAlertViewModel { get }
-}
