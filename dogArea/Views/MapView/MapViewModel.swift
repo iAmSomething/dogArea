@@ -2028,6 +2028,13 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         ) { [weak self] _ in
             self?.reloadSelectedPetContext()
         }
+        let authSessionChanged = eventCenter.addObserver(
+            forName: .authSessionDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.handleAuthSessionDidChange()
+        }
         #if canImport(UIKit)
         let reduceMotionChanged = eventCenter.addObserver(
             forName: UIAccessibility.reduceMotionStatusDidChangeNotification,
@@ -2045,9 +2052,17 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             self?.flushLivePresenceOutboxIfNeeded()
             self?.refreshPresenceHeartbeatState()
         }
-        lifecycleObservers = [didBecomeActive, willResign, willTerminate, petContextChanged, reduceMotionChanged, lowPowerChanged]
+        lifecycleObservers = [
+            didBecomeActive,
+            willResign,
+            willTerminate,
+            petContextChanged,
+            authSessionChanged,
+            reduceMotionChanged,
+            lowPowerChanged
+        ]
         #else
-        lifecycleObservers = [didBecomeActive, willResign, willTerminate, petContextChanged]
+        lifecycleObservers = [didBecomeActive, willResign, willTerminate, petContextChanged, authSessionChanged]
         #endif
         #endif
     }
@@ -3400,6 +3415,13 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             self.syncVisibilitySettingIfNeeded()
         }
         handleLivePresenceSharingStateChanged()
+        refreshRenderableNearbyHotspots()
+    }
+
+    /// 인증 세션 변경 알림 수신 시 지도 기능 상태를 즉시 재계산합니다.
+    private func handleAuthSessionDidChange() {
+        applyFeatureFlags()
+        refreshPresenceHeartbeatState()
     }
 
     /// 저장된 날씨 위험도 캐시/환경값을 기준으로 현재 지도 오버레이 상태를 계산합니다.
