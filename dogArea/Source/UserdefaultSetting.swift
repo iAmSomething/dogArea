@@ -577,6 +577,12 @@ final class FeatureFlagStore {
         let flags: [FeatureFlagRowDTO]
     }
 
+    private enum RefreshGateDecision {
+        case proceed
+        case throttled
+        case inFlight
+    }
+
     private let stateQueue = DispatchQueue(label: "com.th.dogArea.feature-flag-store.state")
     private let cacheStorageKey = "feature.flags.cache.v1"
     private let appInstanceStorageKey = "feature.flags.appInstance.v1"
@@ -584,6 +590,7 @@ final class FeatureFlagStore {
     private let minimumRefreshInterval: TimeInterval = 60
     private var cached: [String: FeatureFlagValue] = [:]
     private var lastRefreshAt: TimeInterval = 0
+    private var isRefreshInFlight: Bool = false
     private let appInstance: String
 
     private let defaults: [String: FeatureFlagValue] = [
@@ -622,14 +629,24 @@ final class FeatureFlagStore {
     /// - Returns: 원격 갱신 성공 또는 스로틀로 인해 캐시 유지가 유효하면 `true`, 실패 시 `false`입니다.
     @discardableResult
     func refresh(force: Bool) async -> Bool {
-        guard shouldSkipRefresh(force: force, now: Date()) == false else {
+        let now = Date()
+        switch evaluateRefreshGate(force: force, now: now) {
+        case .throttled:
             #if DEBUG
             print("[FeatureFlag] refresh skipped: throttled")
             #endif
             return true
+        case .inFlight:
+            #if DEBUG
+            print("[FeatureFlag] refresh skipped: in-flight")
+            #endif
+            return true
+        case .proceed:
+            break
         }
+        defer { finishRefreshCycle() }
         do {
-            let nowEpoch = Date().timeIntervalSince1970
+            let nowEpoch = now.timeIntervalSince1970
             let data = try await FeatureControlService.shared.post(payload: [
                 "action": "get_flags",
                 "keys": AppFeatureFlagKey.allCases.map(\.rawValue)
@@ -715,6 +732,31 @@ final class FeatureFlagStore {
         return stateQueue.sync {
             let elapsed = nowEpoch - lastRefreshAt
             return elapsed >= 0 && elapsed < minimumRefreshInterval
+        }
+    }
+
+    /// 스로틀/동시 실행 상태를 평가해 원격 갱신을 진행할지 여부를 결정합니다.
+    /// - Parameters:
+    ///   - force: `true`면 스로틀 평가를 무시하고 강제 갱신을 허용합니다.
+    ///   - now: 평가 시점 기준 시각입니다.
+    /// - Returns: 이번 호출의 갱신 게이트 결정 결과입니다.
+    private func evaluateRefreshGate(force: Bool, now: Date) -> RefreshGateDecision {
+        if shouldSkipRefresh(force: force, now: now) {
+            return .throttled
+        }
+        return stateQueue.sync {
+            if isRefreshInFlight {
+                return .inFlight
+            }
+            isRefreshInFlight = true
+            return .proceed
+        }
+    }
+
+    /// 원격 feature flag 갱신 시도 종료 시 in-flight 상태를 해제합니다.
+    private func finishRefreshCycle() {
+        stateQueue.sync {
+            isRefreshInFlight = false
         }
     }
 }

@@ -30,7 +30,11 @@ assertTrue(
     "feature flag store should support force refresh entrypoint"
 )
 assertTrue(
-    source.contains("guard shouldSkipRefresh(force: force, now: Date()) == false else"),
+    source.contains("switch evaluateRefreshGate(force: force, now: now)"),
+    "refresh should evaluate refresh gate before remote fetch"
+)
+assertTrue(
+    source.contains("case .throttled:"),
     "refresh should short-circuit when throttled"
 )
 assertTrue(
