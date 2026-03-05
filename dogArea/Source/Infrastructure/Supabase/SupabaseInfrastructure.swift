@@ -747,31 +747,89 @@ protocol HotspotWidgetSnapshotSyncing {
 
 struct FeatureControlService: FeatureFlagRemoteServiceProtocol {
     static let shared = FeatureControlService()
+    private static let functionUnavailableUntilKey = "feature.control.unavailable.until.v1"
+    private static let functionUnavailableCooldownSeconds: TimeInterval = 10 * 60
 
     private let client: SupabaseHTTPClient
+    private let cooldownStore: UserDefaults
 
-    init(client: SupabaseHTTPClient = .live) {
+    init(
+        client: SupabaseHTTPClient = .live,
+        cooldownStore: UserDefaults = .standard
+    ) {
         self.client = client
+        self.cooldownStore = cooldownStore
     }
 
     func post(payload: [String: Any]) async throws -> Data {
+        guard isFunctionTemporarilyUnavailable(now: Date()) == false else {
+            #if DEBUG
+            print("[FeatureControl] blocked: function cooldown active")
+            #endif
+            throw SupabaseHTTPError.notConfigured
+        }
         let body = try JSONSerialization.data(withJSONObject: payload)
-        return try await client.request(
-            .function(name: "feature-control"),
-            method: .post,
-            bodyData: body
-        )
-    }
-
-    func postFireAndForget(payload: [String: Any]) {
-        guard let body = try? JSONSerialization.data(withJSONObject: payload) else { return }
-        Task.detached(priority: .utility) {
-            _ = try? await client.request(
+        do {
+            let data = try await client.request(
                 .function(name: "feature-control"),
                 method: .post,
                 bodyData: body
             )
+            clearFunctionUnavailableMarker()
+            return data
+        } catch let error as SupabaseHTTPError {
+            if case .unexpectedStatusCode(404) = error {
+                markFunctionTemporarilyUnavailable(now: Date())
+                throw SupabaseHTTPError.notConfigured
+            }
+            throw error
         }
+    }
+
+    func postFireAndForget(payload: [String: Any]) {
+        guard isFunctionTemporarilyUnavailable(now: Date()) == false else {
+            return
+        }
+        guard let body = try? JSONSerialization.data(withJSONObject: payload) else { return }
+        Task.detached(priority: .utility) {
+            do {
+                _ = try await client.request(
+                    .function(name: "feature-control"),
+                    method: .post,
+                    bodyData: body
+                )
+                clearFunctionUnavailableMarker()
+            } catch let error as SupabaseHTTPError {
+                if case .unexpectedStatusCode(404) = error {
+                    markFunctionTemporarilyUnavailable(now: Date())
+                }
+            } catch {
+                return
+            }
+        }
+    }
+
+    /// `feature-control` 함수가 최근 404로 비가용 처리됐는지 확인합니다.
+    /// - Parameter now: 쿨다운 만료 판정 기준 시각입니다.
+    /// - Returns: 쿨다운 기간이 남아 있으면 `true`, 아니면 `false`입니다.
+    private func isFunctionTemporarilyUnavailable(now: Date) -> Bool {
+        let unavailableUntil = cooldownStore.double(forKey: Self.functionUnavailableUntilKey)
+        return unavailableUntil > now.timeIntervalSince1970
+    }
+
+    /// `feature-control` 함수 404 감지 시 재시도 폭주를 막기 위해 쿨다운 마커를 기록합니다.
+    /// - Parameter now: 쿨다운 만료시각 계산 기준 시각입니다.
+    private func markFunctionTemporarilyUnavailable(now: Date) {
+        let unavailableUntil = now.timeIntervalSince1970 + Self.functionUnavailableCooldownSeconds
+        cooldownStore.set(unavailableUntil, forKey: Self.functionUnavailableUntilKey)
+        #if DEBUG
+        print("[FeatureControl] marked unavailable for \(Int(Self.functionUnavailableCooldownSeconds))s due to 404")
+        #endif
+    }
+
+    /// `feature-control` 함수 호출이 성공하면 404 쿨다운 마커를 제거합니다.
+    private func clearFunctionUnavailableMarker() {
+        cooldownStore.removeObject(forKey: Self.functionUnavailableUntilKey)
     }
 }
 
