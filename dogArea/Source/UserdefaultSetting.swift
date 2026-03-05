@@ -92,7 +92,6 @@ class UserdefaultSetting {
 extension Notification.Name {
     static let walkPointRecordedForQuest = Notification.Name("walk.point.recorded.for.quest")
     static let authSessionDidChange = Notification.Name("auth.session.didChange")
-    static let authSessionExpired = Notification.Name("auth.session.expired")
 }
 struct UserInfo: TimeCheckable {
     let id: String
@@ -1526,23 +1525,6 @@ final class AuthFlowCoordinator: ObservableObject {
         guestDataUpgradeResult = nil
         onAuthenticated = nil
         refresh()
-    }
-
-    /// 토큰 만료 등으로 세션이 무효화되었을 때 로컬 상태를 정리하고 재로그인 플로우를 강제합니다.
-    func handleSessionExpired() {
-        authSessionStore.clear()
-        profileStore.removeAll()
-        petSelectionStore.clearSelectionState()
-        walkSessionMetadataStore.clearPreferences()
-        UserDefaults.standard.set(false, forKey: guestModeKey)
-        UserDefaults.standard.set(true, forKey: entryChoiceCompletedKey)
-        pendingUpgradeRequest = nil
-        pendingGuestDataUpgradePrompt = nil
-        guestDataUpgradeInProgress = false
-        guestDataUpgradeResult = nil
-        onAuthenticated = nil
-        shouldShowEntryChoice = false
-        shouldShowSignIn = true
     }
 
     func startGuestDataUpgrade(forceRetry: Bool = false) {
