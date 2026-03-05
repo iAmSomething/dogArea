@@ -195,6 +195,7 @@ private extension WeatherRiskLevelValue {
     }
 }
 
+#if DEBUG
 private enum MapCoreLocationCallTracer {
     private static let lock = NSLock()
     private static var eventCounts: [String: Int] = [:]
@@ -290,6 +291,27 @@ private enum MapCoreLocationCallTracer {
         print("[CoreLocationTrace][Map][1s] \(summary)")
     }
 }
+#else
+private enum MapCoreLocationCallTracer {
+    /// Release 빌드에서는 CoreLocation 추적 오버헤드를 제거하기 위해 no-op으로 동작합니다.
+    /// - Parameters:
+    ///   - event: 호출 지점을 구분하는 이벤트 식별자입니다.
+    ///   - detail: 호출 시점의 보조 상태 정보입니다.
+    ///   - file: 호출 파일 식별자입니다.
+    ///   - line: 호출 라인 번호입니다.
+    static func record(
+        _ event: String,
+        detail: String? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) {
+        _ = event
+        _ = detail
+        _ = file
+        _ = line
+    }
+}
+#endif
 
 class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSessionDelegate {
     enum WalkEndReason: String {
