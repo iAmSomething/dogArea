@@ -20,11 +20,11 @@ public class CustomAlertViewModel: ObservableObject {
 extension CustomAlertViewModel {
   func callAlert(type: AlertActionType) {
     self.alertType = type
-    isAlert.toggle()
+    isAlert = true
   }
     func callCustomAlert(model: AlertModel,leftAction: @escaping () -> (),rightAction: @escaping () -> () = {}) {
         self.alertType = .custom(model, leftAction, rightAction)
-        isAlert.toggle()
+        isAlert = true
     }
 }
 
