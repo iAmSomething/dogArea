@@ -776,7 +776,6 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
             return false
         }
         let affectedUserId = currentUserId
-        authSessionStore.clearTokenSession()
         persistLocationSharingPreference(false, for: affectedUserId)
         locationSharingEnabled = false
         hotspots = []
@@ -784,7 +783,7 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
         leaderboardEntries = []
         latestRawLeaderboardEntries = []
         refreshViewState()
-        showToast("인증 세션이 만료됐어요. 다시 로그인 후 시도해주세요.")
+        showToast("인증 세션 확인이 필요해요. 다시 로그인 후 시도해주세요.")
         return true
     }
 

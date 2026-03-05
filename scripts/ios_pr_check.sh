@@ -68,6 +68,7 @@ swift scripts/walk_session_pet_canonicalization_unit_check.swift
 swift scripts/presentation_firebase_boundary_unit_check.swift
 swift scripts/supabase_profile_image_upload_unit_check.swift
 swift scripts/auth_session_autologin_unit_check.swift
+swift scripts/auth_refresh_resilience_unit_check.swift
 swift scripts/auth_onboarding_session_consistency_unit_check.swift
 swift scripts/auth_signup_entry_ux_unit_check.swift
 swift scripts/auth_signup_validation_unit_check.swift

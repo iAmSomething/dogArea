@@ -84,6 +84,7 @@ final class DefaultAuthSessionStore: AuthSessionStoreProtocol {
     func persist(_ identity: AuthenticatedUserIdentity) {
         defaults.set(identity.userId, forKey: Key.userId)
         defaults.set(identity.email, forKey: Key.email)
+        postSessionDidChange(reason: "persist_identity")
     }
 
     /// 현재 인증된 토큰 세션을 로컬에 저장합니다.
@@ -93,6 +94,7 @@ final class DefaultAuthSessionStore: AuthSessionStoreProtocol {
         defaults.set(tokenSession.refreshToken, forKey: Key.refreshToken)
         defaults.set(tokenSession.expiresAt, forKey: Key.expiresAt)
         defaults.set(tokenSession.tokenType, forKey: Key.tokenType)
+        postSessionDidChange(reason: "persist_token")
     }
 
     /// 로컬에 저장된 사용자 식별 정보를 조회합니다.
@@ -131,17 +133,37 @@ final class DefaultAuthSessionStore: AuthSessionStoreProtocol {
 
     /// 토큰 세션 정보만 제거합니다.
     func clearTokenSession() {
+        clearTokenSessionInternal(notify: true)
+    }
+
+    /// 토큰 세션 정보 제거를 수행하고 필요 시 변경 이벤트를 브로드캐스트합니다.
+    /// - Parameter notify: 세션 변경 이벤트를 발행할지 여부입니다.
+    private func clearTokenSessionInternal(notify: Bool) {
         defaults.removeObject(forKey: Key.accessToken)
         defaults.removeObject(forKey: Key.refreshToken)
         defaults.removeObject(forKey: Key.expiresAt)
         defaults.removeObject(forKey: Key.tokenType)
+        if notify {
+            postSessionDidChange(reason: "clear_token")
+        }
     }
 
     /// 로컬 인증 식별 정보를 제거합니다.
     func clear() {
         defaults.removeObject(forKey: Key.userId)
         defaults.removeObject(forKey: Key.email)
-        clearTokenSession()
+        clearTokenSessionInternal(notify: false)
+        postSessionDidChange(reason: "clear_all")
+    }
+
+    /// 인증 세션 변경 사실을 앱 전역으로 브로드캐스트합니다.
+    /// - Parameter reason: 변경 원인을 식별하기 위한 문자열입니다.
+    private func postSessionDidChange(reason: String) {
+        NotificationCenter.default.post(
+            name: .authSessionDidChange,
+            object: self,
+            userInfo: ["reason": reason]
+        )
     }
 }
 

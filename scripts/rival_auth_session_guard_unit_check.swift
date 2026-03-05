@@ -26,11 +26,15 @@ assertTrue(
     "rival tab should classify auth failure status codes explicitly"
 )
 assertTrue(
-    rivalViewModel.contains("authSessionStore.clearTokenSession()"),
-    "rival tab should clear stale token session on auth failure"
+    rivalViewModel.contains("persistLocationSharingPreference(false, for: affectedUserId)"),
+    "rival tab should disable location sharing state on auth failure"
 )
 assertTrue(
-    rivalViewModel.contains("인증 세션이 만료됐어요. 다시 로그인 후 시도해주세요."),
+    !rivalViewModel.contains("authSessionStore.clearTokenSession()"),
+    "rival tab should not clear local token session on edge-function auth failure"
+)
+assertTrue(
+    rivalViewModel.contains("인증 세션 확인이 필요해요. 다시 로그인 후 시도해주세요."),
     "rival tab should expose explicit re-login guidance on auth failure"
 )
 
