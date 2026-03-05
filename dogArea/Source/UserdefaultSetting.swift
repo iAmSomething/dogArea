@@ -1475,6 +1475,7 @@ final class AuthFlowCoordinator: ObservableObject {
     @Published var pendingGuestDataUpgradePrompt: GuestDataUpgradePrompt? = nil
     @Published var guestDataUpgradeInProgress: Bool = false
     @Published var guestDataUpgradeResult: GuestDataUpgradeReport? = nil
+    @Published private(set) var sessionStateSnapshot: AppSessionState = AppFeatureGate.currentSession()
 
     private let guestModeKey = "auth.guest_mode.v1"
     private let entryChoiceCompletedKey = "auth.entry_choice_completed.v1"
@@ -1504,7 +1505,7 @@ final class AuthFlowCoordinator: ObservableObject {
     }
 
     var sessionState: AppSessionState {
-        AppFeatureGate.currentSession()
+        sessionStateSnapshot
     }
 
     var isLoggedIn: Bool {
@@ -1516,6 +1517,7 @@ final class AuthFlowCoordinator: ObservableObject {
     }
 
     func refresh() {
+        syncSessionStateSnapshot()
         if isLoggedIn {
             UserDefaults.standard.set(false, forKey: guestModeKey)
             UserDefaults.standard.set(true, forKey: entryChoiceCompletedKey)
@@ -1590,6 +1592,7 @@ final class AuthFlowCoordinator: ObservableObject {
 
     func startReauthenticationFlow() {
         authSessionStore.clearTokenSession()
+        syncSessionStateSnapshot()
         pendingUpgradeRequest = nil
         pendingGuestDataUpgradePrompt = nil
         shouldShowEntryChoice = false
@@ -1659,6 +1662,7 @@ final class AuthFlowCoordinator: ObservableObject {
     }
 
     func completeSignIn() {
+        syncSessionStateSnapshot()
         UserDefaults.standard.set(false, forKey: guestModeKey)
         UserDefaults.standard.set(true, forKey: entryChoiceCompletedKey)
         shouldShowSignIn = false
@@ -1684,6 +1688,12 @@ final class AuthFlowCoordinator: ObservableObject {
             return nil
         }
         return sessionUserId
+    }
+
+    /// 저장소 기준 최신 세션 상태를 계산해 `@Published` 스냅샷으로 반영합니다.
+    /// - Returns: 없음. 세션 전환이 있으면 SwiftUI 갱신 트리거를 발생시킵니다.
+    private func syncSessionStateSnapshot() {
+        sessionStateSnapshot = AppFeatureGate.currentSession()
     }
 }
 
