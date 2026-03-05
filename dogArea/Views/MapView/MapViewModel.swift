@@ -3310,9 +3310,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             print("nearby hotspot fetch failed: \(error.localizedDescription)")
         }
         lastNearbyHotspotErrorLogAt = Date()
-        return
-        #endif
-
+        #else
         let now = Date()
         if now.timeIntervalSince(lastNearbyHotspotErrorLogAt) < nearbyHotspotErrorLogInterval {
             suppressedNearbyHotspotErrorCount += 1
@@ -3326,6 +3324,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             print("nearby hotspot fetch failed: \(error.localizedDescription)")
         }
         lastNearbyHotspotErrorLogAt = now
+        #endif
     }
 
     /// 가시성(Visibility) 동기화 에러 로그를 일정 주기로만 출력해 콘솔 노이즈를 줄입니다.
@@ -3339,9 +3338,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             print("visibility sync failed: \(error.localizedDescription)")
         }
         lastVisibilitySyncErrorLogAt = Date()
-        return
-        #endif
-
+        #else
         let now = Date()
         if now.timeIntervalSince(lastVisibilitySyncErrorLogAt) < nearbyHotspotErrorLogInterval {
             suppressedVisibilitySyncErrorCount += 1
@@ -3355,6 +3352,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             print("visibility sync failed: \(error.localizedDescription)")
         }
         lastVisibilitySyncErrorLogAt = now
+        #endif
     }
 
     private func syncVisibilitySettingIfNeeded() {
