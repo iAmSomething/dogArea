@@ -1589,10 +1589,12 @@ final class AuthFlowCoordinator: ObservableObject {
     }
 
     func startReauthenticationFlow() {
+        authSessionStore.clearTokenSession()
         pendingUpgradeRequest = nil
         pendingGuestDataUpgradePrompt = nil
         shouldShowEntryChoice = false
         shouldShowSignIn = true
+        onAuthenticated = nil
     }
 
     func dismissGuestDataUpgradePrompt() {
