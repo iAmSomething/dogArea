@@ -117,7 +117,4 @@ struct AlertModel {
         
         
     }
-    func height(_ setHeight: CGFloat) -> CGFloat {
-        return setHeight
-    }
 }
