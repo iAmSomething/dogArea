@@ -106,6 +106,7 @@ swift scripts/profile_edit_userinfo_recovery_unit_check.swift
 swift scripts/custom_alert_present_state_unit_check.swift
 swift scripts/custom_alert_mainactor_unit_check.swift
 swift scripts/custom_alert_unused_type_cleanup_unit_check.swift
+swift scripts/alert_model_height_overload_cleanup_unit_check.swift
 swift scripts/ios_pr_check_derived_data_path_unit_check.swift
 swift scripts/ios_pr_check_skip_watch_build_unit_check.swift
 swift scripts/project_stability_unit_check.swift
