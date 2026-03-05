@@ -83,7 +83,12 @@ struct RootView: View {
                     .padding(.top, 12)
                 }
             }
-            .sheet(item: $authFlow.pendingUpgradeRequest) { request in
+            .sheet(item: $authFlow.pendingUpgradeRequest, onDismiss: {
+                #if DEBUG
+                print("[AuthFlow] RootView pendingUpgradeRequest onDismiss")
+                #endif
+                authFlow.presentDeferredSignInIfNeeded()
+            }) { request in
                 MemberUpgradeSheetView(
                     request: request,
                     onUpgrade: { authFlow.proceedToSignIn() },
@@ -98,6 +103,13 @@ struct RootView: View {
                     onLater: { authFlow.dismissGuestDataUpgradePrompt() }
                 )
                 .presentationDetents([.medium])
+            }
+            .fullScreenCover(isPresented: $authFlow.shouldShowSignIn) {
+                SignInView(
+                    allowDismiss: true,
+                    onAuthenticated: { authFlow.completeSignIn() },
+                    onDismiss: { authFlow.dismissSignIn() }
+                )
             }
             .onAppear {
                 consumePendingWidgetActionIfNeeded()

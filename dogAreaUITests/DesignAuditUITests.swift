@@ -116,6 +116,31 @@ final class DesignAuditUITests: XCTestCase {
         XCTAssertTrue(logoutButton.isHittable, "로그아웃 버튼이 탭 가능한 상태가 아닙니다.")
     }
 
+    /// 로그아웃 후 재로그인하고 라이벌 탭에서 익명 공유를 시작할 수 있는지 검증합니다.
+    func testFeatureRegression_RivalAuthRevalidationFlow() throws {
+        let credentials = try XCTUnwrap(
+            loadTestCredentials(),
+            "DOGAREA_TEST_EMAIL/DOGAREA_TEST_PASSWORD 또는 .design_audit_credentials.json이 필요합니다."
+        )
+        let app = launchAppForAuthRevalidation()
+
+        XCTAssertTrue(waitUntilExists(app.buttons["tab.4"], timeout: 12), "탭바가 렌더링되지 않았습니다.")
+        XCTAssertTrue(openTab(index: 4, app: app), "설정 탭 진입에 실패했습니다.")
+        performLogoutIfNeeded(app)
+        XCTAssertTrue(
+            signInFromAnyEntry(app: app, credentials: credentials),
+            "재검증 시나리오 로그인에 실패했습니다."
+        )
+
+        XCTAssertTrue(openTab(index: 3, app: app), "라이벌 탭 진입에 실패했습니다.")
+        XCTAssertTrue(waitUntilMemberState(app, timeout: 8), "로그인 세션이 라이벌 탭에 반영되지 않았습니다.")
+        triggerRivalSharingStart(app)
+        XCTAssertTrue(
+            waitUntilExists(app.buttons["rival.sharing.stop"], timeout: 12),
+            "익명 공유 시작 후 공유 중지 버튼이 나타나지 않았습니다."
+        )
+    }
+
     /// 지정한 인터페이스 스타일로 앱을 실행하고 주요 화면/서브뷰를 순회해 스크린샷을 저장합니다.
     private func runDesignAudit(style: InterfaceStyle) throws {
         let outputDirectory = try prepareOutputDirectory(style: style)
@@ -257,6 +282,23 @@ final class DesignAuditUITests: XCTestCase {
         return app
     }
 
+    /// 인증 재검증 시나리오용 런타임 인자로 앱을 실행합니다.
+    /// - Parameter style: 테스트에 적용할 인터페이스 스타일입니다.
+    /// - Returns: 실행 완료 후 포그라운드 상태로 진입한 `XCUIApplication` 인스턴스입니다.
+    private func launchAppForAuthRevalidation(style: InterfaceStyle = .light) -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchArguments += [
+            "-UITest.FeatureRegression", "1",
+            "-UITest.DesignAudit", "1",
+            "-UITest.SkipSplash",
+            "-UITest.AutoGuest",
+            "-UITest.InterfaceStyle", style.rawValue
+        ]
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 12), "앱이 foreground 상태로 실행되지 않았습니다.")
+        return app
+    }
+
     /// 라이벌 탭에서 로그인 유도 플로우(업그레이드 시트 -> 로그인 화면)를 처리하고 성공 여부를 반환합니다.
     private func signInFromRivalIfNeeded(
         app: XCUIApplication,
@@ -326,6 +368,127 @@ final class DesignAuditUITests: XCTestCase {
         loginButton.tap()
 
         return waitUntilGone(emailField, timeout: 10)
+    }
+
+    /// 설정 화면에서 현재 로그인 상태를 확인하고 필요 시 로그아웃까지 완료합니다.
+    /// - Parameter app: 테스트 대상 앱 인스턴스입니다.
+    private func performLogoutIfNeeded(_ app: XCUIApplication) {
+        let logoutButton = app.buttons["settings.logout"]
+        guard waitUntilExists(logoutButton, timeout: 3) else {
+            return
+        }
+        logoutButton.tap()
+        usleep(250_000)
+        let alertLogout = app.alerts.buttons["로그아웃"].firstMatch
+        if waitUntilExists(alertLogout, timeout: 3) {
+            alertLogout.tap()
+        }
+        XCTAssertTrue(
+            waitUntilExists(app.buttons["settings.open.signin"], timeout: 8),
+            "로그아웃 후 로그인 진입 버튼이 나타나지 않았습니다."
+        )
+    }
+
+    /// 현재 화면 상태에 맞춰 로그인 진입점을 탐색하고 이메일 로그인을 완료합니다.
+    /// - Parameters:
+    ///   - app: 테스트 대상 앱 인스턴스입니다.
+    ///   - credentials: 재검증에 사용할 테스트 계정 정보입니다.
+    /// - Returns: 로그인 화면 진입 및 인증 완료 시 `true`를 반환합니다.
+    private func signInFromAnyEntry(app: XCUIApplication, credentials: TestCredentials) -> Bool {
+        let signInEmailField = app.textFields["signin.email"]
+        if waitUntilExists(signInEmailField, timeout: 2) == false {
+            if tapIfExists(app.buttons["entry.openSignIn"]) {
+                usleep(250_000)
+            } else if tapIfExists(app.buttons["settings.open.signin"]) {
+                usleep(250_000)
+                if tapIfExists(app.buttons["sheet.memberUpgrade.signin"]) {
+                    usleep(300_000)
+                }
+            } else if tapIfExists(app.buttons["rival.login.start"]) {
+                usleep(250_000)
+                if tapIfExists(app.buttons["sheet.memberUpgrade.signin"]) {
+                    usleep(300_000)
+                }
+            }
+        }
+
+        if waitUntilExists(signInEmailField, timeout: 8) == false {
+            _ = tapIfExists(app.buttons["sheet.memberUpgrade.signin"])
+            _ = tapIfExists(app.buttons["entry.openSignIn"])
+            _ = tapIfExists(app.buttons["settings.open.signin"])
+        }
+
+        guard waitUntilExists(signInEmailField, timeout: 8) else {
+            return false
+        }
+        let didSignIn = performEmailLogin(app: app, credentials: credentials)
+        if didSignIn {
+            _ = waitUntilMemberState(app, timeout: 8)
+        }
+        return didSignIn
+    }
+
+    /// 라이벌 탭에서 익명 공유 시작 플로우를 실행합니다.
+    /// - Parameter app: 테스트 대상 앱 인스턴스입니다.
+    private func triggerRivalSharingStart(_ app: XCUIApplication) {
+        let stopButton = app.buttons["rival.sharing.stop"]
+        if waitUntilExists(stopButton, timeout: 2) {
+            stopButton.tap()
+            usleep(600_000)
+        }
+
+        let startButton = app.buttons["rival.sharing.start"]
+        XCTAssertTrue(waitUntilExists(startButton, timeout: 8), "익명 공유 시작 버튼을 찾지 못했습니다.")
+        startButton.tap()
+        usleep(300_000)
+
+        handleLocationPermissionAlertIfNeeded()
+
+        let consentConfirmButton = app.buttons["sheet.rival.consent.confirm"]
+        if waitUntilExists(consentConfirmButton, timeout: 5) {
+            consentConfirmButton.tap()
+            usleep(300_000)
+            return
+        }
+
+        if waitUntilExists(startButton, timeout: 3) {
+            startButton.tap()
+            usleep(300_000)
+            handleLocationPermissionAlertIfNeeded()
+            if waitUntilExists(consentConfirmButton, timeout: 5) {
+                consentConfirmButton.tap()
+                usleep(300_000)
+            }
+        }
+    }
+
+    /// 로그인 플로우 보조 캡처용 임시 디렉터리를 생성합니다.
+    /// - Returns: 스크린샷 저장 가능한 임시 URL 경로입니다.
+    private func makeTemporaryAuditOutputDirectory() -> URL {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("dogarea-auth-revalidation", isDirectory: true)
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        return directory
+    }
+
+    /// 위치 권한 시스템 알림이 표시되면 허용 버튼을 탭합니다.
+    private func handleLocationPermissionAlertIfNeeded() {
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let allowCandidates = [
+            "앱을 사용하는 동안 허용",
+            "허용",
+            "Allow While Using App",
+            "Allow Once",
+            "Allow"
+        ]
+        for title in allowCandidates {
+            let button = springboard.buttons[title]
+            if waitUntilExists(button, timeout: 1.2) {
+                button.tap()
+                usleep(300_000)
+                return
+            }
+        }
     }
 
     /// 테스트 프로세스 환경변수에서 이메일 로그인용 계정을 로드합니다.
@@ -438,6 +601,7 @@ final class DesignAuditUITests: XCTestCase {
     @discardableResult
     private func tapIfExists(_ element: XCUIElement) -> Bool {
         guard waitUntilExists(element, timeout: 1.5) else { return false }
+        guard element.isHittable else { return false }
         element.tap()
         usleep(250_000)
         return true

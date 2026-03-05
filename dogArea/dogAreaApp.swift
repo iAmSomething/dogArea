@@ -149,16 +149,14 @@ struct dogAreaApp: App {
 
         if shouldAutoGuestForUITest {
             baseRoot
-                .fullScreenCover(isPresented: $authFlow.shouldShowSignIn, content: {
-                    SignInView(
-                        allowDismiss: true,
-                        onAuthenticated: { authFlow.completeSignIn() },
-                        onDismiss: { authFlow.dismissSignIn() }
-                    )
-                })
         } else {
             baseRoot
-                .sheet(isPresented: $authFlow.shouldShowEntryChoice) {
+                .sheet(isPresented: $authFlow.shouldShowEntryChoice, onDismiss: {
+                    #if DEBUG
+                    print("[AuthFlow] dogAreaApp entryChoice onDismiss")
+                    #endif
+                    authFlow.presentDeferredSignInIfNeeded()
+                }) {
                     GuestEntryChoiceSheet(
                         onContinueAsGuest: { authFlow.continueAsGuest() },
                         onSignIn: { authFlow.chooseSignInFromEntry() }
@@ -166,13 +164,6 @@ struct dogAreaApp: App {
                     .presentationDetents([.medium])
                     .interactiveDismissDisabled(true)
                 }
-                .fullScreenCover(isPresented: $authFlow.shouldShowSignIn, content: {
-                    SignInView(
-                        allowDismiss: true,
-                        onAuthenticated: { authFlow.completeSignIn() },
-                        onDismiss: { authFlow.dismissSignIn() }
-                    )
-                })
         }
     }
 }
