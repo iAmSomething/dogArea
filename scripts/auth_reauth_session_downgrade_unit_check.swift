@@ -1,0 +1,37 @@
+import Foundation
+
+@inline(__always)
+func assertTrue(_ condition: Bool, _ message: String) {
+    if !condition {
+        fputs("FAIL: \(message)\n", stderr)
+        exit(1)
+    }
+}
+
+let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+
+func load(_ relativePath: String) -> String {
+    let data = try! Data(contentsOf: root.appendingPathComponent(relativePath))
+    return String(decoding: data, as: UTF8.self)
+}
+
+let source = load("dogArea/Source/UserdefaultSetting.swift")
+
+assertTrue(
+    source.contains("func startReauthenticationFlow()"),
+    "auth flow coordinator should expose reauthentication entrypoint"
+)
+assertTrue(
+    source.contains("authSessionStore.clearTokenSession()"),
+    "reauthentication flow should downgrade token session before presenting sign-in"
+)
+assertTrue(
+    source.contains("shouldShowSignIn = true"),
+    "reauthentication flow should present sign-in overlay"
+)
+assertTrue(
+    source.contains("onAuthenticated = nil"),
+    "reauthentication flow should clear stale post-auth completion callback"
+)
+
+print("PASS: auth reauthentication session downgrade unit checks")
