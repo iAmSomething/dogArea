@@ -1485,6 +1485,7 @@ final class AuthFlowCoordinator: ObservableObject {
     private let petSelectionStore: PetSelectionStoring
     private let walkSessionMetadataStore: WalkSessionMetadataStore
     private var onAuthenticated: (() -> Void)?
+    private var authSessionObserver: AnyCancellable?
 
     /// 인증/프로필/선호 스토어 의존성을 주입해 인증 플로우 코디네이터를 초기화합니다.
     /// - Parameters:
@@ -1502,6 +1503,11 @@ final class AuthFlowCoordinator: ObservableObject {
         self.profileStore = profileStore
         self.petSelectionStore = petSelectionStore
         self.walkSessionMetadataStore = walkSessionMetadataStore
+        bindAuthSessionSync()
+    }
+
+    deinit {
+        authSessionObserver?.cancel()
     }
 
     var sessionState: AppSessionState {
@@ -1694,6 +1700,15 @@ final class AuthFlowCoordinator: ObservableObject {
     /// - Returns: 없음. 세션 전환이 있으면 SwiftUI 갱신 트리거를 발생시킵니다.
     private func syncSessionStateSnapshot() {
         sessionStateSnapshot = AppFeatureGate.currentSession()
+    }
+
+    /// 인증 세션 변경 알림을 구독해 코디네이터 상태를 즉시 동기화합니다.
+    private func bindAuthSessionSync() {
+        authSessionObserver = NotificationCenter.default.publisher(for: .authSessionDidChange)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.refresh()
+            }
     }
 }
 
