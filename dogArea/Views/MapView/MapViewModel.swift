@@ -2073,6 +2073,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     ///   - recordedAt: 포인트 기록 시각입니다.
     ///   - source: 포인트가 추가된 입력 소스(수동/자동/워치)입니다.
     /// - Returns: 세션에 반영된 최종 포인트 모델입니다.
+    @discardableResult
     private func appendWalkPoint(from location: CLLocation, recordedAt: Date, source: PointAppendSource) -> Location {
         let pointRole = pointRole(for: source)
         let appendedPoint = Location(
