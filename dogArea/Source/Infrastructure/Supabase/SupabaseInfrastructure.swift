@@ -205,6 +205,10 @@ private extension SupabaseAuthResponseDTO {
 
 struct SupabaseHTTPClient {
     static let live = SupabaseHTTPClient()
+    private static let edgeFunctionAnonRetryAllowlist: Set<String> = [
+        "nearby-presence",
+        "upload-profile-image"
+    ]
 
     private let session: URLSession
     private let configLoader: () -> SupabaseRuntimeConfig?
@@ -282,6 +286,34 @@ struct SupabaseHTTPClient {
             throw SupabaseHTTPError.invalidResponse
         }
         guard (200..<300).contains(statusCode) else {
+            if shouldRetryWithAnonAuthorization(
+                endpoint: endpoint,
+                statusCode: statusCode,
+                usedAuthenticatedAccessToken: authorization.usedAuthenticatedAccessToken
+            ) {
+                var anonRequest = request
+                anonRequest.setValue("Bearer \(config.anonKey)", forHTTPHeaderField: "Authorization")
+                #if DEBUG
+                print("[SupabaseHTTP] retry-anon \(method.rawValue) \(url.absoluteString)")
+                #endif
+                do {
+                    let (retryData, retryResponse) = try await session.data(for: anonRequest)
+                    if let retryStatusCode = (retryResponse as? HTTPURLResponse)?.statusCode,
+                       (200..<300).contains(retryStatusCode) {
+                        #if DEBUG
+                        let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
+                        print("[SupabaseHTTP] <- \(method.rawValue) \(url.absoluteString) status=\(retryStatusCode) elapsed=\(elapsedMs)ms response=\(retryData.count)B (anon-retry)")
+                        #endif
+                        return retryData
+                    }
+                } catch {
+                    #if DEBUG
+                    let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
+                    print("[SupabaseHTTP] xx retry-anon \(method.rawValue) \(url.absoluteString) elapsed=\(elapsedMs)ms error=\(error.localizedDescription)")
+                    #endif
+                }
+            }
+
             if shouldInvalidateTokenSession(
                 statusCode: statusCode,
                 usedAuthenticatedAccessToken: authorization.usedAuthenticatedAccessToken
@@ -327,6 +359,23 @@ struct SupabaseHTTPClient {
     ) -> Bool {
         guard usedAuthenticatedAccessToken else { return false }
         return statusCode == 401 || statusCode == 403
+    }
+
+    /// 인증 토큰 호출이 401/403일 때, 서버 게이트 이슈 회피용 anon 재시도를 수행할지 판단합니다.
+    /// - Parameters:
+    ///   - endpoint: 호출 대상 Supabase 엔드포인트입니다.
+    ///   - statusCode: 1차 응답 상태 코드입니다.
+    ///   - usedAuthenticatedAccessToken: 1차 요청이 사용자 access token을 사용했는지 여부입니다.
+    /// - Returns: allowlist 함수에서만 anon 재시도를 허용하면 `true`입니다.
+    private func shouldRetryWithAnonAuthorization(
+        endpoint: SupabaseEndpoint,
+        statusCode: Int,
+        usedAuthenticatedAccessToken: Bool
+    ) -> Bool {
+        guard usedAuthenticatedAccessToken else { return false }
+        guard statusCode == 401 || statusCode == 403 else { return false }
+        guard case .function(let functionName) = endpoint else { return false }
+        return Self.edgeFunctionAnonRetryAllowlist.contains(functionName)
     }
 
     /// 저장된 access token의 유효성을 확인하고 필요 시 refresh를 수행합니다.
