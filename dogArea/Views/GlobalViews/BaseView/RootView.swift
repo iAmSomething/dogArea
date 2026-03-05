@@ -32,6 +32,9 @@ struct RootView: View {
     private var homeView = HomeView()
     private var walkListView = WalkListView()
     private var notificationCenterView = NotificationCenterView()
+    private var isAuthenticationOverlayActive: Bool {
+        authFlow.shouldShowSignIn || authFlow.shouldShowEntryChoice
+    }
 
     /// UI 테스트 디자인 감사 모드에서는 기본 진입 탭을 홈으로 고정해 초기 렌더링 안정성을 높입니다.
     private static func initialSelectedTabForRuntime() -> Int {
@@ -115,6 +118,13 @@ struct RootView: View {
             .onOpenURL { url in
                 routeWidgetDeepLinkIfNeeded(url)
             }
+            .onChange(of: isAuthenticationOverlayActive) { _, isPresented in
+                if isPresented {
+                    mapViewModelStore.suspendForAuthenticationOverlay()
+                } else if selectedTab == 2 {
+                    mapViewModelStore.prepareIfNeeded()
+                }
+            }
 
     }
 
@@ -137,18 +147,24 @@ struct RootView: View {
         } else if selectedTab == 2 {
             NavigationView {
                 Group {
-                    if let mapViewModel = mapViewModelStore.mapViewModel {
-                        MapView(viewModel: mapViewModel)
-                            .environmentObject(loading)
-                            .accessibilityIdentifier("screen.map")
+                    if isAuthenticationOverlayActive {
+                        Color.appTabScaffoldBackground
+                            .ignoresSafeArea()
+                            .accessibilityIdentifier("screen.map.suspended")
                     } else {
-                        ProgressView("지도 준비 중...")
-                            .font(.appFont(for: .Regular, size: 14))
-                            .foregroundStyle(Color.appTextDarkGray)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .onAppear {
-                                mapViewModelStore.prepareIfNeeded()
-                            }
+                        if let mapViewModel = mapViewModelStore.mapViewModel {
+                            MapView(viewModel: mapViewModel)
+                                .environmentObject(loading)
+                                .accessibilityIdentifier("screen.map")
+                        } else {
+                            ProgressView("지도 준비 중...")
+                                .font(.appFont(for: .Regular, size: 14))
+                                .foregroundStyle(Color.appTextDarkGray)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .onAppear {
+                                    mapViewModelStore.prepareIfNeeded()
+                                }
+                        }
                     }
                 }
                 .navigationBarHidden(selectedTab == 2)
@@ -329,6 +345,11 @@ private final class MapViewModelStore: ObservableObject {
     func prepareIfNeeded() {
         guard mapViewModel == nil else { return }
         mapViewModel = MapViewModel()
+    }
+
+    /// 인증 오버레이가 보이는 동안 Metal 렌더 경합을 막기 위해 지도 ViewModel을 해제합니다.
+    func suspendForAuthenticationOverlay() {
+        mapViewModel = nil
     }
 }
 
