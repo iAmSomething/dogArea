@@ -264,11 +264,8 @@ private enum MapCoreLocationCallTracer {
         lock.unlock()
 
         guard elapsed >= 0.95 else { return }
-        if summary.isEmpty {
-            print("[CoreLocationTrace][Map][1s] idle")
-        } else {
-            print("[CoreLocationTrace][Map][1s] \(summary)")
-        }
+        guard summary.isEmpty == false else { return }
+        print("[CoreLocationTrace][Map][1s] \(summary)")
     }
 }
 
