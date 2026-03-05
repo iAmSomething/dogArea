@@ -76,6 +76,7 @@ final class SettingViewModel: ObservableObject {
         self.authSessionStore = authSessionStore
         self.walkRepository = walkRepository
         bindSelectedPetSync()
+        bindAuthSessionSync()
         fetchModel()
         reloadUserInfo()
     }
@@ -385,6 +386,28 @@ final class SettingViewModel: ObservableObject {
                 self?.reloadUserInfo()
             }
             .store(in: &cancellables)
+    }
+
+    /// 인증 세션 변경 알림을 구독해 설정 화면 상태를 현재 세션과 즉시 동기화합니다.
+    private func bindAuthSessionSync() {
+        NotificationCenter.default.publisher(for: .authSessionDidChange)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.handleAuthSessionDidChange()
+            }
+            .store(in: &cancellables)
+    }
+
+    /// 세션 유효성에 따라 설정 화면 캐시를 갱신/정리합니다.
+    private func handleAuthSessionDidChange() {
+        guard authSessionStore.currentTokenSession() != nil else {
+            userInfo = nil
+            selectedPet = nil
+            selectedPetId = ""
+            seasonProfileSummary = nil
+            return
+        }
+        reloadUserInfo()
     }
 
     private func reloadSeasonProfileSummary() {
