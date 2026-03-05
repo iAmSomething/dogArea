@@ -428,7 +428,9 @@ struct SupabaseHTTPClient {
     ) async -> UnauthorizedRetryRecoveryResult? {
         guard usedAuthenticatedAccessToken else { return nil }
         guard statusCode == 401 || statusCode == 403 else { return nil }
-        guard case .function = endpoint else { return nil }
+        if case .auth = endpoint {
+            return nil
+        }
         guard let currentSession = authSessionStore.currentTokenSession(),
               currentSession.refreshToken.isEmpty == false else {
             return nil

@@ -17,6 +17,10 @@ assertTrue(
     "http client should define unauthorized recovery helper"
 )
 assertTrue(
+    infra.contains("if case .auth = endpoint"),
+    "unauthorized recovery helper should skip auth endpoints and handle non-auth endpoints"
+)
+assertTrue(
     infra.contains("shouldPreferAnonymousAuthorizationForEndpoint(endpoint)"),
     "http client should select anon authorization first for edge-function allowlist endpoints"
 )
