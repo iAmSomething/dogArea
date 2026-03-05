@@ -3271,26 +3271,6 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         ]
         try? watchSession.updateApplicationContext(context)
     }
-    private func applyWatchAction(_ action: String) {
-        switch action {
-        case "startWalk":
-            if !isWalking {
-                endWalk()
-            }
-        case "addPoint":
-            if isWalking {
-                addLocation()
-                makePolygon()
-            }
-        case "endWalk":
-            if isWalking {
-                timerStop()
-                endWalk()
-            }
-        default:
-            break
-        }
-    }
 
     private func fetchNearbyHotspots(center: CLLocationCoordinate2D) {
         let userId = currentPresenceUserId()
