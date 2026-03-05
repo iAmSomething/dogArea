@@ -21,6 +21,7 @@ struct RootView: View {
     @StateObject var loading: LoadingViewModel = LoadingViewModel()
     @State private var selectedTab = RootView.initialSelectedTabForRuntime()
     @State private var tabbarHidden = false
+    @State private var pendingWalkWidgetRoute: WalkWidgetActionRoute? = nil
     @StateObject var tabStatus = TabAppear.shared
     @StateObject private var mapViewModelStore = MapViewModelStore()
     private let widgetActionStore: WalkWidgetActionRequestStoring = DefaultWalkWidgetActionRequestStore.shared
@@ -121,9 +122,12 @@ struct RootView: View {
             .onChange(of: isAuthenticationOverlayActive) { _, isPresented in
                 if isPresented {
                     mapViewModelStore.suspendForAuthenticationOverlay()
-                } else if selectedTab == 2 {
+                    return
+                }
+                if selectedTab == 2 {
                     mapViewModelStore.prepareIfNeeded()
                 }
+                dispatchPendingWalkWidgetActionIfNeeded()
             }
 
     }
@@ -219,6 +223,12 @@ struct RootView: View {
     /// 산책 관련 위젯 액션을 지도 탭으로 전달합니다.
     /// - Parameter route: 지도 화면에서 처리할 위젯 액션 라우트입니다.
     private func dispatchWalkWidgetAction(_ route: WalkWidgetActionRoute) {
+        if isAuthenticationOverlayActive {
+            pendingWalkWidgetRoute = route
+            selectedTab = 2
+            return
+        }
+        pendingWalkWidgetRoute = nil
         mapViewModelStore.prepareIfNeeded()
         selectedTab = 2
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
@@ -233,6 +243,12 @@ struct RootView: View {
                 ]
             )
         }
+    }
+
+    /// 인증 오버레이 해제 후 대기 중인 위젯 산책 액션이 있으면 즉시 재처리합니다.
+    private func dispatchPendingWalkWidgetActionIfNeeded() {
+        guard let pendingWalkWidgetRoute else { return }
+        dispatchWalkWidgetAction(pendingWalkWidgetRoute)
     }
 
     /// 위젯 보상 수령 액션을 멱등 요청으로 처리하고 스냅샷 상태를 갱신합니다.
