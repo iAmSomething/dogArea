@@ -23,12 +23,16 @@ assertTrue(
     "retryable refresh failure should keep current access token instead of anon fallback"
 )
 assertTrue(
-    infra.contains("terminal-failure: preserve local session and request re-auth lazily"),
-    "terminal refresh failure should avoid immediate local logout"
+    infra.contains("refresh terminal-failure: clear token session and require re-auth"),
+    "terminal refresh failure should clear local token session and force re-auth"
 )
 assertTrue(
     infra.contains("return current.accessToken"),
     "validAccessToken should return current access token on retryable refresh failure"
+)
+assertTrue(
+    infra.contains("authSessionStore.clearTokenSession()"),
+    "terminal refresh failure path should clear token session"
 )
 assertTrue(
     infra.contains("return .retryableFailure") && infra.contains("decode-failed"),

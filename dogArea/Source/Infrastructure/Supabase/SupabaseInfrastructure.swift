@@ -255,7 +255,8 @@ struct SupabaseHTTPClient {
         request.httpMethod = method.rawValue
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(config.anonKey, forHTTPHeaderField: "apikey")
-        request.setValue(await authorizationHeaderValue(config: config), forHTTPHeaderField: "Authorization")
+        let authorization = await resolvedAuthorizationHeader(config: config)
+        request.setValue(authorization.headerValue, forHTTPHeaderField: "Authorization")
         request.httpBody = bodyData
         let startedAt = Date()
         #if DEBUG
@@ -281,6 +282,15 @@ struct SupabaseHTTPClient {
             throw SupabaseHTTPError.invalidResponse
         }
         guard (200..<300).contains(statusCode) else {
+            if shouldInvalidateTokenSession(
+                statusCode: statusCode,
+                usedAuthenticatedAccessToken: authorization.usedAuthenticatedAccessToken
+            ) {
+                authSessionStore.clearTokenSession()
+                #if DEBUG
+                print("[SupabaseAuth] invalidate local token session from response status=\(statusCode)")
+                #endif
+            }
             #if DEBUG
             let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
             print("[SupabaseHTTP] <- \(method.rawValue) \(url.absoluteString) status=\(statusCode) elapsed=\(elapsedMs)ms response=\(data.count)B")
@@ -296,12 +306,27 @@ struct SupabaseHTTPClient {
 
     /// 현재 저장된 사용자 세션을 기준으로 Authorization 헤더 값을 계산합니다.
     /// - Parameter config: Supabase 런타임 기본 구성입니다.
-    /// - Returns: 사용자 토큰이 유효하면 사용자 Bearer, 아니면 anon Bearer 값을 반환합니다.
-    private func authorizationHeaderValue(config: SupabaseRuntimeConfig) async -> String {
+    /// - Returns: 헤더 값과 사용자 토큰 사용 여부 튜플을 반환합니다.
+    private func resolvedAuthorizationHeader(
+        config: SupabaseRuntimeConfig
+    ) async -> (headerValue: String, usedAuthenticatedAccessToken: Bool) {
         guard let accessToken = await validAccessToken(config: config) else {
-            return "Bearer \(config.anonKey)"
+            return ("Bearer \(config.anonKey)", false)
         }
-        return "Bearer \(accessToken)"
+        return ("Bearer \(accessToken)", true)
+    }
+
+    /// 인증 토큰으로 호출한 요청이 401/403을 반환했는지 판정해 세션 무효화 여부를 결정합니다.
+    /// - Parameters:
+    ///   - statusCode: 응답 HTTP 상태 코드입니다.
+    ///   - usedAuthenticatedAccessToken: 해당 요청이 사용자 access token으로 호출됐는지 여부입니다.
+    /// - Returns: 사용자 토큰 호출에서 401/403 응답이면 `true`입니다.
+    private func shouldInvalidateTokenSession(
+        statusCode: Int,
+        usedAuthenticatedAccessToken: Bool
+    ) -> Bool {
+        guard usedAuthenticatedAccessToken else { return false }
+        return statusCode == 401 || statusCode == 403
     }
 
     /// 저장된 access token의 유효성을 확인하고 필요 시 refresh를 수행합니다.
@@ -349,15 +374,16 @@ struct SupabaseHTTPClient {
             #endif
             return current.accessToken
         case .terminalFailure:
+            authSessionStore.clearTokenSession()
             metricTracker.track(
                 .syncAuthRefreshFailed,
                 userKey: currentIdentityUserId(),
-                payload: ["reason": "terminal_failure_deferred"]
+                payload: ["reason": "terminal_failure_cleared"]
             )
             #if DEBUG
-            print("[SupabaseAuth] refresh terminal-failure: preserve local session and request re-auth lazily")
+            print("[SupabaseAuth] refresh terminal-failure: clear token session and require re-auth")
             #endif
-            return current.accessToken
+            return nil
         }
     }
 
