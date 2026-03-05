@@ -3263,10 +3263,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             }
             return
         }
-        guard let watchSession else { return }
-        #if os(iOS)
-        guard watchSession.isWatchAppInstalled else { return }
-        #endif
+        guard let watchSession = resolveWatchContextSession(updateStatusText: false) else { return }
         let context: [String: Any] = [
             "isWalking": isWalking,
             "time": time,
@@ -3841,6 +3838,43 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         self.syncWatchContext(force: true)
     }
 
+    /// 워치 컨텍스트 업데이트 가능 상태를 확인하고 사용 가능한 세션을 반환합니다.
+    /// - Parameter updateStatusText: 게이트 실패 시 `watchSyncStatusText`를 즉시 갱신할지 여부입니다.
+    /// - Returns: 업데이트 가능하면 활성화된 `WCSession`, 불가능하면 `nil`입니다.
+    private func resolveWatchContextSession(updateStatusText: Bool) -> WCSession? {
+        guard let watchSession else {
+            if updateStatusText, watchSyncStatusText != "워치 연결 미지원" {
+                watchSyncStatusText = "워치 연결 미지원"
+            }
+            return nil
+        }
+
+        guard watchSession.activationState == .activated else {
+            if updateStatusText, watchSyncStatusText != "워치 연결 대기" {
+                watchSyncStatusText = "워치 연결 대기"
+            }
+            return nil
+        }
+
+        #if os(iOS)
+        guard watchSession.isPaired else {
+            if updateStatusText, watchSyncStatusText != "워치 미페어링" {
+                watchSyncStatusText = "워치 미페어링"
+            }
+            return nil
+        }
+
+        guard watchSession.isWatchAppInstalled else {
+            if updateStatusText, watchSyncStatusText != "워치 앱 미설치" {
+                watchSyncStatusText = "워치 앱 미설치"
+            }
+            return nil
+        }
+        #endif
+
+        return watchSession
+    }
+
     private func syncWatchContext(force: Bool = false) {
         if Thread.isMainThread == false {
             DispatchQueue.main.async { [weak self] in
@@ -3848,15 +3882,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             }
             return
         }
-        guard let watchSession, watchSession.activationState == .activated else { return }
-        #if os(iOS)
-        guard watchSession.isWatchAppInstalled else {
-            if watchSyncStatusText != "워치 앱 미설치" {
-                watchSyncStatusText = "워치 앱 미설치"
-            }
-            return
-        }
-        #endif
+        guard let watchSession = resolveWatchContextSession(updateStatusText: true) else { return }
 
         let now = Date()
         if force == false, now.timeIntervalSince(lastWatchContextSyncAt) < 1.0 {
