@@ -146,9 +146,6 @@ struct dogAreaApp: App {
             .onReceive(NotificationCenter.default.publisher(for: .authSessionDidChange)) { _ in
                 authFlow.refresh()
             }
-            .onReceive(NotificationCenter.default.publisher(for: .authSessionExpired)) { _ in
-                authFlow.handleSessionExpired()
-            }
 
         if shouldAutoGuestForUITest {
             baseRoot

@@ -23,6 +23,10 @@ assertTrue(
     "retryable refresh failure should keep current access token instead of anon fallback"
 )
 assertTrue(
+    infra.contains("terminal-failure: preserve local session and request re-auth lazily"),
+    "terminal refresh failure should avoid immediate local logout"
+)
+assertTrue(
     infra.contains("return current.accessToken"),
     "validAccessToken should return current access token on retryable refresh failure"
 )
@@ -40,7 +44,7 @@ assertTrue(
 )
 assertTrue(
     infra.contains("if normalized.contains(\"invalid_grant\") { return true }"),
-    "invalid_grant should remain terminal and clear session"
+    "invalid_grant should remain terminal for refresh classification"
 )
 
 print("PASS: auth refresh resilience unit checks")

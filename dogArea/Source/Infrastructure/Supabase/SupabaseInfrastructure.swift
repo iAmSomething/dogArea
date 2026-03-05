@@ -332,11 +332,12 @@ struct SupabaseHTTPClient {
             metricTracker.track(
                 .syncAuthRefreshFailed,
                 userKey: refreshed.identity.userId,
-                payload: ["reason": "missing_token_session"]
+                payload: ["reason": "missing_token_session_soft_fail"]
             )
-            authSessionStore.clearTokenSession()
-            notifyAuthSessionExpired(reason: "missing_token_session")
-            return nil
+            #if DEBUG
+            print("[SupabaseAuth] refresh missing token_session: keep current access token and request re-auth lazily")
+            #endif
+            return current.accessToken
         case .retryableFailure:
             metricTracker.track(
                 .syncAuthRefreshFailed,
@@ -351,11 +352,12 @@ struct SupabaseHTTPClient {
             metricTracker.track(
                 .syncAuthRefreshFailed,
                 userKey: currentIdentityUserId(),
-                payload: ["reason": "terminal_failure"]
+                payload: ["reason": "terminal_failure_deferred"]
             )
-            authSessionStore.clearTokenSession()
-            notifyAuthSessionExpired(reason: "terminal_failure")
-            return nil
+            #if DEBUG
+            print("[SupabaseAuth] refresh terminal-failure: preserve local session and request re-auth lazily")
+            #endif
+            return current.accessToken
         }
     }
 
@@ -363,19 +365,6 @@ struct SupabaseHTTPClient {
     /// - Returns: 로컬에 사용자 식별자가 있으면 해당 userId, 없으면 `nil`입니다.
     private func currentIdentityUserId() -> String? {
         authSessionStore.currentIdentity()?.userId
-    }
-
-    /// 인증 토큰을 더 이상 복구할 수 없는 상태를 앱 전역에 브로드캐스트합니다.
-    /// - Parameter reason: 세션 만료로 판정된 내부 원인 식별자입니다.
-    private func notifyAuthSessionExpired(reason: String) {
-        NotificationCenter.default.post(
-            name: .authSessionExpired,
-            object: self,
-            userInfo: ["reason": reason]
-        )
-        #if DEBUG
-        print("[SupabaseAuth] session-expired reason=\(reason)")
-        #endif
     }
 
     /// refresh token으로 새 세션 토큰을 발급받고 사용자 식별 정보를 복원합니다.
