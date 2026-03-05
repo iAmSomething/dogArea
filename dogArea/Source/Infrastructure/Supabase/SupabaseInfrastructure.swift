@@ -335,6 +335,7 @@ struct SupabaseHTTPClient {
                 payload: ["reason": "missing_token_session"]
             )
             authSessionStore.clearTokenSession()
+            notifyAuthSessionExpired(reason: "missing_token_session")
             return nil
         case .retryableFailure:
             metricTracker.track(
@@ -342,7 +343,10 @@ struct SupabaseHTTPClient {
                 userKey: currentIdentityUserId(),
                 payload: ["reason": "retryable_failure"]
             )
-            return nil
+            #if DEBUG
+            print("[SupabaseAuth] refresh retryable-failure: keep current access token for next retry window")
+            #endif
+            return current.accessToken
         case .terminalFailure:
             metricTracker.track(
                 .syncAuthRefreshFailed,
@@ -350,6 +354,7 @@ struct SupabaseHTTPClient {
                 payload: ["reason": "terminal_failure"]
             )
             authSessionStore.clearTokenSession()
+            notifyAuthSessionExpired(reason: "terminal_failure")
             return nil
         }
     }
@@ -358,6 +363,19 @@ struct SupabaseHTTPClient {
     /// - Returns: 로컬에 사용자 식별자가 있으면 해당 userId, 없으면 `nil`입니다.
     private func currentIdentityUserId() -> String? {
         authSessionStore.currentIdentity()?.userId
+    }
+
+    /// 인증 토큰을 더 이상 복구할 수 없는 상태를 앱 전역에 브로드캐스트합니다.
+    /// - Parameter reason: 세션 만료로 판정된 내부 원인 식별자입니다.
+    private func notifyAuthSessionExpired(reason: String) {
+        NotificationCenter.default.post(
+            name: .authSessionExpired,
+            object: self,
+            userInfo: ["reason": reason]
+        )
+        #if DEBUG
+        print("[SupabaseAuth] session-expired reason=\(reason)")
+        #endif
     }
 
     /// refresh token으로 새 세션 토큰을 발급받고 사용자 식별 정보를 복원합니다.
@@ -384,11 +402,21 @@ struct SupabaseHTTPClient {
         print("[SupabaseAuth] -> POST refresh-token")
         #endif
 
-        guard let (data, response) = try? await session.data(for: request),
-              let statusCode = (response as? HTTPURLResponse)?.statusCode else {
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch {
             #if DEBUG
             let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
-            print("[SupabaseAuth] xx refresh-token elapsed=\(elapsedMs)ms request-failed")
+            print("[SupabaseAuth] xx refresh-token elapsed=\(elapsedMs)ms request-failed error=\(error.localizedDescription)")
+            #endif
+            return .retryableFailure
+        }
+        guard let statusCode = (response as? HTTPURLResponse)?.statusCode else {
+            #if DEBUG
+            let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
+            print("[SupabaseAuth] xx refresh-token elapsed=\(elapsedMs)ms invalid-response")
             #endif
             return .retryableFailure
         }
@@ -398,7 +426,7 @@ struct SupabaseHTTPClient {
             let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
             print("[SupabaseAuth] <- refresh-token status=\(statusCode) elapsed=\(elapsedMs)ms")
             #endif
-            if statusCode == 400 || statusCode == 401 {
+            if isTerminalRefreshFailure(statusCode: statusCode, data: data) {
                 return .terminalFailure
             }
             return .retryableFailure
@@ -413,13 +441,49 @@ struct SupabaseHTTPClient {
             let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
             print("[SupabaseAuth] xx refresh-token decode-failed elapsed=\(elapsedMs)ms")
             #endif
-            return .terminalFailure
+            return .retryableFailure
         }
         #if DEBUG
         let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
         print("[SupabaseAuth] <- refresh-token status=200 elapsed=\(elapsedMs)ms")
         #endif
         return .success(credential)
+    }
+
+    /// 토큰 refresh 실패 응답이 즉시 로그아웃해야 하는 종단 오류인지 판정합니다.
+    /// - Parameters:
+    ///   - statusCode: refresh 엔드포인트 HTTP 상태 코드입니다.
+    ///   - data: 실패 응답 바디 데이터입니다.
+    /// - Returns: refresh token 무효/폐기 계열이면 `true`, 네트워크·일시 오류 성격이면 `false`입니다.
+    private func isTerminalRefreshFailure(statusCode: Int, data: Data) -> Bool {
+        guard statusCode == 400 || statusCode == 401 else {
+            return false
+        }
+        let normalized = refreshFailureMessage(from: data)
+        guard normalized.isEmpty == false else {
+            return false
+        }
+        if normalized.contains("invalid_grant") { return true }
+        if normalized.contains("refresh token") && normalized.contains("invalid") { return true }
+        if normalized.contains("refresh token") && normalized.contains("expired") { return true }
+        if normalized.contains("refresh token") && normalized.contains("not found") { return true }
+        return false
+    }
+
+    /// refresh 실패 응답 바디를 소문자 비교용 문자열로 정규화합니다.
+    /// - Parameter data: refresh 엔드포인트 실패 응답 바디 데이터입니다.
+    /// - Returns: `error_code/message/error_description` 우선순위로 추출한 정규화 문자열입니다.
+    private func refreshFailureMessage(from data: Data) -> String {
+        guard let decoded = try? JSONDecoder().decode(SupabaseAuthResponseDTO.self, from: data) else {
+            return ""
+        }
+        let message = decoded.errorCode
+            ?? decoded.errorDescription
+            ?? decoded.error
+            ?? decoded.message
+            ?? decoded.msg
+            ?? ""
+        return message.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 }
 
