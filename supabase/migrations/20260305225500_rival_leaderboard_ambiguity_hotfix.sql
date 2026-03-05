@@ -1,0 +1,245 @@
+-- #364 hotfix: resolve ambiguous output-variable collision in rpc_get_rival_leaderboard
+
+create or replace function public.rpc_get_rival_leaderboard(
+  in_period_type text default 'week',
+  in_top_n integer default 50,
+  in_now_ts timestamptz default now()
+)
+returns table (
+  period_type text,
+  period_start timestamptz,
+  period_end timestamptz,
+  season_key text,
+  rank_position integer,
+  user_key text,
+  alias_code text,
+  avatar_seed text,
+  league text,
+  effective_league text,
+  fallback_applied boolean,
+  score_bucket text,
+  is_me boolean
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+#variable_conflict use_column
+declare
+  requester_uid uuid;
+  normalized_period text := lower(coalesce(in_period_type, 'week'));
+  limited_top_n integer := greatest(1, least(coalesce(in_top_n, 50), 200));
+  v_period_start timestamptz;
+  v_period_end timestamptz;
+  v_season_id uuid;
+  v_season_key text;
+  run_row public.season_runs%rowtype;
+  policy_row public.rival_league_policies%rowtype;
+begin
+  requester_uid := auth.uid();
+
+  if normalized_period not in ('day', 'week', 'season') then
+    raise exception 'invalid period_type: %', normalized_period;
+  end if;
+
+  select *
+  into policy_row
+  from public.rival_league_policies
+  where policy_key = 'rival_league_v1'
+  limit 1;
+
+  if normalized_period = 'day' then
+    v_period_start := date_trunc('day', in_now_ts);
+    v_period_end := v_period_start + interval '1 day';
+    v_season_key := 'daily_' || to_char(v_period_start, 'YYYYMMDD');
+  elsif normalized_period = 'week' then
+    v_period_start := date_trunc('week', in_now_ts);
+    v_period_end := v_period_start + interval '7 days';
+    v_season_key := 'weekly_' || to_char(v_period_start, 'YYYYMMDD');
+  else
+    select *
+    into run_row
+    from public.season_runs sr
+    order by
+      case sr.status
+        when 'active' then 1
+        when 'settling' then 2
+        else 3
+      end,
+      sr.week_start desc
+    limit 1;
+
+    if run_row.id is null then
+      v_period_start := date_trunc('week', in_now_ts);
+      v_period_end := v_period_start + interval '7 days';
+      v_season_key := 'weekly_' || to_char(v_period_start, 'YYYYMMDD');
+      normalized_period := 'week';
+    else
+      v_period_start := run_row.week_start::timestamptz;
+      v_period_end := run_row.week_end::timestamptz;
+      v_season_id := run_row.id;
+      v_season_key := run_row.season_key;
+    end if;
+  end if;
+
+  return query
+  with raw_scores as (
+    select
+      ws.owner_user_id as user_id,
+      sum(
+        (ws.duration_sec::double precision / 60.0) * coalesce(policy_row.duration_weight, 0.6) +
+        (ws.area_m2::double precision / 10000.0) * coalesce(policy_row.area_weight, 0.4)
+      )::double precision as raw_score
+    from public.walk_sessions ws
+    where normalized_period in ('day', 'week')
+      and ws.started_at >= v_period_start
+      and ws.started_at < v_period_end
+    group by ws.owner_user_id
+
+    union all
+
+    select
+      sus.owner_user_id as user_id,
+      sus.total_score::double precision as raw_score
+    from public.season_user_scores sus
+    where normalized_period = 'season'
+      and v_season_id is not null
+      and sus.season_id = v_season_id
+  ),
+  merged_scores as (
+    select
+      r.user_id,
+      sum(r.raw_score)::double precision as raw_score
+    from raw_scores r
+    group by r.user_id
+  ),
+  latest_assignments as (
+    select distinct on (a.user_id)
+      a.user_id,
+      a.league,
+      a.effective_league,
+      a.fallback_applied
+    from public.rival_league_assignments a
+    order by a.user_id, a.snapshot_week_start desc, a.updated_at desc
+  ),
+  suspicious_users as (
+    select
+      l.owner_user_id as user_id,
+      count(*)::int as blocked_count
+    from public.season_score_audit_logs l
+    where l.blocked = true
+      and l.created_at >= in_now_ts - interval '14 days'
+    group by l.owner_user_id
+  ),
+  excluded_candidates as (
+    select
+      m.user_id,
+      s.blocked_count
+    from merged_scores m
+    join suspicious_users s on s.user_id = m.user_id
+  ),
+  audit_upsert as (
+    insert into public.rival_abuse_audit_logs (
+      user_id,
+      period_type,
+      period_start,
+      period_end,
+      reason,
+      source_count,
+      payload,
+      created_at
+    )
+    select
+      e.user_id,
+      normalized_period,
+      v_period_start,
+      v_period_end,
+      'blocked_by_season_audit',
+      e.blocked_count,
+      jsonb_build_object(
+        'source', 'season_score_audit_logs',
+        'blocked_count', e.blocked_count
+      ),
+      in_now_ts
+    from excluded_candidates e
+    on conflict (user_id, period_type, period_start, reason)
+    do update set
+      source_count = excluded.source_count,
+      payload = excluded.payload,
+      created_at = excluded.created_at
+    returning 1
+  ),
+  eligible as (
+    select
+      m.user_id,
+      m.raw_score,
+      coalesce(a.league, 'onboarding') as league,
+      coalesce(a.effective_league, 'onboarding') as effective_league,
+      coalesce(a.fallback_applied, false) as fallback_applied
+    from merged_scores m
+    left join latest_assignments a on a.user_id = m.user_id
+    where not exists (
+      select 1
+      from suspicious_users s
+      where s.user_id = m.user_id
+    )
+  ),
+  ranked as (
+    select
+      e.*,
+      row_number() over (order by e.raw_score desc, e.user_id) as rank_position
+    from eligible e
+  ),
+  top_rows as (
+    select *
+    from ranked
+    order by rank_position
+    limit limited_top_n
+  ),
+  alias_upsert as (
+    insert into public.rival_alias_profiles (
+      user_id,
+      season_key,
+      alias_code,
+      avatar_seed,
+      rotated_at,
+      created_at,
+      updated_at
+    )
+    select
+      t.user_id,
+      v_season_key,
+      'R-' || upper(substr(md5(t.user_id::text || ':' || v_season_key), 1, 6)),
+      substr(md5('avatar:' || t.user_id::text || ':' || v_season_key), 1, 12),
+      in_now_ts,
+      in_now_ts,
+      in_now_ts
+    from top_rows t
+    on conflict (user_id) do update set
+      season_key = excluded.season_key,
+      alias_code = excluded.alias_code,
+      avatar_seed = excluded.avatar_seed,
+      rotated_at = excluded.rotated_at,
+      updated_at = in_now_ts
+    where public.rival_alias_profiles.season_key is distinct from excluded.season_key
+    returning user_id
+  )
+  select
+    normalized_period as period_type,
+    v_period_start as period_start,
+    v_period_end as period_end,
+    v_season_key as season_key,
+    t.rank_position,
+    md5(t.user_id::text) as user_key,
+    coalesce(ap.alias_code, 'R-' || upper(substr(md5(t.user_id::text || ':' || v_season_key), 1, 6))) as alias_code,
+    coalesce(ap.avatar_seed, substr(md5('avatar:' || t.user_id::text || ':' || v_season_key), 1, 12)) as avatar_seed,
+    t.league,
+    t.effective_league,
+    t.fallback_applied,
+    public.rival_score_bucket(t.raw_score) as score_bucket,
+    (requester_uid is not null and t.user_id = requester_uid) as is_me
+  from top_rows t
+  left join public.rival_alias_profiles ap on ap.user_id = t.user_id
+  order by t.rank_position asc;
+end;
+$$;
