@@ -88,6 +88,7 @@ swift scripts/map_area_calculation_service_unit_check.swift
 swift scripts/map_log_unreachable_cleanup_unit_check.swift
 swift scripts/map_append_walk_point_discardable_unit_check.swift
 swift scripts/map_auth_session_sync_unit_check.swift
+swift scripts/corelocation_trace_idle_log_suppression_unit_check.swift
 swift scripts/live_presence_uplink_policy_unit_check.swift
 swift scripts/sync_walk_404_policy_unit_check.swift
 swift scripts/feature_control_404_cooldown_unit_check.swift

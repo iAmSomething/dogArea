@@ -73,11 +73,8 @@ private enum RivalCoreLocationCallTracer {
         lock.unlock()
 
         guard elapsed >= 0.95 else { return }
-        if summary.isEmpty {
-            print("[CoreLocationTrace][Rival][1s] idle")
-        } else {
-            print("[CoreLocationTrace][Rival][1s] \(summary)")
-        }
+        guard summary.isEmpty == false else { return }
+        print("[CoreLocationTrace][Rival][1s] \(summary)")
     }
 }
 
