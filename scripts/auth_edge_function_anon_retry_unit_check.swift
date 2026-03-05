@@ -22,8 +22,10 @@ assertTrue(
     "http client should define allowlist for anon fallback retry"
 )
 assertTrue(
-    infra.contains("\"nearby-presence\"") && infra.contains("\"upload-profile-image\""),
-    "anon fallback allowlist should include nearby-presence and upload-profile-image"
+    infra.contains("\"feature-control\"")
+        && infra.contains("\"nearby-presence\"")
+        && infra.contains("\"upload-profile-image\""),
+    "anon fallback allowlist should include feature-control, nearby-presence and upload-profile-image"
 )
 assertTrue(
     infra.contains("private func shouldRetryWithAnonAuthorization("),

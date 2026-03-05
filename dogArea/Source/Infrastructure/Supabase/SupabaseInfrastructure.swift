@@ -206,9 +206,16 @@ private extension SupabaseAuthResponseDTO {
 struct SupabaseHTTPClient {
     static let live = SupabaseHTTPClient()
     private static let edgeFunctionAnonRetryAllowlist: Set<String> = [
+        "feature-control",
         "nearby-presence",
         "upload-profile-image"
     ]
+
+    private enum AccessTokenValidationState {
+        case valid
+        case invalid
+        case inconclusive
+    }
 
     private let session: URLSession
     private let configLoader: () -> SupabaseRuntimeConfig?
@@ -314,9 +321,12 @@ struct SupabaseHTTPClient {
                 }
             }
 
-            if shouldInvalidateTokenSession(
+            if await shouldInvalidateTokenSession(
                 statusCode: statusCode,
-                usedAuthenticatedAccessToken: authorization.usedAuthenticatedAccessToken
+                endpoint: endpoint,
+                usedAuthenticatedAccessToken: authorization.usedAuthenticatedAccessToken,
+                accessToken: authorization.accessToken,
+                config: config
             ) {
                 authSessionStore.clearTokenSession()
                 #if DEBUG
@@ -338,27 +348,61 @@ struct SupabaseHTTPClient {
 
     /// 현재 저장된 사용자 세션을 기준으로 Authorization 헤더 값을 계산합니다.
     /// - Parameter config: Supabase 런타임 기본 구성입니다.
-    /// - Returns: 헤더 값과 사용자 토큰 사용 여부 튜플을 반환합니다.
+    /// - Returns: 헤더 값, 사용자 토큰 사용 여부, 실제 access token을 포함한 인증 컨텍스트입니다.
     private func resolvedAuthorizationHeader(
         config: SupabaseRuntimeConfig
-    ) async -> (headerValue: String, usedAuthenticatedAccessToken: Bool) {
+    ) async -> (
+        headerValue: String,
+        usedAuthenticatedAccessToken: Bool,
+        accessToken: String?
+    ) {
         guard let accessToken = await validAccessToken(config: config) else {
-            return ("Bearer \(config.anonKey)", false)
+            return ("Bearer \(config.anonKey)", false, nil)
         }
-        return ("Bearer \(accessToken)", true)
+        return ("Bearer \(accessToken)", true, accessToken)
     }
 
     /// 인증 토큰으로 호출한 요청이 401/403을 반환했는지 판정해 세션 무효화 여부를 결정합니다.
     /// - Parameters:
     ///   - statusCode: 응답 HTTP 상태 코드입니다.
+    ///   - endpoint: 인증 실패가 발생한 Supabase 엔드포인트입니다.
     ///   - usedAuthenticatedAccessToken: 해당 요청이 사용자 access token으로 호출됐는지 여부입니다.
-    /// - Returns: 사용자 토큰 호출에서 401/403 응답이면 `true`입니다.
+    ///   - accessToken: 해당 요청에 사용한 사용자 access token 문자열입니다.
+    ///   - config: Supabase 런타임 기본 구성입니다.
+    /// - Returns: 토큰이 실제 만료/무효로 판정되면 `true`, 게이트/권한 이슈면 `false`입니다.
     private func shouldInvalidateTokenSession(
         statusCode: Int,
-        usedAuthenticatedAccessToken: Bool
-    ) -> Bool {
+        endpoint: SupabaseEndpoint,
+        usedAuthenticatedAccessToken: Bool,
+        accessToken: String?,
+        config: SupabaseRuntimeConfig
+    ) async -> Bool {
         guard usedAuthenticatedAccessToken else { return false }
-        return statusCode == 401 || statusCode == 403
+        guard statusCode == 401 || statusCode == 403 else { return false }
+
+        if case .auth = endpoint {
+            return true
+        }
+
+        guard let accessToken, accessToken.isEmpty == false else {
+            return false
+        }
+
+        let validation = await validateAccessTokenRemotely(accessToken: accessToken, config: config)
+        switch validation {
+        case .valid:
+            #if DEBUG
+            print("[SupabaseAuth] preserve local token session: remote auth user check is still valid")
+            #endif
+            return false
+        case .invalid:
+            return true
+        case .inconclusive:
+            #if DEBUG
+            print("[SupabaseAuth] skip local token invalidation: remote auth user check inconclusive")
+            #endif
+            return false
+        }
     }
 
     /// 인증 토큰 호출이 401/403일 때, 서버 게이트 이슈 회피용 anon 재시도를 수행할지 판단합니다.
@@ -376,6 +420,48 @@ struct SupabaseHTTPClient {
         guard statusCode == 401 || statusCode == 403 else { return false }
         guard case .function(let functionName) = endpoint else { return false }
         return Self.edgeFunctionAnonRetryAllowlist.contains(functionName)
+    }
+
+    /// `auth/v1/user` 검증으로 현재 access token이 실제 만료/무효인지 확인합니다.
+    /// - Parameters:
+    ///   - accessToken: 검증할 사용자 access token 문자열입니다.
+    ///   - config: Supabase 런타임 기본 구성입니다.
+    /// - Returns: 원격 검증 결과(`valid/invalid/inconclusive`)를 반환합니다.
+    private func validateAccessTokenRemotely(
+        accessToken: String,
+        config: SupabaseRuntimeConfig
+    ) async -> AccessTokenValidationState {
+        let endpoint = SupabaseEndpoint.auth(path: "user")
+        let url = endpoint.resolveURL(baseURL: config.baseURL)
+        var request = URLRequest(url: url)
+        request.httpMethod = HTTPMethod.get.rawValue
+        request.setValue(config.anonKey, forHTTPHeaderField: "apikey")
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        let startedAt = Date()
+
+        do {
+            let (_, response) = try await session.data(for: request)
+            guard let statusCode = (response as? HTTPURLResponse)?.statusCode else {
+                return .inconclusive
+            }
+            if (200..<300).contains(statusCode) {
+                return .valid
+            }
+            if statusCode == 401 || statusCode == 403 {
+                return .invalid
+            }
+            #if DEBUG
+            let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
+            print("[SupabaseAuth] auth-user probe status=\(statusCode) elapsed=\(elapsedMs)ms")
+            #endif
+            return .inconclusive
+        } catch {
+            #if DEBUG
+            let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
+            print("[SupabaseAuth] auth-user probe failed elapsed=\(elapsedMs)ms error=\(error.localizedDescription)")
+            #endif
+            return .inconclusive
+        }
     }
 
     /// 저장된 access token의 유효성을 확인하고 필요 시 refresh를 수행합니다.

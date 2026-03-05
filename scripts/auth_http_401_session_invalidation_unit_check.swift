@@ -30,8 +30,24 @@ assertTrue(
     "http client should define token session invalidation guard"
 )
 assertTrue(
-    infra.contains("return statusCode == 401 || statusCode == 403"),
-    "invalidation guard should classify 401 and 403 as auth failure"
+    infra.contains("if case .auth = endpoint"),
+    "invalidation guard should treat auth endpoint failures as immediate invalidation"
+)
+assertTrue(
+    infra.contains("validateAccessTokenRemotely(accessToken: accessToken, config: config)"),
+    "invalidation guard should validate token remotely before clearing local session"
+)
+assertTrue(
+    infra.contains("preserve local token session: remote auth user check is still valid"),
+    "invalidation guard should preserve token session when auth probe confirms validity"
+)
+assertTrue(
+    infra.contains("skip local token invalidation: remote auth user check inconclusive"),
+    "invalidation guard should avoid forced logout when auth probe is inconclusive"
+)
+assertTrue(
+    infra.contains("private func validateAccessTokenRemotely("),
+    "http client should expose remote token validation helper"
 )
 assertTrue(
     infra.contains("invalidate local token session from response status="),
