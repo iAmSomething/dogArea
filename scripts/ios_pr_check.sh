@@ -79,6 +79,7 @@ swift scripts/signin_metal_overlay_guard_unit_check.swift
 swift scripts/auth_overlay_widget_action_defer_unit_check.swift
 swift scripts/auth_reauth_session_downgrade_unit_check.swift
 swift scripts/auth_flow_session_snapshot_unit_check.swift
+swift scripts/auth_flow_session_observer_unit_check.swift
 swift scripts/feature_flag_refresh_throttle_unit_check.swift
 swift scripts/feature_flag_refresh_singleflight_unit_check.swift
 swift scripts/security_key_exposure_unit_check.swift
