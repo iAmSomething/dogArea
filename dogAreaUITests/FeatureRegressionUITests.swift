@@ -135,10 +135,9 @@ final class FeatureRegressionUITests: XCTestCase {
         let app = launchAppForFeatureRegression(extraArguments: ["-UITest.ProfileSaveStubSuccess"])
 
         XCTAssertTrue(openTab(index: 4, app: app), "설정 탭 진입에 실패했습니다.")
-        performLogoutIfNeeded(app)
         XCTAssertTrue(
-            signInFromAnyEntry(app: app, credentials: credentials),
-            "회원 상태 진입용 로그인에 실패했습니다."
+            ensureMemberSession(app: app, credentials: credentials),
+            "회원 상태 진입에 실패했습니다."
         )
 
         XCTAssertTrue(openTab(index: 4, app: app), "로그인 후 설정 탭 재진입에 실패했습니다.")
@@ -166,6 +165,63 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertTrue(waitUntilExists(profileEditSheet, timeout: 6), "저장 후 프로필 편집 시트를 다시 찾지 못했습니다.")
         XCTAssertEqual(petNameField.value as? String, "UITestDog", "저장한 반려견 이름이 다음 편집 진입 시 유지되어야 합니다.")
         _ = tapIfExists(app.buttons["sheet.settings.profileEdit.cancel"])
+    }
+
+    /// 회원 상태에서 반려견 관리 시트로 기존 반려견 정보를 수정할 수 있는지 검증합니다.
+    func testFeatureRegression_MemberPetManagementEditsExistingPet() throws {
+        let credentials = try XCTUnwrap(
+            loadTestCredentials(),
+            "DOGAREA_TEST_EMAIL/DOGAREA_TEST_PASSWORD 또는 .design_audit_credentials.json이 필요합니다."
+        )
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.PetManagementStub"])
+
+        XCTAssertTrue(openTab(index: 4, app: app), "설정 탭 진입에 실패했습니다.")
+        XCTAssertTrue(
+            ensureMemberSession(app: app, credentials: credentials),
+            "회원 상태 진입에 실패했습니다."
+        )
+
+        XCTAssertTrue(openTab(index: 4, app: app), "로그인 후 설정 탭 재진입에 실패했습니다.")
+        let petManagementEntryButton = app.buttons["settings.pet.manage"]
+        XCTAssertTrue(
+            revealElementByVerticalScroll(petManagementEntryButton, app: app, maxSwipes: 6),
+            "반려견 관리 진입 버튼을 화면 안으로 노출하지 못했습니다."
+        )
+        XCTAssertTrue(waitUntilHittable(petManagementEntryButton, timeout: 3), "반려견 관리 진입 버튼이 탭 가능한 상태가 아닙니다.")
+        XCTAssertTrue(tapIfExists(petManagementEntryButton), "반려견 관리 시트 진입에 실패했습니다.")
+        let petManagementCloseButton = app.buttons["sheet.settings.petManagement.close"]
+        if waitUntilExists(petManagementCloseButton, timeout: 2) == false {
+            XCTAssertTrue(tapIfExists(petManagementEntryButton), "반려견 관리 시트 재진입 탭에 실패했습니다.")
+        }
+        XCTAssertTrue(waitUntilExists(petManagementCloseButton, timeout: 8), "반려견 관리 시트를 찾지 못했습니다.")
+        XCTAssertTrue(
+            waitUntilExists(app.buttons["sheet.settings.petManagement.add"], timeout: 4),
+            "반려견 관리 시트 기본 액션을 찾지 못했습니다."
+        )
+
+        let editButton = app.buttons.matching(identifier: "settings.petManagement.edit").firstMatch
+        XCTAssertTrue(waitUntilExists(editButton, timeout: 12), "반려견 편집 버튼을 찾지 못했습니다.")
+        XCTAssertTrue(tapIfExists(editButton), "반려견 편집 버튼 탭에 실패했습니다.")
+
+        let editSheet = screenElement(identifier: "sheet.settings.petManagement.edit", in: app)
+        XCTAssertTrue(waitUntilExists(editSheet, timeout: 8), "반려견 편집 시트를 찾지 못했습니다.")
+
+        let petNameField = editSheet.descendants(matching: .textField)
+            .matching(identifier: "settings.profile.field.petName")
+            .firstMatch
+        XCTAssertTrue(waitUntilExists(petNameField, timeout: 4), "반려견 이름 입력 필드를 찾지 못했습니다.")
+        replaceText(on: petNameField, with: "UITestManagedDog")
+        XCTAssertTrue(tapIfExists(app.buttons["sheet.settings.petManagement.edit.save"]), "반려견 편집 저장 버튼 탭에 실패했습니다.")
+        if waitUntilGone(editSheet, timeout: 8) == false {
+            let errorLabel = app.staticTexts["sheet.settings.petManagement.edit.error"]
+            let errorMessage = waitUntilExists(errorLabel, timeout: 1)
+                ? errorLabel.label
+                : "none"
+            XCTFail("반려견 편집 저장 후 시트가 닫히지 않았습니다. error=\(errorMessage)")
+        }
+
+        XCTAssertTrue(waitUntilExists(app.staticTexts["UITestManagedDog"], timeout: 4), "반려견 관리 시트에서 수정된 반려견 이름이 즉시 반영되지 않았습니다.")
+        _ = tapIfExists(petManagementCloseButton)
     }
 
     /// 로그아웃 후 재로그인하고 라이벌 탭에서 익명 공유를 시작할 수 있는지 검증합니다.
@@ -303,6 +359,18 @@ final class FeatureRegressionUITests: XCTestCase {
             _ = waitUntilMemberState(app, timeout: 8)
         }
         return didSignIn
+    }
+
+    /// 현재 앱 상태가 이미 회원이면 그대로 사용하고, 게스트 상태면 로그인까지 완료합니다.
+    /// - Parameters:
+    ///   - app: 테스트 대상 앱 인스턴스입니다.
+    ///   - credentials: 로그인에 사용할 테스트 계정입니다.
+    /// - Returns: 회원 상태가 확보되면 `true`를 반환합니다.
+    private func ensureMemberSession(app: XCUIApplication, credentials: TestCredentials) -> Bool {
+        if waitUntilExists(app.buttons["settings.logout"], timeout: 2) {
+            return true
+        }
+        return signInFromAnyEntry(app: app, credentials: credentials)
     }
 
     /// 라이벌 탭에서 익명 공유 시작 플로우를 실행합니다.

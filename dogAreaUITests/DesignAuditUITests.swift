@@ -142,6 +142,24 @@ final class DesignAuditUITests: XCTestCase {
             dismissTopModalIfNeeded(app)
         }
 
+        if signedInAsMember, tapIfExists(app.buttons["settings.pet.manage"]) {
+            if screenElement(identifier: "sheet.settings.petManagement", in: app).waitForExistence(timeout: 3) {
+                capture(name: "005_Settings_PetManagement", outputDirectory: outputDirectory)
+            }
+
+            let editButton = app.buttons.matching(identifier: "settings.petManagement.edit").firstMatch
+            if tapIfExists(editButton) {
+                if screenElement(identifier: "sheet.settings.petManagement.edit", in: app).waitForExistence(timeout: 3) {
+                    capture(name: "005_Settings_PetManagement_Edit", outputDirectory: outputDirectory)
+                }
+                _ = tapIfExists(app.buttons["sheet.settings.petManagement.edit.cancel"])
+                dismissTopModalIfNeeded(app)
+            }
+
+            _ = tapIfExists(app.buttons["sheet.settings.petManagement.close"])
+            dismissTopModalIfNeeded(app)
+        }
+
         if tapIfExists(app.buttons["settings.open.signin"]) {
             _ = presentSignInFlowIfNeeded(app)
             if screenElement(identifier: "screen.signin", in: app).waitForExistence(timeout: 3) {

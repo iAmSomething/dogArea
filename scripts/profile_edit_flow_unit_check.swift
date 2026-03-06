@@ -23,6 +23,8 @@ let settingViewModel = load("dogArea/Views/ProfileSettingView/SettingViewModel.s
 let profileEditSheet = load("dogArea/Views/ProfileSettingView/ProfileFieldEditSheet.swift")
 let profileEditSheetViewModel = load("dogArea/Views/ProfileSettingView/ProfileFieldEditSheetViewModel.swift")
 let sharedProfileEditor = load("dogArea/Views/GlobalViews/ProfileEditor/ProfileEditorCards.swift")
+let sharedImageSection = load("dogArea/Views/GlobalViews/ProfileEditor/ProfileEditorImageSection.swift")
+let petManagementEditSheet = load("dogArea/Views/ProfileSettingView/Components/PetManagementEditPetSheet.swift")
 let onboardingViews = loadMany([
     "dogArea/Views/SigningView/ProfileSettingsView.swift",
     "dogArea/Views/SigningView/PetProfileSettingView.swift"
@@ -37,15 +39,21 @@ assertTrue(settingViewModel.contains("PetProfileDraft("), "profile edit should r
 
 assertTrue(profileEditSheet.contains("ProfileEditorUserFieldsCard"), "profile edit sheet should use shared user editor card")
 assertTrue(profileEditSheet.contains("ProfileEditorPetFieldsCard"), "profile edit sheet should use shared pet editor card")
+assertTrue(profileEditSheet.contains("ProfileEditorImageSection"), "profile edit sheet should use shared image section")
 assertTrue(profileEditSheetViewModel.contains("@Published var petName: String"), "profile edit sheet view model should track editable pet name")
 assertTrue(profileEditSheetViewModel.contains("petName: String"), "profile edit provider should pass pet name through save pipeline")
 
 assertTrue(sharedProfileEditor.contains("struct ProfileEditorUserFieldsCard"), "shared profile editor should define user card")
 assertTrue(sharedProfileEditor.contains("struct ProfileEditorPetFieldsCard"), "shared profile editor should define pet card")
+assertTrue(sharedImageSection.contains("struct ProfileEditorImageSection"), "shared profile editor should define image section")
 assertTrue(onboardingViews.contains("ProfileEditorUserFieldsCard"), "onboarding should reuse shared user card")
 assertTrue(onboardingViews.contains("ProfileEditorPetFieldsCard"), "onboarding should reuse shared pet card")
+assertTrue(onboardingViews.contains("ProfileEditorImageSection"), "onboarding should reuse shared image section")
+assertTrue(petManagementEditSheet.contains("ProfileEditorPetFieldsCard"), "pet management edit should reuse shared pet editor card")
+assertTrue(petManagementEditSheet.contains("ProfileEditorImageSection"), "pet management edit should reuse shared image section")
 
 assertTrue(specDoc.contains("반려견 추가"), "spec doc should include pet add flow")
+assertTrue(specDoc.contains("기존 반려견 편집"), "spec doc should include existing pet edit flow")
 assertTrue(specDoc.contains("대표 반려견 지정"), "spec doc should include primary pet flow")
 assertTrue(specDoc.contains("비활성/재활성"), "spec doc should include activation management flow")
 

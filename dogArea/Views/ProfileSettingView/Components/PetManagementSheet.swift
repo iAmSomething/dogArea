@@ -1,44 +1,46 @@
 import SwiftUI
-import UIKit
 
 struct PetManagementSheet: View {
     @Environment(\.dismiss) private var dismiss
-    @ObservedObject var viewModel: SettingViewModel
+    @ObservedObject private var viewModel: SettingViewModel
+    @StateObject private var sheetViewModel: PetManagementSheetViewModel
+    @State private var editSheetViewModel: PetManagementEditPetSheetViewModel? = nil
 
-    @State private var petName: String = ""
-    @State private var breed: String = ""
-    @State private var ageYearsText: String = ""
-    @State private var gender: PetGender = .unknown
-    @State private var petProfileImage: UIImage? = nil
-    @State private var imageSelectPresented: Bool = false
-    @State private var errorMessage: String? = nil
-    @State private var successMessage: String? = nil
-    @State private var isSaving: Bool = false
+    /// 반려견 관리 시트를 구성하고 설정 뷰모델을 반려견 관리 전용 뷰모델에 연결합니다.
+    /// - Parameter viewModel: 설정 화면의 원본 상태와 저장 액션을 제공하는 뷰모델입니다.
+    init(viewModel: SettingViewModel) {
+        self._viewModel = ObservedObject(wrappedValue: viewModel)
+        self._sheetViewModel = StateObject(wrappedValue: PetManagementSheetViewModel(provider: viewModel))
+    }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 16) {
-                    activePetCard
+                    headerSection
 
-                    if viewModel.inactivePets.isEmpty == false {
-                        inactivePetCard
+                    activePetsSection
+
+                    if sheetViewModel.inactivePets.isEmpty == false {
+                        inactivePetsSection
                     }
 
-                    addPetCard
+                    addPetSection
 
-                    if let errorMessage {
+                    if let errorMessage = sheetViewModel.errorMessage {
                         Text(errorMessage)
                             .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .body))
                             .foregroundStyle(Color.red)
                             .padding(.horizontal, 16)
+                            .accessibilityIdentifier("sheet.settings.petManagement.error")
                     }
 
-                    if let successMessage {
+                    if let successMessage = sheetViewModel.successMessage {
                         Text(successMessage)
                             .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .body))
                             .foregroundStyle(Color.appGreen)
                             .padding(.horizontal, 16)
+                            .accessibilityIdentifier("sheet.settings.petManagement.success")
                     }
                 }
                 .padding(.horizontal, 16)
@@ -46,34 +48,65 @@ struct PetManagementSheet: View {
                 .padding(.bottom, 32)
             }
             .background(Color.appTabScaffoldBackground.ignoresSafeArea())
-            .navigationTitle("반려견 관리")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("닫기") {
-                        dismiss()
-                    }
-                }
-            }
         }
-        .sheet(isPresented: $imageSelectPresented) {
-            ImagePicker(image: $petProfileImage, type: .photoLibrary)
-                .ignoresSafeArea()
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("sheet.settings.petManagement")
+        .onAppear {
+            sheetViewModel.reload()
+        }
+        .onReceive(viewModel.$userInfo) { _ in
+            sheetViewModel.reload()
+        }
+        .sheet(item: $editSheetViewModel) { editViewModel in
+            PetManagementEditPetSheet(viewModel: editViewModel) {
+                sheetViewModel.reload()
+            }
         }
     }
 
-    private var activePetCard: some View {
+    private var headerSection: some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("반려견 관리")
+                    .font(.appScaledFont(for: .SemiBold, size: 24, relativeTo: .title2))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
+                Text("대표 반려견, 활성 상태, 프로필 정보를 여기서 정리합니다.")
+                    .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .body))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
+            }
+
+            Spacer(minLength: 0)
+
+            Button("닫기") {
+                dismiss()
+            }
+            .buttonStyle(AppFilledButtonStyle(role: .secondary, fillsWidth: false))
+            .frame(minHeight: 44)
+            .accessibilityIdentifier("sheet.settings.petManagement.close")
+        }
+        .appCardSurface()
+    }
+
+    private var activePetsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("활성 반려견")
                 .font(.appScaledFont(for: .SemiBold, size: 18, relativeTo: .headline))
                 .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
 
-            ForEach(viewModel.activePets, id: \.petId) { pet in
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 10) {
+            if sheetViewModel.activePets.isEmpty {
+                Text("활성 반려견이 아직 없습니다.")
+                    .font(.appScaledFont(for: .Regular, size: 13, relativeTo: .body))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
+            }
+
+            ForEach(sheetViewModel.activePets, id: \.petId) { pet in
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 8) {
                         Text(pet.petName)
                             .font(.appScaledFont(for: .SemiBold, size: 16, relativeTo: .headline))
-                        if viewModel.selectedPetId == pet.petId {
+                            .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
+
+                        if sheetViewModel.selectedPetId == pet.petId {
                             Text("대표")
                                 .font(.appScaledFont(for: .SemiBold, size: 10, relativeTo: .caption2))
                                 .padding(.horizontal, 8)
@@ -81,145 +114,128 @@ struct PetManagementSheet: View {
                                 .background(Color.appYellow.opacity(0.18))
                                 .clipShape(Capsule())
                         }
+
                         Spacer(minLength: 0)
                     }
 
-                    Text(viewModel.petDetailsText(for: pet))
+                    Text(sheetViewModel.petDetailsText(for: pet))
                         .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .body))
                         .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
 
                     HStack(spacing: 8) {
-                        Button("대표로 지정") {
-                            applyImmediateAction {
-                                try viewModel.setPrimaryPet(pet.petId)
-                                successMessage = "대표 반려견을 변경했어요."
-                            }
+                        Button("편집") {
+                            editSheetViewModel = sheetViewModel.makeEditViewModel(for: pet)
                         }
                         .buttonStyle(AppFilledButtonStyle(role: .secondary, fillsWidth: false))
-                        .disabled(viewModel.selectedPetId == pet.petId)
                         .frame(minHeight: 44)
+                        .accessibilityIdentifier("settings.petManagement.edit")
+
+                        Button("대표로 지정") {
+                            sheetViewModel.setPrimaryPet(pet.petId)
+                        }
+                        .buttonStyle(AppFilledButtonStyle(role: .secondary, fillsWidth: false))
+                        .disabled(sheetViewModel.selectedPetId == pet.petId)
+                        .frame(minHeight: 44)
+                        .accessibilityIdentifier("settings.petManagement.primary")
 
                         Button("비활성") {
-                            applyImmediateAction {
-                                try viewModel.setPetActive(pet.petId, isActive: false)
-                                successMessage = "반려견을 비활성 목록으로 이동했어요."
-                            }
+                            sheetViewModel.setPetActive(pet.petId, isActive: false)
                         }
                         .buttonStyle(AppFilledButtonStyle(role: .destructive, fillsWidth: false))
-                        .disabled(viewModel.activePets.count <= 1)
+                        .disabled(sheetViewModel.activePets.count <= 1)
                         .frame(minHeight: 44)
+                        .accessibilityIdentifier("settings.petManagement.deactivate")
                     }
                 }
                 .padding(14)
-                .background(Color.white.opacity(0.7))
+                .background(Color.white.opacity(0.72))
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
         }
         .appCardSurface()
     }
 
-    private var inactivePetCard: some View {
+    private var inactivePetsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("비활성 반려견")
                 .font(.appScaledFont(for: .SemiBold, size: 18, relativeTo: .headline))
                 .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
 
-            ForEach(viewModel.inactivePets, id: \.petId) { pet in
-                VStack(alignment: .leading, spacing: 8) {
+            ForEach(sheetViewModel.inactivePets, id: \.petId) { pet in
+                VStack(alignment: .leading, spacing: 10) {
                     Text(pet.petName)
                         .font(.appScaledFont(for: .SemiBold, size: 16, relativeTo: .headline))
-                    Text(viewModel.petDetailsText(for: pet))
+                        .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
+
+                    Text(sheetViewModel.petDetailsText(for: pet))
                         .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .body))
                         .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
-                    Button("다시 활성화") {
-                        applyImmediateAction {
-                            try viewModel.setPetActive(pet.petId, isActive: true)
-                            successMessage = "반려견을 다시 활성화했어요."
+
+                    HStack(spacing: 8) {
+                        Button("편집") {
+                            editSheetViewModel = sheetViewModel.makeEditViewModel(for: pet)
                         }
+                        .buttonStyle(AppFilledButtonStyle(role: .secondary, fillsWidth: false))
+                        .frame(minHeight: 44)
+                        .accessibilityIdentifier("settings.petManagement.edit")
+
+                        Button("다시 활성화") {
+                            sheetViewModel.setPetActive(pet.petId, isActive: true)
+                        }
+                        .buttonStyle(AppFilledButtonStyle(role: .primary, fillsWidth: false))
+                        .frame(minHeight: 44)
+                        .accessibilityIdentifier("settings.petManagement.reactivate")
                     }
-                    .buttonStyle(AppFilledButtonStyle(role: .secondary, fillsWidth: false))
-                    .frame(minHeight: 44)
                 }
                 .padding(14)
-                .background(Color.white.opacity(0.7))
+                .background(Color.white.opacity(0.72))
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
         }
         .appCardSurface()
     }
 
-    private var addPetCard: some View {
+    private var addPetSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("반려견 추가")
-                    .font(.appScaledFont(for: .SemiBold, size: 18, relativeTo: .headline))
-                Spacer(minLength: 0)
-                Button("사진 선택") {
-                    imageSelectPresented = true
+            Text("반려견 추가")
+                .font(.appScaledFont(for: .SemiBold, size: 18, relativeTo: .headline))
+                .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
+
+            ProfileEditorImageSection(
+                title: "새 반려견 프로필 이미지",
+                subtitle: "앨범 또는 카메라에서 사진을 고를 수 있습니다.",
+                remoteURL: nil,
+                selectedImage: $sheetViewModel.newPetProfileImage,
+                resetButtonTitle: "선택 취소",
+                resetButtonEnabled: sheetViewModel.newPetProfileImage != nil,
+                allowsCamera: true,
+                onReset: {
+                    sheetViewModel.newPetProfileImage = nil
+                },
+                onCameraUnavailable: {
+                    sheetViewModel.errorMessage = "현재 기기에서는 카메라를 사용할 수 없습니다."
                 }
-                .buttonStyle(AppFilledButtonStyle(role: .secondary, fillsWidth: false))
-                .frame(minHeight: 44)
-            }
+            )
 
             ProfileEditorPetFieldsCard(
                 title: "새 반려견 정보",
                 subtitle: "이름은 필수, 상세 정보는 선택입니다.",
-                petName: $petName,
-                breed: $breed,
-                ageYearsText: $ageYearsText,
-                gender: $gender,
+                petName: $sheetViewModel.newPetName,
+                breed: $sheetViewModel.newBreed,
+                ageYearsText: $sheetViewModel.newAgeYearsText,
+                gender: $sheetViewModel.newGender,
                 requiresPetName: true
             )
 
-            Button(isSaving ? "추가 중..." : "반려견 추가") {
+            Button(sheetViewModel.isSaving ? "추가 중..." : "반려견 추가") {
                 Task {
-                    await addPet()
+                    await sheetViewModel.addPet()
                 }
             }
-            .disabled(isSaving)
+            .disabled(sheetViewModel.isSaving)
             .buttonStyle(AppFilledButtonStyle(role: .primary))
             .frame(minHeight: 44)
-        }
-        .appCardSurface()
-    }
-
-    /// 새 반려견 입력값을 저장하고 성공 시 폼을 초기화합니다.
-    /// - Returns: 없음. 처리 결과는 로컬 메시지 상태에 반영됩니다.
-    @MainActor
-    private func addPet() async {
-        errorMessage = nil
-        successMessage = nil
-        isSaving = true
-        defer { isSaving = false }
-
-        let result = await viewModel.addPet(
-            petName: petName,
-            breed: breed,
-            ageYearsText: ageYearsText,
-            gender: gender,
-            petProfileImage: petProfileImage
-        )
-        switch result {
-        case .success:
-            petName = ""
-            breed = ""
-            ageYearsText = ""
-            gender = .unknown
-            petProfileImage = nil
-            successMessage = "반려견을 추가했어요."
-        case .failure(let error):
-            errorMessage = error.localizedDescription
-        }
-    }
-
-    /// 동기 액션을 실행하고 공통 에러 메시지 상태를 처리합니다.
-    /// - Parameter action: 실행할 반려견 관리 작업입니다.
-    private func applyImmediateAction(_ action: () throws -> Void) {
-        errorMessage = nil
-        do {
-            try action()
-        } catch {
-            errorMessage = error.localizedDescription
+            .accessibilityIdentifier("sheet.settings.petManagement.add")
         }
     }
 }

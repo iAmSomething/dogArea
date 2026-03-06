@@ -63,6 +63,10 @@
 		A37600010000000000000022 /* SettingsPetManagementService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37600010000000000000012 /* SettingsPetManagementService.swift */; };
 		A37600010000000000000023 /* ProfileEditorCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37600010000000000000013 /* ProfileEditorCards.swift */; };
 		A37600010000000000000024 /* PetManagementSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37600010000000000000014 /* PetManagementSheet.swift */; };
+		A37600010000000000000025 /* ProfileEditorImageSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37600010000000000000015 /* ProfileEditorImageSection.swift */; };
+		A37600010000000000000026 /* PetManagementEditPetSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37600010000000000000016 /* PetManagementEditPetSheet.swift */; };
+		A37600010000000000000027 /* PetManagementEditPetSheetViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37600010000000000000017 /* PetManagementEditPetSheetViewModel.swift */; };
+		A37600010000000000000028 /* PetManagementSheetViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37600010000000000000018 /* PetManagementSheetViewModel.swift */; };
 		A83350BB79B3CBB09B4C4963 /* RivalTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21CE83B02069A8E4171B35DE /* RivalTabView.swift */; };
 		A9F5F361DE66BF266C36FED0 /* PositionMarkerViewWithSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92C5F96B5D23BD6D36935CA0 /* PositionMarkerViewWithSelection.swift */; };
 		AC04B82FF13073F98E2EE459 /* AreaDetailRecentConquestSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C4863F9787EC32E41B731A8 /* AreaDetailRecentConquestSectionView.swift */; settings = {COMPILER_FLAGS = "-fobjc-arc"; }; };
@@ -306,6 +310,10 @@
 		A37600010000000000000012 /* SettingsPetManagementService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsPetManagementService.swift; sourceTree = "<group>"; };
 		A37600010000000000000013 /* ProfileEditorCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileEditorCards.swift; sourceTree = "<group>"; };
 		A37600010000000000000014 /* PetManagementSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetManagementSheet.swift; sourceTree = "<group>"; };
+		A37600010000000000000015 /* ProfileEditorImageSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileEditorImageSection.swift; sourceTree = "<group>"; };
+		A37600010000000000000016 /* PetManagementEditPetSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetManagementEditPetSheet.swift; sourceTree = "<group>"; };
+		A37600010000000000000017 /* PetManagementEditPetSheetViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetManagementEditPetSheetViewModel.swift; sourceTree = "<group>"; };
+		A37600010000000000000018 /* PetManagementSheetViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetManagementSheetViewModel.swift; sourceTree = "<group>"; };
 		A775802DB2A590A7C7DA0978 /* WalkDetailViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WalkDetailViewModel.swift; path = dogArea/Views/MapView/WalkDetailViewModel.swift; sourceTree = "<group>"; };
 		B3C5EBC2B900522B927AC9AD /* TerritoryGoalOverviewCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TerritoryGoalOverviewCardView.swift; sourceTree = "<group>"; };
 		B76E1FA7BD23351B788C716B /* AreaDetailViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AreaDetailViewModel.swift; sourceTree = "<group>"; };
@@ -593,6 +601,7 @@
 			isa = PBXGroup;
 			children = (
 				A37600010000000000000013 /* ProfileEditorCards.swift */,
+				A37600010000000000000015 /* ProfileEditorImageSection.swift */,
 			);
 			path = ProfileEditor;
 			sourceTree = "<group>";
@@ -601,6 +610,7 @@
 			isa = PBXGroup;
 			children = (
 				A37600010000000000000014 /* PetManagementSheet.swift */,
+				A37600010000000000000016 /* PetManagementEditPetSheet.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -870,6 +880,8 @@
 			children = (
 				A37600010000000000000005 /* Components */,
 				DA3F9B982AE0F14F0048550C /* NotificationCenterView.swift */,
+				A37600010000000000000017 /* PetManagementEditPetSheetViewModel.swift */,
+				A37600010000000000000018 /* PetManagementSheetViewModel.swift */,
 				DA8BB9E72B0255B700E350C4 /* SettingViewModel.swift */,
 			);
 			path = ProfileSettingView;
@@ -1390,6 +1402,7 @@
 				A37500010000000000000027 /* AuthUserInfo.swift in Sources */,
 				A37500010000000000000028 /* EmailSignUpSheetView.swift in Sources */,
 				A37600010000000000000023 /* ProfileEditorCards.swift in Sources */,
+				A37600010000000000000025 /* ProfileEditorImageSection.swift in Sources */,
 				DAAE221F2AFCBDC4005FD096 /* StartModalView.swift in Sources */,
 				DA4513802AFB1EC1007AD69B /* WalkListCell.swift in Sources */,
 				DA3550022B01E0F900E4094A /* UnderLine.swift in Sources */,
@@ -1421,6 +1434,9 @@
 				A0C814D250B8F26BDCC21F66 /* UserProfileImageView.swift in Sources */,
 				37382EBDCEA90A2E818A05BB /* ProfileFieldEditSheetViewModel.swift in Sources */,
 				A37600010000000000000024 /* PetManagementSheet.swift in Sources */,
+				A37600010000000000000026 /* PetManagementEditPetSheet.swift in Sources */,
+				A37600010000000000000027 /* PetManagementEditPetSheetViewModel.swift in Sources */,
+				A37600010000000000000028 /* PetManagementSheetViewModel.swift in Sources */,
 				5951E893E8CBC77DCA82E00F /* WalkDetailViewModel.swift in Sources */,
 				2FAF945E5AA7BC004D27C72E /* WalkDetailContextProvider.swift in Sources */,
 				32009EE2A174DAB07F3DD64D /* RivalTabViewModel.swift in Sources */,

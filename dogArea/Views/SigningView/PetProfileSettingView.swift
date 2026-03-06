@@ -12,7 +12,6 @@ struct PetProfileSettingView: View {
     @EnvironmentObject var authFlow: AuthFlowCoordinator
     @EnvironmentObject var viewModel: SigningViewModel
     @Binding var path: NavigationPath
-    @State var imageSelect: Bool = false
     @State private var didCompleteSignup: Bool = false
     @State private var recoveryIssue: RecoveryIssue? = nil
     let onSignupCompleted: () -> Void
@@ -25,21 +24,19 @@ struct PetProfileSettingView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
-                TitleTextView(title: "강아지 사진",type: .MediumTitle, subTitle: "강아지 사진을 추가해주세요!")
-                Button {
-                    imageSelect.toggle()
-                } label: {
-                    Image(uiImage: viewModel.petProfile ?? .emptyImg)
-                        .resizable()
-                        .frame(maxWidth: 200, maxHeight: 200)
-                        .aspectRatio(contentMode: .fit)
-                        .myCornerRadius(radius: 30)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 30)
-                                .stroke(viewModel.petProfile == nil ? Color.appTextLightGray : Color.appGreen, lineWidth: 1)
-                        )
-                }
-                .buttonStyle(.plain)
+                ProfileEditorImageSection(
+                    title: "강아지 사진",
+                    subtitle: "강아지 사진을 추가해주세요!",
+                    remoteURL: nil,
+                    selectedImage: $viewModel.petProfile,
+                    resetButtonTitle: "선택 취소",
+                    resetButtonEnabled: viewModel.petProfile != nil,
+                    allowsCamera: false,
+                    onReset: {
+                        viewModel.petProfile = nil
+                    },
+                    onCameraUnavailable: { }
+                )
 
                 ProfileEditorPetFieldsCard(
                     title: "반려견 정보",
@@ -69,9 +66,7 @@ struct PetProfileSettingView: View {
             .padding(.bottom, 24)
         }
         .background(Color.appBackground)
-        .fullScreenCover(isPresented: $imageSelect, content: {
-            ImagePicker(image: $viewModel.petProfile, type: .photoLibrary)
-        }).overlay(content: {
+        .overlay(content: {
             if viewModel.loading == .loading {
                 LoadingView()
             }

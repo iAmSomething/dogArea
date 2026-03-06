@@ -10,7 +10,6 @@ import SwiftUI
 struct ProfileSettingsView: View {
     @Binding var path: NavigationPath
     @StateObject var viewModel: SigningViewModel
-    @State var imageSelect: Bool = false
     let onSignupCompleted: () -> Void
 
     init(
@@ -26,21 +25,19 @@ struct ProfileSettingsView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
-                TitleTextView(title: "프로필 사진",type: .MediumTitle, subTitle: "프로필 사진을 추가해주세요!")
-                Button {
-                    imageSelect.toggle()
-                } label: {
-                    Image(uiImage: viewModel.userProfile ?? .emptyImg)
-                        .resizable()
-                        .frame(maxWidth: 200, maxHeight: 200)
-                        .aspectRatio(contentMode: .fit)
-                        .myCornerRadius(radius: 30)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 30)
-                                .stroke(viewModel.userProfile == nil ? Color.appTextLightGray : Color.appGreen, lineWidth: 1)
-                        )
-                }
-                .buttonStyle(.plain)
+                ProfileEditorImageSection(
+                    title: "프로필 사진",
+                    subtitle: "프로필 사진을 추가해주세요!",
+                    remoteURL: nil,
+                    selectedImage: $viewModel.userProfile,
+                    resetButtonTitle: "선택 취소",
+                    resetButtonEnabled: viewModel.userProfile != nil,
+                    allowsCamera: false,
+                    onReset: {
+                        viewModel.userProfile = nil
+                    },
+                    onCameraUnavailable: { }
+                )
 
                 ProfileEditorUserFieldsCard(
                     userName: $viewModel.userName,
@@ -63,8 +60,5 @@ struct ProfileSettingsView: View {
             .padding(.bottom, 24)
         }
         .background(Color.appBackground)
-        .fullScreenCover(isPresented: $imageSelect, content: {
-            ImagePicker(image: $viewModel.userProfile, type: .photoLibrary)
-        })
     }
 }
