@@ -19,7 +19,7 @@ func loadMany(_ relativePaths: [String]) -> String {
     relativePaths.map(load).joined(separator: "\n")
 }
 
-let areaMeters = load("dogArea/Views/HomeView/AreaMeters.swift")
+let areaMeters = load("dogArea/Source/Domain/Home/Models/AreaReferenceModels.swift")
 let supabaseInfra = load("dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift")
 let homeVM = loadMany([
     "dogArea/Views/HomeView/HomeViewModel.swift",

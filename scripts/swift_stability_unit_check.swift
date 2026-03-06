@@ -36,12 +36,14 @@ let titleTextView = load("dogArea/Views/GlobalViews/TitleTextView.swift")
 let homeView = load("dogArea/Views/HomeView/HomeView.swift")
 let homeViewModel = loadMany([
     "dogArea/Views/HomeView/HomeViewModel.swift",
+    "dogArea/Views/HomeView/HomeViewModelSupport/HomePresentationStateModels.swift",
+    "dogArea/Source/Domain/Home/Services/HomeAreaAggregationService.swift",
     "dogArea/Source/Domain/Home/Models/HomeMissionModels.swift",
     "dogArea/Source/Domain/Home/Stores/IndoorMissionStore.swift",
     "dogArea/Source/Domain/Home/Stores/SeasonMotionStore.swift"
 ])
 let walkListDetailView = load("dogArea/Views/WalkListView/WalkListDetailView.swift")
-let areaMeters = load("dogArea/Views/HomeView/AreaMeters.swift")
+let areaMeters = load("dogArea/Source/Domain/Home/Models/AreaReferenceModels.swift")
 let mapCapture = load("dogArea/Views/MapView/MapSubViews/MapCapture.swift")
 let viewUtility = load("dogArea/Source/ViewUtility.swift")
 let timeCheckable = load("dogArea/Source/TimeCheckable.swift")

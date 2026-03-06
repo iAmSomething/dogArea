@@ -58,6 +58,7 @@
 		82C0FE1F9DF4A147D4C6A02C /* RecoveryActionBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = C63D5D25262A8E2185005C50 /* RecoveryActionBanner.swift */; };
 		8705C4CE77BEE3DAEF07A78B /* SimpleKeyValueView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 376D30D4A7542596A014DEE1 /* SimpleKeyValueView.swift */; };
 		8801A48808105C4480F81F16 /* HomeWeatherShieldSummaryCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 745503CBDBC7737E36C35467 /* HomeWeatherShieldSummaryCardView.swift */; };
+		882A85330E905DC115EDE641 /* HomePresentationStateModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67C1D6AB713A59C8D7034CB8 /* HomePresentationStateModels.swift */; };
 		8A40430FD15CD439469AC981 /* RivalViewStateResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2D5D8D51AC30DA6DB60A871 /* RivalViewStateResolver.swift */; };
 		8AB9332023AB8DBFF5657767 /* HomeHeaderSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEBDE81DFC43DCD56546D775 /* HomeHeaderSectionView.swift */; };
 		8CD54D2F099991B9C308F493 /* MapViewModelStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 964083A1B8DE944291FAD56C /* MapViewModelStore.swift */; };
@@ -95,6 +96,8 @@
 		B40D68BD38F0288BF600B11C /* HomeSeasonMotionCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C671468D748C3AD8C0A7DB8A /* HomeSeasonMotionCardView.swift */; };
 		B6ABF3F12D7A7F8761D68EB2 /* HomeSeasonShieldBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DBF6EC9508CA4C5CC954AF8 /* HomeSeasonShieldBadgeView.swift */; };
 		BA480FDD8F1E663F6CF6F9BF /* HomeSeasonMetricPillView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1882845C4C15BF66EF58B401 /* HomeSeasonMetricPillView.swift */; };
+		BC8F0111242B7C35E0A8C032 /* HomeAreaAggregationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D55F514F099289DA27BC2654 /* HomeAreaAggregationService.swift */; };
+		BFE9FFE6DBDDDBDF1B846C2E /* AreaReferenceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 512B7050BD43731047F5D669 /* AreaReferenceModels.swift */; };
 		C047F1CA5DC13CAE4F03AE90 /* RivalHotspotSummaryBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F2B2A868B6FD9035AC5214F /* RivalHotspotSummaryBuilder.swift */; };
 		C93E65F4BA4229D430ED1AD9 /* AreaDetailSummaryCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4340122AB9FE3F16F12570B /* AreaDetailSummaryCardView.swift */; settings = {COMPILER_FLAGS = "-fobjc-arc"; }; };
 		C9FE9795EDE724EE7C96A8F0 /* HomeQuestReminderToggleRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 012C06744E292D894BC4661B /* HomeQuestReminderToggleRowView.swift */; };
@@ -142,7 +145,6 @@
 		DA822CDD2AFB60B6001EC94D /* MapSettingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA822CDC2AFB60B6001EC94D /* MapSettingView.swift */; };
 		DA8BB9E52B024B1900E350C4 /* MapCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA8BB9E42B024B1900E350C4 /* MapCapture.swift */; };
 		DA8BB9E82B0255B700E350C4 /* SettingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA8BB9E72B0255B700E350C4 /* SettingViewModel.swift */; };
-		DA8BB9EE2B02F0CD00E350C4 /* AreaMeters.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA8BB9ED2B02F0CD00E350C4 /* AreaMeters.swift */; };
 		DA8BB9F22B02FE3A00E350C4 /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA8BB9F12B02FE3A00E350C4 /* HomeViewModel.swift */; };
 		DA8BB9F52B032AB000E350C4 /* Calender.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA8BB9F42B032AB000E350C4 /* Calender.swift */; };
 		DA933BE92ADD04E70029856C /* CustomAlertView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA933BE82ADD04E70029856C /* CustomAlertView.swift */; };
@@ -317,9 +319,11 @@
 		44BB9B1737AC410B5104ECFD /* AreaDetailHeaderSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AreaDetailHeaderSectionView.swift; sourceTree = "<group>"; };
 		4A1B2C487816AA2CCCA6186F /* HomeStatusBannerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeStatusBannerView.swift; path = dogArea/Views/HomeView/HomeSubView/HomeStatusBannerView.swift; sourceTree = "<group>"; };
 		4D14629580BEDCDCAE5B9EC3 /* HomeSelectedPetEmptyStateCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeSelectedPetEmptyStateCardView.swift; path = dogArea/Views/HomeView/HomeSubView/HomeSelectedPetEmptyStateCardView.swift; sourceTree = "<group>"; };
+		512B7050BD43731047F5D669 /* AreaReferenceModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AreaReferenceModels.swift; path = AreaReferenceModels.swift; sourceTree = "<group>"; };
 		626E89852AADA163B53AB03D /* dogAreaUITestsLaunchTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		649E88696A0B4425210BB446 /* HomeGoalMetricColumnView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeGoalMetricColumnView.swift; sourceTree = "<group>"; };
 		66C12577FC501DA46E9411D5 /* HomeIndoorMissionRowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeIndoorMissionRowView.swift; sourceTree = "<group>"; };
+		67C1D6AB713A59C8D7034CB8 /* HomePresentationStateModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomePresentationStateModels.swift; path = HomePresentationStateModels.swift; sourceTree = "<group>"; };
 		688E8E192EA6BCB551D19759 /* dogAreaUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = dogAreaUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		6C8E7D8185E273FFD5B84579 /* ProfileFieldEditSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ProfileFieldEditSheet.swift; path = dogArea/Views/ProfileSettingView/ProfileFieldEditSheet.swift; sourceTree = "<group>"; };
 		6E3FDEC98167CC2EA0DAFA5E /* HomeRecentConqueredSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeRecentConqueredSectionView.swift; sourceTree = "<group>"; };
@@ -376,6 +380,7 @@
 		CEBDE81DFC43DCD56546D775 /* HomeHeaderSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeHeaderSectionView.swift; sourceTree = "<group>"; };
 		D4340122AB9FE3F16F12570B /* AreaDetailSummaryCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AreaDetailSummaryCardView.swift; sourceTree = "<group>"; };
 		D457F4903D0BCF9B5C9B7EFC /* HomeAreaMilestoneBadgeOverlayView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeAreaMilestoneBadgeOverlayView.swift; path = HomeAreaMilestoneBadgeOverlayView.swift; sourceTree = "<group>"; };
+		D55F514F099289DA27BC2654 /* HomeAreaAggregationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeAreaAggregationService.swift; path = HomeAreaAggregationService.swift; sourceTree = "<group>"; };
 		D8458EB9DE9760D52537B4B6 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		D8E5D37200B02E2F8E26B734 /* HomeWeeklyQuestSummaryView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeWeeklyQuestSummaryView.swift; sourceTree = "<group>"; };
 		DA0FB2082AD7B21C00B235CF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -425,7 +430,6 @@
 		DA822CDC2AFB60B6001EC94D /* MapSettingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapSettingView.swift; sourceTree = "<group>"; };
 		DA8BB9E42B024B1900E350C4 /* MapCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapCapture.swift; sourceTree = "<group>"; };
 		DA8BB9E72B0255B700E350C4 /* SettingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingViewModel.swift; sourceTree = "<group>"; };
-		DA8BB9ED2B02F0CD00E350C4 /* AreaMeters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMeters.swift; sourceTree = "<group>"; };
 		DA8BB9F12B02FE3A00E350C4 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
 		DA8BB9F42B032AB000E350C4 /* Calender.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Calender.swift; sourceTree = "<group>"; };
 		DA933BE82ADD04E70029856C /* CustomAlertView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomAlertView.swift; sourceTree = "<group>"; };
@@ -538,6 +542,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0DF958EFACCA4449E70C97CD /* HomeViewModelSupport */ = {
+			isa = PBXGroup;
+			children = (
+				67C1D6AB713A59C8D7034CB8 /* HomePresentationStateModels.swift */,
+			);
+			name = HomeViewModelSupport;
+			path = HomeViewModelSupport;
+			sourceTree = "<group>";
+		};
 		20A02CEAEBD1733F530616EE /* Cards */ = {
 			isa = PBXGroup;
 			children = (
@@ -630,6 +643,7 @@
 			isa = PBXGroup;
 			children = (
 				A37500010000000000000011 /* HomeMissionModels.swift */,
+				512B7050BD43731047F5D669 /* AreaReferenceModels.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -759,9 +773,9 @@
 			children = (
 				DA8BB9FA2B03341000E350C4 /* HomeSubView */,
 				DA3F9B992AE0F14F0048550C /* HomeView.swift */,
-				DA8BB9ED2B02F0CD00E350C4 /* AreaMeters.swift */,
 				DA3EB0792B0344CD00AEA65D /* AreaDetailView.swift */,
 				DA8BB9F12B02FE3A00E350C4 /* HomeViewModel.swift */,
+				0DF958EFACCA4449E70C97CD /* HomeViewModelSupport */,
 			);
 			path = HomeView;
 			sourceTree = "<group>";
@@ -1114,6 +1128,7 @@
 				363FE1044470B273CAB987E0 /* HomeQuestReminderSupport.swift */,
 				DAE147A01420000000000001 /* HomeWeeklyStatisticsService.swift */,
 				DAE147A21420000000000001 /* HomeWeatherMissionStatusBuilder.swift */,
+				D55F514F099289DA27BC2654 /* HomeAreaAggregationService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -1430,7 +1445,6 @@
 			files = (
 				DA8BB9E52B024B1900E350C4 /* MapCapture.swift in Sources */,
 				DA3F9BA62AE0F14F0048550C /* WalkListView.swift in Sources */,
-				DA8BB9EE2B02F0CD00E350C4 /* AreaMeters.swift in Sources */,
 				DA3F9BD52AE0FF9B0048550C /* CustomTabBar.swift in Sources */,
 				DAC19F1E2B0B331A002FE2E8 /* SigningViewModel.swift in Sources */,
 				DAC19F102B0AF661002FE2E8 /* TitleTextView.swift in Sources */,
@@ -1589,6 +1603,9 @@
 				337C89763F94598EAAF98C3A /* HomeWeatherMissionStatusCardView.swift in Sources */,
 				8801A48808105C4480F81F16 /* HomeWeatherShieldSummaryCardView.swift in Sources */,
 				21E7CDE1A8E20F90F24FB0C1 /* HomeWeeklyQuestSummaryView.swift in Sources */,
+				BFE9FFE6DBDDDBDF1B846C2E /* AreaReferenceModels.swift in Sources */,
+				BC8F0111242B7C35E0A8C032 /* HomeAreaAggregationService.swift in Sources */,
+				882A85330E905DC115EDE641 /* HomePresentationStateModels.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
