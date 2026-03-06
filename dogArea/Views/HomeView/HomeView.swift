@@ -284,30 +284,13 @@ struct HomeView: View {
     @ViewBuilder
     private func scrollToTopFloatingButton(proxy: ScrollViewProxy) -> some View {
         if shouldShowScrollToTopButton {
-            Button {
+            HomeScrollToTopFloatingButtonView {
                 withAnimation(.easeInOut(duration: 0.24)) {
                     proxy.scrollTo("home.scroll.top", anchor: .top)
                 }
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "arrow.up")
-                        .font(.system(size: 14, weight: .semibold))
-                    Text("맨 위로")
-                        .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.86)
-                }
-                .foregroundStyle(Color.appDynamicHex(light: 0x334155, dark: 0xE2E8F0))
-                .padding(.horizontal, 12)
-                .frame(minHeight: 44)
-                .background(Color.appDynamicHex(light: 0xFFFFFF, dark: 0x1E293B))
-                .clipShape(Capsule())
-                .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: 8)
             }
             .padding(.trailing, 20)
             .appTabFloatingOverlayPadding(lift: 20)
-            .accessibilityLabel("홈 상단으로 이동")
-            .accessibilityHint("스크롤 위치를 맨 위로 이동합니다")
             .transition(.move(edge: .trailing).combined(with: .opacity))
         }
     }
@@ -318,42 +301,18 @@ struct HomeView: View {
             guard let passed = report.validationPassed else { return nil }
             return passed ? "원격 검증 통과" : "원격 검증 실패: \(report.validationMessage ?? "mismatch")"
         }()
-        VStack(alignment: .leading, spacing: 6) {
-            Text(report.hasOutstandingWork ? "데이터 이관 재시도 필요" : "게스트 데이터 이관 완료")
-                .font(.appFont(for: .SemiBold, size: 13))
-            Text(
-                "세션 \(report.sessionCount)건 · 포인트 \(report.pointCount)건 · 면적 \(report.totalAreaM2.calculatedAreaString)"
-            )
-            .font(.appFont(for: .Light, size: 11))
-            .foregroundStyle(Color.appTextDarkGray)
-            if report.hasOutstandingWork,
-               let rawError = report.lastErrorCode,
-               rawError.isEmpty == false {
-                Text("최근 오류: \(guestDataUpgradeErrorMessage(rawValue: rawError))")
-                    .font(.appFont(for: .Light, size: 11))
-                    .foregroundStyle(Color.appRed)
-            }
-            if let validationText {
-                Text(validationText)
-                    .font(.appFont(for: .Light, size: 11))
-                    .foregroundStyle(report.validationPassed == true ? Color.appGreen : Color.appRed)
-            }
-            if report.hasOutstandingWork {
-                Button(authFlow.guestDataUpgradeInProgress ? "재시도 중..." : "이관 재시도") {
-                    triggerGuestDataUpgradeRetry()
-                }
-                .accessibilityIdentifier("home.guestUpgrade.retry")
-                .disabled(authFlow.guestDataUpgradeInProgress)
-                .buttonStyle(AppFilledButtonStyle(role: .secondary, fillsWidth: false))
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(10)
-        .background(Color.white)
-        .cornerRadius(10)
-        .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(report.hasOutstandingWork ? Color.appRed : Color.appGreen, lineWidth: 0.4)
+        let lastErrorMessage: String? = {
+            guard report.hasOutstandingWork,
+                  let rawError = report.lastErrorCode,
+                  rawError.isEmpty == false else { return nil }
+            return guestDataUpgradeErrorMessage(rawValue: rawError)
+        }()
+        HomeGuestDataUpgradeCardView(
+            report: report,
+            validationText: validationText,
+            lastErrorMessage: lastErrorMessage,
+            isRetryInProgress: authFlow.guestDataUpgradeInProgress,
+            onRetry: triggerGuestDataUpgradeRetry
         )
     }
 
@@ -465,71 +424,11 @@ struct HomeView: View {
     }
 
     private func weatherMissionStatusCard(summary: WeatherMissionStatusSummary) -> some View {
-        VStack(alignment: .leading, spacing: 7) {
-            HStack {
-                Text(summary.title)
-                    .font(.appFont(for: .SemiBold, size: 15))
-                Spacer()
-                Text(summary.badgeText)
-                    .font(.appFont(for: .SemiBold, size: 11))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 5)
-                    .background(summary.isFallback ? Color.appTextLightGray.opacity(0.35) : Color.appYellowPale)
-                    .cornerRadius(8)
-            }
-            Text(summary.reasonText)
-                .font(.appFont(for: .Light, size: 12))
-                .foregroundStyle(Color.appTextDarkGray)
-            HStack(spacing: 8) {
-                Text(summary.appliedAtText)
-                    .font(.appFont(for: .Light, size: 11))
-                    .foregroundStyle(Color.appTextDarkGray)
-                Spacer()
-                Text(summary.shieldUsageText)
-                    .font(.appFont(for: .SemiBold, size: 11))
-                    .foregroundStyle(summary.riskLevel == .clear ? Color.appTextDarkGray : Color.appGreen)
-            }
-            if let fallbackNotice = summary.fallbackNotice {
-                Text(fallbackNotice)
-                    .font(.appFont(for: .Light, size: 10))
-                    .foregroundStyle(Color.appTextDarkGray)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 6)
-                    .background(Color.appTextLightGray.opacity(0.2))
-                    .cornerRadius(8)
-            }
-        }
-        .padding(12)
-        .background(Color.white)
-        .cornerRadius(10)
-        .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(Color.appTextLightGray, lineWidth: 0.5)
-        )
-        .padding(.horizontal, 16)
-        .padding(.bottom, 8)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(summary.accessibilityText)
+        HomeWeatherMissionStatusCardView(summary: summary)
     }
 
     private func weatherShieldSummaryCard(summary: WeatherShieldDailySummary) -> some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 3) {
-                Text("오늘 스트릭 보호 요약")
-                    .font(.appFont(for: .SemiBold, size: 13))
-                Text("보호 적용 \(summary.applyCount)회 · 마지막 \(summary.lastAppliedAtText)")
-                    .font(.appFont(for: .Light, size: 11))
-                    .foregroundStyle(Color.appTextDarkGray)
-            }
-            Spacer()
-        }
-        .padding(11)
-        .background(Color.appGreen.opacity(0.22))
-        .cornerRadius(10)
-        .padding(.horizontal, 16)
-        .padding(.bottom, 8)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("오늘 스트릭 보호 요약. 적용 \(summary.applyCount)회, 마지막 \(summary.lastAppliedAtText)")
+        HomeWeatherShieldSummaryCardView(summary: summary)
     }
 
     private func indoorMissionCard(board: IndoorMissionBoard) -> some View {
@@ -636,51 +535,18 @@ struct HomeView: View {
 
     /// 퀘스트 위젯에서 일일/주간 뷰를 전환하는 탭 선택 행입니다.
     private var questWidgetTabSelector: some View {
-        HStack(spacing: 8) {
-            ForEach(HomeQuestWidgetTab.allCases) { tab in
-                Button(tab.title) {
-                    withAnimation(.easeInOut(duration: 0.18)) {
-                        questWidgetTab = tab
-                    }
-                }
-                .font(.appFont(for: .SemiBold, size: 11))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(questWidgetTab == tab ? Color.appYellow : Color.appTextLightGray.opacity(0.35))
-                .cornerRadius(8)
-            }
-            Spacer()
+        HomeQuestWidgetTabSelectorView(selectedTab: questWidgetTab) { tab in
+            questWidgetTab = tab
         }
     }
 
     /// 하루 1회 퀘스트 리마인드 알림 설정 토글 행입니다.
     private var questReminderToggleRow: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("퀘스트 리마인드")
-                    .font(.appScaledFont(for: .SemiBold, size: 14, relativeTo: .subheadline))
-                Text("매일 20:00 · 하루 최대 1회")
-                    .font(.appScaledFont(for: .Regular, size: 11, relativeTo: .caption))
-                    .foregroundStyle(Color.appDynamicHex(light: 0x94A3B8, dark: 0xCBD5E1))
-            }
-            Spacer()
-            Toggle(
-                "",
-                isOn: Binding(
-                    get: { viewModel.questReminderEnabled },
-                    set: { viewModel.setQuestReminderEnabled($0) }
-                )
+        HomeQuestReminderToggleRowView(
+            isEnabled: Binding(
+                get: { viewModel.questReminderEnabled },
+                set: { viewModel.setQuestReminderEnabled($0) }
             )
-            .labelsHidden()
-            .tint(Color.appDynamicHex(light: 0xF59E0B, dark: 0xEAB308))
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(Color.appDynamicHex(light: 0xF8FAFC, dark: 0x1E293B))
-        .cornerRadius(14)
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(Color.appDynamicHex(light: 0xE2E8F0, dark: 0x334155), lineWidth: 1)
         )
     }
 
@@ -690,262 +556,49 @@ struct HomeView: View {
         let completedDaily = board.missions.filter { $0.progress.isCompleted }.count
         let totalDaily = board.missions.count
 
-        return VStack(alignment: .leading, spacing: 8) {
-            Text("이번 주 점수 \(Int(summary.score.rounded())) / \(Int(summary.targetScore.rounded()))")
-                .font(.appFont(for: .SemiBold, size: 13))
-            animatedSeasonGauge(progress: summary.progress)
-                .frame(height: 8)
-            HStack(spacing: 8) {
-                seasonMetricPill(
-                    title: "주간 기여",
-                    value: "\(summary.contributionCount)회",
-                    color: Color.appYellowPale
-                )
-                seasonMetricPill(
-                    title: "오늘 완료",
-                    value: "\(completedDaily)/\(totalDaily)",
-                    color: Color.appGreen.opacity(0.22)
-                )
-            }
-            Text("주간 점수는 미션 완료와 산책 기여로 누적됩니다.")
-                .font(.appFont(for: .Light, size: 11))
-                .foregroundStyle(Color.appTextDarkGray)
-        }
+        return HomeWeeklyQuestSummaryView(
+            summary: summary,
+            completedDailyCount: completedDaily,
+            totalDailyCount: totalDaily,
+            isSeasonMotionReduced: isSeasonMotionReduced,
+            seasonGaugeWaveOffset: seasonGaugeWaveOffset
+        )
     }
 
     /// 퀘스트 실패/만료 시 다음 행동을 안내하는 제안 카드입니다.
     private func questAlternativeSuggestionCard(_ text: String) -> some View {
-        HStack {
-            Text(text)
-                .font(.appFont(for: .Light, size: 11))
-                .foregroundStyle(Color.appTextDarkGray)
-            Spacer()
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 7)
-        .background(Color.appYellowPale.opacity(0.65))
-        .cornerRadius(8)
+        HomeQuestAlternativeSuggestionCardView(text: text)
     }
 
     private func missionDifficultySummary(_ summary: IndoorMissionDifficultySummary) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("\(summary.petName) 기준 난이도: \(summary.adjustmentDescription)")
-                .font(.appFont(for: .SemiBold, size: 12))
-            Text("연령 \(summary.ageBand.title) · 활동 \(summary.activityLevel.title) · 빈도 \(summary.walkFrequency.title)")
-                .font(.appFont(for: .Light, size: 11))
-                .foregroundStyle(Color.appTextDarkGray)
-            ForEach(summary.reasons.prefix(2), id: \.self) { reason in
-                Text("• \(reason)")
-                    .font(.appFont(for: .Light, size: 10))
-                    .foregroundStyle(Color.appTextDarkGray)
+        HomeMissionDifficultySummaryView(
+            summary: summary,
+            onActivateEasyDayMode: {
+                viewModel.activateEasyDayMode()
             }
-            Text(summary.easyDayMessage)
-                .font(.appFont(for: .Light, size: 10))
-                .foregroundStyle(Color.appTextDarkGray)
-
-            if summary.easyDayState == .available {
-                Button("쉬운 날 모드 사용 (보상 -20%)") {
-                    viewModel.activateEasyDayMode()
-                }
-                .font(.appFont(for: .SemiBold, size: 11))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(Color.appYellow)
-                .cornerRadius(8)
-            } else if summary.easyDayState == .active {
-                Text("오늘 쉬운 날 모드 적용됨")
-                    .font(.appFont(for: .SemiBold, size: 11))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(Color.appYellowPale)
-                    .cornerRadius(8)
-            }
-
-            if summary.history.isEmpty == false {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("최근 난이도 히스토리")
-                        .font(.appFont(for: .SemiBold, size: 11))
-                    ForEach(Array(summary.history.prefix(3))) { history in
-                        Text(
-                            "\(history.dayKey) · \(multiplierDescription(history.multiplier))\(history.easyDayApplied ? " · 쉬운 날" : "")"
-                        )
-                        .font(.appFont(for: .Light, size: 10))
-                        .foregroundStyle(Color.appTextDarkGray)
-                    }
-                }
-                .padding(.top, 2)
-            }
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 7)
-        .background(Color.appYellowPale.opacity(0.45))
-        .cornerRadius(8)
+        )
     }
 
     private func seasonMotionCard(summary: SeasonMotionSummary) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .center, spacing: 10) {
-                ZStack {
-                    Circle()
-                        .fill(Color.appDynamicHex(light: 0xF59E0B, dark: 0xEAB308))
-                        .frame(width: 30, height: 30)
-                    Image(systemName: "medal.fill")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.white)
-                }
-                Text("시즌 게이지")
-                    .font(.appScaledFont(for: .SemiBold, size: 24, relativeTo: .title3))
-                    .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
-                Spacer()
-                Text(summary.rankTier.title)
-                    .font(.appScaledFont(for: .SemiBold, size: 11, relativeTo: .caption))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(Color.appDynamicHex(light: 0xE2E8F0, dark: 0x334155))
-                    .cornerRadius(9)
+        HomeSeasonMotionCardView(
+            summary: summary,
+            animatedProgress: seasonAnimatedProgress,
+            isMotionReduced: isSeasonMotionReduced,
+            gaugeWaveOffset: seasonGaugeWaveOffset,
+            shieldRotation: seasonShieldRotation,
+            remainingTimeText: viewModel.seasonRemainingTimeText,
+            onOpenDetail: {
+                isSeasonDetailPresented = true
             }
-
-            HStack(alignment: .firstTextBaseline) {
-                Text("시즌 점수 \(Int(summary.score.rounded())) / \(Int(summary.targetScore.rounded()))")
-                    .font(.appScaledFont(for: .SemiBold, size: 15, relativeTo: .subheadline))
-                    .foregroundStyle(Color.appDynamicHex(light: 0x334155, dark: 0xCBD5E1))
-                Spacer()
-                Text("+\(summary.todayScoreDelta) today")
-                    .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
-                    .foregroundStyle(Color.appDynamicHex(light: 0xF59E0B, dark: 0xFACC15))
-            }
-
-            animatedSeasonGauge(progress: seasonAnimatedProgress)
-                .frame(height: 10)
-
-            HStack(spacing: 8) {
-                Image(systemName: "clock")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Color.appDynamicHex(light: 0x94A3B8, dark: 0xCBD5E1))
-                Text("남은 시간 \(viewModel.seasonRemainingTimeText)")
-                    .font(.appScaledFont(for: .Regular, size: 11, relativeTo: .caption))
-                    .foregroundStyle(Color.appDynamicHex(light: 0x94A3B8, dark: 0xCBD5E1))
-                Spacer()
-                Button("상세보기 >") {
-                    isSeasonDetailPresented = true
-                }
-                .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
-                .foregroundStyle(Color.appDynamicHex(light: 0x334155, dark: 0xE2E8F0))
-                .accessibilityIdentifier("home.season.detail")
-                .frame(minHeight: 44)
-            }
-
-            HStack(spacing: 8) {
-                seasonMetricPill(
-                    title: "기여",
-                    value: "\(summary.contributionCount)회",
-                    color: Color.appDynamicHex(light: 0xEFF6FF, dark: 0x1E3A8A, alpha: 0.24)
-                )
-                seasonMetricPill(
-                    title: "Shield",
-                    value: "\(summary.weatherShieldApplyCount)회",
-                    color: Color.appDynamicHex(light: 0xDCFCE7, dark: 0x14532D, alpha: 0.34)
-                )
-                seasonMetricPill(
-                    title: "주차",
-                    value: summary.weekKey.isEmpty ? "-" : summary.weekKey,
-                    color: Color.appDynamicHex(light: 0xFEF3C7, dark: 0x78350F, alpha: 0.34)
-                )
-            }
-        }
-        .padding(16)
-        .background(Color.appDynamicHex(light: 0xFFFFFF, dark: 0x1E293B))
-        .cornerRadius(20)
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(Color.appDynamicHex(light: 0xE2E8F0, dark: 0x334155), lineWidth: 1)
         )
-        .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 3)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(
-            "시즌 점수 \(Int(summary.score.rounded()))점, 랭크 \(summary.rankTier.title), 보호 \(summary.weatherShieldApplyCount)회, 남은 시간 \(viewModel.seasonRemainingTimeText)"
-        )
-    }
-
-    private func seasonMetricPill(title: String, value: String, color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title)
-                .font(.appFont(for: .Light, size: 10))
-                .foregroundStyle(Color.appTextDarkGray)
-            Text(value)
-                .font(.appFont(for: .SemiBold, size: 12))
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 9)
-        .padding(.vertical, 7)
-        .background(color)
-        .cornerRadius(8)
     }
 
     private func animatedSeasonGauge(progress: Double) -> some View {
-        let clampedProgress = min(1.0, max(0.0, progress))
-        return GeometryReader { proxy in
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(Color.appTextLightGray.opacity(0.24))
-                Capsule()
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.appGreen.opacity(0.75), Color.appYellow.opacity(0.85)],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .frame(width: proxy.size.width * clampedProgress)
-                    .overlay(alignment: .leading) {
-                        if isSeasonMotionReduced == false && clampedProgress > 0 {
-                            Rectangle()
-                                .fill(
-                                    LinearGradient(
-                                        colors: [
-                                            Color.white.opacity(0.0),
-                                            Color.white.opacity(0.34),
-                                            Color.white.opacity(0.0)
-                                        ],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .frame(width: 120)
-                                .offset(x: seasonGaugeWaveOffset)
-                        }
-                    }
-                    .clipShape(Capsule())
-            }
-        }
-    }
-
-    private func seasonShieldBadge(active: Bool) -> some View {
-        ZStack {
-            Circle()
-                .stroke(Color.appTextLightGray.opacity(0.5), lineWidth: 1)
-                .frame(width: 28, height: 28)
-            if active {
-                Circle()
-                    .trim(from: 0.1, to: 0.9)
-                    .stroke(Color.appGreen, style: StrokeStyle(lineWidth: 1.8, lineCap: .round))
-                    .frame(width: 28, height: 28)
-                    .rotationEffect(.degrees(seasonShieldRotation))
-            }
-            Text("S")
-                .font(.appFont(for: .SemiBold, size: 11))
-        }
-    }
-
-    private func multiplierDescription(_ multiplier: Double) -> String {
-        let deltaPercent = Int(((multiplier - 1.0) * 100).rounded())
-        if deltaPercent == 0 {
-            return "기본"
-        }
-        if deltaPercent > 0 {
-            return "+\(deltaPercent)%"
-        }
-        return "\(deltaPercent)%"
+        HomeAnimatedSeasonGaugeView(
+            progress: progress,
+            isMotionReduced: isSeasonMotionReduced,
+            waveOffset: seasonGaugeWaveOffset
+        )
     }
 
     private func questProgressValue(for mission: IndoorMissionCardModel) -> Double {
@@ -1186,115 +839,42 @@ struct HomeView: View {
     @ViewBuilder
     private func animatedQuestProgressBar(mission: IndoorMissionCardModel) -> some View {
         let progress = min(1.0, max(0.0, questProgressValue(for: mission)))
-        GeometryReader { proxy in
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(Color.appTextLightGray.opacity(0.28))
-                Capsule()
-                    .fill(mission.progress.isCompleted ? Color.appGreen : Color.appYellow)
-                    .frame(width: proxy.size.width * progress)
-                if questProgressPulseMissionId == mission.id, isQuestMotionReduced == false {
-                    Capsule()
-                        .fill(Color.white.opacity(0.35))
-                        .frame(width: proxy.size.width * progress)
-                        .blur(radius: 2.5)
-                }
-            }
-        }
-        .frame(height: 8)
-        .animation(
-            isQuestMotionReduced ? nil : .easeOut(duration: 0.34),
-            value: progress
+        HomeAnimatedQuestProgressBarView(
+            progress: progress,
+            isCompleted: mission.progress.isCompleted,
+            showPulse: questProgressPulseMissionId == mission.id,
+            isMotionReduced: isQuestMotionReduced
         )
     }
 
     private func indoorMissionRow(mission: IndoorMissionCardModel) -> some View {
         let claimable = missionIsClaimable(mission)
         let claimed = mission.progress.isCompleted
-        let folded = isQuestMotionReduced ? false : (claimable || claimed)
-        let claimTitle = claimed ? "수령 완료" : (claimable ? "즉시 수령" : "완료 확인")
-        let claimButtonColor = claimed ? Color.appGreen : (claimable ? Color.appYellow : Color.appTextLightGray)
-
-        return VStack(alignment: .leading, spacing: 7) {
-            HStack {
-                Text(mission.title)
-                    .font(.appFont(for: .SemiBold, size: 14))
-                if mission.isExtension {
-                    Text("연장 슬롯")
-                        .font(.appFont(for: .SemiBold, size: 10))
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 4)
-                        .background(Color.appYellowPale)
-                        .cornerRadius(6)
+        return HomeIndoorMissionRowView(
+            mission: mission,
+            animatedProgress: questProgressValue(for: mission),
+            isQuestMotionReduced: isQuestMotionReduced,
+            claimable: claimable,
+            claimed: claimed,
+            showClaimPulse: questClaimPulseMissionId == mission.id,
+            showProgressPulse: questProgressPulseMissionId == mission.id,
+            onRecordAction: { viewModel.recordIndoorMissionAction(mission.id) },
+            onFinalize: { viewModel.finalizeIndoorMission(mission.id) },
+            onAppearSync: {
+                if animatedQuestProgress[mission.id] == nil {
+                    animatedQuestProgress[mission.id] = mission.progress.progressRatio
                 }
-                Spacer()
-                Text("보상 \(mission.rewardPoint)pt")
-                    .font(.appFont(for: .SemiBold, size: 11))
-                    .foregroundStyle(Color.appTextDarkGray)
-            }
-            if folded == false {
-                Text(mission.description)
-                    .font(.appFont(for: .Light, size: 12))
-                    .foregroundStyle(Color.appTextDarkGray)
-                if mission.isExtension {
-                    Text("전일 미션 연장 · 보상 70% · 시즌 점수/연속 보상 제외")
-                        .font(.appFont(for: .Light, size: 10))
-                        .foregroundStyle(Color.appTextDarkGray)
-                }
-            }
-            animatedQuestProgressBar(mission: mission)
-            Text("행동량 \(mission.progress.actionCount)/\(mission.minimumActionCount)")
-                .font(.appFont(for: .Light, size: 11))
-                .foregroundStyle(Color.appTextDarkGray)
-            HStack(spacing: 8) {
-                Button("행동 +1") {
-                    viewModel.recordIndoorMissionAction(mission.id)
-                }
-                .font(.appFont(for: .SemiBold, size: 11))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-                .background(Color.appYellowPale)
-                .cornerRadius(8)
-                .disabled(claimed)
-
-                Button(claimTitle) {
-                    viewModel.finalizeIndoorMission(mission.id)
-                }
-                .font(.appFont(for: .SemiBold, size: 11))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-                .background(claimButtonColor)
-                .cornerRadius(8)
-                .scaleEffect(questClaimPulseMissionId == mission.id ? 1.06 : 1.0)
-                .animation(
-                    isQuestMotionReduced ? nil : .spring(response: 0.3, dampingFraction: 0.74),
-                    value: questClaimPulseMissionId == mission.id
-                )
-            }
-        }
-        .padding(10)
-        .background(Color.appYellowPale.opacity(0.45))
-        .cornerRadius(10)
-        .scaleEffect(folded ? 0.985 : 1.0)
-        .animation(
-            isQuestMotionReduced ? nil : .easeInOut(duration: 0.22),
-            value: folded
-        )
-        .onAppear {
-            if animatedQuestProgress[mission.id] == nil {
-                animatedQuestProgress[mission.id] = mission.progress.progressRatio
-            }
-        }
-        .onChange(of: mission.progress.progressRatio) { _, next in
-            if isQuestMotionReduced {
-                animatedQuestProgress[mission.id] = next
-            } else {
-                withAnimation(.easeOut(duration: 0.34)) {
+            },
+            onProgressSync: { next in
+                if isQuestMotionReduced {
                     animatedQuestProgress[mission.id] = next
+                } else {
+                    withAnimation(.easeOut(duration: 0.34)) {
+                        animatedQuestProgress[mission.id] = next
+                    }
                 }
             }
-        }
-        .accessibilityIdentifier("home.quest.row.\(mission.id)")
+        )
     }
 }
 

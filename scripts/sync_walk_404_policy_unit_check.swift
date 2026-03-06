@@ -27,7 +27,10 @@ let syncStore = loadMany([
     "dogArea/Source/AppSession/AuthFlowCoordinator.swift"
 ])
 let mapVM = load("dogArea/Views/MapView/MapViewModel.swift")
-let homeView = load("dogArea/Views/HomeView/HomeView.swift")
+let homeView = loadMany([
+    "dogArea/Views/HomeView/HomeView.swift",
+    "dogArea/Views/HomeView/HomeSubView/Cards/HomeGuestDataUpgradeCardView.swift"
+])
 
 assertTrue(
     infra.contains("private enum SyncWalkFunctionRoute"),

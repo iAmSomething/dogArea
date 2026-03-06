@@ -23,6 +23,7 @@ let homeView = load("dogArea/Views/HomeView/HomeView.swift")
 let homeViewModel = loadMany([
     "dogArea/Views/HomeView/HomeViewModel.swift",
     "dogArea/Source/Domain/Home/Models/HomeMissionModels.swift",
+    "dogArea/Source/Domain/Home/Services/HomeQuestReminderSupport.swift",
     "dogArea/Source/Domain/Home/Stores/IndoorMissionStore.swift",
     "dogArea/Source/Domain/Home/Stores/SeasonMotionStore.swift"
 ])
