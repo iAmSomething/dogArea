@@ -73,10 +73,8 @@ struct NotificationCenterView: View {
             }
             .padding(.horizontal, 16)
             .padding(.top, 24)
-            .appTabBarContentPadding(extra: 20)
         }
-        .scrollIndicators(.hidden)
-        .safeAreaPadding(.top, 8)
+        .appTabRootScrollLayout(extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding)
         .onAppear {
             viewModel.reloadUserInfo()
         }
@@ -122,10 +120,8 @@ struct NotificationCenterView: View {
             }
             .padding(.horizontal, 16)
             .padding(.top, 24)
-            .appTabBarContentPadding(extra: 20)
         }
-        .scrollIndicators(.hidden)
-        .safeAreaPadding(.top, 8)
+        .appTabRootScrollLayout(extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding)
     }
 
     private var memberProfileCard: some View {

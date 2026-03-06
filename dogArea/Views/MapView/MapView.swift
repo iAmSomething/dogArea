@@ -12,7 +12,6 @@ import _MapKit_SwiftUI
 import UIKit
 #endif
 struct MapView : View{
-    @Environment(\.appTabBarReservedHeight) private var appTabBarReservedHeight
     @EnvironmentObject var loading: LoadingViewModel
     @EnvironmentObject var authFlow: AuthFlowCoordinator
     @StateObject private var myAlert = CustomAlertViewModel()
@@ -153,7 +152,11 @@ struct MapView : View{
                 MapAlertSubView(viewModel: viewModel, myAlert: myAlert)
 
                 VStack {
-                    Spacer().frame(height: max(proxy.safeAreaInsets.top, 0) + 8)
+                    Spacer().frame(
+                        height: AppTabLayoutMetrics.topOverlaySpacing(
+                            safeAreaTopInset: proxy.safeAreaInsets.top
+                        )
+                    )
                     HStack {
                         Spacer()
                         Button(action:{
@@ -380,7 +383,7 @@ struct MapView : View{
             isModalPresented: $isWalkingViewPresented,
             endWalkingViewPresented: $endWalkingViewPresented
         )
-        .padding(.bottom, max(appTabBarReservedHeight - 28, 12))
+        .appTabFloatingOverlayPadding()
     }
 
     var recoverableSessionBanner: some View {

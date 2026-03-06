@@ -30,11 +30,8 @@ struct RivalTabView: View {
                 footerButtons
             }
             .padding(.top, 8)
-            .appTabBarContentPadding(extra: 20)
         }
-        .scrollIndicators(.hidden)
-        .safeAreaPadding(.top, 8)
-        .background(Color.appTabScaffoldBackground)
+        .appTabRootScrollLayout(extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding)
         .accessibilityIdentifier("screen.rival.content")
         .onAppear {
             viewModel.start()

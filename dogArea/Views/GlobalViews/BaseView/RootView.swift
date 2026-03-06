@@ -65,7 +65,7 @@ struct RootView: View {
 
     var body: some View {
         tabContent
-            .appTabBarReservedHeight(CustomTabBar.reservedContentHeight)
+            .appTabBarReservedHeight(AppTabLayoutMetrics.defaultTabBarReservedHeight)
             .onPreferenceChange(AppTabBarVisibilityPreferenceKey.self) { visibility in
                 tabBarVisibility = visibility
             }
