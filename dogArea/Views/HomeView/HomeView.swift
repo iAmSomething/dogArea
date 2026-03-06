@@ -209,7 +209,7 @@ struct HomeView: View {
                 }.onChange(of: viewModel.areaMilestonePresentation) { _, event in
                 guard event != nil else { return }
                 presentAreaMilestoneOverlay()
-                }.onChange(of: authFlow.guestDataUpgradeResult?.id) { _, _ in
+                }.onChange(of: authFlow.guestDataUpgradeResult?.executedAt) { _, _ in
                 viewModel.refreshGuestDataUpgradeReport()
                 }.onChange(of: isLowPowerModeEnabled) { _, enabled in
                 if enabled {
