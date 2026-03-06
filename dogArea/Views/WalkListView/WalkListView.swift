@@ -8,102 +8,96 @@
 import SwiftUI
 
 struct WalkListView: View {
-    @StateObject var tabStatus = TabAppear.shared
     @ObservedObject private var viewModel = WalkListViewModel()
     @State private var scrollPosition: CGFloat = 0
     @EnvironmentObject var authFlow: AuthFlowCoordinator
     @Environment(\.colorScheme) var scheme
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                LazyVStack(pinnedViews: [.sectionHeaders]) {
-                    if authFlow.isGuestMode {
-                        guestUpgradeCard
-                            .padding(.horizontal, 16)
-                            .padding(.top, 10)
-                    }
-                    if viewModel.pets.isEmpty == false {
-                        petContextSwitcher
-                            .padding(.horizontal, 16)
-                            .padding(.top, 8)
-                    }
-                    if viewModel.walkingDatas.isEmpty {
-                        if viewModel.shouldShowSelectedPetEmptyState {
-                            filteredEmptyStateCard
-                        } else {
-                            emptyHistoryCard
-                        }
-                    } else {
-                        if viewModel.walkingDatas.thisWeekList.isEmpty == false {
-                            Section(content: {
-                                VStack {
-                                    ForEach(viewModel.walkingDatas.thisWeekList.reversed(), id:\.self) { walk in
-                                        NavigationLink(value: walk) {
-                                            WalkListCell(walkData: walk)
-                                        }.padding()
-                                            .accessibilityIdentifier("walklist.cell")
-                                            .cornerRadius(15)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 15)
-                                                    .stroke(Color.appTextDarkGray, lineWidth: 0.3)
-                                            )
-                                            .padding(.horizontal, 15)
-                                    }
-                                }
-                            }, header: {HStack {
-                                Text("이번 주 산책 목록")
-                                    .font(.appFont(for: .SemiBold, size: 20))
-                                    .padding()
-                                Spacer()
-                            }.background(scheme == .dark ? Color.black : Color.white)
-                            })
-                        }
-                        if viewModel.walkingDatas.exceptThisWeek.isEmpty == false {
-                            Section(content: {
-                                VStack {
-                                    ForEach(viewModel.walkingDatas.exceptThisWeek.reversed(), id:\.self) { walk in
-                                        NavigationLink(value: walk) {
-                                            WalkListCell(walkData: walk)
-                                        }.padding()
-                                            .accessibilityIdentifier("walklist.cell")
-                                            .cornerRadius(15)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 15)
-                                                    .stroke(Color.appTextDarkGray, lineWidth: 0.3)
-                                            )
-                                            .padding(.horizontal, 15)
-
-                                    }
-                                }
-
-                            }, header: {HStack {
-                                Text("이전 산책 목록")
-                                    .font(.appFont(for: .SemiBold, size: 20))
-                                    .padding()
-                                Spacer()
-                            }.background(scheme == .dark ? Color.black : Color.white)
-                            })
-                        }
-                    }
-                    
+        ScrollView {
+            LazyVStack(pinnedViews: [.sectionHeaders]) {
+                if authFlow.isGuestMode {
+                    guestUpgradeCard
+                        .padding(.horizontal, 16)
+                        .padding(.top, 10)
                 }
-                .padding(.top, 8)
-                .padding(.bottom, CustomTabBar.reservedContentHeight + 12)
-            }.refreshable {
-                viewModel.fetchModel()
-            }
-            .safeAreaPadding(.top, 8)
-            .background(Color.appTabScaffoldBackground)
-            .onAppear{
-                tabStatus.appear()
+                if viewModel.pets.isEmpty == false {
+                    petContextSwitcher
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
+                }
+                if viewModel.walkingDatas.isEmpty {
+                    if viewModel.shouldShowSelectedPetEmptyState {
+                        filteredEmptyStateCard
+                    } else {
+                        emptyHistoryCard
+                    }
+                } else {
+                    if viewModel.walkingDatas.thisWeekList.isEmpty == false {
+                        Section(content: {
+                            VStack {
+                                ForEach(viewModel.walkingDatas.thisWeekList.reversed(), id:\.self) { walk in
+                                    NavigationLink(value: walk) {
+                                        WalkListCell(walkData: walk)
+                                    }.padding()
+                                        .accessibilityIdentifier("walklist.cell")
+                                        .cornerRadius(15)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 15)
+                                                .stroke(Color.appTextDarkGray, lineWidth: 0.3)
+                                        )
+                                        .padding(.horizontal, 15)
+                                }
+                            }
+                        }, header: {HStack {
+                            Text("이번 주 산책 목록")
+                                .font(.appFont(for: .SemiBold, size: 20))
+                                .padding()
+                            Spacer()
+                        }.background(scheme == .dark ? Color.black : Color.white)
+                        })
+                    }
+                    if viewModel.walkingDatas.exceptThisWeek.isEmpty == false {
+                        Section(content: {
+                            VStack {
+                                ForEach(viewModel.walkingDatas.exceptThisWeek.reversed(), id:\.self) { walk in
+                                    NavigationLink(value: walk) {
+                                        WalkListCell(walkData: walk)
+                                    }.padding()
+                                        .accessibilityIdentifier("walklist.cell")
+                                        .cornerRadius(15)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 15)
+                                                .stroke(Color.appTextDarkGray, lineWidth: 0.3)
+                                        )
+                                        .padding(.horizontal, 15)
 
-                viewModel.fetchModel()
-            }.navigationDestination(for: WalkDataModel.self) { model in
-                WalkListDetailView(model: model)
-            }.navigationTitle("산책 목록")
-                .font(.appFont(for: .ExtraBold, size: 36))
-                .accessibilityIdentifier("screen.walkList.content")
+                                }
+                            }
+
+                        }, header: {HStack {
+                            Text("이전 산책 목록")
+                                .font(.appFont(for: .SemiBold, size: 20))
+                                .padding()
+                            Spacer()
+                        }.background(scheme == .dark ? Color.black : Color.white)
+                        })
+                    }
+                }
+            }
+            .padding(.top, 8)
+            .appTabBarContentPadding(extra: 12)
+        }.refreshable {
+            viewModel.fetchModel()
         }
+        .safeAreaPadding(.top, 8)
+        .background(Color.appTabScaffoldBackground)
+        .onAppear{
+            viewModel.fetchModel()
+        }.navigationDestination(for: WalkDataModel.self) { model in
+                WalkListDetailView(model: model)
+        }.navigationTitle("산책 목록")
+            .font(.appFont(for: .ExtraBold, size: 36))
+            .accessibilityIdentifier("screen.walkList.content")
         .background(Color.appTabScaffoldBackground.ignoresSafeArea())
     }
 

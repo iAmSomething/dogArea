@@ -25,6 +25,15 @@ func load(_ relativePath: String) -> String {
 }
 
 let rootView = load("dogArea/Views/GlobalViews/BaseView/RootView.swift")
+let scaffold = load("dogArea/Views/GlobalViews/BaseView/AppTabScaffold.swift")
+let homeView = load("dogArea/Views/HomeView/HomeView.swift")
+let mapView = load("dogArea/Views/MapView/MapView.swift")
+let walkListView = load("dogArea/Views/WalkListView/WalkListView.swift")
+let settingsView = load("dogArea/Views/ProfileSettingView/NotificationCenterView.swift")
+let rivalView = load("dogArea/Views/ProfileSettingView/RivalTabView.swift")
+let territoryGoalView = load("dogArea/Views/HomeView/HomeSubView/TerritoryGoalView.swift")
+let areaDetailView = load("dogArea/Views/HomeView/AreaDetailView.swift")
+let walkListDetailView = load("dogArea/Views/WalkListView/WalkListDetailView.swift")
 
 assertTrue(
     rootView.contains(".safeAreaInset(edge: .bottom, spacing: 0)"),
@@ -35,12 +44,50 @@ assertTrue(
     "RootView should render CustomTabBar inside bottom safe area inset"
 )
 assertTrue(
-    !rootView.contains("ZStack(alignment: .bottom)"),
-    "RootView should avoid bottom overlay ZStack that can cover content"
+    !rootView.contains("NavigationView"),
+    "RootView should use NavigationStack-based tab roots instead of NavigationView"
 )
 assertTrue(
-    !rootView.contains(".padding(.bottom, 2)"),
-    "RootView should avoid manual bottom offset that reintroduces overlap risk"
+    rootView.contains("AppTabRootContainer"),
+    "RootView should use the shared app tab root container"
 )
+assertTrue(
+    scaffold.contains("func appTabBarContentPadding(extra: CGFloat = 0) -> some View"),
+    "AppTabScaffold should expose shared bottom content padding"
+)
+assertTrue(
+    scaffold.contains("func appTabBarVisibility(_ visibility: AppTabBarVisibility) -> some View"),
+    "AppTabScaffold should expose declarative tab bar visibility"
+)
+for (name, source) in [
+    ("HomeView", homeView),
+    ("MapView", mapView),
+    ("WalkListView", walkListView),
+    ("NotificationCenterView", settingsView),
+    ("RivalTabView", rivalView)
+] {
+    assertTrue(
+        source.contains(".appTabBarContentPadding("),
+        "\(name) should use shared app tab bar padding"
+    )
+    assertTrue(
+        !source.contains("CustomTabBar.reservedContentHeight"),
+        "\(name) should not hard-code CustomTabBar reserved height"
+    )
+}
+for (name, source) in [
+    ("TerritoryGoalView", territoryGoalView),
+    ("AreaDetailView", areaDetailView),
+    ("WalkListDetailView", walkListDetailView)
+] {
+    assertTrue(
+        source.contains(".appTabBarVisibility(.hidden)"),
+        "\(name) should declaratively hide the tab bar"
+    )
+    assertTrue(
+        !source.contains("TabAppear.shared"),
+        "\(name) should not depend on TabAppear singleton state"
+    )
+}
 
 print("PASS: tabbar safe area regression unit checks")

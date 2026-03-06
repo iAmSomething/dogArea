@@ -16,7 +16,6 @@ struct WalkListDetailView: View {
     @State private var showShareSheet = false
     @State private var selectedLoc: UUID? = nil
     @State private var sessionMetadata: WalkSessionMetadata? = nil
-    @StateObject var tabStatus = TabAppear.shared
     @StateObject var imageRenderer = MapImageProvider()
     var body: some View {
         let tempPolygon = model.toPolygon()
@@ -112,7 +111,6 @@ struct WalkListDetailView: View {
                     .padding(.horizontal, 70)
                 Spacer()
                 Button(action: {
-                    tabStatus.appear()
                     dismiss()
                 },
                        label:  {
@@ -145,11 +143,9 @@ struct WalkListDetailView: View {
                 imageRenderer.captureMapImage(for: polygon)
             }
             sessionMetadata = WalkSessionMetadataStore.shared.metadata(sessionId: model.id)
-            tabStatus.hide()
-        }.safeAreaPadding(.top, 20)
-            .onDisappear {
-                tabStatus.appear()
-            }
+        }
+        .safeAreaPadding(.top, 20)
+        .appTabBarVisibility(.hidden)
 
     }
     private func endReasonText(_ reason: WalkSessionEndReason) -> String {

@@ -20,6 +20,7 @@ private struct HomeScrollOffsetPreferenceKey: PreferenceKey {
 }
 
 struct HomeView: View {
+    @Environment(\.appTabBarReservedHeight) private var appTabBarReservedHeight
     private enum QuestWidgetTab: String, CaseIterable, Identifiable {
         case daily
         case weekly
@@ -153,7 +154,7 @@ struct HomeView: View {
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 20)
-                    .padding(.bottom, CustomTabBar.reservedContentHeight + 12)
+                    .appTabBarContentPadding(extra: 12)
                 }
                 .coordinateSpace(name: "home.scroll")
                 .safeAreaPadding(.top, 8)
@@ -308,7 +309,7 @@ struct HomeView: View {
                 .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: 8)
             }
             .padding(.trailing, 20)
-            .padding(.bottom, CustomTabBar.reservedContentHeight - 20)
+            .padding(.bottom, appTabBarReservedHeight - 20)
             .accessibilityLabel("홈 상단으로 이동")
             .accessibilityHint("스크롤 위치를 맨 위로 이동합니다")
             .transition(.move(edge: .trailing).combined(with: .opacity))
