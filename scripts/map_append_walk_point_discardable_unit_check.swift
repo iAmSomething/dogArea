@@ -15,10 +15,17 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
-let source = load("dogArea/Views/MapView/MapViewModel.swift")
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
+let source = loadMany([
+    "dogArea/Views/MapView/MapViewModel.swift",
+    "dogArea/Views/MapView/MapViewModelSupport/MapViewModel+WatchConnectivitySupport.swift"
+])
 
 assertTrue(
-    source.contains("@discardableResult\n    private func appendWalkPoint(from location: CLLocation, recordedAt: Date, source: PointAppendSource) -> Location"),
+    source.contains("@discardableResult\n    func appendWalkPoint(from location: CLLocation, recordedAt: Date, source: PointAppendSource) -> Location"),
     "appendWalkPoint should be marked @discardableResult to avoid unused-result warnings"
 )
 assertTrue(

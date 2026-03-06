@@ -17,7 +17,14 @@ func read(_ path: String) -> String {
     (try? String(contentsOfFile: path, encoding: .utf8)) ?? ""
 }
 
-let mapViewModel = read("dogArea/Views/MapView/MapViewModel.swift")
+func readMany(_ paths: [String]) -> String {
+    paths.map(read).joined(separator: "\n")
+}
+
+let mapViewModel = readMany([
+    "dogArea/Views/MapView/MapViewModel.swift",
+    "dogArea/Views/MapView/MapViewModelSupport/MapViewModel+WatchConnectivitySupport.swift"
+])
 let watchVM = read("dogAreaWatch Watch App/ContentsViewModel.swift")
 let watchView = read("dogAreaWatch Watch App/ContentView.swift")
 let docs = read("docs/watch-connectivity-reliability-v1.md")

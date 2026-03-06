@@ -30,7 +30,11 @@ let userDefaultsSource = loadMany([
     "dogArea/Source/AppSession/GuestDataUpgradeService.swift",
     "dogArea/Source/AppSession/AuthFlowCoordinator.swift"
 ])
-let mapViewModel = load("dogArea/Views/MapView/MapViewModel.swift")
+let mapViewModel = loadMany([
+    "dogArea/Views/MapView/MapViewModel.swift",
+    "dogArea/Views/MapView/MapViewModelSupport/MapViewModel+WidgetRuntimeSupport.swift",
+    "dogArea/Views/MapView/MapViewModelSupport/MapViewModel+WatchConnectivitySupport.swift"
+])
 let startButton = load("dogArea/Views/MapView/MapSubViews/StartButtonView.swift")
 let homeViewModel = loadMany([
     "dogArea/Views/HomeView/HomeViewModel.swift",

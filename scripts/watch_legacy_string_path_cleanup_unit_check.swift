@@ -13,8 +13,20 @@ func assertTrue(_ condition: Bool, _ message: String) {
 }
 
 let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-let sourcePath = root.appendingPathComponent("dogArea/Views/MapView/MapViewModel.swift")
-let source = String(decoding: try! Data(contentsOf: sourcePath), as: UTF8.self)
+
+func load(_ relativePath: String) -> String {
+    let path = root.appendingPathComponent(relativePath)
+    return String(decoding: try! Data(contentsOf: path), as: UTF8.self)
+}
+
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
+let source = loadMany([
+    "dogArea/Views/MapView/MapViewModel.swift",
+    "dogArea/Views/MapView/MapViewModelSupport/MapViewModel+WatchConnectivitySupport.swift"
+])
 
 assertTrue(
     source.contains("private func applyWatchAction(_ envelope: WatchActionEnvelope)"),
