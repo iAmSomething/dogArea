@@ -21,6 +21,9 @@ func loadMany(_ relativePaths: [String]) -> String {
 
 let homeVM = loadMany([
     "dogArea/Views/HomeView/HomeViewModel.swift",
+    "dogArea/Views/HomeView/HomeViewModelSupport/HomeViewModel+SessionLifecycle.swift",
+    "dogArea/Views/HomeView/HomeViewModelSupport/HomeViewModel+AreaProgress.swift",
+    "dogArea/Views/HomeView/HomeViewModelSupport/HomeViewModel+IndoorMissionFlow.swift",
     "dogArea/Source/Domain/Home/Models/HomeMissionModels.swift",
     "dogArea/Source/Domain/Home/Stores/IndoorMissionStore.swift",
     "dogArea/Source/Domain/Home/Stores/SeasonMotionStore.swift"
@@ -31,7 +34,7 @@ let walkListView = load("dogArea/Views/WalkListView/WalkListView.swift")
 let uxDoc = load("docs/pet-context-badge-empty-state-v1.md")
 let readme = load("README.md")
 
-assertTrue(homeVM.contains("@Published private(set) var isShowingAllRecordsOverride"), "HomeViewModel should expose all-records override state")
+assertTrue(homeVM.contains("@Published var isShowingAllRecordsOverride"), "HomeViewModel should expose all-records override state for support-file updates")
 assertTrue(homeVM.contains("var shouldShowSelectedPetEmptyState"), "HomeViewModel should compute selected-pet empty state")
 assertTrue(homeVM.contains("func showAllRecordsTemporarily()"), "HomeViewModel should support temporary all-records mode")
 assertTrue(homeVM.contains("func showSelectedPetRecords()"), "HomeViewModel should support returning to selected-pet mode")

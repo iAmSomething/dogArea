@@ -36,6 +36,9 @@ let titleTextView = load("dogArea/Views/GlobalViews/TitleTextView.swift")
 let homeView = load("dogArea/Views/HomeView/HomeView.swift")
 let homeViewModel = loadMany([
     "dogArea/Views/HomeView/HomeViewModel.swift",
+    "dogArea/Views/HomeView/HomeViewModelSupport/HomeViewModel+SessionLifecycle.swift",
+    "dogArea/Views/HomeView/HomeViewModelSupport/HomeViewModel+AreaProgress.swift",
+    "dogArea/Views/HomeView/HomeViewModelSupport/HomeViewModel+IndoorMissionFlow.swift",
     "dogArea/Views/HomeView/HomeViewModelSupport/HomePresentationStateModels.swift",
     "dogArea/Source/Domain/Home/Services/HomeAreaAggregationService.swift",
     "dogArea/Source/Domain/Home/Models/HomeMissionModels.swift",

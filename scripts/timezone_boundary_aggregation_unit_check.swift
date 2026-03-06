@@ -26,6 +26,9 @@ func loadMany(_ relativePaths: [String]) -> String {
 let root = FileManager.default.currentDirectoryPath
 let homeViewModel = loadMany([
     root + "/dogArea/Views/HomeView/HomeViewModel.swift",
+    root + "/dogArea/Views/HomeView/HomeViewModelSupport/HomeViewModel+SessionLifecycle.swift",
+    root + "/dogArea/Views/HomeView/HomeViewModelSupport/HomeViewModel+AreaProgress.swift",
+    root + "/dogArea/Views/HomeView/HomeViewModelSupport/HomeViewModel+IndoorMissionFlow.swift",
     root + "/dogArea/Source/Domain/Home/Models/HomeMissionModels.swift",
     root + "/dogArea/Source/Domain/Home/Stores/IndoorMissionStore.swift",
     root + "/dogArea/Source/Domain/Home/Stores/SeasonMotionStore.swift"

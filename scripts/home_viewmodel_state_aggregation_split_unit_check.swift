@@ -15,17 +15,33 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
-let homeViewModel = load("dogArea/Views/HomeView/HomeViewModel.swift")
+let mainFile = load("dogArea/Views/HomeView/HomeViewModel.swift")
+let sessionLifecycle = load("dogArea/Views/HomeView/HomeViewModelSupport/HomeViewModel+SessionLifecycle.swift")
+let areaProgress = load("dogArea/Views/HomeView/HomeViewModelSupport/HomeViewModel+AreaProgress.swift")
+let indoorMissionFlow = load("dogArea/Views/HomeView/HomeViewModelSupport/HomeViewModel+IndoorMissionFlow.swift")
 let presentationModels = load("dogArea/Views/HomeView/HomeViewModelSupport/HomePresentationStateModels.swift")
 let areaModels = load("dogArea/Source/Domain/Home/Models/AreaReferenceModels.swift")
 let aggregationService = load("dogArea/Source/Domain/Home/Services/HomeAreaAggregationService.swift")
 
-assertTrue(!homeViewModel.contains("enum QuestMotionEventType"), "HomeViewModel should no longer inline quest motion presentation types")
-assertTrue(!homeViewModel.contains("struct WeatherMissionStatusSummary"), "HomeViewModel should no longer inline weather presentation summary types")
-assertTrue(homeViewModel.contains("private let areaAggregationService: HomeAreaAggregationServicing"), "HomeViewModel should inject area aggregation service")
-assertTrue(homeViewModel.contains("areaAggregationService.filteredPolygons"), "HomeViewModel should delegate polygon filtering to area aggregation service")
-assertTrue(homeViewModel.contains("areaAggregationService.combinedAreas"), "HomeViewModel should delegate combined area assembly")
-assertTrue(homeViewModel.contains("areaAggregationService.shouldPersistCurrentMeter"), "HomeViewModel should delegate meter persistence decision")
+assertTrue(!mainFile.contains("enum QuestMotionEventType"), "HomeViewModel should no longer inline quest motion presentation types")
+assertTrue(!mainFile.contains("struct WeatherMissionStatusSummary"), "HomeViewModel should no longer inline weather presentation summary types")
+assertTrue(mainFile.contains("let areaAggregationService: HomeAreaAggregationServicing"), "HomeViewModel should inject area aggregation service")
+assertTrue(!mainFile.contains("func fetchData()"), "HomeViewModel main file should not own session lifecycle functions")
+assertTrue(!mainFile.contains("func applySelectedPetStatistics"), "HomeViewModel main file should not own aggregation functions")
+assertTrue(!mainFile.contains("func refreshIndoorMissions"), "HomeViewModel main file should not own indoor mission flow functions")
+
+assertTrue(sessionLifecycle.contains("func fetchData()"), "session lifecycle support should own fetchData")
+assertTrue(sessionLifecycle.contains("func refreshAreaReferenceCatalogs()"), "session lifecycle support should own area reference refresh")
+assertTrue(sessionLifecycle.contains("func bindSelectedPetSync()"), "session lifecycle support should own selected pet sync binding")
+
+assertTrue(areaProgress.contains("areaAggregationService.filteredPolygons"), "area progress support should delegate polygon filtering to area aggregation service")
+assertTrue(areaProgress.contains("areaAggregationService.combinedAreas"), "area progress support should delegate combined area assembly")
+assertTrue(areaProgress.contains("areaAggregationService.shouldPersistCurrentMeter"), "area progress support should delegate meter persistence decision")
+assertTrue(areaProgress.contains("func evaluateAreaMilestones"), "area progress support should own milestone evaluation")
+
+assertTrue(indoorMissionFlow.contains("func refreshIndoorMissions"), "indoor mission support should own mission refresh")
+assertTrue(indoorMissionFlow.contains("func finalizeIndoorMission"), "indoor mission support should own mission completion flow")
+assertTrue(indoorMissionFlow.contains("func refreshSeasonMotion"), "indoor mission support should own season motion refresh")
 
 assertTrue(presentationModels.contains("enum QuestMotionEventType"), "presentation support file should define quest motion event type")
 assertTrue(presentationModels.contains("struct SeasonMotionSummary"), "presentation support file should define season motion summary")
