@@ -42,25 +42,23 @@ struct ProfileSettingsView: View {
                 }
                 .buttonStyle(.plain)
 
-                VStack(alignment: .leading, spacing: 10) {
-                    TitleTextView(title: "사용자 이름", type: .MediumTitle, subTitle: "사용자 이름을 입력해주세요!")
-                    TextField("사용자 이름을 입력해주세요", text: $viewModel.userName)
-                        .appInputField(validity: viewModel.userName.isEmpty == false)
-
-                    TitleTextView(title: "프로필 메시지", type: .MediumTitle, subTitle: "산책 스타일을 한 줄로 소개해보세요! (선택)")
-                    TextField("예: 아침 산책을 좋아해요", text: $viewModel.userProfileMessage)
-                        .appInputField()
-
-                    NavigationLink(destination: {
-                        PetProfileSettingView(path: $path, onSignupCompleted: onSignupCompleted).environmentObject(viewModel)
-                    }, label: { Text("다음 단계로") })
-                    .disabled(viewModel.userName.isEmpty)
-                    .buttonStyle(AppFilledButtonStyle(role: viewModel.userName.isEmpty ? .neutral : .primary))
-                    .padding(.top, 4)
-                }
+                ProfileEditorUserFieldsCard(
+                    userName: $viewModel.userName,
+                    profileMessage: $viewModel.userProfileMessage
+                )
                 .padding(.horizontal, 16)
-                .appCardSurface()
+
+                NavigationLink(destination: {
+                    PetProfileSettingView(path: $path, onSignupCompleted: onSignupCompleted).environmentObject(viewModel)
+                }, label: { Text("다음 단계로") })
+                .disabled(viewModel.userName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .buttonStyle(
+                    AppFilledButtonStyle(
+                        role: viewModel.userName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .neutral : .primary
+                    )
+                )
                 .padding(.horizontal, 16)
+                .padding(.top, 4)
             }
             .padding(.bottom, 24)
         }
@@ -69,5 +67,4 @@ struct ProfileSettingsView: View {
             ImagePicker(image: $viewModel.userProfile, type: .photoLibrary)
         })
     }
-    
 }

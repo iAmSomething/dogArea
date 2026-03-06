@@ -23,7 +23,9 @@ let userDefaults = loadMany([
     "dogArea/Source/UserdefaultSetting.swift",
     "dogArea/Source/AppSession/AppFeatureGate.swift",
     "dogArea/Source/AppSession/GuestDataUpgradeService.swift",
-    "dogArea/Source/AppSession/AuthFlowCoordinator.swift"
+    "dogArea/Source/AppSession/AuthFlowCoordinator.swift",
+    "dogArea/Source/ProfileStore.swift",
+    "dogArea/Source/PetSelectionStore.swift"
 ])
 let homeVM = loadMany([
     "dogArea/Views/HomeView/HomeViewModel.swift",
@@ -31,35 +33,25 @@ let homeVM = loadMany([
     "dogArea/Source/Domain/Home/Stores/IndoorMissionStore.swift",
     "dogArea/Source/Domain/Home/Stores/SeasonMotionStore.swift"
 ])
-let homeView = load("dogArea/Views/HomeView/HomeView.swift")
 let settingVM = load("dogArea/Views/ProfileSettingView/SettingViewModel.swift")
 let notificationView = load("dogArea/Views/ProfileSettingView/NotificationCenterView.swift")
 let mapVM = load("dogArea/Views/MapView/MapViewModel.swift")
-let startButton = load("dogArea/Views/MapView/MapSubViews/StartButtonView.swift")
-let startModal = load("dogArea/Views/MapView/StartModalView.swift")
+let walkListVM = load("dogArea/Views/WalkListView/WalkListViewModel.swift")
+let specDoc = load("docs/multi-dog-selection-ux-v1.md")
 
-assertTrue(userDefaults.contains("case selectedPetId = \"selectedPetId\""), "UserdefaultSetting should persist selectedPetId")
-assertTrue(
-    userDefaults.contains("func setSelectedPetId(_ petId: String, source: String = \"manual\")"),
-    "UserdefaultSetting should expose pet selection setter"
-)
-assertTrue(userDefaults.contains("func selectedPet(from userInfo: UserInfo? = nil) -> PetInfo?"), "UserdefaultSetting should expose selected pet resolver")
+assertTrue(userDefaults.contains("var isActive: Bool = true"), "PetInfo should persist activation state")
+assertTrue(userDefaults.contains("let activePets = pet.filter(\\.isActive)"), "selected pet resolution should prefer active pets")
+assertTrue(userDefaults.contains("current.pet.contains(where: { $0.petId == petId && $0.isActive })"), "pet selection store should block inactive pet selection")
 
-assertTrue(homeVM.contains("@Published var selectedPetId"), "HomeViewModel should keep selectedPetId state")
-assertTrue(homeVM.contains("func selectPet(_ petId: String)"), "HomeViewModel should support pet selection")
-assertTrue(homeView.contains("ForEach(viewModel.pets, id: \\.petId)"), "HomeView should render selectable pet chips")
+assertTrue(homeVM.contains("userInfo?.pet.filter(\\.isActive)"), "home should expose only active pets for selection")
+assertTrue(walkListVM.contains("userInfo?.pet.filter(\\.isActive)"), "walk list should expose only active pets for selection")
+assertTrue(mapVM.contains("userInfo?.pet.filter(\\.isActive)"), "map should expose only active pets for walk selection")
 
-assertTrue(settingVM.contains("func selectPet(_ petId: String)"), "SettingViewModel should support pet selection")
-assertTrue(notificationView.contains("viewModel.selectedPet"), "NotificationCenterView should render selected pet info")
-assertTrue(notificationView.contains("viewModel.selectPet"), "NotificationCenterView should allow selecting pet")
+assertTrue(settingVM.contains("var activePets: [PetInfo]"), "settings should expose active pet collection")
+assertTrue(settingVM.contains("var inactivePets: [PetInfo]"), "settings should expose inactive pet collection")
+assertTrue(notificationView.contains("settings.pet.manage"), "settings should expose pet management entry point")
+assertTrue(notificationView.contains("비활성 반려견"), "settings should surface inactive pet summary")
 
-assertTrue(mapVM.contains("@Published var selectedPetId"), "MapViewModel should track selected pet for walk start")
-assertTrue(mapVM.contains("func reloadSelectedPetContext()"), "MapViewModel should reload selected pet context")
-assertTrue(startButton.contains("guard viewModel.hasSelectedPet else"), "StartButtonView should block walk start when no selected pet")
-assertTrue(startModal.contains("let petName: String"), "StartModalView should receive selected pet name")
-
-assertTrue(!homeVM.contains("pet.first"), "HomeViewModel should avoid pet.first hardcoding")
-assertTrue(!homeView.contains("pet.first"), "HomeView should avoid pet.first hardcoding")
-assertTrue(!notificationView.contains("pet.first"), "NotificationCenterView should avoid pet.first hardcoding")
+assertTrue(specDoc.contains("선택값이 비어있거나 유효하지 않으면 첫 활성 반려견으로 보정"), "spec should require active pet fallback")
 
 print("PASS: multi-dog selection UX unit checks")

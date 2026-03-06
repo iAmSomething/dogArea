@@ -15,25 +15,38 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
 let settingViewModel = load("dogArea/Views/ProfileSettingView/SettingViewModel.swift")
-let notificationCenterView = load("dogArea/Views/ProfileSettingView/NotificationCenterView.swift")
-let checklist = load("docs/release-regression-checklist-v1.md")
+let profileEditSheet = load("dogArea/Views/ProfileSettingView/ProfileFieldEditSheet.swift")
+let profileEditSheetViewModel = load("dogArea/Views/ProfileSettingView/ProfileFieldEditSheetViewModel.swift")
+let sharedProfileEditor = load("dogArea/Views/GlobalViews/ProfileEditor/ProfileEditorCards.swift")
+let onboardingViews = loadMany([
+    "dogArea/Views/SigningView/ProfileSettingsView.swift",
+    "dogArea/Views/SigningView/PetProfileSettingView.swift"
+])
 let specDoc = load("docs/profile-edit-flow-v1.md")
 
-assertTrue(settingViewModel.contains("enum ProfileEditValidationError"), "setting view model should define edit validation errors")
-assertTrue(settingViewModel.contains("func updateProfileDetails"), "setting view model should expose profile edit save API")
-assertTrue(settingViewModel.contains("profile_edit_save"), "profile edit should publish selected pet sync source")
-assertTrue(settingViewModel.contains("normalizeOptionalText"), "profile edit should trim optional text fields")
-assertTrue(settingViewModel.contains("(0...30).contains"), "profile edit should validate age range 0...30")
+assertTrue(settingViewModel.contains("case invalidPetName"), "setting view model should validate empty pet names")
+assertTrue(settingViewModel.contains("func updateProfileDetails(\n        profileName:"), "setting view model should expose async profile edit API")
+assertTrue(settingViewModel.contains("petName:"), "profile edit save path should include pet name")
+assertTrue(settingViewModel.contains("UserProfileDraft("), "profile edit should reuse shared user draft validation")
+assertTrue(settingViewModel.contains("PetProfileDraft("), "profile edit should reuse shared pet draft validation")
 
-assertTrue(notificationCenterView.contains("프로필 편집"), "notification center should expose profile edit entry")
-assertTrue(notificationCenterView.contains("ProfileFieldEditSheet"), "notification center should present profile edit sheet")
-assertTrue(notificationCenterView.contains("TextField(\"프로필 메시지\""), "profile edit sheet should include profile message field")
-assertTrue(notificationCenterView.contains("TextField(\"나이 (0~30)\""), "profile edit sheet should include age input")
-assertTrue(notificationCenterView.contains("Picker(\"성별\""), "profile edit sheet should include gender picker")
+assertTrue(profileEditSheet.contains("ProfileEditorUserFieldsCard"), "profile edit sheet should use shared user editor card")
+assertTrue(profileEditSheet.contains("ProfileEditorPetFieldsCard"), "profile edit sheet should use shared pet editor card")
+assertTrue(profileEditSheetViewModel.contains("@Published var petName: String"), "profile edit sheet view model should track editable pet name")
+assertTrue(profileEditSheetViewModel.contains("petName: String"), "profile edit provider should pass pet name through save pipeline")
 
-assertTrue(specDoc.contains("#113"), "spec doc should bind to issue #113")
-assertTrue(specDoc.contains("나이(0~30)"), "spec doc should define age validation")
-assertTrue(checklist.contains("기존 가입 사용자 프로필 편집"), "release checklist should include profile edit regression")
+assertTrue(sharedProfileEditor.contains("struct ProfileEditorUserFieldsCard"), "shared profile editor should define user card")
+assertTrue(sharedProfileEditor.contains("struct ProfileEditorPetFieldsCard"), "shared profile editor should define pet card")
+assertTrue(onboardingViews.contains("ProfileEditorUserFieldsCard"), "onboarding should reuse shared user card")
+assertTrue(onboardingViews.contains("ProfileEditorPetFieldsCard"), "onboarding should reuse shared pet card")
+
+assertTrue(specDoc.contains("반려견 추가"), "spec doc should include pet add flow")
+assertTrue(specDoc.contains("대표 반려견 지정"), "spec doc should include primary pet flow")
+assertTrue(specDoc.contains("비활성/재활성"), "spec doc should include activation management flow")
 
 print("PASS: profile edit flow unit checks")

@@ -41,36 +41,30 @@ struct PetProfileSettingView: View {
                 }
                 .buttonStyle(.plain)
 
-                VStack(alignment: .leading, spacing: 10) {
-                    TitleTextView(title: "강아지 이름", type: .MediumTitle, subTitle: "강아지 이름을 입력해주세요!")
-                    TextField("강아지 이름을 입력해주세요", text: $viewModel.petName)
-                        .appInputField(validity: viewModel.petName.isEmpty == false)
-
-                    TitleTextView(title: "강아지 상세 정보", type: .MediumTitle, subTitle: "견종/믹스/나이/성별 입력은 선택이며, 미입력도 정상 사용 가능해요")
-                    TextField("견종/믹스/기타 (선택)", text: $viewModel.petBreed)
-                        .appInputField()
-                    TextField("나이 (숫자)", text: $viewModel.petAgeYearsText)
-                        .keyboardType(.numberPad)
-                        .appInputField()
-                    Picker("성별", selection: $viewModel.petGender) {
-                        ForEach(PetGender.allCases, id: \.rawValue) { item in
-                            Text(item.title).tag(item)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-
-                    Button(action: {
-                        viewModel.setValue()
-                    }, label: {
-                        Text("회원 가입하기")
-                    })
-                    .disabled(viewModel.petName.isEmpty)
-                    .buttonStyle(AppFilledButtonStyle(role: viewModel.petName.isEmpty ? .neutral : .primary))
-                    .padding(.top, 4)
-                }
+                ProfileEditorPetFieldsCard(
+                    title: "반려견 정보",
+                    subtitle: "이름은 필수, 견종/나이/성별은 선택입니다.",
+                    petName: $viewModel.petName,
+                    breed: $viewModel.petBreed,
+                    ageYearsText: $viewModel.petAgeYearsText,
+                    gender: $viewModel.petGender,
+                    requiresPetName: true
+                )
                 .padding(.horizontal, 16)
-                .appCardSurface()
+
+                Button(action: {
+                    viewModel.setValue()
+                }, label: {
+                    Text("회원 가입하기")
+                })
+                .disabled(viewModel.petName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .buttonStyle(
+                    AppFilledButtonStyle(
+                        role: viewModel.petName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .neutral : .primary
+                    )
+                )
                 .padding(.horizontal, 16)
+                .padding(.top, 4)
             }
             .padding(.bottom, 24)
         }

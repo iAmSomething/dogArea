@@ -43,7 +43,7 @@ final class PetSelectionStore: PetSelectionStoring {
     }
 
     func setSelectedPetId(_ petId: String, source: String = "manual") {
-        guard let current = profileStore.getValue(), current.pet.contains(where: { $0.petId == petId }) else {
+        guard let current = profileStore.getValue(), current.pet.contains(where: { $0.petId == petId && $0.isActive }) else {
             return
         }
 
@@ -87,20 +87,24 @@ final class PetSelectionStore: PetSelectionStoring {
 
     func selectedPet(from userInfo: UserInfo? = nil) -> PetInfo? {
         guard let info = userInfo else { return nil }
+        let activePets = info.pet.filter(\.isActive)
+        guard activePets.isEmpty == false else { return nil }
         let selectedId = selectedPetId()
-        return info.pet.first(where: { $0.petId == selectedId }) ?? info.pet.first
+        return activePets.first(where: { $0.petId == selectedId }) ?? activePets.first
     }
 
     func suggestedPetForWalkStart(from userInfo: UserInfo?, now: Date = Date()) -> PetInfo? {
         guard let info = userInfo, info.pet.isEmpty == false else { return nil }
-        if info.pet.count == 1 {
-            return info.pet.first
+        let activePets = info.pet.filter(\.isActive)
+        guard activePets.isEmpty == false else { return nil }
+        if activePets.count == 1 {
+            return activePets.first
         }
 
         let weekday = Calendar.current.component(.weekday, from: now)
         let timeSlot = petSelectionTimeSlot(for: now)
         let scoreMap = loadPetSelectionScoreMap()
-        let ranked = info.pet
+        let ranked = activePets
             .map { pet in
                 (pet, scoreMap[petSelectionScoreKey(petId: pet.petId, weekday: weekday, timeSlot: timeSlot)] ?? 0)
             }
@@ -116,11 +120,11 @@ final class PetSelectionStore: PetSelectionStoring {
         }
 
         if let recentPetId = defaults.string(forKey: Key.petSelectionRecentPetId),
-           let recentPet = info.pet.first(where: { $0.petId == recentPetId }) {
+           let recentPet = activePets.first(where: { $0.petId == recentPetId }) {
             return recentPet
         }
 
-        return selectedPet(from: info) ?? info.pet.first
+        return selectedPet(from: info) ?? activePets.first
     }
 
     func recentPetSelectionEvents() -> [PetSelectionEvent] {

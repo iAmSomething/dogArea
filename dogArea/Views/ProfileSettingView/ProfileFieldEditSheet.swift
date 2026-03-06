@@ -25,64 +25,51 @@ struct ProfileFieldEditSheet: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("사용자 기본 정보") {
-                    TextField("사용자 이름", text: $sheetViewModel.userName)
-                        .textInputAutocapitalization(.never)
-                    TextField("프로필 메시지", text: $sheetViewModel.profileMessage)
-                }
-                Section("프로필 이미지") {
-                    profileImageCard(
-                        title: "사용자 프로필",
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 16) {
+                    ProfileEditorUserFieldsCard(
+                        userName: $sheetViewModel.userName,
+                        profileMessage: $sheetViewModel.profileMessage
+                    )
+
+                    imageCardSection(
+                        title: "사용자 프로필 이미지",
                         remoteURL: sheetViewModel.userProfileImageURL,
-                        selectedImage: sheetViewModel.userProfileImage
+                        selectedImage: sheetViewModel.userProfileImage,
+                        target: .user
                     )
-                    imageActionRow(for: .user)
-                }
-                Section("\(sheetViewModel.selectedPetName) 이미지") {
-                    profileImageCard(
-                        title: "반려견 프로필",
+
+                    ProfileEditorPetFieldsCard(
+                        title: "\(sheetViewModel.selectedPetName) 정보",
+                        subtitle: "선택된 반려견 기준으로 이름/견종/나이/성별을 수정합니다.",
+                        petName: $sheetViewModel.petName,
+                        breed: $sheetViewModel.breed,
+                        ageYearsText: $sheetViewModel.ageYearsText,
+                        gender: $sheetViewModel.gender,
+                        requiresPetName: true
+                    )
+
+                    imageCardSection(
+                        title: "반려견 프로필 이미지",
                         remoteURL: sheetViewModel.petProfileImageURL,
-                        selectedImage: sheetViewModel.petProfileImage
+                        selectedImage: sheetViewModel.petProfileImage,
+                        target: .pet
                     )
-                    imageActionRow(for: .pet)
-                }
-                Section("반려견 (선택된 반려견 기준)") {
-                    TextField("견종/믹스/기타 (선택)", text: $sheetViewModel.breed)
-                    TextField("나이 (0~30)", text: $sheetViewModel.ageYearsText)
-                        .keyboardType(.numberPad)
-                    Picker("성별", selection: $sheetViewModel.gender) {
-                        ForEach(PetGender.allCases, id: \.rawValue) { item in
-                            Text(item.title).tag(item)
-                        }
-                    }
-                }
-                Section("반려견 캐리커처") {
-                    Text("현재 상태: \(sheetViewModel.caricatureStatusText)")
-                        .font(.appFont(for: .Light, size: 11))
-                        .foregroundStyle(Color.appTextDarkGray)
 
-                    Button(sheetViewModel.isGeneratingCaricature ? "생성 중..." : "캐리커처 생성/재생성") {
-                        Task {
-                            await sheetViewModel.requestCaricatureRegeneration()
-                        }
-                    }
-                    .disabled(sheetViewModel.isGeneratingCaricature)
+                    caricatureCard
 
-                    if let caricatureMessage = sheetViewModel.caricatureMessage {
-                        Text(caricatureMessage)
-                            .font(.appFont(for: .Regular, size: 12))
-                            .foregroundStyle(Color.appTextDarkGray)
-                    }
-                }
-                if let errorMessage = sheetViewModel.errorMessage {
-                    Section {
+                    if let errorMessage = sheetViewModel.errorMessage {
                         Text(errorMessage)
-                            .font(.appFont(for: .Regular, size: 12))
+                            .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .body))
                             .foregroundStyle(Color.red)
+                            .padding(.horizontal, 16)
                     }
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 20)
+                .padding(.bottom, 32)
             }
+            .background(Color.appTabScaffoldBackground.ignoresSafeArea())
             .navigationTitle("프로필 편집")
             .navigationBarTitleDisplayMode(.inline)
             .accessibilityIdentifier("sheet.settings.profileEdit")
@@ -130,6 +117,56 @@ struct ProfileFieldEditSheet: View {
         }
     }
 
+    private var caricatureCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("반려견 캐리커처")
+                .font(.appScaledFont(for: .SemiBold, size: 18, relativeTo: .headline))
+            Text("현재 상태: \(sheetViewModel.caricatureStatusText)")
+                .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .body))
+                .foregroundStyle(Color.appTextDarkGray)
+            Button(sheetViewModel.isGeneratingCaricature ? "생성 중..." : "캐리커처 생성/재생성") {
+                Task {
+                    await sheetViewModel.requestCaricatureRegeneration()
+                }
+            }
+            .disabled(sheetViewModel.isGeneratingCaricature)
+            .buttonStyle(AppFilledButtonStyle(role: .secondary))
+            .frame(minHeight: 44)
+
+            if let caricatureMessage = sheetViewModel.caricatureMessage {
+                Text(caricatureMessage)
+                    .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .body))
+                    .foregroundStyle(Color.appTextDarkGray)
+            }
+        }
+        .padding(.horizontal, 16)
+        .appCardSurface()
+    }
+
+    /// 원격/로컬 프로필 이미지 프리뷰와 입력 액션을 묶은 카드 섹션을 렌더링합니다.
+    /// - Parameters:
+    ///   - title: 카드 제목입니다.
+    ///   - remoteURL: 기존 원격 이미지 URL입니다.
+    ///   - selectedImage: 현재 편집 중 선택된 로컬 이미지입니다.
+    ///   - target: 사용자/반려견 중 어느 슬롯을 수정하는지 나타냅니다.
+    /// - Returns: 이미지 미리보기와 입력 액션이 배치된 카드 뷰입니다.
+    private func imageCardSection(
+        title: String,
+        remoteURL: String?,
+        selectedImage: UIImage?,
+        target: ProfileImageTarget
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.appScaledFont(for: .SemiBold, size: 18, relativeTo: .headline))
+
+            profileImageCard(title: title, remoteURL: remoteURL, selectedImage: selectedImage)
+            imageActionRow(for: target)
+        }
+        .padding(.horizontal, 16)
+        .appCardSurface()
+    }
+
     /// 프로필 편집 시트에서 이미지 프리뷰 카드를 렌더링합니다.
     /// - Parameters:
     ///   - title: 카드 상단 라벨 텍스트입니다.
@@ -138,9 +175,6 @@ struct ProfileFieldEditSheet: View {
     /// - Returns: 원격/로컬 이미지 우선순위를 반영한 미리보기 카드 뷰입니다.
     private func profileImageCard(title: String, remoteURL: String?, selectedImage: UIImage?) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.appScaledFont(for: .SemiBold, size: 13, relativeTo: .subheadline))
-                .foregroundStyle(Color.appTextDarkGray)
             Group {
                 if let selectedImage {
                     Image(uiImage: selectedImage)

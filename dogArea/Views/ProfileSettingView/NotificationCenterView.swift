@@ -12,6 +12,7 @@ struct NotificationCenterView: View {
     @EnvironmentObject var loading: LoadingViewModel
     @EnvironmentObject var authFlow: AuthFlowCoordinator
     @State private var isProfileEditPresented: Bool = false
+    @State private var isPetManagementPresented: Bool = false
     @State private var toastMessage: String? = nil
     @State private var isLogoutAlertPresented: Bool = false
     @State private var isAccountDeleteAlertPresented: Bool = false
@@ -80,6 +81,9 @@ struct NotificationCenterView: View {
                     toastMessage = nil
                 }
             }
+        }
+        .sheet(isPresented: $isPetManagementPresented) {
+            PetManagementSheet(viewModel: viewModel)
         }
         .overlay(alignment: .bottom) {
             if let toastMessage {
@@ -174,8 +178,8 @@ struct NotificationCenterView: View {
                     .font(.appScaledFont(for: .SemiBold, size: 18, relativeTo: .headline))
                     .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
                 Spacer()
-                if viewModel.pets.count > 1 {
-                    Text("총 \(viewModel.pets.count)마리")
+                if viewModel.pets.isEmpty == false {
+                    Text("활성 \(viewModel.activePets.count) · 전체 \(viewModel.pets.count)")
                         .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .caption))
                         .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
                 }
@@ -189,9 +193,10 @@ struct NotificationCenterView: View {
                                 viewModel.selectPet(pet.petId)
                             } label: {
                                 Text(pet.petName)
-                                    .appPill(isActive: viewModel.selectedPetId == pet.petId)
+                                    .appPill(isActive: viewModel.selectedPetId == pet.petId && pet.isActive)
                             }
                             .buttonStyle(.plain)
+                            .disabled(pet.isActive == false)
                             .frame(minHeight: 44)
                         }
                     }
@@ -208,7 +213,7 @@ struct NotificationCenterView: View {
                         .font(.appScaledFont(for: .SemiBold, size: 22, relativeTo: .title3))
                         .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
 
-                    Text(petDetailsText(viewModel.selectedPet))
+                    Text(viewModel.selectedPet.map(viewModel.petDetailsText(for:)) ?? "견종(선택)/나이/성별 미입력")
                         .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .body))
                         .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
                         .fixedSize(horizontal: false, vertical: true)
@@ -223,7 +228,7 @@ struct NotificationCenterView: View {
                 Spacer(minLength: 0)
             }
 
-            if viewModel.pets.count > 1 {
+            if viewModel.activePets.count > 1 {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("대표 반려견 선택")
                         .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .caption))
@@ -235,18 +240,44 @@ struct NotificationCenterView: View {
                             get: {
                                 viewModel.selectedPetId.isEmpty == false
                                 ? viewModel.selectedPetId
-                                : (viewModel.pets.first?.petId ?? "")
+                                : (viewModel.activePets.first?.petId ?? "")
                             },
                             set: { viewModel.selectPet($0) }
                         )
                     ) {
-                        ForEach(viewModel.pets, id: \.id) { pet in
+                        ForEach(viewModel.activePets, id: \.id) { pet in
                             Text(pet.petName).tag(pet.petId)
                         }
                     }
                     .pickerStyle(.menu)
                 }
                 .padding(.top, 4)
+            }
+
+            HStack(spacing: 8) {
+                Button("선택 반려견 편집") {
+                    isProfileEditPresented = true
+                }
+                .buttonStyle(AppFilledButtonStyle(role: .secondary, fillsWidth: false))
+                .frame(minHeight: 44)
+
+                Button("반려견 관리") {
+                    isPetManagementPresented = true
+                }
+                .accessibilityIdentifier("settings.pet.manage")
+                .buttonStyle(AppFilledButtonStyle(role: .primary, fillsWidth: false))
+                .frame(minHeight: 44)
+            }
+
+            if viewModel.inactivePets.isEmpty == false {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("비활성 반려견")
+                        .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .caption))
+                        .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
+                    Text(viewModel.inactivePets.map(\.petName).joined(separator: ", "))
+                        .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .body))
+                        .foregroundStyle(Color.appDynamicHex(light: 0x94A3B8, dark: 0x94A3B8))
+                }
             }
         }
         .appCardSurface()
@@ -369,18 +400,6 @@ struct NotificationCenterView: View {
                 .stroke(SeasonProfileFrameStyle.style(for: summary.rankTier).stroke, lineWidth: 1)
         )
     }
-
-    /// 반려견 상세 요약 텍스트를 생성합니다.
-    /// - Parameter pet: 화면에 표시할 반려견 정보 모델입니다.
-    /// - Returns: 견종, 나이, 성별이 결합된 단일 줄 설명 텍스트입니다.
-    private func petDetailsText(_ pet: PetInfo?) -> String {
-        guard let pet else { return "견종(선택)/나이/성별 미입력" }
-        let breed = pet.breed.flatMap { $0.isEmpty ? nil : $0 } ?? "견종(선택) 미입력"
-        let age = pet.ageYears.map { "\($0)세" } ?? "나이 미입력"
-        let gender = pet.gender.title
-        return "\(breed) · \(age) · \(gender)"
-    }
-
     /// 회원탈퇴 요청을 수행하고 성공 시 인증 상태를 정리합니다.
     /// - Returns: 없음. 처리 결과는 토스트 메시지와 인증 상태에 반영됩니다.
     @MainActor

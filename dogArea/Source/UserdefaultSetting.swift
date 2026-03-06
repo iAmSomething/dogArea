@@ -102,9 +102,10 @@ struct UserInfo: TimeCheckable {
     var selectedPetId: String?
     var createdAt: TimeInterval
     var selectedPet: PetInfo? {
-        guard !pet.isEmpty else { return nil }
-        guard let selectedPetId = selectedPetId else { return pet.first }
-        return pet.first(where: { $0.id == selectedPetId }) ?? pet.first
+        let activePets = pet.filter(\.isActive)
+        guard activePets.isEmpty == false else { return pet.first }
+        guard let selectedPetId = selectedPetId else { return activePets.first }
+        return activePets.first(where: { $0.id == selectedPetId }) ?? activePets.first
     }
 }
 
@@ -159,6 +160,7 @@ struct PetInfo: Codable, Identifiable, Equatable {
     var caricatureURL: String? = nil
     var caricatureStatus: CaricatureStatus? = nil
     var caricatureProvider: String? = nil
+    var isActive: Bool = true
 
     init(
         petId: String = UUID().uuidString.lowercased(),
@@ -169,7 +171,8 @@ struct PetInfo: Codable, Identifiable, Equatable {
         gender: PetGender = .unknown,
         caricatureURL: String? = nil,
         caricatureStatus: CaricatureStatus? = nil,
-        caricatureProvider: String? = nil
+        caricatureProvider: String? = nil,
+        isActive: Bool = true
     ) {
         self.petId = petId
         self.petName = petName
@@ -180,6 +183,7 @@ struct PetInfo: Codable, Identifiable, Equatable {
         self.caricatureURL = caricatureURL
         self.caricatureStatus = caricatureStatus
         self.caricatureProvider = caricatureProvider
+        self.isActive = isActive
     }
 
     enum CodingKeys: String, CodingKey {
@@ -192,6 +196,7 @@ struct PetInfo: Codable, Identifiable, Equatable {
         case caricatureURL
         case caricatureStatus
         case caricatureProvider
+        case isActive
     }
 
     init(from decoder: Decoder) throws {
@@ -206,6 +211,7 @@ struct PetInfo: Codable, Identifiable, Equatable {
         self.caricatureURL = try container.decodeIfPresent(String.self, forKey: .caricatureURL)
         self.caricatureStatus = try container.decodeIfPresent(CaricatureStatus.self, forKey: .caricatureStatus)
         self.caricatureProvider = try container.decodeIfPresent(String.self, forKey: .caricatureProvider)
+        self.isActive = try container.decodeIfPresent(Bool.self, forKey: .isActive) ?? true
     }
 }
 
@@ -1104,5 +1110,4 @@ final class SyncOutboxStore {
         UserDefaults.standard.set(data, forKey: storageKey)
     }
 }
-
 

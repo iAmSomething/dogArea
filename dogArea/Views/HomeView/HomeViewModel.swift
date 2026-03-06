@@ -187,7 +187,7 @@ final class HomeViewModel: ObservableObject {
     }()
 
     var pets: [PetInfo] {
-        userInfo?.pet ?? []
+        userInfo?.pet.filter(\.isActive) ?? []
     }
 
     var selectedPetNameWithYi: String {

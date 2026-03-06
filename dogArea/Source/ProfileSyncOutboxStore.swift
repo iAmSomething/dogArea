@@ -85,7 +85,7 @@ final class ProfileSyncOutboxStore {
                     "breed": pet.breed ?? "",
                     "age_years": pet.ageYears.map(String.init) ?? "",
                     "gender": pet.gender.rawValue,
-                    "is_active": "true"
+                    "is_active": pet.isActive ? "true" : "false"
                 ]
                 mutable.append(
                     ProfileSyncOutboxItem(

@@ -160,14 +160,15 @@ final class ProfileStore: ProfileStoring {
     }
 
     private func resolveSelectedPetId(in pets: [PetInfo], requested: String?) -> String? {
-        guard pets.isEmpty == false else { return nil }
-        if let requested, pets.contains(where: { $0.petId == requested }) {
+        let activePets = pets.filter(\.isActive)
+        guard activePets.isEmpty == false else { return nil }
+        if let requested, activePets.contains(where: { $0.petId == requested }) {
             return requested
         }
         if let stored = defaults.string(forKey: Key.selectedPetId),
-           pets.contains(where: { $0.petId == stored }) {
+           activePets.contains(where: { $0.petId == stored }) {
             return stored
         }
-        return pets.first?.petId
+        return activePets.first?.petId
     }
 }

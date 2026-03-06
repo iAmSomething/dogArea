@@ -13,6 +13,8 @@ protocol ProfileFieldEditProviding: AnyObject {
     var initialPetProfileImageURL: String? { get }
     /// 현재 선택 반려견 이름을 반환합니다.
     var selectedPetName: String { get }
+    /// 현재 선택 반려견의 이름 입력값을 반환합니다.
+    var initialPetName: String { get }
     /// 현재 선택 반려견의 견종 텍스트를 반환합니다.
     var initialBreed: String { get }
     /// 현재 선택 반려견의 나이 텍스트를 반환합니다.
@@ -26,6 +28,7 @@ protocol ProfileFieldEditProviding: AnyObject {
     /// - Parameters:
     ///   - profileName: 사용자 표시 이름 입력값입니다.
     ///   - profileMessage: 사용자 프로필 메시지 입력값입니다.
+    ///   - petName: 선택 반려견 이름 입력값입니다.
     ///   - breed: 선택 반려견 견종 입력값입니다.
     ///   - ageYearsText: 선택 반려견 나이 입력값(문자열)입니다.
     ///   - gender: 선택 반려견 성별 입력값입니다.
@@ -35,6 +38,7 @@ protocol ProfileFieldEditProviding: AnyObject {
     func saveProfileDetails(
         profileName: String,
         profileMessage: String,
+        petName: String,
         breed: String,
         ageYearsText: String,
         gender: PetGender,
@@ -68,6 +72,10 @@ extension SettingViewModel: ProfileFieldEditProviding {
         selectedPet?.petName ?? "반려견"
     }
 
+    var initialPetName: String {
+        selectedPet?.petName ?? ""
+    }
+
     var initialBreed: String {
         selectedPet?.breed ?? ""
     }
@@ -88,6 +96,7 @@ extension SettingViewModel: ProfileFieldEditProviding {
     /// - Parameters:
     ///   - profileName: 사용자 표시 이름 입력값입니다.
     ///   - profileMessage: 사용자 프로필 메시지 입력값입니다.
+    ///   - petName: 선택 반려견 이름 입력값입니다.
     ///   - breed: 선택 반려견 견종 입력값입니다.
     ///   - ageYearsText: 선택 반려견 나이 입력값(문자열)입니다.
     ///   - gender: 선택 반려견 성별 입력값입니다.
@@ -97,6 +106,7 @@ extension SettingViewModel: ProfileFieldEditProviding {
     func saveProfileDetails(
         profileName: String,
         profileMessage: String,
+        petName: String,
         breed: String,
         ageYearsText: String,
         gender: PetGender,
@@ -106,6 +116,7 @@ extension SettingViewModel: ProfileFieldEditProviding {
         await updateProfileDetails(
             profileName: profileName,
             profileMessage: profileMessage,
+            petName: petName,
             breed: breed,
             ageYearsText: ageYearsText,
             gender: gender,
@@ -119,6 +130,7 @@ extension SettingViewModel: ProfileFieldEditProviding {
 final class ProfileFieldEditSheetViewModel: ObservableObject {
     @Published var userName: String
     @Published var profileMessage: String
+    @Published var petName: String
     @Published var userProfileImage: UIImage? = nil
     @Published var petProfileImage: UIImage? = nil
     @Published var breed: String
@@ -141,6 +153,7 @@ final class ProfileFieldEditSheetViewModel: ObservableObject {
         self.provider = provider
         self.userName = provider.initialUserName
         self.profileMessage = provider.initialProfileMessage
+        self.petName = provider.initialPetName
         self.breed = provider.initialBreed
         self.ageYearsText = provider.initialAgeYearsText
         self.gender = provider.initialGender
@@ -161,6 +174,7 @@ final class ProfileFieldEditSheetViewModel: ObservableObject {
         let result = await provider.saveProfileDetails(
             profileName: userName,
             profileMessage: profileMessage,
+            petName: petName,
             breed: breed,
             ageYearsText: ageYearsText,
             gender: gender,
@@ -171,6 +185,8 @@ final class ProfileFieldEditSheetViewModel: ObservableObject {
         switch result {
         case .success:
             caricatureStatusText = provider.selectedPetCaricatureStatusText
+            selectedPetName = provider.selectedPetName
+            petName = provider.initialPetName
             userProfileImage = nil
             petProfileImage = nil
             userProfileImageURL = provider.initialUserProfileImageURL

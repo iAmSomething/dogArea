@@ -18,7 +18,7 @@ final class WalkListViewModel: ObservableObject {
     private let walkRepository: WalkRepositoryProtocol
 
     var pets: [PetInfo] {
-        userInfo?.pet ?? []
+        userInfo?.pet.filter(\.isActive) ?? []
     }
 
     var shouldShowSelectedPetEmptyState: Bool {
