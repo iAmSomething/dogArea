@@ -19,8 +19,17 @@ func load(_ path: String) -> String {
     return text
 }
 
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
 let root = FileManager.default.currentDirectoryPath
-let homeViewModel = load(root + "/dogArea/Views/HomeView/HomeViewModel.swift")
+let homeViewModel = loadMany([
+    root + "/dogArea/Views/HomeView/HomeViewModel.swift",
+    root + "/dogArea/Source/Domain/Home/Models/HomeMissionModels.swift",
+    root + "/dogArea/Source/Domain/Home/Stores/IndoorMissionStore.swift",
+    root + "/dogArea/Source/Domain/Home/Stores/SeasonMotionStore.swift"
+])
 let homeView = load(root + "/dogArea/Views/HomeView/HomeView.swift")
 let timeCheckable = load(root + "/dogArea/Source/TimeCheckable.swift")
 let spec = load(root + "/docs/session-boundary-aggregation-v1.md")

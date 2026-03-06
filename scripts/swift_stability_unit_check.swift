@@ -16,12 +16,30 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
-let signInView = load("dogArea/Views/SigningView/SignInView.swift")
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
+let signInView = loadMany([
+    "dogArea/Views/SigningView/SignInView.swift",
+    "dogArea/Views/SigningView/Components/AuthUserInfo.swift",
+    "dogArea/Views/SigningView/Components/EmailSignUpSheetView.swift"
+])
 let startModalView = load("dogArea/Views/MapView/StartModalView.swift")
-let userDefaultsSource = load("dogArea/Source/UserdefaultSetting.swift")
+let userDefaultsSource = loadMany([
+    "dogArea/Source/UserdefaultSetting.swift",
+    "dogArea/Source/AppSession/AppFeatureGate.swift",
+    "dogArea/Source/AppSession/GuestDataUpgradeService.swift",
+    "dogArea/Source/AppSession/AuthFlowCoordinator.swift"
+])
 let titleTextView = load("dogArea/Views/GlobalViews/TitleTextView.swift")
 let homeView = load("dogArea/Views/HomeView/HomeView.swift")
-let homeViewModel = load("dogArea/Views/HomeView/HomeViewModel.swift")
+let homeViewModel = loadMany([
+    "dogArea/Views/HomeView/HomeViewModel.swift",
+    "dogArea/Source/Domain/Home/Models/HomeMissionModels.swift",
+    "dogArea/Source/Domain/Home/Stores/IndoorMissionStore.swift",
+    "dogArea/Source/Domain/Home/Stores/SeasonMotionStore.swift"
+])
 let walkListDetailView = load("dogArea/Views/WalkListView/WalkListDetailView.swift")
 let areaMeters = load("dogArea/Views/HomeView/AreaMeters.swift")
 let mapCapture = load("dogArea/Views/MapView/MapSubViews/MapCapture.swift")

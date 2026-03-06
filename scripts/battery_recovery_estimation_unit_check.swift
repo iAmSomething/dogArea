@@ -15,10 +15,19 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
 let mapViewModel = load("dogArea/Views/MapView/MapViewModel.swift")
 let mapView = load("dogArea/Views/MapView/MapView.swift")
 let walkListDetail = load("dogArea/Views/WalkListView/WalkListDetailView.swift")
-let userDefaults = load("dogArea/Source/UserdefaultSetting.swift")
+let userDefaults = loadMany([
+    "dogArea/Source/UserdefaultSetting.swift",
+    "dogArea/Source/AppSession/AppFeatureGate.swift",
+    "dogArea/Source/AppSession/GuestDataUpgradeService.swift",
+    "dogArea/Source/AppSession/AuthFlowCoordinator.swift"
+])
 let spec = load("docs/battery-recovery-estimation-v1.md")
 let checklist = load("docs/release-regression-checklist-v1.md")
 

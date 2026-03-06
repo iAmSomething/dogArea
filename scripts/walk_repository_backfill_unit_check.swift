@@ -13,9 +13,18 @@ func read(_ path: String) -> String {
     (try? String(contentsOfFile: path, encoding: .utf8)) ?? ""
 }
 
+func readMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(read).joined(separator: "\n")
+}
+
 let backfill = read("dogArea/Source/Data/Walk/WalkBackfillDTO.swift")
 let mapViewModel = read("dogArea/Views/MapView/MapViewModel.swift")
-let userDefault = read("dogArea/Source/UserdefaultSetting.swift")
+let userDefault = readMany([
+    "dogArea/Source/UserdefaultSetting.swift",
+    "dogArea/Source/AppSession/AppFeatureGate.swift",
+    "dogArea/Source/AppSession/GuestDataUpgradeService.swift",
+    "dogArea/Source/AppSession/AuthFlowCoordinator.swift"
+])
 
 Check.assertTrue(backfill.contains("struct WalkSessionBackfillDTO"), "backfill session DTO should exist")
 Check.assertTrue(backfill.contains("struct WalkPointBackfillDTO"), "backfill point DTO should exist")

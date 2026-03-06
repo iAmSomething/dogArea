@@ -75,10 +75,24 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
 let migration = load("supabase/migrations/20260227223000_season_comeback_catchup_buff.sql")
 let syncWalkFunction = load("supabase/functions/sync-walk/index.ts")
-let userDefaultsStore = load("dogArea/Source/UserdefaultSetting.swift")
-let homeViewModel = load("dogArea/Views/HomeView/HomeViewModel.swift")
+let userDefaultsStore = loadMany([
+    "dogArea/Source/UserdefaultSetting.swift",
+    "dogArea/Source/AppSession/AppFeatureGate.swift",
+    "dogArea/Source/AppSession/GuestDataUpgradeService.swift",
+    "dogArea/Source/AppSession/AuthFlowCoordinator.swift"
+])
+let homeViewModel = loadMany([
+    "dogArea/Views/HomeView/HomeViewModel.swift",
+    "dogArea/Source/Domain/Home/Models/HomeMissionModels.swift",
+    "dogArea/Source/Domain/Home/Stores/IndoorMissionStore.swift",
+    "dogArea/Source/Domain/Home/Stores/SeasonMotionStore.swift"
+])
 let homeView = load("dogArea/Views/HomeView/HomeView.swift")
 let doc = load("docs/season-comeback-catchup-buff-v1.md")
 let schemaDoc = load("docs/supabase-schema-v1.md")

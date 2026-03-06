@@ -15,8 +15,22 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
-let userDefaults = load("dogArea/Source/UserdefaultSetting.swift")
-let homeVM = load("dogArea/Views/HomeView/HomeViewModel.swift")
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
+let userDefaults = loadMany([
+    "dogArea/Source/UserdefaultSetting.swift",
+    "dogArea/Source/AppSession/AppFeatureGate.swift",
+    "dogArea/Source/AppSession/GuestDataUpgradeService.swift",
+    "dogArea/Source/AppSession/AuthFlowCoordinator.swift"
+])
+let homeVM = loadMany([
+    "dogArea/Views/HomeView/HomeViewModel.swift",
+    "dogArea/Source/Domain/Home/Models/HomeMissionModels.swift",
+    "dogArea/Source/Domain/Home/Stores/IndoorMissionStore.swift",
+    "dogArea/Source/Domain/Home/Stores/SeasonMotionStore.swift"
+])
 let homeView = load("dogArea/Views/HomeView/HomeView.swift")
 let settingVM = load("dogArea/Views/ProfileSettingView/SettingViewModel.swift")
 let notificationView = load("dogArea/Views/ProfileSettingView/NotificationCenterView.swift")

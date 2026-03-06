@@ -15,9 +15,18 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
 let areaMeters = load("dogArea/Views/HomeView/AreaMeters.swift")
 let supabaseInfra = load("dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift")
-let homeVM = load("dogArea/Views/HomeView/HomeViewModel.swift")
+let homeVM = loadMany([
+    "dogArea/Views/HomeView/HomeViewModel.swift",
+    "dogArea/Source/Domain/Home/Models/HomeMissionModels.swift",
+    "dogArea/Source/Domain/Home/Stores/IndoorMissionStore.swift",
+    "dogArea/Source/Domain/Home/Stores/SeasonMotionStore.swift"
+])
 let homeView = load("dogArea/Views/HomeView/HomeView.swift")
 let areaDetail = load("dogArea/Views/HomeView/AreaDetailView.swift")
 let doc = load("docs/area-reference-db-ui-transition-v1.md")

@@ -17,13 +17,26 @@ func read(_ path: String) -> String {
     (try? String(contentsOfFile: path, encoding: .utf8)) ?? ""
 }
 
+func readMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(read).joined(separator: "\n")
+}
+
 let app = read("dogArea/dogAreaApp.swift")
 let root = read("dogArea/Views/GlobalViews/BaseView/RootView.swift")
-let signIn = read("dogArea/Views/SigningView/SignInView.swift")
+let signIn = readMany([
+    "dogArea/Views/SigningView/SignInView.swift",
+    "dogArea/Views/SigningView/Components/AuthUserInfo.swift",
+    "dogArea/Views/SigningView/Components/EmailSignUpSheetView.swift"
+])
 let mapStart = read("dogArea/Views/MapView/MapSubViews/StartButtonView.swift")
 let image = read("dogArea/Views/ImageGeneratorView/TextToImageView.swift")
 let walkList = read("dogArea/Views/WalkListView/WalkListView.swift")
-let source = read("dogArea/Source/UserdefaultSetting.swift")
+let source = readMany([
+    "dogArea/Source/UserdefaultSetting.swift",
+    "dogArea/Source/AppSession/AppFeatureGate.swift",
+    "dogArea/Source/AppSession/GuestDataUpgradeService.swift",
+    "dogArea/Source/AppSession/AuthFlowCoordinator.swift"
+])
 
 Check.assertTrue(app.contains("GuestEntryChoiceSheet"), "app should expose first-run split sheet")
 Check.assertTrue(app.contains("shouldShowSignIn"), "app should control sign-in cover via coordinator")

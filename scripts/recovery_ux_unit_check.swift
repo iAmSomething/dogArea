@@ -17,13 +17,22 @@ func load(_ path: String) -> String {
     return text
 }
 
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
 let doc = load("docs/recovery-ux-standard-v1.md")
 let checklist = load("docs/release-regression-checklist-v1.md")
 let presenter = load("dogArea/Views/GlobalViews/Recovery/RecoveryActionBanner.swift")
 let mapView = load("dogArea/Views/MapView/MapView.swift")
 let mapViewModel = load("dogArea/Views/MapView/MapViewModel.swift")
 let petProfile = load("dogArea/Views/SigningView/PetProfileSettingView.swift")
-let authFlow = load("dogArea/Source/UserdefaultSetting.swift")
+let authFlow = loadMany([
+    "dogArea/Source/UserdefaultSetting.swift",
+    "dogArea/Source/AppSession/AppFeatureGate.swift",
+    "dogArea/Source/AppSession/GuestDataUpgradeService.swift",
+    "dogArea/Source/AppSession/AuthFlowCoordinator.swift"
+])
 
 assertTrue(doc.contains("RecoveryActionBanner"), "recovery doc must define common presenter")
 assertTrue(doc.contains("권한 거부"), "recovery doc must include permission scenario")

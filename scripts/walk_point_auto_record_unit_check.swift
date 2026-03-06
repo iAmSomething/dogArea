@@ -15,11 +15,20 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
 let doc = load("docs/walk-point-auto-record-v1.md")
 let mapViewModel = load("dogArea/Views/MapView/MapViewModel.swift")
 let mapSetting = load("dogArea/Views/MapView/MapSubViews/MapSettingView.swift")
 let mapView = load("dogArea/Views/MapView/MapView.swift")
-let userDefaultsSetting = load("dogArea/Source/UserdefaultSetting.swift")
+let userDefaultsSetting = loadMany([
+    "dogArea/Source/UserdefaultSetting.swift",
+    "dogArea/Source/AppSession/AppFeatureGate.swift",
+    "dogArea/Source/AppSession/GuestDataUpgradeService.swift",
+    "dogArea/Source/AppSession/AuthFlowCoordinator.swift"
+])
 let checklist = load("docs/release-regression-checklist-v1.md")
 
 assertTrue(doc.contains("자동 기록 규칙(v1)"), "doc must include auto record rule section")
