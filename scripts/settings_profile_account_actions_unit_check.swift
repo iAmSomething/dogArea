@@ -15,7 +15,15 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
-let settingViewModel = load("dogArea/Views/ProfileSettingView/SettingViewModel.swift")
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
+let settingViewModel = loadMany([
+    "dogArea/Views/ProfileSettingView/SettingViewModel.swift",
+    "dogArea/Views/ProfileSettingView/SettingViewModelSupport/SettingViewModel+ProfileEditing.swift",
+    "dogArea/Views/ProfileSettingView/SettingViewModelSupport/SettingViewModel+PetManagement.swift"
+])
 let profileEditSheet = load("dogArea/Views/ProfileSettingView/ProfileFieldEditSheet.swift")
 let notificationCenterView = load("dogArea/Views/ProfileSettingView/NotificationCenterView.swift")
 let petManagementSheet = load("dogArea/Views/ProfileSettingView/Components/PetManagementSheet.swift")
@@ -25,7 +33,7 @@ let supabaseInfrastructure = load("dogArea/Source/Infrastructure/Supabase/Supaba
 let profileEditorCards = load("dogArea/Views/GlobalViews/ProfileEditor/ProfileEditorCards.swift")
 let profileEditorImageSection = load("dogArea/Views/GlobalViews/ProfileEditor/ProfileEditorImageSection.swift")
 
-assertTrue(settingViewModel.contains("private let petManagementService: SettingsPetManaging"), "setting view model should inject pet management service")
+assertTrue(settingViewModel.contains("let petManagementService: SettingsPetManaging"), "setting view model should inject pet management service")
 assertTrue(settingViewModel.contains("func addPet("), "setting view model should expose add pet API")
 assertTrue(settingViewModel.contains("func setPrimaryPet(_ petId: String) throws"), "setting view model should expose primary pet API")
 assertTrue(settingViewModel.contains("func setPetActive(_ petId: String, isActive: Bool) throws"), "setting view model should expose pet activation API")

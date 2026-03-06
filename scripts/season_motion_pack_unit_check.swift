@@ -34,7 +34,12 @@ let homeViewModel = loadMany([
     "dogArea/Source/Domain/Home/Stores/IndoorMissionStore.swift",
     "dogArea/Source/Domain/Home/Stores/SeasonMotionStore.swift"
 ])
-let settingViewModel = load("dogArea/Views/ProfileSettingView/SettingViewModel.swift")
+let settingViewModel = loadMany([
+    "dogArea/Views/ProfileSettingView/SettingViewModel.swift",
+    "dogArea/Views/ProfileSettingView/SettingViewModelSupport/SettingViewModel+SessionSync.swift",
+    "dogArea/Source/Domain/Profile/Models/SeasonProfileSummary.swift",
+    "dogArea/Source/Domain/Profile/Services/SettingsSeasonProfileSummaryService.swift"
+])
 let notificationCenterView = load("dogArea/Views/ProfileSettingView/NotificationCenterView.swift")
 let haptic = load("dogArea/Source/AppHapticFeedback.swift")
 let seasonResultOverlayView = load("dogArea/Views/HomeView/HomeSubView/Presentation/HomeSeasonResultOverlayView.swift")
@@ -58,7 +63,9 @@ assertTrue(haptic.contains("seasonRankUp"), "Haptic utility should define season
 assertTrue(haptic.contains("seasonShieldApplied"), "Haptic utility should define season shield haptic")
 assertTrue(haptic.contains("seasonReset"), "Haptic utility should define season reset haptic")
 
-assertTrue(settingViewModel.contains("SeasonProfileSummary"), "SettingViewModel should decode season profile summary")
+assertTrue(settingViewModel.contains("SeasonProfileSummary"), "settings profile screen should define season summary model")
+assertTrue(settingViewModel.contains("SettingsSeasonProfileSummaryProviding"), "settings profile screen should depend on season summary service protocol")
+assertTrue(settingViewModel.contains("seasonProfileSummaryService.loadSummary()"), "settings profile screen should delegate summary loading to season summary service")
 assertTrue(notificationCenterView.contains("시즌 진행 현황"), "Profile view should show season summary card")
 
 assertTrue(spec.contains("시즌 게이지"), "spec should include season gauge motion")

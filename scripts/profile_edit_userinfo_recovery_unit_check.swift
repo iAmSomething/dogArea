@@ -15,10 +15,17 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
-let settingViewModel = load("dogArea/Views/ProfileSettingView/SettingViewModel.swift")
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
+let settingViewModel = loadMany([
+    "dogArea/Views/ProfileSettingView/SettingViewModel.swift",
+    "dogArea/Views/ProfileSettingView/SettingViewModelSupport/SettingViewModel+ProfileEditing.swift"
+])
 
 assertTrue(
-    settingViewModel.contains("private let authSessionStore: AuthSessionStoreProtocol"),
+    settingViewModel.contains("let authSessionStore: AuthSessionStoreProtocol"),
     "setting view model should inject auth session store for user info recovery"
 )
 assertTrue(

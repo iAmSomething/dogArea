@@ -23,12 +23,18 @@ let migration = load("supabase/migrations/20260227000000_user_pet_profile_fields
 let edgeFunction = load("supabase/functions/sync-profile/index.ts")
 let userdefaultSetting = loadMany([
     "dogArea/Source/UserdefaultSetting.swift",
+    "dogArea/Source/ProfileSyncOutboxStore.swift",
+    "dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift",
     "dogArea/Source/AppSession/AppFeatureGate.swift",
     "dogArea/Source/AppSession/GuestDataUpgradeService.swift",
     "dogArea/Source/AppSession/AuthFlowCoordinator.swift"
 ])
 let profileRepository = load("dogArea/Source/ProfileRepository.swift")
-let settingViewModel = load("dogArea/Views/ProfileSettingView/SettingViewModel.swift")
+let settingViewModel = loadMany([
+    "dogArea/Views/ProfileSettingView/SettingViewModel.swift",
+    "dogArea/Views/ProfileSettingView/SettingViewModelSupport/SettingViewModel+ProfileEditing.swift",
+    "dogArea/Views/ProfileSettingView/SettingViewModelSupport/SettingViewModel+PetManagement.swift"
+])
 let signingViewModel = load("dogArea/Views/SigningView/SigningViewModel.swift")
 let syncSpec = load("docs/userinfo-supabase-sync-v1.md")
 let schemaSpec = load("docs/supabase-schema-v1.md")

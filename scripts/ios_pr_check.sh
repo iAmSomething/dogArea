@@ -120,6 +120,7 @@ swift scripts/settings_pet_management_unit_check.swift
 swift scripts/settings_profile_account_actions_unit_check.swift
 swift scripts/settings_auth_session_sync_unit_check.swift
 swift scripts/profile_edit_userinfo_recovery_unit_check.swift
+swift scripts/settings_viewmodel_split_unit_check.swift
 swift scripts/ui_regression_matrix_unit_check.swift
 swift scripts/custom_alert_present_state_unit_check.swift
 swift scripts/custom_alert_auth_state_unit_check.swift
