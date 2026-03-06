@@ -25,6 +25,7 @@ let doc = load("docs/multi-dog-context-sync-v1.md")
 let checklist = load("docs/release-regression-checklist-v1.md")
 let userDefaultsSource = loadMany([
     "dogArea/Source/UserdefaultSetting.swift",
+    "dogArea/Source/WalkSessionMetadataStore.swift",
     "dogArea/Source/AppSession/AppFeatureGate.swift",
     "dogArea/Source/AppSession/GuestDataUpgradeService.swift",
     "dogArea/Source/AppSession/AuthFlowCoordinator.swift"
@@ -37,7 +38,10 @@ let homeViewModel = loadMany([
     "dogArea/Source/Domain/Home/Stores/IndoorMissionStore.swift",
     "dogArea/Source/Domain/Home/Stores/SeasonMotionStore.swift"
 ])
-let settingViewModel = load("dogArea/Views/ProfileSettingView/SettingViewModel.swift")
+let settingViewModel = loadMany([
+    "dogArea/Views/ProfileSettingView/SettingViewModel.swift",
+    "dogArea/Views/ProfileSettingView/SettingViewModelSupport/SettingViewModel+SessionSync.swift"
+])
 let walkListViewModel = load("dogArea/Views/WalkListView/WalkListViewModel.swift")
 let walkListView = load("dogArea/Views/WalkListView/WalkListView.swift")
 
@@ -73,6 +77,6 @@ assertTrue(settingViewModel.contains("selectedPetDidChangeNotification"), "setti
 assertTrue(walkListViewModel.contains("selectedPetDidChangeNotification"), "walk list should sync selected pet changes")
 assertTrue(walkListViewModel.contains("applySelectedPetFilter"), "walk list should apply selected-pet filtering")
 assertTrue(walkListViewModel.contains("$0.petId == selectedPetId"), "walk list should filter by canonical walk data petId")
-assertTrue(walkListView.contains("현재 반려견 컨텍스트"), "walk list should show shared selected pet context")
+assertTrue(walkListView.contains("선택 반려견 기준"), "walk list should show shared selected pet context")
 
 print("PASS: multi dog context sync unit checks")

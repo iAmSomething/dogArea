@@ -15,7 +15,14 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
-let source = load("dogArea/Views/ProfileSettingView/SettingViewModel.swift")
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
+let source = loadMany([
+    "dogArea/Views/ProfileSettingView/SettingViewModel.swift",
+    "dogArea/Views/ProfileSettingView/SettingViewModelSupport/SettingViewModel+SessionSync.swift"
+])
 
 assertTrue(
     source.contains("bindAuthSessionSync()"),

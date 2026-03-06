@@ -19,7 +19,11 @@ func loadMany(_ relativePaths: [String]) -> String {
     relativePaths.map(load).joined(separator: "\n")
 }
 
-let settingViewModel = load("dogArea/Views/ProfileSettingView/SettingViewModel.swift")
+let settingViewModel = loadMany([
+    "dogArea/Views/ProfileSettingView/SettingViewModel.swift",
+    "dogArea/Views/ProfileSettingView/SettingViewModelSupport/SettingViewModel+ProfileEditing.swift",
+    "dogArea/Views/ProfileSettingView/SettingViewModelSupport/SettingViewModel+PetManagement.swift"
+])
 let profileEditSheet = load("dogArea/Views/ProfileSettingView/ProfileFieldEditSheet.swift")
 let profileEditSheetViewModel = load("dogArea/Views/ProfileSettingView/ProfileFieldEditSheetViewModel.swift")
 let sharedProfileEditor = load("dogArea/Views/GlobalViews/ProfileEditor/ProfileEditorCards.swift")

@@ -17,7 +17,15 @@ func load(_ relativePath: String) -> String {
 
 let repository = load("dogArea/Source/ProfileRepository.swift")
 let signingViewModel = load("dogArea/Views/SigningView/SigningViewModel.swift")
-let settingViewModel = load("dogArea/Views/ProfileSettingView/SettingViewModel.swift")
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
+let settingViewModel = loadMany([
+    "dogArea/Views/ProfileSettingView/SettingViewModel.swift",
+    "dogArea/Views/ProfileSettingView/SettingViewModelSupport/SettingViewModel+ProfileEditing.swift",
+    "dogArea/Views/ProfileSettingView/SettingViewModelSupport/SettingViewModel+PetManagement.swift"
+])
 let transitionDoc = load("docs/data-layer-transition-v1.md")
 
 assertTrue(repository.contains("protocol ProfileRepository"), "profile repository protocol must exist")
@@ -29,7 +37,7 @@ assertTrue(signingViewModel.contains("private let profileRepository"), "signing 
 assertTrue(signingViewModel.contains("DefaultProfileRepository.shared"), "signing view model should default to repository shared impl")
 assertTrue(signingViewModel.contains("profileRepository.save"), "signing flow should save through repository")
 
-assertTrue(settingViewModel.contains("private let profileRepository"), "setting view model should inject profile repository")
+assertTrue(settingViewModel.contains("let profileRepository"), "setting view model should inject profile repository")
 assertTrue(settingViewModel.contains("profileRepository.fetchUserInfo"), "setting flow should read through repository")
 assertTrue(settingViewModel.contains("profileRepository.save"), "setting flow should save through repository")
 
