@@ -190,10 +190,16 @@ final class RivalTabViewModel: NSObject, ObservableObject, @preconcurrency CLLoc
     private let visibilityOffPropagationDeadline: TimeInterval = 30
     private let visibilityOffRetryInterval: TimeInterval = 10
     private let visibilityOffMaxRetries: Int = 3
+    private let hotspotMinimumRefreshInterval: TimeInterval = 10
+    private let leaderboardMinimumRefreshInterval: TimeInterval = 10
+    private let hotspotFailureBackoffBaseInterval: TimeInterval = 10
+    private let hotspotFailureBackoffMaxInterval: TimeInterval = 120
     private var pollingTimer: Timer? = nil
     private var authSessionObserver: NSObjectProtocol? = nil
     private var lastRefreshAt: Date = .distantPast
     private var lastLeaderboardRefreshAt: Date = .distantPast
+    private var hotspotFailureRetryAt: Date = .distantPast
+    private var hotspotFailureStreak: Int = 0
     private var latestRawLeaderboardEntries: [RivalLeaderboardEntryDTO] = []
 
     /// 라이벌 탭 상태를 제어하는 뷰모델을 초기화합니다.
@@ -362,11 +368,16 @@ final class RivalTabViewModel: NSObject, ObservableObject, @preconcurrency CLLoc
             return
         }
 
-        if force == false && Date().timeIntervalSince(lastRefreshAt) < 1.0 {
+        let now = Date()
+        if shouldSkipHotspotRefresh(force: force, now: now) {
             return
         }
+        guard isHotspotRefreshing == false else { return }
 
         isHotspotRefreshing = true
+        if force == false {
+            lastRefreshAt = now
+        }
         if hotspots.isEmpty {
             screenState = .loading
         }
@@ -393,6 +404,7 @@ final class RivalTabViewModel: NSObject, ObservableObject, @preconcurrency CLLoc
                 )
                 hotspots = fetched
                 lastRefreshAt = Date()
+                resetHotspotFailureBackoff()
                 updateHotspotSummary()
                 if fetched.isEmpty {
                     screenState = .empty
@@ -431,6 +443,7 @@ final class RivalTabViewModel: NSObject, ObservableObject, @preconcurrency CLLoc
                 } else {
                     screenState = .errorRetryable
                 }
+                applyHotspotFailureBackoff(for: error, now: Date())
             }
         }
     }
@@ -469,11 +482,15 @@ final class RivalTabViewModel: NSObject, ObservableObject, @preconcurrency CLLoc
             leaderboardEntries = []
             return
         }
-        if force == false && Date().timeIntervalSince(lastLeaderboardRefreshAt) < 1.0 {
+        guard isLeaderboardRefreshing == false else { return }
+        if force == false && Date().timeIntervalSince(lastLeaderboardRefreshAt) < leaderboardMinimumRefreshInterval {
             return
         }
 
         isLeaderboardRefreshing = true
+        if force == false {
+            lastLeaderboardRefreshAt = Date()
+        }
         if leaderboardEntries.isEmpty {
             leaderboardState = .loading
         }
@@ -858,6 +875,66 @@ final class RivalTabViewModel: NSObject, ObservableObject, @preconcurrency CLLoc
         return true
     }
 
+    /// `SupabaseHTTPError`에서 HTTP 상태 코드를 추출합니다.
+    /// - Parameter error: 네트워크 요청 실패 오류입니다.
+    /// - Returns: 상태 코드가 존재하면 정수값을 반환하고, 없으면 `nil`을 반환합니다.
+    private func httpStatusCode(from error: Error) -> Int? {
+        guard let supabaseError = error as? SupabaseHTTPError,
+              case .unexpectedStatusCode(let statusCode) = supabaseError else {
+            return nil
+        }
+        return statusCode
+    }
+
+    /// 핫스팟 갱신 요청을 현재 시점에 건너뛰어야 하는지 판정합니다.
+    /// - Parameters:
+    ///   - force: 강제 갱신 여부입니다.
+    ///   - now: 판정 기준 시각입니다.
+    /// - Returns: 요청을 보내지 말아야 하면 `true`, 요청 가능하면 `false`입니다.
+    private func shouldSkipHotspotRefresh(force: Bool, now: Date) -> Bool {
+        guard force == false else { return false }
+        if now < hotspotFailureRetryAt {
+            return true
+        }
+        return now.timeIntervalSince(lastRefreshAt) < hotspotMinimumRefreshInterval
+    }
+
+    /// 핫스팟 요청 실패 시 백오프 윈도우를 계산해 다음 호출 가능 시점을 지연합니다.
+    /// - Parameters:
+    ///   - error: 원본 네트워크 오류입니다.
+    ///   - now: 실패가 발생한 시각입니다.
+    /// - Returns: 없음. 내부 실패 스트릭/다음 재시도 시각 상태를 갱신합니다.
+    private func applyHotspotFailureBackoff(for error: Error, now: Date) {
+        let statusCode = httpStatusCode(from: error)
+        let isServerFailure = (statusCode ?? 0) >= 500
+        let isRetryableNetworkFailure = RivalNetworkErrorInterpreter.isConnectivityError(error)
+        guard isServerFailure || isRetryableNetworkFailure else {
+            hotspotFailureStreak = 0
+            hotspotFailureRetryAt = now
+            return
+        }
+
+        hotspotFailureStreak = min(6, hotspotFailureStreak + 1)
+        let multiplier = pow(2.0, Double(max(0, hotspotFailureStreak - 1)))
+        let backoff = min(
+            hotspotFailureBackoffMaxInterval,
+            hotspotFailureBackoffBaseInterval * multiplier
+        )
+        hotspotFailureRetryAt = now.addingTimeInterval(backoff)
+        #if DEBUG
+        print(
+            "[Rival] hotspot refresh backoff applied streak=\(hotspotFailureStreak) backoff=\(Int(backoff))s status=\(statusCode ?? -1)"
+        )
+        #endif
+    }
+
+    /// 핫스팟 요청 성공 시 누적된 실패 백오프 상태를 초기화합니다.
+    /// - Returns: 없음. 다음 갱신이 최소 주기 기준으로만 판단되도록 실패 상태를 리셋합니다.
+    private func resetHotspotFailureBackoff() {
+        hotspotFailureStreak = 0
+        hotspotFailureRetryAt = .distantPast
+    }
+
     /// 위치 권한이 바뀌면 화면 상태를 즉시 재계산합니다.
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         RivalCoreLocationCallTracer.record(
@@ -893,6 +970,5 @@ final class RivalTabViewModel: NSObject, ObservableObject, @preconcurrency CLLoc
         guard locations.isEmpty == false,
               locationSharingEnabled else { return }
         refreshHotspots(force: false)
-        refreshLeaderboard(force: false)
     }
 }
