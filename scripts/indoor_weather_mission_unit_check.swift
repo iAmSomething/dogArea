@@ -25,7 +25,10 @@ let homeVM = loadMany([
     "dogArea/Source/Domain/Home/Stores/IndoorMissionStore.swift",
     "dogArea/Source/Domain/Home/Stores/SeasonMotionStore.swift"
 ])
-let homeView = load("dogArea/Views/HomeView/HomeView.swift")
+let homeView = loadMany([
+    "dogArea/Views/HomeView/HomeView.swift",
+    "dogArea/Views/HomeView/HomeSubView/Cards/HomeIndoorMissionRowView.swift"
+])
 let metrics = loadMany([
     "dogArea/Source/UserdefaultSetting.swift",
     "dogArea/Source/AppSession/AppFeatureGate.swift",
