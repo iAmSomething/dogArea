@@ -7,14 +7,14 @@ struct StartWalkIntent: AppIntent {
 
     /// 위젯에서 산책 시작 액션을 앱 공유 저장소에 기록합니다.
     /// - Returns: 앱 실행 후 소비할 요청을 기록한 인텐트 결과입니다.
-    func perform() async throws -> some IntentResult {
+    func perform() async throws -> some IntentResult & OpensIntent {
         routeToApp(kind: .startWalk)
     }
 
     /// 공통 위젯 액션 요청을 공유 저장소에 기록합니다.
     /// - Parameter kind: 요청할 위젯 액션 종류입니다.
     /// - Returns: 요청 기록 완료를 나타내는 인텐트 결과입니다.
-    private func routeToApp(kind: WalkWidgetActionKind) -> some IntentResult {
+    private func routeToApp(kind: WalkWidgetActionKind) -> some IntentResult & OpensIntent {
         let route = WalkWidgetActionRequest(
             kind: kind,
             actionId: UUID().uuidString.lowercased(),
@@ -36,7 +36,8 @@ struct StartWalkIntent: AppIntent {
                 updatedAt: Date().timeIntervalSince1970
             )
         )
-        return .result()
+        let openURL = route.asRoute().makeURL() ?? URL(string: "dogarea://widget/walk")!
+        return .result(opensIntent: OpenURLIntent(openURL))
     }
 }
 
@@ -46,14 +47,14 @@ struct EndWalkIntent: AppIntent {
 
     /// 위젯에서 산책 종료 액션을 앱 공유 저장소에 기록합니다.
     /// - Returns: 앱 실행 후 소비할 요청을 기록한 인텐트 결과입니다.
-    func perform() async throws -> some IntentResult {
+    func perform() async throws -> some IntentResult & OpensIntent {
         routeToApp(kind: .endWalk)
     }
 
     /// 공통 위젯 액션 요청을 공유 저장소에 기록합니다.
     /// - Parameter kind: 요청할 위젯 액션 종류입니다.
     /// - Returns: 요청 기록 완료를 나타내는 인텐트 결과입니다.
-    private func routeToApp(kind: WalkWidgetActionKind) -> some IntentResult {
+    private func routeToApp(kind: WalkWidgetActionKind) -> some IntentResult & OpensIntent {
         let route = WalkWidgetActionRequest(
             kind: kind,
             actionId: UUID().uuidString.lowercased(),
@@ -75,7 +76,8 @@ struct EndWalkIntent: AppIntent {
                 updatedAt: Date().timeIntervalSince1970
             )
         )
-        return .result()
+        let openURL = route.asRoute().makeURL() ?? URL(string: "dogarea://widget/walk")!
+        return .result(opensIntent: OpenURLIntent(openURL))
     }
 }
 
@@ -85,7 +87,7 @@ struct ClaimQuestRewardIntent: AppIntent {
 
     /// 위젯에서 퀘스트 보상 수령 액션을 앱 공유 저장소에 기록합니다.
     /// - Returns: 앱 실행 후 소비할 요청을 기록한 인텐트 결과입니다.
-    func perform() async throws -> some IntentResult {
+    func perform() async throws -> some IntentResult & OpensIntent {
         let snapshotStore = DefaultQuestRivalWidgetSnapshotStore.shared
         let current = snapshotStore.load()
         let questInstanceId = current.summary?.questInstanceId
@@ -111,7 +113,8 @@ struct ClaimQuestRewardIntent: AppIntent {
                 updatedAt: Date().timeIntervalSince1970
             )
         )
-        return .result()
+        let openURL = route.asRoute().makeURL() ?? URL(string: "dogarea://widget/walk")!
+        return .result(opensIntent: OpenURLIntent(openURL))
     }
 }
 
@@ -121,7 +124,7 @@ struct OpenRivalTabIntent: AppIntent {
 
     /// 위젯에서 라이벌 탭 열기 액션을 앱 공유 저장소에 기록합니다.
     /// - Returns: 앱 실행 후 소비할 요청을 기록한 인텐트 결과입니다.
-    func perform() async throws -> some IntentResult {
+    func perform() async throws -> some IntentResult & OpensIntent {
         let route = WalkWidgetActionRequest(
             kind: .openRivalTab,
             actionId: UUID().uuidString.lowercased(),
@@ -130,6 +133,7 @@ struct OpenRivalTabIntent: AppIntent {
             requestedAt: Date().timeIntervalSince1970
         )
         DefaultWalkWidgetActionRequestStore.shared.setPending(route)
-        return .result()
+        let openURL = route.asRoute().makeURL() ?? URL(string: "dogarea://widget/walk")!
+        return .result(opensIntent: OpenURLIntent(openURL))
     }
 }
