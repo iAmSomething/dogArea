@@ -5,8 +5,29 @@ enum AppTabBarVisibility: Equatable {
     case hidden
 }
 
+enum AppTabLayoutMetrics {
+    static let defaultTabBarReservedHeight: CGFloat = 124
+    static let topSafeAreaPadding: CGFloat = 8
+    static let minimumBottomPadding: CGFloat = 12
+    static let defaultScrollExtraBottomPadding: CGFloat = 12
+    static let comfortableScrollExtraBottomPadding: CGFloat = 20
+    static let floatingOverlayLift: CGFloat = 28
+
+    /// 상단 오버레이가 상태 바와 겹치지 않도록 필요한 여백을 계산합니다.
+    /// - Parameters:
+    ///   - safeAreaTopInset: 현재 컨테이너의 상단 safe area inset 값입니다.
+    ///   - extra: 추가로 확보할 상단 여백입니다.
+    /// - Returns: 상단 오버레이에 적용할 최종 spacing 값입니다.
+    static func topOverlaySpacing(
+        safeAreaTopInset: CGFloat,
+        extra: CGFloat = topSafeAreaPadding
+    ) -> CGFloat {
+        max(safeAreaTopInset, 0) + extra
+    }
+}
+
 private struct AppTabBarReservedHeightKey: EnvironmentKey {
-    static let defaultValue: CGFloat = CustomTabBar.reservedContentHeight
+    static let defaultValue: CGFloat = AppTabLayoutMetrics.defaultTabBarReservedHeight
 }
 
 struct AppTabBarVisibilityPreferenceKey: PreferenceKey {
@@ -38,6 +59,37 @@ private struct AppTabBarContentPaddingModifier: ViewModifier {
     /// - Returns: 탭 바 예약 높이가 반영된 뷰입니다.
     func body(content: Content) -> some View {
         content.padding(.bottom, reservedHeight + extra)
+    }
+}
+
+private struct AppTabRootScrollLayoutModifier: ViewModifier {
+    let extraBottomPadding: CGFloat
+    let topSafeAreaPadding: CGFloat
+    let showsIndicators: Bool
+
+    /// 탭 루트 스크롤 화면의 공통 safe area, 배경, 하단 inset 정책을 적용합니다.
+    /// - Parameter content: 공통 탭 스크롤 레이아웃을 적용할 원본 뷰입니다.
+    /// - Returns: 전역 탭 스캐폴드 계약이 반영된 스크롤 뷰입니다.
+    func body(content: Content) -> some View {
+        content
+            .scrollIndicators(showsIndicators ? .visible : .hidden)
+            .safeAreaPadding(.top, topSafeAreaPadding)
+            .background(Color.appTabScaffoldBackground)
+            .appTabBarContentPadding(extra: extraBottomPadding)
+    }
+}
+
+private struct AppTabFloatingOverlayPaddingModifier: ViewModifier {
+    @Environment(\.appTabBarReservedHeight) private var reservedHeight
+
+    let lift: CGFloat
+    let minimumBottomPadding: CGFloat
+
+    /// 플로팅 CTA/오버레이가 하단 탭바 위에 안정적으로 배치되도록 여백을 적용합니다.
+    /// - Parameter content: 하단 플로팅 오버레이로 배치할 원본 뷰입니다.
+    /// - Returns: 탭바 회피용 하단 여백이 적용된 뷰입니다.
+    func body(content: Content) -> some View {
+        content.padding(.bottom, max(reservedHeight - lift, minimumBottomPadding))
     }
 }
 
@@ -106,6 +158,43 @@ extension View {
     /// - Returns: 탭 바 대비 하단 여백이 적용된 뷰입니다.
     func appTabBarContentPadding(extra: CGFloat = 0) -> some View {
         modifier(AppTabBarContentPaddingModifier(extra: extra))
+    }
+
+    /// 탭 루트의 스크롤 화면에 공통 safe area, 배경, 탭바 회피 여백을 적용합니다.
+    /// - Parameters:
+    ///   - extraBottomPadding: 탭바 예약 높이에 추가할 여분 하단 여백입니다.
+    ///   - topSafeAreaPadding: 상단 safe area 뒤에 추가할 공통 여백입니다.
+    ///   - showsIndicators: 스크롤 인디케이터 노출 여부입니다.
+    /// - Returns: 전역 탭 스크롤 레이아웃이 적용된 뷰입니다.
+    func appTabRootScrollLayout(
+        extraBottomPadding: CGFloat = AppTabLayoutMetrics.defaultScrollExtraBottomPadding,
+        topSafeAreaPadding: CGFloat = AppTabLayoutMetrics.topSafeAreaPadding,
+        showsIndicators: Bool = false
+    ) -> some View {
+        modifier(
+            AppTabRootScrollLayoutModifier(
+                extraBottomPadding: extraBottomPadding,
+                topSafeAreaPadding: topSafeAreaPadding,
+                showsIndicators: showsIndicators
+            )
+        )
+    }
+
+    /// 하단 플로팅 CTA/오버레이가 전역 탭바를 기준으로 자동 배치되도록 여백을 적용합니다.
+    /// - Parameters:
+    ///   - lift: 탭바 상단에서 얼마나 위로 띄울지 결정하는 값입니다.
+    ///   - minimumBottomPadding: 탭바 높이가 작을 때 보장할 최소 하단 여백입니다.
+    /// - Returns: 하단 플로팅 오버레이 여백이 적용된 뷰입니다.
+    func appTabFloatingOverlayPadding(
+        lift: CGFloat = AppTabLayoutMetrics.floatingOverlayLift,
+        minimumBottomPadding: CGFloat = AppTabLayoutMetrics.minimumBottomPadding
+    ) -> some View {
+        modifier(
+            AppTabFloatingOverlayPaddingModifier(
+                lift: lift,
+                minimumBottomPadding: minimumBottomPadding
+            )
+        )
     }
 
     /// 현재 화면이 전역 탭 바를 숨겨야 하는지 선언형으로 전달합니다.

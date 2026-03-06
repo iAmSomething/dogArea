@@ -30,6 +30,30 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertTrue(primaryAction.isHittable, "지도 산책 시작 버튼이 하단 탭바에 가려져 탭 불가능합니다.")
     }
 
+    /// 산책 목록 탭의 핵심 콘텐츠 진입점이 하단 탭바에 가려지지 않는지 검증합니다.
+    func testFeatureRegression_WalkListPrimaryContentIsNotObscuredByTabBar() throws {
+        let app = launchAppForFeatureRegression()
+        XCTAssertTrue(openTab(index: 1, app: app), "산책 목록 탭 진입에 실패했습니다.")
+
+        let walkListScreen = screenElement(identifier: "screen.walkList.content", in: app)
+        XCTAssertTrue(waitUntilExists(walkListScreen, timeout: 8), "산책 목록 화면 렌더링에 실패했습니다.")
+
+        let firstCell = app.descendants(matching: .any).matching(identifier: "walklist.cell").firstMatch
+        if waitUntilExists(firstCell, timeout: 2) {
+            XCTAssertTrue(firstCell.isHittable, "산책 목록 셀이 하단 탭바에 가려져 탭 불가능합니다.")
+            return
+        }
+
+        let guestLoginButton = app.buttons["walklist.guest.login"]
+        if waitUntilExists(guestLoginButton, timeout: 2) {
+            XCTAssertTrue(guestLoginButton.isHittable, "산책 목록 게스트 로그인 버튼이 하단 탭바에 가려져 탭 불가능합니다.")
+            return
+        }
+
+        let emptyCard = app.otherElements["walklist.empty"]
+        XCTAssertTrue(waitUntilExists(emptyCard, timeout: 2), "산책 목록 탭의 기본 비어 있음 상태를 찾지 못했습니다.")
+    }
+
     /// 홈의 영역 목표 상세 진입 시 탭바가 숨겨지고 뒤로 복귀 시 다시 표시되는지 검증합니다.
     func testFeatureRegression_TerritoryGoalNavigationHidesAndRestoresTabBar() throws {
         let app = launchAppForFeatureRegression()

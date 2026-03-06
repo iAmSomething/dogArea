@@ -59,6 +59,18 @@ assertTrue(
     scaffold.contains("func appTabBarVisibility(_ visibility: AppTabBarVisibility) -> some View"),
     "AppTabScaffold should expose declarative tab bar visibility"
 )
+assertTrue(
+    scaffold.contains("func appTabRootScrollLayout("),
+    "AppTabScaffold should expose shared tab root scroll layout"
+)
+assertTrue(
+    scaffold.contains("func appTabFloatingOverlayPadding("),
+    "AppTabScaffold should expose shared floating overlay padding"
+)
+assertTrue(
+    scaffold.contains("static func topOverlaySpacing("),
+    "AppTabLayoutMetrics should centralize top overlay spacing"
+)
 for (name, source) in [
     ("HomeView", homeView),
     ("MapView", mapView),
@@ -67,14 +79,29 @@ for (name, source) in [
     ("RivalTabView", rivalView)
 ] {
     assertTrue(
-        source.contains(".appTabBarContentPadding("),
-        "\(name) should use shared app tab bar padding"
-    )
-    assertTrue(
         !source.contains("CustomTabBar.reservedContentHeight"),
         "\(name) should not hard-code CustomTabBar reserved height"
     )
 }
+for (name, source) in [
+    ("HomeView", homeView),
+    ("WalkListView", walkListView),
+    ("NotificationCenterView", settingsView),
+    ("RivalTabView", rivalView)
+] {
+    assertTrue(
+        source.contains(".appTabRootScrollLayout("),
+        "\(name) should use shared app tab root scroll layout"
+    )
+}
+assertTrue(
+    mapView.contains(".appTabFloatingOverlayPadding("),
+    "MapView should use shared floating overlay padding for its CTA"
+)
+assertTrue(
+    mapView.contains("AppTabLayoutMetrics.topOverlaySpacing("),
+    "MapView should use shared top overlay spacing"
+)
 for (name, source) in [
     ("TerritoryGoalView", territoryGoalView),
     ("AreaDetailView", areaDetailView),

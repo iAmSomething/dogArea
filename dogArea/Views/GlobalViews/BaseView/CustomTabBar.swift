@@ -9,8 +9,6 @@ import Foundation
 import SwiftUI
 
 struct CustomTabBar: View {
-    static let reservedContentHeight: CGFloat = 124
-
     @Binding var selectedTab: Int
 
     private let sideItems: [TabVisualItem] = [
@@ -47,7 +45,7 @@ struct CustomTabBar: View {
             .padding(.bottom, 6)
         }
         .frame(maxWidth: .infinity)
-        .frame(height: Self.reservedContentHeight, alignment: .bottom)
+        .frame(height: AppTabLayoutMetrics.defaultTabBarReservedHeight, alignment: .bottom)
     }
 
     /// 일반 탭 아이템 버튼을 렌더링합니다.

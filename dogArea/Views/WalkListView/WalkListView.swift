@@ -85,12 +85,11 @@ struct WalkListView: View {
                 }
             }
             .padding(.top, 8)
-            .appTabBarContentPadding(extra: 12)
-        }.refreshable {
+        }
+        .refreshable {
             viewModel.fetchModel()
         }
-        .safeAreaPadding(.top, 8)
-        .background(Color.appTabScaffoldBackground)
+        .appTabRootScrollLayout(extraBottomPadding: 12)
         .onAppear{
             viewModel.fetchModel()
         }.navigationDestination(for: WalkDataModel.self) { model in
@@ -98,7 +97,6 @@ struct WalkListView: View {
         }.navigationTitle("산책 목록")
             .font(.appFont(for: .ExtraBold, size: 36))
             .accessibilityIdentifier("screen.walkList.content")
-        .background(Color.appTabScaffoldBackground.ignoresSafeArea())
     }
 
     var guestUpgradeCard: some View {
@@ -114,6 +112,7 @@ struct WalkListView: View {
             Button("로그인") {
                 _ = authFlow.requestAccess(feature: .cloudSync)
             }
+            .accessibilityIdentifier("walklist.guest.login")
             .buttonStyle(AppFilledButtonStyle(role: .secondary, fillsWidth: false))
         }
         .padding(10)
@@ -165,6 +164,7 @@ struct WalkListView: View {
             Button("전체 기록 보기") {
                 viewModel.showAllRecordsTemporarily()
             }
+            .accessibilityIdentifier("walklist.showAllRecords")
             .buttonStyle(AppFilledButtonStyle(role: .secondary, fillsWidth: false))
             .accessibilityLabel("전체 기록 보기")
         }
@@ -188,6 +188,7 @@ struct WalkListView: View {
         .appCardSurface()
         .padding(.horizontal, 16)
         .padding(.top, 12)
+        .accessibilityIdentifier("walklist.empty")
     }
 }
 

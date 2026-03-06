@@ -54,6 +54,7 @@ assertTrue(
 )
 for testName in [
     "testFeatureRegression_MapPrimaryActionIsNotObscuredByTabBar",
+    "testFeatureRegression_WalkListPrimaryContentIsNotObscuredByTabBar",
     "testFeatureRegression_TerritoryGoalNavigationHidesAndRestoresTabBar",
     "testFeatureRegression_SettingsAuthEntryPoints",
     "testFeatureRegression_MemberProfileEditPersistsUpdatedPetName",
@@ -69,6 +70,10 @@ for testName in [
 assertTrue(
     featureRegressionScript.contains("FeatureRegressionUITests"),
     "run_feature_regression_ui_tests.sh should target FeatureRegressionUITests"
+)
+assertTrue(
+    featureRegressionScript.contains("testFeatureRegression_WalkListPrimaryContentIsNotObscuredByTabBar"),
+    "run_feature_regression_ui_tests.sh should run the walk list tabbar regression"
 )
 assertTrue(
     featureRegressionScript.contains("testFeatureRegression_MemberProfileEditPersistsUpdatedPetName"),
