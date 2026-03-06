@@ -6,20 +6,27 @@
 //
 
 import Foundation
-enum AlertActionType{
-    case custom(AlertModel , () -> () , () -> ())
-    case customThreeButton(AlertModel, () -> (), () -> (), () -> ())
-    case logOut
+
+enum AlertActionType {
+    typealias AlertActionHandler = () -> Void
+
+    case custom(AlertModel, AlertActionHandler, AlertActionHandler)
+    case customThreeButton(AlertModel, AlertActionHandler, AlertActionHandler, AlertActionHandler)
+    case loggedOut
+    case authRequired
     case annotationSelected(Location)
     case deletePolygon(UUID)
+
     var model: AlertModel {
         switch self {
         case .custom(let model, _, _):
             return model
         case .customThreeButton(let model, _, _, _):
             return model
-        case .logOut:
-            return AlertModel(title: "계정 오류", message: "로그아웃 되었습니다.", configure: .oneButton(buttonMsg: "로그인 하기"))
+        case .loggedOut:
+            return AlertModel.loggedOutAlert()
+        case .authRequired:
+            return AlertModel.authRequiredAlert()
         case .annotationSelected(let location):
             return AlertModel(title: "선택된 포인트", message: "\(location.coordinate)", configure: .twoButtonChoice(isVertical: false, first: "확인", second: "삭제"))
         case .deletePolygon(_):
@@ -27,11 +34,13 @@ enum AlertActionType{
         }
     }
 }
+
 enum AlertConfigureType {
     case defaultType
     case twoButtonChoice(isVertical: Bool = false, first: String?, second: String?)
     case threeButtonChoice(first: String?, second: String?, third: String?)
     case oneButton(buttonMsg: String?)
+
     var leftString: String {
         switch self {
         case .defaultType :
@@ -65,24 +74,27 @@ enum AlertConfigureType {
         }
     }
 }
-// MARK: 알림 기능
-// TODO: 로그인 추가 시 권한 없음 case 추가, customView 추가 기능
+
+// MARK: Alert Configuration
 struct AlertModel {
     private let title: String
     private let message: String?
     private let configure: AlertConfigureType
+
     init(title: String, message: String?, configure: AlertConfigureType) {
         self.title = title
         self.message = message
         self.configure = configure
     }
-    static func simpleAlert(title: String, message: String = "" , isOneButton: Bool = false) -> AlertModel{
+
+    static func simpleAlert(title: String, message: String = "", isOneButton: Bool = false) -> AlertModel{
         if isOneButton {
             AlertModel(title: title, message: message, configure: .oneButton(buttonMsg: "확인"))
         } else {
             AlertModel(title: title, message: message, configure: .twoButtonChoice(isVertical: true, first: "예", second: "아니오"))
         }
     }
+
     static func threeChoiceAlert(
         title: String,
         message: String,
@@ -96,6 +108,29 @@ struct AlertModel {
             configure: .threeButtonChoice(first: first, second: second, third: third)
         )
     }
+
+    /// 로그아웃 완료 안내에 사용하는 단일 버튼 알림 모델을 생성합니다.
+    /// - Parameter primaryButtonTitle: 로그인 재진입 버튼에 표시할 문구입니다.
+    /// - Returns: 로그아웃 완료 안내 문구와 단일 버튼 구성을 담은 알림 모델입니다.
+    static func loggedOutAlert(primaryButtonTitle: String = "로그인 하기") -> AlertModel {
+        AlertModel(
+            title: "계정 오류",
+            message: "로그아웃 되었습니다.",
+            configure: .oneButton(buttonMsg: primaryButtonTitle)
+        )
+    }
+
+    /// 인증 세션 확인이 필요한 상태를 안내하는 단일 버튼 알림 모델을 생성합니다.
+    /// - Parameter primaryButtonTitle: 로그인 재진입 버튼에 표시할 문구입니다.
+    /// - Returns: 인증 재확인 안내 문구와 단일 버튼 구성을 담은 알림 모델입니다.
+    static func authRequiredAlert(primaryButtonTitle: String = "로그인 하기") -> AlertModel {
+        AlertModel(
+            title: "인증 필요",
+            message: "인증 세션 확인이 필요합니다. 다시 로그인 후 시도해주세요.",
+            configure: .oneButton(buttonMsg: primaryButtonTitle)
+        )
+    }
+
     func titleStr() -> String {
         return self.title
     }

@@ -117,6 +117,7 @@ swift scripts/settings_auth_session_sync_unit_check.swift
 swift scripts/profile_edit_userinfo_recovery_unit_check.swift
 swift scripts/ui_regression_matrix_unit_check.swift
 swift scripts/custom_alert_present_state_unit_check.swift
+swift scripts/custom_alert_auth_state_unit_check.swift
 swift scripts/custom_alert_mainactor_unit_check.swift
 swift scripts/custom_alert_unused_type_cleanup_unit_check.swift
 swift scripts/alert_model_height_overload_cleanup_unit_check.swift

@@ -32,7 +32,7 @@ struct MapAlertSubView: View {
             middleButtonAction: middleAction,
             rightButtonAction: rightAction
         )
-      case .logOut:
+      case .loggedOut, .authRequired:
         ca = CustomAlert(presentAlert: $myAlert.isAlert,
                          alertModel: myAlert.alertType.model)
       case .deletePolygon(let id):
