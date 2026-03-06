@@ -78,10 +78,17 @@ struct AppTabRootContainer<Content: View>: View {
 
     var body: some View {
         NavigationStack {
-            content
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .modifier(AppRootNavigationChromeModifier(isHidden: hidesNavigationBar))
-                .accessibilityIdentifier(accessibilityIdentifier)
+            ZStack(alignment: .topLeading) {
+                content
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .modifier(AppRootNavigationChromeModifier(isHidden: hidesNavigationBar))
+
+                Color.black
+                    .opacity(0.01)
+                    .frame(width: 1, height: 1)
+                    .allowsHitTesting(false)
+                    .accessibilityIdentifier(accessibilityIdentifier)
+            }
         }
     }
 }

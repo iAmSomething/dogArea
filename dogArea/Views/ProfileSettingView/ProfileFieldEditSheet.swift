@@ -8,18 +8,20 @@ struct ProfileFieldEditSheet: View {
         case pet
     }
 
-    @Environment(\.dismiss) var dismiss
     @StateObject private var sheetViewModel: ProfileFieldEditSheetViewModel
     @State private var pickerTarget: ProfileImageTarget? = nil
     @State private var pickerSourceType: UIImagePickerController.SourceType? = nil
     let onSaved: (String) -> Void
+    let onClose: () -> Void
 
     /// 프로필 편집 시트의 초기 상태를 구성합니다.
     /// - Parameters:
     ///   - viewModel: 사용자/반려견 정보와 저장 액션을 제공하는 설정 뷰모델입니다.
     ///   - onSaved: 저장 성공 시 사용자에게 보여줄 메시지를 전달하는 콜백입니다.
-    init(viewModel: SettingViewModel, onSaved: @escaping (String) -> Void) {
+    ///   - onClose: 시트 종료가 필요할 때 부모 화면의 표시 상태를 갱신하는 콜백입니다.
+    init(viewModel: SettingViewModel, onSaved: @escaping (String) -> Void, onClose: @escaping () -> Void) {
         self.onSaved = onSaved
+        self.onClose = onClose
         _sheetViewModel = StateObject(wrappedValue: ProfileFieldEditSheetViewModel(provider: viewModel))
     }
 
@@ -63,6 +65,7 @@ struct ProfileFieldEditSheet: View {
                             .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .body))
                             .foregroundStyle(Color.red)
                             .padding(.horizontal, 16)
+                            .accessibilityIdentifier("sheet.settings.profileEdit.error")
                     }
                 }
                 .padding(.horizontal, 16)
@@ -76,7 +79,7 @@ struct ProfileFieldEditSheet: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("취소") {
-                        dismiss()
+                        onClose()
                     }
                     .accessibilityIdentifier("sheet.settings.profileEdit.cancel")
                 }
@@ -84,8 +87,17 @@ struct ProfileFieldEditSheet: View {
                     Button(sheetViewModel.isSaving ? "저장 중..." : "저장") {
                         Task {
                             if await sheetViewModel.saveChanges() {
-                                onSaved("프로필 정보를 저장했어요.")
-                                dismiss()
+                                await MainActor.run {
+                                    #if DEBUG
+                                    print("[ProfileEditSheet] dismiss requested after save success")
+                                    #endif
+                                    onSaved("프로필 정보를 저장했어요.")
+                                    onClose()
+                                }
+                            } else {
+                                #if DEBUG
+                                print("[ProfileEditSheet] dismiss skipped because save failed")
+                                #endif
                             }
                         }
                     }

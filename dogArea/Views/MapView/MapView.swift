@@ -12,6 +12,7 @@ import _MapKit_SwiftUI
 import UIKit
 #endif
 struct MapView : View{
+    @Environment(\.appTabBarReservedHeight) private var appTabBarReservedHeight
     @EnvironmentObject var loading: LoadingViewModel
     @EnvironmentObject var authFlow: AuthFlowCoordinator
     @StateObject private var myAlert = CustomAlertViewModel()
@@ -130,6 +131,9 @@ struct MapView : View{
         composed = AnyView(composed.overlay(alignment: .top) {
             statusOverlayView
         })
+        composed = AnyView(composed.overlay(alignment: .bottom) {
+            mapPrimaryActionOverlay
+        })
         return composed
     }
 
@@ -220,13 +224,6 @@ struct MapView : View{
                             Spacer()
                         }
                     }
-
-                    StartButtonView(
-                        viewModel: viewModel,
-                        myAlert: myAlert,
-                        isModalPresented: $isWalkingViewPresented,
-                        endWalkingViewPresented: $endWalkingViewPresented
-                    )
                     if !viewModel.selectedPolygonList.isEmpty && !viewModel.isWalking {
                         VStack {
                             Text("닫기")
@@ -374,6 +371,16 @@ struct MapView : View{
         case .watchStatus:
             watchStatusBanner
         }
+    }
+
+    private var mapPrimaryActionOverlay: some View {
+        StartButtonView(
+            viewModel: viewModel,
+            myAlert: myAlert,
+            isModalPresented: $isWalkingViewPresented,
+            endWalkingViewPresented: $endWalkingViewPresented
+        )
+        .padding(.bottom, max(appTabBarReservedHeight - 28, 12))
     }
 
     var recoverableSessionBanner: some View {

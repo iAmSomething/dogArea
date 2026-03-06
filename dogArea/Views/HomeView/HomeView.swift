@@ -59,6 +59,7 @@ struct HomeView: View {
     @State private var questWidgetTab: QuestWidgetTab = .daily
     @State private var homeScrollOffsetY: CGFloat = 0
     @State private var isSeasonDetailPresented: Bool = false
+    @State private var isTerritoryGoalPresented: Bool = false
 
     private var isQuestMotionReduced: Bool {
         accessibilityReduceMotion
@@ -245,6 +246,10 @@ struct HomeView: View {
                     seasonResetTransitionBanner
                         .zIndex(9)
                 }
+
+            }
+            .navigationDestination(isPresented: $isTerritoryGoalPresented) {
+                TerritoryGoalView(viewModel: TerritoryGoalViewModel(homeViewModel: viewModel))
             }
         }
     }
@@ -409,9 +414,8 @@ struct HomeView: View {
             nextGoalAreaText: viewModel.nextGoalArea?.area.calculatedAreaString ?? "완료",
             remainingAreaText: viewModel.remainingAreaToGoal.calculatedAreaString,
             progressRatio: viewModel.goalProgressRatio,
-            destination: TerritoryGoalView(viewModel: TerritoryGoalViewModel(homeViewModel: viewModel))
+            onOpenDetail: { isTerritoryGoalPresented = true }
         )
-        .accessibilityElement(children: .contain)
     }
 
     private var selectedPetContextBanner: some View {

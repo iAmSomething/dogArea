@@ -170,6 +170,11 @@ final class ProfileFieldEditSheetViewModel: ObservableObject {
         errorMessage = nil
         isSaving = true
         defer { isSaving = false }
+        #if DEBUG
+        print(
+            "[ProfileEditSheet] save start userName=\(userName) petName=\(petName) breed=\(breed) ageYears=\(ageYearsText) gender=\(gender.rawValue)"
+        )
+        #endif
 
         let result = await provider.saveProfileDetails(
             profileName: userName,
@@ -184,6 +189,9 @@ final class ProfileFieldEditSheetViewModel: ObservableObject {
 
         switch result {
         case .success:
+            #if DEBUG
+            print("[ProfileEditSheet] save success")
+            #endif
             caricatureStatusText = provider.selectedPetCaricatureStatusText
             selectedPetName = provider.selectedPetName
             petName = provider.initialPetName
@@ -194,6 +202,9 @@ final class ProfileFieldEditSheetViewModel: ObservableObject {
             return true
         case .failure(let error):
             errorMessage = error.localizedDescription
+            #if DEBUG
+            print("[ProfileEditSheet] save failure error=\(error.localizedDescription)")
+            #endif
             return false
         }
     }

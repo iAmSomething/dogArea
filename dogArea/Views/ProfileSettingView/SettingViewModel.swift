@@ -252,6 +252,17 @@ final class SettingViewModel: ObservableObject {
         }
 
         var updatedUserProfileURL = current.profile
+        if shouldStubProfileSaveForUITest() {
+            return finalizeProfileSave(
+                current: current,
+                displayName: validatedUserDraft.displayName,
+                profileURL: updatedUserProfileURL,
+                profileMessage: validatedUserDraft.profileMessage,
+                pets: pets,
+                targetPetId: targetPetId
+            )
+        }
+
         do {
             if let userProfileImage {
                 guard let imageData = compressedJPEGData(for: userProfileImage) else {
@@ -280,22 +291,14 @@ final class SettingViewModel: ObservableObject {
             return .failure(error)
         }
 
-        _ = profileRepository.save(
-            id: current.id,
-            name: validatedUserDraft.displayName,
-            profile: updatedUserProfileURL,
+        return finalizeProfileSave(
+            current: current,
+            displayName: validatedUserDraft.displayName,
+            profileURL: updatedUserProfileURL,
             profileMessage: validatedUserDraft.profileMessage,
-            pet: pets,
-            createdAt: current.createdAt,
-            selectedPetId: targetPetId
+            pets: pets,
+            targetPetId: targetPetId
         )
-        if let targetPetId {
-            profileRepository.setSelectedPetId(targetPetId, source: "profile_edit_save")
-        } else {
-            NotificationCenter.default.post(name: UserdefaultSetting.selectedPetDidChangeNotification, object: nil)
-        }
-        reloadUserInfo()
-        return .success(())
     }
 
     /// 현재 로그인 사용자의 회원탈퇴를 요청합니다.
@@ -580,5 +583,46 @@ final class SettingViewModel: ObservableObject {
             rankTier: rankTier,
             contributionCount: decoded.contributionCount
         )
+    }
+
+    /// UI 테스트에서 프로필 저장을 원격 업로드 없이 로컬 스텁으로 처리할지 여부를 반환합니다.
+    /// - Returns: UI 테스트 전용 저장 스텁을 사용해야 하면 `true`입니다.
+    private func shouldStubProfileSaveForUITest() -> Bool {
+        ProcessInfo.processInfo.arguments.contains("-UITest.ProfileSaveStubSuccess")
+    }
+
+    /// 검증을 통과한 프로필 편집 결과를 로컬 저장소와 현재 화면 상태에 반영합니다.
+    /// - Parameters:
+    ///   - current: 저장 기준이 되는 현재 사용자 정보입니다.
+    ///   - displayName: 저장할 사용자 표시 이름입니다.
+    ///   - profileURL: 저장할 사용자 프로필 이미지 URL입니다.
+    ///   - profileMessage: 저장할 사용자 프로필 메시지입니다.
+    ///   - pets: 저장할 반려견 목록입니다.
+    ///   - targetPetId: 저장 후 선택 상태로 유지할 반려견 식별자입니다.
+    /// - Returns: 로컬 저장 반영 결과입니다.
+    private func finalizeProfileSave(
+        current: UserInfo,
+        displayName: String,
+        profileURL: String?,
+        profileMessage: String?,
+        pets: [PetInfo],
+        targetPetId: String?
+    ) -> Result<Void, Error> {
+        _ = profileRepository.save(
+            id: current.id,
+            name: displayName,
+            profile: profileURL,
+            profileMessage: profileMessage,
+            pet: pets,
+            createdAt: current.createdAt,
+            selectedPetId: targetPetId
+        )
+        if let targetPetId {
+            profileRepository.setSelectedPetId(targetPetId, source: "profile_edit_save")
+        } else {
+            NotificationCenter.default.post(name: UserdefaultSetting.selectedPetDidChangeNotification, object: nil)
+        }
+        reloadUserInfo()
+        return .success(())
     }
 }

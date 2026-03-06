@@ -13,6 +13,7 @@
 		1CCC7F48BF06FD4BCECF4286 /* TerritoryGoalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE5CB737B1C8D8A675B6A43B /* TerritoryGoalView.swift */; };
 		22EA9355CC79568490A94348 /* dogAreaUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 626E89852AADA163B53AB03D /* dogAreaUITestsLaunchTests.swift */; };
 		23CB28F896D94B88CEF351F7 /* DesignAuditUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D982F3BFEE53C6D1333FF67 /* DesignAuditUITests.swift */; };
+		A37900010000000000000001 /* FeatureRegressionUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37900010000000000000002 /* FeatureRegressionUITests.swift */; };
 		23F65BCBE5B31BA26CAFD1A5 /* WalkWidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9750A3E12F227C859B34AF85 /* WalkWidgetBridge.swift */; };
 		260998357CBB95987A042E95 /* PetProfileImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FFD83BC3079033CF24E9D6A /* PetProfileImageView.swift */; };
 		28782FDF88C341A3A600D280 /* HomeWeeklyMetricCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEA093F2A0E2A16E5E116F3E /* HomeWeeklyMetricCardView.swift */; };
@@ -263,6 +264,7 @@
 		19B0F89F9FF220625F0008DB /* RivalTabModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RivalTabModels.swift; path = dogArea/Views/ProfileSettingView/RivalTabModels.swift; sourceTree = "<group>"; };
 		1C4863F9787EC32E41B731A8 /* AreaDetailRecentConquestSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AreaDetailRecentConquestSectionView.swift; sourceTree = "<group>"; };
 		1D982F3BFEE53C6D1333FF67 /* DesignAuditUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DesignAuditUITests.swift; sourceTree = "<group>"; };
+		A37900010000000000000002 /* FeatureRegressionUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FeatureRegressionUITests.swift; sourceTree = "<group>"; };
 		21CE83B02069A8E4171B35DE /* RivalTabView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RivalTabView.swift; path = dogArea/Views/ProfileSettingView/RivalTabView.swift; sourceTree = "<group>"; };
 		2615443270FF3222AEBDE893 /* ThumbnailImageView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ThumbnailImageView.swift; sourceTree = "<group>"; };
 		2D030E0DFD8D49558700ACB1 /* WalkControlWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/WalkControlWidget.swift; sourceTree = SOURCE_ROOT; };
@@ -476,6 +478,7 @@
 			isa = PBXGroup;
 			children = (
 				1D982F3BFEE53C6D1333FF67 /* DesignAuditUITests.swift */,
+				A37900010000000000000002 /* FeatureRegressionUITests.swift */,
 				626E89852AADA163B53AB03D /* dogAreaUITestsLaunchTests.swift */,
 			);
 			path = dogAreaUITests;
@@ -1290,6 +1293,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				23CB28F896D94B88CEF351F7 /* DesignAuditUITests.swift in Sources */,
+				A37900010000000000000001 /* FeatureRegressionUITests.swift in Sources */,
 				22EA9355CC79568490A94348 /* dogAreaUITestsLaunchTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -18,6 +18,7 @@ struct TerritoryGoalHeaderSectionView: View {
             Text(title)
                 .font(.appScaledFont(for: .SemiBold, size: 34, relativeTo: .largeTitle))
                 .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
+                .accessibilityIdentifier("screen.territoryGoal")
 
             Text(subtitle)
                 .font(.appScaledFont(for: .Regular, size: 16, relativeTo: .body))
