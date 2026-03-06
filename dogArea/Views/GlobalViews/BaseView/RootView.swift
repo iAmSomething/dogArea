@@ -208,19 +208,31 @@ struct RootView: View {
     /// 위젯에서 전달된 딥링크를 파싱해 지도 탭 액션으로 전달합니다.
     /// - Parameter url: 앱으로 유입된 URL 스킴 딥링크입니다.
     private func routeWidgetDeepLinkIfNeeded(_ url: URL) {
+        #if DEBUG
+        print("[WidgetAction] onOpenURL received: \(url.absoluteString)")
+        #endif
         guard let route = WalkWidgetActionRoute.parse(from: url) else { return }
+        #if DEBUG
+        print("[WidgetAction] parsed deep link kind=\(route.kind.rawValue) actionId=\(route.actionId) source=\(route.source)")
+        #endif
         dispatchWidgetAction(route)
     }
 
     /// 공유 저장소에 대기 중인 위젯 액션 요청을 소비해 앱 내부 액션으로 전달합니다.
     private func consumePendingWidgetActionIfNeeded() {
         guard let request = widgetActionStore.consumePending() else { return }
+        #if DEBUG
+        print("[WidgetAction] consumed pending request kind=\(request.kind.rawValue) actionId=\(request.actionId) source=\(request.source)")
+        #endif
         dispatchWidgetAction(request.asRoute())
     }
 
     /// 위젯 액션 라우트를 종류에 맞는 탭/서비스로 전달합니다.
     /// - Parameter route: 앱 내부에서 처리할 위젯 액션 라우트입니다.
     private func dispatchWidgetAction(_ route: WalkWidgetActionRoute) {
+        #if DEBUG
+        print("[WidgetAction] dispatch kind=\(route.kind.rawValue) actionId=\(route.actionId) source=\(route.source)")
+        #endif
         switch route.kind {
         case .startWalk, .endWalk:
             dispatchWalkWidgetAction(route)
@@ -238,12 +250,18 @@ struct RootView: View {
         if isAuthenticationOverlayActive {
             pendingWalkWidgetRoute = route
             selectedTab = 2
+            #if DEBUG
+            print("[WidgetAction] deferred walk action during auth overlay actionId=\(route.actionId)")
+            #endif
             return
         }
         pendingWalkWidgetRoute = nil
         mapViewModelStore.prepareIfNeeded()
         selectedTab = 2
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            #if DEBUG
+            print("[WidgetAction] posting walkWidgetActionRequested kind=\(route.kind.rawValue) actionId=\(route.actionId)")
+            #endif
             NotificationCenter.default.post(
                 name: .walkWidgetActionRequested,
                 object: nil,
