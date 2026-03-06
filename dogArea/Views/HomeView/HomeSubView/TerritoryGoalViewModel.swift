@@ -18,19 +18,41 @@ final class TerritoryGoalViewModel: ObservableObject {
     }
 
     var title: String {
-        "\(homeViewModel.selectedPetNameWithYi)의 영역"
+        "\(homeViewModel.selectedPetNameWithYi)의 영역 목표"
     }
 
     var subtitle: String {
-        "\(homeViewModel.selectedPetNameWithYi)가 정복한 영역을 확인해보세요!"
+        "다음 산책에서 무엇을 우선해야 하는지 한 번에 정리해드릴게요."
     }
 
     var selectedPetBadgeText: String {
-        "🐾 선택 반려견 기준 · \(homeViewModel.selectedPetName)"
+        "선택 반려견 기준 · \(homeViewModel.selectedPetName)"
+    }
+
+    var headerEyebrowText: String {
+        "Territory Goal Detail"
+    }
+
+    var goalMeaningText: String {
+        if let nextGoal = homeViewModel.nextGoalArea {
+            return "다음 랜드마크 \(nextGoal.areaName)까지 \(remainingAreaText) 남았어요."
+        }
+        return "현재 비교군 기준으로는 가장 큰 목표까지 도달했어요."
     }
 
     var areaSourceText: String {
         "\(homeViewModel.areaReferenceSourceLabel) · Featured \(homeViewModel.featuredAreaCount)개"
+    }
+
+    var freshnessText: String {
+        guard let lastUpdatedAt = homeViewModel.areaReferenceLastUpdatedAt else {
+            return "갱신 정보 없음"
+        }
+        return Self.relativeTimestampFormatter.localizedString(for: lastUpdatedAt, relativeTo: Date()) + " 갱신"
+    }
+
+    var isFallbackSource: Bool {
+        homeViewModel.areaReferenceSource == .fallback
     }
 
     var currentAreaText: String {
@@ -58,7 +80,40 @@ final class TerritoryGoalViewModel: ObservableObject {
     }
 
     var recentAreas: [AreaMeterDTO] {
-        Array(homeViewModel.myAreaList.sorted { $0.createdAt > $1.createdAt }.prefix(3))
+        Array(homeViewModel.myAreaList.sorted { $0.createdAt > $1.createdAt }.prefix(5))
+    }
+
+    var progressMessageText: String {
+        if let nextGoal = homeViewModel.nextGoalArea {
+            return "\(nextGoal.areaName)까지 \(remainingAreaText)만 더 확보하면 돼요. 다음 산책 경로를 조금만 넓혀보세요."
+        }
+        return "새 비교군을 확인해 다음 목표를 다시 정해보세요."
+    }
+
+    var recentInsightDetailText: String {
+        if let latest = recentAreas.first {
+            return "최신 정복: \(latest.areaName)"
+        }
+        return "최근 정복 기록이 아직 없어요."
+    }
+
+    var sourceInsightDetailText: String {
+        isFallbackSource ? "원격 응답 실패 시 로컬 기준으로 대체됩니다." : "운영 중인 비교군 카탈로그를 사용 중이에요."
+    }
+
+    var freshnessInsightDetailText: String {
+        isFallbackSource ? "fallback 상태도 함께 표시합니다." : "최근 동기화 시각 기준입니다."
+    }
+
+    var actionTitle: String {
+        isFallbackSource ? "비교군 재확인 필요" : "다음 산책 액션"
+    }
+
+    var actionBodyText: String {
+        if let nextGoal = homeViewModel.nextGoalArea {
+            return "\(nextGoal.areaName)을 목표로 남은 \(remainingAreaText)을 채우는 경로를 잡아보세요. 비교군 카탈로그에서 그보다 조금 작은 기준도 함께 확인하면 우선순위 판단이 쉬워집니다."
+        }
+        return "현재 목표를 모두 달성했어요. 비교군 카탈로그로 이동해 더 큰 기준을 다음 목표로 골라보세요."
     }
 
     /// 최신 데이터 스냅샷을 갱신합니다.
@@ -66,4 +121,11 @@ final class TerritoryGoalViewModel: ObservableObject {
         homeViewModel.refreshAreaList()
         homeViewModel.refreshAreaReferenceCatalogs()
     }
+
+    private static let relativeTimestampFormatter: RelativeDateTimeFormatter = {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .short
+        formatter.locale = Locale(identifier: "ko_KR")
+        return formatter
+    }()
 }

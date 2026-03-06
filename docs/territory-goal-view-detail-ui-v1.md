@@ -13,7 +13,7 @@
 | 목적 | 빠른 상태 확인 + 진입 유도 | 의사결정 지원(다음 행동/우선순위) |
 | 정보 밀도 | 핵심 수치 3개 중심 | 비교군/최근 정복/목표 달성 힌트까지 확장 |
 | 체류 시간 | 짧음(스캔형) | 중간(탐색형) |
-| 액션 | `비교군 더보기` 1개 | 비교군 이동, 최근 정복 탐색, 새로고침 |
+| 액션 | `목표 상세 보기` 1개 | 비교군 이동, 최근 정복 탐색, 새로고침 |
 | 상태 처리 | 정상 상태 우선 | empty/offline/stale 상태 명시 |
 
 ## 3. 화면 정보 구조(상세 전용)
@@ -55,7 +55,7 @@
 
 ## 5. 인터랙션 정책
 1. 홈 -> 상세 진입 시 하단 탭바 숨김 유지.
-2. 상세 화면의 `비교군 보러가기`는 `AreaDetailView`로 이동.
+2. 상세 화면의 `비교군 카탈로그` CTA는 `AreaDetailView`로 이동.
 3. pull-to-refresh 시 영역 목록 + 기준 카탈로그를 동시에 갱신.
 4. 최근 정복 행 탭 시(차기): 해당 영역 상세로 drill-down.
 
@@ -79,7 +79,7 @@
 - `TerritoryGoalOverviewCardView.swift`
 - `TerritoryGoalInsightSectionView.swift`
 - `TerritoryGoalRecentListSectionView.swift`
-- `TerritoryGoalEmptyHintCardView.swift`
+- `TerritoryGoalActionHintCardView.swift`
 
 ViewModel 분리 기준:
 - 단순 표시 계산은 `TerritoryGoalViewModel` 유지

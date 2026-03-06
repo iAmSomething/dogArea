@@ -142,7 +142,9 @@ final class HomeViewModel: ObservableObject {
     @Published var seasonCatchupBuffStatusWarning: Bool = false
     @Published private(set) var isShowingAllRecordsOverride: Bool = false
     @Published private(set) var areaReferenceSections: [AreaReferenceSection] = []
-    @Published private(set) var areaReferenceSourceLabel: String = "로컬 비교군"
+    @Published private(set) var areaReferenceSource: AreaReferenceSource = .fallback
+    @Published private(set) var areaReferenceSourceLabel: String = "로컬 비교군 (Fallback)"
+    @Published private(set) var areaReferenceLastUpdatedAt: Date? = nil
     @Published private(set) var featuredAreaCount: Int = 0
     @Published var questMotionEvent: QuestMotionEvent? = nil
     @Published var questCompletionPresentation: QuestCompletionPresentation? = nil
@@ -294,7 +296,9 @@ final class HomeViewModel: ObservableObject {
                 self.featuredGoalAreas = snapshot.featuredAreas.sorted { $0.area < $1.area }
                 self.featuredAreaCount = self.featuredGoalAreas.count
                 self.areaReferenceSections = snapshot.sections
+                self.areaReferenceSource = snapshot.source
                 self.areaReferenceSourceLabel = snapshot.source == .remote ? "DB 비교군" : "로컬 비교군 (Fallback)"
+                self.areaReferenceLastUpdatedAt = Date()
                 self.updateCurrentMeter()
                 self.refreshAreaList()
                 self.evaluateAreaMilestones()

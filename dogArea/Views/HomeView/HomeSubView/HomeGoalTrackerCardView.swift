@@ -24,7 +24,7 @@ struct HomeGoalTrackerCardView<Destination: View>: View {
                 }
                 Spacer(minLength: 0)
                 NavigationLink(destination: destination) {
-                    Text("비교군 더보기 >")
+                    Text("목표 상세 보기 >")
                         .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
                         .foregroundStyle(Color.appDynamicHex(light: 0xC2410C, dark: 0xFDBA74))
                         .frame(minHeight: 44, alignment: .center)

@@ -18,7 +18,8 @@
     - `다음 목표`
     - `남은 면적`
   - 진행률 바(`ProgressView`)로 목표 대비 진행 상태 표현
-  - `비교군 더보기` CTA를 `AreaDetailView`로 연결
+  - `목표 상세 보기` CTA를 `TerritoryGoalView`로 연결
+  - `TerritoryGoalView` 내부에서 `비교군 카탈로그` CTA를 통해 `AreaDetailView`로 2단계 진입
 
 ## 3. 접근성/타이포 정책
 - 카드 전체 접근성 라벨 제공
