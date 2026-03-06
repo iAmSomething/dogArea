@@ -96,6 +96,11 @@ request_json() {
   printf '%s\n%s' "$status" "$body"
 }
 
+is_server_error() {
+  local status="$1"
+  [[ "$status" =~ ^5[0-9][0-9]$ ]]
+}
+
 login_response="$(request_json \
   "POST" \
   "$SUPABASE_URL/auth/v1/token?grant_type=password" \
@@ -162,6 +167,12 @@ while [[ "$iteration" -le "$ITERATIONS" ]]; do
   nearby_hotspots_app_status="$(printf '%s' "$nearby_hotspots_app" | head -n 1)"
   if [[ "$nearby_hotspots_app_status" == "401" ]]; then
     echo "[AuthSmoke] FAIL nearby-presence get_hotspots returned 401 with app authorization policy"
+    exit 1
+  fi
+  if is_server_error "$nearby_hotspots_member_status" || is_server_error "$nearby_hotspots_app_status"; then
+    echo "[AuthSmoke] FAIL nearby-presence get_hotspots returned server error member=$nearby_hotspots_member_status app=$nearby_hotspots_app_status"
+    echo "[AuthSmoke] member body=$(printf '%s' "$nearby_hotspots_member" | tail -n +2)"
+    echo "[AuthSmoke] app body=$(printf '%s' "$nearby_hotspots_app" | tail -n +2)"
     exit 1
   fi
 
