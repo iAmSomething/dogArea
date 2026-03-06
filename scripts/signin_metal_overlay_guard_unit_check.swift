@@ -16,6 +16,7 @@ func load(_ relativePath: String) -> String {
 }
 
 let rootView = load("dogArea/Views/GlobalViews/BaseView/RootView.swift")
+let mapViewModelStore = load("dogArea/Views/GlobalViews/BaseView/MapViewModelStore.swift")
 
 assertTrue(
     rootView.contains("private var isAuthenticationOverlayActive: Bool"),
@@ -34,7 +35,7 @@ assertTrue(
     "RootView should render suspended placeholder instead of MapView during auth overlay"
 )
 assertTrue(
-    rootView.contains("func suspendForAuthenticationOverlay()"),
+    mapViewModelStore.contains("func suspendForAuthenticationOverlay()"),
     "MapViewModelStore should provide explicit overlay suspension API"
 )
 
