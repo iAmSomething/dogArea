@@ -308,6 +308,7 @@ struct SupabaseHTTPClient {
             var resolvedStatusCode = statusCode
             var resolvedData = data
             var resolvedAccessToken = authorization.accessToken
+            var authenticatedStatusCodeForSessionDecision = statusCode
 
             if let recoveryResult = await retryUnauthorizedRequestWithRefreshedSessionIfNeeded(
                 request: request,
@@ -332,6 +333,7 @@ struct SupabaseHTTPClient {
                     resolvedStatusCode = retryStatusCode
                     resolvedData = retryData
                     resolvedAccessToken = refreshedAccessToken ?? resolvedAccessToken
+                    authenticatedStatusCodeForSessionDecision = retryStatusCode
                 }
             }
 
@@ -377,7 +379,7 @@ struct SupabaseHTTPClient {
             }
 
             if await shouldInvalidateTokenSession(
-                statusCode: resolvedStatusCode,
+                statusCode: authenticatedStatusCodeForSessionDecision,
                 endpoint: endpoint,
                 usedAuthenticatedAccessToken: authorizationContext.usedAuthenticatedAccessToken,
                 accessToken: resolvedAccessToken,
@@ -388,6 +390,13 @@ struct SupabaseHTTPClient {
                 print("[SupabaseAuth] invalidate local token session from response status=\(resolvedStatusCode)")
                 #endif
             }
+            #if DEBUG
+            if authenticatedStatusCodeForSessionDecision != resolvedStatusCode {
+                print(
+                    "[SupabaseAuth] auth-session decision status=\(authenticatedStatusCodeForSessionDecision) final-response status=\(resolvedStatusCode)"
+                )
+            }
+            #endif
             #if DEBUG
             let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
             print("[SupabaseHTTP] <- \(method.rawValue) \(url.absoluteString) status=\(resolvedStatusCode) elapsed=\(elapsedMs)ms response=\(resolvedData.count)B")

@@ -322,7 +322,7 @@ final class RivalTabViewModel: NSObject, ObservableObject, @preconcurrency CLLoc
                 persistLocationSharingPreference(false, for: userId)
                 locationSharingEnabled = false
                 refreshViewState()
-                showToast(RivalNetworkErrorInterpreter.visibilityFailureMessage(from: error))
+                showToast(visibilityFailureMessage(for: error))
             }
         }
     }
@@ -852,7 +852,34 @@ final class RivalTabViewModel: NSObject, ObservableObject, @preconcurrency CLLoc
               case .unexpectedStatusCode(let statusCode) = supabaseError else {
             return false
         }
-        return statusCode == 401 || statusCode == 403
+        guard statusCode == 401 || statusCode == 403 else {
+            return false
+        }
+        return authSessionStore.currentTokenSession() == nil
+    }
+
+    /// 로컬 토큰 세션이 유지된 상태에서 서버 게이트 401/403이 발생했는지 판정합니다.
+    /// - Parameter error: 판정할 원본 오류입니다.
+    /// - Returns: 토큰 세션이 남아 있고 401/403만 발생한 상태면 `true`, 아니면 `false`입니다.
+    private func isSessionPreservedUnauthorizedStatus(_ error: Error) -> Bool {
+        guard let supabaseError = error as? SupabaseHTTPError,
+              case .unexpectedStatusCode(let statusCode) = supabaseError else {
+            return false
+        }
+        guard statusCode == 401 || statusCode == 403 else {
+            return false
+        }
+        return authSessionStore.currentTokenSession() != nil
+    }
+
+    /// 공유 설정 실패 시 유효 세션 여부를 반영한 사용자 안내 메시지를 생성합니다.
+    /// - Parameter error: 원본 네트워크 오류입니다.
+    /// - Returns: 현재 인증 상태를 고려한 사용자 안내 메시지입니다.
+    private func visibilityFailureMessage(for error: Error) -> String {
+        if isSessionPreservedUnauthorizedStatus(error) {
+            return "로그인은 유지되어 있어요. 서버 인증 상태를 다시 확인 중이니 잠시 후 다시 시도해주세요."
+        }
+        return RivalNetworkErrorInterpreter.visibilityFailureMessage(from: error)
     }
 
     /// 인증 실패를 감지하면 세션/공유 상태를 정리하고 재로그인 안내 UX로 전환합니다.

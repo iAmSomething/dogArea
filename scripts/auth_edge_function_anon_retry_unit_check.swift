@@ -36,6 +36,15 @@ assertTrue(
     "http client should log anon retry attempts in debug builds"
 )
 assertTrue(
+    infra.contains("resolvedStatusCode = retryStatusCode")
+        && infra.contains("resolvedData = retryData"),
+    "anon retry non-2xx responses should become the final surfaced HTTP status/data"
+)
+assertTrue(
+    infra.contains("auth-session decision status="),
+    "http client should emit debug logs when auth-session invalidation uses a different status than the final anon retry response"
+)
+assertTrue(
     infra.contains("(anon-retry)"),
     "http client should annotate successful anon retry responses"
 )

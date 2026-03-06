@@ -43,6 +43,14 @@ assertTrue(
     "invalidation guard should preserve token session when auth probe confirms validity"
 )
 assertTrue(
+    infra.contains("var authenticatedStatusCodeForSessionDecision = statusCode"),
+    "http client should track authenticated-response status separately from anon retry status"
+)
+assertTrue(
+    infra.contains("statusCode: authenticatedStatusCodeForSessionDecision"),
+    "token invalidation should use the authenticated-response status instead of final anon retry status"
+)
+assertTrue(
     infra.contains("skip local token invalidation: remote auth user check inconclusive"),
     "invalidation guard should avoid forced logout when auth probe is inconclusive"
 )
