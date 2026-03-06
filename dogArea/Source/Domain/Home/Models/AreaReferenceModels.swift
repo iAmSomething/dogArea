@@ -1,11 +1,12 @@
 //
-//  AreaMeters.swift
+//  AreaReferenceModels.swift
 //  dogArea
 //
 //  Created by 김태훈 on 11/14/23.
 //
 
 import Foundation
+
 struct AreaMeter: Hashable, Identifiable {
     var id: UUID
     let areaName: String
@@ -16,7 +17,7 @@ struct AreaMeter: Hashable, Identifiable {
         self.area = area
     }
 }
-struct AreaMeterBinding: Hashable, TimeCheckable{
+struct AreaMeterBinding: Hashable, TimeCheckable {
     let areaName: String
     let area: Double
     var createdAt: Double

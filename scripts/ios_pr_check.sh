@@ -94,6 +94,7 @@ swift scripts/tabbar_safearea_regression_unit_check.swift
 swift scripts/root_view_supporting_type_split_unit_check.swift
 swift scripts/home_presentation_split_unit_check.swift
 swift scripts/home_card_row_rendering_split_unit_check.swift
+swift scripts/home_viewmodel_state_aggregation_split_unit_check.swift
 swift scripts/map_camera_jump_fix_unit_check.swift
 swift scripts/walk_return_to_origin_suggestion_unit_check.swift
 swift scripts/map_area_calculation_service_unit_check.swift

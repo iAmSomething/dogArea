@@ -12,112 +12,6 @@ import Combine
 import UIKit
 #endif
 
-enum QuestMotionEventType: String, Equatable {
-    case progress
-    case completed
-    case failed
-    case alreadyCompleted
-}
-
-struct QuestMotionEvent: Identifiable, Equatable {
-    let id = UUID()
-    let missionId: String
-    let missionTitle: String
-    let type: QuestMotionEventType
-    let progress: Double
-}
-
-struct QuestCompletionPresentation: Identifiable, Equatable {
-    let id = UUID()
-    let missionId: String
-    let missionTitle: String
-    let rewardPoint: Int
-}
-
-enum SeasonMotionEventType: String, Equatable {
-    case scoreIncreased
-    case rankUp
-    case shieldApplied
-    case seasonReset
-}
-
-struct SeasonMotionEvent: Identifiable, Equatable {
-    let id = UUID()
-    let type: SeasonMotionEventType
-    let scoreDelta: Double
-    let rankTier: SeasonRankTier
-    let shieldApplied: Bool
-}
-
-struct SeasonMotionSummary: Equatable {
-    let weekKey: String
-    let score: Double
-    let targetScore: Double
-    let progress: Double
-    let rankTier: SeasonRankTier
-    let todayScoreDelta: Int
-    let contributionCount: Int
-    let weatherShieldActive: Bool
-    let weatherShieldApplyCount: Int
-
-    static let empty = SeasonMotionSummary(
-        weekKey: "",
-        score: 0,
-        targetScore: 520,
-        progress: 0,
-        rankTier: .rookie,
-        todayScoreDelta: 0,
-        contributionCount: 0,
-        weatherShieldActive: false,
-        weatherShieldApplyCount: 0
-    )
-}
-
-struct SeasonResultPresentation: Identifiable, Equatable {
-    let id = UUID()
-    let weekKey: String
-    let rankTier: SeasonRankTier
-    let totalScore: Int
-    let contributionCount: Int
-    let shieldApplyCount: Int
-}
-
-enum SeasonRewardClaimStatus: String, Codable, Equatable {
-    case pending
-    case claimed
-    case failed
-}
-
-struct WeatherMissionStatusSummary: Equatable {
-    let badgeText: String
-    let title: String
-    let reasonText: String
-    let appliedAtText: String
-    let shieldUsageText: String
-    let fallbackNotice: String?
-    let accessibilityText: String
-    let isFallback: Bool
-    let riskLevel: IndoorWeatherRiskLevel
-
-    static let empty = WeatherMissionStatusSummary(
-        badgeText: "정상",
-        title: "오늘 날씨 연동 상태",
-        reasonText: "기본 퀘스트 진행",
-        appliedAtText: "적용 시점 -",
-        shieldUsageText: "보호 사용 0회",
-        fallbackNotice: nil,
-        accessibilityText: "오늘 날씨 연동 상태. 기본 퀘스트 진행.",
-        isFallback: false,
-        riskLevel: .clear
-    )
-}
-
-struct WeatherShieldDailySummary: Equatable {
-    let dayKey: String
-    let applyCount: Int
-    let lastAppliedAtText: String
-}
-
 final class HomeViewModel: ObservableObject {
     @Published var polygonList: [Polygon] = []
     @Published var totalArea: Double = 0.0
@@ -170,6 +64,7 @@ final class HomeViewModel: ObservableObject {
     private let userSessionStore: UserSessionStoreProtocol
     private let eventCenter: AppEventCenterProtocol
     private let weeklyStatisticsService: HomeWeeklyStatisticsServicing
+    private let areaAggregationService: HomeAreaAggregationServicing
     private let weatherMissionStatusBuilder: HomeWeatherMissionStatusBuilding
     private let areaMilestoneDetector: AreaMilestoneDetecting
     private let areaMilestoneNotificationScheduler: AreaMilestoneNotificationScheduling
@@ -211,7 +106,11 @@ final class HomeViewModel: ObservableObject {
     }
 
     var nextGoalArea: AreaMeter? {
-        nearlistMore()
+        areaAggregationService.nextReferenceArea(
+            currentArea: myArea,
+            areaCollection: krAreas,
+            featuredGoalAreas: featuredGoalAreas
+        )
     }
 
     var weatherFeedbackWeeklyLimit: Int {
@@ -243,6 +142,7 @@ final class HomeViewModel: ObservableObject {
         userSessionStore: UserSessionStoreProtocol = DefaultUserSessionStore.shared,
         eventCenter: AppEventCenterProtocol = DefaultAppEventCenter.shared,
         weeklyStatisticsService: HomeWeeklyStatisticsServicing = HomeWeeklyStatisticsService(),
+        areaAggregationService: HomeAreaAggregationServicing = HomeAreaAggregationService(),
         weatherMissionStatusBuilder: HomeWeatherMissionStatusBuilding = HomeWeatherMissionStatusBuilder(),
         areaMilestoneDetector: AreaMilestoneDetecting = AreaMilestoneDetector(),
         areaMilestoneNotificationScheduler: AreaMilestoneNotificationScheduling = LocalAreaMilestoneNotificationScheduler()
@@ -252,6 +152,7 @@ final class HomeViewModel: ObservableObject {
         self.userSessionStore = userSessionStore
         self.eventCenter = eventCenter
         self.weeklyStatisticsService = weeklyStatisticsService
+        self.areaAggregationService = areaAggregationService
         self.weatherMissionStatusBuilder = weatherMissionStatusBuilder
         self.areaMilestoneDetector = areaMilestoneDetector
         self.areaMilestoneNotificationScheduler = areaMilestoneNotificationScheduler
@@ -549,34 +450,23 @@ final class HomeViewModel: ObservableObject {
     }
 
     private func applySelectedPetStatistics(shouldUpdateMeter: Bool = false) {
-        polygonList = filteredPolygons(from: allPolygons)
+        polygonList = areaAggregationService.filteredPolygons(
+            from: allPolygons,
+            selectedPetId: selectedPet?.petId,
+            showsAllRecords: isShowingAllRecordsOverride
+        )
         totalArea = polygonList.map(\.walkingArea).reduce(0.0, +)
         totalTime = polygonList.map(\.walkingTime).reduce(0.0, +)
-        myArea = .init("\(selectedPetNameWithYi)의 영역", totalArea)
+        myArea = areaAggregationService.makeCurrentArea(
+            totalArea: totalArea,
+            selectedPetNameWithYi: selectedPetNameWithYi
+        )
         boundarySplitContribution = makeDayBoundarySplitContribution(reference: Date())
         refreshIndoorMissions()
         evaluateAreaMilestones()
         if shouldUpdateMeter {
             updateCurrentMeter()
         }
-    }
-
-    private func filteredPolygons(from polygons: [Polygon]) -> [Polygon] {
-        if isShowingAllRecordsOverride {
-            return polygons
-        }
-        guard let selectedPetId = selectedPet?.petId, selectedPetId.isEmpty == false else {
-            return polygons
-        }
-
-        let taggedPolygons = polygons.filter { ($0.petId?.isEmpty == false) }
-        let selectedPetPolygons = polygons.filter { $0.petId == selectedPetId }
-
-        // Legacy records created before session->pet tagging should remain visible.
-        if selectedPetPolygons.isEmpty && taggedPolygons.isEmpty {
-            return polygons
-        }
-        return selectedPetPolygons
     }
 
     func refreshGuestDataUpgradeReport() {
@@ -591,43 +481,34 @@ final class HomeViewModel: ObservableObject {
         myAreaList = walkRepository.fetchAreas()
     }
 
-    private func findIndex() -> Int {
-        guard let i = krAreas.areas.firstIndex(where: {
-            $0.area > myArea.area
-        }) else { return krAreas.areas.count }
-        return i
-    }
-
     func combinedAreas() -> [AreaMeter] {
-        let i = findIndex()
-        var temp = krAreas.areas
-        temp.insert(myArea, at: i)
-        return temp
+        areaAggregationService.combinedAreas(
+            currentArea: myArea,
+            areaCollection: krAreas
+        )
     }
 
     func nearlistLess() -> AreaMeter? {
-        krAreas.nearistArea(of: myArea.area)
+        areaAggregationService.previousReferenceArea(
+            currentArea: myArea,
+            areaCollection: krAreas
+        )
     }
 
     func nearlistMore() -> AreaMeter? {
-        let featuredNext = featuredGoalAreas.first(where: { $0.area > myArea.area })
-        let defaultNext = krAreas.closeArea(of: myArea.area)
-        if let featuredNext, let defaultNext {
-            return featuredNext.area <= defaultNext.area ? featuredNext : defaultNext
-        }
-        return featuredNext ?? defaultNext
+        areaAggregationService.nextReferenceArea(
+            currentArea: myArea,
+            areaCollection: krAreas,
+            featuredGoalAreas: featuredGoalAreas
+        )
     }
 
     private func shouldUpdateMeter() -> Bool {
-        guard let last = walkRepository.fetchAreas().last else { return true }
-        guard let current = nearlistLess() else { return false }
-        if (last.area == current.area && last.areaName == current.areaName) {
-            return false
-        } else if last.area > current.area {
-            return false
-        } else {
-            return true
-        }
+        areaAggregationService.shouldPersistCurrentMeter(
+            currentArea: myArea,
+            areaCollection: krAreas,
+            persistedAreas: walkRepository.fetchAreas()
+        )
     }
 
     private func updateCurrentMeter() {
@@ -673,18 +554,10 @@ final class HomeViewModel: ObservableObject {
     /// 마일스톤 감지에 사용할 비교군 후보를 계산합니다.
     /// - Returns: featured 우선 정책이 적용된 마일스톤 후보 목록입니다.
     private func milestoneCandidates() -> [AreaMilestoneCandidate] {
-        let sourceAreas: [AreaMeter]
-        if featuredGoalAreas.isEmpty {
-            sourceAreas = Array(krAreas.areas.suffix(10))
-        } else {
-            sourceAreas = featuredGoalAreas
-        }
-        return sourceAreas.map { area in
-            AreaMilestoneCandidate(
-                landmarkName: area.areaName,
-                thresholdArea: area.area
-            )
-        }
+        areaAggregationService.milestoneCandidates(
+            featuredGoalAreas: featuredGoalAreas,
+            fallbackAreas: krAreas.areas
+        )
     }
 
     /// 새 마일스톤 이벤트를 큐에 누적하고 즉시 표시 가능한 경우 팝업을 노출합니다.
