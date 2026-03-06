@@ -64,6 +64,33 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertTrue(waitUntilExists(app.buttons["tab.2"], timeout: 6), "상세 화면 복귀 후 하단 탭바가 다시 표시되지 않았습니다.")
     }
 
+    /// 목표 상세에서 비교군 카탈로그로 2단계 진입했을 때 카탈로그 전용 섹션이 분리되어 노출되는지 검증합니다.
+    func testFeatureRegression_TerritoryGoalOpensSeparatedAreaDetailCatalog() throws {
+        let app = launchAppForFeatureRegression()
+        XCTAssertTrue(waitUntilExists(app.buttons["tab.0"], timeout: 12), "탭바가 렌더링되지 않았습니다.")
+        XCTAssertTrue(openTab(index: 0, app: app), "홈 탭 진입에 실패했습니다.")
+
+        let moreButton = app.buttons["home.goalTracker.more"]
+        XCTAssertTrue(
+            revealElementByVerticalScroll(moreButton, app: app, maxSwipes: 8),
+            "영역 목표 트래커의 목표 상세 보기 버튼을 찾지 못했습니다."
+        )
+        XCTAssertTrue(tapIfExists(moreButton), "영역 목표 상세 화면 진입에 실패했습니다.")
+
+        let territoryGoalScreen = screenElement(identifier: "screen.territoryGoal", in: app)
+        XCTAssertTrue(waitUntilExists(territoryGoalScreen, timeout: 10), "영역 목표 상세 화면 렌더링에 실패했습니다.")
+
+        let catalogButton = app.buttons["territory.goal.catalog"]
+        XCTAssertTrue(waitUntilExists(catalogButton, timeout: 4), "비교군 카탈로그 CTA를 찾지 못했습니다.")
+        XCTAssertTrue(tapIfExists(catalogButton), "비교군 카탈로그 CTA 탭에 실패했습니다.")
+
+        let areaDetailScreen = screenElement(identifier: "screen.areaDetail", in: app)
+        XCTAssertTrue(waitUntilExists(areaDetailScreen, timeout: 8), "비교군 카탈로그 화면 진입에 실패했습니다.")
+        XCTAssertTrue(waitUntilGone(app.buttons["tab.2"], timeout: 2), "비교군 카탈로그 화면에서는 하단 탭바가 숨겨져야 합니다.")
+        XCTAssertTrue(waitUntilExists(app.staticTexts["카탈로그 스냅샷"], timeout: 3), "비교군 카탈로그 스냅샷 섹션이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(app.staticTexts["현재 위치와 다음 기준"], timeout: 3), "비교군 카탈로그 전용 요약 카드가 노출되지 않았습니다.")
+    }
+
     /// 라이벌 탭 하단 푸터 버튼이 지도/설정 탭 라우팅을 정상 수행하는지 검증합니다.
     func testFeatureRegression_RivalFooterButtonsRouteToMapAndSettings() throws {
         let app = launchAppForFeatureRegression()

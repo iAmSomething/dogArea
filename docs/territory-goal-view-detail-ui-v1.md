@@ -33,12 +33,19 @@
 - 다음 목표까지 남은 면적
 - 홈에는 없는 "최근 추세" 맥락을 숫자로 강조
 
-4. 최근 정복 영역 리스트
+4. 카탈로그 스냅샷
+- 활성 카탈로그 수
+- 전체 기준 수
+- Featured 기준 수
+- 바로 다음 기준
+- 현재 면적이 어느 기준 사이에 있는지 설명 문구
+
+5. 최근 정복 영역 리스트
 - 최신순 3개 이상
 - 획득 시각/증가 면적
 - 최신 항목 `NEW` 배지
 
-5. 빈 상태 행동 카드
+6. 빈 상태 행동 카드
 - "산책으로 영역 확장" 안내
 - 기능 미사용 유저를 위한 온보딩 문구
 
@@ -47,6 +54,7 @@
 - 최근 정복 상위 N개(현재 3개 -> 5개 확장 검토)
 - 목표 대비 부족 면적을 거리/시간 힌트로 환산해 안내 문구 강화
 - 마지막 갱신 시각(데이터 신선도 표시)
+- `AreaDetailView`에서 각 기준 행에 `다음 목표` / `현재 기준선` / `달성함` / `FEATURED` 배지를 함께 노출
 
 ### P2 (서비스/도메인 확장 필요)
 - 일/주 증가량 추세(미니 스파크라인)
@@ -80,10 +88,12 @@
 - `TerritoryGoalInsightSectionView.swift`
 - `TerritoryGoalRecentListSectionView.swift`
 - `TerritoryGoalActionHintCardView.swift`
+- `AreaDetailCatalogSnapshotSectionView.swift`
 
 ViewModel 분리 기준:
 - 단순 표시 계산은 `TerritoryGoalViewModel` 유지
 - 독립 API/독립 상태가 생기면 하위 ViewModel 분리
+- 카탈로그 기준 해석은 `AreaReferenceCatalogInsightService` 같은 도메인 서비스로 분리
 
 ## 9. 구현 완료 기준(기획 관점)
 1. 홈 요약 카드와 정보 중복률 50% 이하(상세 정보 우위).

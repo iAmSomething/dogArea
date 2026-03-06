@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct TerritoryGoalOverviewCardView: View {
+struct TerritoryGoalOverviewCardView<CompareDestination: View>: View {
     let currentAreaText: String
     let currentAreaName: String
     let nextGoalNameText: String
@@ -9,7 +9,7 @@ struct TerritoryGoalOverviewCardView: View {
     let progressRatio: Double
     let progressPercentText: String
     let progressMessageText: String
-    let compareDestination: AreaDetailView
+    let compareDestination: CompareDestination
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -26,11 +26,12 @@ struct TerritoryGoalOverviewCardView: View {
                 Spacer(minLength: 0)
 
                 NavigationLink(destination: compareDestination) {
-                    Text("비교군 카탈로그 >")
+                    Text("비교군 카탈로그 열기 >")
                         .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
                         .foregroundStyle(Color.appDynamicHex(light: 0xC2410C, dark: 0xFDBA74))
                         .frame(minHeight: 44)
                 }
+                .accessibilityIdentifier("territory.goal.catalog")
             }
 
             HStack(alignment: .top, spacing: 16) {

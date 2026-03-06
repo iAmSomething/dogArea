@@ -4,11 +4,18 @@ import Foundation
 final class AreaDetailViewModel: ObservableObject {
     let homeViewModel: HomeViewModel
     private var cancellables: Set<AnyCancellable> = []
+    private let insightService: AreaReferenceCatalogInsightServicing
 
     /// 홈 ViewModel을 주입받아 비교군 카탈로그 상세 화면에 필요한 상태를 재사용합니다.
-    /// - Parameter homeViewModel: 영역/비교군 원본 데이터를 보유한 홈 ViewModel입니다.
-    init(homeViewModel: HomeViewModel) {
+    /// - Parameters:
+    ///   - homeViewModel: 영역/비교군 원본 데이터를 보유한 홈 ViewModel입니다.
+    ///   - insightService: 비교군 카탈로그 해석 로직을 제공하는 서비스입니다.
+    init(
+        homeViewModel: HomeViewModel,
+        insightService: AreaReferenceCatalogInsightServicing = AreaReferenceCatalogInsightService()
+    ) {
         self.homeViewModel = homeViewModel
+        self.insightService = insightService
 
         homeViewModel.objectWillChange
             .sink { [weak self] _ in
@@ -22,7 +29,7 @@ final class AreaDetailViewModel: ObservableObject {
     }
 
     var subtitle: String {
-        "\(homeViewModel.selectedPetNameWithYi)가 지금 어디쯤 왔는지 기준값과 함께 비교해보세요."
+        "\(homeViewModel.selectedPetNameWithYi)가 비교군 카탈로그에서 어느 기준 사이에 있는지 확인하고 다음 시즌 목표를 조정해보세요."
     }
 
     var selectedPetBadgeText: String {
@@ -44,6 +51,15 @@ final class AreaDetailViewModel: ObservableObject {
             return "갱신 정보 없음"
         }
         return Self.relativeTimestampFormatter.localizedString(for: lastUpdatedAt, relativeTo: Date()) + " 갱신"
+    }
+
+    private var insight: AreaReferenceCatalogInsight {
+        insightService.makeInsight(
+            currentArea: homeViewModel.myArea,
+            nextGoal: homeViewModel.nextGoalArea,
+            sections: homeViewModel.areaReferenceSections,
+            featuredCount: homeViewModel.featuredAreaCount
+        )
     }
 
     var currentAreaText: String {
@@ -70,8 +86,24 @@ final class AreaDetailViewModel: ObservableObject {
         "Featured \(homeViewModel.featuredAreaCount)개를 우선 기준으로 보여줘요."
     }
 
-    var referenceSections: [AreaReferenceSection] {
-        homeViewModel.areaReferenceSections
+    var coverageSummaryText: String {
+        insight.coverageSummaryText
+    }
+
+    var currentBandTitle: String {
+        insight.currentBandTitle
+    }
+
+    var currentBandBody: String {
+        insight.currentBandBody
+    }
+
+    var catalogMetrics: [AreaReferenceCatalogMetricItem] {
+        insight.metrics
+    }
+
+    var referenceSections: [AreaReferenceCatalogSectionViewData] {
+        insight.displaySections
     }
 
     var recentAreas: [AreaMeterDTO] {
@@ -84,7 +116,7 @@ final class AreaDetailViewModel: ObservableObject {
 
     var actionBody: String {
         if let nextGoal = homeViewModel.nextGoalArea {
-            return "\(nextGoal.areaName)보다 조금 작은 기준부터 훑어보면 남은 \(remainingAreaText)을 얼마나 빨리 채울지 감이 잡혀요."
+            return "\(nextGoal.areaName) 기준선이 붙은 행과 그보다 작은 기준선을 같이 보면, 남은 \(remainingAreaText)을 한 번의 산책으로 채울지 두 번으로 나눌지 판단하기 쉬워집니다."
         }
         return "현재 기준으로는 가장 큰 목표까지 도달했어요. 비교군 카탈로그에서 더 큰 기준을 찾아 다음 시즌 목표를 잡아보세요."
     }

@@ -67,6 +67,8 @@
 		A37600010000000000000026 /* PetManagementEditPetSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37600010000000000000016 /* PetManagementEditPetSheet.swift */; };
 		A37600010000000000000027 /* PetManagementEditPetSheetViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37600010000000000000017 /* PetManagementEditPetSheetViewModel.swift */; };
 		A37600010000000000000028 /* PetManagementSheetViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37600010000000000000018 /* PetManagementSheetViewModel.swift */; };
+		A37700010000000000000001 /* AreaReferenceCatalogInsightService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37700010000000000000011 /* AreaReferenceCatalogInsightService.swift */; };
+		A37700010000000000000002 /* AreaDetailCatalogSnapshotSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37700010000000000000012 /* AreaDetailCatalogSnapshotSectionView.swift */; };
 		A83350BB79B3CBB09B4C4963 /* RivalTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21CE83B02069A8E4171B35DE /* RivalTabView.swift */; };
 		A9F5F361DE66BF266C36FED0 /* PositionMarkerViewWithSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92C5F96B5D23BD6D36935CA0 /* PositionMarkerViewWithSelection.swift */; };
 		AC04B82FF13073F98E2EE459 /* AreaDetailRecentConquestSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C4863F9787EC32E41B731A8 /* AreaDetailRecentConquestSectionView.swift */; settings = {COMPILER_FLAGS = "-fobjc-arc"; }; };
@@ -314,6 +316,8 @@
 		A37600010000000000000016 /* PetManagementEditPetSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetManagementEditPetSheet.swift; sourceTree = "<group>"; };
 		A37600010000000000000017 /* PetManagementEditPetSheetViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetManagementEditPetSheetViewModel.swift; sourceTree = "<group>"; };
 		A37600010000000000000018 /* PetManagementSheetViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetManagementSheetViewModel.swift; sourceTree = "<group>"; };
+		A37700010000000000000011 /* AreaReferenceCatalogInsightService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaReferenceCatalogInsightService.swift; sourceTree = "<group>"; };
+		A37700010000000000000012 /* AreaDetailCatalogSnapshotSectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaDetailCatalogSnapshotSectionView.swift; sourceTree = "<group>"; };
 		A775802DB2A590A7C7DA0978 /* WalkDetailViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WalkDetailViewModel.swift; path = dogArea/Views/MapView/WalkDetailViewModel.swift; sourceTree = "<group>"; };
 		B3C5EBC2B900522B927AC9AD /* TerritoryGoalOverviewCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TerritoryGoalOverviewCardView.swift; sourceTree = "<group>"; };
 		B76E1FA7BD23351B788C716B /* AreaDetailViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AreaDetailViewModel.swift; sourceTree = "<group>"; };
@@ -496,6 +500,7 @@
 			isa = PBXGroup;
 			children = (
 				44BB9B1737AC410B5104ECFD /* AreaDetailHeaderSectionView.swift */,
+				A37700010000000000000012 /* AreaDetailCatalogSnapshotSectionView.swift */,
 				D4340122AB9FE3F16F12570B /* AreaDetailSummaryCardView.swift */,
 				3B7E3AA66F47CA884B345956 /* AreaDetailReferenceCatalogSectionView.swift */,
 				1C4863F9787EC32E41B731A8 /* AreaDetailRecentConquestSectionView.swift */,
@@ -1009,6 +1014,7 @@
 		DAF0A0034200000000000001 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				A37700010000000000000011 /* AreaReferenceCatalogInsightService.swift */,
 				363FE1044470B273CAB987E0 /* HomeQuestReminderSupport.swift */,
 				DAE147A01420000000000001 /* HomeWeeklyStatisticsService.swift */,
 				DAE147A21420000000000001 /* HomeWeatherMissionStatusBuilder.swift */,
@@ -1403,6 +1409,7 @@
 				A37500010000000000000028 /* EmailSignUpSheetView.swift in Sources */,
 				A37600010000000000000023 /* ProfileEditorCards.swift in Sources */,
 				A37600010000000000000025 /* ProfileEditorImageSection.swift in Sources */,
+				A37700010000000000000001 /* AreaReferenceCatalogInsightService.swift in Sources */,
 				DAAE221F2AFCBDC4005FD096 /* StartModalView.swift in Sources */,
 				DA4513802AFB1EC1007AD69B /* WalkListCell.swift in Sources */,
 				DA3550022B01E0F900E4094A /* UnderLine.swift in Sources */,
@@ -1449,6 +1456,7 @@
 				2DBE51403AFB38FFC0B57074 /* WalkWidgetBridge.swift in Sources */,
 				8CEF03B12FF33C7B71CCE658 /* WalkWidgetSnapshotStore.swift in Sources */,
 				3CEE77AA95703F198AC644B2 /* AreaDetailViewModel.swift in Sources */,
+				A37700010000000000000002 /* AreaDetailCatalogSnapshotSectionView.swift in Sources */,
 				80D291562959288398B71B2A /* TerritoryGoalHeaderSectionView.swift in Sources */,
 				4DEEE78A71FF3180E38552A9 /* TerritoryGoalOverviewCardView.swift in Sources */,
 				7142F1A4769436FDE91E1EFF /* TerritoryGoalInsightSectionView.swift in Sources */,
