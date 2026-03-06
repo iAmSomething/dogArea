@@ -1,16 +1,7 @@
 import SwiftUI
-import UIKit
-import Kingfisher
 
 struct ProfileFieldEditSheet: View {
-    private enum ProfileImageTarget {
-        case user
-        case pet
-    }
-
     @StateObject private var sheetViewModel: ProfileFieldEditSheetViewModel
-    @State private var pickerTarget: ProfileImageTarget? = nil
-    @State private var pickerSourceType: UIImagePickerController.SourceType? = nil
     let onSaved: (String) -> Void
     let onClose: () -> Void
 
@@ -34,11 +25,20 @@ struct ProfileFieldEditSheet: View {
                         profileMessage: $sheetViewModel.profileMessage
                     )
 
-                    imageCardSection(
+                    ProfileEditorImageSection(
                         title: "사용자 프로필 이미지",
+                        subtitle: "새 사진을 선택하면 저장 시 프로필에 반영됩니다.",
                         remoteURL: sheetViewModel.userProfileImageURL,
-                        selectedImage: sheetViewModel.userProfileImage,
-                        target: .user
+                        selectedImage: $sheetViewModel.userProfileImage,
+                        resetButtonTitle: "선택 취소",
+                        resetButtonEnabled: sheetViewModel.userProfileImage != nil,
+                        allowsCamera: true,
+                        onReset: {
+                            sheetViewModel.userProfileImage = nil
+                        },
+                        onCameraUnavailable: {
+                            sheetViewModel.errorMessage = "현재 기기에서는 카메라를 사용할 수 없습니다."
+                        }
                     )
 
                     ProfileEditorPetFieldsCard(
@@ -51,11 +51,20 @@ struct ProfileFieldEditSheet: View {
                         requiresPetName: true
                     )
 
-                    imageCardSection(
+                    ProfileEditorImageSection(
                         title: "반려견 프로필 이미지",
+                        subtitle: "새 사진을 선택하면 저장 시 선택 반려견에 반영됩니다.",
                         remoteURL: sheetViewModel.petProfileImageURL,
-                        selectedImage: sheetViewModel.petProfileImage,
-                        target: .pet
+                        selectedImage: $sheetViewModel.petProfileImage,
+                        resetButtonTitle: "선택 취소",
+                        resetButtonEnabled: sheetViewModel.petProfileImage != nil,
+                        allowsCamera: true,
+                        onReset: {
+                            sheetViewModel.petProfileImage = nil
+                        },
+                        onCameraUnavailable: {
+                            sheetViewModel.errorMessage = "현재 기기에서는 카메라를 사용할 수 없습니다."
+                        }
                     )
 
                     caricatureCard
@@ -68,14 +77,12 @@ struct ProfileFieldEditSheet: View {
                             .accessibilityIdentifier("sheet.settings.profileEdit.error")
                     }
                 }
-                .padding(.horizontal, 16)
                 .padding(.top, 20)
                 .padding(.bottom, 32)
             }
             .background(Color.appTabScaffoldBackground.ignoresSafeArea())
             .navigationTitle("프로필 편집")
             .navigationBarTitleDisplayMode(.inline)
-            .accessibilityIdentifier("sheet.settings.profileEdit")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("취소") {
@@ -106,27 +113,8 @@ struct ProfileFieldEditSheet: View {
                 }
             }
         }
-        .sheet(
-            isPresented: Binding(
-                get: { pickerTarget != nil && pickerSourceType != nil },
-                set: { isPresented in
-                    if isPresented == false {
-                        pickerTarget = nil
-                        pickerSourceType = nil
-                    }
-                }
-            )
-        ) {
-            if let pickerSourceType, let pickerTarget {
-                ImagePicker(
-                    image: pickerTarget == .user
-                    ? $sheetViewModel.userProfileImage
-                    : $sheetViewModel.petProfileImage,
-                    type: pickerSourceType
-                )
-                .ignoresSafeArea()
-            }
-        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("sheet.settings.profileEdit")
     }
 
     private var caricatureCard: some View {
@@ -153,102 +141,5 @@ struct ProfileFieldEditSheet: View {
         }
         .padding(.horizontal, 16)
         .appCardSurface()
-    }
-
-    /// 원격/로컬 프로필 이미지 프리뷰와 입력 액션을 묶은 카드 섹션을 렌더링합니다.
-    /// - Parameters:
-    ///   - title: 카드 제목입니다.
-    ///   - remoteURL: 기존 원격 이미지 URL입니다.
-    ///   - selectedImage: 현재 편집 중 선택된 로컬 이미지입니다.
-    ///   - target: 사용자/반려견 중 어느 슬롯을 수정하는지 나타냅니다.
-    /// - Returns: 이미지 미리보기와 입력 액션이 배치된 카드 뷰입니다.
-    private func imageCardSection(
-        title: String,
-        remoteURL: String?,
-        selectedImage: UIImage?,
-        target: ProfileImageTarget
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title)
-                .font(.appScaledFont(for: .SemiBold, size: 18, relativeTo: .headline))
-
-            profileImageCard(title: title, remoteURL: remoteURL, selectedImage: selectedImage)
-            imageActionRow(for: target)
-        }
-        .padding(.horizontal, 16)
-        .appCardSurface()
-    }
-
-    /// 프로필 편집 시트에서 이미지 프리뷰 카드를 렌더링합니다.
-    /// - Parameters:
-    ///   - title: 카드 상단 라벨 텍스트입니다.
-    ///   - remoteURL: 기존에 저장된 원격 이미지 URL입니다.
-    ///   - selectedImage: 이번 편집에서 새로 선택된 로컬 이미지입니다.
-    /// - Returns: 원격/로컬 이미지 우선순위를 반영한 미리보기 카드 뷰입니다.
-    private func profileImageCard(title: String, remoteURL: String?, selectedImage: UIImage?) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Group {
-                if let selectedImage {
-                    Image(uiImage: selectedImage)
-                        .resizable()
-                        .scaledToFill()
-                } else if let remoteURL,
-                          let url = URL(string: remoteURL) {
-                    KFImage(url)
-                        .resizable()
-                        .scaledToFill()
-                } else {
-                    ZStack {
-                        Color.appTextLightGray.opacity(0.18)
-                        Image(systemName: "photo")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundStyle(Color.appTextDarkGray.opacity(0.6))
-                    }
-                }
-            }
-            .frame(width: 94, height: 94)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(Color.appTextLightGray.opacity(0.6), lineWidth: 1)
-            )
-            .accessibilityLabel("\(title) 미리보기")
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    /// 이미지 입력 경로(앨범/카메라/초기화) 버튼 행을 렌더링합니다.
-    /// - Parameter target: 변경 대상 이미지 슬롯(사용자/반려견)입니다.
-    /// - Returns: 이미지 입력 액션 버튼이 배치된 수평 스택 뷰입니다.
-    private func imageActionRow(for target: ProfileImageTarget) -> some View {
-        HStack(spacing: 8) {
-            Button("앨범") {
-                pickerTarget = target
-                pickerSourceType = .photoLibrary
-            }
-            .buttonStyle(AppFilledButtonStyle(role: .secondary, fillsWidth: false))
-            .frame(minHeight: 44)
-
-            Button("카메라") {
-                guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
-                    sheetViewModel.errorMessage = "현재 기기에서는 카메라를 사용할 수 없습니다."
-                    return
-                }
-                pickerTarget = target
-                pickerSourceType = .camera
-            }
-            .buttonStyle(AppFilledButtonStyle(role: .neutral, fillsWidth: false))
-            .frame(minHeight: 44)
-
-            Button("초기화") {
-                if target == .user {
-                    sheetViewModel.userProfileImage = nil
-                } else {
-                    sheetViewModel.petProfileImage = nil
-                }
-            }
-            .buttonStyle(AppFilledButtonStyle(role: .neutral, fillsWidth: false))
-            .frame(minHeight: 44)
-        }
     }
 }

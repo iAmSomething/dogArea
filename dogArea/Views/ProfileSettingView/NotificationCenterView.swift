@@ -8,11 +8,17 @@
 import SwiftUI
 
 struct NotificationCenterView: View {
+    private enum ActiveSheet: String, Identifiable {
+        case profileEdit
+        case petManagement
+
+        var id: String { rawValue }
+    }
+
     @StateObject var viewModel = SettingViewModel()
     @EnvironmentObject var loading: LoadingViewModel
     @EnvironmentObject var authFlow: AuthFlowCoordinator
-    @State private var isProfileEditPresented: Bool = false
-    @State private var isPetManagementPresented: Bool = false
+    @State private var activeSheet: ActiveSheet? = nil
     @State private var toastMessage: String? = nil
     @State private var isLogoutAlertPresented: Bool = false
     @State private var isAccountDeleteAlertPresented: Bool = false
@@ -74,18 +80,24 @@ struct NotificationCenterView: View {
         .onAppear {
             viewModel.reloadUserInfo()
         }
-        .sheet(isPresented: $isProfileEditPresented) {
-            ProfileFieldEditSheet(viewModel: viewModel) { message in
-                toastMessage = message
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                    toastMessage = nil
-                }
-            } onClose: {
-                isProfileEditPresented = false
-            }
+        .onChange(of: authFlow.isLoggedIn) { _, isLoggedIn in
+            guard isLoggedIn else { return }
+            viewModel.reloadUserInfo()
         }
-        .sheet(isPresented: $isPetManagementPresented) {
-            PetManagementSheet(viewModel: viewModel)
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .profileEdit:
+                ProfileFieldEditSheet(viewModel: viewModel) { message in
+                    toastMessage = message
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                        toastMessage = nil
+                    }
+                } onClose: {
+                    activeSheet = nil
+                }
+            case .petManagement:
+                PetManagementSheet(viewModel: viewModel)
+            }
         }
         .overlay(alignment: .bottom) {
             if let toastMessage {
@@ -120,7 +132,11 @@ struct NotificationCenterView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .center, spacing: 14) {
                 Button {
-                    isProfileEditPresented = true
+                    #if DEBUG
+                    print("[SettingsSheet] user image tapped -> profileEdit")
+                    #endif
+                    viewModel.reloadUserInfo()
+                    activeSheet = .profileEdit
                 } label: {
                     UserProfileImageView()
                         .environmentObject(viewModel)
@@ -161,7 +177,11 @@ struct NotificationCenterView: View {
             HStack {
                 Spacer()
                 Button(action: {
-                    isProfileEditPresented = true
+                    #if DEBUG
+                    print("[SettingsSheet] profile edit tapped")
+                    #endif
+                    viewModel.reloadUserInfo()
+                    activeSheet = .profileEdit
                 }, label: {
                     Text("프로필 편집")
                 })
@@ -258,13 +278,21 @@ struct NotificationCenterView: View {
 
             HStack(spacing: 8) {
                 Button("선택 반려견 편집") {
-                    isProfileEditPresented = true
+                    #if DEBUG
+                    print("[SettingsSheet] selected pet edit tapped")
+                    #endif
+                    viewModel.reloadUserInfo()
+                    activeSheet = .profileEdit
                 }
                 .buttonStyle(AppFilledButtonStyle(role: .secondary, fillsWidth: false))
                 .frame(minHeight: 44)
 
                 Button("반려견 관리") {
-                    isPetManagementPresented = true
+                    #if DEBUG
+                    print("[SettingsSheet] pet management tapped")
+                    #endif
+                    viewModel.reloadUserInfo()
+                    activeSheet = .petManagement
                 }
                 .accessibilityIdentifier("settings.pet.manage")
                 .buttonStyle(AppFilledButtonStyle(role: .primary, fillsWidth: false))

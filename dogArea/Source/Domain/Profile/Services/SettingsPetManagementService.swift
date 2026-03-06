@@ -21,6 +21,15 @@ protocol SettingsPetManaging {
         isActive: Bool,
         currentUser: UserInfo
     ) throws -> UserInfo
+
+    /// 기존 반려견 정보를 수정하고 최신 사용자 스냅샷을 반환합니다.
+    func updatePet(
+        petId: String,
+        draft: PetProfileDraft,
+        imageData: Data?,
+        removeProfileImage: Bool,
+        currentUser: UserInfo
+    ) async throws -> UserInfo
 }
 
 enum SettingsPetManagementError: LocalizedError, Equatable {
@@ -166,6 +175,61 @@ final class SettingsPetManagementService: SettingsPetManaging {
         }
         if let selectedPetId {
             profileRepository.setSelectedPetId(selectedPetId, source: isActive ? "settings_pet_reactivate" : "settings_pet_deactivate")
+        }
+        return snapshot
+    }
+
+    /// 기존 반려견 정보를 수정하고 최신 사용자 스냅샷을 반환합니다.
+    /// - Parameters:
+    ///   - petId: 수정 대상 반려견 식별자입니다.
+    ///   - draft: 저장할 반려견 입력 초안입니다.
+    ///   - imageData: 새로 선택된 반려견 이미지 JPEG 데이터입니다.
+    ///   - removeProfileImage: 기존 원격 이미지를 제거할지 여부입니다.
+    ///   - currentUser: 현재 사용자 스냅샷입니다.
+    /// - Returns: 저장 및 동기화가 반영된 최신 사용자 스냅샷입니다.
+    func updatePet(
+        petId: String,
+        draft: PetProfileDraft,
+        imageData: Data?,
+        removeProfileImage: Bool,
+        currentUser: UserInfo
+    ) async throws -> UserInfo {
+        let validated = try draft.validated()
+        var pets = currentUser.pet
+        guard let index = pets.firstIndex(where: { $0.petId == petId }) else {
+            throw SettingsPetManagementError.petNotFound
+        }
+
+        pets[index].petName = validated.petName
+        pets[index].breed = validated.breed
+        pets[index].ageYears = validated.ageYears
+        pets[index].gender = validated.gender
+
+        if removeProfileImage {
+            pets[index].petProfile = nil
+        }
+
+        if let imageData {
+            pets[index].petProfile = try await imageRepository.uploadPetProfileImage(
+                data: imageData,
+                ownerId: currentUser.id
+            )
+        }
+
+        let selectedPetId = resolvedSelectedPetId(afterSaving: pets, requested: currentUser.selectedPetId)
+        guard let snapshot = profileRepository.save(
+            id: currentUser.id,
+            name: currentUser.name,
+            profile: currentUser.profile,
+            profileMessage: currentUser.profileMessage,
+            pet: pets,
+            createdAt: currentUser.createdAt,
+            selectedPetId: selectedPetId
+        ) else {
+            throw SettingsPetManagementError.userNotFound
+        }
+        if let selectedPetId {
+            profileRepository.setSelectedPetId(selectedPetId, source: "settings_pet_update")
         }
         return snapshot
     }
