@@ -7,35 +7,7 @@
 
 import SwiftUI
 
-private struct HomeScrollOffsetPreferenceKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-
-    /// 최신 스크롤 오프셋 값을 preference 시스템에 병합합니다.
-    /// - Parameters:
-    ///   - value: 현재까지 누적된 preference 값입니다.
-    ///   - nextValue: 이번 레이아웃 패스에서 전달된 다음 preference 값 클로저입니다.
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
-}
-
 struct HomeView: View {
-    private enum QuestWidgetTab: String, CaseIterable, Identifiable {
-        case daily
-        case weekly
-
-        var id: String { rawValue }
-
-        var title: String {
-            switch self {
-            case .daily:
-                return "일일"
-            case .weekly:
-                return "주간"
-            }
-        }
-    }
-
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @EnvironmentObject var authFlow: AuthFlowCoordinator
     @StateObject var viewModel = HomeViewModel()
@@ -55,7 +27,7 @@ struct HomeView: View {
     @State private var seasonResultRevealShield: Bool = false
     @State private var seasonResetBannerVisible: Bool = false
     @State private var areaMilestonePop: Bool = false
-    @State private var questWidgetTab: QuestWidgetTab = .daily
+    @State private var questWidgetTab: HomeQuestWidgetTab = .daily
     @State private var homeScrollOffsetY: CGFloat = 0
     @State private var isSeasonDetailPresented: Bool = false
     @State private var isTerritoryGoalPresented: Bool = false
@@ -219,18 +191,39 @@ struct HomeView: View {
                 }.onReceive(NotificationCenter.default.publisher(for: .NSProcessInfoPowerStateDidChange)) { _ in
                 isLowPowerModeEnabled = ProcessInfo.processInfo.isLowPowerModeEnabled
                 }.sheet(isPresented: $isSeasonDetailPresented) {
-                seasonDetailSheet
+                HomeSeasonDetailSheetView(
+                    summary: viewModel.seasonMotionSummary,
+                    remainingTimeText: viewModel.seasonRemainingTimeText,
+                    onClose: { isSeasonDetailPresented = false }
+                )
                 }
                 .appTabRootScrollLayout(extraBottomPadding: 12)
 
                 scrollToTopFloatingButton(proxy: scrollProxy)
 
                 if let questCompletionModal {
-                    questCompletionOverlay(payload: questCompletionModal)
+                    HomeQuestCompletionOverlayView(
+                        payload: questCompletionModal,
+                        isVisible: questCompletionPop
+                    )
                         .zIndex(10)
                 }
                 if let seasonResultModal {
-                    seasonResultOverlay(payload: seasonResultModal)
+                    HomeSeasonResultOverlayView(
+                        payload: seasonResultModal,
+                        rewardStatus: viewModel.seasonRewardStatus(for: seasonResultModal.weekKey),
+                        revealRank: seasonResultRevealRank,
+                        revealContribution: seasonResultRevealContribution,
+                        revealShield: seasonResultRevealShield,
+                        isVisible: seasonResultPop,
+                        onDismiss: dismissSeasonResultModal,
+                        onRetryClaim: {
+                            viewModel.retrySeasonRewardClaim(
+                                for: seasonResultModal.weekKey,
+                                cloudSyncAllowed: authFlow.canAccess(.cloudSync)
+                            )
+                        }
+                    )
                         .zIndex(11)
                 }
                 if let milestoneEvent = viewModel.areaMilestonePresentation {
@@ -241,7 +234,7 @@ struct HomeView: View {
                     .zIndex(12)
                 }
                 if seasonResetBannerVisible {
-                    seasonResetTransitionBanner
+                    HomeSeasonResetTransitionBannerView()
                         .zIndex(9)
                 }
 
@@ -644,7 +637,7 @@ struct HomeView: View {
     /// 퀘스트 위젯에서 일일/주간 뷰를 전환하는 탭 선택 행입니다.
     private var questWidgetTabSelector: some View {
         HStack(spacing: 8) {
-            ForEach(QuestWidgetTab.allCases) { tab in
+            ForEach(HomeQuestWidgetTab.allCases) { tab in
                 Button(tab.title) {
                     withAnimation(.easeInOut(duration: 0.18)) {
                         questWidgetTab = tab
@@ -1191,255 +1184,6 @@ struct HomeView: View {
     }
 
     @ViewBuilder
-    private func questCompletionOverlay(payload: QuestCompletionPresentation) -> some View {
-        VStack {
-            Spacer().frame(height: 120)
-            VStack(spacing: 8) {
-                Text("퀘스트 완료")
-                    .font(.appFont(for: .SemiBold, size: 16))
-                Text(payload.missionTitle)
-                    .font(.appFont(for: .SemiBold, size: 14))
-                    .multilineTextAlignment(.center)
-                Text("+\(payload.rewardPoint)pt 수령 완료")
-                    .font(.appFont(for: .Light, size: 12))
-                    .foregroundStyle(Color.appTextDarkGray)
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 14)
-            .background(Color.white)
-            .cornerRadius(12)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.appYellow, lineWidth: 1.0)
-            )
-            .scaleEffect(questCompletionPop ? 1.0 : 0.86)
-            .opacity(questCompletionPop ? 1.0 : 0.0)
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black.opacity(questCompletionPop ? 0.18 : 0.0))
-        .allowsHitTesting(false)
-    }
-
-    private func seasonResultOverlay(payload: SeasonResultPresentation) -> some View {
-        let rewardStatus = viewModel.seasonRewardStatus(for: payload.weekKey)
-        return VStack(spacing: 0) {
-            Spacer()
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("시즌 결과")
-                            .font(.appFont(for: .SemiBold, size: 18))
-                        Text("\(payload.weekKey) 리포트")
-                            .font(.appFont(for: .Light, size: 12))
-                            .foregroundStyle(Color.appTextDarkGray)
-                    }
-                    Spacer()
-                    Button("닫기") {
-                        dismissSeasonResultModal()
-                    }
-                    .font(.appFont(for: .SemiBold, size: 11))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(Color.appYellowPale)
-                    .cornerRadius(8)
-                }
-                seasonResultRow(
-                    title: "최종 랭크",
-                    value: payload.rankTier.title,
-                    isVisible: seasonResultRevealRank
-                )
-                seasonResultRow(
-                    title: "기여 횟수",
-                    value: "\(payload.contributionCount)회",
-                    isVisible: seasonResultRevealContribution
-                )
-                seasonResultRow(
-                    title: "Shield 적용",
-                    value: "\(payload.shieldApplyCount)회",
-                    isVisible: seasonResultRevealShield
-                )
-                HStack {
-                    Text("보상 상태")
-                        .font(.appFont(for: .Light, size: 12))
-                        .foregroundStyle(Color.appTextDarkGray)
-                    Spacer()
-                    Text(seasonRewardStatusText(rewardStatus))
-                        .font(.appFont(for: .SemiBold, size: 13))
-                        .padding(.horizontal, 9)
-                        .padding(.vertical, 6)
-                        .background(seasonRewardStatusColor(rewardStatus).opacity(0.18))
-                        .cornerRadius(8)
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .background(Color.appYellowPale.opacity(0.45))
-                .cornerRadius(8)
-                if rewardStatus != .claimed {
-                    HStack {
-                        Spacer()
-                        Button(rewardStatus == .failed ? "재수령" : "수령 처리") {
-                            viewModel.retrySeasonRewardClaim(
-                                for: payload.weekKey,
-                                cloudSyncAllowed: authFlow.canAccess(.cloudSync)
-                            )
-                        }
-                        .font(.appFont(for: .SemiBold, size: 12))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(Color.appYellow)
-                        .cornerRadius(8)
-                    }
-                }
-            }
-            .padding(16)
-            .background(Color.white)
-            .cornerRadius(14)
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(Color.appYellow, lineWidth: 1.0)
-            )
-            .padding(.horizontal, 24)
-            .padding(.bottom, 72)
-            .scaleEffect(seasonResultPop ? 1.0 : 0.9)
-            .opacity(seasonResultPop ? 1.0 : 0.0)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black.opacity(seasonResultPop ? 0.22 : 0.0))
-    }
-
-    private var seasonDetailSheet: some View {
-        let summary = viewModel.seasonMotionSummary
-        return NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text("현재 시즌")
-                            .font(.appFont(for: .SemiBold, size: 16))
-                        Text("주차 \(summary.weekKey.isEmpty ? "-" : summary.weekKey)")
-                            .font(.appFont(for: .Light, size: 12))
-                            .foregroundStyle(Color.appTextDarkGray)
-                    }
-                    VStack(alignment: .leading, spacing: 8) {
-                        seasonDetailLine(title: "현재 티어", value: summary.rankTier.title)
-                        seasonDetailLine(title: "누적 점수", value: "\(Int(summary.score.rounded()))pt")
-                        seasonDetailLine(title: "오늘 증가", value: "+\(summary.todayScoreDelta)pt")
-                        seasonDetailLine(title: "기여 횟수", value: "\(summary.contributionCount)회")
-                        seasonDetailLine(title: "Shield 적용", value: "\(summary.weatherShieldApplyCount)회")
-                        seasonDetailLine(title: "남은 시간", value: viewModel.seasonRemainingTimeText)
-                    }
-                    .padding(12)
-                    .background(Color.appYellowPale.opacity(0.42))
-                    .cornerRadius(10)
-
-                    VStack(alignment: .leading, spacing: 7) {
-                        Text("랭크 구간")
-                            .font(.appFont(for: .SemiBold, size: 13))
-                        ForEach(SeasonRankTier.allCases, id: \.rawValue) { tier in
-                            HStack {
-                                Text(tier.title)
-                                    .font(.appFont(for: .Regular, size: 12))
-                                Spacer()
-                                Text("\(Int(tier.minimumScore))pt+")
-                                    .font(.appFont(for: .Light, size: 12))
-                                    .foregroundStyle(Color.appTextDarkGray)
-                            }
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 7)
-                            .background(summary.rankTier == tier ? Color.appYellowPale : Color.appTextLightGray.opacity(0.18))
-                            .cornerRadius(8)
-                        }
-                    }
-
-                    Text("점수는 미션 완료/기여 기준으로 누적되며, 결과는 시즌 종료 후 결과 모달에서 다시 확인할 수 있습니다.")
-                        .font(.appFont(for: .Light, size: 11))
-                        .foregroundStyle(Color.appTextDarkGray)
-                }
-                .padding(16)
-            }
-            .navigationTitle("시즌 상세")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("닫기") {
-                        isSeasonDetailPresented = false
-                    }
-                    .accessibilityIdentifier("home.season.detail.close")
-                }
-            }
-        }
-    }
-
-    private func seasonDetailLine(title: String, value: String) -> some View {
-        HStack {
-            Text(title)
-                .font(.appFont(for: .Light, size: 12))
-                .foregroundStyle(Color.appTextDarkGray)
-            Spacer()
-            Text(value)
-                .font(.appFont(for: .SemiBold, size: 13))
-        }
-    }
-
-    private func seasonRewardStatusText(_ status: SeasonRewardClaimStatus) -> String {
-        switch status {
-        case .pending:
-            return "대기"
-        case .claimed:
-            return "수령 완료"
-        case .failed:
-            return "실패"
-        }
-    }
-
-    private func seasonRewardStatusColor(_ status: SeasonRewardClaimStatus) -> Color {
-        switch status {
-        case .pending:
-            return Color.appYellow
-        case .claimed:
-            return Color.appGreen
-        case .failed:
-            return Color.appRed
-        }
-    }
-
-    private func seasonResultRow(title: String, value: String, isVisible: Bool) -> some View {
-        HStack {
-            Text(title)
-                .font(.appFont(for: .Light, size: 12))
-                .foregroundStyle(Color.appTextDarkGray)
-            Spacer()
-            Text(value)
-                .font(.appFont(for: .SemiBold, size: 15))
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(Color.appYellowPale.opacity(0.45))
-        .cornerRadius(8)
-        .offset(y: isVisible ? 0 : 10)
-        .opacity(isVisible ? 1.0 : 0.0)
-    }
-
-    private var seasonResetTransitionBanner: some View {
-        VStack {
-            HStack {
-                Text("주간 시즌이 리셋되어 새 라운드를 시작했어요.")
-                    .font(.appFont(for: .SemiBold, size: 12))
-                    .foregroundStyle(Color.appTextDarkGray)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(Color.appYellow)
-                    .cornerRadius(10)
-                Spacer()
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
-            Spacer()
-        }
-        .transition(.opacity)
-    }
-
-    @ViewBuilder
     private func animatedQuestProgressBar(mission: IndoorMissionCardModel) -> some View {
         let progress = min(1.0, max(0.0, questProgressValue(for: mission)))
         GeometryReader { proxy in
@@ -1551,67 +1295,6 @@ struct HomeView: View {
             }
         }
         .accessibilityIdentifier("home.quest.row.\(mission.id)")
-    }
-}
-
-private struct HomeAreaMilestoneBadgeOverlayView: View {
-    let event: AreaMilestoneEvent
-    let isVisible: Bool
-
-    /// 목표 임계값을 사용자 표시용 문자열로 변환합니다.
-    private var thresholdText: String {
-        event.thresholdArea.calculatedAreaString
-    }
-
-    var body: some View {
-        VStack {
-            Spacer().frame(height: 116)
-
-            VStack(spacing: 10) {
-                Image(systemName: "rosette")
-                    .font(.system(size: 24, weight: .semibold))
-                    .foregroundStyle(Color.appYellow)
-                    .accessibilityHidden(true)
-
-                Text("영역 달성 배지 획득")
-                    .font(.appScaledFont(for: .SemiBold, size: 18, relativeTo: .headline))
-                    .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xE2E8F0))
-                    .multilineTextAlignment(.center)
-
-                Text(event.landmarkName)
-                    .font(.appScaledFont(for: .SemiBold, size: 20, relativeTo: .title3))
-                    .foregroundStyle(Color.appDynamicHex(light: 0x92400E, dark: 0xFDE68A))
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.85)
-
-                Text("누적 \(thresholdText) 돌파")
-                    .font(.appScaledFont(for: .Regular, size: 13, relativeTo: .subheadline))
-                    .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-            }
-            .padding(.horizontal, 22)
-            .padding(.vertical, 18)
-            .background(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(Color.appDynamicHex(light: 0xFFFFFF, dark: 0x1E293B))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(Color.appDynamicHex(light: 0xFDE68A, dark: 0x92400E), lineWidth: 1)
-            )
-            .scaleEffect(isVisible ? 1.0 : 0.9)
-            .opacity(isVisible ? 1.0 : 0.0)
-
-            Spacer()
-        }
-        .padding(.horizontal, 24)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black.opacity(isVisible ? 0.2 : 0))
-        .allowsHitTesting(false)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(event.landmarkName) 영역 달성 배지를 획득했습니다. 누적 \(thresholdText) 돌파")
     }
 }
 
