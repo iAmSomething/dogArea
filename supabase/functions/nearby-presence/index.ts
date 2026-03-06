@@ -206,6 +206,53 @@ const upsertLivePresence = async (
   };
 };
 
+const getNearbyHotspotsWithCompatRPC = async (
+  client: ReturnType<typeof createClient>,
+  payload: {
+    centerLat: number;
+    centerLng: number;
+    radiusKm: number;
+    nowTs: string;
+  },
+) => {
+  const latestAttempt = await client.rpc("rpc_get_nearby_hotspots", {
+    in_center_lat: payload.centerLat,
+    in_center_lng: payload.centerLng,
+    in_radius_km: payload.radiusKm,
+    in_now_ts: payload.nowTs,
+  });
+  if (!latestAttempt.error) {
+    return {
+      data: latestAttempt.data,
+      error: null,
+      signature: "latest",
+      latestError: null,
+    };
+  }
+
+  const legacyAttempt = await client.rpc("rpc_get_nearby_hotspots", {
+    center_lat: payload.centerLat,
+    center_lng: payload.centerLng,
+    radius_km: payload.radiusKm,
+    now_ts: payload.nowTs,
+  });
+  if (!legacyAttempt.error) {
+    return {
+      data: legacyAttempt.data,
+      error: null,
+      signature: "legacy",
+      latestError: latestAttempt.error,
+    };
+  }
+
+  return {
+    data: null,
+    error: legacyAttempt.error,
+    signature: "none",
+    latestError: latestAttempt.error,
+  };
+};
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "METHOD_NOT_ALLOWED" }, 405);
 
@@ -336,15 +383,27 @@ Deno.serve(async (req) => {
     }
 
     const radiusKm = typeof body.radiusKm === "number" ? body.radiusKm : 1.0;
-    const { data, error } = await client.rpc("rpc_get_nearby_hotspots", {
-      center_lat: body.centerLat,
-      center_lng: body.centerLng,
-      radius_km: radiusKm,
-      now_ts: new Date().toISOString(),
+    const rpcResult = await getNearbyHotspotsWithCompatRPC(client, {
+      centerLat: body.centerLat,
+      centerLng: body.centerLng,
+      radiusKm,
+      nowTs: new Date().toISOString(),
     });
-    if (error) return json({ error: error.message }, 500);
+    if (rpcResult.error) {
+      console.error("nearby hotspot rpc failed", {
+        centerLat: body.centerLat,
+        centerLng: body.centerLng,
+        radiusKm,
+        latestError: rpcResult.latestError,
+        fallbackError: rpcResult.error,
+      });
+      return json({
+        error: rpcResult.error.message,
+        code: rpcResult.error.code ?? null,
+      }, 500);
+    }
 
-    const hotspots = (data ?? []) as ResponseHotspotDTO[];
+    const hotspots = (rpcResult.data ?? []) as ResponseHotspotDTO[];
     const suppressedHotspots = hotspots.filter((row) => row.suppression_reason != null);
     const maskedHotspots = suppressedHotspots.filter((row) => row.suppression_reason === "sensitive_mask");
     const kAnonHotspots = suppressedHotspots.filter((row) => row.suppression_reason === "k_anon");
