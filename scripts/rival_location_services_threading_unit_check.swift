@@ -24,7 +24,16 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
-let viewModel = load("dogArea/Views/ProfileSettingView/RivalTabViewModel.swift")
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
+let viewModel = loadMany([
+    "dogArea/Views/ProfileSettingView/RivalTabViewModel.swift",
+    "dogArea/Views/ProfileSettingView/RivalTabViewModelSupport/RivalTabViewModel+SessionLifecycle.swift",
+    "dogArea/Views/ProfileSettingView/RivalTabViewModelSupport/RivalTabViewModel+SharingAndLeaderboard.swift",
+    "dogArea/Views/ProfileSettingView/RivalTabViewModelSupport/RivalTabViewModel+ModerationAndLocation.swift"
+])
 let prCheck = load("scripts/ios_pr_check.sh")
 
 assertTrue(!viewModel.contains("CLLocationManager.locationServicesEnabled()"), "RivalTabViewModel should avoid locationServicesEnabled on main thread")

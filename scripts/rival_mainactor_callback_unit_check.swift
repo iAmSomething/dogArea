@@ -13,8 +13,23 @@ func assertTrue(_ condition: Bool, _ message: String) {
 }
 
 let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-let sourceURL = root.appendingPathComponent("dogArea/Views/ProfileSettingView/RivalTabViewModel.swift")
-let source = try String(contentsOf: sourceURL, encoding: .utf8)
+
+func load(_ relativePath: String) -> String {
+    let url = root.appendingPathComponent(relativePath)
+    let data = try! Data(contentsOf: url)
+    return String(decoding: data, as: UTF8.self)
+}
+
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
+let source = loadMany([
+    "dogArea/Views/ProfileSettingView/RivalTabViewModel.swift",
+    "dogArea/Views/ProfileSettingView/RivalTabViewModelSupport/RivalTabViewModel+SessionLifecycle.swift",
+    "dogArea/Views/ProfileSettingView/RivalTabViewModelSupport/RivalTabViewModel+SharingAndLeaderboard.swift",
+    "dogArea/Views/ProfileSettingView/RivalTabViewModelSupport/RivalTabViewModel+ModerationAndLocation.swift"
+])
 
 assertTrue(
     source.contains("Task { @MainActor [weak self] in\n                guard let self else { return }\n                self.refreshHotspots(force: false)\n                self.refreshLeaderboard(force: false)\n            }"),

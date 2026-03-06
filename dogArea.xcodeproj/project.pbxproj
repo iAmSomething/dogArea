@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		015946C5C501B37603E066FD /* RivalTabViewModel+SharingAndLeaderboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEC04EF947FC6648D0D63A63 /* RivalTabViewModel+SharingAndLeaderboard.swift */; };
 		02B810B0791CFB600F8406EB /* HomeSelectedPetEmptyStateCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D14629580BEDCDCAE5B9EC3 /* HomeSelectedPetEmptyStateCardView.swift */; };
 		0ADA547D465997E8A4EFE806 /* HomeSeasonResetTransitionBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E7F38C996B1C42E27210E77 /* HomeSeasonResetTransitionBannerView.swift */; };
 		106E27D50C08D7997FD7982D /* RivalNetworkErrorInterpreter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4548C0C604B933CC43644FA /* RivalNetworkErrorInterpreter.swift */; };
@@ -53,6 +54,7 @@
 		6A18F6C8151D05B751F63179 /* HomeQuestReminderSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 363FE1044470B273CAB987E0 /* HomeQuestReminderSupport.swift */; };
 		6B64A696910A6CBB2B3830E0 /* HomeWeeklySnapshotSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F59FE8AF61BF3AE3B6C99D77 /* HomeWeeklySnapshotSectionView.swift */; };
 		7142F1A4769436FDE91E1EFF /* TerritoryGoalInsightSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82C7B17BDEEF3C827C152659 /* TerritoryGoalInsightSectionView.swift */; settings = {COMPILER_FLAGS = "-fobjc-arc"; }; };
+		71C13F32C41AB0D41B9E1BC5 /* RivalTabViewModel+SessionLifecycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD285921ABF7DBF7D3BE6F8D /* RivalTabViewModel+SessionLifecycle.swift */; };
 		73816D222BB17958D198D1AC /* HomeStatusBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A1B2C487816AA2CCCA6186F /* HomeStatusBannerView.swift */; };
 		771A99CFD333C282650284FA /* SettingViewModel+PetManagement.swift in Sources */ = {isa = PBXBuildFile; fileRef = D833B7DD0594CABE821B3469 /* SettingViewModel+PetManagement.swift */; };
 		7FA65C0F2ACFFB5E341DAD07 /* AppleSigninButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 078B330462EB7C7D535B09F1 /* AppleSigninButton.swift */; };
@@ -70,6 +72,7 @@
 		8FF1D41BEF381990105583A9 /* HomeQuestCompletionOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BD638413305E314572CB8D9 /* HomeQuestCompletionOverlayView.swift */; };
 		9315EFC2423955870AFCC18F /* HomeViewModel+SessionLifecycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BD9767C8CA8497962E480D3 /* HomeViewModel+SessionLifecycle.swift */; };
 		96C72C23EA46A15543F1A458 /* HomeSeasonResultOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 081AACF20D304E61699D792F /* HomeSeasonResultOverlayView.swift */; };
+		9B600C1F7FA22CF43EFC09C2 /* RivalTabViewModel+ModerationAndLocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 488E40F27F962EFAA8A02375 /* RivalTabViewModel+ModerationAndLocation.swift */; };
 		9D8804AD0F127C5DDDAEA597 /* ThumbnailImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2615443270FF3222AEBDE893 /* ThumbnailImageView.swift */; };
 		A0C814D250B8F26BDCC21F66 /* UserProfileImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F73B707BA77AC2C69A6BC62B /* UserProfileImageView.swift */; };
 		A37500010000000000000021 /* HomeMissionModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37500010000000000000011 /* HomeMissionModels.swift */; };
@@ -327,6 +330,7 @@
 		4122ED3DF3668790F606D542 /* HomeScrollToTopFloatingButtonView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeScrollToTopFloatingButtonView.swift; sourceTree = "<group>"; };
 		414CE261F0EB5ECCEED97F09 /* MemberUpgradeSheetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MemberUpgradeSheetView.swift; sourceTree = "<group>"; };
 		44BB9B1737AC410B5104ECFD /* AreaDetailHeaderSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AreaDetailHeaderSectionView.swift; sourceTree = "<group>"; };
+		488E40F27F962EFAA8A02375 /* RivalTabViewModel+ModerationAndLocation.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "RivalTabViewModel+ModerationAndLocation.swift"; sourceTree = "<group>"; };
 		4A1B2C487816AA2CCCA6186F /* HomeStatusBannerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeStatusBannerView.swift; path = dogArea/Views/HomeView/HomeSubView/HomeStatusBannerView.swift; sourceTree = "<group>"; };
 		4D14629580BEDCDCAE5B9EC3 /* HomeSelectedPetEmptyStateCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeSelectedPetEmptyStateCardView.swift; path = dogArea/Views/HomeView/HomeSubView/HomeSelectedPetEmptyStateCardView.swift; sourceTree = "<group>"; };
 		512B7050BD43731047F5D669 /* AreaReferenceModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AreaReferenceModels.swift; path = AreaReferenceModels.swift; sourceTree = "<group>"; };
@@ -507,9 +511,11 @@
 		F61462EBA7433ED6BC68778D /* HomeGuestDataUpgradeCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeGuestDataUpgradeCardView.swift; sourceTree = "<group>"; };
 		F70B19034ADC4071F655ED9E /* HomeQuestAlternativeSuggestionCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeQuestAlternativeSuggestionCardView.swift; sourceTree = "<group>"; };
 		F73B707BA77AC2C69A6BC62B /* UserProfileImageView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = UserProfileImageView.swift; path = dogArea/Views/ProfileSettingView/UserProfileImageView.swift; sourceTree = "<group>"; };
+		FD285921ABF7DBF7D3BE6F8D /* RivalTabViewModel+SessionLifecycle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "RivalTabViewModel+SessionLifecycle.swift"; sourceTree = "<group>"; };
 		FDA31AC1DF69B7CA85070D28 /* HomePetSelectorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomePetSelectorView.swift; path = dogArea/Views/HomeView/HomeSubView/HomePetSelectorView.swift; sourceTree = "<group>"; };
 		FE5CB737B1C8D8A675B6A43B /* TerritoryGoalView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TerritoryGoalView.swift; sourceTree = "<group>"; };
 		FEA093F2A0E2A16E5E116F3E /* HomeWeeklyMetricCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeWeeklyMetricCardView.swift; sourceTree = "<group>"; };
+		FEC04EF947FC6648D0D63A63 /* RivalTabViewModel+SharingAndLeaderboard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "RivalTabViewModel+SharingAndLeaderboard.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1029,6 +1035,7 @@
 				A37600010000000000000018 /* PetManagementSheetViewModel.swift */,
 				DA8BB9E72B0255B700E350C4 /* SettingViewModel.swift */,
 				AEEB7566FB4DD44BCB259429 /* SettingViewModelSupport */,
+				FFE36A05F119A92311550278 /* RivalTabViewModelSupport */,
 			);
 			path = ProfileSettingView;
 			sourceTree = "<group>";
@@ -1214,6 +1221,17 @@
 				D8458EB9DE9760D52537B4B6 /* Foundation.framework */,
 			);
 			name = iOS;
+			sourceTree = "<group>";
+		};
+		FFE36A05F119A92311550278 /* RivalTabViewModelSupport */ = {
+			isa = PBXGroup;
+			children = (
+				FD285921ABF7DBF7D3BE6F8D /* RivalTabViewModel+SessionLifecycle.swift */,
+				FEC04EF947FC6648D0D63A63 /* RivalTabViewModel+SharingAndLeaderboard.swift */,
+				488E40F27F962EFAA8A02375 /* RivalTabViewModel+ModerationAndLocation.swift */,
+			);
+			name = RivalTabViewModelSupport;
+			path = RivalTabViewModelSupport;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -1647,6 +1665,9 @@
 				9315EFC2423955870AFCC18F /* HomeViewModel+SessionLifecycle.swift in Sources */,
 				B8774AA566F72FF9E7151938 /* HomeViewModel+AreaProgress.swift in Sources */,
 				C2A4309E392F82F548955737 /* HomeViewModel+IndoorMissionFlow.swift in Sources */,
+				71C13F32C41AB0D41B9E1BC5 /* RivalTabViewModel+SessionLifecycle.swift in Sources */,
+				015946C5C501B37603E066FD /* RivalTabViewModel+SharingAndLeaderboard.swift in Sources */,
+				9B600C1F7FA22CF43EFC09C2 /* RivalTabViewModel+ModerationAndLocation.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
