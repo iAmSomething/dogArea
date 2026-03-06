@@ -67,7 +67,7 @@ struct NotificationCenterView: View {
             }
             .padding(.horizontal, 16)
             .padding(.top, 24)
-            .padding(.bottom, CustomTabBar.reservedContentHeight + 20)
+            .appTabBarContentPadding(extra: 20)
         }
         .scrollIndicators(.hidden)
         .safeAreaPadding(.top, 8)
@@ -108,7 +108,7 @@ struct NotificationCenterView: View {
             }
             .padding(.horizontal, 16)
             .padding(.top, 24)
-            .padding(.bottom, CustomTabBar.reservedContentHeight + 20)
+            .appTabBarContentPadding(extra: 20)
         }
         .scrollIndicators(.hidden)
         .safeAreaPadding(.top, 8)

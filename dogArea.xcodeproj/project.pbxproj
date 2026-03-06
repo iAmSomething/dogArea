@@ -144,8 +144,8 @@
 		DA99FA022AFA50D700B1483F /* Pretendard-Light.otf in Resources */ = {isa = PBXBuildFile; fileRef = DA99F9F12AFA50D700B1483F /* Pretendard-Light.otf */; };
 		DA99FA032AFA50D700B1483F /* Pretendard-Black.otf in Resources */ = {isa = PBXBuildFile; fileRef = DA99F9F22AFA50D700B1483F /* Pretendard-Black.otf */; };
 		DA99FA042AFA50D700B1483F /* Pretendard-Black.otf in Resources */ = {isa = PBXBuildFile; fileRef = DA99F9F22AFA50D700B1483F /* Pretendard-Black.otf */; };
+		A37800010000000000000001 /* AppTabScaffold.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37800010000000000000002 /* AppTabScaffold.swift */; };
 		DAA8E4D62B01A03700F9190B /* WalkListDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAA8E4D52B01A03700F9190B /* WalkListDetailView.swift */; };
-		DAA8E4F92B01A80C00F9190B /* TabAppear.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAA8E4F82B01A80C00F9190B /* TabAppear.swift */; };
 		DAAE221F2AFCBDC4005FD096 /* StartModalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAAE221E2AFCBDC4005FD096 /* StartModalView.swift */; };
 		DAAE22232AFCC225005FD096 /* WalkDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAAE22222AFCC225005FD096 /* WalkDetailView.swift */; };
 		DAB314B22B3C1B4A000357C7 /* dogAreaWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB314B12B3C1B4A000357C7 /* dogAreaWatchApp.swift */; };
@@ -383,8 +383,8 @@
 		DA99F9F02AFA50D700B1483F /* Pretendard-Bold.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Pretendard-Bold.otf"; sourceTree = "<group>"; };
 		DA99F9F12AFA50D700B1483F /* Pretendard-Light.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Pretendard-Light.otf"; sourceTree = "<group>"; };
 		DA99F9F22AFA50D700B1483F /* Pretendard-Black.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Pretendard-Black.otf"; sourceTree = "<group>"; };
+		A37800010000000000000002 /* AppTabScaffold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTabScaffold.swift; sourceTree = "<group>"; };
 		DAA8E4D52B01A03700F9190B /* WalkListDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkListDetailView.swift; sourceTree = "<group>"; };
-		DAA8E4F82B01A80C00F9190B /* TabAppear.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabAppear.swift; sourceTree = "<group>"; };
 		DAAE221E2AFCBDC4005FD096 /* StartModalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartModalView.swift; sourceTree = "<group>"; };
 		DAAE22222AFCC225005FD096 /* WalkDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkDetailView.swift; sourceTree = "<group>"; };
 		DAB314AF2B3C1B4A000357C7 /* dogAreaWatch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "dogAreaWatch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -722,7 +722,6 @@
 				A37500010000000000000001 /* AppSession */,
 				DA354FFC2B01DF1F00E4094A /* TimeIntervalExtensions.swift */,
 				DA3F9BAD2AE0F2410048550C /* ViewUtility.swift */,
-				DAA8E4F82B01A80C00F9190B /* TabAppear.swift */,
 				DA4513882AFB2D68007AD69B /* WalkRepository.swift */,
 				DA1731752AE20A4D00EF10C8 /* WalkBackfillDTO.swift */,
 				DA1731722AE2017500EF10C8 /* SupabaseInfrastructure.swift */,
@@ -755,6 +754,7 @@
 		DA3F9BD12AE0FF7B0048550C /* BaseView */ = {
 			isa = PBXGroup;
 			children = (
+				A37800010000000000000002 /* AppTabScaffold.swift */,
 				DA3F9BD22AE0FF8A0048550C /* RootView.swift */,
 				DAED25012AFA1D430044715A /* SplashView.swift */,
 				DA3F9BD42AE0FF9B0048550C /* CustomTabBar.swift */,
@@ -1356,7 +1356,7 @@
 				DA822CDD2AFB60B6001EC94D /* MapSettingView.swift in Sources */,
 				DA71C83D2AD787AC00081ED0 /* dogAreaApp.swift in Sources */,
 				DA1731732AE2017500EF10C8 /* SupabaseInfrastructure.swift in Sources */,
-				DAA8E4F92B01A80C00F9190B /* TabAppear.swift in Sources */,
+				A37800010000000000000001 /* AppTabScaffold.swift in Sources */,
 				DA3F9BA52AE0F14F0048550C /* MapModel.swift in Sources */,
 				DAE148A11420000000000001 /* MapAreaCalculationService.swift in Sources */,
 				DAE147B11420000000000001 /* MapClusterAnnotationService.swift in Sources */,

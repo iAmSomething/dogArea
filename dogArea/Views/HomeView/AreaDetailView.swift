@@ -1,8 +1,6 @@
 import SwiftUI
 
 struct AreaDetailView: View {
-    @ObservedObject var tabStatus = TabAppear.shared
-
     @ObservedObject var viewModel: AreaDetailViewModel
 
     var body: some View {
@@ -42,13 +40,8 @@ struct AreaDetailView: View {
         .background(Color.appTabScaffoldBackground.ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle("비교군 상세")
-        .onAppear {
-            tabStatus.hide()
-            viewModel.refresh()
-        }
-        .onDisappear {
-            tabStatus.appear()
-        }
+        .appTabBarVisibility(.hidden)
+        .onAppear { viewModel.refresh() }
         .refreshable {
             viewModel.refresh()
         }

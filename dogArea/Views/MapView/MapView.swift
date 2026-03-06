@@ -29,7 +29,6 @@ struct MapView : View{
     @State private var pendingUndoPointID: UUID? = nil
     @State private var addPointUndoDismissTask: Task<Void, Never>? = nil
     @State private var lastCameraEventProcessedAt: Date = .distantPast
-    @ObservedObject var tabStatus = TabAppear.shared
 
     /// 지도 화면에 사용할 상태 객체를 주입해 탭 전환 후에도 카메라/산책 상태를 유지합니다.
     /// - Parameter viewModel: 지도 상태를 보유하는 `MapViewModel`입니다.
@@ -44,7 +43,6 @@ struct MapView : View{
             viewModel.reloadSelectedPetContext()
             viewModel.updateAnnotations(cameraDistance: self.distance)
             recomputeBannerQueue()
-            tabStatus.appear()
         })
         composed = AnyView(composed.onChange(of: viewModel.walkStatusMessage) { _, newValue in
             guard let newValue else { return }
@@ -266,7 +264,7 @@ struct MapView : View{
                     }
                 }
             }
-            .padding(.bottom, CustomTabBar.reservedContentHeight + 8)
+            .appTabBarContentPadding(extra: 8)
         }
     }
 

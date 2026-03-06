@@ -30,7 +30,7 @@ struct RivalTabView: View {
                 footerButtons
             }
             .padding(.top, 8)
-            .padding(.bottom, CustomTabBar.reservedContentHeight + 20)
+            .appTabBarContentPadding(extra: 20)
         }
         .scrollIndicators(.hidden)
         .safeAreaPadding(.top, 8)

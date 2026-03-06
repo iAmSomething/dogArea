@@ -20,9 +20,8 @@ struct RootView: View {
     @EnvironmentObject var authFlow: AuthFlowCoordinator
     @StateObject var loading: LoadingViewModel = LoadingViewModel()
     @State private var selectedTab = RootView.initialSelectedTabForRuntime()
-    @State private var tabbarHidden = false
+    @State private var tabBarVisibility: AppTabBarVisibility = .automatic
     @State private var pendingWalkWidgetRoute: WalkWidgetActionRoute? = nil
-    @StateObject var tabStatus = TabAppear.shared
     @StateObject private var mapViewModelStore = MapViewModelStore()
     private let widgetActionStore: WalkWidgetActionRequestStoring = DefaultWalkWidgetActionRequestStore.shared
     private let territoryWidgetSnapshotSyncService: TerritoryWidgetSnapshotSyncing = DefaultTerritoryWidgetSnapshotSyncService()
@@ -48,13 +47,17 @@ struct RootView: View {
 
     var body: some View {
         tabContent
+            .appTabBarReservedHeight(CustomTabBar.reservedContentHeight)
+            .onPreferenceChange(AppTabBarVisibilityPreferenceKey.self) { visibility in
+                tabBarVisibility = visibility
+            }
             .safeAreaInset(edge: .bottom, spacing: 0) {
-                if tabStatus.isTabAppear {
+                if tabBarVisibility != .hidden {
                     CustomTabBar(selectedTab: $selectedTab)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
-        .background(Color.appTabScaffoldBackground.ignoresSafeArea())
+            .background(Color.appTabScaffoldBackground.ignoresSafeArea())
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .overlay(content: {
                 if loading.phase == .loading {
@@ -147,21 +150,22 @@ struct RootView: View {
     @ViewBuilder
     private var tabContent: some View {
         if selectedTab == 0 {
-            NavigationView {
+            AppTabRootContainer(accessibilityIdentifier: "screen.home") {
                 homeView
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .navigationBarHidden(selectedTab == 0)
-                    .accessibilityIdentifier("screen.home")
             }
         } else if selectedTab == 1 {
-            NavigationView {
+            AppTabRootContainer(
+                accessibilityIdentifier: "screen.walkList",
+                hidesNavigationBar: false
+            ) {
                 walkListView
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .navigationBarHidden(selectedTab == 1)
-                    .accessibilityIdentifier("screen.walkList")
             }
         } else if selectedTab == 2 {
-            NavigationView {
+            AppTabRootContainer(
+                accessibilityIdentifier: isAuthenticationOverlayActive
+                    ? "screen.map.suspended"
+                    : "screen.map"
+            ) {
                 Group {
                     if isAuthenticationOverlayActive {
                         Color.appTabScaffoldBackground
@@ -183,24 +187,17 @@ struct RootView: View {
                         }
                     }
                 }
-                .navigationBarHidden(selectedTab == 2)
             }
         } else if selectedTab == 3 {
-            NavigationView {
+            AppTabRootContainer(accessibilityIdentifier: "screen.rival") {
                 RivalTabView(
                     onOpenMap: { selectedTab = 2 },
                     onOpenSettings: { selectedTab = 4 }
                 )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .navigationBarHidden(selectedTab == 3)
-                .accessibilityIdentifier("screen.rival")
             }
         } else if selectedTab == 4 {
-            NavigationView {
+            AppTabRootContainer(accessibilityIdentifier: "screen.settings") {
                 notificationCenterView
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .navigationBarHidden(selectedTab == 4)
-                    .accessibilityIdentifier("screen.settings")
             }
         }
     }

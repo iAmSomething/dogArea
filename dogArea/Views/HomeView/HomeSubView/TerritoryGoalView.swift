@@ -2,7 +2,6 @@ import SwiftUI
 
 struct TerritoryGoalView: View {
     @ObservedObject var viewModel: TerritoryGoalViewModel
-    @ObservedObject private var tabStatus = TabAppear.shared
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -75,13 +74,8 @@ struct TerritoryGoalView: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle("영역 목표 상세")
         .accessibilityIdentifier("screen.territoryGoal")
-        .onAppear {
-            tabStatus.hide()
-            viewModel.refresh()
-        }
-        .onDisappear {
-            tabStatus.appear()
-        }
+        .appTabBarVisibility(.hidden)
+        .onAppear { viewModel.refresh() }
         .refreshable {
             viewModel.refresh()
         }
