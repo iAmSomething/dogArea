@@ -15,10 +15,19 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
-let source = load("dogArea/Views/ProfileSettingView/RivalTabViewModel.swift")
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
+let source = loadMany([
+    "dogArea/Views/ProfileSettingView/RivalTabViewModel.swift",
+    "dogArea/Views/ProfileSettingView/RivalTabViewModelSupport/RivalTabViewModel+SessionLifecycle.swift",
+    "dogArea/Views/ProfileSettingView/RivalTabViewModelSupport/RivalTabViewModel+SharingAndLeaderboard.swift",
+    "dogArea/Views/ProfileSettingView/RivalTabViewModelSupport/RivalTabViewModel+ModerationAndLocation.swift"
+])
 
 assertTrue(
-    source.contains("private var authSessionObserver: NSObjectProtocol? = nil"),
+    source.contains("authSessionObserver: NSObjectProtocol? = nil"),
     "rival tab should keep an auth-session observer token"
 )
 assertTrue(

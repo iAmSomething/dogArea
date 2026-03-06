@@ -33,7 +33,12 @@ let defaults = loadMany([
     "dogArea/Source/AppSession/GuestDataUpgradeService.swift",
     "dogArea/Source/AppSession/AuthFlowCoordinator.swift"
 ])
-let rivalViewModel = load("dogArea/Views/ProfileSettingView/RivalTabViewModel.swift")
+let rivalViewModel = loadMany([
+    "dogArea/Views/ProfileSettingView/RivalTabViewModel.swift",
+    "dogArea/Views/ProfileSettingView/RivalTabViewModelSupport/RivalTabViewModel+SessionLifecycle.swift",
+    "dogArea/Views/ProfileSettingView/RivalTabViewModelSupport/RivalTabViewModel+SharingAndLeaderboard.swift",
+    "dogArea/Views/ProfileSettingView/RivalTabViewModelSupport/RivalTabViewModel+ModerationAndLocation.swift"
+])
 let rivalSpec = load("docs/rival-tab-ux-usecase-spec-v1.md")
 let gameLayerSpec = load("docs/game-layer-observability-qa-v1.md")
 let prCheck = load("scripts/ios_pr_check.sh")
@@ -43,7 +48,7 @@ assertTrue(defaults.contains("case rivalLeaderboardFetched = \"rival_leaderboard
 assertTrue(defaults.contains("case rivalHotspotFetchSucceeded = \"rival_hotspot_fetch_succeeded\""), "metric enum should define rival_hotspot_fetch_succeeded")
 assertTrue(defaults.contains("case rivalHotspotFetchFailed = \"rival_hotspot_fetch_failed\""), "metric enum should define rival_hotspot_fetch_failed")
 
-assertTrue(rivalViewModel.contains("private let metricTracker: AppMetricTracker"), "rival view model should keep metric tracker dependency")
+assertTrue(rivalViewModel.contains("metricTracker: AppMetricTracker"), "rival view model should keep metric tracker dependency")
 assertTrue(rivalViewModel.contains(".rivalPrivacyOptInCompleted"), "consent success should emit rival_privacy_opt_in_completed")
 assertTrue(rivalViewModel.contains(".rivalHotspotFetchSucceeded"), "hotspot success should emit rival_hotspot_fetch_succeeded")
 assertTrue(rivalViewModel.contains(".rivalHotspotFetchFailed"), "hotspot failure should emit rival_hotspot_fetch_failed")

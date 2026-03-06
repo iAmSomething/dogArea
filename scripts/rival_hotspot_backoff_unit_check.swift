@@ -9,12 +9,27 @@ func assertTrue(_ condition: Bool, _ message: String) {
 }
 
 let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-let sourceURL = root.appendingPathComponent("dogArea/Views/ProfileSettingView/RivalTabViewModel.swift")
-let source = try String(contentsOf: sourceURL, encoding: .utf8)
 
-assertTrue(source.contains("private let hotspotMinimumRefreshInterval: TimeInterval = 10"), "hotspot refresh interval should be throttled to 10 seconds")
-assertTrue(source.contains("private let leaderboardMinimumRefreshInterval: TimeInterval = 10"), "leaderboard refresh interval should be throttled to 10 seconds")
-assertTrue(source.contains("private var hotspotFailureRetryAt: Date = .distantPast"), "hotspot failure retry gate should exist")
+func load(_ relativePath: String) -> String {
+    let url = root.appendingPathComponent(relativePath)
+    let data = try! Data(contentsOf: url)
+    return String(decoding: data, as: UTF8.self)
+}
+
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
+let source = loadMany([
+    "dogArea/Views/ProfileSettingView/RivalTabViewModel.swift",
+    "dogArea/Views/ProfileSettingView/RivalTabViewModelSupport/RivalTabViewModel+SessionLifecycle.swift",
+    "dogArea/Views/ProfileSettingView/RivalTabViewModelSupport/RivalTabViewModel+SharingAndLeaderboard.swift",
+    "dogArea/Views/ProfileSettingView/RivalTabViewModelSupport/RivalTabViewModel+ModerationAndLocation.swift"
+])
+
+assertTrue(source.contains("hotspotMinimumRefreshInterval: TimeInterval = 10"), "hotspot refresh interval should be throttled to 10 seconds")
+assertTrue(source.contains("leaderboardMinimumRefreshInterval: TimeInterval = 10"), "leaderboard refresh interval should be throttled to 10 seconds")
+assertTrue(source.contains("hotspotFailureRetryAt: Date = .distantPast"), "hotspot failure retry gate should exist")
 assertTrue(source.contains("private func applyHotspotFailureBackoff"), "hotspot failure backoff helper should exist")
 assertTrue(source.contains("private func shouldSkipHotspotRefresh(force: Bool, now: Date) -> Bool"), "hotspot skip helper should exist")
 assertTrue(source.contains("guard isHotspotRefreshing == false else { return }"), "hotspot refresh should block overlapping requests")

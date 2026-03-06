@@ -85,8 +85,8 @@ verifyTracerGating(
 verifyTracerGating(
     source: rivalSource,
     tracerName: "Rival tracer",
-    debugMarker: "private enum RivalCoreLocationCallTracer {",
-    releaseMarker: "#else\nprivate enum RivalCoreLocationCallTracer {"
+    debugMarker: "enum RivalCoreLocationCallTracer {",
+    releaseMarker: "#else\nenum RivalCoreLocationCallTracer {"
 )
 
 print("PASS: corelocation trace debug gate unit checks")
