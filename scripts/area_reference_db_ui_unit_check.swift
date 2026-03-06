@@ -23,6 +23,9 @@ let areaMeters = load("dogArea/Source/Domain/Home/Models/AreaReferenceModels.swi
 let supabaseInfra = load("dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift")
 let homeVM = loadMany([
     "dogArea/Views/HomeView/HomeViewModel.swift",
+    "dogArea/Views/HomeView/HomeViewModelSupport/HomeViewModel+SessionLifecycle.swift",
+    "dogArea/Views/HomeView/HomeViewModelSupport/HomeViewModel+AreaProgress.swift",
+    "dogArea/Views/HomeView/HomeViewModelSupport/HomeViewModel+IndoorMissionFlow.swift",
     "dogArea/Source/Domain/Home/Models/HomeMissionModels.swift",
     "dogArea/Source/Domain/Home/Stores/IndoorMissionStore.swift",
     "dogArea/Source/Domain/Home/Stores/SeasonMotionStore.swift"

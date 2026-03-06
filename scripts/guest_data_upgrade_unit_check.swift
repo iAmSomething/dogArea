@@ -31,6 +31,9 @@ let root = read("dogArea/Views/GlobalViews/BaseView/RootView.swift")
 let home = read("dogArea/Views/HomeView/HomeView.swift")
 let homeVM = readMany([
     "dogArea/Views/HomeView/HomeViewModel.swift",
+    "dogArea/Views/HomeView/HomeViewModelSupport/HomeViewModel+SessionLifecycle.swift",
+    "dogArea/Views/HomeView/HomeViewModelSupport/HomeViewModel+AreaProgress.swift",
+    "dogArea/Views/HomeView/HomeViewModelSupport/HomeViewModel+IndoorMissionFlow.swift",
     "dogArea/Source/Domain/Home/Models/HomeMissionModels.swift",
     "dogArea/Source/Domain/Home/Stores/IndoorMissionStore.swift",
     "dogArea/Source/Domain/Home/Stores/SeasonMotionStore.swift"

@@ -25,6 +25,9 @@ let homeView = loadMany([
 ])
 let homeViewModel = loadMany([
     "dogArea/Views/HomeView/HomeViewModel.swift",
+    "dogArea/Views/HomeView/HomeViewModelSupport/HomeViewModel+SessionLifecycle.swift",
+    "dogArea/Views/HomeView/HomeViewModelSupport/HomeViewModel+AreaProgress.swift",
+    "dogArea/Views/HomeView/HomeViewModelSupport/HomeViewModel+IndoorMissionFlow.swift",
     "dogArea/Source/Domain/Home/Stores/SeasonMotionStore.swift"
 ])
 let mapView = load("dogArea/Views/MapView/MapView.swift")

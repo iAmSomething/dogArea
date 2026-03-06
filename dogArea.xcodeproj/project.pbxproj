@@ -68,6 +68,7 @@
 		8CEF03B12FF33C7B71CCE658 /* WalkWidgetSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE5D5C2E004FD37BC9E65790 /* WalkWidgetSnapshotStore.swift */; };
 		8DD9CE63EA914575B4763A9F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D8458EB9DE9760D52537B4B6 /* Foundation.framework */; };
 		8FF1D41BEF381990105583A9 /* HomeQuestCompletionOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BD638413305E314572CB8D9 /* HomeQuestCompletionOverlayView.swift */; };
+		9315EFC2423955870AFCC18F /* HomeViewModel+SessionLifecycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BD9767C8CA8497962E480D3 /* HomeViewModel+SessionLifecycle.swift */; };
 		96C72C23EA46A15543F1A458 /* HomeSeasonResultOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 081AACF20D304E61699D792F /* HomeSeasonResultOverlayView.swift */; };
 		9D8804AD0F127C5DDDAEA597 /* ThumbnailImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2615443270FF3222AEBDE893 /* ThumbnailImageView.swift */; };
 		A0C814D250B8F26BDCC21F66 /* UserProfileImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F73B707BA77AC2C69A6BC62B /* UserProfileImageView.swift */; };
@@ -98,10 +99,12 @@
 		AEC5862872E6BF3231D08C90 /* HomeScrollToTopFloatingButtonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4122ED3DF3668790F606D542 /* HomeScrollToTopFloatingButtonView.swift */; };
 		B40D68BD38F0288BF600B11C /* HomeSeasonMotionCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C671468D748C3AD8C0A7DB8A /* HomeSeasonMotionCardView.swift */; };
 		B6ABF3F12D7A7F8761D68EB2 /* HomeSeasonShieldBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DBF6EC9508CA4C5CC954AF8 /* HomeSeasonShieldBadgeView.swift */; };
+		B8774AA566F72FF9E7151938 /* HomeViewModel+AreaProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAE640538C59819A309529D3 /* HomeViewModel+AreaProgress.swift */; };
 		BA480FDD8F1E663F6CF6F9BF /* HomeSeasonMetricPillView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1882845C4C15BF66EF58B401 /* HomeSeasonMetricPillView.swift */; };
 		BC8F0111242B7C35E0A8C032 /* HomeAreaAggregationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D55F514F099289DA27BC2654 /* HomeAreaAggregationService.swift */; };
 		BFE9FFE6DBDDDBDF1B846C2E /* AreaReferenceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 512B7050BD43731047F5D669 /* AreaReferenceModels.swift */; };
 		C047F1CA5DC13CAE4F03AE90 /* RivalHotspotSummaryBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F2B2A868B6FD9035AC5214F /* RivalHotspotSummaryBuilder.swift */; };
+		C2A4309E392F82F548955737 /* HomeViewModel+IndoorMissionFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0922EB392D5A2CF01060C9E6 /* HomeViewModel+IndoorMissionFlow.swift */; };
 		C93E65F4BA4229D430ED1AD9 /* AreaDetailSummaryCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4340122AB9FE3F16F12570B /* AreaDetailSummaryCardView.swift */; settings = {COMPILER_FLAGS = "-fobjc-arc"; }; };
 		C9FE9795EDE724EE7C96A8F0 /* HomeQuestReminderToggleRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 012C06744E292D894BC4661B /* HomeQuestReminderToggleRowView.swift */; };
 		CAB8947D9039E6F839F12EA4 /* GuestDataUpgradePromptSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F07A82B4C3550CACA2C6ED /* GuestDataUpgradePromptSheetView.swift */; };
@@ -298,6 +301,7 @@
 		020BF5BBC530202A931EEA4B /* WalkControlWidgetBundle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/WalkControlWidgetBundle.swift; sourceTree = SOURCE_ROOT; };
 		078B330462EB7C7D535B09F1 /* AppleSigninButton.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppleSigninButton.swift; sourceTree = "<group>"; };
 		081AACF20D304E61699D792F /* HomeSeasonResultOverlayView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeSeasonResultOverlayView.swift; path = HomeSeasonResultOverlayView.swift; sourceTree = "<group>"; };
+		0922EB392D5A2CF01060C9E6 /* HomeViewModel+IndoorMissionFlow.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "HomeViewModel+IndoorMissionFlow.swift"; sourceTree = "<group>"; };
 		0B86CA6EAAA6D2939A4516B9 /* WalkControlIntents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/WalkControlIntents.swift; sourceTree = SOURCE_ROOT; };
 		0DE6E868D63B43E48E230CFC /* TerritoryGoalActionHintCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TerritoryGoalActionHintCardView.swift; sourceTree = "<group>"; };
 		12397094BA00E47FD8BE76B0 /* TerritoryGoalHeaderSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TerritoryGoalHeaderSectionView.swift; sourceTree = "<group>"; };
@@ -312,6 +316,7 @@
 		2615443270FF3222AEBDE893 /* ThumbnailImageView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ThumbnailImageView.swift; sourceTree = "<group>"; };
 		26182C87E44E1C0D9629CD03 /* HomeAnimatedSeasonGaugeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeAnimatedSeasonGaugeView.swift; sourceTree = "<group>"; };
 		29F07A82B4C3550CACA2C6ED /* GuestDataUpgradePromptSheetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GuestDataUpgradePromptSheetView.swift; sourceTree = "<group>"; };
+		2BD9767C8CA8497962E480D3 /* HomeViewModel+SessionLifecycle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "HomeViewModel+SessionLifecycle.swift"; sourceTree = "<group>"; };
 		2D030E0DFD8D49558700ACB1 /* WalkControlWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/WalkControlWidget.swift; sourceTree = SOURCE_ROOT; };
 		3087DB4DD4BFDA3FC923B011 /* HomeScrollOffsetPreferenceKey.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeScrollOffsetPreferenceKey.swift; path = HomeScrollOffsetPreferenceKey.swift; sourceTree = "<group>"; };
 		30BF0E17B2BF40E97DBA5E07 /* ProfileFieldEditSheetViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ProfileFieldEditSheetViewModel.swift; path = dogArea/Views/ProfileSettingView/ProfileFieldEditSheetViewModel.swift; sourceTree = "<group>"; };
@@ -381,6 +386,7 @@
 		A775802DB2A590A7C7DA0978 /* WalkDetailViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WalkDetailViewModel.swift; path = dogArea/Views/MapView/WalkDetailViewModel.swift; sourceTree = "<group>"; };
 		B3C5EBC2B900522B927AC9AD /* TerritoryGoalOverviewCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TerritoryGoalOverviewCardView.swift; sourceTree = "<group>"; };
 		B76E1FA7BD23351B788C716B /* AreaDetailViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AreaDetailViewModel.swift; sourceTree = "<group>"; };
+		BAE640538C59819A309529D3 /* HomeViewModel+AreaProgress.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "HomeViewModel+AreaProgress.swift"; sourceTree = "<group>"; };
 		C566C61F8B5520FEC3406DFF /* HomeGoalTrackerCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeGoalTrackerCardView.swift; sourceTree = "<group>"; };
 		C63D5D25262A8E2185005C50 /* RecoveryActionBanner.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RecoveryActionBanner.swift; sourceTree = "<group>"; };
 		C671468D748C3AD8C0A7DB8A /* HomeSeasonMotionCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeSeasonMotionCardView.swift; sourceTree = "<group>"; };
@@ -556,6 +562,9 @@
 			isa = PBXGroup;
 			children = (
 				67C1D6AB713A59C8D7034CB8 /* HomePresentationStateModels.swift */,
+				2BD9767C8CA8497962E480D3 /* HomeViewModel+SessionLifecycle.swift */,
+				BAE640538C59819A309529D3 /* HomeViewModel+AreaProgress.swift */,
+				0922EB392D5A2CF01060C9E6 /* HomeViewModel+IndoorMissionFlow.swift */,
 			);
 			name = HomeViewModelSupport;
 			path = HomeViewModelSupport;
@@ -1635,6 +1644,9 @@
 				D6C7AC45E842356138A50D6F /* SettingViewModel+ProfileEditing.swift in Sources */,
 				771A99CFD333C282650284FA /* SettingViewModel+PetManagement.swift in Sources */,
 				85B9C2AED02D77D491DA93CA /* SettingViewModel+SessionSync.swift in Sources */,
+				9315EFC2423955870AFCC18F /* HomeViewModel+SessionLifecycle.swift in Sources */,
+				B8774AA566F72FF9E7151938 /* HomeViewModel+AreaProgress.swift in Sources */,
+				C2A4309E392F82F548955737 /* HomeViewModel+IndoorMissionFlow.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -64,6 +64,9 @@ func loadMany(_ relativePaths: [String]) -> String {
 let doc = load("docs/weather-risk-provider-policy-v1.md")
 let homeVM = loadMany([
     "dogArea/Views/HomeView/HomeViewModel.swift",
+    "dogArea/Views/HomeView/HomeViewModelSupport/HomeViewModel+SessionLifecycle.swift",
+    "dogArea/Views/HomeView/HomeViewModelSupport/HomeViewModel+AreaProgress.swift",
+    "dogArea/Views/HomeView/HomeViewModelSupport/HomeViewModel+IndoorMissionFlow.swift",
     "dogArea/Source/Domain/Home/Models/HomeMissionModels.swift",
     "dogArea/Source/Domain/Home/Stores/IndoorMissionStore.swift",
     "dogArea/Source/Domain/Home/Stores/SeasonMotionStore.swift"
