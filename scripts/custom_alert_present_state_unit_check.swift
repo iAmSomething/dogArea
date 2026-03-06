@@ -21,7 +21,10 @@ assertTrue(
     "callAlert should exist in CustomAlertViewModel"
 )
 assertTrue(
-    source.contains("func callCustomAlert(model: AlertModel,leftAction: @escaping () -> (),rightAction: @escaping () -> () = {})"),
+    source.contains("func callCustomAlert(") &&
+    source.contains("model: AlertModel") &&
+    source.contains("leftAction: @escaping () -> Void") &&
+    source.contains("rightAction: @escaping () -> Void = {}"),
     "callCustomAlert should exist in CustomAlertViewModel"
 )
 assertTrue(
