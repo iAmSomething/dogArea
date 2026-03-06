@@ -32,7 +32,7 @@ let spec = load("docs/quest-motion-pack-v1.md")
 let report = load("docs/cycle-142-quest-motion-pack-report-2026-02-27.md")
 
 assertTrue(homeView.contains("animatedQuestProgressBar"), "HomeView should render animated quest progress bar")
-assertTrue(homeView.contains("questCompletionOverlay"), "HomeView should render quest completion modal")
+assertTrue(homeView.contains("HomeQuestCompletionOverlayView"), "HomeView should render quest completion modal")
 assertTrue(homeView.contains("questClaimPulseMissionId"), "HomeView should animate claim state transition")
 assertTrue(homeView.contains("isQuestMotionReduced"), "HomeView should support reduced motion mode")
 

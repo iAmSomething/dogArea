@@ -27,6 +27,7 @@ let homeViewModel = loadMany([
     "dogArea/Source/Domain/Home/Stores/SeasonMotionStore.swift"
 ])
 let homeView = load("dogArea/Views/HomeView/HomeView.swift")
+let milestoneOverlayView = load("dogArea/Views/HomeView/HomeSubView/Presentation/HomeAreaMilestoneBadgeOverlayView.swift")
 
 assertTrue(
     support.contains("struct AreaMilestoneEvent: Identifiable, Codable, Equatable"),
@@ -60,7 +61,7 @@ assertTrue(
     "home view should present milestone badge overlay on milestone events"
 )
 assertTrue(
-    homeView.contains("struct HomeAreaMilestoneBadgeOverlayView"),
+    milestoneOverlayView.contains("struct HomeAreaMilestoneBadgeOverlayView: View"),
     "home milestone overlay view should be implemented"
 )
 

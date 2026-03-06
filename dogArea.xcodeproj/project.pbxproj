@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		02B810B0791CFB600F8406EB /* HomeSelectedPetEmptyStateCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D14629580BEDCDCAE5B9EC3 /* HomeSelectedPetEmptyStateCardView.swift */; };
+		0ADA547D465997E8A4EFE806 /* HomeSeasonResetTransitionBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E7F38C996B1C42E27210E77 /* HomeSeasonResetTransitionBannerView.swift */; };
 		106E27D50C08D7997FD7982D /* RivalNetworkErrorInterpreter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4548C0C604B933CC43644FA /* RivalNetworkErrorInterpreter.swift */; };
 		1A87E29B8817434BC0210F5F /* WalkControlIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B86CA6EAAA6D2939A4516B9 /* WalkControlIntents.swift */; };
 		1CCC7F48BF06FD4BCECF4286 /* TerritoryGoalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE5CB737B1C8D8A675B6A43B /* TerritoryGoalView.swift */; };
@@ -23,6 +24,7 @@
 		30B76E851C27574F5E5AC8A0 /* RivalModerationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 722875CA7B7EAB511CCC1590 /* RivalModerationStore.swift */; };
 		316EF137D15633B33FDB93A3 /* ProfileFieldEditSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C8E7D8185E273FFD5B84579 /* ProfileFieldEditSheet.swift */; };
 		32009EE2A174DAB07F3DD64D /* RivalTabViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70172018FBBE6C94AB182660 /* RivalTabViewModel.swift */; };
+		32212CE8E65DCE8A3F54F209 /* HomeSeasonDetailSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 163BA83441FB36D4D40305D8 /* HomeSeasonDetailSheetView.swift */; };
 		356D2ACD7D5FE5E6B735BBC2 /* AreaDetailReferenceCatalogSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B7E3AA66F47CA884B345956 /* AreaDetailReferenceCatalogSectionView.swift */; settings = {COMPILER_FLAGS = "-fobjc-arc"; }; };
 		35EBB882681A45D25A948235 /* TerritoryGoalRecentListSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1256D9DE5D8E63B795C90401 /* TerritoryGoalRecentListSectionView.swift */; settings = {COMPILER_FLAGS = "-fobjc-arc"; }; };
 		37382EBDCEA90A2E818A05BB /* ProfileFieldEditSheetViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30BF0E17B2BF40E97DBA5E07 /* ProfileFieldEditSheetViewModel.swift */; };
@@ -32,6 +34,7 @@
 		4C8C66B1707DD603359C2C39 /* dogAreaWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E916788F22F3DDF144CCE8D4 /* dogAreaWidgetExtension.appex */; };
 		4D741EB8E7EC826A55FCC5A5 /* WalkWidgetSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE5D5C2E004FD37BC9E65790 /* WalkWidgetSnapshotStore.swift */; };
 		4DEEE78A71FF3180E38552A9 /* TerritoryGoalOverviewCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3C5EBC2B900522B927AC9AD /* TerritoryGoalOverviewCardView.swift */; settings = {COMPILER_FLAGS = "-fobjc-arc"; }; };
+		4E216BC4B2B8834C43FD8497 /* HomeQuestWidgetTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E44AFE17DBAADDCF10DB273 /* HomeQuestWidgetTab.swift */; };
 		541633F39AA01B555EA4A904 /* HomeRecentConqueredSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E3FDEC98167CC2EA0DAFA5E /* HomeRecentConqueredSectionView.swift */; };
 		5951E893E8CBC77DCA82E00F /* WalkDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A775802DB2A590A7C7DA0978 /* WalkDetailViewModel.swift */; };
 		5B03A082491706A835733386 /* GuestDataUpgradeResultBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EEF5E5853DABE804BDEDE35 /* GuestDataUpgradeResultBanner.swift */; };
@@ -51,6 +54,8 @@
 		8CD54D2F099991B9C308F493 /* MapViewModelStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 964083A1B8DE944291FAD56C /* MapViewModelStore.swift */; };
 		8CEF03B12FF33C7B71CCE658 /* WalkWidgetSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE5D5C2E004FD37BC9E65790 /* WalkWidgetSnapshotStore.swift */; };
 		8DD9CE63EA914575B4763A9F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D8458EB9DE9760D52537B4B6 /* Foundation.framework */; };
+		8FF1D41BEF381990105583A9 /* HomeQuestCompletionOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BD638413305E314572CB8D9 /* HomeQuestCompletionOverlayView.swift */; };
+		96C72C23EA46A15543F1A458 /* HomeSeasonResultOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 081AACF20D304E61699D792F /* HomeSeasonResultOverlayView.swift */; };
 		9D8804AD0F127C5DDDAEA597 /* ThumbnailImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2615443270FF3222AEBDE893 /* ThumbnailImageView.swift */; };
 		A0C814D250B8F26BDCC21F66 /* UserProfileImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F73B707BA77AC2C69A6BC62B /* UserProfileImageView.swift */; };
 		A37500010000000000000021 /* HomeMissionModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37500010000000000000011 /* HomeMissionModels.swift */; };
@@ -79,7 +84,9 @@
 		C047F1CA5DC13CAE4F03AE90 /* RivalHotspotSummaryBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F2B2A868B6FD9035AC5214F /* RivalHotspotSummaryBuilder.swift */; };
 		C93E65F4BA4229D430ED1AD9 /* AreaDetailSummaryCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4340122AB9FE3F16F12570B /* AreaDetailSummaryCardView.swift */; settings = {COMPILER_FLAGS = "-fobjc-arc"; }; };
 		CAB8947D9039E6F839F12EA4 /* GuestDataUpgradePromptSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F07A82B4C3550CACA2C6ED /* GuestDataUpgradePromptSheetView.swift */; };
+		CD071DCF8ABBABED0F998B66 /* HomeScrollOffsetPreferenceKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3087DB4DD4BFDA3FC923B011 /* HomeScrollOffsetPreferenceKey.swift */; };
 		CEDA085DD93B4102FE55229E /* HomeGoalTrackerCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C566C61F8B5520FEC3406DFF /* HomeGoalTrackerCardView.swift */; };
+		D706184062CE7DA65FC2FE16 /* HomeAreaMilestoneBadgeOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D457F4903D0BCF9B5C9B7EFC /* HomeAreaMilestoneBadgeOverlayView.swift */; };
 		DA16C1D92B05DCC8008FC133 /* CornerShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA16C1D82B05DCC8008FC133 /* CornerShape.swift */; };
 		DA16C1DC2B05E4DF008FC133 /* TimeCheckable.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA16C1DB2B05E4DF008FC133 /* TimeCheckable.swift */; };
 		DA16C1E12B060C7B008FC133 /* SelectedPolygonCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA16C1E02B060C7B008FC133 /* SelectedPolygonCell.swift */; };
@@ -267,10 +274,12 @@
 /* Begin PBXFileReference section */
 		020BF5BBC530202A931EEA4B /* WalkControlWidgetBundle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/WalkControlWidgetBundle.swift; sourceTree = SOURCE_ROOT; };
 		078B330462EB7C7D535B09F1 /* AppleSigninButton.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppleSigninButton.swift; sourceTree = "<group>"; };
+		081AACF20D304E61699D792F /* HomeSeasonResultOverlayView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeSeasonResultOverlayView.swift; path = HomeSeasonResultOverlayView.swift; sourceTree = "<group>"; };
 		0B86CA6EAAA6D2939A4516B9 /* WalkControlIntents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/WalkControlIntents.swift; sourceTree = SOURCE_ROOT; };
 		0DE6E868D63B43E48E230CFC /* TerritoryGoalActionHintCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TerritoryGoalActionHintCardView.swift; sourceTree = "<group>"; };
 		12397094BA00E47FD8BE76B0 /* TerritoryGoalHeaderSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TerritoryGoalHeaderSectionView.swift; sourceTree = "<group>"; };
 		1256D9DE5D8E63B795C90401 /* TerritoryGoalRecentListSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TerritoryGoalRecentListSectionView.swift; sourceTree = "<group>"; };
+		163BA83441FB36D4D40305D8 /* HomeSeasonDetailSheetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeSeasonDetailSheetView.swift; path = HomeSeasonDetailSheetView.swift; sourceTree = "<group>"; };
 		19B0F89F9FF220625F0008DB /* RivalTabModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RivalTabModels.swift; path = dogArea/Views/ProfileSettingView/RivalTabModels.swift; sourceTree = "<group>"; };
 		1C4863F9787EC32E41B731A8 /* AreaDetailRecentConquestSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AreaDetailRecentConquestSectionView.swift; sourceTree = "<group>"; };
 		1D982F3BFEE53C6D1333FF67 /* DesignAuditUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DesignAuditUITests.swift; sourceTree = "<group>"; };
@@ -278,6 +287,7 @@
 		2615443270FF3222AEBDE893 /* ThumbnailImageView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ThumbnailImageView.swift; sourceTree = "<group>"; };
 		29F07A82B4C3550CACA2C6ED /* GuestDataUpgradePromptSheetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GuestDataUpgradePromptSheetView.swift; sourceTree = "<group>"; };
 		2D030E0DFD8D49558700ACB1 /* WalkControlWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/WalkControlWidget.swift; sourceTree = SOURCE_ROOT; };
+		3087DB4DD4BFDA3FC923B011 /* HomeScrollOffsetPreferenceKey.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeScrollOffsetPreferenceKey.swift; path = HomeScrollOffsetPreferenceKey.swift; sourceTree = "<group>"; };
 		30BF0E17B2BF40E97DBA5E07 /* ProfileFieldEditSheetViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ProfileFieldEditSheetViewModel.swift; path = dogArea/Views/ProfileSettingView/ProfileFieldEditSheetViewModel.swift; sourceTree = "<group>"; };
 		363FE1044470B273CAB987E0 /* HomeQuestReminderSupport.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeQuestReminderSupport.swift; sourceTree = "<group>"; };
 		376D30D4A7542596A014DEE1 /* SimpleKeyValueView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SimpleKeyValueView.swift; sourceTree = "<group>"; };
@@ -291,12 +301,15 @@
 		688E8E192EA6BCB551D19759 /* dogAreaUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = dogAreaUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		6C8E7D8185E273FFD5B84579 /* ProfileFieldEditSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ProfileFieldEditSheet.swift; path = dogArea/Views/ProfileSettingView/ProfileFieldEditSheet.swift; sourceTree = "<group>"; };
 		6E3FDEC98167CC2EA0DAFA5E /* HomeRecentConqueredSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeRecentConqueredSectionView.swift; sourceTree = "<group>"; };
+		6E7F38C996B1C42E27210E77 /* HomeSeasonResetTransitionBannerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeSeasonResetTransitionBannerView.swift; path = HomeSeasonResetTransitionBannerView.swift; sourceTree = "<group>"; };
 		70172018FBBE6C94AB182660 /* RivalTabViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RivalTabViewModel.swift; path = dogArea/Views/ProfileSettingView/RivalTabViewModel.swift; sourceTree = "<group>"; };
 		722875CA7B7EAB511CCC1590 /* RivalModerationStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RivalModerationStore.swift; path = dogArea/Views/ProfileSettingView/RivalModerationStore.swift; sourceTree = "<group>"; };
+		7E44AFE17DBAADDCF10DB273 /* HomeQuestWidgetTab.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeQuestWidgetTab.swift; path = HomeQuestWidgetTab.swift; sourceTree = "<group>"; };
 		81CDB8AB4C8855FE6D106BF3 /* WalkDetailContextProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WalkDetailContextProvider.swift; path = dogArea/Views/MapView/WalkDetailContextProvider.swift; sourceTree = "<group>"; };
 		82C7B17BDEEF3C827C152659 /* TerritoryGoalInsightSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TerritoryGoalInsightSectionView.swift; sourceTree = "<group>"; };
 		86FFE492DDD22A6AC1319D9D /* HomeTerritoryHeaderSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeTerritoryHeaderSectionView.swift; sourceTree = "<group>"; };
 		8B7738E4A04B406F4D70AE19 /* HomeSelectedPetContextBannerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeSelectedPetContextBannerView.swift; path = dogArea/Views/HomeView/HomeSubView/HomeSelectedPetContextBannerView.swift; sourceTree = "<group>"; };
+		8BD638413305E314572CB8D9 /* HomeQuestCompletionOverlayView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeQuestCompletionOverlayView.swift; path = HomeQuestCompletionOverlayView.swift; sourceTree = "<group>"; };
 		8CEBC83AFF321A2E3D10E8A0 /* SeasonProfileFrameStyle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SeasonProfileFrameStyle.swift; path = dogArea/Views/ProfileSettingView/SeasonProfileFrameStyle.swift; sourceTree = "<group>"; };
 		8F2B2A868B6FD9035AC5214F /* RivalHotspotSummaryBuilder.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RivalHotspotSummaryBuilder.swift; path = dogArea/Views/ProfileSettingView/RivalHotspotSummaryBuilder.swift; sourceTree = "<group>"; };
 		92C5F96B5D23BD6D36935CA0 /* PositionMarkerViewWithSelection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PositionMarkerViewWithSelection.swift; sourceTree = "<group>"; };
@@ -335,6 +348,7 @@
 		CE5D5C2E004FD37BC9E65790 /* WalkWidgetSnapshotStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogArea/Source/WidgetBridge/WalkWidgetSnapshotStore.swift; sourceTree = SOURCE_ROOT; };
 		CEBDE81DFC43DCD56546D775 /* HomeHeaderSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeHeaderSectionView.swift; sourceTree = "<group>"; };
 		D4340122AB9FE3F16F12570B /* AreaDetailSummaryCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AreaDetailSummaryCardView.swift; sourceTree = "<group>"; };
+		D457F4903D0BCF9B5C9B7EFC /* HomeAreaMilestoneBadgeOverlayView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeAreaMilestoneBadgeOverlayView.swift; path = HomeAreaMilestoneBadgeOverlayView.swift; sourceTree = "<group>"; };
 		D8458EB9DE9760D52537B4B6 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		DA0FB2082AD7B21C00B235CF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		DA16C1D82B05DCC8008FC133 /* CornerShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CornerShape.swift; sourceTree = "<group>"; };
@@ -630,6 +644,21 @@
 			path = Components;
 			sourceTree = "<group>";
 		};
+		BBEA26F77AB8339FAAB30583 /* Presentation */ = {
+			isa = PBXGroup;
+			children = (
+				3087DB4DD4BFDA3FC923B011 /* HomeScrollOffsetPreferenceKey.swift */,
+				7E44AFE17DBAADDCF10DB273 /* HomeQuestWidgetTab.swift */,
+				8BD638413305E314572CB8D9 /* HomeQuestCompletionOverlayView.swift */,
+				081AACF20D304E61699D792F /* HomeSeasonResultOverlayView.swift */,
+				163BA83441FB36D4D40305D8 /* HomeSeasonDetailSheetView.swift */,
+				6E7F38C996B1C42E27210E77 /* HomeSeasonResetTransitionBannerView.swift */,
+				D457F4903D0BCF9B5C9B7EFC /* HomeAreaMilestoneBadgeOverlayView.swift */,
+			);
+			name = Presentation;
+			path = Presentation;
+			sourceTree = "<group>";
+		};
 		C22993D97B3A550A9ADCBA82 /* TerritoryGoal */ = {
 			isa = PBXGroup;
 			children = (
@@ -919,6 +948,7 @@
 				649E88696A0B4425210BB446 /* HomeGoalMetricColumnView.swift */,
 				6E9414A4C2CD31522376808E /* Sections */,
 				B76E1FA7BD23351B788C716B /* AreaDetailViewModel.swift */,
+				BBEA26F77AB8339FAAB30583 /* Presentation */,
 			);
 			path = HomeSubView;
 			sourceTree = "<group>";
@@ -1483,6 +1513,13 @@
 				CAB8947D9039E6F839F12EA4 /* GuestDataUpgradePromptSheetView.swift in Sources */,
 				8CD54D2F099991B9C308F493 /* MapViewModelStore.swift in Sources */,
 				5B03A082491706A835733386 /* GuestDataUpgradeResultBanner.swift in Sources */,
+				CD071DCF8ABBABED0F998B66 /* HomeScrollOffsetPreferenceKey.swift in Sources */,
+				4E216BC4B2B8834C43FD8497 /* HomeQuestWidgetTab.swift in Sources */,
+				8FF1D41BEF381990105583A9 /* HomeQuestCompletionOverlayView.swift in Sources */,
+				96C72C23EA46A15543F1A458 /* HomeSeasonResultOverlayView.swift in Sources */,
+				32212CE8E65DCE8A3F54F209 /* HomeSeasonDetailSheetView.swift in Sources */,
+				0ADA547D465997E8A4EFE806 /* HomeSeasonResetTransitionBannerView.swift in Sources */,
+				D706184062CE7DA65FC2FE16 /* HomeAreaMilestoneBadgeOverlayView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

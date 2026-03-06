@@ -37,6 +37,7 @@ let homeViewModel = loadMany([
 let settingViewModel = load("dogArea/Views/ProfileSettingView/SettingViewModel.swift")
 let notificationCenterView = load("dogArea/Views/ProfileSettingView/NotificationCenterView.swift")
 let haptic = load("dogArea/Source/AppHapticFeedback.swift")
+let seasonResultOverlayView = load("dogArea/Views/HomeView/HomeSubView/Presentation/HomeSeasonResultOverlayView.swift")
 let spec = load("docs/season-motion-pack-v1.md")
 let report = load("docs/cycle-143-season-motion-pack-report-2026-02-27.md")
 
@@ -48,8 +49,9 @@ assertTrue(homeViewModel.contains("recordMissionCompletion"), "Season motion sto
 
 assertTrue(homeView.contains("seasonMotionCard(summary:"), "HomeView should render season motion card")
 assertTrue(homeView.contains("animatedSeasonGauge"), "HomeView should render animated season gauge")
-assertTrue(homeView.contains("seasonResultOverlay"), "HomeView should render season result overlay")
-assertTrue(homeView.contains("seasonResetTransitionBanner"), "HomeView should render season reset transition banner")
+assertTrue(homeView.contains("HomeSeasonResultOverlayView"), "HomeView should render season result overlay")
+assertTrue(homeView.contains("HomeSeasonResetTransitionBannerView"), "HomeView should render season reset transition banner")
+assertTrue(seasonResultOverlayView.contains("seasonRewardStatusText"), "Season result overlay view should render reward claim status text")
 
 assertTrue(haptic.contains("seasonScoreTick"), "Haptic utility should define season score haptic")
 assertTrue(haptic.contains("seasonRankUp"), "Haptic utility should define season rank-up haptic")
