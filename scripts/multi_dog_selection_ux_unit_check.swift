@@ -38,7 +38,10 @@ let homeVM = loadMany([
 ])
 let settingVM = load("dogArea/Views/ProfileSettingView/SettingViewModel.swift")
 let notificationView = load("dogArea/Views/ProfileSettingView/NotificationCenterView.swift")
-let mapVM = load("dogArea/Views/MapView/MapViewModel.swift")
+let mapVM = loadMany([
+    "dogArea/Views/MapView/MapViewModel.swift",
+    "dogArea/Views/MapView/MapViewModelSupport/MapViewModel+WidgetRuntimeSupport.swift"
+])
 let walkListVM = load("dogArea/Views/WalkListView/WalkListViewModel.swift")
 let specDoc = load("docs/multi-dog-selection-ux-v1.md")
 

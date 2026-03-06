@@ -538,9 +538,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     @Published private(set) var weatherOverlayFallbackActive: Bool = false
     @Published var mapMotionReduced: Bool = false
     @Published var isAddPointLongPressModeEnabled: Bool = false
-    private let watchSession = WCSession.isSupported() ? WCSession.default : nil
+    let watchSession = WCSession.isSupported() ? WCSession.default : nil
     private let featureFlags = FeatureFlagStore.shared
-    private let metricTracker = AppMetricTracker.shared
+    let metricTracker = AppMetricTracker.shared
     private let nearbyService = NearbyPresenceService()
     private var nearbyTickTimer: Timer? = nil
     private var lastPresenceSentAt: Date = .distantPast
@@ -558,15 +558,15 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private var lastVisibilitySyncErrorLogAt: Date = .distantPast
     private var suppressedVisibilitySyncErrorCount: Int = 0
     private let nearbyHotspotErrorLogInterval: TimeInterval = 60
-    private var processedWatchActionIds: Set<String> = []
-    private var processedWatchActionOrder: [String] = []
-    private let maxProcessedWatchActions = 500
-    private var lastWatchContextSyncAt: Date = .distantPast
-    private var lastAppliedWatchActionId: String = ""
-    private var lastAppliedWidgetActionId: String = ""
-    private let processedWatchActionStorageKey = "watch.processedActionIds"
+    var processedWatchActionIds: Set<String> = []
+    var processedWatchActionOrder: [String] = []
+    let maxProcessedWatchActions = 500
+    var lastWatchContextSyncAt: Date = .distantPast
+    var lastAppliedWatchActionId: String = ""
+    var lastAppliedWidgetActionId: String = ""
+    let processedWatchActionStorageKey = "watch.processedActionIds"
     private let activeWalkSessionStorageKey = "walk.activeSession.v1"
-    private let lastWidgetActionIdKey = "walk.widget.lastActionId.v1"
+    let lastWidgetActionIdKey = "walk.widget.lastActionId.v1"
     private let heatmapEnabledKey = "heatmap.enabled"
     private let locationSharingKey = "nearby.locationSharingEnabled"
     private let nearbyHotspotEnabledKey = "nearby.hotspotEnabled"
@@ -621,13 +621,13 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private var returnToOriginSuggestionCount: Int = 0
     private var returnToOriginDidReExcursionAfterFirstSuggestion: Bool = false
     private var returnToOriginCooldownUntil: Date = .distantPast
-    private let restCandidateInterval: TimeInterval = 300.0
-    private let inactivityWarningInterval: TimeInterval = 720.0
-    private let inactivityFinalizeInterval: TimeInterval = 900.0
+    let restCandidateInterval: TimeInterval = 300.0
+    let inactivityWarningInterval: TimeInterval = 720.0
+    let inactivityFinalizeInterval: TimeInterval = 900.0
     private let walkAutoTimeoutInterval: TimeInterval = 3600.0
     private let recoverableSessionMaxAge: TimeInterval = 43_200.0
-    private var lastPointEventAt: Date?
-    private var lastMovementAt: Date?
+    var lastPointEventAt: Date?
+    var lastMovementAt: Date?
     private var movementAnchorLocation: CLLocation?
     private var didNotifyRestCandidate: Bool = false
     private var didNotifyInactivityWarning: Bool = false
@@ -652,22 +652,22 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private var pendingPointAddCameraSnapshot: CameraSnapshot?
     private var lastSyncFlushAt: Date = .distantPast
     private var lastSyncSummarySnapshot: SyncOutboxSummary? = nil
-    private var lastWidgetSnapshotSyncAt: Date = .distantPast
-    private var lastLiveActivitySyncAt: Date = .distantPast
-    private var liveActivitySyncTask: Task<Void, Never>? = nil
-    private var lastLiveActivityFallbackReason: WalkLiveActivityFallbackReason? = nil
+    var lastWidgetSnapshotSyncAt: Date = .distantPast
+    var lastLiveActivitySyncAt: Date = .distantPast
+    var liveActivitySyncTask: Task<Void, Never>? = nil
+    var lastLiveActivityFallbackReason: WalkLiveActivityFallbackReason? = nil
     private var syncFlushTask: Task<Void, Never>? = nil
     private let syncOutbox = SyncOutboxStore.shared
     private let syncTransport = SupabaseSyncOutboxTransport()
     private let walkRepository: WalkRepositoryProtocol
-    private let userSessionStore: UserSessionStoreProtocol
+    let userSessionStore: UserSessionStoreProtocol
     private let authSessionStore: AuthSessionStoreProtocol
-    private let preferenceStore: MapPreferenceStoreProtocol
+    let preferenceStore: MapPreferenceStoreProtocol
     private let weatherRiskProvider: WeatherRiskProviding
     private let areaCalculationService: MapAreaCalculationServicing
     private let clusterAnnotationService: MapClusterAnnotationServicing
-    private let widgetSnapshotStore: WalkWidgetSnapshotStoring
-    private let liveActivityService: WalkLiveActivityServicing
+    let widgetSnapshotStore: WalkWidgetSnapshotStoring
+    let liveActivityService: WalkLiveActivityServicing
     private let eventCenter: AppEventCenterProtocol
     private var lastCaptureHapticAt: Date = .distantPast
     private var lastWarningHapticAt: Date = .distantPast
@@ -677,30 +677,30 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private let trailVisibleMaxCameraDistance: Double = 2_600
     private var weatherFetchTask: Task<Void, Never>? = nil
     private var lastWeatherFetchAttemptAt: Date = .distantPast
-    private let widgetSnapshotSyncInterval: TimeInterval = 5.0
-    private let liveActivitySyncInterval: TimeInterval = 2.0
+    let widgetSnapshotSyncInterval: TimeInterval = 5.0
+    let liveActivitySyncInterval: TimeInterval = 2.0
 
-    private enum WatchIncomingAction: String {
+    enum WatchIncomingAction: String {
         case startWalk
         case addPoint
         case endWalk
         case syncState
     }
 
-    private struct WatchActionEnvelope {
+    struct WatchActionEnvelope {
         let version: String
         let action: WatchIncomingAction
         let actionId: String
         let sentAt: TimeInterval?
     }
 
-    private enum WatchContract {
+    enum WatchContract {
         static let version = "watch.remote.v1"
         static let actionType = "watch_action"
         static let ackType = "watch_ack"
     }
 
-    private enum PointAppendSource: String {
+    enum PointAppendSource: String {
         case manual
         case auto
         case watch
@@ -1339,7 +1339,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         return formatter
     }()
 
-    private static func statusTimeString(from date: Date) -> String {
+    static func statusTimeString(from date: Date) -> String {
         statusTimeFormatter.string(from: date)
     }
 
@@ -2115,7 +2115,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     ///   - source: 포인트가 추가된 입력 소스(수동/자동/워치)입니다.
     /// - Returns: 세션에 반영된 최종 포인트 모델입니다.
     @discardableResult
-    private func appendWalkPoint(from location: CLLocation, recordedAt: Date, source: PointAppendSource) -> Location {
+    func appendWalkPoint(from location: CLLocation, recordedAt: Date, source: PointAppendSource) -> Location {
         let pointRole = pointRole(for: source)
         let appendedPoint = Location(
             coordinate: location.coordinate,
@@ -3256,22 +3256,6 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         livePresenceOutbox = decoded
         trimLivePresenceOutboxIfNeeded()
     }
-    private func publishWatchState() {
-        if Thread.isMainThread == false {
-            DispatchQueue.main.async { [weak self] in
-                self?.publishWatchState()
-            }
-            return
-        }
-        guard let watchSession = resolveWatchContextSession(updateStatusText: false) else { return }
-        let context: [String: Any] = [
-            "isWalking": isWalking,
-            "time": time,
-            "area": calculateArea()
-        ]
-        try? watchSession.updateApplicationContext(context)
-    }
-
     private func fetchNearbyHotspots(center: CLLocationCoordinate2D) {
         let userId = currentPresenceUserId()
         Task { [weak self] in
@@ -3560,479 +3544,6 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         return nil
     }
 
-    private func currentMetricUserId() -> String? {
-        guard let raw = userSessionStore.currentUserInfo()?.id, raw.isEmpty == false else {
-            return nil
-        }
-        return raw
-    }
-
-    /// 위젯에서 전달된 산책 액션 딥링크를 적용합니다.
-    /// - Parameter route: 위젯 액션 종류/중복 방지 식별자를 담은 라우트입니다.
-    func applyWidgetWalkAction(_ route: WalkWidgetActionRoute) {
-        guard shouldProcessWidgetAction(actionId: route.actionId) else {
-            metricTracker.track(
-                .widgetActionDuplicate,
-                userKey: currentMetricUserId(),
-                payload: ["action": route.kind.rawValue, "source": route.source]
-            )
-            return
-        }
-
-        switch route.kind {
-        case .startWalk:
-            guard isWalking == false else {
-                walkStatusMessage = "이미 산책이 진행 중입니다."
-                metricTracker.track(
-                    .widgetActionRejected,
-                    userKey: currentMetricUserId(),
-                    payload: ["action": route.kind.rawValue, "reason": "already_walking"]
-                )
-                syncWalkWidgetSnapshot(force: true, statusOverride: .sessionConflict, messageOverride: walkStatusMessage)
-                return
-            }
-            guard isLocationPermissionDenied == false else {
-                walkStatusMessage = "위치 권한이 필요합니다. 설정에서 권한을 허용해주세요."
-                metricTracker.track(
-                    .widgetActionRejected,
-                    userKey: currentMetricUserId(),
-                    payload: ["action": route.kind.rawValue, "reason": "location_denied"]
-                )
-                syncWalkWidgetSnapshot(force: true, statusOverride: .locationDenied, messageOverride: walkStatusMessage)
-                return
-            }
-            startWalkNow()
-            walkStatusMessage = "위젯에서 산책을 시작했어요."
-            metricTracker.track(
-                .widgetActionApplied,
-                userKey: currentMetricUserId(),
-                payload: ["action": route.kind.rawValue, "source": route.source]
-            )
-            syncWalkWidgetSnapshot(force: true)
-            syncWalkLiveActivity(force: true)
-
-        case .endWalk:
-            guard isWalking else {
-                walkStatusMessage = "종료할 산책 세션이 없습니다."
-                metricTracker.track(
-                    .widgetActionRejected,
-                    userKey: currentMetricUserId(),
-                    payload: ["action": route.kind.rawValue, "reason": "no_active_session"]
-                )
-                syncWalkWidgetSnapshot(force: true, statusOverride: .sessionConflict, messageOverride: walkStatusMessage)
-                return
-            }
-            endWalk()
-            walkStatusMessage = "위젯에서 산책을 종료했어요."
-            metricTracker.track(
-                .widgetActionApplied,
-                userKey: currentMetricUserId(),
-                payload: ["action": route.kind.rawValue, "source": route.source]
-            )
-            syncWalkWidgetSnapshot(force: true)
-            syncWalkLiveActivity(force: true)
-
-        case .claimQuestReward, .openRivalTab:
-            metricTracker.track(
-                .widgetActionRejected,
-                userKey: currentMetricUserId(),
-                payload: ["action": route.kind.rawValue, "reason": "unsupported_on_map"]
-            )
-        }
-    }
-
-    /// 중복 위젯 액션 식별자를 검사하고 최신 식별자를 저장합니다.
-    /// - Parameter actionId: 위젯 액션 요청 ID입니다.
-    /// - Returns: 처음 처리하는 요청이면 `true`, 중복 요청이면 `false`입니다.
-    private func shouldProcessWidgetAction(actionId: String) -> Bool {
-        let normalized = actionId.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard normalized.isEmpty == false else {
-            return true
-        }
-        guard normalized != lastAppliedWidgetActionId else {
-            return false
-        }
-        lastAppliedWidgetActionId = normalized
-        preferenceStore.set(normalized, forKey: lastWidgetActionIdKey)
-        return true
-    }
-
-    /// 현재 산책 상태를 위젯 공유 스냅샷으로 동기화합니다.
-    /// - Parameters:
-    ///   - force: `true`면 최소 간격 제한 없이 즉시 저장합니다.
-    ///   - statusOverride: 상태를 강제로 지정할 때 사용하는 값입니다.
-    ///   - messageOverride: 상태 메시지를 강제로 지정할 때 사용하는 값입니다.
-    private func syncWalkWidgetSnapshot(
-        force: Bool = false,
-        statusOverride: WalkWidgetSnapshotStatus? = nil,
-        messageOverride: String? = nil
-    ) {
-        let now = Date()
-        if force == false, now.timeIntervalSince(lastWidgetSnapshotSyncAt) < widgetSnapshotSyncInterval {
-            return
-        }
-
-        let snapshot = WalkWidgetSnapshot(
-            isWalking: isWalking,
-            elapsedSeconds: Int(max(0, time.rounded(.down))),
-            petName: currentWalkingPetName,
-            status: statusOverride ?? (isLocationPermissionDenied ? .locationDenied : .ready),
-            statusMessage: messageOverride,
-            updatedAt: now.timeIntervalSince1970
-        )
-        widgetSnapshotStore.save(snapshot)
-        lastWidgetSnapshotSyncAt = now
-    }
-
-    /// 현재 자동 종료 정책 기준으로 Live Activity 단계 값을 계산합니다.
-    /// - Parameter now: 단계 계산 기준 시각입니다.
-    /// - Returns: 무이동 정책(5/12/15분)에 매핑된 단계 값입니다.
-    private func currentAutoEndStage(now: Date = Date()) -> WalkLiveActivityAutoEndStage {
-        guard isWalking else { return .ended }
-        let baseline = lastMovementAt ?? lastPointEventAt ?? startTime
-        let inactivity = max(0, now.timeIntervalSince(baseline))
-        if inactivity >= inactivityFinalizeInterval { return .autoEnding }
-        if inactivity >= inactivityWarningInterval { return .warning }
-        if inactivity >= restCandidateInterval { return .restCandidate }
-        return .active
-    }
-
-    /// 현재 ViewModel 상태를 Live Activity 서비스용 상태 모델로 변환합니다.
-    /// - Parameter now: 상태 스냅샷 기준 시각입니다.
-    /// - Returns: 세션 식별자/경과시간/포인트/자동종료 단계를 포함한 상태입니다.
-    private func makeWalkLiveActivityState(now: Date = Date()) -> WalkLiveActivityState {
-        WalkLiveActivityState(
-            sessionId: polygon.id.uuidString.lowercased(),
-            startedAt: startTime.timeIntervalSince1970,
-            isWalking: isWalking,
-            elapsedSeconds: Int(max(0, time.rounded(.down))),
-            pointCount: polygon.locations.count,
-            petName: currentWalkingPetName,
-            autoEndStage: currentAutoEndStage(now: now),
-            statusMessage: walkStatusMessage,
-            updatedAt: now.timeIntervalSince1970
-        )
-    }
-
-    /// Live Activity/대체 알림 상태를 주기적으로 동기화합니다.
-    /// - Parameter force: `true`면 최소 간격 제한 없이 즉시 동기화합니다.
-    private func syncWalkLiveActivity(force: Bool = false) {
-        let now = Date()
-        if force == false, now.timeIntervalSince(lastLiveActivitySyncAt) < liveActivitySyncInterval {
-            return
-        }
-        guard liveActivitySyncTask == nil else { return }
-        let state = makeWalkLiveActivityState(now: now)
-        lastLiveActivitySyncAt = now
-
-        liveActivitySyncTask = Task { [weak self] in
-            guard let self else { return }
-            let result: WalkLiveActivityServiceResult
-            if state.isWalking {
-                result = await liveActivityService.sync(state: state)
-            } else {
-                result = await liveActivityService.end(state: state, dismissImmediately: false)
-            }
-            await MainActor.run {
-                self.applyWalkLiveActivityResult(result)
-                self.liveActivitySyncTask = nil
-            }
-        }
-    }
-
-    /// Live Activity 동기화 결과를 배너 메시지 상태에 반영합니다.
-    /// - Parameter result: Live Activity 서비스 처리 결과입니다.
-    private func applyWalkLiveActivityResult(_ result: WalkLiveActivityServiceResult) {
-        switch result {
-        case .liveActivity, .ended:
-            lastLiveActivityFallbackReason = nil
-        case let .fallback(reason):
-            guard lastLiveActivityFallbackReason != reason else { return }
-            lastLiveActivityFallbackReason = reason
-            switch reason {
-            case .unsupportedOS:
-                walkStatusMessage = "Live Activity 미지원 환경이라 일반 알림으로 대체합니다."
-            case .activitiesDisabled:
-                walkStatusMessage = "Live Activity가 비활성화되어 일반 알림 + 앱 배너로 안내합니다."
-            case .requestFailed:
-                walkStatusMessage = "Live Activity 생성에 실패해 일반 알림으로 대체했습니다."
-            }
-        }
-    }
-
-    func reloadSelectedPetContext() {
-        let userInfo = userSessionStore.currentUserInfo()
-        self.availablePets = userInfo?.pet.filter(\.isActive) ?? []
-        let selectedPet = userSessionStore.selectedPet(from: userInfo)
-        self.selectedPetId = selectedPet?.petId
-        self.selectedPetName = selectedPet?.petName ?? "강아지"
-        if isWalking == false {
-            self.currentWalkingPetName = self.selectedPetName
-        }
-        syncWalkWidgetSnapshot(force: true)
-        syncWalkLiveActivity(force: true)
-    }
-
-    var hasSelectedPet: Bool {
-        selectedPetId != nil
-    }
-
-    func prepareWalkPetSelectionSuggestion() {
-        guard isWalking == false else { return }
-        guard let userInfo = userSessionStore.currentUserInfo(),
-              userInfo.pet.contains(where: \.isActive) else {
-            reloadSelectedPetContext()
-            return
-        }
-        if let suggested = userSessionStore.suggestedPetForWalkStart(from: userInfo, now: Date()),
-           suggested.petId != selectedPetId {
-            userSessionStore.setSelectedPetId(suggested.petId, source: "walk_start_suggestion")
-            metricTracker.track(
-                .petSelectionSuggested,
-                userKey: currentMetricUserId(),
-                payload: [
-                    "petId": suggested.petId,
-                    "petName": suggested.petName
-                ]
-            )
-            walkStatusMessage = "\(suggested.petName)을(를) 산책 대상으로 제안했어요."
-        }
-        reloadSelectedPetContext()
-    }
-
-    func cycleSelectedPetForWalkStart() {
-        guard isWalking == false else { return }
-        guard availablePets.count > 1 else { return }
-
-        let currentIndex = availablePets.firstIndex(where: { $0.petId == selectedPetId }) ?? -1
-        let nextIndex = (currentIndex + 1) % availablePets.count
-        let nextPet = availablePets[nextIndex]
-        userSessionStore.setSelectedPetId(nextPet.petId, source: "walk_start_switcher")
-        walkStatusMessage = "산책 대상: \(nextPet.petName)"
-        reloadSelectedPetContext()
-    }
-
-    private func setupWatchConnectivity() {
-        guard let watchSession else { return }
-        watchSession.delegate = self
-        watchSession.activate()
-        self.syncWatchContext(force: true)
-    }
-
-    /// 워치 컨텍스트 업데이트 가능 상태를 확인하고 사용 가능한 세션을 반환합니다.
-    /// - Parameter updateStatusText: 게이트 실패 시 `watchSyncStatusText`를 즉시 갱신할지 여부입니다.
-    /// - Returns: 업데이트 가능하면 활성화된 `WCSession`, 불가능하면 `nil`입니다.
-    private func resolveWatchContextSession(updateStatusText: Bool) -> WCSession? {
-        guard let watchSession else {
-            if updateStatusText, watchSyncStatusText != "워치 연결 미지원" {
-                watchSyncStatusText = "워치 연결 미지원"
-            }
-            return nil
-        }
-
-        guard watchSession.activationState == .activated else {
-            if updateStatusText, watchSyncStatusText != "워치 연결 대기" {
-                watchSyncStatusText = "워치 연결 대기"
-            }
-            return nil
-        }
-
-        #if os(iOS)
-        guard watchSession.isPaired else {
-            if updateStatusText, watchSyncStatusText != "워치 미페어링" {
-                watchSyncStatusText = "워치 미페어링"
-            }
-            return nil
-        }
-
-        guard watchSession.isWatchAppInstalled else {
-            if updateStatusText, watchSyncStatusText != "워치 앱 미설치" {
-                watchSyncStatusText = "워치 앱 미설치"
-            }
-            return nil
-        }
-        #endif
-
-        return watchSession
-    }
-
-    private func syncWatchContext(force: Bool = false) {
-        if Thread.isMainThread == false {
-            DispatchQueue.main.async { [weak self] in
-                self?.syncWatchContext(force: force)
-            }
-            return
-        }
-        guard let watchSession = resolveWatchContextSession(updateStatusText: true) else { return }
-
-        let now = Date()
-        if force == false, now.timeIntervalSince(lastWatchContextSyncAt) < 1.0 {
-            return
-        }
-
-        let context: [String: Any] = [
-            "version": WatchContract.version,
-            "type": "watch_state",
-            "isWalking": self.isWalking,
-            "time": self.time,
-            "area": self.polygon.walkingArea,
-            "last_sync_at": now.timeIntervalSince1970,
-            "watch_status": self.watchSyncStatusText,
-            "last_action_id_applied": self.lastAppliedWatchActionId
-        ]
-
-        do {
-            try watchSession.updateApplicationContext(context)
-            self.lastWatchContextSyncAt = now
-            self.watchSyncStatusText = "워치 동기화 \(Self.statusTimeString(from: now))"
-        } catch {
-            self.watchSyncStatusText = "워치 동기화 실패"
-            print("watch context update failed: \(error.localizedDescription)")
-        }
-    }
-
-    private func loadProcessedWatchActions() {
-        let stored = preferenceStore.stringArray(forKey: processedWatchActionStorageKey)
-        self.processedWatchActionOrder = stored
-        self.processedWatchActionIds = Set(stored)
-    }
-
-    private func persistProcessedWatchActions() {
-        preferenceStore.set(self.processedWatchActionOrder, forKey: processedWatchActionStorageKey)
-    }
-
-    private func shouldProcessWatchAction(actionId: String) -> Bool {
-        guard processedWatchActionIds.contains(actionId) == false else {
-            return false
-        }
-        processedWatchActionIds.insert(actionId)
-        processedWatchActionOrder.append(actionId)
-        if processedWatchActionOrder.count > maxProcessedWatchActions {
-            let overflow = processedWatchActionOrder.count - maxProcessedWatchActions
-            let removed = Array(processedWatchActionOrder.prefix(overflow))
-            processedWatchActionOrder.removeFirst(overflow)
-            removed.forEach { processedWatchActionIds.remove($0) }
-        }
-        persistProcessedWatchActions()
-        return true
-    }
-
-    @discardableResult
-    private func handleWatchPayload(_ payload: [String: Any]) -> [String: Any]? {
-        if Thread.isMainThread == false {
-            return DispatchQueue.main.sync { [weak self] in
-                self?.handleWatchPayload(payload)
-            }
-        }
-        guard let envelope = parseWatchEnvelope(from: payload) else { return nil }
-        let actionName = envelope.action.rawValue
-        let sentAtLabel: String = {
-            guard let sentAt = envelope.sentAt else { return "" }
-            return " sent:\(Int(sentAt))"
-        }()
-        latestWatchActionText = "워치 \(actionName) 수신 \(Self.statusTimeString(from: Date()))"
-        metricTracker.track(
-            .watchActionReceived,
-            userKey: currentMetricUserId(),
-            payload: [
-                "action": actionName,
-                "version": envelope.version + sentAtLabel
-            ]
-        )
-        if shouldProcessWatchAction(actionId: envelope.actionId) == false {
-            metricTracker.track(
-                .watchActionDuplicate,
-                userKey: currentMetricUserId(),
-                payload: [
-                    "action": actionName,
-                    "actionId": envelope.actionId
-                ]
-            )
-            return [
-                "version": WatchContract.version,
-                "type": WatchContract.ackType,
-                "status": "duplicate",
-                "action": actionName,
-                "action_id": envelope.actionId,
-                "last_sync_at": Date().timeIntervalSince1970
-            ]
-        }
-        metricTracker.track(
-            .watchActionProcessed,
-            userKey: currentMetricUserId(),
-            payload: [
-                "action": actionName,
-                "actionId": envelope.actionId
-            ]
-        )
-        self.applyWatchAction(envelope)
-        return [
-            "version": WatchContract.version,
-            "type": WatchContract.ackType,
-            "status": "accepted",
-            "action": actionName,
-            "action_id": envelope.actionId,
-            "last_sync_at": Date().timeIntervalSince1970
-        ]
-    }
-
-    private func parseWatchEnvelope(from payload: [String: Any]) -> WatchActionEnvelope? {
-        let version = (payload["version"] as? String) ?? "watch.legacy.v0"
-        if let type = payload["type"] as? String,
-           type.isEmpty == false,
-           type != WatchContract.actionType {
-            return nil
-        }
-        let nestedPayload = payload["payload"] as? [String: Any]
-        let actionPayload = nestedPayload ?? payload
-
-        guard let rawAction = (actionPayload["action"] as? String) ?? (payload["action"] as? String),
-              let action = WatchIncomingAction(rawValue: rawAction) else {
-            return nil
-        }
-        let actionId: String = {
-            if let id = (actionPayload["action_id"] as? String) ?? (payload["action_id"] as? String),
-               id.isEmpty == false {
-                return id
-            }
-            if let sentAt = (actionPayload["sent_at"] as? TimeInterval) ?? (payload["sent_at"] as? TimeInterval) {
-                return "\(rawAction):\(Int(sentAt * 1000.0))"
-            }
-            return UUID().uuidString.lowercased()
-        }()
-        let sentAt = (actionPayload["sent_at"] as? TimeInterval) ?? (payload["sent_at"] as? TimeInterval)
-        return WatchActionEnvelope(version: version, action: action, actionId: actionId, sentAt: sentAt)
-    }
-
-    private func applyWatchAction(_ envelope: WatchActionEnvelope) {
-        let action = envelope.action
-        switch action {
-        case .startWalk:
-            if self.isWalking == false {
-                self.startWalkNow()
-                self.latestWatchActionText = "워치 시작 반영 \(Self.statusTimeString(from: Date()))"
-                self.metricTracker.track(.watchActionApplied, userKey: self.currentMetricUserId(), payload: ["action": action.rawValue])
-            }
-        case .addPoint:
-            if self.isWalking {
-                if let location = self.location {
-                    self.appendWalkPoint(from: location, recordedAt: Date(), source: .watch)
-                    self.metricTracker.track(.watchActionApplied, userKey: self.currentMetricUserId(), payload: ["action": action.rawValue])
-                }
-            }
-        case .endWalk:
-            if self.isWalking {
-                self.endWalk()
-                self.latestWatchActionText = "워치 종료 반영 \(Self.statusTimeString(from: Date()))"
-                self.metricTracker.track(.watchActionApplied, userKey: self.currentMetricUserId(), payload: ["action": action.rawValue])
-            }
-        case .syncState:
-            self.latestWatchActionText = "워치 상태 재동기화 \(Self.statusTimeString(from: Date()))"
-        }
-        self.lastAppliedWatchActionId = envelope.actionId
-        self.syncWatchContext(force: true)
-    }
-
 }
 //MARK: - 넓이와 시간로직
 extension MapViewModel {
@@ -4276,58 +3787,5 @@ extension MapViewModel {
             minCellMeters: clusterCellMinMeters,
             maxCellMeters: clusterCellMaxMeters
         )
-    }
-}
-
-// MARK: - WatchConnectivity
-extension MapViewModel {
-    func session(
-        _ session: WCSession,
-        activationDidCompleteWith activationState: WCSessionActivationState,
-        error: Error?
-    ) {
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            if let error {
-                print("watch activation failed: \(error.localizedDescription)")
-                return
-            }
-            self.syncWatchContext(force: true)
-        }
-    }
-
-    #if os(iOS)
-    func sessionDidBecomeInactive(_ session: WCSession) {}
-    func sessionDidDeactivate(_ session: WCSession) {
-        session.activate()
-    }
-    #endif
-
-    func sessionReachabilityDidChange(_ session: WCSession) {
-        DispatchQueue.main.async { [weak self] in
-            self?.syncWatchContext(force: true)
-        }
-    }
-
-    func session(
-        _ session: WCSession,
-        didReceiveMessage message: [String : Any],
-        replyHandler: @escaping ([String : Any]) -> Void
-    ) {
-        let ack = self.handleWatchPayload(message) ?? [
-            "version": WatchContract.version,
-            "type": WatchContract.ackType,
-            "status": "ignored",
-            "last_sync_at": Date().timeIntervalSince1970
-        ]
-        replyHandler(ack)
-    }
-
-    func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
-        self.handleWatchPayload(message)
-    }
-
-    func session(_ session: WCSession, didReceiveUserInfo userInfo: [String : Any]) {
-        self.handleWatchPayload(userInfo)
     }
 }

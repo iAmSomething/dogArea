@@ -1,0 +1,262 @@
+import Foundation
+
+extension MapViewModel {
+    /// 현재 메트릭 수집에 사용할 사용자 식별자를 반환합니다.
+    /// - Returns: 유효한 사용자 ID가 있으면 반환하고, 없으면 `nil`을 반환합니다.
+    func currentMetricUserId() -> String? {
+        guard let raw = userSessionStore.currentUserInfo()?.id, raw.isEmpty == false else {
+            return nil
+        }
+        return raw
+    }
+
+    /// 위젯에서 전달된 산책 액션 딥링크를 적용합니다.
+    /// - Parameter route: 위젯 액션 종류와 중복 방지 식별자를 담은 라우트입니다.
+    func applyWidgetWalkAction(_ route: WalkWidgetActionRoute) {
+        guard shouldProcessWidgetAction(actionId: route.actionId) else {
+            metricTracker.track(
+                .widgetActionDuplicate,
+                userKey: currentMetricUserId(),
+                payload: ["action": route.kind.rawValue, "source": route.source]
+            )
+            return
+        }
+
+        switch route.kind {
+        case .startWalk:
+            guard isWalking == false else {
+                walkStatusMessage = "이미 산책이 진행 중입니다."
+                metricTracker.track(
+                    .widgetActionRejected,
+                    userKey: currentMetricUserId(),
+                    payload: ["action": route.kind.rawValue, "reason": "already_walking"]
+                )
+                syncWalkWidgetSnapshot(force: true, statusOverride: .sessionConflict, messageOverride: walkStatusMessage)
+                return
+            }
+            guard isLocationPermissionDenied == false else {
+                walkStatusMessage = "위치 권한이 필요합니다. 설정에서 권한을 허용해주세요."
+                metricTracker.track(
+                    .widgetActionRejected,
+                    userKey: currentMetricUserId(),
+                    payload: ["action": route.kind.rawValue, "reason": "location_denied"]
+                )
+                syncWalkWidgetSnapshot(force: true, statusOverride: .locationDenied, messageOverride: walkStatusMessage)
+                return
+            }
+            startWalkNow()
+            walkStatusMessage = "위젯에서 산책을 시작했어요."
+            metricTracker.track(
+                .widgetActionApplied,
+                userKey: currentMetricUserId(),
+                payload: ["action": route.kind.rawValue, "source": route.source]
+            )
+            syncWalkWidgetSnapshot(force: true)
+            syncWalkLiveActivity(force: true)
+
+        case .endWalk:
+            guard isWalking else {
+                walkStatusMessage = "종료할 산책 세션이 없습니다."
+                metricTracker.track(
+                    .widgetActionRejected,
+                    userKey: currentMetricUserId(),
+                    payload: ["action": route.kind.rawValue, "reason": "no_active_session"]
+                )
+                syncWalkWidgetSnapshot(force: true, statusOverride: .sessionConflict, messageOverride: walkStatusMessage)
+                return
+            }
+            endWalk()
+            walkStatusMessage = "위젯에서 산책을 종료했어요."
+            metricTracker.track(
+                .widgetActionApplied,
+                userKey: currentMetricUserId(),
+                payload: ["action": route.kind.rawValue, "source": route.source]
+            )
+            syncWalkWidgetSnapshot(force: true)
+            syncWalkLiveActivity(force: true)
+
+        case .claimQuestReward, .openRivalTab:
+            metricTracker.track(
+                .widgetActionRejected,
+                userKey: currentMetricUserId(),
+                payload: ["action": route.kind.rawValue, "reason": "unsupported_on_map"]
+            )
+        }
+    }
+
+    /// 현재 산책 상태를 위젯 공유 스냅샷으로 동기화합니다.
+    /// - Parameters:
+    ///   - force: `true`면 최소 간격 제한 없이 즉시 저장합니다.
+    ///   - statusOverride: 상태를 강제로 지정할 때 사용하는 값입니다.
+    ///   - messageOverride: 상태 메시지를 강제로 지정할 때 사용하는 값입니다.
+    func syncWalkWidgetSnapshot(
+        force: Bool = false,
+        statusOverride: WalkWidgetSnapshotStatus? = nil,
+        messageOverride: String? = nil
+    ) {
+        let now = Date()
+        if force == false, now.timeIntervalSince(lastWidgetSnapshotSyncAt) < widgetSnapshotSyncInterval {
+            return
+        }
+
+        let snapshot = WalkWidgetSnapshot(
+            isWalking: isWalking,
+            elapsedSeconds: Int(max(0, time.rounded(.down))),
+            petName: currentWalkingPetName,
+            status: statusOverride ?? (isLocationPermissionDenied ? .locationDenied : .ready),
+            statusMessage: messageOverride,
+            updatedAt: now.timeIntervalSince1970
+        )
+        widgetSnapshotStore.save(snapshot)
+        lastWidgetSnapshotSyncAt = now
+    }
+
+    /// 선택 반려견/활성 반려견 목록을 현재 세션 상태와 다시 동기화합니다.
+    func reloadSelectedPetContext() {
+        let userInfo = userSessionStore.currentUserInfo()
+        self.availablePets = userInfo?.pet.filter(\.isActive) ?? []
+        let selectedPet = userSessionStore.selectedPet(from: userInfo)
+        self.selectedPetId = selectedPet?.petId
+        self.selectedPetName = selectedPet?.petName ?? "강아지"
+        if isWalking == false {
+            self.currentWalkingPetName = self.selectedPetName
+        }
+        syncWalkWidgetSnapshot(force: true)
+        syncWalkLiveActivity(force: true)
+    }
+
+    /// 현재 산책에 사용할 반려견이 선택되어 있는지 반환합니다.
+    /// - Returns: 선택된 반려견 ID가 있으면 `true`, 없으면 `false`입니다.
+    var hasSelectedPet: Bool {
+        selectedPetId != nil
+    }
+
+    /// 산책 시작 전 선택 반려견 제안 규칙을 적용합니다.
+    func prepareWalkPetSelectionSuggestion() {
+        guard isWalking == false else { return }
+        guard let userInfo = userSessionStore.currentUserInfo(),
+              userInfo.pet.contains(where: \.isActive) else {
+            reloadSelectedPetContext()
+            return
+        }
+        if let suggested = userSessionStore.suggestedPetForWalkStart(from: userInfo, now: Date()),
+           suggested.petId != selectedPetId {
+            userSessionStore.setSelectedPetId(suggested.petId, source: "walk_start_suggestion")
+            metricTracker.track(
+                .petSelectionSuggested,
+                userKey: currentMetricUserId(),
+                payload: [
+                    "petId": suggested.petId,
+                    "petName": suggested.petName
+                ]
+            )
+            walkStatusMessage = "\(suggested.petName)을(를) 산책 대상으로 제안했어요."
+        }
+        reloadSelectedPetContext()
+    }
+
+    /// 산책 시작 UI에서 선택 반려견을 다음 활성 반려견으로 순환합니다.
+    func cycleSelectedPetForWalkStart() {
+        guard isWalking == false else { return }
+        guard availablePets.count > 1 else { return }
+
+        let currentIndex = availablePets.firstIndex(where: { $0.petId == selectedPetId }) ?? -1
+        let nextIndex = (currentIndex + 1) % availablePets.count
+        let nextPet = availablePets[nextIndex]
+        userSessionStore.setSelectedPetId(nextPet.petId, source: "walk_start_switcher")
+        walkStatusMessage = "산책 대상: \(nextPet.petName)"
+        reloadSelectedPetContext()
+    }
+
+    /// 중복 위젯 액션 식별자를 검사하고 최신 식별자를 저장합니다.
+    /// - Parameter actionId: 위젯 액션 요청 ID입니다.
+    /// - Returns: 처음 처리하는 요청이면 `true`, 중복 요청이면 `false`입니다.
+    private func shouldProcessWidgetAction(actionId: String) -> Bool {
+        let normalized = actionId.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard normalized.isEmpty == false else {
+            return true
+        }
+        guard normalized != lastAppliedWidgetActionId else {
+            return false
+        }
+        lastAppliedWidgetActionId = normalized
+        preferenceStore.set(normalized, forKey: lastWidgetActionIdKey)
+        return true
+    }
+
+    /// 현재 자동 종료 정책 기준으로 Live Activity 단계 값을 계산합니다.
+    /// - Parameter now: 단계 계산 기준 시각입니다.
+    /// - Returns: 무이동 정책(5/12/15분)에 매핑된 단계 값입니다.
+    private func currentAutoEndStage(now: Date = Date()) -> WalkLiveActivityAutoEndStage {
+        guard isWalking else { return .ended }
+        let baseline = lastMovementAt ?? lastPointEventAt ?? startTime
+        let inactivity = max(0, now.timeIntervalSince(baseline))
+        if inactivity >= inactivityFinalizeInterval { return .autoEnding }
+        if inactivity >= inactivityWarningInterval { return .warning }
+        if inactivity >= restCandidateInterval { return .restCandidate }
+        return .active
+    }
+
+    /// 현재 ViewModel 상태를 Live Activity 서비스용 상태 모델로 변환합니다.
+    /// - Parameter now: 상태 스냅샷 기준 시각입니다.
+    /// - Returns: 세션 식별자, 경과시간, 포인트 수, 자동 종료 단계를 포함한 상태입니다.
+    private func makeWalkLiveActivityState(now: Date = Date()) -> WalkLiveActivityState {
+        WalkLiveActivityState(
+            sessionId: polygon.id.uuidString.lowercased(),
+            startedAt: startTime.timeIntervalSince1970,
+            isWalking: isWalking,
+            elapsedSeconds: Int(max(0, time.rounded(.down))),
+            pointCount: polygon.locations.count,
+            petName: currentWalkingPetName,
+            autoEndStage: currentAutoEndStage(now: now),
+            statusMessage: walkStatusMessage,
+            updatedAt: now.timeIntervalSince1970
+        )
+    }
+
+    /// Live Activity 또는 대체 알림 상태를 주기적으로 동기화합니다.
+    /// - Parameter force: `true`면 최소 간격 제한 없이 즉시 동기화합니다.
+    func syncWalkLiveActivity(force: Bool = false) {
+        let now = Date()
+        if force == false, now.timeIntervalSince(lastLiveActivitySyncAt) < liveActivitySyncInterval {
+            return
+        }
+        guard liveActivitySyncTask == nil else { return }
+        let state = makeWalkLiveActivityState(now: now)
+        lastLiveActivitySyncAt = now
+
+        liveActivitySyncTask = Task { [weak self] in
+            guard let self else { return }
+            let result: WalkLiveActivityServiceResult
+            if state.isWalking {
+                result = await liveActivityService.sync(state: state)
+            } else {
+                result = await liveActivityService.end(state: state, dismissImmediately: false)
+            }
+            await MainActor.run {
+                self.applyWalkLiveActivityResult(result)
+                self.liveActivitySyncTask = nil
+            }
+        }
+    }
+
+    /// Live Activity 동기화 결과를 배너 메시지 상태에 반영합니다.
+    /// - Parameter result: Live Activity 서비스 처리 결과입니다.
+    private func applyWalkLiveActivityResult(_ result: WalkLiveActivityServiceResult) {
+        switch result {
+        case .liveActivity, .ended:
+            lastLiveActivityFallbackReason = nil
+        case let .fallback(reason):
+            guard lastLiveActivityFallbackReason != reason else { return }
+            lastLiveActivityFallbackReason = reason
+            switch reason {
+            case .unsupportedOS:
+                walkStatusMessage = "Live Activity 미지원 환경이라 일반 알림으로 대체합니다."
+            case .activitiesDisabled:
+                walkStatusMessage = "Live Activity가 비활성화되어 일반 알림 + 앱 배너로 안내합니다."
+            case .requestFailed:
+                walkStatusMessage = "Live Activity 생성에 실패해 일반 알림으로 대체했습니다."
+            }
+        }
+    }
+}

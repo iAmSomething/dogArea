@@ -95,6 +95,8 @@
 		A37700010000000000000002 /* AreaDetailCatalogSnapshotSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37700010000000000000012 /* AreaDetailCatalogSnapshotSectionView.swift */; };
 		A37800010000000000000001 /* AppTabScaffold.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37800010000000000000002 /* AppTabScaffold.swift */; };
 		A37900010000000000000001 /* FeatureRegressionUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37900010000000000000002 /* FeatureRegressionUITests.swift */; };
+		A41000010000000000000021 /* MapViewModel+WidgetRuntimeSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41000010000000000000012 /* MapViewModel+WidgetRuntimeSupport.swift */; };
+		A41000010000000000000022 /* MapViewModel+WatchConnectivitySupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41000010000000000000013 /* MapViewModel+WatchConnectivitySupport.swift */; };
 		A52752451CC8AC21215318DE /* HomeAnimatedQuestProgressBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B2B32A76C99094D54CD044D /* HomeAnimatedQuestProgressBarView.swift */; };
 		A83350BB79B3CBB09B4C4963 /* RivalTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21CE83B02069A8E4171B35DE /* RivalTabView.swift */; };
 		A9F5F361DE66BF266C36FED0 /* PositionMarkerViewWithSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92C5F96B5D23BD6D36935CA0 /* PositionMarkerViewWithSelection.swift */; };
@@ -387,6 +389,8 @@
 		A37700010000000000000012 /* AreaDetailCatalogSnapshotSectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaDetailCatalogSnapshotSectionView.swift; sourceTree = "<group>"; };
 		A37800010000000000000002 /* AppTabScaffold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTabScaffold.swift; sourceTree = "<group>"; };
 		A37900010000000000000002 /* FeatureRegressionUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FeatureRegressionUITests.swift; sourceTree = "<group>"; };
+		A41000010000000000000012 /* MapViewModel+WidgetRuntimeSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MapViewModel+WidgetRuntimeSupport.swift"; sourceTree = "<group>"; };
+		A41000010000000000000013 /* MapViewModel+WatchConnectivitySupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MapViewModel+WatchConnectivitySupport.swift"; sourceTree = "<group>"; };
 		A775802DB2A590A7C7DA0978 /* WalkDetailViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WalkDetailViewModel.swift; path = dogArea/Views/MapView/WalkDetailViewModel.swift; sourceTree = "<group>"; };
 		B3C5EBC2B900522B927AC9AD /* TerritoryGoalOverviewCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TerritoryGoalOverviewCardView.swift; sourceTree = "<group>"; };
 		B76E1FA7BD23351B788C716B /* AreaDetailViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AreaDetailViewModel.swift; sourceTree = "<group>"; };
@@ -738,6 +742,16 @@
 			path = Components;
 			sourceTree = "<group>";
 		};
+		A41000010000000000000001 /* MapViewModelSupport */ = {
+			isa = PBXGroup;
+			children = (
+				A41000010000000000000012 /* MapViewModel+WidgetRuntimeSupport.swift */,
+				A41000010000000000000013 /* MapViewModel+WatchConnectivitySupport.swift */,
+			);
+			name = MapViewModelSupport;
+			path = MapViewModelSupport;
+			sourceTree = "<group>";
+		};
 		AEEB7566FB4DD44BCB259429 /* SettingViewModelSupport */ = {
 			isa = PBXGroup;
 			children = (
@@ -860,6 +874,7 @@
 				DAAE221E2AFCBDC4005FD096 /* StartModalView.swift */,
 				DAAE22222AFCC225005FD096 /* WalkDetailView.swift */,
 				DA3F9B9C2AE0F14F0048550C /* MapViewModel.swift */,
+				A41000010000000000000001 /* MapViewModelSupport */,
 				376D30D4A7542596A014DEE1 /* SimpleKeyValueView.swift */,
 			);
 			path = MapView;
@@ -1665,6 +1680,8 @@
 				9315EFC2423955870AFCC18F /* HomeViewModel+SessionLifecycle.swift in Sources */,
 				B8774AA566F72FF9E7151938 /* HomeViewModel+AreaProgress.swift in Sources */,
 				C2A4309E392F82F548955737 /* HomeViewModel+IndoorMissionFlow.swift in Sources */,
+				A41000010000000000000021 /* MapViewModel+WidgetRuntimeSupport.swift in Sources */,
+				A41000010000000000000022 /* MapViewModel+WatchConnectivitySupport.swift in Sources */,
 				71C13F32C41AB0D41B9E1BC5 /* RivalTabViewModel+SessionLifecycle.swift in Sources */,
 				015946C5C501B37603E066FD /* RivalTabViewModel+SharingAndLeaderboard.swift in Sources */,
 				9B600C1F7FA22CF43EFC09C2 /* RivalTabViewModel+ModerationAndLocation.swift in Sources */,
