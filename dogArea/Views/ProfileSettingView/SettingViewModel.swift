@@ -21,8 +21,10 @@ final class SettingViewModel: ObservableObject {
         case userNotFound
         case invalidAgeRange
         case invalidDisplayName
+        case invalidPetName
         case selectedPetNotFound
         case imageEncodingFailed
+        case cannotDeactivateLastActivePet
 
         var errorDescription: String? {
             switch self {
@@ -32,10 +34,14 @@ final class SettingViewModel: ObservableObject {
                 return "나이는 0~30 사이 숫자로 입력해주세요."
             case .invalidDisplayName:
                 return "사용자 이름은 비워둘 수 없습니다."
+            case .invalidPetName:
+                return "반려견 이름은 비워둘 수 없습니다."
             case .selectedPetNotFound:
                 return "선택된 반려견 정보를 찾지 못했습니다."
             case .imageEncodingFailed:
                 return "이미지 처리에 실패했습니다. 다른 사진으로 다시 시도해주세요."
+            case .cannotDeactivateLastActivePet:
+                return "활성 반려견은 최소 1마리 이상 유지되어야 합니다."
             }
         }
     }
@@ -51,6 +57,7 @@ final class SettingViewModel: ObservableObject {
     @Published var isAccountDeletionInProgress: Bool = false
     private let profileRepository: ProfileRepository
     private let imageRepository: ProfileImageRepository
+    private let petManagementService: SettingsPetManaging
     private let accountDeletionService: AccountDeletionServiceProtocol
     private let authSessionStore: AuthSessionStoreProtocol
     private let walkRepository: WalkRepositoryProtocol
@@ -63,15 +70,25 @@ final class SettingViewModel: ObservableObject {
         userInfo?.pet ?? []
     }
 
+    var activePets: [PetInfo] {
+        pets.filter(\.isActive)
+    }
+
+    var inactivePets: [PetInfo] {
+        pets.filter { $0.isActive == false }
+    }
+
     init(
         profileRepository: ProfileRepository = DefaultProfileRepository.shared,
         imageRepository: ProfileImageRepository = SupabaseProfileImageRepository.shared,
+        petManagementService: SettingsPetManaging = SettingsPetManagementService(),
         accountDeletionService: AccountDeletionServiceProtocol = SupabaseAccountDeletionService.shared,
         authSessionStore: AuthSessionStoreProtocol = DefaultAuthSessionStore.shared,
         walkRepository: WalkRepositoryProtocol = WalkRepositoryContainer.shared
     ) {
         self.profileRepository = profileRepository
         self.imageRepository = imageRepository
+        self.petManagementService = petManagementService
         self.accountDeletionService = accountDeletionService
         self.authSessionStore = authSessionStore
         self.walkRepository = walkRepository
@@ -88,16 +105,19 @@ final class SettingViewModel: ObservableObject {
         self.userInfo = profileRepository.fetchUserInfo()
         self.selectedPet = profileRepository.selectedPet(from: userInfo)
         self.selectedPetId = selectedPet?.petId ?? ""
+        self.userName = userInfo?.name
+        self.petName = selectedPet?.petName
         reloadSeasonProfileSummary()
     }
 
     func selectPet(_ petId: String) {
-        guard pets.contains(where: { $0.petId == petId }) else { return }
+        guard activePets.contains(where: { $0.petId == petId }) else { return }
         profileRepository.setSelectedPetId(petId, source: "setting")
         reloadUserInfo()
     }
 
     func updateProfileDetails(
+        petName: String,
         profileMessage: String,
         breed: String,
         ageYearsText: String,
@@ -107,26 +127,40 @@ final class SettingViewModel: ObservableObject {
             return .failure(.userNotFound)
         }
 
-        let normalizedProfileMessage = normalizeOptionalText(profileMessage)
-        let normalizedBreed = normalizeOptionalText(breed)
-        let normalizedAgeYears: Int?
+        let validatedUserDraft = UserProfileDraft(displayName: current.name, profileMessage: profileMessage)
+        let validatedPetDraft = PetProfileDraft(
+            petName: petName,
+            breed: breed,
+            ageYearsText: ageYearsText,
+            gender: gender
+        )
 
-        let trimmedAge = ageYearsText.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmedAge.isEmpty {
-            normalizedAgeYears = nil
-        } else if let parsed = Int(trimmedAge), (0...30).contains(parsed) {
-            normalizedAgeYears = parsed
-        } else {
-            return .failure(.invalidAgeRange)
+        let normalizedProfileMessage: String?
+        let normalizedPet: ValidatedPetProfileDraft
+        do {
+            normalizedProfileMessage = try validatedUserDraft.validated().profileMessage
+            normalizedPet = try validatedPetDraft.validated()
+        } catch let error as ProfileEditorValidationError {
+            switch error {
+            case .invalidAgeRange:
+                return .failure(.invalidAgeRange)
+            case .invalidPetName:
+                return .failure(.invalidPetName)
+            case .invalidDisplayName:
+                return .failure(.invalidDisplayName)
+            }
+        } catch {
+            return .failure(.userNotFound)
         }
 
         var pets = current.pet
-        let targetPetId = selectedPetId.isEmpty == false ? selectedPetId : pets.first?.petId
+        let targetPetId = selectedPetId.isEmpty == false ? selectedPetId : pets.first(where: \.isActive)?.petId
         if let targetPetId,
            let index = pets.firstIndex(where: { $0.petId == targetPetId }) {
-            pets[index].breed = normalizedBreed
-            pets[index].ageYears = normalizedAgeYears
-            pets[index].gender = gender
+            pets[index].petName = normalizedPet.petName
+            pets[index].breed = normalizedPet.breed
+            pets[index].ageYears = normalizedPet.ageYears
+            pets[index].gender = normalizedPet.gender
         }
 
         _ = profileRepository.save(
@@ -152,6 +186,7 @@ final class SettingViewModel: ObservableObject {
     /// - Parameters:
     ///   - profileName: 사용자 표시 이름 입력값입니다.
     ///   - profileMessage: 사용자 프로필 메시지 입력값입니다.
+    ///   - petName: 선택 반려견의 이름 입력값입니다.
     ///   - breed: 선택 반려견의 견종 입력값입니다.
     ///   - ageYearsText: 선택 반려견의 나이 입력값(문자열)입니다.
     ///   - gender: 선택 반려견 성별 입력값입니다.
@@ -162,45 +197,58 @@ final class SettingViewModel: ObservableObject {
     func updateProfileDetails(
         profileName: String,
         profileMessage: String,
+        petName: String,
         breed: String,
         ageYearsText: String,
         gender: PetGender,
         userProfileImage: UIImage?,
         petProfileImage: UIImage?
     ) async -> Result<Void, Error> {
-        let normalizedProfileName = profileName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard normalizedProfileName.isEmpty == false else {
-            return .failure(ProfileEditValidationError.invalidDisplayName)
-        }
-
-        let normalizedProfileMessage = normalizeOptionalText(profileMessage)
-        let normalizedBreed = normalizeOptionalText(breed)
-        let normalizedAgeYears: Int?
-        let trimmedAge = ageYearsText.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmedAge.isEmpty {
-            normalizedAgeYears = nil
-        } else if let parsed = Int(trimmedAge), (0...30).contains(parsed) {
-            normalizedAgeYears = parsed
-        } else {
-            return .failure(ProfileEditValidationError.invalidAgeRange)
+        let validatedUserDraft: ValidatedUserProfileDraft
+        let validatedPetDraft: ValidatedPetProfileDraft
+        do {
+            validatedUserDraft = try UserProfileDraft(
+                displayName: profileName,
+                profileMessage: profileMessage
+            ).validated()
+            validatedPetDraft = try PetProfileDraft(
+                petName: petName,
+                breed: breed,
+                ageYearsText: ageYearsText,
+                gender: gender
+            ).validated()
+        } catch let error as ProfileEditorValidationError {
+            switch error {
+            case .invalidAgeRange:
+                return .failure(ProfileEditValidationError.invalidAgeRange)
+            case .invalidDisplayName:
+                return .failure(ProfileEditValidationError.invalidDisplayName)
+            case .invalidPetName:
+                return .failure(ProfileEditValidationError.invalidPetName)
+            }
+        } catch {
+            return .failure(error)
         }
 
         guard let current = currentEditableUserInfo(
-            fallbackDisplayName: normalizedProfileName,
-            fallbackProfileMessage: normalizedProfileMessage
+            fallbackDisplayName: validatedUserDraft.displayName,
+            fallbackProfileMessage: validatedUserDraft.profileMessage
         ) else {
             return .failure(ProfileEditValidationError.userNotFound)
         }
 
         var pets = current.pet
-        let targetPetId = selectedPetId.isEmpty == false ? selectedPetId : pets.first?.petId
+        let targetPetId = selectedPetId.isEmpty == false ? selectedPetId : pets.first(where: \.isActive)?.petId
         let targetPetIndex = targetPetId.flatMap { petId in
             pets.firstIndex(where: { $0.petId == petId })
         }
         if let targetPetIndex {
-            pets[targetPetIndex].breed = normalizedBreed
-            pets[targetPetIndex].ageYears = normalizedAgeYears
-            pets[targetPetIndex].gender = gender
+            pets[targetPetIndex].petName = validatedPetDraft.petName
+            pets[targetPetIndex].breed = validatedPetDraft.breed
+            pets[targetPetIndex].ageYears = validatedPetDraft.ageYears
+            pets[targetPetIndex].gender = validatedPetDraft.gender
+        } else {
+            return .failure(ProfileEditValidationError.selectedPetNotFound)
         }
 
         var updatedUserProfileURL = current.profile
@@ -234,9 +282,9 @@ final class SettingViewModel: ObservableObject {
 
         _ = profileRepository.save(
             id: current.id,
-            name: normalizedProfileName,
+            name: validatedUserDraft.displayName,
             profile: updatedUserProfileURL,
-            profileMessage: normalizedProfileMessage,
+            profileMessage: validatedUserDraft.profileMessage,
             pet: pets,
             createdAt: current.createdAt,
             selectedPetId: targetPetId
@@ -325,9 +373,100 @@ final class SettingViewModel: ObservableObject {
         }
     }
 
-    private func normalizeOptionalText(_ value: String) -> String? {
-        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : trimmed
+    /// 설정 화면에서 표시할 반려견 상세 요약 문구를 생성합니다.
+    /// - Parameter pet: 요약 문자열을 만들 반려견 정보입니다.
+    /// - Returns: 견종, 나이, 성별, 활성 상태를 결합한 설명 문자열입니다.
+    func petDetailsText(for pet: PetInfo) -> String {
+        let breed = pet.breed.flatMap { $0.isEmpty ? nil : $0 } ?? "견종(선택) 미입력"
+        let age = pet.ageYears.map { "\($0)세" } ?? "나이 미입력"
+        let gender = pet.gender.title
+        let activity = pet.isActive ? "활성" : "비활성"
+        return "\(breed) · \(age) · \(gender) · \(activity)"
+    }
+
+    /// 새 반려견을 추가하고 즉시 화면 상태를 갱신합니다.
+    /// - Parameters:
+    ///   - petName: 새 반려견 이름 입력값입니다.
+    ///   - breed: 새 반려견 견종 입력값입니다.
+    ///   - ageYearsText: 새 반려견 나이 입력값입니다.
+    ///   - gender: 새 반려견 성별 입력값입니다.
+    ///   - petProfileImage: 새 반려견 프로필 이미지입니다.
+    /// - Returns: 저장 성공/실패 결과입니다.
+    @MainActor
+    func addPet(
+        petName: String,
+        breed: String,
+        ageYearsText: String,
+        gender: PetGender,
+        petProfileImage: UIImage?
+    ) async -> Result<Void, Error> {
+        guard let current = currentEditableUserInfo(
+            fallbackDisplayName: userInfo?.name ?? "산책꾼",
+            fallbackProfileMessage: userInfo?.profileMessage
+        ) else {
+            return .failure(ProfileEditValidationError.userNotFound)
+        }
+        let imageData: Data?
+        if let petProfileImage {
+            guard let encoded = compressedJPEGData(for: petProfileImage) else {
+                return .failure(ProfileEditValidationError.imageEncodingFailed)
+            }
+            imageData = encoded
+        } else {
+            imageData = nil
+        }
+
+        do {
+            _ = try await petManagementService.addPet(
+                draft: PetProfileDraft(
+                    petName: petName,
+                    breed: breed,
+                    ageYearsText: ageYearsText,
+                    gender: gender
+                ),
+                imageData: imageData,
+                currentUser: current
+            )
+            reloadUserInfo()
+            return .success(())
+        } catch {
+            return .failure(error)
+        }
+    }
+
+    /// 대표 반려견을 변경하고 즉시 화면 상태를 갱신합니다.
+    /// - Parameter petId: 대표로 지정할 반려견 식별자입니다.
+    func setPrimaryPet(_ petId: String) throws {
+        guard let current = userInfo else {
+            throw ProfileEditValidationError.userNotFound
+        }
+        _ = try petManagementService.setPrimaryPet(petId: petId, currentUser: current)
+        reloadUserInfo()
+    }
+
+    /// 반려견 활성 상태를 변경하고 즉시 화면 상태를 갱신합니다.
+    /// - Parameters:
+    ///   - petId: 활성 상태를 변경할 반려견 식별자입니다.
+    ///   - isActive: 적용할 활성 상태입니다.
+    func setPetActive(_ petId: String, isActive: Bool) throws {
+        guard let current = userInfo else {
+            throw ProfileEditValidationError.userNotFound
+        }
+        do {
+            _ = try petManagementService.setPetActive(petId: petId, isActive: isActive, currentUser: current)
+            reloadUserInfo()
+        } catch let error as SettingsPetManagementError {
+            switch error {
+            case .cannotDeactivateLastActivePet:
+                throw ProfileEditValidationError.cannotDeactivateLastActivePet
+            case .imageEncodingFailed:
+                throw ProfileEditValidationError.imageEncodingFailed
+            case .petNotFound:
+                throw ProfileEditValidationError.selectedPetNotFound
+            case .userNotFound:
+                throw ProfileEditValidationError.userNotFound
+            }
+        }
     }
 
     /// 업로드 전 프로필 이미지를 JPEG 데이터로 압축합니다.
@@ -363,7 +502,7 @@ final class SettingViewModel: ObservableObject {
         if let selectedPetSnapshot {
             recoveredPets = [selectedPetSnapshot]
         } else {
-            recoveredPets = [PetInfo(petName: "강아지", petProfile: nil)]
+            recoveredPets = [PetInfo(petName: "강아지", petProfile: nil, isActive: true)]
         }
         let recoveredSelectedPetId = selectedPetId.isEmpty == false
         ? selectedPetId

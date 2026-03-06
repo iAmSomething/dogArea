@@ -3762,7 +3762,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 
     func reloadSelectedPetContext() {
         let userInfo = userSessionStore.currentUserInfo()
-        self.availablePets = userInfo?.pet ?? []
+        self.availablePets = userInfo?.pet.filter(\.isActive) ?? []
         let selectedPet = userSessionStore.selectedPet(from: userInfo)
         self.selectedPetId = selectedPet?.petId
         self.selectedPetName = selectedPet?.petName ?? "강아지"
@@ -3779,7 +3779,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 
     func prepareWalkPetSelectionSuggestion() {
         guard isWalking == false else { return }
-        guard let userInfo = userSessionStore.currentUserInfo(), userInfo.pet.isEmpty == false else {
+        guard let userInfo = userSessionStore.currentUserInfo(),
+              userInfo.pet.contains(where: \.isActive) else {
             reloadSelectedPetContext()
             return
         }

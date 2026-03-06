@@ -47,6 +47,16 @@ class SigningViewModel: ObservableObject {
         Task { @MainActor [weak self] in
             guard let self else { return }
             do {
+                let validatedUserDraft = try UserProfileDraft(
+                    displayName: userName,
+                    profileMessage: userProfileMessage
+                ).validated()
+                let validatedPetDraft = try PetProfileDraft(
+                    petName: petName,
+                    breed: petBreed,
+                    ageYearsText: petAgeYearsText,
+                    gender: petGender
+                ).validated()
                 if let img = userProfile {
                     profileURL = try await uploadImage(img: img, isPet: false)
                 }
@@ -55,20 +65,21 @@ class SigningViewModel: ObservableObject {
                 }
                 let caricatureEnabled = featureFlags.isEnabled(.caricatureAsyncV1)
                 let petInfo = PetInfo(
-                    petName: petName.trimmingCharacters(in: .whitespacesAndNewlines),
+                    petName: validatedPetDraft.petName,
                     petProfile: petURL,
-                    breed: normalizedPetBreed,
-                    ageYears: normalizedPetAgeYears,
-                    gender: petGender,
+                    breed: validatedPetDraft.breed,
+                    ageYears: validatedPetDraft.ageYears,
+                    gender: validatedPetDraft.gender,
                     caricatureURL: nil,
                     caricatureStatus: (caricatureEnabled && petURL != nil) ? .queued : nil,
-                    caricatureProvider: nil
+                    caricatureProvider: nil,
+                    isActive: true
                 )
                 _ = profileRepository.save(
                     id: userId,
-                    name: userName.trimmingCharacters(in: .whitespacesAndNewlines),
+                    name: validatedUserDraft.displayName,
                     profile: profileURL,
-                    profileMessage: normalizedProfileMessage,
+                    profileMessage: validatedUserDraft.profileMessage,
                     pet: [petInfo],
                     createdAt: createdAt,
                     selectedPetId: nil
@@ -139,16 +150,5 @@ class SigningViewModel: ObservableObject {
     private var normalizedProfileMessage: String? {
         let trimmed = userProfileMessage.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? nil : trimmed
-    }
-
-    private var normalizedPetBreed: String? {
-        let trimmed = petBreed.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : trimmed
-    }
-
-    private var normalizedPetAgeYears: Int? {
-        let trimmed = petAgeYearsText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let age = Int(trimmed), (0...30).contains(age) else { return nil }
-        return age
     }
 }
