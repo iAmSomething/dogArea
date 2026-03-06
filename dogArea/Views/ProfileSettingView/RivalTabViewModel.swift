@@ -776,9 +776,11 @@ final class RivalTabViewModel: NSObject, ObservableObject, @preconcurrency CLLoc
     private func startPollingIfNeeded() {
         pollingTimer?.invalidate()
         pollingTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
-            guard let self else { return }
-            self.refreshHotspots(force: false)
-            self.refreshLeaderboard(force: false)
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.refreshHotspots(force: false)
+                self.refreshLeaderboard(force: false)
+            }
         }
     }
 
@@ -790,7 +792,9 @@ final class RivalTabViewModel: NSObject, ObservableObject, @preconcurrency CLLoc
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.handleAuthSessionDidChange()
+            Task { @MainActor [weak self] in
+                self?.handleAuthSessionDidChange()
+            }
         }
     }
 
