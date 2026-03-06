@@ -38,22 +38,38 @@ struct StartButtonView: View {
                             viewModel.cycleSelectedPetForWalkStart()
                         }
                 }
-                Button(action: handleStartStopTapped) {
-                    ZStack {
-                        Circle()
-                            .fill(viewModel.isWalking ? Color.appRed : Color.appInk)
-                            .frame(width: 68, height: 68)
-                            .shadow(color: Color.black.opacity(0.16), radius: 10, x: 0, y: 6)
-                        Image(systemName: viewModel.isWalking ? "stop.fill" : "play.fill")
-                            .font(.system(size: 22, weight: .bold))
-                            .foregroundStyle(Color.white)
+                ZStack {
+                    Button(action: handleStartStopTapped) {
+                        ZStack {
+                            Circle()
+                                .fill(viewModel.isWalking ? Color.appRed : Color.appInk)
+                                .frame(width: 68, height: 68)
+                                .shadow(color: Color.black.opacity(0.16), radius: 10, x: 0, y: 6)
+                            Image(systemName: viewModel.isWalking ? "stop.fill" : "play.fill")
+                                .font(.system(size: 22, weight: .bold))
+                                .foregroundStyle(Color.white)
+                        }
                     }
+                    .buttonStyle(.plain)
+                    .frame(width: 68, height: 68)
+                    .contentShape(Circle())
+                    .accessibilityHidden(true)
+
+                    Button(action: handleStartStopTapped) {
+                        Text(viewModel.isWalking ? "산책 종료" : "산책 시작")
+                            .font(.system(size: 1, weight: .regular))
+                            .foregroundStyle(Color.black.opacity(0.01))
+                            .frame(width: 68, height: 68)
+                            .background(
+                                Circle()
+                                    .fill(Color.black.opacity(0.01))
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("map.walk.primaryAction")
+                    .accessibilityLabel(viewModel.isWalking ? "산책 종료" : "산책 시작")
+                    .accessibilityHint("산책 기록을 시작하거나 종료합니다.")
                 }
-                .buttonStyle(.plain)
-                .accessibilityElement(children: .ignore)
-                .accessibilityIdentifier("map.walk.primaryAction")
-                .accessibilityLabel(viewModel.isWalking ? "산책 종료" : "산책 시작")
-                .accessibilityHint("산책 기록을 시작하거나 종료합니다.")
             }
             if viewModel.isWalking {
                 Spacer()

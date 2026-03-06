@@ -21,6 +21,7 @@ let notificationCenterView = load("dogArea/Views/ProfileSettingView/Notification
 let petManagementSheet = load("dogArea/Views/ProfileSettingView/Components/PetManagementSheet.swift")
 let petManagementService = load("dogArea/Source/Domain/Profile/Services/SettingsPetManagementService.swift")
 let supabaseInfrastructure = load("dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift")
+let profileEditorCards = load("dogArea/Views/GlobalViews/ProfileEditor/ProfileEditorCards.swift")
 
 assertTrue(settingViewModel.contains("private let petManagementService: SettingsPetManaging"), "setting view model should inject pet management service")
 assertTrue(settingViewModel.contains("func addPet("), "setting view model should expose add pet API")
@@ -29,6 +30,9 @@ assertTrue(settingViewModel.contains("func setPetActive(_ petId: String, isActiv
 
 assertTrue(profileEditSheet.contains("캐리커처 생성/재생성"), "profile edit sheet should preserve caricature action")
 assertTrue(profileEditSheet.contains("ProfileEditorPetFieldsCard"), "profile edit sheet should reuse shared pet fields")
+assertTrue(profileEditorCards.contains("settings.profile.field.userName"), "profile editor should expose user name accessibility identifier")
+assertTrue(profileEditorCards.contains("settings.profile.field.profileMessage"), "profile editor should expose profile message accessibility identifier")
+assertTrue(profileEditorCards.contains("settings.profile.field.petName"), "profile editor should expose pet name accessibility identifier")
 
 assertTrue(notificationCenterView.contains("PetManagementSheet"), "settings should present pet management sheet")
 assertTrue(notificationCenterView.contains("선택 반려견 편집"), "settings should expose selected pet edit action")

@@ -80,6 +80,8 @@ struct NotificationCenterView: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
                     toastMessage = nil
                 }
+            } onClose: {
+                isProfileEditPresented = false
             }
         }
         .sheet(isPresented: $isPetManagementPresented) {

@@ -139,6 +139,7 @@ struct dogAreaApp: App {
                 authFlow.refresh()
                 if shouldAutoGuestForUITest {
                     DispatchQueue.main.async {
+                        authFlow.signOut()
                         authFlow.continueAsGuest()
                     }
                 }

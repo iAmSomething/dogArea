@@ -22,6 +22,7 @@ struct RootView: View {
     @State private var selectedTab = RootView.initialSelectedTabForRuntime()
     @State private var tabBarVisibility: AppTabBarVisibility = .automatic
     @State private var pendingWalkWidgetRoute: WalkWidgetActionRoute? = nil
+    @State private var didDispatchUITestWidgetRoute = false
     @StateObject private var mapViewModelStore = MapViewModelStore()
     private let widgetActionStore: WalkWidgetActionRequestStoring = DefaultWalkWidgetActionRequestStore.shared
     private let territoryWidgetSnapshotSyncService: TerritoryWidgetSnapshotSyncing = DefaultTerritoryWidgetSnapshotSyncService()
@@ -43,6 +44,23 @@ struct RootView: View {
             return 0
         }
         return 2
+    }
+
+    /// UI 테스트 런치 인자로 요청된 위젯 라우트를 파싱합니다.
+    /// - Returns: 테스트 런타임에서 지정한 위젯 라우트가 있으면 반환하고, 없으면 `nil`을 반환합니다.
+    private static func initialUITestWidgetRoute() -> WalkWidgetActionRoute? {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard let index = arguments.firstIndex(of: "-UITest.WidgetRoute"),
+              arguments.indices.contains(index + 1),
+              let kind = WalkWidgetActionKind(rawValue: arguments[index + 1]) else {
+            return nil
+        }
+        return WalkWidgetActionRoute(
+            kind: kind,
+            actionId: "ui-test-widget-route",
+            source: "ui-test",
+            contextId: nil
+        )
     }
 
     var body: some View {
@@ -115,6 +133,7 @@ struct RootView: View {
                 )
             }
             .onAppear {
+                dispatchUITestWidgetActionIfNeeded()
                 consumePendingWidgetActionIfNeeded()
                 syncTerritoryWidgetSnapshot(force: true)
                 syncHotspotWidgetSnapshot(force: true)
@@ -175,7 +194,6 @@ struct RootView: View {
                         if let mapViewModel = mapViewModelStore.mapViewModel {
                             MapView(viewModel: mapViewModel)
                                 .environmentObject(loading)
-                                .accessibilityIdentifier("screen.map")
                         } else {
                             ProgressView("지도 준비 중...")
                                 .font(.appFont(for: .Regular, size: 14))
@@ -222,6 +240,14 @@ struct RootView: View {
         print("[WidgetAction] consumed pending request kind=\(request.kind.rawValue) actionId=\(request.actionId) source=\(request.source)")
         #endif
         dispatchWidgetAction(request.asRoute())
+    }
+
+    /// UI 테스트 런타임에서 지정한 위젯 라우트를 한 번만 앱 내부 액션으로 전달합니다.
+    private func dispatchUITestWidgetActionIfNeeded() {
+        guard didDispatchUITestWidgetRoute == false,
+              let route = Self.initialUITestWidgetRoute() else { return }
+        didDispatchUITestWidgetRoute = true
+        dispatchWidgetAction(route)
     }
 
     /// 위젯 액션 라우트를 종류에 맞는 탭/서비스로 전달합니다.

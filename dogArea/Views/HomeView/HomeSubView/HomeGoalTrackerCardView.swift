@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct HomeGoalTrackerCardView<Destination: View>: View {
+struct HomeGoalTrackerCardView: View {
     let areaReferenceSourceLabel: String
     let featuredAreaCount: Int
     let currentAreaText: String
@@ -9,7 +9,7 @@ struct HomeGoalTrackerCardView<Destination: View>: View {
     let nextGoalAreaText: String
     let remainingAreaText: String
     let progressRatio: Double
-    let destination: Destination
+    let onOpenDetail: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -23,12 +23,15 @@ struct HomeGoalTrackerCardView<Destination: View>: View {
                         .foregroundStyle(Color.appDynamicHex(light: 0xC2410C, dark: 0xFDBA74))
                 }
                 Spacer(minLength: 0)
-                NavigationLink(destination: destination) {
+                Button(action: onOpenDetail) {
                     Text("목표 상세 보기 >")
                         .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
                         .foregroundStyle(Color.appDynamicHex(light: 0xC2410C, dark: 0xFDBA74))
+                        .padding(.horizontal, 6)
                         .frame(minHeight: 44, alignment: .center)
+                        .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
                 .accessibilityIdentifier("home.goalTracker.more")
             }
 

@@ -8,24 +8,39 @@ TEST_EMAIL="${DOGAREA_TEST_EMAIL:-}"
 TEST_PASSWORD="${DOGAREA_TEST_PASSWORD:-}"
 CREDENTIALS_FILE="$PROJECT_ROOT/.design_audit_credentials.json"
 
-cleanup() {
-  rm -f "$CREDENTIALS_FILE"
+cleanup_credentials_file() {
+  if [[ -f "$CREDENTIALS_FILE" && "${DESIGN_AUDIT_TEMP_CREDENTIALS:-0}" == "1" ]]; then
+    rm -f "$CREDENTIALS_FILE"
+  fi
 }
-trap cleanup EXIT
+
+prepare_credentials_file() {
+  if [[ -f "$CREDENTIALS_FILE" ]]; then
+    echo "[DesignAudit] Using existing credentials file"
+    return 0
+  fi
+
+  if [[ -n "$TEST_EMAIL" && -n "$TEST_PASSWORD" ]]; then
+    echo "[DesignAudit] Test credentials: provided"
+    cat > "$CREDENTIALS_FILE" <<EOF
+{"email":"$TEST_EMAIL","password":"$TEST_PASSWORD"}
+EOF
+    chmod 600 "$CREDENTIALS_FILE"
+    DESIGN_AUDIT_TEMP_CREDENTIALS=1
+    echo "[DesignAudit] Wrote temporary credentials file"
+    return 0
+  fi
+
+  echo "[DesignAudit] Test credentials: not provided (guest flow only)"
+}
+
+trap cleanup_credentials_file EXIT
 
 mkdir -p "$OUTPUT_DIR"
 
 echo "[DesignAudit] Output: $OUTPUT_DIR"
 echo "[DesignAudit] Destination: $DESTINATION"
-if [[ -n "$TEST_EMAIL" && -n "$TEST_PASSWORD" ]]; then
-  echo "[DesignAudit] Test credentials: provided"
-  cat > "$CREDENTIALS_FILE" <<EOF
-{"email":"$TEST_EMAIL","password":"$TEST_PASSWORD"}
-EOF
-  chmod 600 "$CREDENTIALS_FILE"
-else
-  echo "[DesignAudit] Test credentials: not provided (guest flow only)"
-fi
+prepare_credentials_file
 
 run_ui_test() {
   local test_case="${1:-}"
