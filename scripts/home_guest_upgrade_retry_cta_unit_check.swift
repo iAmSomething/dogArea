@@ -26,7 +26,7 @@ assertTrue(
     "home retry CTA should trigger forced guest data upgrade"
 )
 assertTrue(
-    homeView.contains(".onChange(of: authFlow.guestDataUpgradeResult?.id)"),
+    homeView.contains(".onChange(of: authFlow.guestDataUpgradeResult?.executedAt)"),
     "home view should refresh report when auth flow publishes upgrade result"
 )
 assertTrue(

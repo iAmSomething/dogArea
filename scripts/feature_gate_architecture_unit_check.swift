@@ -17,7 +17,16 @@ func read(_ path: String) -> String {
     (try? String(contentsOfFile: path, encoding: .utf8)) ?? ""
 }
 
-let source = read("dogArea/Source/UserdefaultSetting.swift")
+func readMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(read).joined(separator: "\n")
+}
+
+let source = readMany([
+    "dogArea/Source/UserdefaultSetting.swift",
+    "dogArea/Source/AppSession/AppFeatureGate.swift",
+    "dogArea/Source/AppSession/GuestDataUpgradeService.swift",
+    "dogArea/Source/AppSession/AuthFlowCoordinator.swift"
+])
 let mapStart = read("dogArea/Views/MapView/MapSubViews/StartButtonView.swift")
 let imageView = read("dogArea/Views/ImageGeneratorView/TextToImageView.swift")
 let imageVM = read("dogArea/Views/ImageGeneratorView/ImageGenerateViewModel.swift")

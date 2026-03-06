@@ -15,7 +15,19 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
-let authFlowSource = load("dogArea/Source/UserdefaultSetting.swift")
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
+let authFlowSource = [
+    loadMany([
+    "dogArea/Source/UserdefaultSetting.swift",
+    "dogArea/Source/AppSession/AppFeatureGate.swift",
+    "dogArea/Source/AppSession/GuestDataUpgradeService.swift",
+    "dogArea/Source/AppSession/AuthFlowCoordinator.swift"
+]),
+    load("dogArea/Source/AppSession/GuestDataUpgradeService.swift")
+].joined(separator: "\n")
 let homeViewSource = load("dogArea/Views/HomeView/HomeView.swift")
 
 assertTrue(

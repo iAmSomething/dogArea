@@ -17,10 +17,24 @@ func read(_ path: String) -> String {
     (try? String(contentsOfFile: path, encoding: .utf8)) ?? ""
 }
 
-let source = read("dogArea/Source/UserdefaultSetting.swift")
+func readMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(read).joined(separator: "\n")
+}
+
+let source = readMany([
+    "dogArea/Source/UserdefaultSetting.swift",
+    "dogArea/Source/AppSession/AppFeatureGate.swift",
+    "dogArea/Source/AppSession/GuestDataUpgradeService.swift",
+    "dogArea/Source/AppSession/AuthFlowCoordinator.swift"
+])
 let root = read("dogArea/Views/GlobalViews/BaseView/RootView.swift")
 let home = read("dogArea/Views/HomeView/HomeView.swift")
-let homeVM = read("dogArea/Views/HomeView/HomeViewModel.swift")
+let homeVM = readMany([
+    "dogArea/Views/HomeView/HomeViewModel.swift",
+    "dogArea/Source/Domain/Home/Models/HomeMissionModels.swift",
+    "dogArea/Source/Domain/Home/Stores/IndoorMissionStore.swift",
+    "dogArea/Source/Domain/Home/Stores/SeasonMotionStore.swift"
+])
 
 Check.assertTrue(source.contains("struct GuestDataUpgradeSnapshot"), "snapshot model must exist")
 Check.assertTrue(source.contains("struct GuestDataUpgradeReport"), "upgrade report model must exist")

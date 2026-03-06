@@ -17,12 +17,26 @@ func load(_ path: String) -> String {
     return text
 }
 
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
 let doc = load("docs/multi-dog-context-sync-v1.md")
 let checklist = load("docs/release-regression-checklist-v1.md")
-let userDefaultsSource = load("dogArea/Source/UserdefaultSetting.swift")
+let userDefaultsSource = loadMany([
+    "dogArea/Source/UserdefaultSetting.swift",
+    "dogArea/Source/AppSession/AppFeatureGate.swift",
+    "dogArea/Source/AppSession/GuestDataUpgradeService.swift",
+    "dogArea/Source/AppSession/AuthFlowCoordinator.swift"
+])
 let mapViewModel = load("dogArea/Views/MapView/MapViewModel.swift")
 let startButton = load("dogArea/Views/MapView/MapSubViews/StartButtonView.swift")
-let homeViewModel = load("dogArea/Views/HomeView/HomeViewModel.swift")
+let homeViewModel = loadMany([
+    "dogArea/Views/HomeView/HomeViewModel.swift",
+    "dogArea/Source/Domain/Home/Models/HomeMissionModels.swift",
+    "dogArea/Source/Domain/Home/Stores/IndoorMissionStore.swift",
+    "dogArea/Source/Domain/Home/Stores/SeasonMotionStore.swift"
+])
 let settingViewModel = load("dogArea/Views/ProfileSettingView/SettingViewModel.swift")
 let walkListViewModel = load("dogArea/Views/WalkListView/WalkListViewModel.swift")
 let walkListView = load("dogArea/Views/WalkListView/WalkListView.swift")

@@ -15,6 +15,10 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
 func rankTier(for score: Double) -> String {
     if score >= 520 { return "platinum" }
     if score >= 320 { return "gold" }
@@ -24,7 +28,12 @@ func rankTier(for score: Double) -> String {
 }
 
 let homeView = load("dogArea/Views/HomeView/HomeView.swift")
-let homeViewModel = load("dogArea/Views/HomeView/HomeViewModel.swift")
+let homeViewModel = loadMany([
+    "dogArea/Views/HomeView/HomeViewModel.swift",
+    "dogArea/Source/Domain/Home/Models/HomeMissionModels.swift",
+    "dogArea/Source/Domain/Home/Stores/IndoorMissionStore.swift",
+    "dogArea/Source/Domain/Home/Stores/SeasonMotionStore.swift"
+])
 let settingViewModel = load("dogArea/Views/ProfileSettingView/SettingViewModel.swift")
 let notificationCenterView = load("dogArea/Views/ProfileSettingView/NotificationCenterView.swift")
 let haptic = load("dogArea/Source/AppHapticFeedback.swift")

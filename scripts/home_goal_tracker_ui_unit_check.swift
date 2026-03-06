@@ -17,10 +17,19 @@ func load(_ path: String) -> String {
     return text
 }
 
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
 let doc = load("docs/home-goal-tracker-ui-v1.md")
 let checklist = load("docs/release-regression-checklist-v1.md")
 let homeView = load("dogArea/Views/HomeView/HomeView.swift")
-let homeViewModel = load("dogArea/Views/HomeView/HomeViewModel.swift")
+let homeViewModel = loadMany([
+    "dogArea/Views/HomeView/HomeViewModel.swift",
+    "dogArea/Source/Domain/Home/Models/HomeMissionModels.swift",
+    "dogArea/Source/Domain/Home/Stores/IndoorMissionStore.swift",
+    "dogArea/Source/Domain/Home/Stores/SeasonMotionStore.swift"
+])
 let areaDetail = load("dogArea/Views/HomeView/AreaDetailView.swift")
 
 assertTrue(doc.contains("비활성 `inline Picker`"), "doc should define picker removal policy")

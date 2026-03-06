@@ -15,9 +15,18 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
 let migration = load("supabase/migrations/20260227000000_user_pet_profile_fields_sync.sql")
 let edgeFunction = load("supabase/functions/sync-profile/index.ts")
-let userdefaultSetting = load("dogArea/Source/UserdefaultSetting.swift")
+let userdefaultSetting = loadMany([
+    "dogArea/Source/UserdefaultSetting.swift",
+    "dogArea/Source/AppSession/AppFeatureGate.swift",
+    "dogArea/Source/AppSession/GuestDataUpgradeService.swift",
+    "dogArea/Source/AppSession/AuthFlowCoordinator.swift"
+])
 let profileRepository = load("dogArea/Source/ProfileRepository.swift")
 let settingViewModel = load("dogArea/Views/ProfileSettingView/SettingViewModel.swift")
 let signingViewModel = load("dogArea/Views/SigningView/SigningViewModel.swift")

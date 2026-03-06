@@ -15,7 +15,16 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
-let homeVM = load("dogArea/Views/HomeView/HomeViewModel.swift")
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
+let homeVM = loadMany([
+    "dogArea/Views/HomeView/HomeViewModel.swift",
+    "dogArea/Source/Domain/Home/Models/HomeMissionModels.swift",
+    "dogArea/Source/Domain/Home/Stores/IndoorMissionStore.swift",
+    "dogArea/Source/Domain/Home/Stores/SeasonMotionStore.swift"
+])
 let homeView = load("dogArea/Views/HomeView/HomeView.swift")
 let walkListVM = load("dogArea/Views/WalkListView/WalkListViewModel.swift")
 let walkListView = load("dogArea/Views/WalkListView/WalkListView.swift")

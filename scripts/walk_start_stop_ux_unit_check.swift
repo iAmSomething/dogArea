@@ -15,13 +15,22 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
 let startButton = load("dogArea/Views/MapView/MapSubViews/StartButtonView.swift")
 let startModal = load("dogArea/Views/MapView/StartModalView.swift")
 let mapView = load("dogArea/Views/MapView/MapView.swift")
 let mapSetting = load("dogArea/Views/MapView/MapSubViews/MapSettingView.swift")
 let mapViewModel = load("dogArea/Views/MapView/MapViewModel.swift")
 let alertConfig = load("dogArea/Views/GlobalViews/AlertView/CustomAlertConfigure.swift")
-let userDefaultsSetting = load("dogArea/Source/UserdefaultSetting.swift")
+let userDefaultsSetting = loadMany([
+    "dogArea/Source/UserdefaultSetting.swift",
+    "dogArea/Source/AppSession/AppFeatureGate.swift",
+    "dogArea/Source/AppSession/GuestDataUpgradeService.swift",
+    "dogArea/Source/AppSession/AuthFlowCoordinator.swift"
+])
 let checklist = load("docs/release-regression-checklist-v1.md")
 
 assertTrue(startButton.contains("walkStartCountdownEnabled"), "start button should branch by countdown setting")

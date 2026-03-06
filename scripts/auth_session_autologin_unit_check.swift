@@ -16,9 +16,18 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
 let auth = load("dogArea/Source/ProfileRepository.swift")
 let infra = load("dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift")
-let defaults = load("dogArea/Source/UserdefaultSetting.swift")
+let defaults = loadMany([
+    "dogArea/Source/UserdefaultSetting.swift",
+    "dogArea/Source/AppSession/AppFeatureGate.swift",
+    "dogArea/Source/AppSession/GuestDataUpgradeService.swift",
+    "dogArea/Source/AppSession/AuthFlowCoordinator.swift"
+])
 
 assertTrue(auth.contains("struct AuthTokenSession"), "auth store should define token session model")
 assertTrue(auth.contains("persist(tokenSession:"), "auth session store should persist token sessions")

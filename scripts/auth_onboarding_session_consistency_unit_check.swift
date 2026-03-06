@@ -15,8 +15,17 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
 let authSource = load("dogArea/Source/ProfileRepository.swift")
-let sessionSource = load("dogArea/Source/UserdefaultSetting.swift")
+let sessionSource = loadMany([
+    "dogArea/Source/UserdefaultSetting.swift",
+    "dogArea/Source/AppSession/AppFeatureGate.swift",
+    "dogArea/Source/AppSession/GuestDataUpgradeService.swift",
+    "dogArea/Source/AppSession/AuthFlowCoordinator.swift"
+])
 
 assertTrue(
     authSource.contains("switch request"),

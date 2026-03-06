@@ -24,6 +24,14 @@
 		37382EBDCEA90A2E818A05BB /* ProfileFieldEditSheetViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30BF0E17B2BF40E97DBA5E07 /* ProfileFieldEditSheetViewModel.swift */; };
 		3B09EF73E528C78FEEE2AB01 /* SeasonProfileFrameStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CEBC83AFF321A2E3D10E8A0 /* SeasonProfileFrameStyle.swift */; };
 		45CA89EBC76C1FE5200FD88D /* HomeSelectedPetContextBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B7738E4A04B406F4D70AE19 /* HomeSelectedPetContextBannerView.swift */; };
+		A37500010000000000000021 /* HomeMissionModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37500010000000000000011 /* HomeMissionModels.swift */; };
+		A37500010000000000000022 /* IndoorMissionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37500010000000000000012 /* IndoorMissionStore.swift */; };
+		A37500010000000000000023 /* SeasonMotionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37500010000000000000013 /* SeasonMotionStore.swift */; };
+		A37500010000000000000024 /* AppFeatureGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37500010000000000000014 /* AppFeatureGate.swift */; };
+		A37500010000000000000025 /* GuestDataUpgradeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37500010000000000000015 /* GuestDataUpgradeService.swift */; };
+		A37500010000000000000026 /* AuthFlowCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37500010000000000000016 /* AuthFlowCoordinator.swift */; };
+		A37500010000000000000027 /* AuthUserInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37500010000000000000017 /* AuthUserInfo.swift */; };
+		A37500010000000000000028 /* EmailSignUpSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37500010000000000000018 /* EmailSignUpSheetView.swift */; };
 		4C8C66B1707DD603359C2C39 /* dogAreaWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E916788F22F3DDF144CCE8D4 /* dogAreaWidgetExtension.appex */; };
 		4D741EB8E7EC826A55FCC5A5 /* dogArea/Source/WidgetBridge/WalkWidgetSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE5D5C2E004FD37BC9E65790 /* dogArea/Source/WidgetBridge/WalkWidgetSnapshotStore.swift */; };
 		541633F39AA01B555EA4A904 /* HomeRecentConqueredSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E3FDEC98167CC2EA0DAFA5E /* HomeRecentConqueredSectionView.swift */; };
@@ -253,6 +261,14 @@
 		6E3FDEC98167CC2EA0DAFA5E /* HomeRecentConqueredSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeRecentConqueredSectionView.swift; sourceTree = "<group>"; };
 		70172018FBBE6C94AB182660 /* RivalTabViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RivalTabViewModel.swift; path = dogArea/Views/ProfileSettingView/RivalTabViewModel.swift; sourceTree = "<group>"; };
 		722875CA7B7EAB511CCC1590 /* RivalModerationStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RivalModerationStore.swift; path = dogArea/Views/ProfileSettingView/RivalModerationStore.swift; sourceTree = "<group>"; };
+		A37500010000000000000011 /* HomeMissionModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeMissionModels.swift; sourceTree = "<group>"; };
+		A37500010000000000000012 /* IndoorMissionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndoorMissionStore.swift; sourceTree = "<group>"; };
+		A37500010000000000000013 /* SeasonMotionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonMotionStore.swift; sourceTree = "<group>"; };
+		A37500010000000000000014 /* AppFeatureGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppFeatureGate.swift; sourceTree = "<group>"; };
+		A37500010000000000000015 /* GuestDataUpgradeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuestDataUpgradeService.swift; sourceTree = "<group>"; };
+		A37500010000000000000016 /* AuthFlowCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthFlowCoordinator.swift; sourceTree = "<group>"; };
+		A37500010000000000000017 /* AuthUserInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthUserInfo.swift; sourceTree = "<group>"; };
+		A37500010000000000000018 /* EmailSignUpSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailSignUpSheetView.swift; sourceTree = "<group>"; };
 		81CDB8AB4C8855FE6D106BF3 /* WalkDetailContextProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WalkDetailContextProvider.swift; path = dogArea/Views/MapView/WalkDetailContextProvider.swift; sourceTree = "<group>"; };
 		86FFE492DDD22A6AC1319D9D /* HomeTerritoryHeaderSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeTerritoryHeaderSectionView.swift; sourceTree = "<group>"; };
 		8B7738E4A04B406F4D70AE19 /* HomeSelectedPetContextBannerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeSelectedPetContextBannerView.swift; path = dogArea/Views/HomeView/HomeSubView/HomeSelectedPetContextBannerView.swift; sourceTree = "<group>"; };
@@ -561,6 +577,7 @@
 			isa = PBXGroup;
 			children = (
 				DAF0A0014200000000000001 /* Domain */,
+				A37500010000000000000001 /* AppSession */,
 				DA354FFC2B01DF1F00E4094A /* TimeIntervalExtensions.swift */,
 				DA3F9BAD2AE0F2410048550C /* ViewUtility.swift */,
 				DAA8E4F82B01A80C00F9190B /* TabAppear.swift */,
@@ -581,6 +598,16 @@
 				83572DCB08333E9BFA6B83E9 /* WidgetBridge */,
 			);
 			path = Source;
+			sourceTree = "<group>";
+		};
+		A37500010000000000000001 /* AppSession */ = {
+			isa = PBXGroup;
+			children = (
+				A37500010000000000000014 /* AppFeatureGate.swift */,
+				A37500010000000000000015 /* GuestDataUpgradeService.swift */,
+				A37500010000000000000016 /* AuthFlowCoordinator.swift */,
+			);
+			path = AppSession;
 			sourceTree = "<group>";
 		};
 		DA3F9BAF2AE0F24C0048550C /* AlertView */ = {
@@ -784,9 +811,19 @@
 				DAC19F152B0B3246002FE2E8 /* PetProfileSettingView.swift */,
 				DAC19F1D2B0B331A002FE2E8 /* SigningViewModel.swift */,
 				DAC19F2B2B0B43BB002FE2E8 /* SignInView.swift */,
+				A37500010000000000000004 /* Components */,
 				078B330462EB7C7D535B09F1 /* AppleSigninButton.swift */,
 			);
 			path = SigningView;
+			sourceTree = "<group>";
+		};
+		A37500010000000000000004 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				A37500010000000000000017 /* AuthUserInfo.swift */,
+				A37500010000000000000018 /* EmailSignUpSheetView.swift */,
+			);
+			path = Components;
 			sourceTree = "<group>";
 		};
 		DAC19F222B0B379C002FE2E8 /* Loading */ = {
@@ -821,9 +858,28 @@
 		DAF0A0024200000000000001 /* Home */ = {
 			isa = PBXGroup;
 			children = (
+				A37500010000000000000002 /* Models */,
+				A37500010000000000000003 /* Stores */,
 				DAF0A0034200000000000001 /* Services */,
 			);
 			path = Home;
+			sourceTree = "<group>";
+		};
+		A37500010000000000000002 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A37500010000000000000011 /* HomeMissionModels.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		A37500010000000000000003 /* Stores */ = {
+			isa = PBXGroup;
+			children = (
+				A37500010000000000000012 /* IndoorMissionStore.swift */,
+				A37500010000000000000013 /* SeasonMotionStore.swift */,
+			);
+			path = Stores;
 			sourceTree = "<group>";
 		};
 		DAF0A0034200000000000001 /* Services */ = {
@@ -1166,6 +1222,9 @@
 				DAC19F162B0B3246002FE2E8 /* PetProfileSettingView.swift in Sources */,
 				DA16C1DC2B05E4DF008FC133 /* TimeCheckable.swift in Sources */,
 				DAC19F132B0AFCAC002FE2E8 /* UserdefaultSetting.swift in Sources */,
+				A37500010000000000000024 /* AppFeatureGate.swift in Sources */,
+				A37500010000000000000025 /* GuestDataUpgradeService.swift in Sources */,
+				A37500010000000000000026 /* AuthFlowCoordinator.swift in Sources */,
 				DA3EB07A2B0344CD00AEA65D /* AreaDetailView.swift in Sources */,
 				DA933BE92ADD04E70029856C /* CustomAlertView.swift in Sources */,
 				DAC19F202B0B3798002FE2E8 /* LoadingView.swift in Sources */,
@@ -1194,6 +1253,9 @@
 				DAE147B11420000000000001 /* MapClusterAnnotationService.swift in Sources */,
 				DA4513832AFB25C2007AD69B /* PositionMarkerView.swift in Sources */,
 				DA8BB9F22B02FE3A00E350C4 /* HomeViewModel.swift in Sources */,
+				A37500010000000000000021 /* HomeMissionModels.swift in Sources */,
+				A37500010000000000000022 /* IndoorMissionStore.swift in Sources */,
+				A37500010000000000000023 /* SeasonMotionStore.swift in Sources */,
 				DAE147A11420000000000001 /* HomeWeeklyStatisticsService.swift in Sources */,
 				DAE147A31420000000000001 /* HomeWeatherMissionStatusBuilder.swift in Sources */,
 				DAED25022AFA1D430044715A /* SplashView.swift in Sources */,
@@ -1210,6 +1272,8 @@
 				DA822CD62AFB5E21001EC94D /* StartButtonView.swift in Sources */,
 				DA390A752AFE1AFC00BACF2B /* SimpleMessageView.swift in Sources */,
 				DAC19F2C2B0B43BB002FE2E8 /* SignInView.swift in Sources */,
+				A37500010000000000000027 /* AuthUserInfo.swift in Sources */,
+				A37500010000000000000028 /* EmailSignUpSheetView.swift in Sources */,
 				DAAE221F2AFCBDC4005FD096 /* StartModalView.swift in Sources */,
 				DA4513802AFB1EC1007AD69B /* WalkListCell.swift in Sources */,
 				DA3550022B01E0F900E4094A /* UnderLine.swift in Sources */,

@@ -57,8 +57,17 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
 let doc = load("docs/weather-risk-provider-policy-v1.md")
-let homeVM = load("dogArea/Views/HomeView/HomeViewModel.swift")
+let homeVM = loadMany([
+    "dogArea/Views/HomeView/HomeViewModel.swift",
+    "dogArea/Source/Domain/Home/Models/HomeMissionModels.swift",
+    "dogArea/Source/Domain/Home/Stores/IndoorMissionStore.swift",
+    "dogArea/Source/Domain/Home/Stores/SeasonMotionStore.swift"
+])
 let mapVM = load("dogArea/Views/MapView/MapViewModel.swift")
 let report = load("docs/cycle-133-weather-risk-policy-report-2026-02-27.md")
 

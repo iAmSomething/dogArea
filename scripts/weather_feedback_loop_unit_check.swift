@@ -52,9 +52,23 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
-let homeVM = load("dogArea/Views/HomeView/HomeViewModel.swift")
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
+let homeVM = loadMany([
+    "dogArea/Views/HomeView/HomeViewModel.swift",
+    "dogArea/Source/Domain/Home/Models/HomeMissionModels.swift",
+    "dogArea/Source/Domain/Home/Stores/IndoorMissionStore.swift",
+    "dogArea/Source/Domain/Home/Stores/SeasonMotionStore.swift"
+])
 let homeView = load("dogArea/Views/HomeView/HomeView.swift")
-let metrics = load("dogArea/Source/UserdefaultSetting.swift")
+let metrics = loadMany([
+    "dogArea/Source/UserdefaultSetting.swift",
+    "dogArea/Source/AppSession/AppFeatureGate.swift",
+    "dogArea/Source/AppSession/GuestDataUpgradeService.swift",
+    "dogArea/Source/AppSession/AuthFlowCoordinator.swift"
+])
 let spec = load("docs/weather-feedback-loop-v1.md")
 let indoorSpec = load("docs/indoor-weather-mission-v1.md")
 let migration = load("supabase/migrations/20260227203000_weather_feedback_kpis.sql")

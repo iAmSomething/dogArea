@@ -15,12 +15,21 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
 let doc = load("docs/walk-session-recovery-auto-end-v1.md")
 let checklist = load("docs/release-regression-checklist-v1.md")
 let mapViewModel = load("dogArea/Views/MapView/MapViewModel.swift")
 let mapView = load("dogArea/Views/MapView/MapView.swift")
 let mapSetting = load("dogArea/Views/MapView/MapSubViews/MapSettingView.swift")
-let userDefaultsSetting = load("dogArea/Source/UserdefaultSetting.swift")
+let userDefaultsSetting = loadMany([
+    "dogArea/Source/UserdefaultSetting.swift",
+    "dogArea/Source/AppSession/AppFeatureGate.swift",
+    "dogArea/Source/AppSession/GuestDataUpgradeService.swift",
+    "dogArea/Source/AppSession/AuthFlowCoordinator.swift"
+])
 
 assertTrue(doc.contains("세션 임시저장"), "doc must include active session snapshot section")
 assertTrue(doc.contains("재실행 복구 UX"), "doc must include recovery UX section")

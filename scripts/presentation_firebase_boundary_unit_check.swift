@@ -16,7 +16,15 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
-let signInView = load("dogArea/Views/SigningView/SignInView.swift")
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
+let signInView = loadMany([
+    "dogArea/Views/SigningView/SignInView.swift",
+    "dogArea/Views/SigningView/Components/AuthUserInfo.swift",
+    "dogArea/Views/SigningView/Components/EmailSignUpSheetView.swift"
+])
 let signingViewModel = load("dogArea/Views/SigningView/SigningViewModel.swift")
 let settingViewModel = load("dogArea/Views/ProfileSettingView/SettingViewModel.swift")
 let infra = load("dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift")
