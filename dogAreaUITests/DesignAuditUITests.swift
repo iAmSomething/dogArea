@@ -52,6 +52,22 @@ final class DesignAuditUITests: XCTestCase {
         }
         capture(name: "001_Home", outputDirectory: outputDirectory)
 
+        let goalMoreButton = app.buttons["home.goalTracker.more"]
+        if revealElementByVerticalScroll(goalMoreButton, app: app, maxSwipes: 8),
+           tapIfExists(goalMoreButton),
+           screenElement(identifier: "screen.territoryGoal", in: app).waitForExistence(timeout: 4) {
+            capture(name: "001_Home_TerritoryGoal", outputDirectory: outputDirectory)
+
+            let catalogButton = app.buttons["territory.goal.catalog"]
+            if tapIfExists(catalogButton),
+               screenElement(identifier: "screen.areaDetail", in: app).waitForExistence(timeout: 4) {
+                capture(name: "001_Home_AreaDetailCatalog", outputDirectory: outputDirectory)
+                navigateBackIfPossible(app)
+            }
+
+            navigateBackIfPossible(app)
+        }
+
         if tapIfExists(app.buttons.matching(identifier: "home.season.detail").firstMatch) {
             capture(name: "001_Home_SeasonDetail", outputDirectory: outputDirectory)
             _ = tapIfExists(app.buttons.matching(identifier: "home.season.detail.close").firstMatch)
