@@ -49,6 +49,7 @@ swift scripts/rival_stage3_client_ux_unit_check.swift
 swift scripts/rival_auth_session_guard_unit_check.swift
 swift scripts/rival_auth_session_sync_unit_check.swift
 swift scripts/rival_cllocation_delegate_preconcurrency_unit_check.swift
+swift scripts/rival_mainactor_callback_unit_check.swift
 swift scripts/season_anti_farming_unit_check.swift
 swift scripts/season_comeback_catchup_unit_check.swift
 swift scripts/season_stage2_pipeline_unit_check.swift
