@@ -1,9 +1,13 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
-import { resolveEdgeAuthContext } from "../_shared/edge_auth.ts";
+import {
+  ensureAuthenticatedUserMatch,
+  resolveEdgeAuthContext,
+} from "../_shared/edge_auth.ts";
 import { requireSupabaseRuntimeEnv } from "../_shared/edge_runtime.ts";
 import { errorJson, json, methodNotAllowed, parseJsonBody } from "../_shared/http.ts";
 import { asString } from "../_shared/parsers.ts";
 import {
+  resolveAnonOnboardingProfileImageObjectPath,
   resolveProfileImageObjectPath,
   uploadPublicStorageObject,
 } from "../_shared/storage_upload.ts";
@@ -16,6 +20,7 @@ type RequestDTO = {
 };
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const ANON_ONBOARDING_OWNER_PREFIX = "anon-onboarding-";
 
 const sanitizeOwnerId = (value: string): string | null => {
   const trimmed = value.trim().toLowerCase();
@@ -67,11 +72,8 @@ Deno.serve(async (req) => {
   const body = parsedBody.body;
 
   const ownerIdRaw = asString(body.ownerId);
-  if (!ownerIdRaw) {
-    return errorJson("OWNER_ID_REQUIRED", 400);
-  }
-  const ownerId = sanitizeOwnerId(ownerIdRaw);
-  if (!ownerId) {
+  const requestedOwnerId = ownerIdRaw ? sanitizeOwnerId(ownerIdRaw) : null;
+  if (ownerIdRaw && !requestedOwnerId) {
     return errorJson("INVALID_OWNER_ID", 400);
   }
 
@@ -90,7 +92,34 @@ Deno.serve(async (req) => {
 
   const imageKind = body.imageKind === "pet" ? "pet" : "user";
   const contentType = body.contentType === "image/png" ? "image/png" : "image/jpeg";
-  const objectPath = resolveProfileImageObjectPath(ownerId, imageKind, contentType);
+  let objectPath: string;
+
+  if (auth.context.authMode === "authenticated") {
+    const ownerMismatchResponse = ensureAuthenticatedUserMatch(auth.context, requestedOwnerId);
+    if (ownerMismatchResponse) {
+      return ownerMismatchResponse;
+    }
+
+    const boundOwnerId = sanitizeOwnerId(auth.context.userId ?? "");
+    if (!boundOwnerId) {
+      return errorJson("OWNER_BINDING_UNAVAILABLE", 500);
+    }
+    objectPath = resolveProfileImageObjectPath(boundOwnerId, imageKind, contentType);
+  } else {
+    if (!requestedOwnerId) {
+      return errorJson("OWNER_ID_REQUIRED", 400);
+    }
+    if (!requestedOwnerId.startsWith(ANON_ONBOARDING_OWNER_PREFIX)) {
+      return errorJson("ANON_OWNER_NAMESPACE_REQUIRED", 403, {
+        expectedPrefix: ANON_ONBOARDING_OWNER_PREFIX,
+      });
+    }
+    objectPath = resolveAnonOnboardingProfileImageObjectPath(
+      requestedOwnerId,
+      imageKind,
+      contentType,
+    );
+  }
 
   const serviceClient = createClient(supabaseURL, supabaseServiceRoleKey);
   const storageResult = await uploadPublicStorageObject(serviceClient, {

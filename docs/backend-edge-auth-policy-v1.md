@@ -117,7 +117,7 @@ member token 또는 app/anon bearer를 허용합니다.
 | `quest-engine` | `member_required` | 퀘스트 진행/클레임은 member 권리경로 |
 | `caricature` | `member_required` | 과거 optional auth 경로 제거, member 검증 필수화 |
 | `nearby-presence` | `member_or_anon` | app authorization policy 유지 |
-| `upload-profile-image` | `member_or_anon` | app authorization policy 유지 |
+| `upload-profile-image` | `member_or_anon` | member는 `auth.user.id` owner binding 강제, anon은 `anon-onboarding-*` 임시 namespace만 허용 |
 | `feature-control` | `member_or_anon` | rollout/flag app authorization 유지 |
 
 위 표에 포함된 함수는 모두 `supabase/config.toml`에서 `verify_jwt = false`를 유지합니다.
@@ -129,6 +129,7 @@ member token 또는 app/anon bearer를 허용합니다.
 현재 1차 적용:
 
 - `sync-profile`의 `user_id` mismatch
+- `upload-profile-image`의 `ownerId` mismatch
 
 즉, invalid token / empty token / anon not allowed는 전부 `401`, 소유권 mismatch만 `403`으로 분리합니다.
 

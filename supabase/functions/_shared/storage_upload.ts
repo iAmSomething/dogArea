@@ -48,6 +48,14 @@ type StorageClientLike = {
 export type ProfileImageKind = "user" | "pet";
 export type ProfileImageContentType = "image/jpeg" | "image/png";
 
+const resolveProfileImageFileName = (
+  imageKind: ProfileImageKind,
+  contentType: ProfileImageContentType,
+): string => {
+  const fileExtension = contentType === "image/png" ? "png" : "jpeg";
+  return imageKind === "pet" ? `petProfile.${fileExtension}` : `userProfile.${fileExtension}`;
+};
+
 export const uploadPublicStorageObject = async (
   client: StorageClientLike,
   request: SharedStorageUploadRequest,
@@ -94,9 +102,17 @@ export const resolveProfileImageObjectPath = (
   imageKind: ProfileImageKind,
   contentType: ProfileImageContentType,
 ): string => {
-  const fileExtension = contentType === "image/png" ? "png" : "jpeg";
-  const fileName = imageKind === "pet" ? `petProfile.${fileExtension}` : `userProfile.${fileExtension}`;
+  const fileName = resolveProfileImageFileName(imageKind, contentType);
   return `${ownerId}/${fileName}`;
+};
+
+export const resolveAnonOnboardingProfileImageObjectPath = (
+  ownerId: string,
+  imageKind: ProfileImageKind,
+  contentType: ProfileImageContentType,
+): string => {
+  const fileName = resolveProfileImageFileName(imageKind, contentType);
+  return `anon-onboarding/${ownerId}/${fileName}`;
 };
 
 export const resolveCaricatureObjectPath = (

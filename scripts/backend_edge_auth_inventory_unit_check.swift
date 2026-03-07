@@ -90,8 +90,9 @@ for rpcSurface in [
     assertTrue(inventoryDoc.contains(rpcSurface), "inventory doc should list RPC/view surface \(rpcSurface)")
 }
 
-assertTrue(inventoryDoc.contains("#466"), "inventory doc should reference upload-profile-image hardening follow-up")
-assertTrue(inventoryDoc.contains("ownerId"), "inventory doc should mention upload-profile-image ownerId risk")
+assertTrue(inventoryDoc.contains("#466"), "inventory doc should keep upload-profile-image hardening traceability")
+assertTrue(inventoryDoc.contains("anon-onboarding-*"), "inventory doc should document anon onboarding namespace policy")
+assertTrue(inventoryDoc.contains("UNAUTHORIZED_USER_MISMATCH"), "inventory doc should document member owner mismatch handling")
 assertTrue(inventoryDoc.contains("auth_member_401_smoke_check.sh"), "inventory doc should reference auth smoke script")
 assertTrue(inventoryDoc.contains("docs/supabase-integration-smoke-matrix-v1.md"), "inventory doc should reference smoke matrix doc")
 
@@ -114,7 +115,9 @@ for block in [
 assertTrue(functionSources.contains("kind: \"member_required\""), "function sources should still contain member_required policies")
 assertTrue(functionSources.contains("kind: \"member_or_anon\""), "function sources should still contain member_or_anon policies")
 assertTrue(functionSources.contains("ensureAuthenticatedUserMatch"), "sync-profile mismatch guard should remain in source")
-assertTrue(functionSources.contains("ownerIdRaw"), "upload-profile-image should still have caller supplied ownerId path documented by the inventory")
+assertTrue(functionSources.contains("ownerIdRaw"), "upload-profile-image should still parse caller supplied ownerId for policy validation")
+assertTrue(functionSources.contains("ensureAuthenticatedUserMatch"), "upload-profile-image should now bind ownerId to authenticated user")
+assertTrue(functionSources.contains("ANON_OWNER_NAMESPACE_REQUIRED"), "upload-profile-image should enforce anon onboarding namespace")
 
 for grant in [
     "grant execute on function public.rpc_get_nearby_hotspots(double precision, double precision, double precision, timestamptz) to anon, authenticated;",
