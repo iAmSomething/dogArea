@@ -4,7 +4,16 @@ import UIKit
 #endif
 
 extension HomeViewModel {
-    func applySelectedPetStatistics(shouldUpdateMeter: Bool = false) {
+    /// 선택된 반려견/표시 범위 기준으로 홈 집계 상태를 재계산합니다.
+    /// - Parameters:
+    ///   - shouldUpdateMeter: 누적 영역 기준이 바뀌었을 때 현재 영역 마일스톤을 영속화할지 여부입니다.
+    ///   - refreshDerivedContent: 집계 후 실내 미션·시즌·날씨 파생 상태를 즉시 새로고칠지 여부입니다.
+    ///   - reference: 일자 경계/주간 통계 계산에 사용할 기준 시각입니다.
+    func applySelectedPetStatistics(
+        shouldUpdateMeter: Bool = false,
+        refreshDerivedContent: Bool = true,
+        reference: Date = Date()
+    ) {
         polygonList = areaAggregationService.filteredPolygons(
             from: allPolygons,
             selectedPetId: selectedPet?.petId,
@@ -16,8 +25,10 @@ extension HomeViewModel {
             totalArea: totalArea,
             selectedPetNameWithYi: selectedPetNameWithYi
         )
-        boundarySplitContribution = makeDayBoundarySplitContribution(reference: Date())
-        refreshIndoorMissions()
+        boundarySplitContribution = makeDayBoundarySplitContribution(reference: reference)
+        if refreshDerivedContent {
+            refreshIndoorMissions(now: reference)
+        }
         evaluateAreaMilestones()
         if shouldUpdateMeter {
             updateCurrentMeter()

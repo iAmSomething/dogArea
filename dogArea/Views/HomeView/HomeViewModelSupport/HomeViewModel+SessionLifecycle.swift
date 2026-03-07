@@ -15,21 +15,129 @@ private enum HomeCatchupStatusFormatter {
     }()
 }
 
+private enum HomeRefreshTrigger: String {
+    case initialLoad
+    case visibleReentry
+    case manualRefresh
+    case appResume
+    case petSelection
+    case timeBoundaryChange
+
+    var reloadPersistedWalkData: Bool {
+        switch self {
+        case .initialLoad, .visibleReentry, .manualRefresh, .appResume:
+            return true
+        case .petSelection, .timeBoundaryChange:
+            return false
+        }
+    }
+
+    var refreshAreaReferences: Bool {
+        switch self {
+        case .initialLoad, .visibleReentry, .manualRefresh, .appResume:
+            return true
+        case .petSelection, .timeBoundaryChange:
+            return false
+        }
+    }
+
+    var refreshGuestUpgradeReport: Bool {
+        switch self {
+        case .initialLoad, .visibleReentry, .manualRefresh, .appResume:
+            return true
+        case .petSelection, .timeBoundaryChange:
+            return false
+        }
+    }
+
+    var shouldUpdateMeter: Bool {
+        switch self {
+        case .initialLoad, .visibleReentry, .manualRefresh, .appResume:
+            return true
+        case .petSelection, .timeBoundaryChange:
+            return false
+        }
+    }
+
+    var shouldReloadAreaList: Bool {
+        switch self {
+        case .initialLoad, .visibleReentry, .manualRefresh, .appResume:
+            return true
+        case .petSelection, .timeBoundaryChange:
+            return false
+        }
+    }
+}
+
 extension HomeViewModel {
     func localizedCopy(ko: String, en: String) -> String {
         let languageCode = Locale.preferredLanguages.first?.lowercased() ?? "ko"
         return languageCode.hasPrefix("en") ? en : ko
     }
 
-    func fetchData() {
+    /// 홈 화면 최초 구성 시 필요한 저장 상태와 파생 UI를 중복 없이 적재합니다.
+    /// - Parameter now: 초기 집계와 시간 경계 계산에 사용할 기준 시각입니다.
+    func performInitialRefresh(now: Date = Date()) {
+        executeRefresh(trigger: .initialLoad, now: now)
+    }
+
+    /// 사용자가 명시적으로 새로고침했을 때 홈 데이터를 다시 집계합니다.
+    /// - Parameter now: 새로고침 기준 시각입니다.
+    func fetchData(now: Date = Date()) {
+        executeRefresh(trigger: .manualRefresh, now: now)
+    }
+
+    /// 홈 탭이 다시 화면에 나타났을 때 필요한 새로고침을 수행합니다.
+    /// - Parameter now: 재진입 시각 기준입니다.
+    func refreshForVisibleReentry(now: Date = Date()) {
+        executeRefresh(trigger: .visibleReentry, now: now)
+    }
+
+    /// 포그라운드 복귀 시 홈이 보이는 상태라면 1회성 초기 active 이벤트를 제외하고 데이터를 다시 집계합니다.
+    /// - Parameter now: 앱 복귀 기준 시각입니다.
+    func refreshForAppResumeIfNeeded(now: Date = Date()) {
+        if hasSkippedInitialActiveSceneRefresh == false {
+            hasSkippedInitialActiveSceneRefresh = true
+            return
+        }
+        executeRefresh(trigger: .appResume, now: now)
+    }
+
+    /// 반려견 선택이 바뀌었을 때 선택 컨텍스트에 영향을 받는 홈 상태만 다시 계산합니다.
+    /// - Parameter now: pet 전환 기준 시각입니다.
+    func refreshForSelectedPetChange(now: Date = Date()) {
+        executeRefresh(trigger: .petSelection, now: now)
+    }
+
+    /// 홈 refresh trigger별로 저장소 재조회와 파생 상태 계산 순서를 조정합니다.
+    /// - Parameters:
+    ///   - trigger: 이번 새로고침을 유발한 홈 이벤트 종류입니다.
+    ///   - now: 집계/미션/시즌 계산에 공통으로 사용할 기준 시각입니다.
+    private func executeRefresh(trigger: HomeRefreshTrigger, now: Date = Date()) {
         reloadUserInfo()
-        reloadSeasonCatchupBuffStatus()
-        allPolygons = walkRepository.fetchPolygons()
-        applySelectedPetStatistics(shouldUpdateMeter: true)
-        myAreaList = walkRepository.fetchAreas()
-        refreshAreaReferenceCatalogs()
-        refreshGuestDataUpgradeReport()
-        refreshIndoorMissions()
+        reloadSeasonCatchupBuffStatus(now: now)
+
+        if trigger.reloadPersistedWalkData {
+            allPolygons = walkRepository.fetchPolygons()
+        }
+
+        applySelectedPetStatistics(
+            shouldUpdateMeter: trigger.shouldUpdateMeter,
+            refreshDerivedContent: false,
+            reference: now
+        )
+
+        if trigger.shouldReloadAreaList {
+            myAreaList = walkRepository.fetchAreas()
+        }
+        if trigger.refreshAreaReferences {
+            refreshAreaReferenceCatalogs()
+        }
+        if trigger.refreshGuestUpgradeReport {
+            refreshGuestDataUpgradeReport()
+        }
+
+        refreshIndoorMissions(now: now)
     }
 
     /// 공용 날씨 스냅샷 저장소에서 최신 값을 읽어 홈 상태에 반영합니다.
@@ -81,8 +189,7 @@ extension HomeViewModel {
         guard pets.contains(where: { $0.petId == petId }) else { return }
         isShowingAllRecordsOverride = false
         userSessionStore.setSelectedPetId(petId, source: "home")
-        reloadUserInfo()
-        applySelectedPetStatistics()
+        refreshForSelectedPetChange()
     }
 
     func showAllRecordsTemporarily() {
@@ -166,11 +273,12 @@ extension HomeViewModel {
     func bindSelectedPetSync() {
         eventCenter.publisher(for: UserdefaultSetting.selectedPetDidChangeNotification, object: nil)
             .receive(on: RunLoop.main)
-            .sink { [weak self] _ in
+            .sink { [weak self] notification in
                 guard let self else { return }
+                let source = notification.userInfo?["source"] as? String
+                guard source != "home" else { return }
                 self.isShowingAllRecordsOverride = false
-                self.reloadUserInfo()
-                self.applySelectedPetStatistics()
+                self.refreshForSelectedPetChange()
             }
             .store(in: &cancellables)
     }
@@ -201,8 +309,7 @@ extension HomeViewModel {
         let didTimeZoneChange = newTimeZoneIdentifier != aggregationTimeZoneIdentifier
 
         aggregationTimeZoneIdentifier = newTimeZoneIdentifier
-        applySelectedPetStatistics()
-        refreshIndoorMissions()
+        executeRefresh(trigger: .timeBoundaryChange, now: Date())
 
         guard didTimeZoneChange || name == .NSSystemTimeZoneDidChange else { return }
         aggregationStatusMessage = "타임존이 변경되어 통계를 현재 시간대 기준으로 다시 계산했어요."

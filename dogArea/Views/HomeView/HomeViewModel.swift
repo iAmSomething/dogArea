@@ -69,6 +69,7 @@ final class HomeViewModel: ObservableObject {
     var featuredGoalAreas: [AreaMeter] = []
     var areaMilestoneQueue: [AreaMilestoneEvent] = []
     var areaReferenceTask: Task<Void, Never>? = nil
+    var hasSkippedInitialActiveSceneRefresh: Bool = false
 
     var pets: [PetInfo] {
         userInfo?.pet.filter(\.isActive) ?? []
@@ -153,7 +154,7 @@ final class HomeViewModel: ObservableObject {
         bindQuestProgressNotifications()
         reloadUserInfo()
         reloadSeasonCatchupBuffStatus()
-        fetchData()
+        performInitialRefresh()
         Task { [weak self] in
             await self?.syncQuestReminderOnLaunch()
         }
