@@ -227,6 +227,23 @@ enum WidgetFormatting {
         return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
     }
 
+    /// 경과 시간을 compact/minimal 표면에서 쓰기 좋은 축약 문자열로 변환합니다.
+    /// - Parameter elapsedSeconds: 변환할 경과 시간(초)입니다.
+    /// - Returns: `59m`, `2h`, `45s` 형식의 축약 시간 문자열입니다.
+    static func formattedElapsedCompact(_ elapsedSeconds: Int) -> String {
+        let total = max(0, elapsedSeconds)
+        let hours = total / 3600
+        let minutes = (total % 3600) / 60
+        let seconds = total % 60
+        if hours > 0 {
+            return "\(hours)h"
+        }
+        if minutes > 0 {
+            return "\(minutes)m"
+        }
+        return "\(seconds)s"
+    }
+
     /// 유닉스 타임스탬프를 위젯 표시용 `HH:mm` 문자열로 변환합니다.
     /// - Parameter timestamp: 변환할 유닉스 초 단위 타임스탬프입니다.
     /// - Returns: 사용자 로캘 기준의 시:분 문자열입니다.
@@ -249,6 +266,23 @@ enum WidgetFormatting {
             return String(format: "%.2f", area / 10_000) + "만 ㎡"
         }
         return String(format: "%.2f", area) + "㎡"
+    }
+
+    /// 제곱미터 면적을 compact 표면 폭에 맞는 짧은 문자열로 변환합니다.
+    /// - Parameter areaM2: 변환할 원본 면적(`m²`)입니다.
+    /// - Returns: `42㎡`, `1.2k㎡`, `0.8만㎡` 형식의 축약 면적 문자열입니다.
+    static func formattedCompactArea(_ areaM2: Double) -> String {
+        let area = max(0, areaM2)
+        if area >= 100_000 {
+            return String(format: "%.1f", area / 1_000_000) + "k㎡"
+        }
+        if area >= 10_000 {
+            return String(format: "%.1f", area / 10_000) + "만㎡"
+        }
+        if area >= 100 {
+            return "\(Int(area.rounded()))㎡"
+        }
+        return String(format: "%.1f", area) + "㎡"
     }
 
     /// 진행률 비율을 위젯 표시용 백분율 문자열로 변환합니다.

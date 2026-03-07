@@ -383,7 +383,7 @@ extension MapViewModel {
 
     /// 현재 ViewModel 상태를 Live Activity 서비스용 상태 모델로 변환합니다.
     /// - Parameter now: 상태 스냅샷 기준 시각입니다.
-    /// - Returns: 세션 식별자, 경과시간, 포인트 수, 자동 종료 단계를 포함한 상태입니다.
+    /// - Returns: 세션 식별자, 경과시간, 영역 증가량, 포인트 수, 자동 종료 단계를 포함한 상태입니다.
     private func makeWalkLiveActivityState(now: Date = Date()) -> WalkLiveActivityState {
         WalkLiveActivityState(
             sessionId: polygon.id.uuidString.lowercased(),
@@ -391,6 +391,7 @@ extension MapViewModel {
             isWalking: isWalking,
             elapsedSeconds: Int(max(0, time.rounded(.down))),
             pointCount: polygon.locations.count,
+            capturedAreaM2: walkHybridContributionSummary.finalAreaM2,
             petName: currentWalkingPetName,
             autoEndStage: currentAutoEndStage(now: now),
             statusMessage: walkStatusMessage,

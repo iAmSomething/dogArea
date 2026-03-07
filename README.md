@@ -26,6 +26,7 @@
 - Widget state CTA taxonomy v1: `docs/widget-state-cta-taxonomy-v1.md`
 - Widget Lock Screen accessory family plan v1: `docs/widget-lock-screen-accessory-family-plan-v1.md`
 - Walk widget action state model v1: `docs/walk-widget-action-state-model-v1.md`
+- Walk Live Activity priority v1: `docs/walk-live-activity-priority-v1.md`
 - Walk widget pet context policy v1: `docs/walk-widget-pet-context-policy-v1.md`
 - Territory widget goal deeplink v1: `docs/territory-widget-goal-deeplink-v1.md`
 - Territory widget next goal summary v1: `docs/territory-widget-next-goal-summary-v1.md`
