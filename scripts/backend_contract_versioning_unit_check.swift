@@ -21,13 +21,21 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
 let policy = load("docs/backend-contract-versioning-policy-v1.md")
 let matrix = load("docs/backend-high-risk-contract-matrix-v1.md")
 let smokeDoc = load("docs/supabase-integration-smoke-matrix-v1.md")
 let readme = load("README.md")
 let backendCheck = load("scripts/backend_pr_check.sh")
 let iosPRCheck = load("scripts/ios_pr_check.sh")
-let nearbyPresence = load("supabase/functions/nearby-presence/index.ts")
+let nearbyPresence = loadMany([
+    "supabase/functions/nearby-presence/index.ts",
+    "supabase/functions/nearby-presence/support/hotspot_compat.ts",
+    "supabase/functions/nearby-presence/handlers/hotspot_handler.ts"
+])
 let rivalLeague = load("supabase/functions/rival-league/index.ts")
 let rivalCompat = load("supabase/migrations/20260305224000_rival_rpc_postgrest_compat_fix.sql")
 let hotspotWidgetMigration = load("supabase/migrations/20260303203000_hotspot_widget_summary_rpc.sql")

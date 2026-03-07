@@ -21,6 +21,10 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
 let standardDoc = load("docs/backend-edge-observability-standard-v1.md")
 let taxonomyDoc = load("docs/backend-edge-error-taxonomy-v1.md")
 let runbookDoc = load("docs/backend-edge-incident-runbook-v1.md")
@@ -30,7 +34,14 @@ let backendCheck = load("scripts/backend_pr_check.sh")
 let iosPRCheck = load("scripts/ios_pr_check.sh")
 let caricature = load("supabase/functions/caricature/index.ts")
 let edgeAuthHelper = load("supabase/functions/_shared/edge_auth.ts")
-let nearbyPresence = load("supabase/functions/nearby-presence/index.ts")
+let nearbyPresence = loadMany([
+    "supabase/functions/nearby-presence/index.ts",
+    "supabase/functions/nearby-presence/support/types.ts",
+    "supabase/functions/nearby-presence/support/privacy_audit.ts",
+    "supabase/functions/nearby-presence/support/hotspot_compat.ts",
+    "supabase/functions/nearby-presence/handlers/hotspot_handler.ts",
+    "supabase/functions/nearby-presence/handlers/live_presence_handlers.ts"
+])
 let syncWalk = load("supabase/functions/sync-walk/index.ts")
 let questEngine = load("supabase/functions/quest-engine/index.ts")
 let featureControl = load("supabase/functions/feature-control/index.ts")
