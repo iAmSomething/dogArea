@@ -14,6 +14,7 @@
 - 직접 matrix 실행: `bash scripts/run_supabase_smoke_matrix.sh`
 - auth surface inventory: `docs/backend-edge-auth-mode-inventory-v1.md`
 - deploy inventory / post-deploy 기준: `docs/backend-edge-rpc-deployment-matrix-post-deploy-v1.md`
+- geo fixture lifecycle 기준: `docs/backend-geo-test-fixture-lifecycle-v1.md`
 
 ## 필수 환경변수
 
