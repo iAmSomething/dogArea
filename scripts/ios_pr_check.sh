@@ -144,6 +144,7 @@ swift scripts/territory_goal_detail_ui_unit_check.swift
 swift scripts/profile_edit_flow_unit_check.swift
 swift scripts/settings_pet_management_unit_check.swift
 swift scripts/settings_profile_account_actions_unit_check.swift
+swift scripts/settings_product_surface_unit_check.swift
 swift scripts/settings_auth_session_sync_unit_check.swift
 swift scripts/profile_edit_userinfo_recovery_unit_check.swift
 swift scripts/settings_viewmodel_split_unit_check.swift

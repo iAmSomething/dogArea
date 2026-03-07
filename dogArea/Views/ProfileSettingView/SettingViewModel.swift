@@ -38,6 +38,8 @@ final class SettingViewModel: ObservableObject {
     @Published var selectedPetId: String = ""
     @Published var selectedPet: PetInfo? = nil
     @Published var seasonProfileSummary: SeasonProfileSummary? = nil
+    @Published var notificationSettingsSummary: SettingsNotificationSummary = .unknown
+    @Published var appMetadata: SettingsAppMetadata = .placeholder
     @Published var isCaricatureGenerating: Bool = false
     @Published var isAccountDeletionInProgress: Bool = false
 
@@ -48,6 +50,9 @@ final class SettingViewModel: ObservableObject {
     let authSessionStore: AuthSessionStoreProtocol
     let walkRepository: WalkRepositoryProtocol
     let seasonProfileSummaryService: SettingsSeasonProfileSummaryProviding
+    let appMetadataService: SettingsAppMetadataProviding
+    let notificationAuthorizationService: SettingsNotificationAuthorizationProviding
+    let settingsSurfaceCatalogService: SettingsSurfaceCatalogProviding
     let featureFlags = FeatureFlagStore.shared
     let metricTracker = AppMetricTracker.shared
     let caricatureClient = CaricatureEdgeClient()
@@ -79,6 +84,9 @@ final class SettingViewModel: ObservableObject {
     ///   - authSessionStore: 인증 세션/식별자 조회를 담당하는 저장소입니다.
     ///   - walkRepository: 다각형 영역 데이터를 읽는 저장소입니다.
     ///   - seasonProfileSummaryService: 시즌 진행 현황 요약을 계산하는 서비스입니다.
+    ///   - appMetadataService: 앱 버전/빌드/지원 채널 메타데이터를 조립하는 서비스입니다.
+    ///   - notificationAuthorizationService: 시스템 알림 권한 상태를 요약하는 서비스입니다.
+    ///   - settingsSurfaceCatalogService: 설정 화면의 앱 설정/법적 문서/지원/앱 정보 섹션을 조립하는 서비스입니다.
     init(
         profileRepository: ProfileRepository = DefaultProfileRepository.shared,
         imageRepository: ProfileImageRepository = SupabaseProfileImageRepository.shared,
@@ -86,7 +94,10 @@ final class SettingViewModel: ObservableObject {
         accountDeletionService: AccountDeletionServiceProtocol = SupabaseAccountDeletionService.shared,
         authSessionStore: AuthSessionStoreProtocol = DefaultAuthSessionStore.shared,
         walkRepository: WalkRepositoryProtocol = WalkRepositoryContainer.shared,
-        seasonProfileSummaryService: SettingsSeasonProfileSummaryProviding = SettingsSeasonProfileSummaryService()
+        seasonProfileSummaryService: SettingsSeasonProfileSummaryProviding = SettingsSeasonProfileSummaryService(),
+        appMetadataService: SettingsAppMetadataProviding = SettingsAppMetadataService(),
+        notificationAuthorizationService: SettingsNotificationAuthorizationProviding = SettingsNotificationAuthorizationService(),
+        settingsSurfaceCatalogService: SettingsSurfaceCatalogProviding = SettingsSurfaceCatalogService()
     ) {
         self.profileRepository = profileRepository
         self.imageRepository = imageRepository
@@ -95,6 +106,10 @@ final class SettingViewModel: ObservableObject {
         self.authSessionStore = authSessionStore
         self.walkRepository = walkRepository
         self.seasonProfileSummaryService = seasonProfileSummaryService
+        self.appMetadataService = appMetadataService
+        self.notificationAuthorizationService = notificationAuthorizationService
+        self.settingsSurfaceCatalogService = settingsSurfaceCatalogService
+        self.appMetadata = appMetadataService.loadMetadata(currentIdentity: authSessionStore.currentIdentity())
         bindSelectedPetSync()
         bindAuthSessionSync()
         fetchModel()
@@ -113,6 +128,7 @@ final class SettingViewModel: ObservableObject {
         selectedPetId = selectedPet?.petId ?? ""
         userName = userInfo?.name
         petName = selectedPet?.petName
+        appMetadata = appMetadataService.loadMetadata(currentIdentity: authSessionStore.currentIdentity())
         reloadSeasonProfileSummary()
     }
 }

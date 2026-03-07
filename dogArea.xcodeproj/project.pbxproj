@@ -91,6 +91,12 @@
 		A37600010000000000000026 /* PetManagementEditPetSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37600010000000000000016 /* PetManagementEditPetSheet.swift */; };
 		A37600010000000000000027 /* PetManagementEditPetSheetViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37600010000000000000017 /* PetManagementEditPetSheetViewModel.swift */; };
 		A37600010000000000000028 /* PetManagementSheetViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37600010000000000000018 /* PetManagementSheetViewModel.swift */; };
+		A50000010000000000000001 /* SettingsSurfaceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000010000000000000011 /* SettingsSurfaceModels.swift */; };
+		A50000010000000000000002 /* SettingsProductSurfaceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000010000000000000012 /* SettingsProductSurfaceService.swift */; };
+		A50000010000000000000003 /* SettingsActionSectionCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000010000000000000013 /* SettingsActionSectionCardView.swift */; };
+		A50000010000000000000004 /* SettingsAppInfoCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000010000000000000014 /* SettingsAppInfoCardView.swift */; };
+		A50000010000000000000005 /* SettingsDocumentSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000010000000000000015 /* SettingsDocumentSheetView.swift */; };
+		A50000010000000000000006 /* SettingViewModel+ProductSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000010000000000000016 /* SettingViewModel+ProductSurface.swift */; };
 		A37700010000000000000001 /* AreaReferenceCatalogInsightService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37700010000000000000011 /* AreaReferenceCatalogInsightService.swift */; };
 		A37700010000000000000002 /* AreaDetailCatalogSnapshotSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37700010000000000000012 /* AreaDetailCatalogSnapshotSectionView.swift */; };
 		A37800010000000000000001 /* AppTabScaffold.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37800010000000000000002 /* AppTabScaffold.swift */; };
@@ -408,6 +414,12 @@
 		A37600010000000000000016 /* PetManagementEditPetSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetManagementEditPetSheet.swift; sourceTree = "<group>"; };
 		A37600010000000000000017 /* PetManagementEditPetSheetViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetManagementEditPetSheetViewModel.swift; sourceTree = "<group>"; };
 		A37600010000000000000018 /* PetManagementSheetViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetManagementSheetViewModel.swift; sourceTree = "<group>"; };
+		A50000010000000000000011 /* SettingsSurfaceModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSurfaceModels.swift; sourceTree = "<group>"; };
+		A50000010000000000000012 /* SettingsProductSurfaceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsProductSurfaceService.swift; sourceTree = "<group>"; };
+		A50000010000000000000013 /* SettingsActionSectionCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsActionSectionCardView.swift; sourceTree = "<group>"; };
+		A50000010000000000000014 /* SettingsAppInfoCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsAppInfoCardView.swift; sourceTree = "<group>"; };
+		A50000010000000000000015 /* SettingsDocumentSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsDocumentSheetView.swift; sourceTree = "<group>"; };
+		A50000010000000000000016 /* SettingViewModel+ProductSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SettingViewModel+ProductSurface.swift"; sourceTree = "<group>"; };
 		A37700010000000000000011 /* AreaReferenceCatalogInsightService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaReferenceCatalogInsightService.swift; sourceTree = "<group>"; };
 		A37700010000000000000012 /* AreaDetailCatalogSnapshotSectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaDetailCatalogSnapshotSectionView.swift; sourceTree = "<group>"; };
 		A37800010000000000000002 /* AppTabScaffold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTabScaffold.swift; sourceTree = "<group>"; };
@@ -767,6 +779,7 @@
 			isa = PBXGroup;
 			children = (
 				A37600010000000000000011 /* ProfileEditorDraft.swift */,
+				A50000010000000000000011 /* SettingsSurfaceModels.swift */,
 				72F12802474DD64B59485B1E /* SeasonProfileSummary.swift */,
 			);
 			path = Models;
@@ -776,6 +789,7 @@
 			isa = PBXGroup;
 			children = (
 				A37600010000000000000012 /* SettingsPetManagementService.swift */,
+				A50000010000000000000012 /* SettingsProductSurfaceService.swift */,
 				9D5A36B3041BCFBBD4C59BDC /* SettingsSeasonProfileSummaryService.swift */,
 			);
 			path = Services;
@@ -793,6 +807,9 @@
 		A37600010000000000000005 /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				A50000010000000000000013 /* SettingsActionSectionCardView.swift */,
+				A50000010000000000000014 /* SettingsAppInfoCardView.swift */,
+				A50000010000000000000015 /* SettingsDocumentSheetView.swift */,
 				A37600010000000000000014 /* PetManagementSheet.swift */,
 				A37600010000000000000016 /* PetManagementEditPetSheet.swift */,
 			);
@@ -814,6 +831,7 @@
 			children = (
 				93DC984E1F9B8174ECAB6524 /* SettingViewModel+ProfileEditing.swift */,
 				D833B7DD0594CABE821B3469 /* SettingViewModel+PetManagement.swift */,
+				A50000010000000000000016 /* SettingViewModel+ProductSurface.swift */,
 				A013B53969138FCAAF1E0428 /* SettingViewModel+SessionSync.swift */,
 			);
 			name = SettingViewModelSupport;
@@ -1664,6 +1682,8 @@
 				DAE147B11420000000000001 /* MapClusterAnnotationService.swift in Sources */,
 				A37600010000000000000021 /* ProfileEditorDraft.swift in Sources */,
 				A37600010000000000000022 /* SettingsPetManagementService.swift in Sources */,
+				A50000010000000000000001 /* SettingsSurfaceModels.swift in Sources */,
+				A50000010000000000000002 /* SettingsProductSurfaceService.swift in Sources */,
 				DA4513832AFB25C2007AD69B /* PositionMarkerView.swift in Sources */,
 				DA8BB9F22B02FE3A00E350C4 /* HomeViewModel.swift in Sources */,
 				A37500010000000000000021 /* HomeMissionModels.swift in Sources */,
@@ -1722,6 +1742,9 @@
 				37382EBDCEA90A2E818A05BB /* ProfileFieldEditSheetViewModel.swift in Sources */,
 				A37600010000000000000024 /* PetManagementSheet.swift in Sources */,
 				A37600010000000000000026 /* PetManagementEditPetSheet.swift in Sources */,
+				A50000010000000000000003 /* SettingsActionSectionCardView.swift in Sources */,
+				A50000010000000000000004 /* SettingsAppInfoCardView.swift in Sources */,
+				A50000010000000000000005 /* SettingsDocumentSheetView.swift in Sources */,
 				A37600010000000000000027 /* PetManagementEditPetSheetViewModel.swift in Sources */,
 				A37600010000000000000028 /* PetManagementSheetViewModel.swift in Sources */,
 				5951E893E8CBC77DCA82E00F /* WalkDetailViewModel.swift in Sources */,
@@ -1780,6 +1803,7 @@
 				EE6DAD319CDE2C3D7366547A /* SettingsSeasonProfileSummaryService.swift in Sources */,
 				D6C7AC45E842356138A50D6F /* SettingViewModel+ProfileEditing.swift in Sources */,
 				771A99CFD333C282650284FA /* SettingViewModel+PetManagement.swift in Sources */,
+				A50000010000000000000006 /* SettingViewModel+ProductSurface.swift in Sources */,
 				85B9C2AED02D77D491DA93CA /* SettingViewModel+SessionSync.swift in Sources */,
 				9315EFC2423955870AFCC18F /* HomeViewModel+SessionLifecycle.swift in Sources */,
 				B8774AA566F72FF9E7151938 /* HomeViewModel+AreaProgress.swift in Sources */,

@@ -29,9 +29,13 @@ extension SettingViewModel {
             selectedPet = nil
             selectedPetId = ""
             seasonProfileSummary = nil
+            appMetadata = appMetadataService.loadMetadata(currentIdentity: authSessionStore.currentIdentity())
             return
         }
         reloadUserInfo()
+        Task {
+            await refreshProductSurface()
+        }
     }
 
     /// 현재 저장된 시즌 진행 현황을 다시 읽어 설정 화면 상태에 반영합니다.
