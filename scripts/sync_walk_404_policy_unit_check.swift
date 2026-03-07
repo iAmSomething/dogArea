@@ -25,6 +25,14 @@ let infra = loadMany([
 ])
 let syncStore = loadMany([
     "dogArea/Source/UserdefaultSetting.swift",
+    "dogArea/Source/UserDefaultsSupport/UserSessionModels.swift",
+    "dogArea/Source/UserDefaultsSupport/UserDefaultsCodableExtensions.swift",
+    "dogArea/Source/UserDefaultsSupport/UserdefaultSetting+SessionFacade.swift",
+    "dogArea/Source/UserDefaultsSupport/UserSessionStore.swift",
+    "dogArea/Source/UserDefaultsSupport/AppPreferenceStores.swift",
+    "dogArea/Source/UserDefaultsSupport/FeatureFlagStore.swift",
+    "dogArea/Source/UserDefaultsSupport/AppMetricTracker.swift",
+    "dogArea/Source/UserDefaultsSupport/SyncOutboxStore.swift",
     "dogArea/Source/AppSession/AppFeatureGate.swift",
     "dogArea/Source/AppSession/GuestDataUpgradeService.swift",
     "dogArea/Source/AppSession/AuthFlowCoordinator.swift"

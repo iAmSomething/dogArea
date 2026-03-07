@@ -217,6 +217,14 @@
 		DAC19F2C2B0B43BB002FE2E8 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F2B2B0B43BB002FE2E8 /* SignInView.swift */; };
 		DAC19F352B0B898D002FE2E8 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = DAC19F342B0B898D002FE2E8 /* Kingfisher */; };
 		DAC19F382B0B9E81002FE2E8 /* StringExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F372B0B9E81002FE2E8 /* StringExtensions.swift */; };
+		A41500010000000000000021 /* UserSessionModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41500010000000000000011 /* UserSessionModels.swift */; };
+		A41500010000000000000022 /* UserDefaultsCodableExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41500010000000000000012 /* UserDefaultsCodableExtensions.swift */; };
+		A41500010000000000000023 /* UserdefaultSetting+SessionFacade.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41500010000000000000013 /* UserdefaultSetting+SessionFacade.swift */; };
+		A41500010000000000000024 /* UserSessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41500010000000000000014 /* UserSessionStore.swift */; };
+		A41500010000000000000025 /* AppPreferenceStores.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41500010000000000000015 /* AppPreferenceStores.swift */; };
+		A41500010000000000000026 /* FeatureFlagStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41500010000000000000016 /* FeatureFlagStore.swift */; };
+		A41500010000000000000027 /* AppMetricTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41500010000000000000017 /* AppMetricTracker.swift */; };
+		A41500010000000000000028 /* SyncOutboxStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41500010000000000000018 /* SyncOutboxStore.swift */; };
 		DAE140101400000000000001 /* ProfileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE140001400000000000001 /* ProfileStore.swift */; };
 		DAE140101400000000000002 /* PetSelectionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE140001400000000000002 /* PetSelectionStore.swift */; };
 		DAE140101400000000000003 /* WalkSessionMetadataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE140001400000000000003 /* WalkSessionMetadataStore.swift */; };
@@ -515,6 +523,14 @@
 		DAC19F272B0B37DA002FE2E8 /* LoadingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingViewModel.swift; sourceTree = "<group>"; };
 		DAC19F2B2B0B43BB002FE2E8 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
 		DAC19F372B0B9E81002FE2E8 /* StringExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringExtensions.swift; sourceTree = "<group>"; };
+		A41500010000000000000011 /* UserSessionModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSessionModels.swift; sourceTree = "<group>"; };
+		A41500010000000000000012 /* UserDefaultsCodableExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDefaultsCodableExtensions.swift; sourceTree = "<group>"; };
+		A41500010000000000000013 /* UserdefaultSetting+SessionFacade.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UserdefaultSetting+SessionFacade.swift"; sourceTree = "<group>"; };
+		A41500010000000000000014 /* UserSessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSessionStore.swift; sourceTree = "<group>"; };
+		A41500010000000000000015 /* AppPreferenceStores.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPreferenceStores.swift; sourceTree = "<group>"; };
+		A41500010000000000000016 /* FeatureFlagStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureFlagStore.swift; sourceTree = "<group>"; };
+		A41500010000000000000017 /* AppMetricTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppMetricTracker.swift; sourceTree = "<group>"; };
+		A41500010000000000000018 /* SyncOutboxStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncOutboxStore.swift; sourceTree = "<group>"; };
 		DAE140001400000000000001 /* ProfileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileStore.swift; sourceTree = "<group>"; };
 		DAE140001400000000000002 /* PetSelectionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetSelectionStore.swift; sourceTree = "<group>"; };
 		DAE140001400000000000003 /* WalkSessionMetadataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkSessionMetadataStore.swift; sourceTree = "<group>"; };
@@ -945,6 +961,21 @@
 			path = Infrastructure/Supabase/Services;
 			sourceTree = "<group>";
 		};
+		A41500010000000000000001 /* UserDefaultsSupport */ = {
+			isa = PBXGroup;
+			children = (
+				A41500010000000000000011 /* UserSessionModels.swift */,
+				A41500010000000000000012 /* UserDefaultsCodableExtensions.swift */,
+				A41500010000000000000013 /* UserdefaultSetting+SessionFacade.swift */,
+				A41500010000000000000014 /* UserSessionStore.swift */,
+				A41500010000000000000015 /* AppPreferenceStores.swift */,
+				A41500010000000000000016 /* FeatureFlagStore.swift */,
+				A41500010000000000000017 /* AppMetricTracker.swift */,
+				A41500010000000000000018 /* SyncOutboxStore.swift */,
+			);
+			path = UserDefaultsSupport;
+			sourceTree = "<group>";
+		};
 		DA3F9BAC2AE0F2410048550C /* Source */ = {
 			isa = PBXGroup;
 			children = (
@@ -960,6 +991,7 @@
 				DA16C1D82B05DCC8008FC133 /* CornerShape.swift */,
 				DA16C1DB2B05E4DF008FC133 /* TimeCheckable.swift */,
 				DAC19F122B0AFCAC002FE2E8 /* UserdefaultSetting.swift */,
+				A41500010000000000000001 /* UserDefaultsSupport */,
 				DAE140001400000000000001 /* ProfileStore.swift */,
 				DA1731702AE200C100EF10C8 /* ProfileRepository.swift */,
 				DAE140001400000000000002 /* PetSelectionStore.swift */,
@@ -1581,6 +1613,14 @@
 				DAE140101400000000000002 /* PetSelectionStore.swift in Sources */,
 				DAE140101400000000000003 /* WalkSessionMetadataStore.swift in Sources */,
 				DAE140101400000000000004 /* ProfileSyncOutboxStore.swift in Sources */,
+				A41500010000000000000021 /* UserSessionModels.swift in Sources */,
+				A41500010000000000000022 /* UserDefaultsCodableExtensions.swift in Sources */,
+				A41500010000000000000023 /* UserdefaultSetting+SessionFacade.swift in Sources */,
+				A41500010000000000000024 /* UserSessionStore.swift in Sources */,
+				A41500010000000000000025 /* AppPreferenceStores.swift in Sources */,
+				A41500010000000000000026 /* FeatureFlagStore.swift in Sources */,
+				A41500010000000000000027 /* AppMetricTracker.swift in Sources */,
+				A41500010000000000000028 /* SyncOutboxStore.swift in Sources */,
 				DAE142101420000000000001 /* AppHapticFeedback.swift in Sources */,
 				DA354FFD2B01DF1F00E4094A /* TimeIntervalExtensions.swift in Sources */,
 				DA45138C2AFB36D4007AD69B /* WalkListModel.swift in Sources */,

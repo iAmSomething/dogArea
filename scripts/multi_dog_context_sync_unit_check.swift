@@ -25,6 +25,14 @@ let doc = load("docs/multi-dog-context-sync-v1.md")
 let checklist = load("docs/release-regression-checklist-v1.md")
 let userDefaultsSource = loadMany([
     "dogArea/Source/UserdefaultSetting.swift",
+    "dogArea/Source/UserDefaultsSupport/UserSessionModels.swift",
+    "dogArea/Source/UserDefaultsSupport/UserDefaultsCodableExtensions.swift",
+    "dogArea/Source/UserDefaultsSupport/UserdefaultSetting+SessionFacade.swift",
+    "dogArea/Source/UserDefaultsSupport/UserSessionStore.swift",
+    "dogArea/Source/UserDefaultsSupport/AppPreferenceStores.swift",
+    "dogArea/Source/UserDefaultsSupport/FeatureFlagStore.swift",
+    "dogArea/Source/UserDefaultsSupport/AppMetricTracker.swift",
+    "dogArea/Source/UserDefaultsSupport/SyncOutboxStore.swift",
     "dogArea/Source/WalkSessionMetadataStore.swift",
     "dogArea/Source/AppSession/AppFeatureGate.swift",
     "dogArea/Source/AppSession/GuestDataUpgradeService.swift",
