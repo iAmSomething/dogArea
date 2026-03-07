@@ -40,6 +40,9 @@ assertTrue(smokeRunner.contains("functions/v1/rival-league"), "smoke matrix shou
 assertTrue(smokeRunner.contains("functions/v1/quest-engine"), "smoke matrix should include quest-engine route")
 assertTrue(smokeRunner.contains("functions/v1/feature-control"), "smoke matrix should include feature-control route")
 assertTrue(smokeRunner.contains("rpc_get_rival_leaderboard"), "smoke matrix should include rival RPC compatibility case")
+assertTrue(smokeRunner.contains("rpc_get_widget_territory_summary"), "smoke matrix should include widget territory summary RPC case")
+assertTrue(smokeRunner.contains("rpc_get_widget_hotspot_summary"), "smoke matrix should include widget hotspot summary RPC case")
+assertTrue(smokeRunner.contains("rpc_get_widget_quest_rival_summary"), "smoke matrix should include widget quest/rival summary RPC case")
 assertTrue(smokeRunner.contains("sync-profile.permission.user_mismatch"), "smoke matrix should include permission mismatch case")
 assertTrue(smokeRunner.contains("invalid_token"), "smoke matrix should include invalid token cases")
 
@@ -50,6 +53,9 @@ assertTrue(backendCheck.contains("DOGAREA_RUN_SUPABASE_SMOKE"), "backend PR chec
 assertTrue(matrixDoc.contains("DOGAREA_TEST_EMAIL"), "integration smoke doc should document member credential env")
 assertTrue(matrixDoc.contains("DOGAREA_SUPABASE_CASE_FILTER"), "integration smoke doc should document case filter env")
 assertTrue(matrixDoc.contains("rival-rpc.compat.member"), "integration smoke doc should document RPC compatibility case")
+assertTrue(matrixDoc.contains("widget-territory.summary.member"), "integration smoke doc should document widget territory RPC case")
+assertTrue(matrixDoc.contains("widget-hotspot.summary.member"), "integration smoke doc should document widget hotspot RPC case")
+assertTrue(matrixDoc.contains("widget-quest-rival.summary.member"), "integration smoke doc should document widget quest/rival RPC case")
 assertTrue(matrixDoc.contains("401"), "integration smoke doc should describe unauthorized expectations")
 
 assertTrue(readme.contains("docs/supabase-integration-smoke-matrix-v1.md"), "README should link integration smoke doc")

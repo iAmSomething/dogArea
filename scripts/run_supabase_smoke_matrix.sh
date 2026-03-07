@@ -109,6 +109,30 @@ rival_rpc_member="$(harness_request_json \
   "{\"payload\":{\"period_type\":\"week\",\"top_n\":5,\"now_ts\":\"$now_ts\"}}")"
 harness_expect_status "rival-rpc.compat.member" "200" "$rival_rpc_member" "route=/rest/v1/rpc/rpc_get_rival_leaderboard"
 
+widget_territory_member="$(harness_request_json \
+  "POST" \
+  "$SUPABASE_URL/rest/v1/rpc/rpc_get_widget_territory_summary" \
+  "$SUPABASE_ANON_KEY" \
+  "$member_auth" \
+  "{\"now_ts\":\"$now_ts\"}")"
+harness_expect_status "widget-territory.summary.member" "200" "$widget_territory_member" "route=/rest/v1/rpc/rpc_get_widget_territory_summary"
+
+widget_hotspot_member="$(harness_request_json \
+  "POST" \
+  "$SUPABASE_URL/rest/v1/rpc/rpc_get_widget_hotspot_summary" \
+  "$SUPABASE_ANON_KEY" \
+  "$member_auth" \
+  "{\"radius_km\":1.2,\"now_ts\":\"$now_ts\"}")"
+harness_expect_status "widget-hotspot.summary.member" "200" "$widget_hotspot_member" "route=/rest/v1/rpc/rpc_get_widget_hotspot_summary"
+
+widget_quest_rival_member="$(harness_request_json \
+  "POST" \
+  "$SUPABASE_URL/rest/v1/rpc/rpc_get_widget_quest_rival_summary" \
+  "$SUPABASE_ANON_KEY" \
+  "$member_auth" \
+  "{\"in_now_ts\":\"$now_ts\"}")"
+harness_expect_status "widget-quest-rival.summary.member" "200" "$widget_quest_rival_member" "route=/rest/v1/rpc/rpc_get_widget_quest_rival_summary"
+
 quest_engine_member="$(harness_request_json \
   "POST" \
   "$SUPABASE_URL/functions/v1/quest-engine" \

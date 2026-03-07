@@ -8,6 +8,7 @@
 
 ## 엔트리포인트
 
+- drift / RPC contract 전용 게이트: `bash scripts/backend_migration_drift_check.sh`
 - 구조/문서 연결 체크: `bash scripts/backend_pr_check.sh`
 - 실 Supabase smoke 실행: `DOGAREA_RUN_SUPABASE_SMOKE=1 bash scripts/backend_pr_check.sh`
 - 직접 matrix 실행: `bash scripts/run_supabase_smoke_matrix.sh`
@@ -26,6 +27,7 @@
 - `DOGAREA_SUPABASE_CASE_FILTER`: 정규식 기반 case 필터. 예: `rival|quest-engine`
 - `DOGAREA_SUPABASE_SMOKE_TIMEOUT`: curl 요청 타임아웃 초. 기본값 `20`
 - `DOGAREA_SUPABASE_SMOKE_SESSION_ID`: `sync-walk` smoke가 재사용할 고정 session id
+- `DOGAREA_SUPABASE_SMOKE_PET_ID`: `sync-walk` smoke에 사용할 테스트 반려견 id override. 미지정 시 profile snapshot에서 첫 반려견 id를 읽음
 - `DOGAREA_SUPABASE_FOREIGN_USER_ID`: permission mismatch smoke에 사용할 다른 user id
 
 ## 현재 smoke matrix
@@ -37,6 +39,9 @@
 - `sync-walk.session.member`
 - `sync-walk.summary.member`
 - `rival-league.leaderboard.member`
+- `widget-territory.summary.member`
+- `widget-hotspot.summary.member`
+- `widget-quest-rival.summary.member`
 - `quest-engine.list_active.member`
 - `feature-control.flags.anon`
 - `feature-control.rollout_kpis.anon`
@@ -53,6 +58,9 @@
 - `sync-profile.permission.user_mismatch` => `403`
 - `nearby-presence.hotspots.app_policy` => `401`이 아니어야 함
 - `rival-rpc.compat.member` => `/rest/v1/rpc/rpc_get_rival_leaderboard`가 `404` 없이 응답해야 함
+- `widget-territory.summary.member` => `/rest/v1/rpc/rpc_get_widget_territory_summary`가 `200`이어야 함
+- `widget-hotspot.summary.member` => `/rest/v1/rpc/rpc_get_widget_hotspot_summary`가 `200`이어야 함
+- `widget-quest-rival.summary.member` => `/rest/v1/rpc/rpc_get_widget_quest_rival_summary`가 `200`이어야 함
 
 ## 출력 규약
 
@@ -67,7 +75,9 @@
 
 - `feature-control`, `nearby-presence`는 anon/app authorization 정책을 함께 확인합니다.
 - `sync-walk` smoke는 고정 session id upsert를 사용해 데이터를 무한 증가시키지 않습니다.
+- `sync-walk` smoke는 profile snapshot에서 실제 `pet_id`를 읽어 현재 스키마 제약을 맞춥니다.
 - `sync-profile`, `quest-engine`, `rival-league`는 읽기 또는 제한된 contract 호출 위주로 구성합니다.
+- widget summary smoke는 read-only RPC만 호출합니다.
 - 실 smoke는 secrets가 필요한 만큼 로컬/CI에서 opt-in으로만 실행합니다.
 
 ## CI 연결 포인트
