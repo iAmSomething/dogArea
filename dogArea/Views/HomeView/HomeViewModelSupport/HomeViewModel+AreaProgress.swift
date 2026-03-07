@@ -19,6 +19,7 @@ extension HomeViewModel {
             selectedPetId: selectedPet?.petId,
             showsAllRecords: isShowingAllRecordsOverride
         )
+        updateIndoorMissionPetContextPolygonFingerprint(for: polygonList)
         totalArea = polygonList.map(\.walkingArea).reduce(0.0, +)
         totalTime = polygonList.map(\.walkingTime).reduce(0.0, +)
         myArea = areaAggregationService.makeCurrentArea(
@@ -33,6 +34,15 @@ extension HomeViewModel {
         if shouldUpdateMeter {
             updateCurrentMeter()
         }
+    }
+
+    /// 현재 홈에 노출 중인 polygon 목록으로 실내 미션 pet context 입력 fingerprint를 갱신합니다.
+    /// - Parameter polygons: 선택 반려견/전체 보기 정책이 반영된 홈 polygon 목록입니다.
+    func updateIndoorMissionPetContextPolygonFingerprint(for polygons: [Polygon]) {
+        let nextFingerprint = indoorMissionPetContextSnapshotService.makePolygonFingerprint(from: polygons)
+        guard indoorMissionPetContextPolygonFingerprint != nextFingerprint else { return }
+        indoorMissionPetContextPolygonFingerprint = nextFingerprint
+        indoorMissionPetContextAggregationSnapshot = nil
     }
 
     func refreshAreaList() {

@@ -346,22 +346,57 @@ extension HomeViewModel {
     }
 
     func makeIndoorMissionPetContext(reference: Date) -> IndoorMissionPetContext {
-        let fourteenDaysAgo = reference.addingTimeInterval(-14 * 24 * 3600)
-        let twentyEightDaysAgo = reference.addingTimeInterval(-28 * 24 * 3600)
-        let recentPolygons = polygonList.filter { Date(timeIntervalSince1970: $0.createdAt) >= fourteenDaysAgo }
-        let monthlyPolygons = polygonList.filter { Date(timeIntervalSince1970: $0.createdAt) >= twentyEightDaysAgo }
-        let totalRecentMinutes = recentPolygons.reduce(0.0) { partial, polygon in
-            partial + max(0, polygon.walkingTime) / 60.0
-        }
-        let recentDailyMinutes = totalRecentMinutes / 14.0
-        let averageWeeklyWalkCount = Double(monthlyPolygons.count) / 4.0
+        let selectedPetId = normalizedIndoorMissionPetContextPetId()
+        let polygonFingerprint = indoorMissionPetContextPolygonFingerprint
+            ?? indoorMissionPetContextSnapshotService.makePolygonFingerprint(from: polygonList)
+        indoorMissionPetContextPolygonFingerprint = polygonFingerprint
 
-        return .init(
-            petId: selectedPet?.petId,
+        if indoorMissionPetContextSnapshotService.canReuseSnapshot(
+            indoorMissionPetContextAggregationSnapshot,
+            polygonFingerprint: polygonFingerprint,
+            selectedPetId: selectedPetId,
+            reference: reference
+        ) {
+            return makeIndoorMissionPetContext(
+                from: indoorMissionPetContextAggregationSnapshot,
+                selectedPetId: selectedPetId
+            )
+        }
+
+        let snapshot = indoorMissionPetContextSnapshotService.makeAggregationSnapshot(
+            polygons: polygonList,
+            polygonFingerprint: polygonFingerprint,
+            selectedPetId: selectedPetId,
+            reference: reference
+        )
+        indoorMissionPetContextAggregationSnapshot = snapshot
+        return makeIndoorMissionPetContext(from: snapshot, selectedPetId: selectedPetId)
+    }
+
+    /// 현재 선택 반려견 식별자를 실내 미션 pet context 입력 형식으로 정규화합니다.
+    /// - Returns: 비어 있지 않은 선택 반려견 식별자이며, 선택되지 않았으면 `nil`입니다.
+    func normalizedIndoorMissionPetContextPetId() -> String? {
+        guard let selectedPetId = selectedPet?.petId, selectedPetId.isEmpty == false else {
+            return nil
+        }
+        return selectedPetId
+    }
+
+    /// 집계 snapshot과 현재 선택 반려견 표시 정보를 조합해 최종 pet context를 생성합니다.
+    /// - Parameters:
+    ///   - snapshot: 최근 14일/28일 집계가 들어 있는 재사용 snapshot입니다.
+    ///   - selectedPetId: 현재 선택 반려견 식별자입니다. 선택되지 않았으면 `nil`입니다.
+    /// - Returns: 홈 실내 미션 난이도 계산에 전달할 최종 반려견 컨텍스트입니다.
+    func makeIndoorMissionPetContext(
+        from snapshot: HomeIndoorMissionPetContextAggregationSnapshot?,
+        selectedPetId: String?
+    ) -> IndoorMissionPetContext {
+        IndoorMissionPetContext(
+            petId: selectedPetId,
             petName: selectedPet?.petName ?? "강아지",
             ageYears: selectedPet?.ageYears,
-            recentDailyMinutes: recentDailyMinutes,
-            averageWeeklyWalkCount: averageWeeklyWalkCount
+            recentDailyMinutes: snapshot?.recentDailyMinutes ?? 0.0,
+            averageWeeklyWalkCount: snapshot?.averageWeeklyWalkCount ?? 0.0
         )
     }
 

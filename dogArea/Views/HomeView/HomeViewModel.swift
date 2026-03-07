@@ -60,6 +60,7 @@ final class HomeViewModel: ObservableObject {
     let weatherMissionStatusBuilder: HomeWeatherMissionStatusBuilding
     let weatherSnapshotPresentationService: HomeWeatherSnapshotPresenting
     let indoorMissionPresentationService: HomeIndoorMissionPresenting
+    let indoorMissionPetContextSnapshotService: HomeIndoorMissionPetContextSnapshotServicing
     let weatherSnapshotStore: WeatherSnapshotStoreProtocol
     let areaMilestoneDetector: AreaMilestoneDetecting
     let areaMilestoneNotificationScheduler: AreaMilestoneNotificationScheduling
@@ -70,6 +71,8 @@ final class HomeViewModel: ObservableObject {
     var areaMilestoneQueue: [AreaMilestoneEvent] = []
     var areaReferenceTask: Task<Void, Never>? = nil
     var hasSkippedInitialActiveSceneRefresh: Bool = false
+    var indoorMissionPetContextPolygonFingerprint: HomeIndoorMissionPetContextPolygonFingerprint? = nil
+    var indoorMissionPetContextAggregationSnapshot: HomeIndoorMissionPetContextAggregationSnapshot? = nil
 
     var pets: [PetInfo] {
         userInfo?.pet.filter(\.isActive) ?? []
@@ -129,6 +132,7 @@ final class HomeViewModel: ObservableObject {
         weatherMissionStatusBuilder: HomeWeatherMissionStatusBuilding = HomeWeatherMissionStatusBuilder(),
         weatherSnapshotPresentationService: HomeWeatherSnapshotPresenting = HomeWeatherSnapshotPresentationService(),
         indoorMissionPresentationService: HomeIndoorMissionPresenting = HomeIndoorMissionPresentationService(),
+        indoorMissionPetContextSnapshotService: HomeIndoorMissionPetContextSnapshotServicing = HomeIndoorMissionPetContextSnapshotService(),
         weatherSnapshotStore: WeatherSnapshotStoreProtocol = WeatherSnapshotStore.shared,
         areaMilestoneDetector: AreaMilestoneDetecting = AreaMilestoneDetector(),
         areaMilestoneNotificationScheduler: AreaMilestoneNotificationScheduling = LocalAreaMilestoneNotificationScheduler()
@@ -142,6 +146,7 @@ final class HomeViewModel: ObservableObject {
         self.weatherMissionStatusBuilder = weatherMissionStatusBuilder
         self.weatherSnapshotPresentationService = weatherSnapshotPresentationService
         self.indoorMissionPresentationService = indoorMissionPresentationService
+        self.indoorMissionPetContextSnapshotService = indoorMissionPetContextSnapshotService
         self.weatherSnapshotStore = weatherSnapshotStore
         self.areaMilestoneDetector = areaMilestoneDetector
         self.areaMilestoneNotificationScheduler = areaMilestoneNotificationScheduler
