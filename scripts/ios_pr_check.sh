@@ -104,6 +104,7 @@ swift scripts/auth_signup_entry_ux_unit_check.swift
 swift scripts/auth_signup_validation_unit_check.swift
 swift scripts/auth_rate_limit_message_unit_check.swift
 swift scripts/auth_mail_resend_state_machine_unit_check.swift
+swift scripts/auth_captcha_fallback_ux_unit_check.swift
 swift scripts/signin_metal_overlay_guard_unit_check.swift
 swift scripts/auth_overlay_widget_action_defer_unit_check.swift
 swift scripts/auth_reauth_session_downgrade_unit_check.swift
