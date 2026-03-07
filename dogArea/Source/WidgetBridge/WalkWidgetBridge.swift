@@ -16,12 +16,22 @@ enum WalkWidgetBridgeContract {
     static let deepLinkHost = "widget"
     static let walkDeepLinkPath = "/walk"
     static let territoryDeepLinkPath = "/territory"
+    static let hotspotDeepLinkPath = "/hotspot"
     static let deepLinkActionQueryName = "action"
     static let deepLinkActionIdQueryName = "action_id"
     static let deepLinkSourceQueryName = "source"
     static let deepLinkContextQueryName = "context_id"
     static let deepLinkDestinationQueryName = "destination"
     static let territoryStatusQueryName = "territory_status"
+    static let hotspotStatusQueryName = "hotspot_status"
+    static let hotspotRadiusPresetQueryName = "radius_preset"
+
+    /// 지정한 핫스팟 반경 preset에 대응하는 공유 저장소 키를 생성합니다.
+    /// - Parameter radiusPreset: 스냅샷을 구분할 위젯 반경 preset입니다.
+    /// - Returns: preset별 핫스팟 스냅샷 저장 키 문자열입니다.
+    static func hotspotSnapshotStorageKey(for radiusPreset: HotspotWidgetRadiusPreset) -> String {
+        "\(hotspotSnapshotStorageKey).\(radiusPreset.rawValue)"
+    }
 }
 
 enum WalkWidgetActionKind: String, Codable, CaseIterable {
@@ -172,6 +182,82 @@ struct TerritoryWidgetDeepLinkRoute: Equatable {
         let source = queryByName[WalkWidgetBridgeContract.deepLinkSourceQueryName]
             .flatMap { $0.isEmpty ? nil : $0 } ?? "territory_widget"
         return .init(destination: destination, source: source, status: status)
+    }
+}
+
+enum HotspotWidgetDeepLinkDestination: String, Codable, CaseIterable {
+    case rivalDetail = "rival_detail"
+}
+
+struct HotspotWidgetDeepLinkRoute: Equatable {
+    let destination: HotspotWidgetDeepLinkDestination
+    let source: String
+    let status: HotspotWidgetSnapshotStatus
+    let radiusPreset: HotspotWidgetRadiusPreset
+
+    /// 핫스팟 위젯 딥링크 라우트를 앱 URL 스킴으로 직렬화합니다.
+    /// - Returns: 앱에서 라이벌 상세 목적지와 반경 문맥을 복원할 수 있는 URL입니다.
+    func makeURL() -> URL? {
+        var components = URLComponents()
+        components.scheme = WalkWidgetBridgeContract.deepLinkScheme
+        components.host = WalkWidgetBridgeContract.deepLinkHost
+        components.path = WalkWidgetBridgeContract.hotspotDeepLinkPath
+        components.queryItems = [
+            URLQueryItem(
+                name: WalkWidgetBridgeContract.deepLinkDestinationQueryName,
+                value: destination.rawValue
+            ),
+            URLQueryItem(
+                name: WalkWidgetBridgeContract.deepLinkSourceQueryName,
+                value: source
+            ),
+            URLQueryItem(
+                name: WalkWidgetBridgeContract.hotspotStatusQueryName,
+                value: status.rawValue
+            ),
+            URLQueryItem(
+                name: WalkWidgetBridgeContract.hotspotRadiusPresetQueryName,
+                value: radiusPreset.rawValue
+            )
+        ]
+        return components.url
+    }
+
+    /// 앱으로 전달된 URL에서 핫스팟 위젯 딥링크 라우트를 복원합니다.
+    /// - Parameter url: 위젯 탭으로 유입된 입력 URL입니다.
+    /// - Returns: 핫스팟 위젯 규약에 맞는 라우트면 반환하고, 아니면 `nil`을 반환합니다.
+    static func parse(from url: URL) -> HotspotWidgetDeepLinkRoute? {
+        guard
+            let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+            components.scheme?.lowercased() == WalkWidgetBridgeContract.deepLinkScheme,
+            components.host?.lowercased() == WalkWidgetBridgeContract.deepLinkHost,
+            components.path == WalkWidgetBridgeContract.hotspotDeepLinkPath
+        else {
+            return nil
+        }
+
+        let queryByName = Dictionary(
+            uniqueKeysWithValues: (components.queryItems ?? []).map { ($0.name, $0.value ?? "") }
+        )
+        guard
+            let destinationRaw = queryByName[WalkWidgetBridgeContract.deepLinkDestinationQueryName],
+            let destination = HotspotWidgetDeepLinkDestination(rawValue: destinationRaw),
+            let statusRaw = queryByName[WalkWidgetBridgeContract.hotspotStatusQueryName],
+            let status = HotspotWidgetSnapshotStatus(rawValue: statusRaw),
+            let radiusRaw = queryByName[WalkWidgetBridgeContract.hotspotRadiusPresetQueryName],
+            let radiusPreset = HotspotWidgetRadiusPreset(rawValue: radiusRaw)
+        else {
+            return nil
+        }
+
+        let source = queryByName[WalkWidgetBridgeContract.deepLinkSourceQueryName]
+            .flatMap { $0.isEmpty ? nil : $0 } ?? "hotspot_widget"
+        return .init(
+            destination: destination,
+            source: source,
+            status: status,
+            radiusPreset: radiusPreset
+        )
     }
 }
 

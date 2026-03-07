@@ -3,6 +3,7 @@ import SwiftUI
 struct RivalTabView: View {
     @EnvironmentObject private var authFlow: AuthFlowCoordinator
     @StateObject private var viewModel = RivalTabViewModel()
+    @Binding private var externalRoute: RivalExternalRoute?
     @State private var isConsentSheetPresented: Bool = false
     @State private var reportTargetAlias: String? = nil
     @State private var isModerationSheetPresented: Bool = false
@@ -11,9 +12,11 @@ struct RivalTabView: View {
     let onOpenSettings: () -> Void
 
     init(
+        externalRoute: Binding<RivalExternalRoute?> = .constant(nil),
         onOpenMap: @escaping () -> Void = {},
         onOpenSettings: @escaping () -> Void = {}
     ) {
+        self._externalRoute = externalRoute
         self.onOpenMap = onOpenMap
         self.onOpenSettings = onOpenSettings
     }
@@ -35,6 +38,7 @@ struct RivalTabView: View {
         .accessibilityIdentifier("screen.rival.content")
         .onAppear {
             viewModel.start()
+            consumeExternalRouteIfNeeded()
         }
         .onDisappear {
             viewModel.stop()
@@ -43,6 +47,9 @@ struct RivalTabView: View {
             if shouldShowSignIn == false {
                 viewModel.refreshSessionContext()
             }
+        }
+        .onChange(of: externalRoute) { _, _ in
+            consumeExternalRouteIfNeeded()
         }
         .sheet(isPresented: $isConsentSheetPresented) {
             consentSheet
@@ -144,6 +151,7 @@ struct RivalTabView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("근처 익명 핫스팟")
                 .font(.appFont(for: .SemiBold, size: 20))
+            hotspotRadiusContextSection
 
             switch viewModel.screenState {
             case .guestLocked:
@@ -227,6 +235,61 @@ struct RivalTabView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .appCardSurface()
         .padding(.horizontal, 16)
+    }
+
+    private var hotspotRadiusContextSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let banner = viewModel.hotspotExternalRouteBannerMessage {
+                Text(banner)
+                    .font(.appFont(for: .Regular, size: 12))
+                    .foregroundStyle(Color.appYellow)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.appYellow.opacity(0.08))
+                    .cornerRadius(12)
+                    .accessibilityIdentifier("rival.hotspot.externalRouteBanner")
+            }
+
+            HStack(spacing: 8) {
+                Text("현재 반경")
+                    .font(.appFont(for: .Regular, size: 12))
+                    .foregroundStyle(Color.appTextDarkGray)
+                Spacer()
+                Text(viewModel.hotspotRadiusPreset.shortLabel)
+                    .font(.appFont(for: .SemiBold, size: 12))
+                    .foregroundStyle(Color.appInk)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.appTextLightGray.opacity(0.18))
+                    .cornerRadius(10)
+                    .accessibilityIdentifier("rival.hotspot.radius.current")
+            }
+
+            Picker(
+                "핫스팟 반경",
+                selection: Binding(
+                    get: { viewModel.hotspotRadiusPreset },
+                    set: { viewModel.setHotspotRadiusPreset($0, source: "picker") }
+                )
+            ) {
+                ForEach(HotspotWidgetRadiusPreset.allCases, id: \.rawValue) { preset in
+                    Text(preset.shortLabel).tag(preset)
+                }
+            }
+            .pickerStyle(.segmented)
+            .accessibilityIdentifier("rival.hotspot.radius.picker")
+
+            Text(viewModel.hotspotRadiusPreset.rivalDetailDescription)
+                .font(.appFont(for: .Regular, size: 12))
+                .foregroundStyle(Color.appTextDarkGray)
+
+            if let stalePriority = viewModel.hotspotRadiusPreset.stalePriorityDescription {
+                Text(stalePriority)
+                    .font(.appFont(for: .Light, size: 11))
+                    .foregroundStyle(Color.appTextDarkGray)
+            }
+        }
     }
 
     private var leaderboardCard: some View {
@@ -500,5 +563,12 @@ struct RivalTabView: View {
             .padding(.vertical, 4)
             .background(color.opacity(0.25))
             .cornerRadius(8)
+    }
+
+    /// 외부 위젯 라우트가 있으면 라이벌 탭 상태에 반영하고 즉시 소비합니다.
+    private func consumeExternalRouteIfNeeded() {
+        guard let externalRoute else { return }
+        viewModel.applyExternalRoute(externalRoute)
+        self.externalRoute = nil
     }
 }

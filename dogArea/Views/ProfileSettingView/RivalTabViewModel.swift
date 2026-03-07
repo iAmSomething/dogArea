@@ -176,6 +176,8 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
     @Published var compareScope: RivalCompareScope = .rival
     @Published var leaderboardPeriod: RivalLeaderboardPeriod = .week
     @Published var toastMessage: String? = nil
+    @Published var hotspotRadiusPreset: HotspotWidgetRadiusPreset = .balanced
+    @Published var hotspotExternalRouteBannerMessage: String? = nil
 
     let nearbyService: NearbyPresenceServiceProtocol
     let rivalLeagueService: RivalLeagueServiceProtocol
@@ -188,6 +190,7 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
     let locationSharingKeyPrefix = "nearby.locationSharingEnabled.v1"
     let locationSharingLegacyGlobalKey = "nearby.locationSharingEnabled.v1"
     let locationSharingPolicyInitializedKeyPrefix = "nearby.locationSharingPolicyInitialized.v1"
+    let hotspotRadiusPresetKeyPrefix = "rival.hotspot.radiusPreset.v1"
     let visibilityOffPropagationDeadline: TimeInterval = 30
     let visibilityOffRetryInterval: TimeInterval = 10
     let visibilityOffMaxRetries: Int = 3

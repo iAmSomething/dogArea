@@ -23,9 +23,11 @@ struct RootView: View {
     @State private var tabBarVisibility: AppTabBarVisibility = .automatic
     @State private var pendingWalkWidgetRoute: WalkWidgetActionRoute? = nil
     @State private var pendingHomeRoute: HomeExternalRoute? = nil
+    @State private var pendingRivalRoute: RivalExternalRoute? = nil
     @State private var deferredTerritoryWidgetRoute: TerritoryWidgetDeepLinkRoute? = nil
     @State private var didDispatchUITestWidgetRoute = false
     @State private var didDispatchUITestTerritoryWidgetRoute = false
+    @State private var didDispatchUITestHotspotWidgetRoute = false
     @StateObject private var mapViewModelStore = MapViewModelStore()
     private let widgetActionStore: WalkWidgetActionRequestStoring = DefaultWalkWidgetActionRequestStore.shared
     private let walkWidgetSnapshotStore: WalkWidgetSnapshotStoring = DefaultWalkWidgetSnapshotStore.shared
@@ -79,6 +81,23 @@ struct RootView: View {
             destination: .goalDetail,
             source: "ui-test-territory-widget",
             status: status
+        )
+    }
+
+    /// UI 테스트 런타임에서 지정한 핫스팟 위젯 반경 라우트를 복원합니다.
+    /// - Returns: 반경 preset 인자가 있으면 라이벌 상세 라우트를 반환하고, 없으면 `nil`을 반환합니다.
+    private static func initialUITestHotspotWidgetRoute() -> HotspotWidgetDeepLinkRoute? {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard let index = arguments.firstIndex(of: "-UITest.HotspotWidgetRoutePreset"),
+              arguments.indices.contains(index + 1),
+              let radiusPreset = HotspotWidgetRadiusPreset(rawValue: arguments[index + 1]) else {
+            return nil
+        }
+        return HotspotWidgetDeepLinkRoute(
+            destination: .rivalDetail,
+            source: "ui-test-hotspot-widget",
+            status: .memberReady,
+            radiusPreset: radiusPreset
         )
     }
 
@@ -154,6 +173,7 @@ struct RootView: View {
             .onAppear {
                 dispatchUITestWidgetActionIfNeeded()
                 dispatchUITestTerritoryWidgetRouteIfNeeded()
+                dispatchUITestHotspotWidgetRouteIfNeeded()
                 consumePendingWidgetActionIfNeeded()
                 syncTerritoryWidgetSnapshot(force: true)
                 syncHotspotWidgetSnapshot(force: true)
@@ -230,6 +250,7 @@ struct RootView: View {
         } else if selectedTab == 3 {
             AppTabRootContainer(accessibilityIdentifier: "screen.rival") {
                 RivalTabView(
+                    externalRoute: $pendingRivalRoute,
                     onOpenMap: { selectedTab = 2 },
                     onOpenSettings: { selectedTab = 4 }
                 )
@@ -261,6 +282,15 @@ struct RootView: View {
             )
             #endif
             dispatchTerritoryWidgetRoute(territoryRoute)
+            return
+        }
+        if let hotspotRoute = HotspotWidgetDeepLinkRoute.parse(from: url) {
+            #if DEBUG
+            print(
+                "[WidgetAction] parsed hotspot deep link destination=\(hotspotRoute.destination.rawValue) status=\(hotspotRoute.status.rawValue) radius=\(hotspotRoute.radiusPreset.rawValue) source=\(hotspotRoute.source)"
+            )
+            #endif
+            dispatchHotspotWidgetRoute(hotspotRoute)
         }
     }
 
@@ -287,6 +317,14 @@ struct RootView: View {
               let route = Self.initialUITestTerritoryWidgetRoute() else { return }
         didDispatchUITestTerritoryWidgetRoute = true
         dispatchTerritoryWidgetRoute(route)
+    }
+
+    /// UI 테스트 런타임에서 지정한 핫스팟 위젯 라우트를 한 번만 라이벌 탭으로 전달합니다.
+    private func dispatchUITestHotspotWidgetRouteIfNeeded() {
+        guard didDispatchUITestHotspotWidgetRoute == false,
+              let route = Self.initialUITestHotspotWidgetRoute() else { return }
+        didDispatchUITestHotspotWidgetRoute = true
+        dispatchHotspotWidgetRoute(route)
     }
 
     /// 위젯 액션 라우트를 종류에 맞는 탭/서비스로 전달합니다.
@@ -359,6 +397,22 @@ struct RootView: View {
                 widgetStatus: route.status
             ),
             questWidgetEntryContext: nil
+        )
+    }
+
+    /// 핫스팟 위젯 딥링크를 라이벌 탭의 동일 반경 문맥으로 연결합니다.
+    /// - Parameter route: 핫스팟 위젯이 전달한 목적지/반경/상태 딥링크 정보입니다.
+    private func dispatchHotspotWidgetRoute(_ route: HotspotWidgetDeepLinkRoute) {
+        #if DEBUG
+        print(
+            "[WidgetAction] dispatch hotspot destination=\(route.destination.rawValue) status=\(route.status.rawValue) radius=\(route.radiusPreset.rawValue) source=\(route.source)"
+        )
+        #endif
+        selectedTab = 3
+        pendingRivalRoute = RivalExternalRoute(
+            source: .hotspotWidget,
+            radiusPreset: route.radiusPreset,
+            widgetStatus: route.status
         )
     }
 

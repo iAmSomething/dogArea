@@ -45,6 +45,7 @@ extension RivalTabViewModel {
     /// 로그인/로그아웃 직후 세션 컨텍스트를 다시 읽고 UI 상태를 즉시 갱신합니다.
     func refreshSessionContext() {
         locationSharingEnabled = loadLocationSharingPreference(for: currentUserId)
+        hotspotRadiusPreset = loadHotspotRadiusPreset(for: currentUserId)
         loadModerationPreferences()
         updatePermissionState()
         refreshViewState()

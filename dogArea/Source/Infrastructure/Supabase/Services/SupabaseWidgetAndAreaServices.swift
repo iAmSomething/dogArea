@@ -821,7 +821,7 @@ final class DefaultHotspotWidgetSnapshotSyncService: HotspotWidgetSnapshotSyncin
     private let preferenceStore: UserDefaults
     private let syncTTL: TimeInterval
     private let staleGraceInterval: TimeInterval
-    private let queryRadiusKm: Double
+    private let supportedRadiusPresets: [HotspotWidgetRadiusPreset]
 
     /// 핫스팟 위젯 스냅샷 동기화 서비스를 생성합니다.
     /// - Parameters:
@@ -831,7 +831,7 @@ final class DefaultHotspotWidgetSnapshotSyncService: HotspotWidgetSnapshotSyncin
     ///   - preferenceStore: 마지막 동기화 메타데이터를 저장할 기본 설정 저장소입니다.
     ///   - syncTTL: RPC 재조회 최소 간격(초)입니다.
     ///   - staleGraceInterval: 오프라인 캐시를 허용할 최대 유예 시간(초)입니다.
-    ///   - queryRadiusKm: 서버 요약 조회 시 사용할 반경(km)입니다.
+    ///   - supportedRadiusPresets: 서버 요약을 미리 동기화할 반경 preset 목록입니다.
     init(
         summaryService: HotspotWidgetSummaryServiceProtocol = HotspotWidgetSummaryService(),
         snapshotStore: HotspotWidgetSnapshotStoring = DefaultHotspotWidgetSnapshotStore.shared,
@@ -839,7 +839,7 @@ final class DefaultHotspotWidgetSnapshotSyncService: HotspotWidgetSnapshotSyncin
         preferenceStore: UserDefaults = .standard,
         syncTTL: TimeInterval = 10 * 60,
         staleGraceInterval: TimeInterval = 3 * 60 * 60,
-        queryRadiusKm: Double = 1.2
+        supportedRadiusPresets: [HotspotWidgetRadiusPreset] = HotspotWidgetRadiusPreset.allCases
     ) {
         self.summaryService = summaryService
         self.snapshotStore = snapshotStore
@@ -847,7 +847,7 @@ final class DefaultHotspotWidgetSnapshotSyncService: HotspotWidgetSnapshotSyncin
         self.preferenceStore = preferenceStore
         self.syncTTL = syncTTL
         self.staleGraceInterval = staleGraceInterval
-        self.queryRadiusKm = queryRadiusKm
+        self.supportedRadiusPresets = supportedRadiusPresets
     }
 
     /// 서버 요약을 조회해 핫스팟 위젯 공유 스냅샷을 갱신합니다.
@@ -855,19 +855,22 @@ final class DefaultHotspotWidgetSnapshotSyncService: HotspotWidgetSnapshotSyncin
     ///   - force: `true`면 TTL을 무시하고 즉시 갱신합니다.
     ///   - now: TTL/상태 계산 기준 시각입니다.
     func sync(force: Bool, now: Date) async {
-        guard shouldSync(force: force, now: now) else { return }
+        let presetsToSync = supportedRadiusPresets.filter { shouldSync(force: force, now: now, radiusPreset: $0) }
+        guard presetsToSync.isEmpty == false else { return }
 
         guard let user = userSessionStore.currentUserInfo(),
               user.id.isEmpty == false else {
-            saveGuestSnapshot(now: now)
+            presetsToSync.forEach { saveGuestSnapshot(radiusPreset: $0, now: now) }
             return
         }
 
-        do {
-            let summary = try await summaryService.fetchSummary(radiusKm: queryRadiusKm, now: now)
-            saveMemberSnapshot(summary: summary, now: now)
-        } catch {
-            saveFailureSnapshot(now: now)
+        for radiusPreset in presetsToSync {
+            do {
+                let summary = try await summaryService.fetchSummary(radiusKm: radiusPreset.radiusKm, now: now)
+                saveMemberSnapshot(summary: summary, radiusPreset: radiusPreset, now: now)
+            } catch {
+                saveFailureSnapshot(radiusPreset: radiusPreset, now: now)
+            }
         }
     }
 
@@ -876,23 +879,27 @@ final class DefaultHotspotWidgetSnapshotSyncService: HotspotWidgetSnapshotSyncin
     ///   - force: `true`면 즉시 동기화합니다.
     ///   - now: 판단 기준 시각입니다.
     /// - Returns: 동기화가 필요하면 `true`, 스킵 가능하면 `false`입니다.
-    private func shouldSync(force: Bool, now: Date) -> Bool {
+    private func shouldSync(force: Bool, now: Date, radiusPreset: HotspotWidgetRadiusPreset) -> Bool {
         if force { return true }
-        let snapshot = snapshotStore.load()
+        let snapshot = snapshotStore.load(radiusPreset: radiusPreset)
         let age = now.timeIntervalSince1970 - snapshot.updatedAt
         return age >= syncTTL
     }
 
     /// 비회원 상태 스냅샷을 저장합니다.
-    /// - Parameter now: 저장 시각입니다.
-    private func saveGuestSnapshot(now: Date) {
+    /// - Parameters:
+    ///   - radiusPreset: 현재 저장할 위젯 반경 preset입니다.
+    ///   - now: 저장 시각입니다.
+    private func saveGuestSnapshot(radiusPreset: HotspotWidgetRadiusPreset, now: Date) {
         save(
             HotspotWidgetSnapshot(
+                radiusPreset: radiusPreset,
                 status: .guestLocked,
                 message: "로그인 후 주변 익명 핫스팟 트렌드를 위젯에서 확인할 수 있어요.",
                 summary: nil,
                 updatedAt: now.timeIntervalSince1970
             ),
+            radiusPreset: radiusPreset,
             now: now
         )
     }
@@ -900,14 +907,21 @@ final class DefaultHotspotWidgetSnapshotSyncService: HotspotWidgetSnapshotSyncin
     /// 서버 요약 응답을 회원 상태 스냅샷으로 저장합니다.
     /// - Parameters:
     ///   - summary: 서버에서 조회한 최신 익명 핫스팟 요약 DTO입니다.
+    ///   - radiusPreset: 스냅샷을 저장할 위젯 반경 preset입니다.
     ///   - now: 저장 시각입니다.
-    private func saveMemberSnapshot(summary: HotspotWidgetSummaryDTO, now: Date) {
+    private func saveMemberSnapshot(
+        summary: HotspotWidgetSummaryDTO,
+        radiusPreset: HotspotWidgetRadiusPreset,
+        now: Date
+    ) {
         let status = resolveMemberStatus(summary)
         let message = messageForMemberSummary(summary, status: status)
         let snapshot = HotspotWidgetSnapshot(
+            radiusPreset: radiusPreset,
             status: status,
             message: message,
             summary: HotspotWidgetSummarySnapshot(
+                radiusPreset: radiusPreset,
                 signalLevel: summary.signalLevel,
                 highCellCount: summary.highCellCount,
                 mediumCellCount: summary.mediumCellCount,
@@ -920,7 +934,7 @@ final class DefaultHotspotWidgetSnapshotSyncService: HotspotWidgetSnapshotSyncin
             ),
             updatedAt: now.timeIntervalSince1970
         )
-        save(snapshot, now: now)
+        save(snapshot, radiusPreset: radiusPreset, now: now)
     }
 
     /// 서버 요약을 위젯 상태 코드로 정규화합니다.
@@ -965,17 +979,21 @@ final class DefaultHotspotWidgetSnapshotSyncService: HotspotWidgetSnapshotSyncin
     }
 
     /// 서버 조회 실패 시 마지막 성공 스냅샷 기반 상태로 저장합니다.
-    /// - Parameter now: 저장 시각입니다.
-    private func saveFailureSnapshot(now: Date) {
-        let current = snapshotStore.load()
+    /// - Parameters:
+    ///   - radiusPreset: 현재 저장할 위젯 반경 preset입니다.
+    ///   - now: 저장 시각입니다.
+    private func saveFailureSnapshot(radiusPreset: HotspotWidgetRadiusPreset, now: Date) {
+        let current = snapshotStore.load(radiusPreset: radiusPreset)
         guard let cachedSummary = current.summary else {
             save(
                 HotspotWidgetSnapshot(
+                    radiusPreset: radiusPreset,
                     status: .syncDelayed,
                     message: "동기화가 지연되고 있어요. 앱을 열어 최신화해주세요.",
                     summary: nil,
                     updatedAt: now.timeIntervalSince1970
                 ),
+                radiusPreset: radiusPreset,
                 now: now
             )
             return
@@ -988,11 +1006,13 @@ final class DefaultHotspotWidgetSnapshotSyncService: HotspotWidgetSnapshotSyncin
             : "동기화가 지연되고 있어요. 앱을 열어 최신화해주세요."
         save(
             HotspotWidgetSnapshot(
+                radiusPreset: radiusPreset,
                 status: status,
                 message: message,
                 summary: cachedSummary,
                 updatedAt: now.timeIntervalSince1970
             ),
+            radiusPreset: radiusPreset,
             now: now
         )
     }
@@ -1000,9 +1020,14 @@ final class DefaultHotspotWidgetSnapshotSyncService: HotspotWidgetSnapshotSyncin
     /// 위젯 스냅샷 저장 후 재로딩을 요청하고 마지막 동기화 시각을 기록합니다.
     /// - Parameters:
     ///   - snapshot: 저장할 핫스팟 위젯 스냅샷입니다.
+    ///   - radiusPreset: 스냅샷을 저장할 위젯 반경 preset입니다.
     ///   - now: 마지막 동기화 시각 기록 기준입니다.
-    private func save(_ snapshot: HotspotWidgetSnapshot, now: Date) {
-        snapshotStore.save(snapshot)
+    private func save(
+        _ snapshot: HotspotWidgetSnapshot,
+        radiusPreset: HotspotWidgetRadiusPreset,
+        now: Date
+    ) {
+        snapshotStore.save(snapshot, radiusPreset: radiusPreset)
         preferenceStore.set(now.timeIntervalSince1970, forKey: "hotspot.widget.lastSyncAt.v1")
         reloadHotspotWidgetTimeline()
     }
