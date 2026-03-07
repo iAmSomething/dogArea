@@ -1,7 +1,62 @@
 import SwiftUI
 import CoreLocation
 
+struct RivalExternalRoute: Equatable {
+    enum Source: String, Equatable {
+        case hotspotWidget = "hotspot_widget"
+    }
+
+    let source: Source
+    let radiusPreset: HotspotWidgetRadiusPreset
+    let widgetStatus: HotspotWidgetSnapshotStatus
+
+    var bannerMessage: String {
+        switch widgetStatus {
+        case .offlineCached, .syncDelayed:
+            return "위젯에서 \(radiusPreset.shortLabel) 기준으로 열었어요. 이 범위는 마지막 업데이트 시각을 함께 보는 게 중요해요."
+        case .privacyGuarded:
+            return "위젯에서 \(radiusPreset.shortLabel) 기준으로 열었어요. 상세 신호는 프라이버시 정책에 맞게 축약됩니다."
+        default:
+            return "위젯에서 \(radiusPreset.shortLabel) 기준으로 열었어요. 같은 반경으로 상세를 확인합니다."
+        }
+    }
+}
+
 extension RivalTabViewModel {
+    /// 외부 라우트가 지정한 반경 문맥을 라이벌 탭 상태에 반영합니다.
+    /// - Parameter route: 위젯에서 전달된 반경/상태 문맥입니다.
+    func applyExternalRoute(_ route: RivalExternalRoute) {
+        let shouldForceRefresh = hotspotRadiusPreset == route.radiusPreset
+        hotspotExternalRouteBannerMessage = route.bannerMessage
+        setHotspotRadiusPreset(route.radiusPreset, source: route.source.rawValue)
+        if shouldForceRefresh {
+            refreshHotspots(force: true)
+        }
+    }
+
+    /// 사용자가 선택한 핫스팟 반경 preset을 반영하고 필요 시 즉시 다시 조회합니다.
+    /// - Parameters:
+    ///   - preset: 새로 적용할 핫스팟 반경 preset입니다.
+    ///   - source: preset 변경을 유발한 진입 소스 식별자입니다.
+    func setHotspotRadiusPreset(_ preset: HotspotWidgetRadiusPreset, source: String) {
+        let didChange = hotspotRadiusPreset != preset
+        hotspotRadiusPreset = preset
+        persistHotspotRadiusPreset(preset, for: currentUserId)
+
+        if source != RivalExternalRoute.Source.hotspotWidget.rawValue {
+            hotspotExternalRouteBannerMessage = nil
+        }
+
+        guard didChange else { return }
+        metricTracker.track(
+            .rivalHotspotFetchRequested,
+            userKey: currentUserId,
+            featureKey: .nearbyHotspotV1,
+            payload: ["source": source, "radius_preset": preset.rawValue]
+        )
+        refreshHotspots(force: true)
+    }
+
     /// 동의 시트 완료 후 익명 공유를 활성화합니다.
     func enableSharingWithConsent() {
         guard let userId = currentUserId else {
@@ -101,7 +156,7 @@ extension RivalTabViewModel {
                     userId: userId,
                     centerLatitude: coordinate.latitude,
                     centerLongitude: coordinate.longitude,
-                    radiusKm: 1.0
+                    radiusKm: hotspotRadiusPreset.radiusKm
                 )
                 let maxIntensity = fetched.map(\.intensity).max() ?? 0
                 metricTracker.track(
@@ -110,6 +165,7 @@ extension RivalTabViewModel {
                     featureKey: .nearbyHotspotV1,
                     eventValue: Double(fetched.count),
                     payload: [
+                        "radius_preset": hotspotRadiusPreset.rawValue,
                         "cell_count": "\(fetched.count)",
                         "max_intensity": String(format: "%.4f", maxIntensity)
                     ]
@@ -138,6 +194,7 @@ extension RivalTabViewModel {
                     userKey: userId,
                     featureKey: .nearbyHotspotV1,
                     payload: [
+                        "radius_preset": hotspotRadiusPreset.rawValue,
                         "error_code": metricErrorCode,
                         "retryable": RivalNetworkErrorInterpreter.isConnectivityError(error) ? "true" : "false"
                     ]
@@ -272,6 +329,20 @@ extension RivalTabViewModel {
         "\(locationSharingPolicyInitializedKeyPrefix).\(userId)"
     }
 
+    /// 사용자 ID 범위에 맞는 핫스팟 반경 preset 저장 키를 생성합니다.
+    /// - Parameter userId: 현재 인증 사용자 ID입니다.
+    /// - Returns: 사용자 범위가 포함된 반경 preset 저장 키 문자열입니다.
+    private func hotspotRadiusPresetKey(for userId: String?) -> String {
+        let scope: String
+        if let userId {
+            let normalized = userId.trimmingCharacters(in: .whitespacesAndNewlines)
+            scope = normalized.isEmpty ? "guest" : normalized
+        } else {
+            scope = "guest"
+        }
+        return "\(hotspotRadiusPresetKeyPrefix).\(scope)"
+    }
+
     /// 특정 키에 저장된 Bool 값이 존재할 때만 해당 값을 반환합니다.
     /// - Parameter key: 조회할 UserDefaults 키입니다.
     /// - Returns: 저장된 값이 있으면 `Bool`, 없으면 `nil`입니다.
@@ -324,6 +395,25 @@ extension RivalTabViewModel {
         guard normalizedUserId.isEmpty == false else { return }
         preferenceStore.set(enabled, forKey: locationSharingPreferenceKey(for: normalizedUserId))
         preferenceStore.set(true, forKey: locationSharingPolicyInitializedKey(for: normalizedUserId))
+    }
+
+    /// 현재 사용자 범위에 저장된 핫스팟 반경 preset을 로드합니다.
+    /// - Parameter userId: 현재 인증 사용자 ID입니다.
+    /// - Returns: 저장된 반경 preset이 있으면 해당 값, 없으면 기본 `balanced` preset입니다.
+    func loadHotspotRadiusPreset(for userId: String?) -> HotspotWidgetRadiusPreset {
+        guard let rawValue = preferenceStore.string(forKey: hotspotRadiusPresetKey(for: userId)),
+              let preset = HotspotWidgetRadiusPreset(rawValue: rawValue) else {
+            return .balanced
+        }
+        return preset
+    }
+
+    /// 현재 사용자 범위에 핫스팟 반경 preset을 저장합니다.
+    /// - Parameters:
+    ///   - preset: 저장할 핫스팟 반경 preset입니다.
+    ///   - userId: 저장 대상 사용자 ID입니다.
+    private func persistHotspotRadiusPreset(_ preset: HotspotWidgetRadiusPreset, for userId: String?) {
+        preferenceStore.set(preset.rawValue, forKey: hotspotRadiusPresetKey(for: userId))
     }
 
     /// 공유 OFF 요청을 최대 30초 창 내에서 재시도해 서버 반영 성공 확률을 높입니다.

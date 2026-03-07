@@ -1,12 +1,73 @@
+import AppIntents
 import WidgetKit
 import SwiftUI
+
+enum HotspotWidgetRadiusPresetOption: String, AppEnum {
+    case nearby = "nearby"
+    case balanced = "balanced"
+    case broad = "broad"
+
+    static var typeDisplayRepresentation: TypeDisplayRepresentation {
+        TypeDisplayRepresentation(name: "핫스팟 반경")
+    }
+
+    static var caseDisplayRepresentations: [HotspotWidgetRadiusPresetOption: DisplayRepresentation] {
+        [
+            .nearby: DisplayRepresentation(
+                title: "0.5km",
+                subtitle: "가장 가까운 흐름"
+            ),
+            .balanced: DisplayRepresentation(
+                title: "1km",
+                subtitle: "기본 주변 범위"
+            ),
+            .broad: DisplayRepresentation(
+                title: "3km",
+                subtitle: "넓은 범위 추세"
+            )
+        ]
+    }
+
+    /// 위젯 설정 옵션을 공유 스냅샷에서 사용하는 반경 preset으로 변환합니다.
+    /// - Returns: 앱과 위젯이 공통으로 사용하는 반경 preset입니다.
+    var preset: HotspotWidgetRadiusPreset {
+        switch self {
+        case .nearby:
+            return .nearby
+        case .balanced:
+            return .balanced
+        case .broad:
+            return .broad
+        }
+    }
+}
+
+struct HotspotWidgetConfigurationIntent: WidgetConfigurationIntent {
+    static var title: LocalizedStringResource = "핫스팟 반경"
+    static var description = IntentDescription("위젯에서 확인할 익명 핫스팟 범위를 고릅니다.")
+
+    @Parameter(title: "반경")
+    var radiusPreset: HotspotWidgetRadiusPresetOption?
+
+    /// 위젯 구성 인텐트의 기본 반경 preset을 `balanced`로 초기화합니다.
+    init() {
+        self.radiusPreset = .balanced
+    }
+
+    static var parameterSummary: some ParameterSummary {
+        Summary("반경 \(\.$radiusPreset)")
+    }
+}
 
 struct HotspotStatusTimelineEntry: TimelineEntry {
     let date: Date
     let snapshot: HotspotWidgetSnapshot
 }
 
-struct HotspotStatusTimelineProvider: TimelineProvider {
+struct HotspotStatusTimelineProvider: AppIntentTimelineProvider {
+    typealias Entry = HotspotStatusTimelineEntry
+    typealias Intent = HotspotWidgetConfigurationIntent
+
     private let snapshotStore: HotspotWidgetSnapshotStoring
 
     /// 익명 핫스팟 위젯 타임라인 제공자를 생성합니다.
@@ -17,27 +78,41 @@ struct HotspotStatusTimelineProvider: TimelineProvider {
 
     /// 위젯 갤러리 플레이스홀더 엔트리를 반환합니다.
     /// - Parameter context: 위젯 미리보기 컨텍스트입니다.
-    /// - Returns: 기본 핫스팟 스냅샷을 포함한 엔트리입니다.
+    /// - Returns: 기본 반경 preset을 포함한 플레이스홀더 엔트리입니다.
     func placeholder(in context: Context) -> HotspotStatusTimelineEntry {
-        .init(date: Date(), snapshot: .initial)
+        .init(date: Date(), snapshot: .initial(radiusPreset: .balanced))
     }
 
-    /// 시스템 스냅샷 요청에 현재 저장된 핫스팟 스냅샷을 전달합니다.
+    /// 시스템 스냅샷 요청에 선택한 반경 preset 스냅샷을 전달합니다.
     /// - Parameters:
+    ///   - configuration: 사용자가 선택한 핫스팟 반경 설정입니다.
     ///   - context: 스냅샷 요청 컨텍스트입니다.
-    ///   - completion: 생성한 엔트리를 전달하는 콜백입니다.
-    func getSnapshot(in context: Context, completion: @escaping (HotspotStatusTimelineEntry) -> Void) {
-        completion(.init(date: Date(), snapshot: snapshotStore.load()))
+    /// - Returns: 선택 반경 기준 핫스팟 스냅샷을 포함한 엔트리입니다.
+    func snapshot(
+        for configuration: HotspotWidgetConfigurationIntent,
+        in context: Context
+    ) async -> HotspotStatusTimelineEntry {
+        .init(
+            date: Date(),
+            snapshot: snapshotStore.load(radiusPreset: configuration.radiusPreset?.preset ?? .balanced)
+        )
     }
 
     /// 현재 공유 저장소 기준 타임라인을 생성합니다.
     /// - Parameters:
+    ///   - configuration: 사용자가 선택한 핫스팟 반경 설정입니다.
     ///   - context: 타임라인 생성 컨텍스트입니다.
-    ///   - completion: 생성된 타임라인을 전달하는 콜백입니다.
-    func getTimeline(in context: Context, completion: @escaping (Timeline<HotspotStatusTimelineEntry>) -> Void) {
+    /// - Returns: 선택 반경 기준 스냅샷과 다음 갱신 시점을 포함한 타임라인입니다.
+    func timeline(
+        for configuration: HotspotWidgetConfigurationIntent,
+        in context: Context
+    ) async -> Timeline<HotspotStatusTimelineEntry> {
         let now = Date()
-        let entry = HotspotStatusTimelineEntry(date: now, snapshot: snapshotStore.load())
-        completion(Timeline(entries: [entry], policy: .after(now.addingTimeInterval(10 * 60))))
+        let entry = HotspotStatusTimelineEntry(
+            date: now,
+            snapshot: snapshotStore.load(radiusPreset: configuration.radiusPreset?.preset ?? .balanced)
+        )
+        return Timeline(entries: [entry], policy: .after(now.addingTimeInterval(10 * 60)))
     }
 }
 
@@ -58,14 +133,32 @@ struct HotspotStatusWidgetEntryView: View {
             }
         }
         .containerBackground(.fill.tertiary, for: .widget)
+        .widgetURL(routeURL)
+    }
+
+    private var currentPreset: HotspotWidgetRadiusPreset {
+        entry.snapshot.summary?.radiusPreset ?? entry.snapshot.radiusPreset
+    }
+
+    private var routeURL: URL? {
+        HotspotWidgetDeepLinkRoute(
+            destination: .rivalDetail,
+            source: "hotspot_widget",
+            status: entry.snapshot.status,
+            radiusPreset: currentPreset
+        ).makeURL()
     }
 
     private var guestContent: some View {
         VStack(alignment: .leading, spacing: 8) {
-            WidgetStatusBadge(title: "비회원", color: .orange.opacity(0.2))
+            HStack(alignment: .top, spacing: 8) {
+                WidgetStatusBadge(title: "비회원", color: .orange.opacity(0.2))
+                Spacer(minLength: 0)
+                presetBadge(currentPreset)
+            }
             Text("익명 핫스팟")
                 .font(.headline)
-            Text("개인 위치 없이 지역 트렌드 단계를 확인할 수 있어요. 로그인 후 활성화됩니다.")
+            Text("\(currentPreset.shortLabel) 기준으로 지역 트렌드 단계를 확인할 수 있어요. 로그인 후 활성화됩니다.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(3)
@@ -78,12 +171,20 @@ struct HotspotStatusWidgetEntryView: View {
 
     private var emptyContent: some View {
         VStack(alignment: .leading, spacing: 8) {
-            WidgetStatusBadge(title: "신호 부족", color: .blue.opacity(0.18))
+            HStack(alignment: .top, spacing: 8) {
+                WidgetStatusBadge(title: "신호 부족", color: .blue.opacity(0.18))
+                Spacer(minLength: 0)
+                presetBadge(currentPreset)
+            }
             Text("주변 익명 신호를 수집 중입니다")
                 .font(.headline)
                 .lineLimit(2)
-            Text(entry.snapshot.message)
+            Text(currentPreset.widgetSummaryDetail)
                 .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+            Text(entry.snapshot.message)
+                .font(.caption2)
                 .foregroundStyle(.secondary)
                 .lineLimit(3)
             Spacer(minLength: 2)
@@ -94,15 +195,12 @@ struct HotspotStatusWidgetEntryView: View {
     }
 
     private var dataContent: some View {
-        let summary = entry.snapshot.summary ?? .zero
+        let summary = entry.snapshot.summary ?? .zero(radiusPreset: entry.snapshot.radiusPreset)
         return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 8) {
                 WidgetStatusBadge(title: signalTitle(summary.signalLevel), color: signalColor(summary.signalLevel))
                 Spacer(minLength: 0)
-                Text(updatedAtText)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                presetBadge(summary.radiusPreset)
             }
 
             if family == .systemSmall {
@@ -120,13 +218,30 @@ struct HotspotStatusWidgetEntryView: View {
         }
     }
 
+    /// 반경 preset을 간단한 배지 형태로 렌더링합니다.
+    /// - Parameter preset: 위젯에 표시할 핫스팟 반경 preset입니다.
+    /// - Returns: 현재 반경 문맥을 보여주는 배지 뷰입니다.
+    private func presetBadge(_ preset: HotspotWidgetRadiusPreset) -> some View {
+        Text(preset.shortLabel)
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(Color.primary)
+            .padding(.vertical, 6)
+            .padding(.horizontal, 10)
+            .background(Color.secondary.opacity(0.12))
+            .clipShape(Capsule())
+    }
+
     /// 소형 위젯 본문을 렌더링합니다.
     /// - Parameter summary: 익명 핫스팟 요약 스냅샷입니다.
-    /// - Returns: 활성도 단계와 보호 정책 정보를 담은 소형 본문 뷰입니다.
+    /// - Returns: 반경 문맥과 활성도 단계 정보를 담은 소형 본문 뷰입니다.
     private func smallBody(summary: HotspotWidgetSummarySnapshot) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             Text("활성도 \(signalTitle(summary.signalLevel))")
                 .font(.system(size: 22, weight: .bold, design: .rounded))
+                .lineLimit(1)
+            Text(summary.radiusPreset.widgetSummaryTitle)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
                 .lineLimit(1)
             Text(signalDistributionSummary(summary))
                 .font(.caption2)
@@ -141,11 +256,15 @@ struct HotspotStatusWidgetEntryView: View {
 
     /// 중형 위젯 본문을 렌더링합니다.
     /// - Parameter summary: 익명 핫스팟 요약 스냅샷입니다.
-    /// - Returns: 익명 단계 상태와 정책 안내를 담은 중형 본문 뷰입니다.
+    /// - Returns: 반경별 유지 정보와 지연 주의 문구를 담은 중형 본문 뷰입니다.
     private func mediumBody(summary: HotspotWidgetSummarySnapshot) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("익명 핫스팟 단계")
                 .font(.headline)
+            Text(summary.radiusPreset.widgetSummaryDetail)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
             HStack(spacing: 8) {
                 stageChip(title: "높음", isActive: summary.highCellCount > 0, tint: .red)
                 stageChip(title: "보통", isActive: summary.mediumCellCount > 0, tint: .orange)
@@ -155,6 +274,12 @@ struct HotspotStatusWidgetEntryView: View {
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .lineLimit(2)
+            if let stalePriority = summary.radiusPreset.stalePriorityDescription {
+                Text(stalePriority)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
             Text(policyFootnote(summary))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
@@ -185,11 +310,11 @@ struct HotspotStatusWidgetEntryView: View {
     private func signalDistributionSummary(_ summary: HotspotWidgetSummarySnapshot) -> String {
         switch dominantSignalLevel(summary) {
         case .high:
-            return "현재는 높음 단계 신호가 상대적으로 우세해요."
+            return "\(summary.radiusPreset.shortLabel) 기준으로는 높음 단계 신호가 상대적으로 우세해요."
         case .medium:
-            return "현재는 보통 단계 신호가 가장 많이 관측돼요."
+            return "\(summary.radiusPreset.shortLabel) 기준으로는 보통 단계 신호가 가장 많이 관측돼요."
         case .low:
-            return "현재는 낮음 단계 신호가 중심이에요."
+            return "\(summary.radiusPreset.shortLabel) 기준으로는 낮음 단계 신호가 중심이에요."
         case .none:
             return "아직 뚜렷한 단계 신호가 없어요."
         }
@@ -249,7 +374,7 @@ struct HotspotStatusWidgetEntryView: View {
 
     /// 프라이버시 가드 상태를 설명하는 보조 문구를 생성합니다.
     /// - Parameter summary: 익명 핫스팟 요약 스냅샷입니다.
-    /// - Returns: 지연/억제/백분위 정책을 설명하는 문자열입니다.
+    /// - Returns: 반경 문맥과 지연/억제 정책을 설명하는 문자열입니다.
     private func policyFootnote(_ summary: HotspotWidgetSummarySnapshot) -> String {
         switch summary.suppressionReason {
         case "k_anon":
@@ -263,7 +388,7 @@ struct HotspotStatusWidgetEntryView: View {
             return "좌표/개별 카운트 없이 백분위 단계만 제공합니다."
         }
         if summary.delayMinutes > 0 {
-            return "정책 지연 \(summary.delayMinutes)분 적용 · 좌표 비노출"
+            return "정책 지연 \(summary.delayMinutes)분 적용 · 개인 좌표 비노출"
         }
         return "개인 좌표/정밀 카운트는 제공하지 않습니다."
     }
@@ -274,18 +399,21 @@ struct HotspotStatusWidgetEntryView: View {
         }
         return "업데이트 -"
     }
-
 }
 
 struct HotspotStatusWidget: Widget {
     private let kind = WalkWidgetBridgeContract.hotspotWidgetKind
 
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: HotspotStatusTimelineProvider()) { entry in
+        AppIntentConfiguration(
+            kind: kind,
+            intent: HotspotWidgetConfigurationIntent.self,
+            provider: HotspotStatusTimelineProvider()
+        ) { entry in
             HotspotStatusWidgetEntryView(entry: entry)
         }
         .configurationDisplayName("익명 핫스팟")
-        .description("주변 익명 핫스팟 활성도 단계를 프라이버시 가드와 함께 표시합니다.")
+        .description("주변 익명 핫스팟 활성도 단계를 선택한 반경 기준으로 표시합니다.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }

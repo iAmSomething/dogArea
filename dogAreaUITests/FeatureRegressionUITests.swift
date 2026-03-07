@@ -204,6 +204,23 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertTrue(hasSettingsEntryPoint, "설정 탭 진입 화면 검증에 실패했습니다.")
     }
 
+    /// 핫스팟 위젯 딥링크가 라이벌 탭을 열고 동일 반경 preset 문맥을 유지하는지 검증합니다.
+    func testFeatureRegression_HotspotWidgetRouteOpensRivalWithMatchingRadiusPreset() throws {
+        let app = launchAppForFeatureRegression(
+            extraArguments: ["-UITest.HotspotWidgetRoutePreset", "broad"]
+        )
+
+        let rivalScreen = screenElement(identifier: "screen.rival.content", in: app)
+        XCTAssertTrue(waitUntilExists(rivalScreen, timeout: 8), "핫스팟 위젯 라우트로 라이벌 탭이 열리지 않았습니다.")
+
+        let banner = app.staticTexts["위젯에서 3km 기준으로 열었어요. 같은 반경으로 상세를 확인합니다."]
+        XCTAssertTrue(waitUntilExists(banner, timeout: 4), "핫스팟 위젯 반경 문맥 배너가 노출되지 않았습니다.")
+
+        let currentRadius = screenElement(identifier: "rival.hotspot.radius.current", in: app)
+        XCTAssertTrue(waitUntilExists(currentRadius, timeout: 3), "라이벌 탭의 현재 반경 배지를 찾지 못했습니다.")
+        XCTAssertEqual(currentRadius.label, "3km", "위젯에서 전달한 반경 preset이 앱 상세와 일치해야 합니다.")
+    }
+
     /// 설정 탭에서 게스트/회원 상태별 핵심 진입점(로그인 또는 로그아웃)이 노출되는지 검증합니다.
     func testFeatureRegression_SettingsAuthEntryPoints() throws {
         let app = launchAppForFeatureRegression()

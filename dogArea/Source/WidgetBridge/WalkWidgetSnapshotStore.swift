@@ -379,6 +379,78 @@ enum HotspotWidgetSignalLevel: String, Codable {
     case none = "none"
 }
 
+enum HotspotWidgetRadiusPreset: String, Codable, CaseIterable, Hashable {
+    case nearby = "nearby"
+    case balanced = "balanced"
+    case broad = "broad"
+
+    var radiusKm: Double {
+        switch self {
+        case .nearby:
+            return 0.5
+        case .balanced:
+            return 1.0
+        case .broad:
+            return 3.0
+        }
+    }
+
+    var shortLabel: String {
+        switch self {
+        case .nearby:
+            return "0.5km"
+        case .balanced:
+            return "1km"
+        case .broad:
+            return "3km"
+        }
+    }
+
+    var widgetSummaryTitle: String {
+        switch self {
+        case .nearby:
+            return "가까운 범위"
+        case .balanced:
+            return "주변 범위"
+        case .broad:
+            return "넓은 범위"
+        }
+    }
+
+    var widgetSummaryDetail: String {
+        switch self {
+        case .nearby:
+            return "가장 가까운 익명 흐름을 빠르게 확인해요."
+        case .balanced:
+            return "주변 익명 흐름을 균형 있게 확인해요."
+        case .broad:
+            return "넓은 범위 추세를 보되 지연 여부를 더 주의해요."
+        }
+    }
+
+    var rivalDetailDescription: String {
+        switch self {
+        case .nearby:
+            return "가장 가까운 익명 흐름만 좁게 확인합니다."
+        case .balanced:
+            return "주변 익명 흐름을 기본 범위로 확인합니다."
+        case .broad:
+            return "넓은 범위를 보기 때문에 지연/오프라인 표시에 더 민감합니다."
+        }
+    }
+
+    var stalePriorityDescription: String? {
+        switch self {
+        case .nearby:
+            return nil
+        case .balanced:
+            return "기본 범위에서는 마지막 업데이트 시각을 함께 확인해 주세요."
+        case .broad:
+            return "넓은 범위는 지연 정보의 영향이 더 커서 마지막 업데이트 시각이 중요해요."
+        }
+    }
+}
+
 enum HotspotWidgetSnapshotStatus: String, Codable {
     case memberReady = "member_ready"
     case guestLocked = "guest_locked"
@@ -389,6 +461,7 @@ enum HotspotWidgetSnapshotStatus: String, Codable {
 }
 
 struct HotspotWidgetSummarySnapshot: Codable, Equatable {
+    let radiusPreset: HotspotWidgetRadiusPreset
     let signalLevel: HotspotWidgetSignalLevel
     let highCellCount: Int
     let mediumCellCount: Int
@@ -399,31 +472,80 @@ struct HotspotWidgetSummarySnapshot: Codable, Equatable {
     let guideCopy: String
     let refreshedAt: TimeInterval
 
-    static let zero = HotspotWidgetSummarySnapshot(
-        signalLevel: .none,
-        highCellCount: 0,
-        mediumCellCount: 0,
-        lowCellCount: 0,
-        delayMinutes: 0,
-        privacyMode: "none",
-        suppressionReason: nil,
-        guideCopy: "현재 주변 익명 핫스팟 신호가 충분하지 않습니다.",
-        refreshedAt: Date().timeIntervalSince1970
-    )
+    /// 지정한 반경 preset에 맞는 빈 핫스팟 요약 스냅샷을 생성합니다.
+    /// - Parameter radiusPreset: 기본값에 반영할 위젯 반경 preset입니다.
+    /// - Returns: 신호가 없는 상태를 나타내는 기본 핫스팟 요약 스냅샷입니다.
+    static func zero(radiusPreset: HotspotWidgetRadiusPreset = .balanced) -> HotspotWidgetSummarySnapshot {
+        HotspotWidgetSummarySnapshot(
+            radiusPreset: radiusPreset,
+            signalLevel: .none,
+            highCellCount: 0,
+            mediumCellCount: 0,
+            lowCellCount: 0,
+            delayMinutes: 0,
+            privacyMode: "none",
+            suppressionReason: nil,
+            guideCopy: "현재 주변 익명 핫스팟 신호가 충분하지 않습니다.",
+            refreshedAt: Date().timeIntervalSince1970
+        )
+    }
 }
 
 struct HotspotWidgetSnapshot: Codable, Equatable {
+    let radiusPreset: HotspotWidgetRadiusPreset
     let status: HotspotWidgetSnapshotStatus
     let message: String
     let summary: HotspotWidgetSummarySnapshot?
     let updatedAt: TimeInterval
 
-    static let initial = HotspotWidgetSnapshot(
-        status: .guestLocked,
-        message: "로그인 후 익명 핫스팟 활성도 단계를 확인할 수 있어요.",
-        summary: nil,
-        updatedAt: Date().timeIntervalSince1970
-    )
+    /// 핫스팟 위젯 스냅샷을 지정한 반경 문맥으로 생성합니다.
+    /// - Parameters:
+    ///   - radiusPreset: 스냅샷이 표현하는 반경 preset입니다.
+    ///   - status: 현재 핫스팟 위젯 상태입니다.
+    ///   - message: 상태 설명 문구입니다.
+    ///   - summary: 렌더링할 핫스팟 요약 스냅샷입니다.
+    ///   - updatedAt: 마지막 갱신 시각입니다.
+    init(
+        radiusPreset: HotspotWidgetRadiusPreset,
+        status: HotspotWidgetSnapshotStatus,
+        message: String,
+        summary: HotspotWidgetSummarySnapshot?,
+        updatedAt: TimeInterval
+    ) {
+        self.radiusPreset = radiusPreset
+        self.status = status
+        self.message = message
+        self.summary = summary
+        self.updatedAt = updatedAt
+    }
+
+    /// 지정한 반경 preset에 맞는 기본 핫스팟 위젯 스냅샷을 생성합니다.
+    /// - Parameter radiusPreset: 위젯에 기본 적용할 반경 preset입니다.
+    /// - Returns: 선택한 반경 문맥을 포함한 초기 핫스팟 위젯 스냅샷입니다.
+    static func initial(radiusPreset: HotspotWidgetRadiusPreset = .balanced) -> HotspotWidgetSnapshot {
+        HotspotWidgetSnapshot(
+            radiusPreset: radiusPreset,
+            status: .guestLocked,
+            message: "로그인 후 익명 핫스팟 활성도 단계를 확인할 수 있어요.",
+            summary: nil,
+            updatedAt: Date().timeIntervalSince1970
+        )
+    }
+
+    /// 레거시 스냅샷까지 호환하도록 핫스팟 위젯 스냅샷을 디코딩합니다.
+    /// - Parameter decoder: 공유 저장소의 직렬화 데이터를 해석할 디코더입니다.
+    /// - Throws: 지원하지 않는 형식일 때 디코딩 오류를 그대로 전달합니다.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.radiusPreset = try container.decodeIfPresent(
+            HotspotWidgetRadiusPreset.self,
+            forKey: .radiusPreset
+        ) ?? .balanced
+        self.status = try container.decode(HotspotWidgetSnapshotStatus.self, forKey: .status)
+        self.message = try container.decode(String.self, forKey: .message)
+        self.summary = try container.decodeIfPresent(HotspotWidgetSummarySnapshot.self, forKey: .summary)
+        self.updatedAt = try container.decode(TimeInterval.self, forKey: .updatedAt)
+    }
 }
 
 enum QuestRivalWidgetSnapshotStatus: String, Codable {
@@ -702,9 +824,20 @@ protocol HotspotWidgetSnapshotStoring {
     /// - Returns: 저장된 스냅샷이 있으면 해당 값, 없으면 기본 스냅샷을 반환합니다.
     func load() -> HotspotWidgetSnapshot
 
+    /// 특정 반경 preset에 대응하는 핫스팟 위젯 스냅샷을 조회합니다.
+    /// - Parameter radiusPreset: 조회할 위젯 반경 preset입니다.
+    /// - Returns: preset별 저장 스냅샷이 있으면 해당 값, 없으면 기본 스냅샷을 반환합니다.
+    func load(radiusPreset: HotspotWidgetRadiusPreset) -> HotspotWidgetSnapshot
+
     /// 핫스팟 위젯 스냅샷을 저장합니다.
     /// - Parameter snapshot: 위젯 표시용으로 직렬화할 최신 핫스팟 스냅샷입니다.
     func save(_ snapshot: HotspotWidgetSnapshot)
+
+    /// 특정 반경 preset에 대응하는 핫스팟 위젯 스냅샷을 저장합니다.
+    /// - Parameters:
+    ///   - snapshot: 위젯 표시용으로 직렬화할 최신 핫스팟 스냅샷입니다.
+    ///   - radiusPreset: 스냅샷을 저장할 위젯 반경 preset입니다.
+    func save(_ snapshot: HotspotWidgetSnapshot, radiusPreset: HotspotWidgetRadiusPreset)
 }
 
 final class DefaultHotspotWidgetSnapshotStore: HotspotWidgetSnapshotStoring {
@@ -723,11 +856,45 @@ final class DefaultHotspotWidgetSnapshotStore: HotspotWidgetSnapshotStoring {
     /// 핫스팟 위젯 스냅샷을 조회합니다.
     /// - Returns: 저장된 스냅샷이 있으면 해당 값, 없으면 기본 스냅샷을 반환합니다.
     func load() -> HotspotWidgetSnapshot {
+        load(radiusPreset: .balanced)
+    }
+
+    /// 특정 반경 preset에 대응하는 핫스팟 위젯 스냅샷을 조회합니다.
+    /// - Parameter radiusPreset: 조회할 위젯 반경 preset입니다.
+    /// - Returns: preset별 저장 스냅샷이 있으면 해당 값, 없으면 기본 스냅샷을 반환합니다.
+    func load(radiusPreset: HotspotWidgetRadiusPreset) -> HotspotWidgetSnapshot {
         guard
-            let data = storage.data(forKey: WalkWidgetBridgeContract.hotspotSnapshotStorageKey),
+            let data = storage.data(
+                forKey: WalkWidgetBridgeContract.hotspotSnapshotStorageKey(for: radiusPreset)
+            ),
             let decoded = try? decoder.decode(HotspotWidgetSnapshot.self, from: data)
         else {
-            return .initial
+            if radiusPreset != .balanced,
+               let legacyData = storage.data(forKey: WalkWidgetBridgeContract.hotspotSnapshotStorageKey),
+               let legacyDecoded = try? decoder.decode(HotspotWidgetSnapshot.self, from: legacyData) {
+                let migratedSummary = legacyDecoded.summary.map {
+                    HotspotWidgetSummarySnapshot(
+                        radiusPreset: radiusPreset,
+                        signalLevel: $0.signalLevel,
+                        highCellCount: $0.highCellCount,
+                        mediumCellCount: $0.mediumCellCount,
+                        lowCellCount: $0.lowCellCount,
+                        delayMinutes: $0.delayMinutes,
+                        privacyMode: $0.privacyMode,
+                        suppressionReason: $0.suppressionReason,
+                        guideCopy: $0.guideCopy,
+                        refreshedAt: $0.refreshedAt
+                    )
+                }
+                return HotspotWidgetSnapshot(
+                    radiusPreset: radiusPreset,
+                    status: legacyDecoded.status,
+                    message: legacyDecoded.message,
+                    summary: migratedSummary,
+                    updatedAt: legacyDecoded.updatedAt
+                )
+            }
+            return .initial(radiusPreset: radiusPreset)
         }
         return decoded
     }
@@ -735,8 +902,22 @@ final class DefaultHotspotWidgetSnapshotStore: HotspotWidgetSnapshotStoring {
     /// 핫스팟 위젯 스냅샷을 저장합니다.
     /// - Parameter snapshot: 위젯 표시용으로 직렬화할 최신 핫스팟 스냅샷입니다.
     func save(_ snapshot: HotspotWidgetSnapshot) {
+        save(snapshot, radiusPreset: snapshot.radiusPreset)
+    }
+
+    /// 특정 반경 preset에 대응하는 핫스팟 위젯 스냅샷을 저장합니다.
+    /// - Parameters:
+    ///   - snapshot: 위젯 표시용으로 직렬화할 최신 핫스팟 스냅샷입니다.
+    ///   - radiusPreset: 스냅샷을 저장할 위젯 반경 preset입니다.
+    func save(_ snapshot: HotspotWidgetSnapshot, radiusPreset: HotspotWidgetRadiusPreset) {
         guard let data = try? encoder.encode(snapshot) else { return }
-        storage.set(data, forKey: WalkWidgetBridgeContract.hotspotSnapshotStorageKey)
+        storage.set(
+            data,
+            forKey: WalkWidgetBridgeContract.hotspotSnapshotStorageKey(for: radiusPreset)
+        )
+        if radiusPreset == .balanced {
+            storage.set(data, forKey: WalkWidgetBridgeContract.hotspotSnapshotStorageKey)
+        }
     }
 
     /// App Group 저장소를 우선 사용하고, 실패 시 표준 저장소를 반환합니다.
