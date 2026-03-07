@@ -61,37 +61,52 @@ struct QuestRivalStatusWidgetEntryView: View {
     }
 
     private var guestContent: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            WidgetStatusBadge(title: "비회원", color: .orange.opacity(0.2))
-            Text("퀘스트/라이벌 위젯")
+        let guide = WidgetStatePresentationGuide.presentation(
+            for: .guest,
+            surface: .questRival
+        )
+        return VStack(alignment: .leading, spacing: 8) {
+            WidgetStatusBadge(title: guide.badgeTitle, color: guide.badgeColor)
+            Text(guide.headline)
                 .font(.headline)
-            Text("로그인 후 오늘의 퀘스트 진행률과 라이벌 순위를 빠르게 확인할 수 있어요.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(3)
-            Spacer(minLength: 2)
-            Text("앱에서 로그인")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.orange)
-        }
-    }
-
-    private var emptyContent: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            WidgetStatusBadge(title: "준비 중", color: .blue.opacity(0.18))
-            Text("퀘스트 데이터를 준비 중입니다")
-                .font(.headline)
-                .lineLimit(2)
-            Text(entry.snapshot.message)
+            Text(guide.detail)
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(3)
             Spacer(minLength: 2)
             Button(intent: OpenQuestDetailIntent()) {
-                Label("퀘스트 상세 보기", systemImage: "list.bullet.rectangle.portrait")
+                Label(guide.cta.title, systemImage: guide.cta.systemImage)
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
+            .accessibilityLabel(guide.cta.accessibilityLabel)
+            .accessibilityHint(guide.cta.accessibilityHint)
+        }
+    }
+
+    private var emptyContent: some View {
+        let guide = WidgetStatePresentationGuide.presentation(
+            for: .empty,
+            surface: .questRival,
+            fallbackMessage: entry.snapshot.message
+        )
+        return VStack(alignment: .leading, spacing: 8) {
+            WidgetStatusBadge(title: guide.badgeTitle, color: guide.badgeColor)
+            Text(guide.headline)
+                .font(.headline)
+                .lineLimit(2)
+            Text(guide.detail)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(3)
+            Spacer(minLength: 2)
+            Button(intent: OpenQuestDetailIntent()) {
+                Label(guide.cta.title, systemImage: guide.cta.systemImage)
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .accessibilityLabel(guide.cta.accessibilityLabel)
+            .accessibilityHint(guide.cta.accessibilityHint)
         }
     }
 
@@ -113,10 +128,29 @@ struct QuestRivalStatusWidgetEntryView: View {
                 mediumBody(summary: summary)
             }
 
-            Text(entry.snapshot.message)
+            Text(actionStateGuide?.detail ?? entry.snapshot.message)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .lineLimit(2)
+        }
+    }
+
+    private var actionStateGuide: WidgetStatePresentationContent? {
+        switch entry.snapshot.status {
+        case .offlineCached:
+            return WidgetStatePresentationGuide.presentation(
+                for: .offline,
+                surface: .questRival,
+                fallbackMessage: entry.snapshot.message
+            )
+        case .syncDelayed:
+            return WidgetStatePresentationGuide.presentation(
+                for: .syncDelayed,
+                surface: .questRival,
+                fallbackMessage: entry.snapshot.message
+            )
+        case .memberReady, .guestLocked, .emptyData, .claimInFlight, .claimFailed, .claimSucceeded:
+            return nil
         }
     }
 
@@ -215,7 +249,9 @@ struct QuestRivalStatusWidgetEntryView: View {
             return .openQuestDetail
         case .emptyData:
             return .openQuestDetail
-        case .offlineCached, .syncDelayed, .memberReady:
+        case .offlineCached, .syncDelayed:
+            return .openQuestRecovery
+        case .memberReady:
             if summary.questClaimable, summary.questInstanceId != nil {
                 return .claimQuestReward
             }
@@ -230,6 +266,9 @@ struct QuestRivalStatusWidgetEntryView: View {
     /// - Parameter summary: 퀘스트/라이벌 위젯 요약 스냅샷입니다.
     /// - Returns: 함께 노출할 보조 행동 종류가 있으면 반환하고, 없으면 `nil`을 반환합니다.
     private func secondaryActionKind(for summary: QuestRivalWidgetSummarySnapshot) -> WalkWidgetActionKind? {
+        if actionStateGuide != nil {
+            return nil
+        }
         switch primaryActionKind(for: summary) {
         case .claimQuestReward:
             return .openRivalTab
@@ -248,6 +287,9 @@ struct QuestRivalStatusWidgetEntryView: View {
     /// - Parameter summary: 퀘스트/라이벌 위젯 요약 스냅샷입니다.
     /// - Returns: 상태별로 달라지는 다음 행동 제목입니다.
     private func nextActionHeadline(_ summary: QuestRivalWidgetSummarySnapshot) -> String {
+        if let guide = actionStateGuide {
+            return guide.headline
+        }
         switch primaryActionKind(for: summary) {
         case .claimQuestReward:
             return "지금 보상 받을 수 있어요"
@@ -270,6 +312,9 @@ struct QuestRivalStatusWidgetEntryView: View {
     /// - Parameter summary: 퀘스트/라이벌 위젯 요약 스냅샷입니다.
     /// - Returns: 상태별 CTA와 복구 맥락을 설명하는 보조 문구입니다.
     private func nextActionCaption(_ summary: QuestRivalWidgetSummarySnapshot) -> String {
+        if let guide = actionStateGuide {
+            return guide.detail
+        }
         switch primaryActionKind(for: summary) {
         case .claimQuestReward:
             return "보상 \(summary.questRewardPoint)pt를 지금 수령할 수 있어요."
@@ -339,6 +384,9 @@ struct QuestRivalStatusWidgetEntryView: View {
     /// - Parameter kind: 렌더링할 CTA 종류입니다.
     /// - Returns: 버튼에 표시할 사용자 문구입니다.
     private func actionTitle(for kind: WalkWidgetActionKind) -> String {
+        if kind == .openQuestRecovery, let guide = actionStateGuide {
+            return guide.cta.title
+        }
         switch kind {
         case .claimQuestReward:
             return "보상 받기"
@@ -361,6 +409,9 @@ struct QuestRivalStatusWidgetEntryView: View {
     /// - Parameter kind: 렌더링할 CTA 종류입니다.
     /// - Returns: 버튼 라벨에 사용할 시스템 이미지 이름입니다.
     private func actionSymbolName(for kind: WalkWidgetActionKind) -> String {
+        if kind == .openQuestRecovery, let guide = actionStateGuide {
+            return guide.cta.systemImage
+        }
         switch kind {
         case .claimQuestReward:
             return "gift.fill"
@@ -501,6 +552,9 @@ struct QuestRivalStatusWidgetEntryView: View {
     }
 
     private var statusBadgeTitle: String {
+        if let guide = actionStateGuide {
+            return guide.badgeTitle
+        }
         switch entry.snapshot.status {
         case .memberReady:
             return "실시간"
@@ -522,6 +576,9 @@ struct QuestRivalStatusWidgetEntryView: View {
     }
 
     private var statusBadgeColor: Color {
+        if let guide = actionStateGuide {
+            return guide.badgeColor
+        }
         switch entry.snapshot.status {
         case .memberReady, .claimSucceeded:
             return .green.opacity(0.20)
