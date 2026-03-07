@@ -33,3 +33,5 @@ Issue: #418
 ## Validation
 
 - `swift scripts/backend_edge_observability_unit_check.swift`
+- `swift scripts/backend_edge_failure_dashboard_unit_check.swift`
+- `docs/backend-edge-failure-dashboard-view-v1.md`

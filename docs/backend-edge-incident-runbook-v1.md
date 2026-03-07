@@ -125,6 +125,7 @@ DOGAREA_RUN_SUPABASE_SMOKE=1 DOGAREA_TEST_EMAIL=... DOGAREA_TEST_PASSWORD=... ba
 
 운영자가 기본으로 보는 기준:
 
+- backend failure dashboard: `docs/backend-edge-failure-dashboard-view-v1.md`
 - game-layer KPI: `docs/game-layer-observability-qa-v1.md`
 - rollout KPI: `docs/feature-flag-rollout-monitoring-v1.md`
 - live smoke matrix: `docs/supabase-integration-smoke-matrix-v1.md`
