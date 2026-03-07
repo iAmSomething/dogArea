@@ -46,6 +46,7 @@
 - Swift 안정화(강제 언래핑/타이머 수명) v1: `docs/swift-stability-hardening-v1.md`
 - 프로젝트 설정/의존성 안정화 v1: `docs/project-settings-dependency-stability-v1.md`
 - Supabase 마이그레이션/운영 검증 v1: `docs/supabase-migration.md`
+- Supabase integration smoke matrix v1: `docs/supabase-integration-smoke-matrix-v1.md`
 - 릴리즈 회귀 체크리스트 v1: `docs/release-regression-checklist-v1.md`
 - 릴리즈 회귀 실행 리포트(2026-02-26): `docs/release-regression-report-2026-02-26.md`
 - 게임 레이어 공통 관측/QA 기준 v1: `docs/game-layer-observability-qa-v1.md`
@@ -85,6 +86,8 @@
 
 - 전체 체크(iOS/watchOS build 포함): `bash scripts/ios_pr_check.sh`
 - 문서/유닛만 빠르게 체크: `DOGAREA_SKIP_BUILD=1 bash scripts/ios_pr_check.sh`
+- Backend smoke entrypoint: `bash scripts/backend_pr_check.sh`
+- Live Supabase smoke matrix: `DOGAREA_RUN_SUPABASE_SMOKE=1 DOGAREA_TEST_EMAIL=... DOGAREA_TEST_PASSWORD=... bash scripts/backend_pr_check.sh`
 
 ## 강아지들의 영역 표시
 

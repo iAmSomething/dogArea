@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT_DIR"
+
+echo "[dogArea-backend] running integration harness structure checks"
+swift scripts/supabase_integration_harness_unit_check.swift
+
+if [[ "${DOGAREA_RUN_SUPABASE_SMOKE:-0}" != "1" ]]; then
+  echo "[dogArea-backend] DOGAREA_RUN_SUPABASE_SMOKE=1 이 아니므로 실 Supabase smoke matrix는 건너뜁니다."
+  echo "[dogArea-backend] run: DOGAREA_RUN_SUPABASE_SMOKE=1 DOGAREA_TEST_EMAIL=... DOGAREA_TEST_PASSWORD=... bash scripts/backend_pr_check.sh"
+  exit 0
+fi
+
+bash scripts/run_supabase_smoke_matrix.sh
