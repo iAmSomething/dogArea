@@ -27,7 +27,7 @@ struct MapFloatingControlColumnView: View {
             if showsAddPointButton {
                 VStack(alignment: .trailing, spacing: 8) {
                     if isAutoPointRecordMode {
-                        Text("AUTO")
+                        Text("자동 기록")
                             .font(.appFont(for: .SemiBold, size: 11))
                             .foregroundStyle(MapChromePalette.primaryText)
                             .mapChromePill(.success)

@@ -30,7 +30,7 @@ final class TerritoryGoalViewModel: ObservableObject {
     }
 
     var headerEyebrowText: String {
-        "Territory Goal Detail"
+        "영역 목표 상세"
     }
 
     var goalMeaningText: String {
@@ -41,7 +41,7 @@ final class TerritoryGoalViewModel: ObservableObject {
     }
 
     var areaSourceText: String {
-        "\(homeViewModel.areaReferenceSourceLabel) · Featured \(homeViewModel.featuredAreaCount)개"
+        "\(homeViewModel.areaReferenceSourceLabel) · 우선 추천 \(homeViewModel.featuredAreaCount)개"
     }
 
     var freshnessText: String {
@@ -98,11 +98,11 @@ final class TerritoryGoalViewModel: ObservableObject {
     }
 
     var sourceInsightDetailText: String {
-        isFallbackSource ? "원격 응답 실패 시 로컬 기준으로 대체됩니다." : "운영 중인 비교군 카탈로그를 사용 중이에요."
+        isFallbackSource ? "지금은 온라인 비교 구역을 불러오지 못해 기본 비교 구역으로 안내하고 있어요." : "운영 중인 비교 구역을 사용 중이에요."
     }
 
     var freshnessInsightDetailText: String {
-        isFallbackSource ? "fallback 상태도 함께 표시합니다." : "최근 동기화 시각 기준입니다."
+        isFallbackSource ? "지금은 기본 비교 구역 기준으로 보여드리고 있어요." : "최근 동기화 시각 기준입니다."
     }
 
     var actionTitle: String {

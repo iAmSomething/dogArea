@@ -33,7 +33,10 @@ let homeVM = loadMany([
     "dogArea/Source/Domain/Home/Stores/IndoorMissionStore.swift",
     "dogArea/Source/Domain/Home/Stores/SeasonMotionStore.swift"
 ])
-let homeView = load("dogArea/Views/HomeView/HomeView.swift")
+let homeView = loadMany([
+    "dogArea/Views/HomeView/HomeView.swift",
+    "dogArea/Views/HomeView/HomeSubView/HomeGoalTrackerCardView.swift"
+])
 let areaDetail = load("dogArea/Views/HomeView/AreaDetailView.swift")
 let areaDetailViewModel = load("dogArea/Views/HomeView/HomeSubView/AreaDetailViewModel.swift")
 let areaDetailCatalogSection = load("dogArea/Views/HomeView/HomeSubView/Sections/AreaDetail/AreaDetailReferenceCatalogSectionView.swift")
@@ -59,7 +62,7 @@ assertTrue(homeVM.contains("refreshAreaReferenceCatalogs()"), "HomeViewModel sho
 assertTrue(homeVM.contains("nearlistMore()"), "HomeViewModel should still expose nearlistMore")
 assertTrue(homeVM.contains("featuredGoalAreas"), "HomeViewModel should keep featured-goal areas")
 
-assertTrue(homeView.contains("비교군 소스:"), "HomeView should render area source label")
+assertTrue(homeView.contains("비교 기준:"), "HomeView should render area source label")
 assertTrue(areaDetailCatalogSection.contains("비교군 카탈로그"), "AreaDetail should render catalog section")
 assertTrue(areaDetail.contains("AreaDetailReferenceCatalogSectionView"), "AreaDetail should use catalog section component")
 assertTrue(areaDetailViewModel.contains("referenceSections"), "AreaDetailViewModel should expose DB-backed sections")
@@ -67,7 +70,7 @@ assertTrue(areaDetailViewModel.contains("freshnessText"), "AreaDetailViewModel s
 
 assertTrue(doc.contains("featured"), "doc should include featured policy")
 assertTrue(doc.contains("display_order"), "doc should include display order policy")
-assertTrue(doc.contains("Fallback"), "doc should include fallback policy")
+assertTrue(doc.contains("fallback 정책"), "doc should include fallback policy")
 assertTrue(readme.contains("docs/area-reference-db-ui-transition-v1.md"), "README should include area DB UI transition doc")
 assertTrue(migrationDoc.contains("area_reference_catalogs"), "migration doc should include area reference catalog verification")
 

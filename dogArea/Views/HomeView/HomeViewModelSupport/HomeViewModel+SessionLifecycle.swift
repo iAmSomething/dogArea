@@ -44,7 +44,7 @@ extension HomeViewModel {
                 self.featuredAreaCount = self.featuredGoalAreas.count
                 self.areaReferenceSections = snapshot.sections
                 self.areaReferenceSource = snapshot.source
-                self.areaReferenceSourceLabel = snapshot.source == .remote ? "DB 비교군" : "로컬 비교군 (Fallback)"
+                self.areaReferenceSourceLabel = snapshot.source == .remote ? "운영 비교 구역" : "기본 비교 구역"
                 self.areaReferenceLastUpdatedAt = Date()
                 self.updateCurrentMeter()
                 self.refreshAreaList()

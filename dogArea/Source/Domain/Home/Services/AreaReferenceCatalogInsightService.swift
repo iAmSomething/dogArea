@@ -139,7 +139,7 @@ final class AreaReferenceCatalogInsightService: AreaReferenceCatalogInsightServi
             ),
             .init(
                 id: "featured",
-                title: "Featured",
+                title: "우선 추천",
                 value: "\(featuredCount)개",
                 detail: "우선 추천 기준"
             ),
@@ -193,7 +193,7 @@ final class AreaReferenceCatalogInsightService: AreaReferenceCatalogInsightServi
         case let (.some(currentReference), .none):
             return "\(currentReference.referenceName) 이후의 더 큰 기준은 현재 카탈로그에 없습니다. 다음 시즌 목표는 다른 카탈로그에서 찾는 편이 좋습니다."
         case (.none, .none):
-            return "원격/로컬 비교군 기준을 아직 구성하지 못했습니다. 잠시 뒤 새로고침으로 카탈로그를 다시 받아보세요."
+            return "비교 구역 기준을 아직 준비하지 못했어요. 잠시 뒤 새로고침해 다시 받아보세요."
         }
     }
 
@@ -212,7 +212,7 @@ final class AreaReferenceCatalogInsightService: AreaReferenceCatalogInsightServi
         if catalogNames.isEmpty {
             return "비교군 카탈로그가 비어 있어 다음 목표를 다시 계산하기 어렵습니다."
         }
-        return "\(catalogNames) 기준으로 총 \(totalReferenceCount)개를 제공하고, 이 중 Featured \(featuredCount)개를 우선 추천합니다."
+        return "\(catalogNames) 기준으로 총 \(totalReferenceCount)개를 보여드리고, 이 중 우선 추천 \(featuredCount)개를 먼저 안내합니다."
     }
 
     /// 카탈로그 섹션을 화면 표시용 행/배지 데이터로 변환합니다.

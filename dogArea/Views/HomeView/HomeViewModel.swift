@@ -26,7 +26,7 @@ final class HomeViewModel: ObservableObject {
     @Published var isShowingAllRecordsOverride: Bool = false
     @Published var areaReferenceSections: [AreaReferenceSection] = []
     @Published var areaReferenceSource: AreaReferenceSource = .fallback
-    @Published var areaReferenceSourceLabel: String = "로컬 비교군 (Fallback)"
+    @Published var areaReferenceSourceLabel: String = "기본 비교 구역"
     @Published var areaReferenceLastUpdatedAt: Date? = nil
     @Published var featuredAreaCount: Int = 0
     @Published var questMotionEvent: QuestMotionEvent? = nil

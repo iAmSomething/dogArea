@@ -3453,7 +3453,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         let nextRisk = next.risk
         weatherOverlayFallbackActive = next.fallback
         weatherOverlayStatusText = next.fallback
-            ? "Fallback: 날씨 데이터 연결 불가"
+            ? "날씨 정보를 잠시 불러오지 못했어요"
             : "날씨 위험도 \(nextRisk.displayTitle)"
         guard nextRisk != weatherOverlayRiskLevel || (nextRisk == .clear && weatherOverlayOpacity != 0.0) else { return }
         withAnimation(.easeInOut(duration: weatherOverlayAnimationDuration)) {

@@ -69,7 +69,7 @@ struct MapSettingView: View {
                 viewModel.showOnlyOne.toggle()
             }
             toggleChip(
-                title: "Heatmap",
+                title: "산책 분포",
                 isActive: viewModel.isHeatmapFeatureAvailable && viewModel.heatmapEnabled
             ) {
                 viewModel.toggleHeatmapEnabled()
@@ -99,7 +99,7 @@ struct MapSettingView: View {
                 viewModel.toggleWalkPointRecordMode()
             }
             toggleChip(
-                title: viewModel.isAddPointLongPressModeEnabled ? "영역 추가: 길게 0.4s" : "영역 추가: 1탭+Undo",
+                title: viewModel.isAddPointLongPressModeEnabled ? "길게 눌러 영역 추가" : "영역 추가 후 실행 취소",
                 isActive: viewModel.isAddPointLongPressModeEnabled
             ) {
                 viewModel.toggleAddPointLongPressMode()
@@ -110,7 +110,7 @@ struct MapSettingView: View {
             ) {
                 viewModel.toggleMapMotionReduced()
             }
-            Text("자동 종료 정책 v1(고정)")
+            Text("자동 종료 기준 적용 중")
                 .font(.appFont(for: .SemiBold, size: 13))
                 .foregroundStyle(Color.appInk)
                 .frame(maxWidth: .infinity)

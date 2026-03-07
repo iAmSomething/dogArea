@@ -29,6 +29,7 @@ let homeViewModel = loadMany([
     "dogArea/Views/HomeView/HomeViewModelSupport/HomeViewModel+SessionLifecycle.swift",
     "dogArea/Views/HomeView/HomeViewModelSupport/HomeViewModel+AreaProgress.swift",
     "dogArea/Views/HomeView/HomeViewModelSupport/HomeViewModel+IndoorMissionFlow.swift",
+    "dogArea/Source/Domain/Home/Services/HomeWeatherMissionStatusBuilder.swift",
     "dogArea/Source/Domain/Home/Models/HomeMissionModels.swift",
     "dogArea/Source/Domain/Home/Stores/IndoorMissionStore.swift",
     "dogArea/Source/Domain/Home/Stores/SeasonMotionStore.swift"
@@ -43,18 +44,20 @@ assertTrue(homeViewModel.contains("weatherShieldDailySummary"), "HomeViewModel s
 assertTrue(homeViewModel.contains("weatherStatus(now:"), "IndoorMissionStore should expose weather status")
 assertTrue(homeViewModel.contains("recordWeatherShieldUsage"), "IndoorMissionStore should record weather shield usage")
 assertTrue(homeViewModel.contains("return (.clear, .fallback)"), "fallback should keep default clear risk")
+assertTrue(homeViewModel.contains("localizedCopy(\"기본 모드\", \"Base Mode\")"), "weather status builder should define localized fallback badge copy")
 
 assertTrue(homeView.contains("weatherMissionStatusCard(summary:"), "HomeView should render weather mission status card")
 assertTrue(homeView.contains("weatherShieldSummaryCard(summary:"), "HomeView should render weather shield summary card")
-assertTrue(homeView.contains("Fallback"), "HomeView should expose fallback badge text")
 
 assertTrue(mapView.contains("weatherOverlayStatusText"), "MapView should display weather status text")
 assertTrue(mapViewModel.contains("weatherOverlayFallbackActive"), "MapViewModel should track fallback state")
-assertTrue(mapViewModel.contains("Fallback: 날씨 데이터 연결 불가"), "MapViewModel should define fallback status copy")
+assertTrue(mapViewModel.contains("날씨 정보를 잠시 불러오지 못했어요"), "MapViewModel should define fallback status copy")
 
 assertTrue(spec.contains("fallback"), "Weather UX spec should include fallback behavior")
 assertTrue(spec.contains("접근성"), "Weather UX spec should include accessibility guidance")
 assertTrue(spec.contains("기본 퀘스트"), "Weather UX spec should specify default quest behavior")
+assertTrue(spec.contains("기본 모드"), "Weather UX spec should describe the fallback badge copy")
+assertTrue(spec.contains("날씨 정보를 잠시 불러오지 못했어요"), "Weather UX spec should describe the map fallback copy")
 assertTrue(report.contains("#135"), "Cycle report should reference issue #135")
 
 print("PASS: weather ux stage3 unit checks")

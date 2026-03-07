@@ -18,10 +18,10 @@ struct HomeSeasonDetailSheetView: View {
                     }
                     VStack(alignment: .leading, spacing: 8) {
                         seasonDetailLine(title: "현재 티어", value: summary.rankTier.title)
-                        seasonDetailLine(title: "누적 점수", value: "\(Int(summary.score.rounded()))pt")
-                        seasonDetailLine(title: "오늘 증가", value: "+\(summary.todayScoreDelta)pt")
+                        seasonDetailLine(title: "누적 점수", value: "\(Int(summary.score.rounded()))점")
+                        seasonDetailLine(title: "오늘 증가", value: "+\(summary.todayScoreDelta)점")
                         seasonDetailLine(title: "기여 횟수", value: "\(summary.contributionCount)회")
-                        seasonDetailLine(title: "Shield 적용", value: "\(summary.weatherShieldApplyCount)회")
+                        seasonDetailLine(title: "보호 적용", value: "\(summary.weatherShieldApplyCount)회")
                         seasonDetailLine(title: "남은 시간", value: remainingTimeText)
                     }
                     .padding(12)
@@ -36,7 +36,7 @@ struct HomeSeasonDetailSheetView: View {
                                 Text(tier.title)
                                     .font(.appFont(for: .Regular, size: 12))
                                 Spacer()
-                                Text("\(Int(tier.minimumScore))pt+")
+                                Text("\(Int(tier.minimumScore))점+")
                                     .font(.appFont(for: .Light, size: 12))
                                     .foregroundStyle(Color.appTextDarkGray)
                             }

@@ -23,6 +23,7 @@ let doc = load("docs/walk-point-auto-record-v1.md")
 let mapViewModel = load("dogArea/Views/MapView/MapViewModel.swift")
 let mapSetting = load("dogArea/Views/MapView/MapSubViews/MapSettingView.swift")
 let mapView = load("dogArea/Views/MapView/MapView.swift")
+let mapFloatingControl = load("dogArea/Views/MapView/MapSubViews/MapFloatingControlColumnView.swift")
 let userDefaultsSetting = loadMany([
     "dogArea/Source/UserdefaultSetting.swift",
     "dogArea/Source/UserDefaultsSupport/UserSessionModels.swift",
@@ -54,7 +55,7 @@ assertTrue(mapViewModel.contains("didUpdateLocations") && mapViewModel.contains(
 assertTrue(mapSetting.contains("walkPointRecordMode.title"), "map setting must show point record mode label")
 assertTrue(mapSetting.contains("toggleWalkPointRecordMode"), "map setting must toggle point record mode")
 
-assertTrue(mapView.contains("AUTO"), "map view should display AUTO badge in auto mode")
+assertTrue(mapFloatingControl.contains("자동 기록"), "map floating control should display auto record badge in auto mode")
 
 assertTrue(userDefaultsSetting.contains("walkPointRecordMode"), "user defaults should persist point record mode")
 assertTrue(userDefaultsSetting.contains("walkPointRecordModeRawValue"), "user defaults should provide point record mode getter")

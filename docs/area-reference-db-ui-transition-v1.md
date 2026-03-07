@@ -2,10 +2,10 @@
 
 ## 1. 목표
 - `AreaMeters.swift` 정적 비교군 의존을 완화하고, Supabase `area_reference_catalogs/area_references`를 UI 소스로 우선 사용한다.
-- 원격 조회 실패 시 기존 로컬 비교군으로 자동 fallback 한다.
+- 원격 조회 실패 시 기존 로컬 비교 기준으로 자동 fallback 한다.
 
 ## 2. 적용 범위
-- Home 목표 카드(`nextGoalArea`)를 DB 비교군 기준으로 계산
+- Home 목표 카드(`nextGoalArea`)를 운영 비교 구역 기준으로 계산
 - AreaDetail 화면에 카탈로그 기반 비교군 리스트 노출
 - featured/display_order/catalog 필터를 일관 적용
 
@@ -25,14 +25,14 @@
   - featured가 비어 있으면 전체 비교군 사용
 
 ## 5. UX 반영
-- Home 목표 카드에 데이터 소스/featured 개수 안내
-  - 예: `비교군 소스: DB 비교군 · featured 12개 우선`
+- Home 목표 카드에 데이터 소스/우선 추천 개수 안내
+  - 예: `비교 기준: 운영 비교 구역 · 우선 추천 12개`
 - AreaDetail에 `비교군 카탈로그` 섹션 추가
   - 각 카탈로그별 상위 5개 reference와 면적 표시
 
 ## 6. fallback 정책
 - `SUPABASE_URL`/`SUPABASE_ANON_KEY` 미설정 또는 네트워크 실패 시 fallback
-- 라벨을 `로컬 비교군 (Fallback)`으로 표시해 운영 상태를 인지 가능하게 함
+- 라벨을 `기본 비교 구역`으로 표시해 운영 상태를 인지 가능하게 함
 
 ## 7. 완료 기준
 - Home/AreaDetail 비교군 UI가 DB 변경을 반영
