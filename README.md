@@ -57,6 +57,7 @@
 - Backend Edge auth policy v1: `docs/backend-edge-auth-policy-v1.md`
 - Backend Edge auth mode inventory v1: `docs/backend-edge-auth-mode-inventory-v1.md`
 - Backend Edge secret inventory / rotation runbook v1: `docs/backend-edge-secret-inventory-rotation-runbook-v1.md`
+- Backend Edge/RPC deployment matrix & post-deploy v1: `docs/backend-edge-rpc-deployment-matrix-post-deploy-v1.md`
 - Backend Edge observability 표준 v1: `docs/backend-edge-observability-standard-v1.md`
 - Backend Edge error taxonomy v1: `docs/backend-edge-error-taxonomy-v1.md`
 - Backend Edge incident runbook v1: `docs/backend-edge-incident-runbook-v1.md`

@@ -10,6 +10,7 @@ Supabase migration과 고위험 RPC 계약이 깨졌을 때, 모바일 회귀를
 
 - drift / contract 전용 게이트: `bash scripts/backend_migration_drift_check.sh`
 - backend 기본 PR 체크: `bash scripts/backend_pr_check.sh`
+- deploy inventory / post-deploy 기준: `docs/backend-edge-rpc-deployment-matrix-post-deploy-v1.md`
 - 실 Supabase smoke 포함 backend 체크:
 
 ```bash
