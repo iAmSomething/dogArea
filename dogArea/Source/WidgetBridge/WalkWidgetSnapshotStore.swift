@@ -132,7 +132,7 @@ struct WalkWidgetActionState: Codable, Equatable {
             message = "산책 시작 요청을 보냈어요."
         case .endWalk:
             message = "산책 종료 요청을 보냈어요."
-        case .openWalkTab, .claimQuestReward, .openRivalTab:
+        case .openWalkTab, .claimQuestReward, .openQuestDetail, .openQuestRecovery, .openRivalTab:
             message = "앱에서 요청을 준비 중입니다."
         }
         return .init(

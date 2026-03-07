@@ -34,6 +34,8 @@ struct HomeView: View {
     @State private var isSeasonDetailPresented: Bool = false
     @State private var isTerritoryGoalPresented: Bool = false
     @State private var territoryGoalEntryContext: TerritoryGoalEntryContext? = nil
+    @State private var questWidgetEntryContext: QuestWidgetEntryContext? = nil
+    @State private var pendingHomeScrollTarget: HomeExternalScrollTarget? = nil
     @State private var hasAppearedOnce: Bool = false
     @State private var isHomeVisible: Bool = false
 
@@ -115,6 +117,15 @@ struct HomeView: View {
                 }
 
             }
+            .onChange(of: pendingHomeScrollTarget) { _, target in
+                guard let target else { return }
+                DispatchQueue.main.async {
+                    withAnimation(.easeOut(duration: 0.24)) {
+                        scrollProxy.scrollTo(target.rawValue, anchor: .top)
+                    }
+                    pendingHomeScrollTarget = nil
+                }
+            }
             .navigationDestination(isPresented: $isTerritoryGoalPresented) {
                 TerritoryGoalView(
                     viewModel: TerritoryGoalViewModel(
@@ -179,6 +190,10 @@ struct HomeView: View {
     /// 홈 상태 배너들을 우선순위 순으로 묶어서 렌더링합니다.
     private var homeStatusBannerSection: some View {
         Group {
+            if let context = questWidgetEntryContext {
+                HomeStatusBannerView(message: context.bannerMessage, isWarning: context.isWarning)
+                    .accessibilityIdentifier("home.quest.externalRouteBanner")
+            }
             if let message = viewModel.aggregationStatusMessage {
                 HomeStatusBannerView(message: message, isWarning: false)
             }
@@ -215,7 +230,7 @@ struct HomeView: View {
     /// 날씨 기반 미션 카드와 보조 상태 카드를 한 섹션으로 렌더링합니다.
     private var homeMissionSection: some View {
         Group {
-            if viewModel.indoorMissionBoard.shouldDisplayCard {
+            if viewModel.indoorMissionBoard.shouldDisplayCard || questWidgetEntryContext != nil {
                 homeMissionSectionContent
             }
         }
@@ -262,6 +277,7 @@ struct HomeView: View {
                 }
             }
         )
+        .id(HomeExternalScrollTarget.questMissionSection.rawValue)
     }
 
     /// 홈 대시보드 스크롤 뷰에 상태 동기화, 시트, 전역 레이아웃 modifier를 적용합니다.
@@ -341,6 +357,12 @@ struct HomeView: View {
                     guard newValue != nil else { return }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 3.2) {
                         viewModel.clearWeatherFeedbackResultMessage()
+                    }
+                }
+                .onChange(of: questWidgetEntryContext?.bannerMessage) { _, newValue in
+                    guard newValue != nil else { return }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+                        questWidgetEntryContext = nil
                     }
                 }
         )
@@ -561,6 +583,10 @@ struct HomeView: View {
         case .territoryGoalDetail:
             territoryGoalEntryContext = externalRoute.territoryGoalEntryContext
             isTerritoryGoalPresented = true
+        case .questMissionBoard:
+            questWidgetEntryContext = externalRoute.questWidgetEntryContext
+            questWidgetTab = .daily
+            pendingHomeScrollTarget = .questMissionSection
         }
         self.externalRoute = nil
     }
@@ -910,47 +936,51 @@ private struct HomeMissionSectionView: View {
     let onSyncMissionProgress: (IndoorMissionCardModel, Double) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("오늘 미션 안내")
-                .font(.appScaledFont(for: .SemiBold, size: 30, relativeTo: .title2))
-            Text("완료 기준, 부족분, 완료된 미션을 한 번에 확인하세요.")
-                .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .caption))
-                .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("오늘 미션 안내")
+                    .font(.appScaledFont(for: .SemiBold, size: 30, relativeTo: .title2))
+                Text("완료 기준, 부족분, 완료된 미션을 한 번에 확인하세요.")
+                    .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .caption))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            HomeWeatherMissionStatusCardView(summary: weatherMissionStatusSummary)
+
+            if let weatherShieldDailySummary {
+                HomeWeatherShieldSummaryCardView(summary: weatherShieldDailySummary)
+            }
+
+            HomeIndoorMissionCardContainerView(
+                board: board,
+                presentation: presentation,
+                weatherMissionStatusSummary: weatherMissionStatusSummary,
+                questWidgetTab: $questWidgetTab,
+                questReminderEnabled: questReminderEnabled,
+                onSetQuestReminderEnabled: onSetQuestReminderEnabled,
+                canSubmitWeatherMismatchFeedback: canSubmitWeatherMismatchFeedback,
+                weatherFeedbackRemainingCount: weatherFeedbackRemainingCount,
+                weatherFeedbackWeeklyLimit: weatherFeedbackWeeklyLimit,
+                weatherFeedbackResultMessage: weatherFeedbackResultMessage,
+                questAlternativeActionSuggestion: questAlternativeActionSuggestion,
+                seasonSummary: seasonSummary,
+                isSeasonMotionReduced: isSeasonMotionReduced,
+                seasonGaugeWaveOffset: seasonGaugeWaveOffset,
+                animatedQuestProgress: animatedQuestProgress,
+                questProgressPulseMissionId: questProgressPulseMissionId,
+                questClaimPulseMissionId: questClaimPulseMissionId,
+                isQuestMotionReduced: isQuestMotionReduced,
+                onSubmitWeatherMismatchFeedback: onSubmitWeatherMismatchFeedback,
+                onActivateEasyDayMode: onActivateEasyDayMode,
+                onRecordIndoorMissionAction: onRecordIndoorMissionAction,
+                onFinalizeIndoorMission: onFinalizeIndoorMission,
+                onSyncMissionAppearProgress: onSyncMissionAppearProgress,
+                onSyncMissionProgress: onSyncMissionProgress
+            )
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-
-        HomeWeatherMissionStatusCardView(summary: weatherMissionStatusSummary)
-
-        if let weatherShieldDailySummary {
-            HomeWeatherShieldSummaryCardView(summary: weatherShieldDailySummary)
-        }
-
-        HomeIndoorMissionCardContainerView(
-            board: board,
-            presentation: presentation,
-            weatherMissionStatusSummary: weatherMissionStatusSummary,
-            questWidgetTab: $questWidgetTab,
-            questReminderEnabled: questReminderEnabled,
-            onSetQuestReminderEnabled: onSetQuestReminderEnabled,
-            canSubmitWeatherMismatchFeedback: canSubmitWeatherMismatchFeedback,
-            weatherFeedbackRemainingCount: weatherFeedbackRemainingCount,
-            weatherFeedbackWeeklyLimit: weatherFeedbackWeeklyLimit,
-            weatherFeedbackResultMessage: weatherFeedbackResultMessage,
-            questAlternativeActionSuggestion: questAlternativeActionSuggestion,
-            seasonSummary: seasonSummary,
-            isSeasonMotionReduced: isSeasonMotionReduced,
-            seasonGaugeWaveOffset: seasonGaugeWaveOffset,
-            animatedQuestProgress: animatedQuestProgress,
-            questProgressPulseMissionId: questProgressPulseMissionId,
-            questClaimPulseMissionId: questClaimPulseMissionId,
-            isQuestMotionReduced: isQuestMotionReduced,
-            onSubmitWeatherMismatchFeedback: onSubmitWeatherMismatchFeedback,
-            onActivateEasyDayMode: onActivateEasyDayMode,
-            onRecordIndoorMissionAction: onRecordIndoorMissionAction,
-            onFinalizeIndoorMission: onFinalizeIndoorMission,
-            onSyncMissionAppearProgress: onSyncMissionAppearProgress,
-            onSyncMissionProgress: onSyncMissionProgress
-        )
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("home.quest.section")
     }
 }
 

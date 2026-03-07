@@ -57,4 +57,15 @@ enum WidgetFormatting {
         let normalized = min(1.0, max(0.0, ratio))
         return "\(Int((normalized * 100).rounded()))%"
     }
+
+    /// 퀘스트/행동 부족분 실수 값을 위젯 표시용 축약 문자열로 변환합니다.
+    /// - Parameter value: 남은 진행량 실수 값입니다.
+    /// - Returns: 정수면 정수로, 아니면 소수 첫째 자리까지 포함한 문자열입니다.
+    static func formattedProgressDelta(_ value: Double) -> String {
+        let clamped = max(0.0, value)
+        if abs(clamped.rounded() - clamped) < 0.001 {
+            return String(Int(clamped.rounded()))
+        }
+        return String(format: "%.1f", clamped)
+    }
 }

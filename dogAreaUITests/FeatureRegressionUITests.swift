@@ -552,6 +552,46 @@ final class FeatureRegressionUITests: XCTestCase {
         )
     }
 
+    /// 퀘스트 위젯 상세 CTA가 홈 퀘스트 카드 위치로 바로 이동하는지 검증합니다.
+    func testFeatureRegression_QuestWidgetRouteOpensQuestMissionBoard() throws {
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.WidgetRoute", "open_quest_detail"])
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "screen.home", in: app), timeout: 8),
+            "퀘스트 위젯 라우트가 홈 화면으로 진입하지 못했습니다."
+        )
+        let detailBanner = app.staticTexts[
+            "위젯에서 퀘스트 상세로 바로 이어졌어요. 부족한 진행량과 완료 조건을 여기서 이어서 확인해보세요."
+        ]
+        XCTAssertTrue(
+            waitUntilExists(detailBanner, timeout: 3),
+            "퀘스트 위젯 상세 진입 배너가 노출되지 않았습니다."
+        )
+        XCTAssertTrue(
+            revealExistingElementByVerticalScroll(app.otherElements["home.quest.section"], app: app, maxSwipes: 3),
+            "퀘스트 위젯 상세 라우트가 미션 카드 위치를 노출하지 못했습니다."
+        )
+    }
+
+    /// 퀘스트 위젯 복구 CTA가 홈 퀘스트 카드와 복구 배너로 이어지는지 검증합니다.
+    func testFeatureRegression_QuestWidgetRecoveryRouteOpensQuestMissionBoard() throws {
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.WidgetRoute", "open_quest_recovery"])
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "screen.home", in: app), timeout: 8),
+            "퀘스트 복구 위젯 라우트가 홈 화면으로 진입하지 못했습니다."
+        )
+        let recoveryBanner = app.staticTexts[
+            "위젯 수령 상태와 앱 상태가 어긋났을 수 있어요. 이 카드에서 다시 확인하고 복구해보세요."
+        ]
+        XCTAssertTrue(
+            waitUntilExists(recoveryBanner, timeout: 3),
+            "퀘스트 복구 위젯 진입 배너가 노출되지 않았습니다."
+        )
+        XCTAssertTrue(
+            revealExistingElementByVerticalScroll(app.otherElements["home.quest.section"], app: app, maxSwipes: 3),
+            "퀘스트 복구 위젯 라우트가 미션 카드 위치를 노출하지 못했습니다."
+        )
+    }
+
     /// 영역 위젯 딥링크가 홈 루트가 아니라 목표 상세 화면으로 직접 진입하는지 검증합니다.
     func testFeatureRegression_TerritoryWidgetRouteOpensGoalDetail() throws {
         let app = launchAppForFeatureRegression(

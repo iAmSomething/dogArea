@@ -200,7 +200,7 @@ struct WalkControlWidgetEntryView: View {
             }
             .buttonStyle(.borderedProminent)
             .tint(.orange)
-        case .openWalkTab, .claimQuestReward, .openRivalTab:
+        case .openWalkTab, .claimQuestReward, .openQuestDetail, .openQuestRecovery, .openRivalTab:
             Button(intent: OpenWalkTabIntent()) {
                 Label("앱에서 확인", systemImage: "arrow.up.right.square")
                     .frame(maxWidth: .infinity)

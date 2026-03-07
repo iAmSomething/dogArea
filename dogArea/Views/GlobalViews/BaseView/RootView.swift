@@ -300,12 +300,36 @@ struct RootView: View {
             dispatchWalkWidgetAction(route)
         case .openWalkTab:
             selectedTab = 2
+        case .openQuestDetail, .openQuestRecovery:
+            dispatchQuestWidgetRoute(route, statusOverride: nil)
         case .openRivalTab:
             selectedTab = 3
         case .claimQuestReward:
             selectedTab = 0
+            dispatchQuestWidgetRoute(route, statusOverride: .claimInFlight)
             handleQuestRewardClaimFromWidget(route)
         }
+    }
+
+    /// 퀘스트/라이벌 위젯 라우트를 홈의 미션 카드 위치로 연결합니다.
+    /// - Parameters:
+    ///   - route: 위젯에서 전달한 액션 라우트입니다.
+    ///   - statusOverride: 라우트 시점에 강제로 반영할 위젯 상태입니다.
+    private func dispatchQuestWidgetRoute(
+        _ route: WalkWidgetActionRoute,
+        statusOverride: QuestRivalWidgetSnapshotStatus?
+    ) {
+        let currentStatus = statusOverride ?? questRivalSnapshotStore.load().status
+        selectedTab = 0
+        pendingHomeRoute = HomeExternalRoute(
+            destination: .questMissionBoard,
+            territoryGoalEntryContext: nil,
+            questWidgetEntryContext: QuestWidgetEntryContext(
+                source: .questRivalWidget,
+                routeKind: route.kind,
+                widgetStatus: currentStatus
+            )
+        )
     }
 
     /// 영역 위젯 딥링크를 홈의 목표 상세 화면으로 연결합니다.
@@ -333,7 +357,8 @@ struct RootView: View {
             territoryGoalEntryContext: TerritoryGoalEntryContext(
                 source: .territoryWidget,
                 widgetStatus: route.status
-            )
+            ),
+            questWidgetEntryContext: nil
         )
     }
 
@@ -414,7 +439,15 @@ struct RootView: View {
         let snapshot = questRivalSnapshotStore.load()
         let targetQuestId = route.contextId ?? snapshot.summary?.questInstanceId
         guard let questInstanceId = targetQuestId?.canonicalUUIDString else {
-            syncQuestRivalWidgetSnapshot(force: true)
+            let mismatchSnapshot = QuestRivalWidgetSnapshot(
+                status: .claimFailed,
+                message: "위젯 상태가 최신이 아니에요. 앱에서 퀘스트 카드를 다시 확인해 주세요.",
+                summary: snapshot.summary,
+                contextKey: snapshot.contextKey,
+                updatedAt: Date().timeIntervalSince1970
+            )
+            saveQuestRivalWidgetSnapshot(mismatchSnapshot)
+            dispatchQuestWidgetRoute(route, statusOverride: .claimFailed)
             return
         }
 
@@ -464,14 +497,14 @@ struct RootView: View {
                 let latest = questRivalSnapshotStore.load()
                 let failedSnapshot = QuestRivalWidgetSnapshot(
                     status: .claimFailed,
-                    message: "보상 수령에 실패했어요. 앱에서 다시 시도해주세요.",
+                    message: "보상 수령에 실패했어요. 앱에서 퀘스트 카드를 열어 다시 확인해 주세요.",
                     summary: latest.summary,
                     contextKey: latest.contextKey,
                     updatedAt: Date().timeIntervalSince1970
                 )
                 saveQuestRivalWidgetSnapshot(failedSnapshot)
+                dispatchQuestWidgetRoute(route, statusOverride: .claimFailed)
             }
-            await questRivalWidgetSnapshotSyncService.sync(force: true, now: Date())
         }
     }
 
