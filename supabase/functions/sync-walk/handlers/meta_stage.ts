@@ -23,5 +23,5 @@ export async function handleMetaStage(
     return json({ error: error.message }, 500);
   }
 
-  return json({ ok: true, stage: "meta", walk_session_id: context.walkSessionId });
+  return json({ ok: true, request_id: context.requestId, stage: "meta", walk_session_id: context.walkSessionId });
 }

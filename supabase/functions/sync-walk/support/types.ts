@@ -7,7 +7,10 @@ export type RequestDTO = {
   action?: Action;
   stage?: SyncStage;
   walk_session_id?: string;
+  request_id?: string;
+  requestId?: string;
   idempotency_key?: string;
+  idempotencyKey?: string;
   payload?: Record<string, unknown>;
   session_ids?: string[];
 };

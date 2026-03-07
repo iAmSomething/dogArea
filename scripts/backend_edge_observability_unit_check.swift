@@ -80,7 +80,7 @@ assertTrue(edgeAuthHelper.contains("AUTH_SESSION_INVALID") && edgeAuthHelper.con
 assertTrue(nearbyPresence.contains("suppression_reason") && nearbyPresence.contains("abuse_reason"), "nearby presence should expose privacy and abuse metadata in source")
 assertTrue(nearbyPresence.contains("console.error(\"nearby hotspot rpc failed\""), "nearby presence should log hotspot rpc failure")
 assertTrue(syncWalk.contains("resolveEdgeAuthContext"), "sync-walk should route auth failures through shared helper")
-assertTrue(questEngine.contains("request_id: asString(body.requestId)"), "quest-engine should expose partial request id trace mentioned in the matrix")
+assertTrue(questEngine.contains("resolveCanonicalRequestId") && questEngine.contains("request_id: requestId"), "quest-engine should expose canonical request id trace mentioned in the matrix")
 assertTrue(featureControl.contains("json({ error: \"SERVER_MISCONFIGURED\" }"), "feature-control should expose legacy error shape covered by the matrix")
 assertTrue(uploadProfileImage.contains("UPLOAD_FAILED") && uploadProfileImage.contains("PUBLIC_URL_FAILED"), "upload-profile-image should expose storage failure codes")
 

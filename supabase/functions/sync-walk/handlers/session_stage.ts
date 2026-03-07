@@ -18,6 +18,7 @@ export async function handleSessionStage(
 
   return json({
     ok: true,
+    request_id: context.requestId,
     stage: "session",
     walk_session_id: context.walkSessionId,
     idempotency_key: context.idempotencyKey,

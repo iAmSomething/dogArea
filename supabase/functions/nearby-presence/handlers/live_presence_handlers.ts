@@ -1,4 +1,5 @@
-import { asPositiveIntegerOrNull, asUUIDArray, asUUIDOrNull, json } from "../support/core.ts";
+import { asPositiveIntegerOrNull, asRecord, asUUIDArray, asUUIDOrNull, json } from "../support/core.ts";
+import { resolveCanonicalIdempotencyKey } from "../../_shared/request_keys.ts";
 import { insertLivePresencePrivacyAuditLog } from "../support/privacy_audit.ts";
 import { upsertLivePresence } from "../support/live_presence.ts";
 import { readVisibilitySetting } from "../support/visibility.ts";
@@ -20,6 +21,7 @@ export async function handleUpsertLivePresence(
     return json({ ok: true, skipped: "location_sharing_disabled" });
   }
 
+  const bodyRecord = asRecord(context.body)
   const livePresenceResult = await upsertLivePresence(context.client, {
     userId,
     sessionId: context.body.sessionId,
@@ -28,7 +30,10 @@ export async function handleUpsertLivePresence(
     longitude: context.body.lng,
     speedMps: context.body.speedMps,
     sequence: context.body.sequence,
-    idempotencyKey: context.body.idempotencyKey,
+    idempotencyKey: resolveCanonicalIdempotencyKey(bodyRecord, {
+      keys: ["idempotency_key", "idempotencyKey", "request_id", "requestId", "action_id"],
+      fallback: context.requestId,
+    }) ?? undefined,
     updatedAt: context.body.updatedAt,
     ttlSeconds: context.body.ttlSeconds,
   });
@@ -37,7 +42,12 @@ export async function handleUpsertLivePresence(
 
   return json({
     ok: true,
+    request_id: context.requestId,
     geohash7: livePresenceResult.geohash7,
+    idempotency_key: resolveCanonicalIdempotencyKey(bodyRecord, {
+      keys: ["idempotency_key", "idempotencyKey", "request_id", "requestId", "action_id"],
+      fallback: context.requestId,
+    }),
     live_presence: livePresenceResult.row,
   });
 }
@@ -93,5 +103,5 @@ export async function handleGetLivePresence(
     console.error("privacy live audit insert failed", audit.error.message);
   }
 
-  return json({ presence });
+  return json({ request_id: context.requestId, presence });
 }

@@ -118,7 +118,8 @@ struct NearbyPresenceService: NearbyPresenceServiceProtocol {
             payload["sequence"] = sequence
         }
         if let idempotencyKey, idempotencyKey.isEmpty == false {
-            payload["idempotencyKey"] = idempotencyKey
+            payload["request_id"] = idempotencyKey
+            payload["idempotency_key"] = idempotencyKey
         }
         if let deviceKey, deviceKey.isEmpty == false {
             payload["deviceKey"] = deviceKey
@@ -348,7 +349,7 @@ struct QuestRewardClaimService: QuestRewardClaimServiceProtocol {
             : requestId.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let payload: [String: Any] = [
             "action": "claim_reward",
-            "target_instance_id": canonicalQuestId,
+            "instance_id": canonicalQuestId,
             "request_id": normalizedRequestId,
             "now_ts": ISO8601DateFormatter().string(from: now)
         ]

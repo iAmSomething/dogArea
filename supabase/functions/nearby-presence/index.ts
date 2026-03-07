@@ -1,7 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { resolveEdgeAuthContext } from "../_shared/edge_auth.ts";
+import { resolveCanonicalRequestId } from "../_shared/request_keys.ts";
 import { dispatchNearbyPresenceAction, isSupportedNearbyPresenceAction } from "./handlers/action_dispatcher.ts";
-import { json } from "./support/core.ts";
+import { asRecord, json } from "./support/core.ts";
 import type { RequestDTO } from "./support/types.ts";
 
 Deno.serve(async (req) => {
@@ -41,8 +42,11 @@ Deno.serve(async (req) => {
     return json({ error: body.action ? "UNSUPPORTED_ACTION" : "ACTION_REQUIRED" }, 400);
   }
 
+  const requestId = resolveCanonicalRequestId(asRecord(body), auth.context.requestId);
+
   return dispatchNearbyPresenceAction(body.action, {
     client,
     body,
+    requestId,
   });
 });

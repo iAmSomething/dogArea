@@ -76,9 +76,11 @@ export async function handlePointsStage(
 
   return json({
     ok: true,
+    request_id: context.requestId,
     stage: "points",
     walk_session_id: context.walkSessionId,
     point_count: parsedRows.rows.length,
+    idempotency_key: context.idempotencyKey,
     season_score_summary: postProcessing.seasonScoreSummary,
     season_pipeline_summary: postProcessing.seasonPipelineSummary,
     weather_replacement_summary: postProcessing.weatherReplacementSummary,
