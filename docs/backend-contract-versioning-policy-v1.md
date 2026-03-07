@@ -203,5 +203,6 @@ select * from public.rpc_get_rival_leaderboard(
 
 - `docs/backend-high-risk-contract-matrix-v1.md`
 - `docs/sync-walk-404-fallback-policy-v1.md`
+- `docs/backend-legacy-fallback-compat-sunset-plan-v1.md`
 - `scripts/rival_rpc_param_compat_unit_check.swift`
 - Issue `#419`, `#429`, `#436`, `#437`
