@@ -152,6 +152,9 @@
 		DA3F9BA52AE0F14F0048550C /* MapModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9B9D2AE0F14F0048550C /* MapModel.swift */; };
 		DA3F9BA62AE0F14F0048550C /* WalkListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9B9F2AE0F14F0048550C /* WalkListView.swift */; };
 		DA3F9BAE2AE0F2410048550C /* ViewUtility.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9BAD2AE0F2410048550C /* ViewUtility.swift */; };
+		A45000010000000000000011 /* MapChromeSurfaceStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45000010000000000000001 /* MapChromeSurfaceStyle.swift */; };
+		A45000010000000000000012 /* MapTopChromeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45000010000000000000002 /* MapTopChromeView.swift */; };
+		A45000010000000000000013 /* MapFloatingControlColumnView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45000010000000000000003 /* MapFloatingControlColumnView.swift */; };
 		DA3F9BD32AE0FF8A0048550C /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9BD22AE0FF8A0048550C /* RootView.swift */; };
 		DA3F9BD52AE0FF9B0048550C /* CustomTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9BD42AE0FF9B0048550C /* CustomTabBar.swift */; };
 		DA4513802AFB1EC1007AD69B /* WalkListCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA45137F2AFB1EC1007AD69B /* WalkListCell.swift */; };
@@ -476,6 +479,9 @@
 		DA3F9B9D2AE0F14F0048550C /* MapModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MapModel.swift; sourceTree = "<group>"; };
 		DA3F9B9F2AE0F14F0048550C /* WalkListView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WalkListView.swift; sourceTree = "<group>"; };
 		DA3F9BAD2AE0F2410048550C /* ViewUtility.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ViewUtility.swift; sourceTree = "<group>"; };
+		A45000010000000000000001 /* MapChromeSurfaceStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapChromeSurfaceStyle.swift; sourceTree = "<group>"; };
+		A45000010000000000000002 /* MapTopChromeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapTopChromeView.swift; sourceTree = "<group>"; };
+		A45000010000000000000003 /* MapFloatingControlColumnView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapFloatingControlColumnView.swift; sourceTree = "<group>"; };
 		DA3F9BD22AE0FF8A0048550C /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		DA3F9BD42AE0FF9B0048550C /* CustomTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTabBar.swift; sourceTree = "<group>"; };
 		DA45137D2AFA6DC1007AD69B /* OpenAIConfiguration.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = OpenAIConfiguration.xcconfig; sourceTree = "<group>"; };
@@ -1049,6 +1055,9 @@
 			isa = PBXGroup;
 			children = (
 				DA56FFE72AE2B9890040855B /* MapAlertSubView.swift */,
+				A45000010000000000000001 /* MapChromeSurfaceStyle.swift */,
+				A45000010000000000000002 /* MapTopChromeView.swift */,
+				A45000010000000000000003 /* MapFloatingControlColumnView.swift */,
 				DA822CD52AFB5E21001EC94D /* StartButtonView.swift */,
 				DA822CDC2AFB60B6001EC94D /* MapSettingView.swift */,
 				DA390A6E2AFE027C00BACF2B /* MapSubView.swift */,
@@ -1700,6 +1709,9 @@
 				DA3F9BA02AE0F14F0048550C /* ProfileSettingsView.swift in Sources */,
 				DA4513892AFB2D68007AD69B /* WalkRepository.swift in Sources */,
 				DA16C1E12B060C7B008FC133 /* SelectedPolygonCell.swift in Sources */,
+				A45000010000000000000011 /* MapChromeSurfaceStyle.swift in Sources */,
+				A45000010000000000000012 /* MapTopChromeView.swift in Sources */,
+				A45000010000000000000013 /* MapFloatingControlColumnView.swift in Sources */,
 				DAED24FB2AFA1C980044715A /* LottieView.swift in Sources */,
 				DA1731762AE20A4D00EF10C8 /* WalkBackfillDTO.swift in Sources */,
 				DA822CD62AFB5E21001EC94D /* StartButtonView.swift in Sources */,
