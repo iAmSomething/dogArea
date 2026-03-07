@@ -83,6 +83,7 @@ DOGAREA_RUN_SUPABASE_SMOKE=1 DOGAREA_TEST_EMAIL=... DOGAREA_TEST_PASSWORD=... ba
 - `#436`
 - `#427`
 - `#439`
+- `docs/backend-edge-secret-inventory-rotation-runbook-v1.md`
 
 ### privacy
 
