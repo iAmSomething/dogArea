@@ -229,6 +229,11 @@
 		DAED24FB2AFA1C980044715A /* LottieView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAED24FA2AFA1C980044715A /* LottieView.swift */; };
 		DAED25022AFA1D430044715A /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAED25012AFA1D430044715A /* SplashView.swift */; };
 		DAF0A00A4200000000000001 /* RecoveryIssue.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAF0A0094200000000000001 /* RecoveryIssue.swift */; };
+		A41400010000000000000021 /* TerritoryStatusWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41400010000000000000011 /* TerritoryStatusWidget.swift */; };
+		A41400010000000000000022 /* HotspotStatusWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41400010000000000000012 /* HotspotStatusWidget.swift */; };
+		A41400010000000000000023 /* QuestRivalStatusWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41400010000000000000013 /* QuestRivalStatusWidget.swift */; };
+		A41400010000000000000024 /* WalkLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41400010000000000000014 /* WalkLiveActivityWidget.swift */; };
+		A41400010000000000000025 /* WidgetPresentationSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41400010000000000000015 /* WidgetPresentationSupport.swift */; };
 		DF2852F26614BBE6698C20F6 /* WalkControlWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020BF5BBC530202A931EEA4B /* WalkControlWidgetBundle.swift */; };
 		E1996670DB5AF8DEE4111010 /* RivalTabModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19B0F89F9FF220625F0008DB /* RivalTabModels.swift */; };
 		EE6DAD319CDE2C3D7366547A /* SettingsSeasonProfileSummaryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D5A36B3041BCFBBD4C59BDC /* SettingsSeasonProfileSummaryService.swift */; };
@@ -327,7 +332,7 @@
 		26182C87E44E1C0D9629CD03 /* HomeAnimatedSeasonGaugeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeAnimatedSeasonGaugeView.swift; sourceTree = "<group>"; };
 		29F07A82B4C3550CACA2C6ED /* GuestDataUpgradePromptSheetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GuestDataUpgradePromptSheetView.swift; sourceTree = "<group>"; };
 		2BD9767C8CA8497962E480D3 /* HomeViewModel+SessionLifecycle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "HomeViewModel+SessionLifecycle.swift"; sourceTree = "<group>"; };
-		2D030E0DFD8D49558700ACB1 /* WalkControlWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/WalkControlWidget.swift; sourceTree = SOURCE_ROOT; };
+		2D030E0DFD8D49558700ACB1 /* WalkControlWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/Widgets/WalkControlWidget.swift; sourceTree = SOURCE_ROOT; };
 		3087DB4DD4BFDA3FC923B011 /* HomeScrollOffsetPreferenceKey.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeScrollOffsetPreferenceKey.swift; path = HomeScrollOffsetPreferenceKey.swift; sourceTree = "<group>"; };
 		30BF0E17B2BF40E97DBA5E07 /* ProfileFieldEditSheetViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ProfileFieldEditSheetViewModel.swift; path = dogArea/Views/ProfileSettingView/ProfileFieldEditSheetViewModel.swift; sourceTree = "<group>"; };
 		363FE1044470B273CAB987E0 /* HomeQuestReminderSupport.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeQuestReminderSupport.swift; sourceTree = "<group>"; };
@@ -336,6 +341,11 @@
 		3B7E3AA66F47CA884B345956 /* AreaDetailReferenceCatalogSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AreaDetailReferenceCatalogSectionView.swift; sourceTree = "<group>"; };
 		4122ED3DF3668790F606D542 /* HomeScrollToTopFloatingButtonView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeScrollToTopFloatingButtonView.swift; sourceTree = "<group>"; };
 		414CE261F0EB5ECCEED97F09 /* MemberUpgradeSheetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MemberUpgradeSheetView.swift; sourceTree = "<group>"; };
+		A41400010000000000000011 /* TerritoryStatusWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/Widgets/TerritoryStatusWidget.swift; sourceTree = SOURCE_ROOT; };
+		A41400010000000000000012 /* HotspotStatusWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/Widgets/HotspotStatusWidget.swift; sourceTree = SOURCE_ROOT; };
+		A41400010000000000000013 /* QuestRivalStatusWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/Widgets/QuestRivalStatusWidget.swift; sourceTree = SOURCE_ROOT; };
+		A41400010000000000000014 /* WalkLiveActivityWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/Widgets/WalkLiveActivityWidget.swift; sourceTree = SOURCE_ROOT; };
+		A41400010000000000000015 /* WidgetPresentationSupport.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/Shared/WidgetPresentationSupport.swift; sourceTree = SOURCE_ROOT; };
 		44BB9B1737AC410B5104ECFD /* AreaDetailHeaderSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AreaDetailHeaderSectionView.swift; sourceTree = "<group>"; };
 		488E40F27F962EFAA8A02375 /* RivalTabViewModel+ModerationAndLocation.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "RivalTabViewModel+ModerationAndLocation.swift"; sourceTree = "<group>"; };
 		4A1B2C487816AA2CCCA6186F /* HomeStatusBannerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeStatusBannerView.swift; path = dogArea/Views/HomeView/HomeSubView/HomeStatusBannerView.swift; sourceTree = "<group>"; };
@@ -647,11 +657,32 @@
 			path = Sections;
 			sourceTree = "<group>";
 		};
+		A41400010000000000000001 /* Widgets */ = {
+			isa = PBXGroup;
+			children = (
+				2D030E0DFD8D49558700ACB1 /* WalkControlWidget.swift */,
+				A41400010000000000000011 /* TerritoryStatusWidget.swift */,
+				A41400010000000000000012 /* HotspotStatusWidget.swift */,
+				A41400010000000000000013 /* QuestRivalStatusWidget.swift */,
+				A41400010000000000000014 /* WalkLiveActivityWidget.swift */,
+			);
+			path = Widgets;
+			sourceTree = "<group>";
+		};
+		A41400010000000000000002 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				A41400010000000000000015 /* WidgetPresentationSupport.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
 		739206D93B3E1667D2A58593 /* dogAreaWidgetExtension */ = {
 			isa = PBXGroup;
 			children = (
+				A41400010000000000000001 /* Widgets */,
+				A41400010000000000000002 /* Shared */,
 				020BF5BBC530202A931EEA4B /* WalkControlWidgetBundle.swift */,
-				2D030E0DFD8D49558700ACB1 /* WalkControlWidget.swift */,
 				0B86CA6EAAA6D2939A4516B9 /* WalkControlIntents.swift */,
 				94F1831B36AD06A464B77936 /* Info.plist */,
 				983F00D4F1C80990F3FED2B2 /* dogAreaWidgetExtension.entitlements */,
@@ -1521,7 +1552,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				DF2852F26614BBE6698C20F6 /* WalkControlWidgetBundle.swift in Sources */,
+				A41400010000000000000025 /* WidgetPresentationSupport.swift in Sources */,
 				F8055CD421749F308FAF2E58 /* WalkControlWidget.swift in Sources */,
+				A41400010000000000000021 /* TerritoryStatusWidget.swift in Sources */,
+				A41400010000000000000022 /* HotspotStatusWidget.swift in Sources */,
+				A41400010000000000000023 /* QuestRivalStatusWidget.swift in Sources */,
+				A41400010000000000000024 /* WalkLiveActivityWidget.swift in Sources */,
 				1A87E29B8817434BC0210F5F /* WalkControlIntents.swift in Sources */,
 				23F65BCBE5B31BA26CAFD1A5 /* WalkWidgetBridge.swift in Sources */,
 				4D741EB8E7EC826A55FCC5A5 /* WalkWidgetSnapshotStore.swift in Sources */,

@@ -26,7 +26,10 @@ let infra = loadMany([
 ])
 let bridge = load("dogArea/Source/WidgetBridge/WalkWidgetBridge.swift")
 let snapshotStore = load("dogArea/Source/WidgetBridge/WalkWidgetSnapshotStore.swift")
-let widget = load("dogAreaWidgetExtension/WalkControlWidget.swift")
+let widget = loadMany([
+    "dogAreaWidgetExtension/Shared/WidgetPresentationSupport.swift",
+    "dogAreaWidgetExtension/Widgets/TerritoryStatusWidget.swift"
+])
 let bundle = load("dogAreaWidgetExtension/WalkControlWidgetBundle.swift")
 
 assertTrue(migration.contains("create or replace function public.rpc_get_widget_territory_summary"), "migration should create territory widget summary rpc")

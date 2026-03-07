@@ -28,7 +28,10 @@ let infra = loadMany([
 let model = load("dogArea/Source/Domain/Map/Models/MapModel.swift")
 let bridge = load("dogArea/Source/WidgetBridge/WalkWidgetBridge.swift")
 let store = load("dogArea/Source/WidgetBridge/WalkWidgetSnapshotStore.swift")
-let widget = load("dogAreaWidgetExtension/WalkControlWidget.swift")
+let widget = loadMany([
+    "dogAreaWidgetExtension/Shared/WidgetPresentationSupport.swift",
+    "dogAreaWidgetExtension/Widgets/HotspotStatusWidget.swift"
+])
 let bundle = load("dogAreaWidgetExtension/WalkControlWidgetBundle.swift")
 let rootView = load("dogArea/Views/GlobalViews/BaseView/RootView.swift")
 let policyDoc = load("docs/hotspot-widget-privacy-mapping-v1.md")
