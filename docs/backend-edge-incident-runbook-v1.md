@@ -159,6 +159,26 @@ DOGAREA_RUN_SUPABASE_SMOKE=1 DOGAREA_TEST_EMAIL=... DOGAREA_TEST_PASSWORD=... ba
 - primary provider와 fallback provider 중 어느 단계에서 실패했는지 확인
 - `latency_ms`와 provider 실패 코드를 함께 확인
 
+### auth mail / deliverability
+
+- `action_type`
+- `surface`
+- `request_id`
+- `mail_action_key`
+- `recipient_hash`
+- `retry_after_seconds`
+- `duplicate_suppressed`
+- `provider_name`
+- `provider_message_id`
+- `provider_event_id`
+- provider 최종 상태 (`accepted`, `bounce`, `reject`, `deferred`)
+
+관련 문서:
+
+- `docs/auth-mail-observability-metric-alert-request-key-v1.md`
+- `docs/auth-mail-resend-state-machine-v1.md`
+- `docs/auth-smtp-provider-selection-dns-secret-checklist-v1.md`
+
 ## 6. 운영 후속 조치 규칙
 
 - incident가 contract 문제면 문서/compat matrix도 같이 갱신
