@@ -21,6 +21,9 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
+/// 여러 파일을 읽어 하나의 문자열로 연결합니다.
+/// - Parameter relativePaths: 저장소 루트 기준 상대 경로 배열입니다.
+/// - Returns: 각 파일 내용을 줄바꿈으로 합친 문자열입니다.
 func loadMany(_ relativePaths: [String]) -> String {
     relativePaths.map(load).joined(separator: "\n")
 }
@@ -46,6 +49,7 @@ let syncWalk = load("supabase/functions/sync-walk/index.ts")
 let questEngine = load("supabase/functions/quest-engine/index.ts")
 let featureControl = load("supabase/functions/feature-control/index.ts")
 let uploadProfileImage = load("supabase/functions/upload-profile-image/index.ts")
+let sharedStorageHelper = load("supabase/functions/_shared/storage_upload.ts")
 
 for field in ["function_name", "request_id", "version", "latency_ms", "auth_mode", "fallback_used", "rpc_name"] {
     assertTrue(standardDoc.contains(field), "standard doc should define \(field) field")
@@ -82,7 +86,8 @@ assertTrue(nearbyPresence.contains("console.error(\"nearby hotspot rpc failed\""
 assertTrue(syncWalk.contains("resolveEdgeAuthContext"), "sync-walk should route auth failures through shared helper")
 assertTrue(questEngine.contains("resolveCanonicalRequestId") && questEngine.contains("request_id: requestId"), "quest-engine should expose canonical request id trace mentioned in the matrix")
 assertTrue(featureControl.contains("json({ error: \"SERVER_MISCONFIGURED\" }"), "feature-control should expose legacy error shape covered by the matrix")
-assertTrue(uploadProfileImage.contains("UPLOAD_FAILED") && uploadProfileImage.contains("PUBLIC_URL_FAILED"), "upload-profile-image should expose storage failure codes")
+assertTrue(uploadProfileImage.contains("uploadPublicStorageObject"), "upload-profile-image should use shared storage upload helper")
+assertTrue(sharedStorageHelper.contains("\"STORAGE_UPLOAD_FAILED\"") && sharedStorageHelper.contains("\"PUBLIC_URL_FAILED\""), "shared storage helper should define canonical storage failure codes")
 
 assertTrue(readme.contains("docs/backend-edge-observability-standard-v1.md"), "README should link backend edge observability standard doc")
 assertTrue(readme.contains("docs/backend-edge-error-taxonomy-v1.md"), "README should link backend edge error taxonomy doc")

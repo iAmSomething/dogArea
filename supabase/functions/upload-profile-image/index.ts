@@ -1,5 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { resolveEdgeAuthContext } from "../_shared/edge_auth.ts";
+import {
+  resolveProfileImageObjectPath,
+  uploadPublicStorageObject,
+} from "../_shared/storage_upload.ts";
 
 type RequestDTO = {
   ownerId?: string;
@@ -100,33 +104,25 @@ Deno.serve(async (req) => {
 
   const imageKind = body.imageKind === "pet" ? "pet" : "user";
   const contentType = body.contentType === "image/png" ? "image/png" : "image/jpeg";
-  const fileExtension = contentType === "image/png" ? "png" : "jpeg";
-  const fileName = imageKind === "pet" ? `petProfile.${fileExtension}` : `userProfile.${fileExtension}`;
-  const objectPath = `${ownerId}/${fileName}`;
+  const objectPath = resolveProfileImageObjectPath(ownerId, imageKind, contentType);
 
   const serviceClient = createClient(supabaseURL, supabaseServiceRoleKey);
-  const upload = await serviceClient.storage
-    .from("profiles")
-    .upload(objectPath, imageBytes, {
-      contentType,
-      upsert: true,
-    });
+  const storageResult = await uploadPublicStorageObject(serviceClient, {
+    bucket: "profiles",
+    path: objectPath,
+    bytes: imageBytes,
+    contentType,
+    upsert: true,
+  });
 
-  if (upload.error) {
-    return json({ error: "UPLOAD_FAILED", detail: upload.error.message }, 500);
-  }
-
-  const { data } = serviceClient.storage.from("profiles").getPublicUrl(objectPath);
-  const publicUrl = data?.publicUrl;
-
-  if (!publicUrl) {
-    return json({ error: "PUBLIC_URL_FAILED" }, 500);
+  if (!storageResult.ok) {
+    return json({ error: storageResult.code, detail: storageResult.message }, 500);
   }
 
   return json({
     ok: true,
-    bucket: "profiles",
-    path: objectPath,
-    publicUrl,
+    bucket: storageResult.bucket,
+    path: storageResult.path,
+    publicUrl: storageResult.publicUrl,
   });
 });

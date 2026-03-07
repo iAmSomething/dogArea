@@ -34,3 +34,16 @@ Supabase Edge Function for uploading user/pet profile images to Supabase Storage
 - max image size: 5MB
 - `imageKind`: `user` or `pet`
 - uploads are `upsert: true`
+- object path: `<ownerId>/userProfile.<ext>` or `<ownerId>/petProfile.<ext>`
+
+## Error Codes
+- `METHOD_NOT_ALLOWED`
+- `SERVER_MISCONFIGURED`
+- `INVALID_JSON`
+- `OWNER_ID_REQUIRED`
+- `INVALID_OWNER_ID`
+- `IMAGE_BASE64_REQUIRED`
+- `INVALID_IMAGE_BASE64`
+- `INVALID_IMAGE_SIZE`
+- `STORAGE_UPLOAD_FAILED`
+- `PUBLIC_URL_FAILED`

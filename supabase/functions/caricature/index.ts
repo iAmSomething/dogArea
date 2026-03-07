@@ -1,5 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { resolveEdgeAuthContext } from "../_shared/edge_auth.ts";
+import {
+  resolveCaricatureObjectPath,
+  uploadPublicStorageObject,
+} from "../_shared/storage_upload.ts";
 
 type ProviderName = "gemini" | "openai";
 type ProviderHint = "auto" | ProviderName;
@@ -11,6 +15,7 @@ type ErrorCode =
   | "SOURCE_IMAGE_NOT_FOUND"
   | "ALL_PROVIDERS_FAILED"
   | "STORAGE_UPLOAD_FAILED"
+  | "PUBLIC_URL_FAILED"
   | "DB_UPDATE_FAILED"
   | "SERVER_MISCONFIGURED";
 
@@ -459,17 +464,19 @@ Deno.serve(async (req) => {
     }, 502);
   }
 
-  const caricaturePath = `${resolvedUserId}/${petId}/${jobId}.png`;
-  const upload = await serviceClient.storage.from("caricatures").upload(
-    caricaturePath,
-    generatedImage,
-    { contentType: "image/png", upsert: true },
-  );
-  if (upload.error) {
+  const caricaturePath = resolveCaricatureObjectPath(resolvedUserId, petId, jobId);
+  const storageResult = await uploadPublicStorageObject(serviceClient, {
+    bucket: "caricatures",
+    path: caricaturePath,
+    bytes: generatedImage,
+    contentType: "image/png",
+    upsert: true,
+  });
+  if (!storageResult.ok) {
     await updateJob({
       status: "failed",
-      error_code: "storage_upload_failed",
-      error_message: compactMessage(upload.error.message),
+      error_code: storageResult.code.toLowerCase(),
+      error_message: compactMessage(storageResult.message),
       retry_count: attemptCount,
       completed_at: new Date().toISOString(),
       latency_ms: Date.now() - startedAt,
@@ -478,19 +485,18 @@ Deno.serve(async (req) => {
     });
     await patchPetStatus({ caricature_status: "failed" });
     return json({
-      errorCode: "STORAGE_UPLOAD_FAILED",
-      message: "failed to upload caricature image",
+      errorCode: storageResult.code,
+      message: storageResult.code === "PUBLIC_URL_FAILED"
+        ? "failed to resolve caricature image url"
+        : "failed to upload caricature image",
       version: requestVersion,
       requestId,
       jobId,
     }, 500);
   }
 
-  const { data: publicData } = serviceClient.storage.from("caricatures").getPublicUrl(caricaturePath);
-  const caricatureUrl = publicData.publicUrl;
-
   await patchPetStatus({
-    caricature_url: caricatureUrl,
+    caricature_url: storageResult.publicUrl,
     caricature_status: "ready",
     caricature_provider: usedProvider,
     caricature_style: style,
@@ -516,6 +522,6 @@ Deno.serve(async (req) => {
     provider: usedProvider,
     fallbackUsed: usedProvider !== chain[0],
     caricaturePath,
-    caricatureUrl,
+    caricatureUrl: storageResult.publicUrl,
   });
 });
