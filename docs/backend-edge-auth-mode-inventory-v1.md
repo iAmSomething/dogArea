@@ -60,7 +60,7 @@ member bearer 또는 app/anon bearer를 허용합니다.
 | `quest-engine` | `member_required` | member only | yes | service-role proxy write/read | `quest-engine.list_active.member`, invalid-token smoke | 진행/클레임은 member 권리경로 |
 | `caricature` | `member_required` | member only | yes | service-role proxy storage/db write | member login + edge smoke 기반 | provider fallback만 허용, auth fallback 없음 |
 | `nearby-presence` | `member_or_anon` | member, app/anon | yes | service-role proxy + privacy/abuse policy | `nearby-presence.hotspots.app_policy`, `auth_member_401_smoke_check.sh` | anon 허용은 제품 정책 |
-| `upload-profile-image` | `member_or_anon` | member, app/anon | yes | service-role proxy storage write | `auth_member_401_smoke_check.sh` | owner binding hardening 후속 필요 |
+| `upload-profile-image` | `member_or_anon` | member, app/anon | yes | service-role proxy storage write | `auth_member_401_smoke_check.sh` | member는 `auth.user.id` binding, anon은 `anon-onboarding-*` namespace만 허용 |
 | `feature-control` | `member_or_anon` | member, app/anon | yes | service-role proxy read/write | `feature-control.flags.anon`, `feature-control.rollout_kpis.anon`, `auth_member_401_smoke_check.sh` | read/write action이 같은 auth class에 묶여 있음 |
 
 ## Direct RPC / View Inventory
@@ -147,23 +147,30 @@ member bearer 또는 app/anon bearer를 허용합니다.
 
 1. `rival-league`는 Edge surface와 RPC direct surface의 auth 폭이 다름
 2. `feature-control`은 read action과 write action이 같은 auth class에 묶여 있음
-3. `upload-profile-image`는 caller supplied `ownerId`를 그대로 storage object path에 사용
+3. `upload-profile-image`는 member/anon path가 다르므로 namespace drift를 smoke로 계속 확인해야 함
 
 ## Residual Risk / Follow-up
 
 ### 1. upload-profile-image owner binding
 
-현재 `upload-profile-image`는 `member_or_anon` surface이면서 `ownerId`를 요청 본문에서 받습니다.
+`upload-profile-image`는 `member_or_anon` surface를 유지하지만 경계는 아래처럼 고정했습니다.
 
-운영 해석:
+- member bearer:
+  - `ownerId`는 optional
+  - 보내는 경우 `auth.user.id`와 같아야 하며 mismatch는 `403 UNAUTHORIZED_USER_MISMATCH`
+  - storage path는 `<auth.user.id>/...`
+- anon bearer:
+  - `ownerId`는 required
+  - `anon-onboarding-*` namespace만 허용
+  - storage path는 `anon-onboarding/<ownerId>/...`
 
-- 문서/구현 mismatch라기보다 **보안 hardening 미완료**
-- member path는 auth subject binding을 더 강하게 잠글 필요가 있음
-- anon path는 실제 onboarding namespace 전략이 분리되어야 안전함
+근거:
 
-후속:
+- 구현: `supabase/functions/upload-profile-image/index.ts`
+- smoke: `auth_member_401_smoke_check.sh`
+- 정책 문서: `docs/backend-upload-profile-image-owner-binding-policy-v1.md`
 
-- `#466` `[Backend/Security] upload-profile-image owner binding·anon write policy hardening`
+이 hardening은 `#466`에서 잠갔습니다.
 
 ### 2. wider RPC grant vs stricter Edge surface
 

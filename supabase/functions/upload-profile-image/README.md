@@ -8,7 +8,7 @@ Supabase Edge Function for uploading user/pet profile images to Supabase Storage
 ## Request
 - Method: `POST`
 - Headers:
-  - `Authorization: Bearer <token>` (currently app sends anon key bearer)
+  - `Authorization: Bearer <token>`
   - `Content-Type: application/json`
 
 ```json
@@ -34,14 +34,24 @@ Supabase Edge Function for uploading user/pet profile images to Supabase Storage
 - max image size: 5MB
 - `imageKind`: `user` or `pet`
 - uploads are `upsert: true`
-- object path: `<ownerId>/userProfile.<ext>` or `<ownerId>/petProfile.<ext>`
+- member bearer:
+  - `ownerId`는 optional
+  - 보내는 경우 `auth.user.id`와 같아야 합니다
+  - object path: `<auth.user.id>/userProfile.<ext>` or `<auth.user.id>/petProfile.<ext>`
+- anon bearer:
+  - `ownerId`는 required
+  - `anon-onboarding-*` 임시 namespace만 허용합니다
+  - object path: `anon-onboarding/<ownerId>/userProfile.<ext>` or `anon-onboarding/<ownerId>/petProfile.<ext>`
 
 ## Error Codes
 - `METHOD_NOT_ALLOWED`
 - `SERVER_MISCONFIGURED`
 - `INVALID_JSON`
+- `OWNER_BINDING_UNAVAILABLE`
 - `OWNER_ID_REQUIRED`
 - `INVALID_OWNER_ID`
+- `UNAUTHORIZED_USER_MISMATCH`
+- `ANON_OWNER_NAMESPACE_REQUIRED`
 - `IMAGE_BASE64_REQUIRED`
 - `INVALID_IMAGE_BASE64`
 - `INVALID_IMAGE_SIZE`

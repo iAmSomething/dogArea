@@ -45,7 +45,7 @@ bash scripts/backend_pr_check.sh
 | `rpc_get_widget_territory_summary` | RPC | `/rest/v1/rpc/rpc_get_widget_territory_summary` | Territory widget summary | widget summary schema / territory aggregation 변경 | `widget-territory.summary.member` | `200` | RPC migration drift / grant regression |
 | `rpc_get_widget_hotspot_summary` | RPC | `/rest/v1/rpc/rpc_get_widget_hotspot_summary` | Hotspot widget summary | hotspot summary / privacy policy / nearby RPC delegate 변경 | `widget-hotspot.summary.member` | `200` | delegate RPC drift / privacy contract mismatch |
 | `rpc_get_widget_quest_rival_summary(payload jsonb)` | RPC | `/rest/v1/rpc/rpc_get_widget_quest_rival_summary` | Quest/Rival widget summary | rival RPC compat / widget summary envelope 변경 | `widget-quest-rival.summary.member` | `200` | payload wrapper drift / upstream rival RPC failure |
-| `upload-profile-image` | Edge Function | `/functions/v1/upload-profile-image` | 프로필 편집 이미지 업로드 | storage policy / owner binding / public URL path 변경 | `upload_profile member=200 app=200` from `auth_member_401_smoke_check.sh` | `200` | service-role/storage path regression |
+| `upload-profile-image` | Edge Function | `/functions/v1/upload-profile-image` | 프로필 편집 이미지 업로드 | storage policy / owner binding / public URL path 변경 | `upload_profile member=200 app=200 member_mismatch=403` from `auth_member_401_smoke_check.sh` | member/app `200`, mismatch `403` | service-role/storage path regression / owner binding drift / anon namespace drift |
 | `caricature` | Edge Function | `/functions/v1/caricature` | 캐리커처 생성 | provider key / storage upload / model router 변경 | targeted manual smoke only | provider-dependent | provider key missing / storage upload failure |
 
 ## Post-Deploy Priority

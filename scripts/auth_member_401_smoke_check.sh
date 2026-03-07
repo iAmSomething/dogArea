@@ -125,6 +125,7 @@ if [[ -z "$access_token" || -z "$user_id" ]]; then
 fi
 
 tiny_png_base64="iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7+7zEAAAAASUVORK5CYII="
+anon_upload_owner_id="anon-onboarding-auth-smoke-${user_id:0:8}"
 
 echo "[AuthSmoke] start iterations=$ITERATIONS user_id=${user_id:0:8}..."
 
@@ -198,8 +199,15 @@ while [[ "$iteration" -le "$ITERATIONS" ]]; do
     "$SUPABASE_URL/functions/v1/upload-profile-image" \
     "$SUPABASE_ANON_KEY" \
     "Bearer $SUPABASE_ANON_KEY" \
-    "{\"ownerId\":\"$user_id\",\"imageBase64\":\"$tiny_png_base64\",\"imageKind\":\"user\"}")"
+    "{\"ownerId\":\"$anon_upload_owner_id\",\"imageBase64\":\"$tiny_png_base64\",\"imageKind\":\"user\"}")"
   upload_profile_app_status="$(printf '%s' "$upload_profile_app" | head -n 1)"
+  upload_profile_member_mismatch="$(request_json \
+    "POST" \
+    "$SUPABASE_URL/functions/v1/upload-profile-image" \
+    "$SUPABASE_ANON_KEY" \
+    "Bearer $access_token" \
+    "{\"ownerId\":\"$anon_upload_owner_id\",\"imageBase64\":\"$tiny_png_base64\",\"imageKind\":\"user\"}")"
+  upload_profile_member_mismatch_status="$(printf '%s' "$upload_profile_member_mismatch" | head -n 1)"
   if [[ "$upload_profile_app_status" == "401" ]]; then
     echo "[AuthSmoke] FAIL upload-profile-image returned 401 with app authorization policy"
     exit 1
@@ -207,6 +215,11 @@ while [[ "$iteration" -le "$ITERATIONS" ]]; do
   if [[ "$upload_profile_member_status" == "401" ]]; then
     echo "[AuthSmoke] FAIL upload-profile-image returned 401 with member token"
     echo "[AuthSmoke] member body=$(printf '%s' "$upload_profile_member" | tail -n +2)"
+    exit 1
+  fi
+  if [[ "$upload_profile_member_mismatch_status" != "403" ]]; then
+    echo "[AuthSmoke] FAIL upload-profile-image member owner mismatch should return 403"
+    echo "[AuthSmoke] mismatch body=$(printf '%s' "$upload_profile_member_mismatch" | tail -n +2)"
     exit 1
   fi
 
@@ -250,7 +263,7 @@ while [[ "$iteration" -le "$ITERATIONS" ]]; do
 
   echo "[AuthSmoke] nearby_visibility member=$nearby_visibility_member_status app=$nearby_visibility_app_status"
   echo "[AuthSmoke] nearby_hotspots member=$nearby_hotspots_member_status app=$nearby_hotspots_app_status"
-  echo "[AuthSmoke] upload_profile member=$upload_profile_member_status app=$upload_profile_app_status"
+  echo "[AuthSmoke] upload_profile member=$upload_profile_member_status app=$upload_profile_app_status member_mismatch=$upload_profile_member_mismatch_status"
   echo "[AuthSmoke] feature_control member=$feature_control_member_status app=$feature_control_app_status"
   echo "[AuthSmoke] rival_rpc member=$rival_rpc_member_status"
   iteration=$((iteration + 1))
