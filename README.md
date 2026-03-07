@@ -33,6 +33,7 @@
 - 시즌 집계/정산 파이프라인 Stage2 v1: `docs/season-stage2-pipeline-v1.md`
 - 체감 날씨 피드백 루프 v1: `docs/weather-feedback-loop-v1.md`
 - 날씨 리스크 모델/Provider 정책 v1: `docs/weather-risk-provider-policy-v1.md`
+- 날씨 snapshot/provider 확장 v1: `docs/weather-snapshot-provider-v1.md`
 - 날씨 치환/스트릭 보호 서버 엔진 v1: `docs/weather-replacement-shield-engine-v1.md`
 - 날씨 연동 UX/fallback/접근성 v1: `docs/weather-ux-fallback-accessibility-v1.md`
 - 퀘스트 Stage1 템플릿/난이도 정책 v1: `docs/quest-stage1-template-difficulty-policy-v1.md`

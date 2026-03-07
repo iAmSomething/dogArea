@@ -30,6 +30,12 @@ extension HomeViewModel {
         refreshAreaReferenceCatalogs()
         refreshGuestDataUpgradeReport()
         refreshIndoorMissions()
+        refreshWeatherSnapshot()
+    }
+
+    /// 공용 날씨 스냅샷 저장소에서 최신 값을 읽어 홈 상태에 반영합니다.
+    func refreshWeatherSnapshot() {
+        latestWeatherSnapshot = weatherSnapshotStore.loadSnapshot()
     }
 
     func refreshAreaReferenceCatalogs() {

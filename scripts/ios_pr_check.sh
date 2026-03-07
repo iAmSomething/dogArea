@@ -82,6 +82,7 @@ swift scripts/territory_status_widget_unit_check.swift
 swift scripts/hotspot_widget_privacy_unit_check.swift
 swift scripts/season_policy_stage1_unit_check.swift
 swift scripts/weather_risk_policy_stage1_unit_check.swift
+swift scripts/weather_snapshot_provider_unit_check.swift
 swift scripts/weather_stage2_engine_unit_check.swift
 swift scripts/weather_ux_stage3_unit_check.swift
 swift scripts/weather_feedback_loop_unit_check.swift

@@ -65,6 +65,7 @@ enum IndoorWeatherRiskLevel: String, CaseIterable {
 
 enum IndoorWeatherRiskSource: String, Equatable {
     case environment
+    case snapshot
     case userOverride
     case fallback
 }
@@ -270,4 +271,3 @@ struct WeatherFeedbackOutcome: Equatable {
     let adjustedRisk: IndoorWeatherRiskLevel
     let remainingWeeklyQuota: Int
 }
-

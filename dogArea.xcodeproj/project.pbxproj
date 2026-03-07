@@ -99,6 +99,9 @@
 		A50000010000000000000006 /* SettingViewModel+ProductSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000010000000000000016 /* SettingViewModel+ProductSurface.swift */; };
 		A45200010000000000000001 /* SettingsEditableImageButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45200010000000000000011 /* SettingsEditableImageButton.swift */; };
 		A45300010000000000000001 /* HomeIndoorMissionPresentationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45300010000000000000011 /* HomeIndoorMissionPresentationService.swift */; };
+		A45700010000000000000001 /* WeatherSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45700010000000000000011 /* WeatherSnapshot.swift */; };
+		A45700010000000000000002 /* OpenMeteoWeatherSnapshotProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45700010000000000000012 /* OpenMeteoWeatherSnapshotProvider.swift */; };
+		A45700010000000000000003 /* WeatherSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45700010000000000000013 /* WeatherSnapshotStore.swift */; };
 		A37700010000000000000001 /* AreaReferenceCatalogInsightService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37700010000000000000011 /* AreaReferenceCatalogInsightService.swift */; };
 		A37700010000000000000002 /* AreaDetailCatalogSnapshotSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37700010000000000000012 /* AreaDetailCatalogSnapshotSectionView.swift */; };
 		A37800010000000000000001 /* AppTabScaffold.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37800010000000000000002 /* AppTabScaffold.swift */; };
@@ -428,6 +431,9 @@
 		A50000010000000000000016 /* SettingViewModel+ProductSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SettingViewModel+ProductSurface.swift"; sourceTree = "<group>"; };
 		A45200010000000000000011 /* SettingsEditableImageButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsEditableImageButton.swift; sourceTree = "<group>"; };
 		A45300010000000000000011 /* HomeIndoorMissionPresentationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeIndoorMissionPresentationService.swift; sourceTree = "<group>"; };
+		A45700010000000000000011 /* WeatherSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherSnapshot.swift; sourceTree = "<group>"; };
+		A45700010000000000000012 /* OpenMeteoWeatherSnapshotProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenMeteoWeatherSnapshotProvider.swift; sourceTree = "<group>"; };
+		A45700010000000000000013 /* WeatherSnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherSnapshotStore.swift; sourceTree = "<group>"; };
 		A37700010000000000000011 /* AreaReferenceCatalogInsightService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaReferenceCatalogInsightService.swift; sourceTree = "<group>"; };
 		A37700010000000000000012 /* AreaDetailCatalogSnapshotSectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaDetailCatalogSnapshotSectionView.swift; sourceTree = "<group>"; };
 		A37800010000000000000002 /* AppTabScaffold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTabScaffold.swift; sourceTree = "<group>"; };
@@ -1283,6 +1289,7 @@
 				DAF0A0044200000000000001 /* Map */,
 				A37600010000000000000001 /* Profile */,
 				DAF0A0074200000000000001 /* Recovery */,
+				A45700010000000000000021 /* Weather */,
 			);
 			path = Domain;
 			sourceTree = "<group>";
@@ -1317,6 +1324,40 @@
 				DAF0A0064200000000000001 /* Services */,
 			);
 			path = Map;
+			sourceTree = "<group>";
+		};
+		A45700010000000000000021 /* Weather */ = {
+			isa = PBXGroup;
+			children = (
+				A45700010000000000000022 /* Models */,
+				A45700010000000000000023 /* Services */,
+				A45700010000000000000024 /* Stores */,
+			);
+			path = Weather;
+			sourceTree = "<group>";
+		};
+		A45700010000000000000022 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A45700010000000000000011 /* WeatherSnapshot.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		A45700010000000000000023 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				A45700010000000000000012 /* OpenMeteoWeatherSnapshotProvider.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		A45700010000000000000024 /* Stores */ = {
+			isa = PBXGroup;
+			children = (
+				A45700010000000000000013 /* WeatherSnapshotStore.swift */,
+			);
+			path = Stores;
 			sourceTree = "<group>";
 		};
 		DAF0A0054200000000000001 /* Models */ = {
@@ -1707,6 +1748,9 @@
 				A37500010000000000000021 /* HomeMissionModels.swift in Sources */,
 				A37500010000000000000022 /* IndoorMissionStore.swift in Sources */,
 				A37500010000000000000023 /* SeasonMotionStore.swift in Sources */,
+				A45700010000000000000001 /* WeatherSnapshot.swift in Sources */,
+				A45700010000000000000002 /* OpenMeteoWeatherSnapshotProvider.swift in Sources */,
+				A45700010000000000000003 /* WeatherSnapshotStore.swift in Sources */,
 				DAE147A11420000000000001 /* HomeWeeklyStatisticsService.swift in Sources */,
 				DAE147A31420000000000001 /* HomeWeatherMissionStatusBuilder.swift in Sources */,
 				A45300010000000000000001 /* HomeIndoorMissionPresentationService.swift in Sources */,

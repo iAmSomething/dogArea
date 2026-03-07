@@ -71,6 +71,7 @@ final class IndoorMissionStore {
         value.timeZone = TimeZone.autoupdatingCurrent
         return value
     }()
+    private let weatherSnapshotStore: WeatherSnapshotStoreProtocol
 
     private let templates: [IndoorMissionTemplate] = [
         .init(
@@ -119,6 +120,12 @@ final class IndoorMissionStore {
             streakEligible: true
         )
     ]
+
+    /// 실내 미션 저장소를 생성합니다.
+    /// - Parameter weatherSnapshotStore: 홈/맵과 공유하는 최신 날씨 스냅샷 저장소입니다.
+    init(weatherSnapshotStore: WeatherSnapshotStoreProtocol = WeatherSnapshotStore.shared) {
+        self.weatherSnapshotStore = weatherSnapshotStore
+    }
 
     func buildBoard(now: Date) -> IndoorMissionBoard {
         buildBoard(now: now, context: nil)
@@ -794,6 +801,16 @@ final class IndoorMissionStore {
         if let env = ProcessInfo.processInfo.environment["WEATHER_RISK_LEVEL"],
            let level = IndoorWeatherRiskLevel(rawValue: env.lowercased()) {
             return (level, .environment)
+        }
+        if let snapshot = weatherSnapshotStore.loadSnapshot(),
+           let level = IndoorWeatherRiskLevel(rawValue: snapshot.level.rawValue) {
+            let now = Date().timeIntervalSince1970
+            let age = now - snapshot.observedAt
+            if age <= 7200 {
+                return (level, .snapshot)
+            }
+            let conservative = level == .clear ? IndoorWeatherRiskLevel.caution : level
+            return (conservative, .fallback)
         }
         if let raw = UserDefaults.standard.string(forKey: DefaultsKey.weatherRiskOverride),
            let level = IndoorWeatherRiskLevel(rawValue: raw.lowercased()) {

@@ -20,6 +20,7 @@ final class HomeViewModel: ObservableObject {
     @Published var weatherFeedbackRemainingCount: Int = 2
     @Published var weatherFeedbackResultMessage: String? = nil
     @Published var weatherMissionStatusSummary: WeatherMissionStatusSummary = .empty
+    @Published var latestWeatherSnapshot: WeatherSnapshot? = nil
     @Published var indoorMissionPresentation: HomeIndoorMissionBoardPresentation = .empty
     @Published var weatherShieldDailySummary: WeatherShieldDailySummary? = nil
     @Published var seasonCatchupBuffStatusMessage: String? = nil
@@ -57,6 +58,7 @@ final class HomeViewModel: ObservableObject {
     let areaAggregationService: HomeAreaAggregationServicing
     let weatherMissionStatusBuilder: HomeWeatherMissionStatusBuilding
     let indoorMissionPresentationService: HomeIndoorMissionPresenting
+    let weatherSnapshotStore: WeatherSnapshotStoreProtocol
     let areaMilestoneDetector: AreaMilestoneDetecting
     let areaMilestoneNotificationScheduler: AreaMilestoneNotificationScheduling
     let seasonMotionStore = SeasonMotionStore()
@@ -123,6 +125,7 @@ final class HomeViewModel: ObservableObject {
         areaAggregationService: HomeAreaAggregationServicing = HomeAreaAggregationService(),
         weatherMissionStatusBuilder: HomeWeatherMissionStatusBuilding = HomeWeatherMissionStatusBuilder(),
         indoorMissionPresentationService: HomeIndoorMissionPresenting = HomeIndoorMissionPresentationService(),
+        weatherSnapshotStore: WeatherSnapshotStoreProtocol = WeatherSnapshotStore.shared,
         areaMilestoneDetector: AreaMilestoneDetecting = AreaMilestoneDetector(),
         areaMilestoneNotificationScheduler: AreaMilestoneNotificationScheduling = LocalAreaMilestoneNotificationScheduler()
     ) {
@@ -134,6 +137,7 @@ final class HomeViewModel: ObservableObject {
         self.areaAggregationService = areaAggregationService
         self.weatherMissionStatusBuilder = weatherMissionStatusBuilder
         self.indoorMissionPresentationService = indoorMissionPresentationService
+        self.weatherSnapshotStore = weatherSnapshotStore
         self.areaMilestoneDetector = areaMilestoneDetector
         self.areaMilestoneNotificationScheduler = areaMilestoneNotificationScheduler
         self.questReminderScheduler = LocalQuestReminderScheduler()
