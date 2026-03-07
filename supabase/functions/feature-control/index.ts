@@ -1,5 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { resolveEdgeAuthContext } from "../_shared/edge_auth.ts";
+import { requireSupabaseRuntimeEnv } from "../_shared/edge_runtime.ts";
+import { errorJson, json, methodNotAllowed, parseJsonBody } from "../_shared/http.ts";
+import { asRecord } from "../_shared/parsers.ts";
 
 type Action = "get_flags" | "track_metric" | "get_rollout_kpis";
 
@@ -14,21 +17,13 @@ type RequestDTO = {
   payload?: Record<string, unknown>;
 };
 
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-
 Deno.serve(async (req) => {
-  if (req.method !== "POST") return json({ error: "METHOD_NOT_ALLOWED" }, 405);
+  if (req.method !== "POST") return methodNotAllowed();
 
-  const supabaseURL = Deno.env.get("SUPABASE_URL");
-  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
-  const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!supabaseURL || !supabaseAnonKey || !serviceRole) {
-    return json({ error: "SERVER_MISCONFIGURED" }, 500);
-  }
+  const runtime = requireSupabaseRuntimeEnv({ serviceRole: true });
+  if (!runtime.ok) return runtime.response;
+  const { supabaseURL, supabaseAnonKey } = runtime.value;
+  const serviceRole = runtime.value.supabaseServiceRoleKey!;
 
   const auth = await resolveEdgeAuthContext({
     req,
@@ -45,14 +40,11 @@ Deno.serve(async (req) => {
   }
 
   const client = createClient(supabaseURL, serviceRole);
-  let body: RequestDTO;
-  try {
-    body = await req.json();
-  } catch {
-    return json({ error: "INVALID_JSON" }, 400);
-  }
+  const parsedBody = await parseJsonBody<RequestDTO>(req);
+  if (!parsedBody.ok) return parsedBody.response;
+  const body = parsedBody.body;
 
-  if (!body.action) return json({ error: "ACTION_REQUIRED" }, 400);
+  if (!body.action) return errorJson("ACTION_REQUIRED", 400);
 
   if (body.action === "get_flags") {
     const keys = (body.keys ?? []).filter((key) => key.startsWith("ff_"));
@@ -66,18 +58,16 @@ Deno.serve(async (req) => {
     }
 
     const { data, error } = await query;
-    if (error) return json({ error: error.message }, 500);
+    if (error) return errorJson(error.message, 500);
     return json({ flags: data ?? [] });
   }
 
   if (body.action === "track_metric") {
     if (!body.eventName || !body.appInstanceId) {
-      return json({ error: "INVALID_PAYLOAD" }, 400);
+      return errorJson("INVALID_PAYLOAD", 400);
     }
 
-    const payload = body.payload && typeof body.payload === "object"
-      ? body.payload
-      : {};
+    const payload = asRecord(body.payload);
 
     const { error } = await client.from("app_metric_events").insert({
       event_name: body.eventName,
@@ -88,7 +78,7 @@ Deno.serve(async (req) => {
       payload,
     });
 
-    if (error) return json({ error: error.message }, 500);
+    if (error) return errorJson(error.message, 500);
     return json({ ok: true });
   }
 
@@ -99,9 +89,9 @@ Deno.serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
-    if (error) return json({ error: error.message }, 500);
+    if (error) return errorJson(error.message, 500);
     return json({ kpis: data ?? null });
   }
 
-  return json({ error: "UNSUPPORTED_ACTION" }, 400);
+  return errorJson("UNSUPPORTED_ACTION", 400);
 });

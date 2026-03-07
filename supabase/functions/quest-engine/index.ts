@@ -1,4 +1,7 @@
 import { resolveEdgeAuthContext } from "../_shared/edge_auth.ts";
+import { requireSupabaseRuntimeEnv } from "../_shared/edge_runtime.ts";
+import { errorJson, json, methodNotAllowed, parseJsonBody } from "../_shared/http.ts";
+import { asRecord, asString, toNumber, toUUIDOrNull } from "../_shared/parsers.ts";
 import { resolveCanonicalIdempotencyKey, resolveCanonicalRequestId } from "../_shared/request_keys.ts";
 
 type Action =
@@ -39,46 +42,12 @@ type RequestDTO = {
   now_ts?: string;
 };
 
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-
-const asString = (value: unknown): string | null => {
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
-};
-
-const asRecord = (value: unknown): Record<string, unknown> =>
-  typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
-
-const toNumber = (value: unknown, fallback = 0): number => {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string") {
-    const parsed = Number(value);
-    if (Number.isFinite(parsed)) return parsed;
-  }
-  return fallback;
-};
-
-const toUUIDOrNull = (value: unknown): string | null => {
-  const raw = asString(value);
-  if (!raw) return null;
-  const normalized = raw.toLowerCase();
-  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
-  return uuidPattern.test(normalized) ? normalized : null;
-};
-
 Deno.serve(async (req) => {
-  if (req.method !== "POST") return json({ error: "METHOD_NOT_ALLOWED" }, 405);
+  if (req.method !== "POST") return methodNotAllowed();
 
-  const supabaseURL = Deno.env.get("SUPABASE_URL");
-  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
-  if (!supabaseURL || !supabaseAnonKey) {
-    return json({ error: "SERVER_MISCONFIGURED" }, 500);
-  }
+  const runtime = requireSupabaseRuntimeEnv();
+  if (!runtime.ok) return runtime.response;
+  const { supabaseURL, supabaseAnonKey } = runtime.value;
 
   const auth = await resolveEdgeAuthContext({
     req,
@@ -95,14 +64,11 @@ Deno.serve(async (req) => {
   const userClient = auth.context.userClient!;
   const userId = auth.context.userId!;
 
-  let body: RequestDTO;
-  try {
-    body = await req.json();
-  } catch {
-    return json({ error: "INVALID_JSON" }, 400);
-  }
+  const parsedBody = await parseJsonBody<RequestDTO>(req);
+  if (!parsedBody.ok) return parsedBody.response;
+  const body = parsedBody.body;
 
-  if (!body.action) return json({ error: "ACTION_REQUIRED" }, 400);
+  if (!body.action) return errorJson("ACTION_REQUIRED", 400);
 
   const bodyRecord = asRecord(body);
   const requestId = resolveCanonicalRequestId(bodyRecord, auth.context.requestId);
@@ -121,7 +87,7 @@ Deno.serve(async (req) => {
         expires_at: expiresAt,
         now_ts: nowISO,
       });
-      if (error) return json({ error: error.message }, 500);
+      if (error) return errorJson(error.message, 500);
 
       return json({ request_id: requestId, quests: Array.isArray(data) ? data : [] });
     }
@@ -133,7 +99,7 @@ Deno.serve(async (req) => {
         fallback: requestId,
       });
       if (!instanceId || !eventId) {
-        return json({ error: "INVALID_PAYLOAD" }, 400);
+        return errorJson("INVALID_PAYLOAD", 400);
       }
 
       const { data, error } = await userClient.rpc("rpc_apply_quest_progress_event", {
@@ -145,7 +111,7 @@ Deno.serve(async (req) => {
         payload: asRecord(body.payload),
         now_ts: nowISO,
       });
-      if (error) return json({ error: error.message }, 500);
+      if (error) return errorJson(error.message, 500);
 
       const row = Array.isArray(data) && data.length > 0 ? data[0] : null;
       return json({ request_id: requestId, progress: row });
@@ -153,7 +119,7 @@ Deno.serve(async (req) => {
 
     case "claim_reward": {
       const instanceId = toUUIDOrNull(body.instance_id ?? body.instanceId ?? body.target_instance_id);
-      if (!instanceId) return json({ error: "INVALID_PAYLOAD" }, 400);
+      if (!instanceId) return errorJson("INVALID_PAYLOAD", 400);
 
       const claimRequestId = resolveCanonicalIdempotencyKey(bodyRecord, {
         keys: ["request_id", "requestId", "idempotency_key", "idempotencyKey", "action_id"],
@@ -166,7 +132,7 @@ Deno.serve(async (req) => {
         request_id: claimRequestId,
         now_ts: nowISO,
       });
-      if (error) return json({ error: error.message }, 500);
+      if (error) return errorJson(error.message, 500);
 
       const row = Array.isArray(data) && data.length > 0 ? data[0] : null;
       return json({ request_id: requestId, claim: row });
@@ -176,7 +142,7 @@ Deno.serve(async (req) => {
       const instanceId = toUUIDOrNull(body.instance_id ?? body.instanceId ?? body.target_instance_id);
       const transitionAction = asString(body.transition_action ?? body.transitionAction);
       if (!instanceId || !transitionAction) {
-        return json({ error: "INVALID_PAYLOAD" }, 400);
+        return errorJson("INVALID_PAYLOAD", 400);
       }
 
       const { data, error } = await userClient.rpc("rpc_transition_quest_status", {
@@ -186,7 +152,7 @@ Deno.serve(async (req) => {
         replacement_template_id: asString(body.replacement_template_id ?? body.replacementTemplateId),
         now_ts: nowISO,
       });
-      if (error) return json({ error: error.message }, 500);
+      if (error) return errorJson(error.message, 500);
 
       const row = Array.isArray(data) && data.length > 0 ? data[0] : null;
       return json({ request_id: requestId, transition: row });
@@ -201,11 +167,11 @@ Deno.serve(async (req) => {
         .order("created_at", { ascending: false })
         .limit(30);
 
-      if (error) return json({ error: error.message }, 500);
+      if (error) return errorJson(error.message, 500);
       return json({ request_id: requestId, quests: data ?? [] });
     }
 
     default:
-      return json({ error: "UNSUPPORTED_ACTION" }, 400);
+      return errorJson("UNSUPPORTED_ACTION", 400);
   }
 });
