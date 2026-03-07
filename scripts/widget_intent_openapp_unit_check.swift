@@ -18,8 +18,10 @@ func load(_ relativePath: String) -> String {
 let intents = load("dogAreaWidgetExtension/WalkControlIntents.swift")
 let rootView = load("dogArea/Views/GlobalViews/BaseView/RootView.swift")
 
-assertTrue(intents.contains("func perform() async throws -> some IntentResult & OpensIntent"), "widget intents should return OpensIntent to guarantee app launch route")
-assertTrue(intents.contains("OpenURLIntent"), "widget intents should open app via OpenURLIntent")
+assertTrue(intents.contains("static var openAppWhenRun: Bool = true"), "widget intents should request app foreground continuation")
+assertTrue(intents.contains("#if compiler(>=6.0)"), "widget intents should gate new SDK open-app APIs for CI compatibility")
+assertTrue(intents.contains("OpenURLIntent"), "widget intents should still use OpenURLIntent on supported toolchains")
+assertTrue(intents.contains("return .result()"), "widget intents should keep an older toolchain fallback result path")
 assertTrue(intents.contains("route.asRoute().makeURL()"), "widget intents should serialize action route into deep link URL")
 assertTrue(rootView.contains("[WidgetAction] onOpenURL received:"), "RootView should log incoming widget deep links in debug")
 assertTrue(rootView.contains("consumePendingWidgetActionIfNeeded"), "RootView should keep pending widget action consumption path")
