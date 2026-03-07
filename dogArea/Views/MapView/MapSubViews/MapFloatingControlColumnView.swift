@@ -1,8 +1,6 @@
 import SwiftUI
 
 struct MapFloatingControlColumnView: View {
-    @Environment(\.appTabBarReservedHeight) private var reservedHeight
-
     let showsRecenterButton: Bool
     let showsAddPointButton: Bool
     let isAutoPointRecordMode: Bool
@@ -42,9 +40,6 @@ struct MapFloatingControlColumnView: View {
                 }
             }
         }
-        .padding(.trailing, MapChromeLayoutMetrics.horizontalPadding)
-        .padding(.bottom, showsAddPointButton ? reservedHeight + 92 : reservedHeight + 28)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
     }
 
     private var addPointButton: some View {

@@ -155,6 +155,7 @@
 		A45000010000000000000011 /* MapChromeSurfaceStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45000010000000000000001 /* MapChromeSurfaceStyle.swift */; };
 		A45000010000000000000012 /* MapTopChromeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45000010000000000000002 /* MapTopChromeView.swift */; };
 		A45000010000000000000013 /* MapFloatingControlColumnView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45000010000000000000003 /* MapFloatingControlColumnView.swift */; };
+		A45400010000000000000011 /* MapBottomControlOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45400010000000000000001 /* MapBottomControlOverlayView.swift */; };
 		DA3F9BD32AE0FF8A0048550C /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9BD22AE0FF8A0048550C /* RootView.swift */; };
 		DA3F9BD52AE0FF9B0048550C /* CustomTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9BD42AE0FF9B0048550C /* CustomTabBar.swift */; };
 		DA4513802AFB1EC1007AD69B /* WalkListCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA45137F2AFB1EC1007AD69B /* WalkListCell.swift */; };
@@ -482,6 +483,7 @@
 		A45000010000000000000001 /* MapChromeSurfaceStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapChromeSurfaceStyle.swift; sourceTree = "<group>"; };
 		A45000010000000000000002 /* MapTopChromeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapTopChromeView.swift; sourceTree = "<group>"; };
 		A45000010000000000000003 /* MapFloatingControlColumnView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapFloatingControlColumnView.swift; sourceTree = "<group>"; };
+		A45400010000000000000001 /* MapBottomControlOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapBottomControlOverlayView.swift; sourceTree = "<group>"; };
 		DA3F9BD22AE0FF8A0048550C /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		DA3F9BD42AE0FF9B0048550C /* CustomTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTabBar.swift; sourceTree = "<group>"; };
 		DA45137D2AFA6DC1007AD69B /* OpenAIConfiguration.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = OpenAIConfiguration.xcconfig; sourceTree = "<group>"; };
@@ -1058,6 +1060,7 @@
 				A45000010000000000000001 /* MapChromeSurfaceStyle.swift */,
 				A45000010000000000000002 /* MapTopChromeView.swift */,
 				A45000010000000000000003 /* MapFloatingControlColumnView.swift */,
+				A45400010000000000000001 /* MapBottomControlOverlayView.swift */,
 				DA822CD52AFB5E21001EC94D /* StartButtonView.swift */,
 				DA822CDC2AFB60B6001EC94D /* MapSettingView.swift */,
 				DA390A6E2AFE027C00BACF2B /* MapSubView.swift */,
@@ -1712,6 +1715,7 @@
 				A45000010000000000000011 /* MapChromeSurfaceStyle.swift in Sources */,
 				A45000010000000000000012 /* MapTopChromeView.swift in Sources */,
 				A45000010000000000000013 /* MapFloatingControlColumnView.swift in Sources */,
+				A45400010000000000000011 /* MapBottomControlOverlayView.swift in Sources */,
 				DAED24FB2AFA1C980044715A /* LottieView.swift in Sources */,
 				DA1731762AE20A4D00EF10C8 /* WalkBackfillDTO.swift in Sources */,
 				DA822CD62AFB5E21001EC94D /* StartButtonView.swift in Sources */,

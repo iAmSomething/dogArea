@@ -161,14 +161,8 @@ struct MapView : View{
                     }
                 )
             }
-            .overlay(alignment: .bottomTrailing) {
-                mapFloatingControlOverlay
-            }
             .overlay(alignment: .bottom) {
-                selectedPolygonTrayOverlay
-            }
-            .overlay(alignment: .bottom) {
-                mapPrimaryActionOverlay
+                mapBottomControlOverlay
             }
             .appTabBarContentPadding(extra: 8)
         }
@@ -281,6 +275,15 @@ struct MapView : View{
         }
     }
 
+    private var mapBottomControlOverlay: some View {
+        MapBottomControlOverlayView(
+            showsPrimaryAction: true,
+            primaryAction: AnyView(mapPrimaryActionOverlay),
+            floatingControls: AnyView(mapFloatingControlOverlay),
+            selectedPolygonTray: selectedPolygonTrayView
+        )
+    }
+
     private var mapPrimaryActionOverlay: some View {
         StartButtonView(
             viewModel: viewModel,
@@ -288,7 +291,6 @@ struct MapView : View{
             isModalPresented: $isWalkingViewPresented,
             endWalkingViewPresented: $endWalkingViewPresented
         )
-        .appTabFloatingOverlayPadding()
     }
 
     private var mapFloatingControlOverlay: some View {
@@ -313,49 +315,52 @@ struct MapView : View{
         )
     }
 
+    private var selectedPolygonTrayView: AnyView? {
+        guard !viewModel.selectedPolygonList.isEmpty && !viewModel.isWalking else { return nil }
+        return AnyView(selectedPolygonTrayOverlay)
+    }
+
     private var selectedPolygonTrayOverlay: some View {
         Group {
-            if !viewModel.selectedPolygonList.isEmpty && !viewModel.isWalking {
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        Text("선택한 산책 기록")
-                            .font(.appFont(for: .SemiBold, size: 15))
-                            .foregroundStyle(MapChromePalette.primaryText)
-                        Spacer()
-                        Button("닫기") {
-                            viewModel.selectedPolygonList = []
-                        }
-                        .font(.appFont(for: .SemiBold, size: 12))
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("선택한 산책 기록")
+                        .font(.appFont(for: .SemiBold, size: 15))
                         .foregroundStyle(MapChromePalette.primaryText)
-                        .frame(minHeight: 44)
-                        .padding(.horizontal, 10)
-                        .mapChromePill(.neutral)
+                    Spacer()
+                    Button("닫기") {
+                        viewModel.selectedPolygonList = []
                     }
+                    .font(.appFont(for: .SemiBold, size: 12))
+                    .foregroundStyle(MapChromePalette.primaryText)
+                    .frame(minHeight: 44)
+                    .padding(.horizontal, 10)
+                    .mapChromePill(.neutral)
+                }
 
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 10) {
-                            ForEach(viewModel.selectedPolygonList) { item in
-                                SelectedPolygonCell(walkData: .init(polygon: item))
-                                    .onTapGesture {
-                                        self.selectedPolygonData = WalkDataModel(polygon: item)
-                                    }
-                                    .padding()
-                                    .myCornerRadius(radius: 15)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 15)
-                                            .stroke(MapChromePalette.surfaceBorder, lineWidth: 1)
-                                    )
-                            }
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 10) {
+                        ForEach(viewModel.selectedPolygonList) { item in
+                            SelectedPolygonCell(walkData: .init(polygon: item))
+                                .onTapGesture {
+                                    self.selectedPolygonData = WalkDataModel(polygon: item)
+                                }
+                                .padding()
+                                .myCornerRadius(radius: 15)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 15)
+                                        .stroke(MapChromePalette.surfaceBorder, lineWidth: 1)
+                                )
                         }
                     }
                 }
-                .padding(14)
-                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, MapChromeLayoutMetrics.horizontalPadding)
-                .mapChromeSurface()
-                .padding(.horizontal, MapChromeLayoutMetrics.horizontalPadding)
-                .appTabFloatingOverlayPadding(lift: -112, minimumBottomPadding: 188)
             }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, MapChromeLayoutMetrics.horizontalPadding)
+            .mapChromeSurface()
+            .padding(.horizontal, MapChromeLayoutMetrics.horizontalPadding)
         }
     }
 

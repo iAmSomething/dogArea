@@ -57,6 +57,7 @@ xcodebuild -scheme dogArea \
   build-for-testing
 
 run_ui_test "testFeatureRegression_MapPrimaryActionIsNotObscuredByTabBar"
+run_ui_test "testFeatureRegression_MapAddPointControlRemainsHittableWhileWalking"
 run_ui_test "testFeatureRegression_WalkListPrimaryContentIsNotObscuredByTabBar"
 run_ui_test "testFeatureRegression_TerritoryGoalNavigationHidesAndRestoresTabBar"
 run_ui_test "testFeatureRegression_RivalFooterButtonsRouteToMapAndSettings"

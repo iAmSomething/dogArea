@@ -28,6 +28,7 @@ let designAuditScript = load("scripts/run_design_audit_ui_tests.sh")
 for token in [
     "DA-HOME-001",
     "FR-MAP-001",
+    "FR-MAP-002",
     "FR-GOAL-001",
     "FR-AUTH-001",
     "FR-PROFILE-001",
@@ -54,6 +55,7 @@ assertTrue(
 )
 for testName in [
     "testFeatureRegression_MapPrimaryActionIsNotObscuredByTabBar",
+    "testFeatureRegression_MapAddPointControlRemainsHittableWhileWalking",
     "testFeatureRegression_WalkListPrimaryContentIsNotObscuredByTabBar",
     "testFeatureRegression_TerritoryGoalNavigationHidesAndRestoresTabBar",
     "testFeatureRegression_SettingsAuthEntryPoints",
@@ -74,6 +76,10 @@ assertTrue(
 assertTrue(
     featureRegressionScript.contains("testFeatureRegression_WalkListPrimaryContentIsNotObscuredByTabBar"),
     "run_feature_regression_ui_tests.sh should run the walk list tabbar regression"
+)
+assertTrue(
+    featureRegressionScript.contains("testFeatureRegression_MapAddPointControlRemainsHittableWhileWalking"),
+    "run_feature_regression_ui_tests.sh should run the walking add-point regression"
 )
 assertTrue(
     featureRegressionScript.contains("testFeatureRegression_MemberProfileEditPersistsUpdatedPetName"),
