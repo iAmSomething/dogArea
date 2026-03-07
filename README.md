@@ -50,6 +50,7 @@
 - Backend 계약 버저닝 정책 v1: `docs/backend-contract-versioning-policy-v1.md`
 - Backend 고위험 계약 매트릭스 v1: `docs/backend-high-risk-contract-matrix-v1.md`
 - Backend request correlation/idempotency 정책 v1: `docs/backend-request-correlation-idempotency-policy-v1.md`
+- Backend migration drift / RPC CI 체크 v1: `docs/backend-migration-drift-rpc-ci-check-v1.md`
 - Backend Edge auth policy v1: `docs/backend-edge-auth-policy-v1.md`
 - Backend Edge observability 표준 v1: `docs/backend-edge-observability-standard-v1.md`
 - Backend Edge error taxonomy v1: `docs/backend-edge-error-taxonomy-v1.md`
@@ -94,6 +95,7 @@
 
 - 전체 체크(iOS/watchOS build 포함): `bash scripts/ios_pr_check.sh`
 - 문서/유닛만 빠르게 체크: `DOGAREA_SKIP_BUILD=1 bash scripts/ios_pr_check.sh`
+- Backend drift / RPC contract 전용 체크: `bash scripts/backend_migration_drift_check.sh`
 - Backend smoke entrypoint: `bash scripts/backend_pr_check.sh`
 - Live Supabase smoke matrix: `DOGAREA_RUN_SUPABASE_SMOKE=1 DOGAREA_TEST_EMAIL=... DOGAREA_TEST_PASSWORD=... bash scripts/backend_pr_check.sh`
 

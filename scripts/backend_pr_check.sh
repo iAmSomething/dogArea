@@ -13,6 +13,9 @@ swift scripts/backend_request_id_idempotency_unit_check.swift
 swift scripts/sync_walk_stage_handler_split_unit_check.swift
 swift scripts/nearby_presence_handler_split_unit_check.swift
 
+echo "[dogArea-backend] running migration drift / rpc contract checks"
+bash scripts/backend_migration_drift_check.sh
+
 if [[ "${DOGAREA_RUN_SUPABASE_SMOKE:-0}" != "1" ]]; then
   echo "[dogArea-backend] DOGAREA_RUN_SUPABASE_SMOKE=1 이 아니므로 실 Supabase smoke matrix는 건너뜁니다."
   echo "[dogArea-backend] run: DOGAREA_RUN_SUPABASE_SMOKE=1 DOGAREA_TEST_EMAIL=... DOGAREA_TEST_PASSWORD=... bash scripts/backend_pr_check.sh"
