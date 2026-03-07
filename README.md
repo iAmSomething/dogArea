@@ -61,6 +61,7 @@
 - UX copy guideline v1: `docs/ux-copy-guideline-v1.md`
 - Auth mail resend state machine v1: `docs/auth-mail-resend-state-machine-v1.md`
 - Auth CAPTCHA insertion & fallback UX v1: `docs/auth-captcha-insertion-fallback-ux-v1.md`
+- Auth SMTP provider / DNS / secret checklist v1: `docs/auth-smtp-provider-selection-dns-secret-checklist-v1.md`
 - Backend Edge auth policy v1: `docs/backend-edge-auth-policy-v1.md`
 - Backend Edge auth mode inventory v1: `docs/backend-edge-auth-mode-inventory-v1.md`
 - Backend upload-profile-image owner binding policy v1: `docs/backend-upload-profile-image-owner-binding-policy-v1.md`
