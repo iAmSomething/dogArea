@@ -20,6 +20,8 @@ func loadMany(_ relativePaths: [String]) -> String {
 }
 
 let homeView = load("dogArea/Views/HomeView/HomeView.swift")
+let homeIndoorMissionRowView = load("dogArea/Views/HomeView/HomeSubView/Cards/HomeIndoorMissionRowView.swift")
+let homeAnimatedQuestProgressBarView = load("dogArea/Views/HomeView/HomeSubView/Cards/HomeAnimatedQuestProgressBarView.swift")
 let homeViewModel = loadMany([
     "dogArea/Views/HomeView/HomeViewModel.swift",
     "dogArea/Views/HomeView/HomeViewModelSupport/HomeViewModel+SessionLifecycle.swift",
@@ -34,7 +36,14 @@ let haptic = load("dogArea/Source/AppHapticFeedback.swift")
 let spec = load("docs/quest-motion-pack-v1.md")
 let report = load("docs/cycle-142-quest-motion-pack-report-2026-02-27.md")
 
-assertTrue(homeView.contains("animatedQuestProgressBar"), "HomeView should render animated quest progress bar")
+assertTrue(
+    homeIndoorMissionRowView.contains("HomeAnimatedQuestProgressBarView"),
+    "Indoor mission row should render animated quest progress bar"
+)
+assertTrue(
+    homeAnimatedQuestProgressBarView.contains("struct HomeAnimatedQuestProgressBarView"),
+    "Animated quest progress bar view should exist"
+)
 assertTrue(homeView.contains("HomeQuestCompletionOverlayView"), "HomeView should render quest completion modal")
 assertTrue(homeView.contains("questClaimPulseMissionId"), "HomeView should animate claim state transition")
 assertTrue(homeView.contains("isQuestMotionReduced"), "HomeView should support reduced motion mode")

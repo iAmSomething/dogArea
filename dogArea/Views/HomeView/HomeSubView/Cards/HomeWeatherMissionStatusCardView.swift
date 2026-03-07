@@ -4,7 +4,7 @@ struct HomeWeatherMissionStatusCardView: View {
     let summary: WeatherMissionStatusSummary
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text(summary.title)
                     .font(.appFont(for: .SemiBold, size: 15))
@@ -19,6 +19,21 @@ struct HomeWeatherMissionStatusCardView: View {
             Text(summary.reasonText)
                 .font(.appFont(for: .Light, size: 12))
                 .foregroundStyle(Color.appTextDarkGray)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(summary.policyTitle)
+                    .font(.appFont(for: .SemiBold, size: 12))
+                    .foregroundStyle(Color.appTextDarkGray)
+                Text(summary.policyText)
+                    .font(.appFont(for: .Light, size: 12))
+                    .foregroundStyle(Color.appTextDarkGray)
+                Text(summary.lifecycleGuideText)
+                    .font(.appFont(for: .Light, size: 11))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 9)
+            .background(Color.appYellowPale.opacity(0.45))
+            .cornerRadius(10)
             HStack(spacing: 8) {
                 Text(summary.appliedAtText)
                     .font(.appFont(for: .Light, size: 11))
@@ -47,6 +62,7 @@ struct HomeWeatherMissionStatusCardView: View {
         )
         .padding(.horizontal, 16)
         .padding(.bottom, 8)
+        .accessibilityIdentifier("home.quest.weatherStatus")
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(summary.accessibilityText)
     }

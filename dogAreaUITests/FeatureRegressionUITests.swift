@@ -238,6 +238,53 @@ final class FeatureRegressionUITests: XCTestCase {
         )
     }
 
+    /// 홈 미션 카드가 완료 기준/자가 기록 가이드/완료 아카이브 상태를 분리해 노출하는지 검증합니다.
+    func testFeatureRegression_HomeMissionLifecycleSeparatesCompletedMissionState() throws {
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.HomeMissionLifecycleStub"])
+        let dailyMissionCard = app.descendants(matching: .any).matching(identifier: "home.quest.card.daily").firstMatch
+        let weatherStatusCard = app.descendants(matching: .any).matching(identifier: "home.quest.weatherStatus").firstMatch
+        let rationaleCard = app.descendants(matching: .any).matching(identifier: "home.quest.rationale.card").firstMatch
+        let activeSection = app.descendants(matching: .any).matching(identifier: "home.quest.section.active").firstMatch
+        let completedSection = app.descendants(matching: .any).matching(identifier: "home.quest.section.completed").firstMatch
+        let activeRow = app.descendants(matching: .any).matching(identifier: "home.quest.row.uitest.home.quest.active").firstMatch
+        let readyRow = app.descendants(matching: .any).matching(identifier: "home.quest.row.uitest.home.quest.ready").firstMatch
+        let completedRow = app.descendants(matching: .any).matching(identifier: "home.quest.row.uitest.home.quest.completed").firstMatch
+
+        XCTAssertTrue(openTab(index: 0, app: app), "홈 탭 진입에 실패했습니다.")
+        XCTAssertTrue(
+            revealExistingElementByVerticalScroll(dailyMissionCard, app: app, maxSwipes: 6),
+            "홈 미션 카드를 화면에 노출하지 못했습니다."
+        )
+        XCTAssertTrue(
+            waitUntilExists(weatherStatusCard, timeout: 4),
+            "날씨 연동 상태 카드가 노출되지 않았습니다."
+        )
+        XCTAssertTrue(
+            waitUntilExists(rationaleCard, timeout: 4),
+            "미션 진행 가이드 카드가 노출되지 않았습니다."
+        )
+        XCTAssertTrue(
+            waitUntilExists(activeSection, timeout: 4),
+            "진행 중 미션 섹션이 노출되지 않았습니다."
+        )
+        XCTAssertTrue(
+            waitUntilExists(completedSection, timeout: 4),
+            "완료 미션 아카이브 섹션이 노출되지 않았습니다."
+        )
+        XCTAssertTrue(
+            waitUntilExists(activeRow, timeout: 4),
+            "진행 중 미션 행이 노출되지 않았습니다."
+        )
+        XCTAssertTrue(
+            waitUntilExists(readyRow, timeout: 4),
+            "완료 확정 가능 미션 행이 노출되지 않았습니다."
+        )
+        XCTAssertTrue(
+            waitUntilExists(completedRow, timeout: 4),
+            "완료 아카이브 미션 행이 노출되지 않았습니다."
+        )
+    }
+
     /// 회원 상태에서 프로필 편집 저장 성공 후 편집 값이 다시 시트에 반영되는지 검증합니다.
     func testFeatureRegression_MemberProfileEditPersistsUpdatedPetName() throws {
         let credentials = try XCTUnwrap(

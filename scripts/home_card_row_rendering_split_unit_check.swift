@@ -21,26 +21,27 @@ func load(_ relativePath: String) -> String {
 }
 
 let homeView = load("dogArea/Views/HomeView/HomeView.swift")
+let homeIndoorMissionRowView = load("dogArea/Views/HomeView/HomeSubView/Cards/HomeIndoorMissionRowView.swift")
 let project = load("dogArea.xcodeproj/project.pbxproj")
 
-let expectedReferences: [(String, String)] = [
-    ("HomeScrollToTopFloatingButtonView", "dogArea/Views/HomeView/HomeSubView/Cards/HomeScrollToTopFloatingButtonView.swift"),
-    ("HomeGuestDataUpgradeCardView", "dogArea/Views/HomeView/HomeSubView/Cards/HomeGuestDataUpgradeCardView.swift"),
-    ("HomeWeatherMissionStatusCardView", "dogArea/Views/HomeView/HomeSubView/Cards/HomeWeatherMissionStatusCardView.swift"),
-    ("HomeWeatherShieldSummaryCardView", "dogArea/Views/HomeView/HomeSubView/Cards/HomeWeatherShieldSummaryCardView.swift"),
-    ("HomeQuestWidgetTabSelectorView", "dogArea/Views/HomeView/HomeSubView/Cards/HomeQuestWidgetTabSelectorView.swift"),
-    ("HomeQuestReminderToggleRowView", "dogArea/Views/HomeView/HomeSubView/Cards/HomeQuestReminderToggleRowView.swift"),
-    ("HomeWeeklyQuestSummaryView", "dogArea/Views/HomeView/HomeSubView/Cards/HomeWeeklyQuestSummaryView.swift"),
-    ("HomeQuestAlternativeSuggestionCardView", "dogArea/Views/HomeView/HomeSubView/Cards/HomeQuestAlternativeSuggestionCardView.swift"),
-    ("HomeMissionDifficultySummaryView", "dogArea/Views/HomeView/HomeSubView/Cards/HomeMissionDifficultySummaryView.swift"),
-    ("HomeSeasonMotionCardView", "dogArea/Views/HomeView/HomeSubView/Cards/HomeSeasonMotionCardView.swift"),
-    ("HomeAnimatedSeasonGaugeView", "dogArea/Views/HomeView/HomeSubView/Cards/HomeAnimatedSeasonGaugeView.swift"),
-    ("HomeAnimatedQuestProgressBarView", "dogArea/Views/HomeView/HomeSubView/Cards/HomeAnimatedQuestProgressBarView.swift"),
-    ("HomeIndoorMissionRowView", "dogArea/Views/HomeView/HomeSubView/Cards/HomeIndoorMissionRowView.swift")
+let expectedReferences: [(reference: String, path: String, hostContents: String)] = [
+    ("HomeScrollToTopFloatingButtonView", "dogArea/Views/HomeView/HomeSubView/Cards/HomeScrollToTopFloatingButtonView.swift", homeView),
+    ("HomeGuestDataUpgradeCardView", "dogArea/Views/HomeView/HomeSubView/Cards/HomeGuestDataUpgradeCardView.swift", homeView),
+    ("HomeWeatherMissionStatusCardView", "dogArea/Views/HomeView/HomeSubView/Cards/HomeWeatherMissionStatusCardView.swift", homeView),
+    ("HomeWeatherShieldSummaryCardView", "dogArea/Views/HomeView/HomeSubView/Cards/HomeWeatherShieldSummaryCardView.swift", homeView),
+    ("HomeQuestWidgetTabSelectorView", "dogArea/Views/HomeView/HomeSubView/Cards/HomeQuestWidgetTabSelectorView.swift", homeView),
+    ("HomeQuestReminderToggleRowView", "dogArea/Views/HomeView/HomeSubView/Cards/HomeQuestReminderToggleRowView.swift", homeView),
+    ("HomeWeeklyQuestSummaryView", "dogArea/Views/HomeView/HomeSubView/Cards/HomeWeeklyQuestSummaryView.swift", homeView),
+    ("HomeQuestAlternativeSuggestionCardView", "dogArea/Views/HomeView/HomeSubView/Cards/HomeQuestAlternativeSuggestionCardView.swift", homeView),
+    ("HomeMissionDifficultySummaryView", "dogArea/Views/HomeView/HomeSubView/Cards/HomeMissionDifficultySummaryView.swift", homeView),
+    ("HomeSeasonMotionCardView", "dogArea/Views/HomeView/HomeSubView/Cards/HomeSeasonMotionCardView.swift", homeView),
+    ("HomeAnimatedSeasonGaugeView", "dogArea/Views/HomeView/HomeSubView/Cards/HomeAnimatedSeasonGaugeView.swift", homeView),
+    ("HomeAnimatedQuestProgressBarView", "dogArea/Views/HomeView/HomeSubView/Cards/HomeAnimatedQuestProgressBarView.swift", homeIndoorMissionRowView),
+    ("HomeIndoorMissionRowView", "dogArea/Views/HomeView/HomeSubView/Cards/HomeIndoorMissionRowView.swift", homeView)
 ]
 
-for (reference, path) in expectedReferences {
-    assertTrue(homeView.contains(reference), "HomeView should reference \(reference)")
+for (reference, path, hostContents) in expectedReferences {
+    assertTrue(hostContents.contains(reference), "Split host should reference \(reference)")
     let fileContents = load(path)
     assertTrue(fileContents.contains("struct "), "\(path) should declare a view struct")
     assertTrue(project.contains((path as NSString).lastPathComponent), "project should include \((path as NSString).lastPathComponent)")

@@ -30,6 +30,7 @@ for token in [
     "FR-MAP-001",
     "FR-MAP-002",
     "FR-GOAL-001",
+    "FR-HOME-QUEST-001",
     "FR-AUTH-001",
     "FR-SET-001",
     "FR-PROFILE-001",
@@ -59,6 +60,7 @@ for testName in [
     "testFeatureRegression_MapAddPointControlRemainsHittableWhileWalking",
     "testFeatureRegression_WalkListPrimaryContentIsNotObscuredByTabBar",
     "testFeatureRegression_TerritoryGoalNavigationHidesAndRestoresTabBar",
+    "testFeatureRegression_HomeMissionLifecycleSeparatesCompletedMissionState",
     "testFeatureRegression_SettingsAuthEntryPoints",
     "testFeatureRegression_SettingsImageTapAffordanceOpensProfileEdit",
     "testFeatureRegression_MemberProfileEditPersistsUpdatedPetName",
@@ -82,6 +84,10 @@ assertTrue(
 assertTrue(
     featureRegressionScript.contains("testFeatureRegression_MapAddPointControlRemainsHittableWhileWalking"),
     "run_feature_regression_ui_tests.sh should run the walking add-point regression"
+)
+assertTrue(
+    featureRegressionScript.contains("testFeatureRegression_HomeMissionLifecycleSeparatesCompletedMissionState"),
+    "run_feature_regression_ui_tests.sh should run the home mission lifecycle regression"
 )
 assertTrue(
     featureRegressionScript.contains("testFeatureRegression_SettingsImageTapAffordanceOpensProfileEdit"),

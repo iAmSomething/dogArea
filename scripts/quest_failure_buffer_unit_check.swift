@@ -65,7 +65,8 @@ let homeVM = loadMany([
 ])
 let homeView = loadMany([
     "dogArea/Views/HomeView/HomeView.swift",
-    "dogArea/Views/HomeView/HomeSubView/Cards/HomeIndoorMissionRowView.swift"
+    "dogArea/Views/HomeView/HomeSubView/Cards/HomeIndoorMissionRowView.swift",
+    "dogArea/Source/Domain/Home/Services/HomeIndoorMissionPresentationService.swift"
 ])
 let metrics = loadMany([
     "dogArea/Source/UserdefaultSetting.swift",
@@ -94,7 +95,7 @@ assertTrue(homeVM.contains("markExtensionConsumedIfNeeded"), "home vm should han
 assertTrue(homeVM.contains("streakEligibleOverride: false"), "extension mission should disable streak eligibility")
 
 assertTrue(homeView.contains("연장 슬롯"), "home view should render extension badge")
-assertTrue(homeView.contains("보상 70%"), "home view should explain reduced extension reward")
+assertTrue(homeView.contains("보상 70%"), "home quest presentation should explain reduced extension reward")
 
 assertTrue(metrics.contains("indoor_mission_extension_applied"), "metrics should include extension applied event")
 assertTrue(metrics.contains("indoor_mission_extension_consumed"), "metrics should include extension consumed event")

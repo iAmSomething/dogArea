@@ -30,7 +30,8 @@ let homeVM = loadMany([
 ])
 let homeView = loadMany([
     "dogArea/Views/HomeView/HomeView.swift",
-    "dogArea/Views/HomeView/HomeSubView/Cards/HomeIndoorMissionRowView.swift"
+    "dogArea/Views/HomeView/HomeSubView/Cards/HomeIndoorMissionRowView.swift",
+    "dogArea/Source/Domain/Home/Services/HomeIndoorMissionPresentationService.swift"
 ])
 let metrics = loadMany([
     "dogArea/Source/UserdefaultSetting.swift",
@@ -57,9 +58,9 @@ assertTrue(homeVM.contains("recentPresentedMissionIds"), "home vm should apply r
 assertTrue(homeVM.contains("resolveRiskLevel"), "home vm should resolve risk level for replacement")
 assertTrue(homeVM.contains("return .caution"), "home vm should fallback to caution level when weather provider value is missing")
 
-assertTrue(homeView.contains("악천후 실내 대체 미션"), "home view should render indoor replacement mission card")
-assertTrue(homeView.contains("행동 +1"), "home view should provide action logging button")
-assertTrue(homeView.contains("완료 확인"), "home view should provide completion confirmation button")
+assertTrue(homeView.contains("오늘 실내 대체 미션 안내"), "home quest presentation should describe indoor replacement card title")
+assertTrue(homeView.contains("행동 +1 기록"), "home quest presentation should provide action logging button copy")
+assertTrue(homeView.contains("완료 확인"), "home quest presentation should provide completion confirmation button copy")
 
 assertTrue(metrics.contains("indoor_mission_replacement_applied"), "metric enum should include indoor replacement event")
 assertTrue(metrics.contains("indoor_mission_completed"), "metric enum should include indoor completion event")

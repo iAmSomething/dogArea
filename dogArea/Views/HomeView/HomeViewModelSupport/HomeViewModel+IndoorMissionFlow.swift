@@ -19,6 +19,9 @@ extension HomeViewModel {
     }
 
     func refreshIndoorMissions(now: Date = Date()) {
+        if applyIndoorMissionUITestScenarioIfNeeded(now: now) {
+            return
+        }
         let missionContext = makeIndoorMissionPetContext(reference: now)
         indoorMissionBoard = indoorMissionStore.buildBoard(now: now, context: missionContext)
         questAlternativeActionSuggestion = makeQuestAlternativeActionSuggestion(for: indoorMissionBoard)
@@ -33,6 +36,7 @@ extension HomeViewModel {
             shieldApplyCount: shieldDailySummary?.applyCount ?? 0,
             localizedCopy: localizedCopy(ko:en:)
         )
+        updateIndoorMissionPresentation()
         if indoorMissionBoard.isIndoorReplacementActive {
             let exposureKey = "\(indoorMissionBoard.dayKey)|\(indoorMissionBoard.riskLevel.rawValue)"
             if exposureKey != lastIndoorMissionExposureTrackKey {
@@ -117,6 +121,7 @@ extension HomeViewModel {
         )
         mission = indoorMissionStore.updatedMissionState(mission)
         indoorMissionBoard = indoorMissionBoard.updated(mission)
+        updateIndoorMissionPresentation()
         questMotionEvent = QuestMotionEvent(
             missionId: mission.id,
             missionTitle: mission.title,
@@ -143,6 +148,7 @@ extension HomeViewModel {
         )
         mission = indoorMissionStore.updatedMissionState(mission)
         indoorMissionBoard = indoorMissionBoard.updated(mission)
+        updateIndoorMissionPresentation()
 
         switch result {
         case .completed:
@@ -414,5 +420,105 @@ extension HomeViewModel {
                 shieldApplied: false
             )
         }
+    }
+
+    /// 현재 실내 미션 보드와 날씨 요약을 바탕으로 홈 카드 프레젠테이션 상태를 갱신합니다.
+    func updateIndoorMissionPresentation() {
+        indoorMissionPresentation = indoorMissionPresentationService.makePresentation(
+            board: indoorMissionBoard,
+            weatherSummary: weatherMissionStatusSummary,
+            localizedCopy: localizedCopy(ko:en:)
+        )
+    }
+
+    /// UI 테스트용 홈 미션 시나리오가 지정되어 있으면 보드와 요약 상태를 강제로 주입합니다.
+    /// - Parameter now: 시나리오의 기준 시각입니다.
+    /// - Returns: UI 테스트 시나리오를 적용했으면 `true`를 반환합니다.
+    func applyIndoorMissionUITestScenarioIfNeeded(now: Date) -> Bool {
+        guard ProcessInfo.processInfo.arguments.contains("-UITest.HomeMissionLifecycleStub") else {
+            return false
+        }
+
+        let dayKey = indoorMissionStore.dayStampForPreview(now: now)
+        indoorMissionBoard = makeIndoorMissionUITestBoard(dayKey: dayKey)
+        weatherFeedbackRemainingCount = indoorMissionStore.weeklyFeedbackLimit
+        weatherShieldDailySummary = .init(dayKey: dayKey, applyCount: 1, lastAppliedAtText: "09:30")
+        weatherMissionStatusSummary = .init(
+            badgeText: "치환",
+            title: "오늘 날씨 연동 상태",
+            reasonText: "강풍과 강수 위험 때문에 오늘은 실내 대체 미션을 우선 진행합니다.",
+            appliedAtText: "적용 시점 09:30",
+            shieldUsageText: "보호 사용 1회",
+            policyTitle: "오늘 미션 기준",
+            policyText: "실외 목표 대신 실내 대체 미션 3개가 열렸고, 행동 +1은 실제로 끝낸 루틴만 기록하는 체크입니다.",
+            lifecycleGuideText: "기준 횟수를 채운 뒤 완료 확인을 눌러야 보상이 확정되고, 완료된 미션은 아래 아카이브로 이동합니다.",
+            fallbackNotice: nil,
+            accessibilityText: "오늘 날씨 연동 상태. 강풍과 강수 위험 때문에 실내 대체 미션이 열렸습니다.",
+            isFallback: false,
+            riskLevel: .bad
+        )
+        questAlternativeActionSuggestion = "오늘은 실내 루틴을 실제로 수행한 횟수만 기록하고, 완료된 미션은 아래 완료 영역에서 확인하세요."
+        updateIndoorMissionPresentation()
+        return true
+    }
+
+    /// UI 테스트에서 사용할 홈 미션 보드를 생성합니다.
+    /// - Parameter dayKey: 테스트용 미션 보드에 사용할 날짜 키입니다.
+    /// - Returns: 활성/확정 가능/완료 미션을 모두 포함한 테스트용 실내 미션 보드입니다.
+    func makeIndoorMissionUITestBoard(dayKey: String) -> IndoorMissionBoard {
+        let activeMission = IndoorMissionCardModel(
+            id: "uitest.home.quest.active",
+            category: .petCareCheck,
+            title: "펫 케어 루틴 체크",
+            description: "물/브러싱/컨디션 체크를 2회 진행해요.",
+            minimumActionCount: 2,
+            rewardPoint: 32,
+            streakEligible: true,
+            trackingMissionId: "uitest.home.quest.active",
+            dayKey: dayKey,
+            isExtension: false,
+            extensionSourceDayKey: nil,
+            extensionRewardScale: 1.0,
+            progress: .init(actionCount: 1, minimumActionCount: 2, isCompleted: false)
+        )
+        let readyMission = IndoorMissionCardModel(
+            id: "uitest.home.quest.ready",
+            category: .trainingCheck,
+            title: "실내 훈련 체크",
+            description: "기다려/손/하우스 훈련을 4회 수행해요.",
+            minimumActionCount: 4,
+            rewardPoint: 48,
+            streakEligible: true,
+            trackingMissionId: "uitest.home.quest.ready",
+            dayKey: dayKey,
+            isExtension: false,
+            extensionSourceDayKey: nil,
+            extensionRewardScale: 1.0,
+            progress: .init(actionCount: 4, minimumActionCount: 4, isCompleted: false)
+        )
+        let completedMission = IndoorMissionCardModel(
+            id: "uitest.home.quest.completed",
+            category: .recordCleanup,
+            title: "기록 정리 체크",
+            description: "산책 기록/사진/메모 정리를 3회 진행해요.",
+            minimumActionCount: 3,
+            rewardPoint: 40,
+            streakEligible: true,
+            trackingMissionId: "uitest.home.quest.completed",
+            dayKey: dayKey,
+            isExtension: true,
+            extensionSourceDayKey: "2026-03-06",
+            extensionRewardScale: indoorMissionStore.extensionRewardScale,
+            progress: .init(actionCount: 3, minimumActionCount: 3, isCompleted: true)
+        )
+
+        return .init(
+            riskLevel: .bad,
+            dayKey: dayKey,
+            missions: [activeMission, readyMission, completedMission],
+            extensionState: .consumed,
+            extensionMessage: "전일 미션 1개가 연장되었고, 완료 후에는 완료 아카이브로 이동합니다.",
+            difficultySummary: nil
+        )
     }
 }

@@ -107,9 +107,9 @@ struct HomeView: View {
                         seasonMotionCard(summary: viewModel.seasonMotionSummary)
                         if viewModel.indoorMissionBoard.shouldDisplayCard {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("데일리 미션 상태")
+                                Text("오늘 미션 안내")
                                     .font(.appScaledFont(for: .SemiBold, size: 30, relativeTo: .title2))
-                                Text("오늘 날씨·활동 상태를 반영한 추천 미션 진행 현황입니다.")
+                                Text("완료 기준, 부족분, 완료된 미션을 한 번에 확인하세요.")
                                     .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .caption))
                                     .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
                             }
@@ -432,9 +432,10 @@ struct HomeView: View {
     }
 
     private func indoorMissionCard(board: IndoorMissionBoard) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        let presentation = viewModel.indoorMissionPresentation
+        return VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text(questWidgetTab == .daily ? (board.riskLevel == .clear ? "데일리 미션 상태" : "악천후 실내 대체 미션") : "주간 퀘스트 요약")
+                Text(questWidgetTab == .daily ? presentation.sectionTitle : "주간 퀘스트 요약")
                     .font(.appFont(for: .SemiBold, size: 18))
                 Spacer()
                 if board.riskLevel != .clear && questWidgetTab == .daily {
@@ -450,9 +451,10 @@ struct HomeView: View {
             questReminderToggleRow
 
             if questWidgetTab == .daily {
-                Text(viewModel.weatherMissionStatusSummary.reasonText)
+                Text(presentation.sectionSubtitle)
                     .font(.appFont(for: .Light, size: 12))
                     .foregroundStyle(Color.appTextDarkGray)
+                    .fixedSize(horizontal: false, vertical: true)
                 HStack {
                     Text(viewModel.weatherMissionStatusSummary.appliedAtText)
                         .font(.appFont(for: .Light, size: 11))
@@ -478,6 +480,31 @@ struct HomeView: View {
                             .font(.appFont(for: .Light, size: 11))
                             .foregroundStyle(Color.appTextDarkGray)
                     }
+                }
+                if presentation.rationaleItems.isEmpty == false {
+                    VStack(alignment: .leading, spacing: 7) {
+                        Text("진행 가이드")
+                            .font(.appFont(for: .SemiBold, size: 12))
+                        ForEach(Array(presentation.rationaleItems.enumerated()), id: \.offset) { index, item in
+                            HStack(alignment: .top, spacing: 6) {
+                                Circle()
+                                    .fill(Color.appInk)
+                                    .frame(width: 5, height: 5)
+                                    .padding(.top, 5)
+                                Text(item)
+                                    .font(.appFont(for: .Light, size: 11))
+                                    .foregroundStyle(Color.appTextDarkGray)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            .accessibilityIdentifier("home.quest.rationale.\(index)")
+                        }
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 10)
+                    .background(Color.appYellowPale.opacity(0.35))
+                    .cornerRadius(10)
+                    .accessibilityElement(children: .contain)
+                    .accessibilityIdentifier("home.quest.rationale.card")
                 }
                 if let difficulty = board.difficultySummary {
                     missionDifficultySummary(difficulty)
@@ -505,14 +532,27 @@ struct HomeView: View {
                         .cornerRadius(8)
                 }
 
-                if board.missions.isEmpty {
-                    Text("오늘 활성화된 미션이 없어요.")
-                        .font(.appFont(for: .Light, size: 12))
-                        .foregroundStyle(Color.appTextDarkGray)
-                        .padding(.vertical, 4)
+                if presentation.activeMissions.isEmpty && presentation.completedMissions.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(presentation.emptyTitle)
+                            .font(.appFont(for: .SemiBold, size: 13))
+                        Text(presentation.emptyMessage)
+                            .font(.appFont(for: .Light, size: 12))
+                            .foregroundStyle(Color.appTextDarkGray)
+                    }
+                    .padding(.vertical, 4)
                 } else {
-                    ForEach(board.missions) { mission in
-                        indoorMissionRow(mission: mission)
+                    indoorMissionSection(
+                        title: "지금 진행할 미션",
+                        accessibilityIdentifier: "home.quest.section.active",
+                        rows: presentation.activeMissions
+                    )
+                    if let completedTitle = presentation.completedSectionTitle {
+                        indoorMissionSection(
+                            title: completedTitle,
+                            accessibilityIdentifier: "home.quest.section.completed",
+                            rows: presentation.completedMissions
+                        )
                     }
                 }
             } else {
@@ -531,6 +571,8 @@ struct HomeView: View {
                 .stroke(Color.appTextLightGray, lineWidth: 0.5)
         )
         .padding(.horizontal, 16)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("home.quest.card.daily")
     }
 
     /// 퀘스트 위젯에서 일일/주간 뷰를 전환하는 탭 선택 행입니다.
@@ -603,10 +645,6 @@ struct HomeView: View {
 
     private func questProgressValue(for mission: IndoorMissionCardModel) -> Double {
         animatedQuestProgress[mission.id] ?? mission.progress.progressRatio
-    }
-
-    private func missionIsClaimable(_ mission: IndoorMissionCardModel) -> Bool {
-        mission.progress.actionCount >= mission.minimumActionCount && mission.progress.isCompleted == false
     }
 
     private func handleQuestMotionEvent(_ event: QuestMotionEvent?) {
@@ -836,26 +874,43 @@ struct HomeView: View {
         }
     }
 
-    @ViewBuilder
-    private func animatedQuestProgressBar(mission: IndoorMissionCardModel) -> some View {
-        let progress = min(1.0, max(0.0, questProgressValue(for: mission)))
-        HomeAnimatedQuestProgressBarView(
-            progress: progress,
-            isCompleted: mission.progress.isCompleted,
-            showPulse: questProgressPulseMissionId == mission.id,
-            isMotionReduced: isQuestMotionReduced
+    /// 홈 미션 카드를 활성/완료 섹션 단위로 렌더링합니다.
+    /// - Parameters:
+    ///   - title: 섹션 제목입니다.
+    ///   - accessibilityIdentifier: UI 테스트와 접근성 탐색에 사용할 식별자입니다.
+    ///   - rows: 섹션에 포함될 미션 행 프레젠테이션 목록입니다.
+    /// - Returns: 홈 미션 카드 내부에 표시할 섹션 뷰입니다.
+    private func indoorMissionSection(
+        title: String,
+        accessibilityIdentifier: String,
+        rows: [HomeIndoorMissionRowPresentation]
+    ) -> some View {
+        guard rows.isEmpty == false else {
+            return AnyView(EmptyView())
+        }
+        return AnyView(
+            VStack(alignment: .leading, spacing: 8) {
+                Text(title)
+                    .font(.appFont(for: .SemiBold, size: 13))
+                    .foregroundStyle(Color.appTextDarkGray)
+                ForEach(rows) { row in
+                    indoorMissionRow(presentation: row)
+                }
+            }
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier(accessibilityIdentifier)
         )
     }
 
-    private func indoorMissionRow(mission: IndoorMissionCardModel) -> some View {
-        let claimable = missionIsClaimable(mission)
-        let claimed = mission.progress.isCompleted
+    /// 개별 실내 미션 프레젠테이션을 홈 카드 행으로 렌더링합니다.
+    /// - Parameter presentation: 렌더링할 미션 행 프레젠테이션 정보입니다.
+    /// - Returns: 홈 카드 내부의 개별 미션 행 뷰입니다.
+    private func indoorMissionRow(presentation: HomeIndoorMissionRowPresentation) -> some View {
+        let mission = presentation.mission
         return HomeIndoorMissionRowView(
-            mission: mission,
+            presentation: presentation,
             animatedProgress: questProgressValue(for: mission),
             isQuestMotionReduced: isQuestMotionReduced,
-            claimable: claimable,
-            claimed: claimed,
             showClaimPulse: questClaimPulseMissionId == mission.id,
             showProgressPulse: questProgressPulseMissionId == mission.id,
             onRecordAction: { viewModel.recordIndoorMissionAction(mission.id) },
