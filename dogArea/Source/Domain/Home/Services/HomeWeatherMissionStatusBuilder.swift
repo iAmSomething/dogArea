@@ -83,6 +83,33 @@ final class HomeWeatherMissionStatusBuilder: HomeWeatherMissionStatusBuilding {
             "Shield used \(shieldApplyCount)x"
         )
 
+        let policyTitle = localizedCopy(
+            "오늘 미션 기준",
+            "Today's Mission Policy"
+        )
+        let policyText: String
+        if status.source == .fallback {
+            policyText = localizedCopy(
+                "연결이 복구될 때까지 최근 안전 기준으로 실내/실외 모드를 보수적으로 정해요.",
+                "Until connectivity recovers, indoor or outdoor mission mode is chosen conservatively from the latest safe baseline."
+            )
+        } else if board.riskLevel == .clear {
+            policyText = localizedCopy(
+                "오늘은 기본 실외 미션 기준으로 진행합니다. 악천후가 되면 실내 대체 미션이 자동으로 열려요.",
+                "Today uses the default outdoor mission baseline. Indoor replacement missions open automatically when severe weather appears."
+            )
+        } else {
+            policyText = localizedCopy(
+                "오늘은 날씨 위험 때문에 실내 대체 미션이 열렸어요. `행동 +1 기록`은 실제로 끝낸 행동 1회를 남기는 체크입니다.",
+                "Indoor replacement missions are open due to weather risk. `Log +1` is a self-reported count for one action you actually completed."
+            )
+        }
+
+        let lifecycleGuideText = localizedCopy(
+            "기준 횟수를 채운 뒤 `완료 확인` 또는 `보상 받기`를 눌러야 미션이 완료로 확정됩니다.",
+            "A mission is finalized only after you reach the target count and confirm it."
+        )
+
         let fallbackNotice: String?
         if status.source == .fallback {
             fallbackNotice = localizedCopy(
@@ -97,7 +124,7 @@ final class HomeWeatherMissionStatusBuilder: HomeWeatherMissionStatusBuilding {
             "적용 시점 \(appliedTime)",
             "Applied at \(appliedTime)"
         )
-        let accessibilityText = "\(badgeText). \(reasonText). \(appliedAtText). \(shieldText)"
+        let accessibilityText = "\(badgeText). \(reasonText). \(policyText). \(lifecycleGuideText). \(appliedAtText). \(shieldText)"
 
         return WeatherMissionStatusSummary(
             badgeText: badgeText,
@@ -105,6 +132,9 @@ final class HomeWeatherMissionStatusBuilder: HomeWeatherMissionStatusBuilding {
             reasonText: reasonText,
             appliedAtText: appliedAtText,
             shieldUsageText: shieldText,
+            policyTitle: policyTitle,
+            policyText: policyText,
+            lifecycleGuideText: lifecycleGuideText,
             fallbackNotice: fallbackNotice,
             accessibilityText: accessibilityText,
             isFallback: status.source == .fallback,

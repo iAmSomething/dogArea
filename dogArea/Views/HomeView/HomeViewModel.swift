@@ -20,6 +20,7 @@ final class HomeViewModel: ObservableObject {
     @Published var weatherFeedbackRemainingCount: Int = 2
     @Published var weatherFeedbackResultMessage: String? = nil
     @Published var weatherMissionStatusSummary: WeatherMissionStatusSummary = .empty
+    @Published var indoorMissionPresentation: HomeIndoorMissionBoardPresentation = .empty
     @Published var weatherShieldDailySummary: WeatherShieldDailySummary? = nil
     @Published var seasonCatchupBuffStatusMessage: String? = nil
     @Published var seasonCatchupBuffStatusWarning: Bool = false
@@ -55,6 +56,7 @@ final class HomeViewModel: ObservableObject {
     let weeklyStatisticsService: HomeWeeklyStatisticsServicing
     let areaAggregationService: HomeAreaAggregationServicing
     let weatherMissionStatusBuilder: HomeWeatherMissionStatusBuilding
+    let indoorMissionPresentationService: HomeIndoorMissionPresenting
     let areaMilestoneDetector: AreaMilestoneDetecting
     let areaMilestoneNotificationScheduler: AreaMilestoneNotificationScheduling
     let seasonMotionStore = SeasonMotionStore()
@@ -120,6 +122,7 @@ final class HomeViewModel: ObservableObject {
         weeklyStatisticsService: HomeWeeklyStatisticsServicing = HomeWeeklyStatisticsService(),
         areaAggregationService: HomeAreaAggregationServicing = HomeAreaAggregationService(),
         weatherMissionStatusBuilder: HomeWeatherMissionStatusBuilding = HomeWeatherMissionStatusBuilder(),
+        indoorMissionPresentationService: HomeIndoorMissionPresenting = HomeIndoorMissionPresentationService(),
         areaMilestoneDetector: AreaMilestoneDetecting = AreaMilestoneDetector(),
         areaMilestoneNotificationScheduler: AreaMilestoneNotificationScheduling = LocalAreaMilestoneNotificationScheduler()
     ) {
@@ -130,6 +133,7 @@ final class HomeViewModel: ObservableObject {
         self.weeklyStatisticsService = weeklyStatisticsService
         self.areaAggregationService = areaAggregationService
         self.weatherMissionStatusBuilder = weatherMissionStatusBuilder
+        self.indoorMissionPresentationService = indoorMissionPresentationService
         self.areaMilestoneDetector = areaMilestoneDetector
         self.areaMilestoneNotificationScheduler = areaMilestoneNotificationScheduler
         self.questReminderScheduler = LocalQuestReminderScheduler()

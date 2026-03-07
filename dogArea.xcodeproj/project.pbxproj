@@ -98,6 +98,7 @@
 		A50000010000000000000005 /* SettingsDocumentSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000010000000000000015 /* SettingsDocumentSheetView.swift */; };
 		A50000010000000000000006 /* SettingViewModel+ProductSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000010000000000000016 /* SettingViewModel+ProductSurface.swift */; };
 		A45200010000000000000001 /* SettingsEditableImageButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45200010000000000000011 /* SettingsEditableImageButton.swift */; };
+		A45300010000000000000001 /* HomeIndoorMissionPresentationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45300010000000000000011 /* HomeIndoorMissionPresentationService.swift */; };
 		A37700010000000000000001 /* AreaReferenceCatalogInsightService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37700010000000000000011 /* AreaReferenceCatalogInsightService.swift */; };
 		A37700010000000000000002 /* AreaDetailCatalogSnapshotSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37700010000000000000012 /* AreaDetailCatalogSnapshotSectionView.swift */; };
 		A37800010000000000000001 /* AppTabScaffold.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37800010000000000000002 /* AppTabScaffold.swift */; };
@@ -426,6 +427,7 @@
 		A50000010000000000000015 /* SettingsDocumentSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsDocumentSheetView.swift; sourceTree = "<group>"; };
 		A50000010000000000000016 /* SettingViewModel+ProductSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SettingViewModel+ProductSurface.swift"; sourceTree = "<group>"; };
 		A45200010000000000000011 /* SettingsEditableImageButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsEditableImageButton.swift; sourceTree = "<group>"; };
+		A45300010000000000000011 /* HomeIndoorMissionPresentationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeIndoorMissionPresentationService.swift; sourceTree = "<group>"; };
 		A37700010000000000000011 /* AreaReferenceCatalogInsightService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaReferenceCatalogInsightService.swift; sourceTree = "<group>"; };
 		A37700010000000000000012 /* AreaDetailCatalogSnapshotSectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaDetailCatalogSnapshotSectionView.swift; sourceTree = "<group>"; };
 		A37800010000000000000002 /* AppTabScaffold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTabScaffold.swift; sourceTree = "<group>"; };
@@ -1302,6 +1304,7 @@
 				363FE1044470B273CAB987E0 /* HomeQuestReminderSupport.swift */,
 				DAE147A01420000000000001 /* HomeWeeklyStatisticsService.swift */,
 				DAE147A21420000000000001 /* HomeWeatherMissionStatusBuilder.swift */,
+				A45300010000000000000011 /* HomeIndoorMissionPresentationService.swift */,
 				D55F514F099289DA27BC2654 /* HomeAreaAggregationService.swift */,
 			);
 			path = Services;
@@ -1706,6 +1709,7 @@
 				A37500010000000000000023 /* SeasonMotionStore.swift in Sources */,
 				DAE147A11420000000000001 /* HomeWeeklyStatisticsService.swift in Sources */,
 				DAE147A31420000000000001 /* HomeWeatherMissionStatusBuilder.swift in Sources */,
+				A45300010000000000000001 /* HomeIndoorMissionPresentationService.swift in Sources */,
 				DAED25022AFA1D430044715A /* SplashView.swift in Sources */,
 				DA99F9E62AFA4F3E00B1483F /* Color.swift in Sources */,
 				DA3F9BD32AE0FF8A0048550C /* RootView.swift in Sources */,

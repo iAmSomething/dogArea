@@ -307,6 +307,13 @@ final class IndoorMissionStore {
         max(0, weeklyFeedbackLimit - feedbackCountInCurrentWeek(now: now))
     }
 
+    /// 주어진 시각을 현재 저장소 기준 날짜 키로 변환합니다.
+    /// - Parameter now: 날짜 키로 변환할 기준 시각입니다.
+    /// - Returns: 저장소 내부 집계와 동일한 형식의 날짜 키입니다.
+    func dayStampForPreview(now: Date) -> String {
+        dayStamp(for: now)
+    }
+
     func submitWeatherMismatchFeedback(now: Date = Date()) -> WeatherFeedbackOutcome {
         let originalRisk = resolveRiskLevel(now: now)
         let remainingBefore = weatherFeedbackRemainingCount(now: now)
