@@ -127,12 +127,6 @@ struct MapView : View{
         composed = AnyView(composed.onMapCameraChange(frequency: .onEnd) { context in
             handleMapCameraChange(context)
         })
-        composed = AnyView(composed.overlay(alignment: .top) {
-            statusOverlayView
-        })
-        composed = AnyView(composed.overlay(alignment: .bottom) {
-            mapPrimaryActionOverlay
-        })
         return composed
     }
 
@@ -150,119 +144,31 @@ struct MapView : View{
                         value: viewModel.weatherOverlayRiskLevel
                     )
                 MapAlertSubView(viewModel: viewModel, myAlert: myAlert)
-
-                VStack {
-                    Spacer().frame(
-                        height: AppTabLayoutMetrics.topOverlaySpacing(
-                            safeAreaTopInset: proxy.safeAreaInsets.top
-                        )
-                    )
-                    HStack {
-                        Spacer()
-                        Button(action:{
-                            viewModel.fetchPolygonList()
-                            isModalPresented.toggle()
-                        }, label: {
-                            Text("설정")
-                                .font(.appFont(for: .Bold, size: 16))
-                                .foregroundStyle(Color.appInk)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
-                                .background(Color.appSurface.opacity(0.95))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .stroke(Color.appTextLightGray.opacity(0.7), lineWidth: 1)
-                                )
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
-                        })
-                        .accessibilityIdentifier("map.openSettings")
+            }
+            .overlay(alignment: .top) {
+                MapTopChromeView(
+                    safeAreaTopInset: proxy.safeAreaInsets.top,
+                    weatherStatusText: viewModel.weatherOverlayStatusText,
+                    isWeatherFallbackActive: viewModel.weatherOverlayFallbackActive,
+                    heatmapSummaryText: (!viewModel.isWalking && viewModel.isHeatmapFeatureAvailable && viewModel.heatmapEnabled)
+                        ? viewModel.seasonTileStatusSummaryText
+                        : nil,
+                    bannerContent: activeBanner.map { AnyView(topBannerView(for: $0)) },
+                    statusContent: statusOverlayContent,
+                    onOpenSettings: {
+                        viewModel.fetchPolygonList()
+                        isModalPresented.toggle()
                     }
-                    HStack {
-                        Text(viewModel.weatherOverlayStatusText)
-                            .font(.appFont(for: .SemiBold, size: 11))
-                            .foregroundStyle(Color.appTextDarkGray)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(viewModel.weatherOverlayFallbackActive ? Color.appTextLightGray.opacity(0.35) : Color.appYellowPale)
-                            .cornerRadius(8)
-                            .accessibilityLabel("지도 날씨 상태 \(viewModel.weatherOverlayStatusText)")
-                        Spacer()
-                    }
-                    .padding(.top, 6)
-                    if !viewModel.isWalking && viewModel.isHeatmapFeatureAvailable && viewModel.heatmapEnabled {
-                        HStack {
-                            Text(viewModel.seasonTileStatusSummaryText)
-                                .font(.appFont(for: .Light, size: 11))
-                                .foregroundStyle(Color.appTextDarkGray)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 6)
-                                .background(Color.white.opacity(0.9))
-                                .cornerRadius(8)
-                            Spacer()
-                        }
-                        .padding(.top, 2)
-                    }
-                    if let activeBanner {
-                        topBannerView(for: activeBanner)
-                    }
-                    Spacer()
-
-                    if viewModel.isWalking {
-                        HStack {
-                            if isCameraSeeingSomewhere, viewModel.location != nil {
-                                Button(action: { viewModel.handleLocationButtonTap() }, label: {Text("내 위치 보기")})
-                                    .buttonStyle(.borderedProminent)
-                                    .padding(.leading)
-                            }
-                            Spacer()
-                            addPointBtn
-                        }
-                    } else {
-                        HStack {
-                            if isCameraSeeingSomewhere, viewModel.location != nil {
-                                Button(action: { viewModel.handleLocationButtonTap() }, label: {Text("내 위치 보기")})
-                                    .buttonStyle(.borderedProminent)
-                                    .padding(.leading)
-                            }
-                            Spacer()
-                        }
-                    }
-                    if !viewModel.selectedPolygonList.isEmpty && !viewModel.isWalking {
-                        VStack {
-                            Text("닫기")
-                                .frame(maxWidth: .infinity, maxHeight: 20)
-                                .onTapGesture {
-                                    viewModel.selectedPolygonList = []
-                                }.padding()
-                                .aspectRatio(contentMode: .fit)
-                            UnderLine()
-                            ScrollView(.horizontal) {
-                                HStack{
-                                    ForEach(viewModel.selectedPolygonList) { item in
-                                        SelectedPolygonCell(walkData: .init(polygon: item))
-                                            .onTapGesture {
-                                                self.selectedPolygonData = WalkDataModel(polygon: item)
-                                            }
-                                            .padding()
-                                            .myCornerRadius(radius: 15)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 15)
-                                                    .stroke(Color.appTextDarkGray, lineWidth: 0.3)
-                                            )
-                                    }.padding(10)
-                                }
-                                .frame(maxHeight: .infinity)
-                                .aspectRatio(contentMode: .fit)
-                            }
-                            .frame(width: screenSize.width)
-                            .aspectRatio(contentMode: .fit)
-                        }
-                        .frame(maxHeight: .infinity)
-                        .aspectRatio(contentMode: .fit)
-                        .background(.white)
-                        .clipShape(RoundedCornersShape(radius: 20, corners: [.topLeft, .topRight]))
-                    }
-                }
+                )
+            }
+            .overlay(alignment: .bottomTrailing) {
+                mapFloatingControlOverlay
+            }
+            .overlay(alignment: .bottom) {
+                selectedPolygonTrayOverlay
+            }
+            .overlay(alignment: .bottom) {
+                mapPrimaryActionOverlay
             }
             .appTabBarContentPadding(extra: 8)
         }
@@ -274,50 +180,49 @@ struct MapView : View{
                 HStack(spacing: 10) {
                     Text(message)
                         .font(.appFont(for: .SemiBold, size: 13))
-                        .foregroundStyle(Color.black)
+                        .foregroundStyle(MapChromePalette.primaryText)
                     if shouldShowLocationSettingsAction(for: message) {
                         Button("설정 열기") {
                             openAppSettings()
                         }
                         .font(.appFont(for: .SemiBold, size: 12))
-                        .foregroundStyle(Color.appInk)
+                        .foregroundStyle(MapChromePalette.primaryText)
+                        .frame(minHeight: 44)
                         .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(Color.white.opacity(0.9))
-                        .cornerRadius(8)
+                        .mapChromePill(.neutral)
                     }
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
-                .background(Color.appYellow)
-                .cornerRadius(10)
-                .padding(.top, 12)
+                .mapChromeSurface(emphasized: true)
             }
 
             if pendingUndoPointID != nil {
                 HStack(spacing: 10) {
                     Text("포인트를 추가했어요")
                         .font(.appFont(for: .SemiBold, size: 13))
-                        .foregroundStyle(Color.black)
+                        .foregroundStyle(MapChromePalette.primaryText)
                     Spacer()
                     Button("실행 취소") {
                         undoLastAddedPoint()
                     }
                     .font(.appFont(for: .SemiBold, size: 12))
-                    .foregroundStyle(Color.appInk)
-                    .padding(.horizontal, 10)
                     .frame(minHeight: 44)
-                    .background(Color.white.opacity(0.9))
-                    .cornerRadius(8)
+                    .foregroundStyle(MapChromePalette.primaryText)
+                    .padding(.horizontal, 10)
+                    .mapChromePill(.neutral)
                     .accessibilityLabel("포인트 추가 실행 취소")
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
-                .background(Color.appYellowPale)
-                .cornerRadius(10)
+                .mapChromeSurface(emphasized: true)
             }
         }
-        .padding(.horizontal, 12)
+    }
+
+    private var statusOverlayContent: AnyView? {
+        guard viewModel.walkStatusMessage != nil || pendingUndoPointID != nil else { return nil }
+        return AnyView(statusOverlayView)
     }
 
     /// 지도 카메라 이벤트를 반영해 UI 상태와 클러스터 계산을 갱신합니다.
@@ -386,18 +291,87 @@ struct MapView : View{
         .appTabFloatingOverlayPadding()
     }
 
+    private var mapFloatingControlOverlay: some View {
+        MapFloatingControlColumnView(
+            showsRecenterButton: isCameraSeeingSomewhere && viewModel.location != nil,
+            showsAddPointButton: viewModel.isWalking,
+            isAutoPointRecordMode: viewModel.isAutoPointRecordMode,
+            isAddPointLongPressModeEnabled: viewModel.isAddPointLongPressModeEnabled,
+            onRecenterTapped: {
+                viewModel.handleLocationButtonTap()
+            },
+            onAddPointTapped: {
+                guard viewModel.isAddPointLongPressModeEnabled == false else {
+                    viewModel.walkStatusMessage = "길게 눌러 포인트를 추가하세요."
+                    return
+                }
+                handleAddPointRequest()
+            },
+            onAddPointLongPressEnded: {
+                handleAddPointRequest()
+            }
+        )
+    }
+
+    private var selectedPolygonTrayOverlay: some View {
+        Group {
+            if !viewModel.selectedPolygonList.isEmpty && !viewModel.isWalking {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Text("선택한 산책 기록")
+                            .font(.appFont(for: .SemiBold, size: 15))
+                            .foregroundStyle(MapChromePalette.primaryText)
+                        Spacer()
+                        Button("닫기") {
+                            viewModel.selectedPolygonList = []
+                        }
+                        .font(.appFont(for: .SemiBold, size: 12))
+                        .foregroundStyle(MapChromePalette.primaryText)
+                        .frame(minHeight: 44)
+                        .padding(.horizontal, 10)
+                        .mapChromePill(.neutral)
+                    }
+
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 10) {
+                            ForEach(viewModel.selectedPolygonList) { item in
+                                SelectedPolygonCell(walkData: .init(polygon: item))
+                                    .onTapGesture {
+                                        self.selectedPolygonData = WalkDataModel(polygon: item)
+                                    }
+                                    .padding()
+                                    .myCornerRadius(radius: 15)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 15)
+                                            .stroke(MapChromePalette.surfaceBorder, lineWidth: 1)
+                                    )
+                            }
+                        }
+                    }
+                }
+                .padding(14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, MapChromeLayoutMetrics.horizontalPadding)
+                .mapChromeSurface()
+                .padding(.horizontal, MapChromeLayoutMetrics.horizontalPadding)
+                .appTabFloatingOverlayPadding(lift: -112, minimumBottomPadding: 188)
+            }
+        }
+    }
+
     var recoverableSessionBanner: some View {
         HStack(spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("미종료 산책 감지")
                     .font(.appFont(for: .SemiBold, size: 13))
+                    .foregroundStyle(MapChromePalette.primaryText)
                 Text(viewModel.recoverableWalkSummaryText)
                     .font(.appFont(for: .Light, size: 11))
-                    .foregroundStyle(Color.appTextDarkGray)
+                    .foregroundStyle(MapChromePalette.secondaryText)
                 if viewModel.recoverableWalkEstimateText.isEmpty == false {
                     Text(viewModel.recoverableWalkEstimateText)
                         .font(.appFont(for: .Light, size: 11))
-                        .foregroundStyle(Color.appTextDarkGray)
+                        .foregroundStyle(MapChromePalette.secondaryText)
                 }
             }
             Spacer()
@@ -435,27 +409,23 @@ struct MapView : View{
             .cornerRadius(8)
         }
         .padding(10)
-        .background(Color.white.opacity(0.95))
-        .cornerRadius(12)
-        .padding(.horizontal, 12)
+        .mapChromeSurface()
     }
 
     var watchStatusBanner: some View {
         VStack(spacing: 3) {
             Text(viewModel.watchSyncStatusText)
                 .font(.appFont(for: .Light, size: 11))
-                .foregroundStyle(Color.appTextDarkGray)
+                .foregroundStyle(MapChromePalette.secondaryText)
             if viewModel.latestWatchActionText.isEmpty == false {
                 Text(viewModel.latestWatchActionText)
                     .font(.appFont(for: .Light, size: 11))
-                    .foregroundStyle(Color.appTextDarkGray)
+                    .foregroundStyle(MapChromePalette.secondaryText)
             }
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-        .background(Color.white.opacity(0.9))
-        .cornerRadius(8)
-        .padding(.top, 4)
+        .mapChromeSurface()
     }
 
     var returnToOriginSuggestionBanner: some View {
@@ -465,13 +435,13 @@ struct MapView : View{
                     VStack(alignment: .leading, spacing: 3) {
                         Text("출발지 근처예요")
                             .font(.appFont(for: .SemiBold, size: 13))
-                            .foregroundStyle(Color.appInk)
+                            .foregroundStyle(MapChromePalette.primaryText)
                         Text("약 \(context.distanceFromOriginMeters)m · \(context.dwellSeconds)초 체류")
                             .font(.appFont(for: .Light, size: 11))
-                            .foregroundStyle(Color.appTextDarkGray)
+                            .foregroundStyle(MapChromePalette.secondaryText)
                         Text("산책을 종료할까요?")
                             .font(.appFont(for: .Light, size: 11))
-                            .foregroundStyle(Color.appTextDarkGray)
+                            .foregroundStyle(MapChromePalette.secondaryText)
                     }
                     Spacer(minLength: 8)
                     Button("계속") {
@@ -492,9 +462,7 @@ struct MapView : View{
                     .cornerRadius(8)
                 }
                 .padding(10)
-                .background(Color.white.opacity(0.95))
-                .cornerRadius(12)
-                .padding(.horizontal, 12)
+                .mapChromeSurface()
             }
         }
     }
@@ -505,20 +473,16 @@ struct MapView : View{
             .foregroundStyle(Color.appRed)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .background(Color.white.opacity(0.9))
-            .cornerRadius(8)
-            .padding(.top, 2)
+            .mapChromeSurface()
     }
 
     var syncOutboxBanner: some View {
         Text(viewModel.syncOutboxStatusText)
             .font(.appFont(for: .Light, size: 11))
-            .foregroundStyle(Color.appTextDarkGray)
+            .foregroundStyle(MapChromePalette.secondaryText)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .background(Color.white.opacity(0.9))
-            .cornerRadius(8)
-            .padding(.top, 2)
+            .mapChromeSurface()
     }
 
     var offlineModeBadge: some View {
@@ -528,21 +492,19 @@ struct MapView : View{
                 .frame(width: 8, height: 8)
             Text("오프라인 모드 · 온라인 복귀 시 자동 동기화")
                 .font(.appFont(for: .Light, size: 11))
-                .foregroundStyle(Color.appTextDarkGray)
+                .foregroundStyle(MapChromePalette.secondaryText)
             Spacer()
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-        .background(Color.white.opacity(0.9))
-        .cornerRadius(8)
-        .padding(.top, 2)
+        .mapChromeSurface()
     }
 
     var guestBackupBanner: some View {
         HStack(spacing: 8) {
             Text("게스트 기록은 이 기기에만 저장돼요.")
                 .font(.appFont(for: .Light, size: 11))
-                .foregroundStyle(Color.appTextDarkGray)
+                .foregroundStyle(MapChromePalette.secondaryText)
             Spacer()
             Button("로그인하고 백업") {
                 _ = authFlow.requestAccess(feature: .cloudSync)
@@ -555,59 +517,7 @@ struct MapView : View{
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-        .background(Color.white.opacity(0.9))
-        .cornerRadius(8)
-        .padding(.top, 2)
-    }
-
-    var addPointBtn: some View {
-        VStack(spacing: 6) {
-            if viewModel.isAutoPointRecordMode {
-                Text("AUTO")
-                    .font(.appFont(for: .SemiBold, size: 11))
-                    .foregroundStyle(Color.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.appGreen)
-                    .cornerRadius(6)
-            }
-            if viewModel.isAddPointLongPressModeEnabled {
-                Text("길게 0.4s")
-                    .font(.appFont(for: .SemiBold, size: 11))
-                    .foregroundStyle(Color.appTextDarkGray)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.white.opacity(0.9))
-                    .cornerRadius(6)
-            }
-            Button {
-                guard viewModel.isAddPointLongPressModeEnabled == false else {
-                    viewModel.walkStatusMessage = "길게 눌러 포인트를 추가하세요."
-                    return
-                }
-                handleAddPointRequest()
-            } label: {
-                ZStack {
-                    Circle()
-                        .fill(Color.appYellow)
-                        .frame(width: 70, height: 70)
-                        .shadow(color: Color.black.opacity(0.18), radius: 14, x: 0, y: 8)
-                    Image(systemName: "plus")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundStyle(Color.appInk)
-                }
-            }
-            .buttonStyle(.plain)
-            .simultaneousGesture(
-                LongPressGesture(minimumDuration: 0.4)
-                    .onEnded { _ in
-                        guard viewModel.isAddPointLongPressModeEnabled else { return }
-                        handleAddPointRequest()
-                    }
-            )
-            .accessibilityLabel(viewModel.isAddPointLongPressModeEnabled ? "길게 눌러 영역 추가" : "영역 추가")
-            .accessibilityHint("추가 후 3초 안에 실행 취소할 수 있습니다")
-        }
+        .mapChromeSurface()
     }
 
     /// 영역 추가 버튼 요청을 처리하고 3초 Undo 토스트를 예약합니다.

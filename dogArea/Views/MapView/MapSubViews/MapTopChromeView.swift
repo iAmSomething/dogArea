@@ -1,0 +1,74 @@
+import SwiftUI
+
+struct MapTopChromeView: View {
+    let safeAreaTopInset: CGFloat
+    let weatherStatusText: String
+    let isWeatherFallbackActive: Bool
+    let heatmapSummaryText: String?
+    let bannerContent: AnyView?
+    let statusContent: AnyView?
+    let onOpenSettings: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: MapChromeLayoutMetrics.topSectionSpacing) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: MapChromeLayoutMetrics.pillSpacing) {
+                    weatherStatusPill
+                    if let heatmapSummaryText, heatmapSummaryText.isEmpty == false {
+                        heatmapSummaryPill(text: heatmapSummaryText)
+                    }
+                }
+
+                Spacer(minLength: 12)
+
+                MapChromeIconButton(
+                    systemImageName: "slider.horizontal.3",
+                    accessibilityIdentifier: "map.openSettings",
+                    accessibilityLabel: "지도 설정",
+                    accessibilityHint: "지도 설정 시트를 엽니다.",
+                    emphasized: false,
+                    action: onOpenSettings
+                )
+            }
+
+            if let bannerContent {
+                bannerContent
+            }
+
+            if let statusContent {
+                statusContent
+            }
+        }
+        .padding(.top, AppTabLayoutMetrics.topOverlaySpacing(safeAreaTopInset: safeAreaTopInset, extra: 10))
+        .padding(.horizontal, MapChromeLayoutMetrics.horizontalPadding)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+
+    private var weatherStatusPill: some View {
+        HStack(spacing: 8) {
+            Image(systemName: isWeatherFallbackActive ? "exclamationmark.triangle.fill" : "cloud.sun.fill")
+                .font(.system(size: 12, weight: .semibold))
+            Text(weatherStatusText)
+                .font(.appFont(for: .SemiBold, size: 11))
+                .lineLimit(2)
+        }
+        .foregroundStyle(MapChromePalette.secondaryText)
+        .mapChromePill(isWeatherFallbackActive ? .neutral : .accent)
+        .accessibilityLabel("지도 날씨 상태 \(weatherStatusText)")
+    }
+
+    /// 히트맵 요약을 chrome pill로 렌더링합니다.
+    /// - Parameter text: 현재 히트맵/시즌 타일 요약 문구입니다.
+    /// - Returns: 지도 상단에 표시할 히트맵 요약 pill 뷰입니다.
+    private func heatmapSummaryPill(text: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "square.grid.3x3.fill")
+                .font(.system(size: 11, weight: .semibold))
+            Text(text)
+                .font(.appFont(for: .SemiBold, size: 11))
+                .lineLimit(2)
+        }
+        .foregroundStyle(MapChromePalette.secondaryText)
+        .mapChromePill(.neutral)
+    }
+}

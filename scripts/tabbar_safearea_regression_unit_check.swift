@@ -28,6 +28,7 @@ let rootView = load("dogArea/Views/GlobalViews/BaseView/RootView.swift")
 let scaffold = load("dogArea/Views/GlobalViews/BaseView/AppTabScaffold.swift")
 let homeView = load("dogArea/Views/HomeView/HomeView.swift")
 let mapView = load("dogArea/Views/MapView/MapView.swift")
+let mapTopChromeView = load("dogArea/Views/MapView/MapSubViews/MapTopChromeView.swift")
 let walkListView = load("dogArea/Views/WalkListView/WalkListView.swift")
 let settingsView = load("dogArea/Views/ProfileSettingView/NotificationCenterView.swift")
 let rivalView = load("dogArea/Views/ProfileSettingView/RivalTabView.swift")
@@ -99,8 +100,8 @@ assertTrue(
     "MapView should use shared floating overlay padding for its CTA"
 )
 assertTrue(
-    mapView.contains("AppTabLayoutMetrics.topOverlaySpacing("),
-    "MapView should use shared top overlay spacing"
+    mapTopChromeView.contains("AppTabLayoutMetrics.topOverlaySpacing("),
+    "MapTopChromeView should use shared top overlay spacing"
 )
 for (name, source) in [
     ("TerritoryGoalView", territoryGoalView),
