@@ -144,6 +144,7 @@ member token 또는 app/anon bearer를 허용합니다.
 ## Related
 
 - `supabase/functions/_shared/edge_auth.ts`
+- `docs/backend-edge-auth-mode-inventory-v1.md`
 - `docs/backend-contract-versioning-policy-v1.md`
 - `docs/backend-edge-observability-standard-v1.md`
 - `#418`
