@@ -13,11 +13,11 @@ let sourceURL = root.appendingPathComponent("dogArea/Views/ProfileSettingView/Ri
 let source = try String(contentsOf: sourceURL, encoding: .utf8)
 
 assertTrue(
-    source.contains("final class RivalTabViewModel: NSObject, ObservableObject, @preconcurrency CLLocationManagerDelegate"),
+    source.contains("@preconcurrency\nfinal class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDelegate"),
     "RivalTabViewModel should adopt CLLocationManagerDelegate with @preconcurrency to avoid Swift 6 concurrency warnings"
 )
 assertTrue(
-    source.contains("@MainActor\nfinal class RivalTabViewModel"),
+    source.contains("@MainActor\n@preconcurrency\nfinal class RivalTabViewModel"),
     "RivalTabViewModel should remain main-actor isolated"
 )
 
