@@ -15,8 +15,18 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
 let migration = load("supabase/migrations/20260227192000_rival_privacy_hard_guard.sql")
-let nearbyFunction = load("supabase/functions/nearby-presence/index.ts")
+let nearbyFunction = loadMany([
+    "supabase/functions/nearby-presence/index.ts",
+    "supabase/functions/nearby-presence/support/types.ts",
+    "supabase/functions/nearby-presence/support/privacy_audit.ts",
+    "supabase/functions/nearby-presence/handlers/hotspot_handler.ts",
+    "supabase/functions/nearby-presence/handlers/live_presence_handlers.ts"
+])
 let doc = load("docs/rival-privacy-hard-guard-v1.md")
 let nearbyDoc = load("docs/nearby-anonymous-hotspot-v1.md")
 let readme = load("README.md")
