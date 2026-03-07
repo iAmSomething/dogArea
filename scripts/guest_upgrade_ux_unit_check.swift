@@ -33,6 +33,14 @@ let image = read("dogArea/Views/ImageGeneratorView/TextToImageView.swift")
 let walkList = read("dogArea/Views/WalkListView/WalkListView.swift")
 let source = readMany([
     "dogArea/Source/UserdefaultSetting.swift",
+    "dogArea/Source/UserDefaultsSupport/UserSessionModels.swift",
+    "dogArea/Source/UserDefaultsSupport/UserDefaultsCodableExtensions.swift",
+    "dogArea/Source/UserDefaultsSupport/UserdefaultSetting+SessionFacade.swift",
+    "dogArea/Source/UserDefaultsSupport/UserSessionStore.swift",
+    "dogArea/Source/UserDefaultsSupport/AppPreferenceStores.swift",
+    "dogArea/Source/UserDefaultsSupport/FeatureFlagStore.swift",
+    "dogArea/Source/UserDefaultsSupport/AppMetricTracker.swift",
+    "dogArea/Source/UserDefaultsSupport/SyncOutboxStore.swift",
     "dogArea/Source/AppSession/AppFeatureGate.swift",
     "dogArea/Source/AppSession/GuestDataUpgradeService.swift",
     "dogArea/Source/AppSession/AuthFlowCoordinator.swift"

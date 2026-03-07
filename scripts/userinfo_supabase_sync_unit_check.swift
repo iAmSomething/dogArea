@@ -23,6 +23,14 @@ let migration = load("supabase/migrations/20260227000000_user_pet_profile_fields
 let edgeFunction = load("supabase/functions/sync-profile/index.ts")
 let userdefaultSetting = loadMany([
     "dogArea/Source/UserdefaultSetting.swift",
+    "dogArea/Source/UserDefaultsSupport/UserSessionModels.swift",
+    "dogArea/Source/UserDefaultsSupport/UserDefaultsCodableExtensions.swift",
+    "dogArea/Source/UserDefaultsSupport/UserdefaultSetting+SessionFacade.swift",
+    "dogArea/Source/UserDefaultsSupport/UserSessionStore.swift",
+    "dogArea/Source/UserDefaultsSupport/AppPreferenceStores.swift",
+    "dogArea/Source/UserDefaultsSupport/FeatureFlagStore.swift",
+    "dogArea/Source/UserDefaultsSupport/AppMetricTracker.swift",
+    "dogArea/Source/UserDefaultsSupport/SyncOutboxStore.swift",
     "dogArea/Source/ProfileSyncOutboxStore.swift",
     "dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift",
     "dogArea/Source/Infrastructure/Supabase/Services/SupabaseSyncServices.swift",
