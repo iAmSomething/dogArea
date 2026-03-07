@@ -11,9 +11,10 @@ struct PetManagementEditPetSheet: View {
                 LazyVStack(alignment: .leading, spacing: 16) {
                     ProfileEditorImageSection(
                         title: "반려견 프로필 이미지",
-                        subtitle: "새 사진을 선택하거나 기존 이미지를 제거할 수 있습니다.",
+                        subtitle: "사진을 탭하면 앨범이 열리고, 기존 이미지는 아래에서 제거할 수 있습니다.",
                         remoteURL: viewModel.remoteImageURL,
                         selectedImage: $viewModel.petProfileImage,
+                        previewAccessibilityIdentifier: "settings.petManagement.edit.image",
                         resetButtonTitle: "이미지 제거",
                         resetButtonEnabled: viewModel.petProfileImage != nil || viewModel.remoteImageURL != nil,
                         allowsCamera: true,

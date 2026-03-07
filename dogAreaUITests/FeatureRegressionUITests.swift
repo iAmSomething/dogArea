@@ -279,6 +279,45 @@ final class FeatureRegressionUITests: XCTestCase {
         _ = tapIfExists(app.buttons["sheet.settings.profileEdit.cancel"])
     }
 
+    /// 설정 메인 카드의 사용자/반려견 이미지를 탭하면 동일한 프로필 편집 시트로 진입하는지 검증합니다.
+    func testFeatureRegression_SettingsImageTapAffordanceOpensProfileEdit() throws {
+        let credentials = try XCTUnwrap(
+            loadTestCredentials(),
+            "DOGAREA_TEST_EMAIL/DOGAREA_TEST_PASSWORD 또는 .design_audit_credentials.json이 필요합니다."
+        )
+        let app = launchAppForFeatureRegression()
+
+        XCTAssertTrue(openTab(index: 4, app: app), "설정 탭 진입에 실패했습니다.")
+        XCTAssertTrue(
+            ensureMemberSession(app: app, credentials: credentials),
+            "회원 상태 진입에 실패했습니다."
+        )
+
+        XCTAssertTrue(openTab(index: 4, app: app), "로그인 후 설정 탭 재진입에 실패했습니다.")
+
+        let profileImageButton = app.buttons["settings.profile.image"]
+        XCTAssertTrue(waitUntilExists(profileImageButton, timeout: 6), "사용자 프로필 이미지 편집 버튼을 찾지 못했습니다.")
+        XCTAssertTrue(tapIfExists(profileImageButton), "사용자 프로필 이미지 탭에 실패했습니다.")
+
+        let profileEditSheet = screenElement(identifier: "sheet.settings.profileEdit", in: app)
+        XCTAssertTrue(waitUntilExists(profileEditSheet, timeout: 8), "사용자 이미지 탭 후 프로필 편집 시트를 찾지 못했습니다.")
+        XCTAssertTrue(
+            waitUntilExists(app.buttons["settings.profileEditor.userImage"], timeout: 4),
+            "프로필 편집 시트의 사용자 이미지 탭 영역을 찾지 못했습니다."
+        )
+        _ = tapIfExists(app.buttons["sheet.settings.profileEdit.cancel"])
+
+        let petImageButton = app.buttons["settings.pet.image"]
+        XCTAssertTrue(waitUntilExists(petImageButton, timeout: 6), "반려견 이미지 편집 버튼을 찾지 못했습니다.")
+        XCTAssertTrue(tapIfExists(petImageButton), "반려견 이미지 탭에 실패했습니다.")
+        XCTAssertTrue(waitUntilExists(profileEditSheet, timeout: 8), "반려견 이미지 탭 후 프로필 편집 시트를 찾지 못했습니다.")
+        XCTAssertTrue(
+            waitUntilExists(app.buttons["settings.profileEditor.petImage"], timeout: 4),
+            "프로필 편집 시트의 반려견 이미지 탭 영역을 찾지 못했습니다."
+        )
+        _ = tapIfExists(app.buttons["sheet.settings.profileEdit.cancel"])
+    }
+
     /// 회원 상태에서 반려견 관리 시트로 기존 반려견 정보를 수정할 수 있는지 검증합니다.
     func testFeatureRegression_MemberPetManagementEditsExistingPet() throws {
         let credentials = try XCTUnwrap(

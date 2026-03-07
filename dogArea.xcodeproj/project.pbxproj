@@ -97,6 +97,7 @@
 		A50000010000000000000004 /* SettingsAppInfoCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000010000000000000014 /* SettingsAppInfoCardView.swift */; };
 		A50000010000000000000005 /* SettingsDocumentSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000010000000000000015 /* SettingsDocumentSheetView.swift */; };
 		A50000010000000000000006 /* SettingViewModel+ProductSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000010000000000000016 /* SettingViewModel+ProductSurface.swift */; };
+		A45200010000000000000001 /* SettingsEditableImageButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45200010000000000000011 /* SettingsEditableImageButton.swift */; };
 		A37700010000000000000001 /* AreaReferenceCatalogInsightService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37700010000000000000011 /* AreaReferenceCatalogInsightService.swift */; };
 		A37700010000000000000002 /* AreaDetailCatalogSnapshotSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37700010000000000000012 /* AreaDetailCatalogSnapshotSectionView.swift */; };
 		A37800010000000000000001 /* AppTabScaffold.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37800010000000000000002 /* AppTabScaffold.swift */; };
@@ -424,6 +425,7 @@
 		A50000010000000000000014 /* SettingsAppInfoCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsAppInfoCardView.swift; sourceTree = "<group>"; };
 		A50000010000000000000015 /* SettingsDocumentSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsDocumentSheetView.swift; sourceTree = "<group>"; };
 		A50000010000000000000016 /* SettingViewModel+ProductSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SettingViewModel+ProductSurface.swift"; sourceTree = "<group>"; };
+		A45200010000000000000011 /* SettingsEditableImageButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsEditableImageButton.swift; sourceTree = "<group>"; };
 		A37700010000000000000011 /* AreaReferenceCatalogInsightService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaReferenceCatalogInsightService.swift; sourceTree = "<group>"; };
 		A37700010000000000000012 /* AreaDetailCatalogSnapshotSectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaDetailCatalogSnapshotSectionView.swift; sourceTree = "<group>"; };
 		A37800010000000000000002 /* AppTabScaffold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTabScaffold.swift; sourceTree = "<group>"; };
@@ -818,6 +820,7 @@
 				A50000010000000000000013 /* SettingsActionSectionCardView.swift */,
 				A50000010000000000000014 /* SettingsAppInfoCardView.swift */,
 				A50000010000000000000015 /* SettingsDocumentSheetView.swift */,
+				A45200010000000000000011 /* SettingsEditableImageButton.swift */,
 				A37600010000000000000014 /* PetManagementSheet.swift */,
 				A37600010000000000000016 /* PetManagementEditPetSheet.swift */,
 			);
@@ -1761,6 +1764,7 @@
 				A50000010000000000000003 /* SettingsActionSectionCardView.swift in Sources */,
 				A50000010000000000000004 /* SettingsAppInfoCardView.swift in Sources */,
 				A50000010000000000000005 /* SettingsDocumentSheetView.swift in Sources */,
+				A45200010000000000000001 /* SettingsEditableImageButton.swift in Sources */,
 				A37600010000000000000027 /* PetManagementEditPetSheetViewModel.swift in Sources */,
 				A37600010000000000000028 /* PetManagementSheetViewModel.swift in Sources */,
 				5951E893E8CBC77DCA82E00F /* WalkDetailViewModel.swift in Sources */,

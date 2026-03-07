@@ -184,18 +184,20 @@ struct NotificationCenterView: View {
     var memberProfileCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .center, spacing: 14) {
-                Button {
+                SettingsEditableImageButton(
+                    title: "사진을 탭해 프로필 사진을 바꿔요.",
+                    accessibilityIdentifier: "settings.profile.image",
+                    accessibilityLabel: "사용자 프로필 사진 편집"
+                ) {
                     #if DEBUG
                     print("[SettingsSheet] user image tapped -> profileEdit")
                     #endif
                     viewModel.reloadUserInfo()
                     activeSheet = .profileEdit
-                } label: {
+                } content: {
                     UserProfileImageView()
                         .environmentObject(viewModel)
                 }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("settings.profile.image")
 
                 VStack(alignment: .leading, spacing: 6) {
                     Text(viewModel.userInfo?.name ?? "산책꾼")
@@ -236,10 +238,10 @@ struct NotificationCenterView: View {
                     viewModel.reloadUserInfo()
                     activeSheet = .profileEdit
                 }, label: {
-                    Text("프로필 편집")
+                    Text("정보 편집")
                 })
                 .accessibilityIdentifier("settings.profile.edit")
-                .buttonStyle(AppFilledButtonStyle(role: .secondary, fillsWidth: false))
+                .buttonStyle(AppFilledButtonStyle(role: .neutral, fillsWidth: false))
                 .frame(minHeight: 44)
             }
         }
@@ -280,8 +282,20 @@ struct NotificationCenterView: View {
             }
 
             HStack(alignment: .center, spacing: 14) {
-                PetProfileImageView()
-                    .environmentObject(viewModel)
+                SettingsEditableImageButton(
+                    title: "사진을 탭해 선택한 반려견 사진을 바꿔요.",
+                    accessibilityIdentifier: "settings.pet.image",
+                    accessibilityLabel: "선택한 반려견 사진 편집"
+                ) {
+                    #if DEBUG
+                    print("[SettingsSheet] pet image tapped -> profileEdit")
+                    #endif
+                    viewModel.reloadUserInfo()
+                    activeSheet = .profileEdit
+                } content: {
+                    PetProfileImageView()
+                        .environmentObject(viewModel)
+                }
 
                 VStack(alignment: .leading, spacing: 6) {
                     Text(viewModel.selectedPet?.petName ?? "강아지")
@@ -337,7 +351,7 @@ struct NotificationCenterView: View {
                     viewModel.reloadUserInfo()
                     activeSheet = .profileEdit
                 }
-                .buttonStyle(AppFilledButtonStyle(role: .secondary, fillsWidth: false))
+                .buttonStyle(AppFilledButtonStyle(role: .neutral, fillsWidth: false))
                 .frame(minHeight: 44)
 
                 Button("반려견 관리") {
@@ -348,7 +362,7 @@ struct NotificationCenterView: View {
                     activeSheet = .petManagement
                 }
                 .accessibilityIdentifier("settings.pet.manage")
-                .buttonStyle(AppFilledButtonStyle(role: .primary, fillsWidth: false))
+                .buttonStyle(AppFilledButtonStyle(role: .neutral, fillsWidth: false))
                 .frame(minHeight: 44)
             }
 

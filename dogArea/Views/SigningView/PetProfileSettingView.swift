@@ -26,9 +26,10 @@ struct PetProfileSettingView: View {
             VStack(spacing: 14) {
                 ProfileEditorImageSection(
                     title: "강아지 사진",
-                    subtitle: "강아지 사진을 추가해주세요!",
+                    subtitle: "사진을 탭하면 앨범이 열립니다.",
                     remoteURL: nil,
                     selectedImage: $viewModel.petProfile,
+                    previewAccessibilityIdentifier: "signin.pet.image",
                     resetButtonTitle: "선택 취소",
                     resetButtonEnabled: viewModel.petProfile != nil,
                     allowsCamera: false,

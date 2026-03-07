@@ -203,9 +203,10 @@ struct PetManagementSheet: View {
 
             ProfileEditorImageSection(
                 title: "새 반려견 프로필 이미지",
-                subtitle: "앨범 또는 카메라에서 사진을 고를 수 있습니다.",
+                subtitle: "사진을 탭하면 앨범이 열리고, 아래에서 카메라 촬영도 할 수 있습니다.",
                 remoteURL: nil,
                 selectedImage: $sheetViewModel.newPetProfileImage,
+                previewAccessibilityIdentifier: "settings.petManagement.add.image",
                 resetButtonTitle: "선택 취소",
                 resetButtonEnabled: sheetViewModel.newPetProfileImage != nil,
                 allowsCamera: true,

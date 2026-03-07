@@ -31,6 +31,7 @@ for token in [
     "FR-MAP-002",
     "FR-GOAL-001",
     "FR-AUTH-001",
+    "FR-SET-001",
     "FR-PROFILE-001",
     "FR-RIVAL-001",
     "FR-WIDGET-001",
@@ -59,6 +60,7 @@ for testName in [
     "testFeatureRegression_WalkListPrimaryContentIsNotObscuredByTabBar",
     "testFeatureRegression_TerritoryGoalNavigationHidesAndRestoresTabBar",
     "testFeatureRegression_SettingsAuthEntryPoints",
+    "testFeatureRegression_SettingsImageTapAffordanceOpensProfileEdit",
     "testFeatureRegression_MemberProfileEditPersistsUpdatedPetName",
     "testFeatureRegression_RivalAuthRevalidationFlow",
     "testFeatureRegression_WidgetRouteOpensRivalTab"
@@ -80,6 +82,10 @@ assertTrue(
 assertTrue(
     featureRegressionScript.contains("testFeatureRegression_MapAddPointControlRemainsHittableWhileWalking"),
     "run_feature_regression_ui_tests.sh should run the walking add-point regression"
+)
+assertTrue(
+    featureRegressionScript.contains("testFeatureRegression_SettingsImageTapAffordanceOpensProfileEdit"),
+    "run_feature_regression_ui_tests.sh should run the settings image affordance regression"
 )
 assertTrue(
     featureRegressionScript.contains("testFeatureRegression_MemberProfileEditPersistsUpdatedPetName"),

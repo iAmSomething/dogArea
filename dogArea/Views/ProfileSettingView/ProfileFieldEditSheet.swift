@@ -27,9 +27,10 @@ struct ProfileFieldEditSheet: View {
 
                     ProfileEditorImageSection(
                         title: "사용자 프로필 이미지",
-                        subtitle: "새 사진을 선택하면 저장 시 프로필에 반영됩니다.",
+                        subtitle: "사진을 탭하면 앨범이 열리고, 저장 시 프로필에 반영됩니다.",
                         remoteURL: sheetViewModel.userProfileImageURL,
                         selectedImage: $sheetViewModel.userProfileImage,
+                        previewAccessibilityIdentifier: "settings.profileEditor.userImage",
                         resetButtonTitle: "선택 취소",
                         resetButtonEnabled: sheetViewModel.userProfileImage != nil,
                         allowsCamera: true,
@@ -53,9 +54,10 @@ struct ProfileFieldEditSheet: View {
 
                     ProfileEditorImageSection(
                         title: "반려견 프로필 이미지",
-                        subtitle: "새 사진을 선택하면 저장 시 선택 반려견에 반영됩니다.",
+                        subtitle: "사진을 탭하면 앨범이 열리고, 저장 시 선택 반려견에 반영됩니다.",
                         remoteURL: sheetViewModel.petProfileImageURL,
                         selectedImage: $sheetViewModel.petProfileImage,
+                        previewAccessibilityIdentifier: "settings.profileEditor.petImage",
                         resetButtonTitle: "선택 취소",
                         resetButtonEnabled: sheetViewModel.petProfileImage != nil,
                         allowsCamera: true,

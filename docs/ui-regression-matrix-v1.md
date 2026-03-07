@@ -18,6 +18,7 @@
 | `FR-MAP-002` | `docs/walk-start-stop-ux-v1.md` | 산책 시작 후 영역 추가 버튼 노출/터치 | `FeatureRegressionUITests/testFeatureRegression_MapAddPointControlRemainsHittableWhileWalking` | 산책 중 영역 추가 버튼이 CTA와 겹치지 않고 눌리는지 확인 |
 | `FR-GOAL-001` | `docs/home-goal-tracker-ui-v1.md`, `docs/territory-goal-view-detail-ui-v1.md` | 홈 목표 상세 진입/복귀 | `FeatureRegressionUITests/testFeatureRegression_TerritoryGoalNavigationHidesAndRestoresTabBar` | 상세 진입 시 탭바 숨김, 복귀 시 재노출 확인 |
 | `FR-AUTH-001` | `docs/profile-edit-flow-v1.md`, `docs/supabase-auth-apple-plan.md` | 설정 탭의 로그인/로그아웃 진입점 | `FeatureRegressionUITests/testFeatureRegression_SettingsAuthEntryPoints` | guest/member 상태별 CTA 문구 확인 |
+| `FR-SET-001` | `docs/profile-edit-flow-v1.md` | 설정 메인 카드의 사용자/반려견 이미지 탭 편집 진입 | `FeatureRegressionUITests/testFeatureRegression_SettingsImageTapAffordanceOpensProfileEdit` | 이미지 자체가 1차 편집 진입점으로 이해되는지 확인 |
 | `FR-PROFILE-001` | `docs/profile-edit-flow-v1.md` | 회원 상태 프로필 편집 저장 | `FeatureRegressionUITests/testFeatureRegression_MemberProfileEditPersistsUpdatedPetName` | 프로필 편집 저장 후 재진입 시 값 유지 확인 |
 | `FR-RIVAL-001` | `docs/rival-tab-ui-design-spec-v1.md`, `docs/nearby-anonymous-hotspot-v1.md` | 로그아웃 후 재로그인, 익명 공유 시작 | `FeatureRegressionUITests/testFeatureRegression_RivalAuthRevalidationFlow` | 세션 재검증 후 공유 시작 가능 여부 확인 |
 | `FR-RIVAL-002` | `docs/rival-tab-ui-design-spec-v1.md` | 라이벌 푸터 버튼 라우팅 | `FeatureRegressionUITests/testFeatureRegression_RivalFooterButtonsRouteToMapAndSettings` | 지도/설정으로의 전환 및 복귀 확인 |
