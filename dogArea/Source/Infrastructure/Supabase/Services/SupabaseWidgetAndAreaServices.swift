@@ -212,7 +212,16 @@ final class DefaultQuestRivalWidgetSnapshotSyncService: QuestRivalWidgetSnapshot
 }
 
 struct TerritoryWidgetSummaryService: TerritoryWidgetSummaryServiceProtocol {
-    private struct ResponseDTO: Decodable {
+    private struct ResponseDTO {
+        let todayTileCount: Int?
+        let weeklyTileCount: Int?
+        let defenseScheduledTileCount: Int?
+        let scoreUpdatedAt: String?
+        let refreshedAt: String?
+        let hasData: Bool?
+    }
+
+    private struct LegacyResponseDTO: Decodable {
         let todayTileCount: Int?
         let weeklyTileCount: Int?
         let defenseScheduledTileCount: Int?
@@ -230,6 +239,32 @@ struct TerritoryWidgetSummaryService: TerritoryWidgetSummaryServiceProtocol {
         }
     }
 
+    private struct EnvelopeResponseDTO: Decodable {
+        struct SummaryDTO: Decodable {
+            let todayTileCount: Int?
+            let weeklyTileCount: Int?
+            let defenseScheduledTileCount: Int?
+            let scoreUpdatedAt: String?
+
+            enum CodingKeys: String, CodingKey {
+                case todayTileCount = "today_tile_count"
+                case weeklyTileCount = "weekly_tile_count"
+                case defenseScheduledTileCount = "defense_scheduled_tile_count"
+                case scoreUpdatedAt = "score_updated_at"
+            }
+        }
+
+        let hasData: Bool?
+        let refreshedAt: String?
+        let summary: SummaryDTO?
+
+        enum CodingKeys: String, CodingKey {
+            case hasData = "has_data"
+            case refreshedAt = "refreshed_at"
+            case summary
+        }
+    }
+
     private let client: SupabaseHTTPClient
 
     init(client: SupabaseHTTPClient = .live) {
@@ -240,15 +275,12 @@ struct TerritoryWidgetSummaryService: TerritoryWidgetSummaryServiceProtocol {
     /// - Parameter now: 서버 집계 기준 시각입니다.
     /// - Returns: 오늘/주간/방어 예정 타일과 갱신 시각을 포함한 요약 DTO입니다.
     func fetchSummary(now: Date) async throws -> TerritoryWidgetSummaryDTO {
-        let payload: [String: Any] = [
-            "now_ts": ISO8601DateFormatter().string(from: now)
-        ]
-        let data = try await client.request(
-            .rest(path: "rpc/rpc_get_widget_territory_summary"),
-            method: .post,
-            bodyData: try JSONSerialization.data(withJSONObject: payload)
-        )
-        let decoded = try JSONDecoder().decode(ResponseDTO.self, from: data)
+        let decoded: ResponseDTO
+        do {
+            decoded = try await fetchCanonicalSummary(now: now)
+        } catch {
+            decoded = try await fetchLegacySummary(now: now)
+        }
         let refreshedAt = SupabaseISO8601.parseEpoch(decoded.refreshedAt) ?? now.timeIntervalSince1970
         let summary = TerritoryWidgetSummaryDTO(
             todayTileCount: max(0, decoded.todayTileCount ?? 0),
@@ -260,6 +292,78 @@ struct TerritoryWidgetSummaryService: TerritoryWidgetSummaryServiceProtocol {
                 ?? ((decoded.weeklyTileCount ?? 0) > 0 || (decoded.todayTileCount ?? 0) > 0)
         )
         return summary
+    }
+
+    /// canonical wrapper 요청으로 영역 요약 RPC를 조회합니다.
+    /// - Parameter now: 서버 집계 기준 시각입니다.
+    /// - Returns: envelope 또는 legacy 응답을 정규화한 영역 요약 응답입니다.
+    private func fetchCanonicalSummary(now: Date) async throws -> ResponseDTO {
+        let payload: [String: Any] = [
+            "payload": [
+                "in_now_ts": ISO8601DateFormatter().string(from: now)
+            ]
+        ]
+        let data = try await client.request(
+            .rest(path: "rpc/rpc_get_widget_territory_summary"),
+            method: .post,
+            bodyData: try JSONSerialization.data(withJSONObject: payload)
+        )
+        return try decodeSummaryResponse(data: data)
+    }
+
+    /// legacy positional 요청으로 영역 요약 RPC를 조회합니다.
+    /// - Parameter now: 서버 집계 기준 시각입니다.
+    /// - Returns: legacy top-level 응답을 정규화한 영역 요약 응답입니다.
+    private func fetchLegacySummary(now: Date) async throws -> ResponseDTO {
+        let payload: [String: Any] = [
+            "now_ts": ISO8601DateFormatter().string(from: now)
+        ]
+        let data = try await client.request(
+            .rest(path: "rpc/rpc_get_widget_territory_summary"),
+            method: .post,
+            bodyData: try JSONSerialization.data(withJSONObject: payload)
+        )
+        return try decodeSummaryResponse(data: data)
+    }
+
+    /// RPC 응답이 canonical envelope 또는 legacy top-level 어느 형태든 단일 요약 객체로 파싱합니다.
+    /// - Parameter data: RPC 원시 응답 데이터입니다.
+    /// - Returns: 앱 DTO 변환에 사용할 정규화된 영역 요약 응답입니다.
+    private func decodeSummaryResponse(data: Data) throws -> ResponseDTO {
+        let decoder = JSONDecoder()
+        if let envelope = try? decoder.decode(EnvelopeResponseDTO.self, from: data),
+           let summary = envelope.summary {
+            return ResponseDTO(
+                todayTileCount: summary.todayTileCount,
+                weeklyTileCount: summary.weeklyTileCount,
+                defenseScheduledTileCount: summary.defenseScheduledTileCount,
+                scoreUpdatedAt: summary.scoreUpdatedAt,
+                refreshedAt: envelope.refreshedAt,
+                hasData: envelope.hasData
+            )
+        }
+        if let object = try? decoder.decode(LegacyResponseDTO.self, from: data) {
+            return ResponseDTO(
+                todayTileCount: object.todayTileCount,
+                weeklyTileCount: object.weeklyTileCount,
+                defenseScheduledTileCount: object.defenseScheduledTileCount,
+                scoreUpdatedAt: object.scoreUpdatedAt,
+                refreshedAt: object.refreshedAt,
+                hasData: object.hasData
+            )
+        }
+        if let rows = try? decoder.decode([LegacyResponseDTO].self, from: data),
+           let first = rows.first {
+            return ResponseDTO(
+                todayTileCount: first.todayTileCount,
+                weeklyTileCount: first.weeklyTileCount,
+                defenseScheduledTileCount: first.defenseScheduledTileCount,
+                scoreUpdatedAt: first.scoreUpdatedAt,
+                refreshedAt: first.refreshedAt,
+                hasData: first.hasData
+            )
+        }
+        throw SupabaseHTTPError.invalidResponse
     }
 }
 
@@ -419,7 +523,21 @@ final class DefaultTerritoryWidgetSnapshotSyncService: TerritoryWidgetSnapshotSy
 }
 
 struct HotspotWidgetSummaryService: HotspotWidgetSummaryServiceProtocol {
-    private struct ResponseDTO: Decodable {
+    private struct ResponseDTO {
+        let signalLevel: String?
+        let highCells: Int?
+        let mediumCells: Int?
+        let lowCells: Int?
+        let delayMinutes: Int?
+        let privacyMode: String?
+        let suppressionReason: String?
+        let guideCopy: String?
+        let hasData: Bool?
+        let isCached: Bool?
+        let refreshedAt: String?
+    }
+
+    private struct LegacyResponseDTO: Decodable {
         let signalLevel: String?
         let highCells: Int?
         let mediumCells: Int?
@@ -447,6 +565,54 @@ struct HotspotWidgetSummaryService: HotspotWidgetSummaryServiceProtocol {
         }
     }
 
+    private struct EnvelopeResponseDTO: Decodable {
+        struct ContextDTO: Decodable {
+            let isCached: Bool?
+            let privacyMode: String?
+            let suppressionReason: String?
+
+            enum CodingKeys: String, CodingKey {
+                case isCached = "is_cached"
+                case privacyMode = "privacy_mode"
+                case suppressionReason = "suppression_reason"
+            }
+        }
+
+        struct SummaryDTO: Decodable {
+            let signalLevel: String?
+            let highCells: Int?
+            let mediumCells: Int?
+            let lowCells: Int?
+            let delayMinutes: Int?
+            let privacyMode: String?
+            let suppressionReason: String?
+            let guideCopy: String?
+
+            enum CodingKeys: String, CodingKey {
+                case signalLevel = "signal_level"
+                case highCells = "high_cells"
+                case mediumCells = "medium_cells"
+                case lowCells = "low_cells"
+                case delayMinutes = "delay_minutes"
+                case privacyMode = "privacy_mode"
+                case suppressionReason = "suppression_reason"
+                case guideCopy = "guide_copy"
+            }
+        }
+
+        let hasData: Bool?
+        let refreshedAt: String?
+        let context: ContextDTO?
+        let summary: SummaryDTO?
+
+        enum CodingKeys: String, CodingKey {
+            case hasData = "has_data"
+            case refreshedAt = "refreshed_at"
+            case context
+            case summary
+        }
+    }
+
     private let client: SupabaseHTTPClient
 
     /// 익명 핫스팟 위젯 요약 서비스 인스턴스를 생성합니다.
@@ -461,16 +627,12 @@ struct HotspotWidgetSummaryService: HotspotWidgetSummaryServiceProtocol {
     ///   - now: 서버 집계 기준 시각입니다.
     /// - Returns: 활성도 단계/억제 사유/안내 문구를 포함한 요약 DTO입니다.
     func fetchSummary(radiusKm: Double, now: Date) async throws -> HotspotWidgetSummaryDTO {
-        let payload: [String: Any] = [
-            "radius_km": min(5.0, max(0.3, radiusKm)),
-            "now_ts": ISO8601DateFormatter().string(from: now)
-        ]
-        let data = try await client.request(
-            .rest(path: "rpc/rpc_get_widget_hotspot_summary"),
-            method: .post,
-            bodyData: try JSONSerialization.data(withJSONObject: payload)
-        )
-        let decoded = try JSONDecoder().decode(ResponseDTO.self, from: data)
+        let decoded: ResponseDTO
+        do {
+            decoded = try await fetchCanonicalSummary(radiusKm: radiusKm, now: now)
+        } catch {
+            decoded = try await fetchLegacySummary(radiusKm: radiusKm, now: now)
+        }
         return HotspotWidgetSummaryDTO(
             signalLevel: mapSignalLevel(decoded.signalLevel),
             highCellCount: max(0, decoded.highCells ?? 0),
@@ -484,6 +646,99 @@ struct HotspotWidgetSummaryService: HotspotWidgetSummaryServiceProtocol {
             isCached: decoded.isCached ?? false,
             refreshedAt: SupabaseISO8601.parseEpoch(decoded.refreshedAt) ?? now.timeIntervalSince1970
         )
+    }
+
+    /// canonical wrapper 요청으로 핫스팟 요약 RPC를 조회합니다.
+    /// - Parameters:
+    ///   - radiusKm: 사용자 주변 집계 반경(km)입니다.
+    ///   - now: 서버 집계 기준 시각입니다.
+    /// - Returns: envelope 또는 legacy 응답을 정규화한 핫스팟 요약 응답입니다.
+    private func fetchCanonicalSummary(radiusKm: Double, now: Date) async throws -> ResponseDTO {
+        let payload: [String: Any] = [
+            "payload": [
+                "in_radius_km": min(5.0, max(0.3, radiusKm)),
+                "in_now_ts": ISO8601DateFormatter().string(from: now)
+            ]
+        ]
+        let data = try await client.request(
+            .rest(path: "rpc/rpc_get_widget_hotspot_summary"),
+            method: .post,
+            bodyData: try JSONSerialization.data(withJSONObject: payload)
+        )
+        return try decodeSummaryResponse(data: data)
+    }
+
+    /// legacy positional 요청으로 핫스팟 요약 RPC를 조회합니다.
+    /// - Parameters:
+    ///   - radiusKm: 사용자 주변 집계 반경(km)입니다.
+    ///   - now: 서버 집계 기준 시각입니다.
+    /// - Returns: legacy top-level 응답을 정규화한 핫스팟 요약 응답입니다.
+    private func fetchLegacySummary(radiusKm: Double, now: Date) async throws -> ResponseDTO {
+        let payload: [String: Any] = [
+            "radius_km": min(5.0, max(0.3, radiusKm)),
+            "now_ts": ISO8601DateFormatter().string(from: now)
+        ]
+        let data = try await client.request(
+            .rest(path: "rpc/rpc_get_widget_hotspot_summary"),
+            method: .post,
+            bodyData: try JSONSerialization.data(withJSONObject: payload)
+        )
+        return try decodeSummaryResponse(data: data)
+    }
+
+    /// RPC 응답이 canonical envelope 또는 legacy top-level 어느 형태든 단일 요약 객체로 파싱합니다.
+    /// - Parameter data: RPC 원시 응답 데이터입니다.
+    /// - Returns: 앱 DTO 변환에 사용할 정규화된 핫스팟 요약 응답입니다.
+    private func decodeSummaryResponse(data: Data) throws -> ResponseDTO {
+        let decoder = JSONDecoder()
+        if let envelope = try? decoder.decode(EnvelopeResponseDTO.self, from: data),
+           let summary = envelope.summary {
+            return ResponseDTO(
+                signalLevel: summary.signalLevel,
+                highCells: summary.highCells,
+                mediumCells: summary.mediumCells,
+                lowCells: summary.lowCells,
+                delayMinutes: summary.delayMinutes,
+                privacyMode: summary.privacyMode ?? envelope.context?.privacyMode,
+                suppressionReason: summary.suppressionReason ?? envelope.context?.suppressionReason,
+                guideCopy: summary.guideCopy,
+                hasData: envelope.hasData,
+                isCached: envelope.context?.isCached,
+                refreshedAt: envelope.refreshedAt
+            )
+        }
+        if let object = try? decoder.decode(LegacyResponseDTO.self, from: data) {
+            return ResponseDTO(
+                signalLevel: object.signalLevel,
+                highCells: object.highCells,
+                mediumCells: object.mediumCells,
+                lowCells: object.lowCells,
+                delayMinutes: object.delayMinutes,
+                privacyMode: object.privacyMode,
+                suppressionReason: object.suppressionReason,
+                guideCopy: object.guideCopy,
+                hasData: object.hasData,
+                isCached: object.isCached,
+                refreshedAt: object.refreshedAt
+            )
+        }
+        if let rows = try? decoder.decode([LegacyResponseDTO].self, from: data),
+           let first = rows.first {
+            return ResponseDTO(
+                signalLevel: first.signalLevel,
+                highCells: first.highCells,
+                mediumCells: first.mediumCells,
+                lowCells: first.lowCells,
+                delayMinutes: first.delayMinutes,
+                privacyMode: first.privacyMode,
+                suppressionReason: first.suppressionReason,
+                guideCopy: first.guideCopy,
+                hasData: first.hasData,
+                isCached: first.isCached,
+                refreshedAt: first.refreshedAt
+            )
+        }
+        throw SupabaseHTTPError.invalidResponse
     }
 
     /// 서버 응답의 문자열 값을 위젯 신호 레벨 열거형으로 변환합니다.

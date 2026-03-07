@@ -19,7 +19,10 @@ func loadMany(_ relativePaths: [String]) -> String {
     relativePaths.map(load).joined(separator: "\n")
 }
 
-let migration = load("supabase/migrations/20260303190000_territory_widget_summary_rpc.sql")
+let migration = loadMany([
+    "supabase/migrations/20260303190000_territory_widget_summary_rpc.sql",
+    "supabase/migrations/20260307154000_widget_summary_envelope_compat_rollout.sql"
+])
 let infra = loadMany([
     "dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift",
     "dogArea/Source/Infrastructure/Supabase/Services/SupabaseWidgetAndAreaServices.swift"
@@ -33,6 +36,7 @@ let widget = loadMany([
 let bundle = load("dogAreaWidgetExtension/WalkControlWidgetBundle.swift")
 
 assertTrue(migration.contains("create or replace function public.rpc_get_widget_territory_summary"), "migration should create territory widget summary rpc")
+assertTrue(migration.contains("rpc_get_widget_territory_summary(payload jsonb)"), "migration should add payload wrapper canonical path for territory widget rpc")
 assertTrue(migration.contains("defense_scheduled_tile_count"), "migration should return defense scheduled tile count")
 assertTrue(migration.contains("tile_events"), "migration should use tile_events for today metric")
 assertTrue(migration.contains("season_tile_scores"), "migration should use season_tile_scores for defense metric")
@@ -41,6 +45,8 @@ assertTrue(migration.contains("grant execute on function public.rpc_get_widget_t
 assertTrue(infra.contains("protocol TerritoryWidgetSummaryServiceProtocol"), "infra should define territory widget summary service protocol")
 assertTrue(infra.contains("struct TerritoryWidgetSummaryService"), "infra should include territory widget summary service")
 assertTrue(infra.contains("rpc/rpc_get_widget_territory_summary"), "infra should call territory widget summary rpc")
+assertTrue(infra.contains("\"payload\""), "territory widget service should prefer payload wrapper requests")
+assertTrue(infra.contains("EnvelopeResponseDTO"), "territory widget service should support canonical envelope decoding")
 assertTrue(infra.contains("DefaultTerritoryWidgetSnapshotSyncService"), "infra should include territory widget snapshot sync service")
 
 assertTrue(bridge.contains("territorySnapshotStorageKey"), "widget bridge contract should define territory snapshot key")

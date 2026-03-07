@@ -43,6 +43,19 @@ assertTrue(smokeRunner.contains("rpc_get_rival_leaderboard"), "smoke matrix shou
 assertTrue(smokeRunner.contains("rpc_get_widget_territory_summary"), "smoke matrix should include widget territory summary RPC case")
 assertTrue(smokeRunner.contains("rpc_get_widget_hotspot_summary"), "smoke matrix should include widget hotspot summary RPC case")
 assertTrue(smokeRunner.contains("rpc_get_widget_quest_rival_summary"), "smoke matrix should include widget quest/rival summary RPC case")
+assertTrue(
+    smokeRunner.contains("widget_territory_member") &&
+        smokeRunner.contains("rpc_get_widget_territory_summary") &&
+        smokeRunner.contains("in_now_ts"),
+    "smoke matrix should call widget territory summary via payload wrapper"
+)
+assertTrue(
+    smokeRunner.contains("widget_hotspot_member") &&
+        smokeRunner.contains("rpc_get_widget_hotspot_summary") &&
+        smokeRunner.contains("in_radius_km") &&
+        smokeRunner.contains("in_now_ts"),
+    "smoke matrix should call widget hotspot summary via payload wrapper"
+)
 assertTrue(smokeRunner.contains("sync-profile.permission.user_mismatch"), "smoke matrix should include permission mismatch case")
 assertTrue(smokeRunner.contains("invalid_token"), "smoke matrix should include invalid token cases")
 

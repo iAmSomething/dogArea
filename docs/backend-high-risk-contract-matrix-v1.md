@@ -13,9 +13,9 @@ Issue: #417
 | `nearby-presence` | Edge POST JSON + `action`, hotspot RPC latest signature `in_center_lat/in_center_lng/in_radius_km/in_now_ts` | `rpc_get_nearby_hotspots(center_lat, center_lng, radius_km, now_ts)` legacy signature fallback | 문서 기준 `ok/code/message/request_id/version` target, runtime rollout은 후속 | source compat helper, smoke matrix `nearby-presence.hotspots.app_policy` | `#425`, `#431`, `#437` |
 | `rival-league` | Edge POST JSON + `action`, leaderboard RPC canonical `rpc_get_rival_leaderboard(payload jsonb)` | 3-arg `rpc_get_rival_leaderboard(period_type, top_n, now_ts)` delegate 유지 | 문서 기준 envelope target, leaderboard body top-level 유지 | `scripts/rival_rpc_param_compat_unit_check.swift`, smoke matrix `rival-rpc.compat.member` | `#419`, `#437` |
 | `quest-engine` | Edge POST JSON + `action` + optional `request_id` / `payload` | legacy camelCase request fields 일부 허용 | 문서 기준 envelope target, action payload shape는 유지 | smoke matrix `quest-engine.list_active.member`, static contract doc check | `#419`, `#438` |
-| `rpc_get_widget_quest_rival_summary` | `payload jsonb` wrapper canonical | `timestamptz` positional signature compat 유지 | RPC output contract은 wrapper canonical 기준 | `scripts/rival_rpc_param_compat_unit_check.swift`, `docs/widget-summary-rpc-common-response-model-v1.md` | `#429`, `#437`, `#459` |
-| `rpc_get_widget_territory_summary` | 현재 positional `timestamptz` canonical | wrapper 미도입, 차기 표준화 필요 | response model은 유지하되 wrapper 도입 필요 | migration static check + policy doc, `docs/widget-summary-rpc-common-response-model-v1.md` | `#429`, `#459` |
-| `rpc_get_widget_hotspot_summary` | 현재 positional `(radius_km, now_ts)` canonical | 내부에서 `rpc_get_nearby_hotspots` positional 의존 | response model은 유지하되 wrapper 도입 필요 | migration static check + policy doc, `docs/widget-summary-rpc-common-response-model-v1.md` | `#429`, `#437`, `#459` |
+| `rpc_get_widget_quest_rival_summary` | `payload jsonb` wrapper canonical | `timestamptz` positional signature compat 유지 | wrapper는 canonical envelope, positional은 legacy top-level 유지 | `scripts/rival_rpc_param_compat_unit_check.swift`, `docs/widget-summary-rpc-common-response-model-v1.md` | `#429`, `#437`, `#459` |
+| `rpc_get_widget_territory_summary` | `payload jsonb` wrapper canonical | `timestamptz` positional signature compat 유지 | wrapper는 canonical envelope, positional은 legacy top-level 유지 | migration static check + policy doc, `docs/widget-summary-rpc-common-response-model-v1.md` | `#429`, `#459` |
+| `rpc_get_widget_hotspot_summary` | `payload jsonb` wrapper canonical | positional `(radius_km, now_ts)` compat + 내부 `rpc_get_nearby_hotspots` positional 의존 | wrapper는 canonical envelope, positional은 legacy top-level 유지 | migration static check + policy doc, `docs/widget-summary-rpc-common-response-model-v1.md` | `#429`, `#437`, `#459` |
 
 ## Canonical Envelope 적용 원칙
 
@@ -36,7 +36,7 @@ Issue: #417
 
 - `rpc_get_rival_leaderboard(payload jsonb)`는 이미 canonical
 - `rpc_get_widget_quest_rival_summary(payload jsonb)`도 canonical
-- `rpc_get_widget_territory_summary` / `rpc_get_widget_hotspot_summary`는 아직 positional canonical이라 차기 랩핑이 필요
+- `rpc_get_widget_territory_summary(payload jsonb)` / `rpc_get_widget_hotspot_summary(payload jsonb)`도 canonical
 - `rpc_get_nearby_hotspots`는 latest `in_*` 시그니처 우선, legacy positional fallback 유지
 
 ## Sunset Rule

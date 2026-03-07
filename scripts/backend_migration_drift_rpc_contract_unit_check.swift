@@ -42,6 +42,7 @@ let rivalDelegateMigration = load("supabase/migrations/20260305231000_rival_lead
 let questMigration = load("supabase/migrations/20260303120000_quest_stage2_progress_claim_engine.sql")
 let territoryWidgetMigration = load("supabase/migrations/20260303190000_territory_widget_summary_rpc.sql")
 let hotspotWidgetMigration = load("supabase/migrations/20260303203000_hotspot_widget_summary_rpc.sql")
+let widgetCompatRolloutMigration = load("supabase/migrations/20260307154000_widget_summary_envelope_compat_rollout.sql")
 let nearbyHotspotMigration = load("supabase/migrations/20260227192000_rival_privacy_hard_guard.sql")
 
 let syncWalkSource = loadMany([
@@ -118,6 +119,17 @@ assertTrue(
     "hotspot widget migration should define widget hotspot summary RPC"
 )
 assertTrue(
+    widgetCompatRolloutMigration.contains("rpc_get_widget_territory_summary(payload jsonb)") &&
+        widgetCompatRolloutMigration.contains("rpc_get_widget_hotspot_summary(payload jsonb)") &&
+        widgetCompatRolloutMigration.contains("rpc_get_widget_quest_rival_summary(payload jsonb)"),
+    "widget summary compat rollout migration should define payload wrapper canonical paths"
+)
+assertTrue(
+    widgetCompatRolloutMigration.contains("summary_type") &&
+        widgetCompatRolloutMigration.contains("widget_summary_v1"),
+    "widget summary compat rollout migration should emit canonical envelope metadata"
+)
+assertTrue(
     nearbyHotspotMigration.contains("create or replace function public.rpc_get_nearby_hotspots") &&
         nearbyHotspotMigration.contains("in_center_lat") &&
         nearbyHotspotMigration.contains("in_center_lng") &&
@@ -161,7 +173,8 @@ for smokeCase in [
 assertTrue(
     harnessUnitCheck.contains("widget-territory.summary.member") &&
         harnessUnitCheck.contains("widget-hotspot.summary.member") &&
-        harnessUnitCheck.contains("widget-quest-rival.summary.member"),
+        harnessUnitCheck.contains("widget-quest-rival.summary.member") &&
+        harnessUnitCheck.contains("payload wrapper"),
     "integration harness unit check should track widget summary smoke cases"
 )
 

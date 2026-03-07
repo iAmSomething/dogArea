@@ -123,7 +123,8 @@ enum RivalCoreLocationCallTracer {
 #endif
 
 @MainActor
-final class RivalTabViewModel: NSObject, ObservableObject, @preconcurrency CLLocationManagerDelegate {
+@preconcurrency
+final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     struct HotspotPreviewRow {
         let title: String
         let value: String

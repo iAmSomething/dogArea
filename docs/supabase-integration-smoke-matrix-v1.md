@@ -61,9 +61,9 @@
 - `sync-profile.permission.user_mismatch` => `403`
 - `nearby-presence.hotspots.app_policy` => `401`이 아니어야 함
 - `rival-rpc.compat.member` => `/rest/v1/rpc/rpc_get_rival_leaderboard`가 `404` 없이 응답해야 함
-- `widget-territory.summary.member` => `/rest/v1/rpc/rpc_get_widget_territory_summary`가 `200`이어야 함
-- `widget-hotspot.summary.member` => `/rest/v1/rpc/rpc_get_widget_hotspot_summary`가 `200`이어야 함
-- `widget-quest-rival.summary.member` => `/rest/v1/rpc/rpc_get_widget_quest_rival_summary`가 `200`이어야 함
+- `widget-territory.summary.member` => `/rest/v1/rpc/rpc_get_widget_territory_summary`를 `payload.in_now_ts` wrapper body로 호출했을 때 `200`이어야 함
+- `widget-hotspot.summary.member` => `/rest/v1/rpc/rpc_get_widget_hotspot_summary`를 `payload.in_radius_km` / `payload.in_now_ts` wrapper body로 호출했을 때 `200`이어야 함
+- `widget-quest-rival.summary.member` => `/rest/v1/rpc/rpc_get_widget_quest_rival_summary`를 `payload.in_now_ts` wrapper body로 호출했을 때 `200`이어야 함
 
 ## 출력 규약
 
