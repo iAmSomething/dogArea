@@ -22,6 +22,7 @@ extension HomeViewModel {
         if applyIndoorMissionUITestScenarioIfNeeded(now: now) {
             return
         }
+        refreshWeatherSnapshot()
         let missionContext = makeIndoorMissionPetContext(reference: now)
         indoorMissionBoard = indoorMissionStore.buildBoard(now: now, context: missionContext)
         questAlternativeActionSuggestion = makeQuestAlternativeActionSuggestion(for: indoorMissionBoard)
