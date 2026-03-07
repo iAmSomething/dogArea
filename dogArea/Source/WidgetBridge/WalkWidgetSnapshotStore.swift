@@ -2,6 +2,9 @@ import Foundation
 #if canImport(ActivityKit)
 import ActivityKit
 #endif
+#if canImport(WidgetKit)
+import WidgetKit
+#endif
 
 enum WalkWidgetSnapshotStatus: String, Codable {
     case ready = "ready"
@@ -10,13 +13,149 @@ enum WalkWidgetSnapshotStatus: String, Codable {
     case error = "error"
 }
 
+enum WalkWidgetActionPhase: String, Codable {
+    case pending = "pending"
+    case requiresAppOpen = "requires_app_open"
+    case succeeded = "succeeded"
+    case failed = "failed"
+}
+
+enum WalkWidgetActionFollowUp: String, Codable {
+    case none = "none"
+    case retry = "retry"
+    case openApp = "open_app"
+}
+
+struct WalkWidgetActionState: Codable, Equatable {
+    let kind: WalkWidgetActionKind
+    let phase: WalkWidgetActionPhase
+    let followUp: WalkWidgetActionFollowUp
+    let message: String
+    let updatedAt: TimeInterval
+    let expiresAt: TimeInterval?
+
+    var isExpired: Bool {
+        guard let expiresAt else { return false }
+        return Date().timeIntervalSince1970 >= expiresAt
+    }
+
+    /// 산책 위젯 액션이 앱으로 전달되는 중인 상태를 생성합니다.
+    /// - Parameters:
+    ///   - kind: 처리 중인 산책 액션 종류입니다.
+    ///   - now: 상태 생성 기준 시각입니다.
+    /// - Returns: pending 단계와 기본 만료 시간을 포함한 액션 상태입니다.
+    static func pending(kind: WalkWidgetActionKind, now: Date = Date()) -> WalkWidgetActionState {
+        let message: String
+        switch kind {
+        case .startWalk:
+            message = "산책 시작 요청을 보냈어요."
+        case .endWalk:
+            message = "산책 종료 요청을 보냈어요."
+        case .openWalkTab, .claimQuestReward, .openRivalTab:
+            message = "앱에서 요청을 준비 중입니다."
+        }
+        return .init(
+            kind: kind,
+            phase: .pending,
+            followUp: .none,
+            message: message,
+            updatedAt: now.timeIntervalSince1970,
+            expiresAt: now.addingTimeInterval(20).timeIntervalSince1970
+        )
+    }
+
+    /// 앱에서 최종 확인이 필요한 위젯 액션 상태를 생성합니다.
+    /// - Parameters:
+    ///   - kind: 확인이 필요한 산책 액션 종류입니다.
+    ///   - message: 사용자에게 노출할 안내 문구입니다.
+    ///   - now: 상태 생성 기준 시각입니다.
+    /// - Returns: app-open 후속 동작을 포함한 액션 상태입니다.
+    static func requiresAppOpen(
+        kind: WalkWidgetActionKind,
+        message: String,
+        now: Date = Date()
+    ) -> WalkWidgetActionState {
+        .init(
+            kind: kind,
+            phase: .requiresAppOpen,
+            followUp: .openApp,
+            message: message,
+            updatedAt: now.timeIntervalSince1970,
+            expiresAt: now.addingTimeInterval(30).timeIntervalSince1970
+        )
+    }
+
+    /// 산책 위젯 액션 성공 상태를 생성합니다.
+    /// - Parameters:
+    ///   - kind: 성공한 산책 액션 종류입니다.
+    ///   - message: 사용자에게 노출할 성공 문구입니다.
+    ///   - now: 상태 생성 기준 시각입니다.
+    /// - Returns: 성공 단계와 짧은 노출 시간을 가진 액션 상태입니다.
+    static func succeeded(
+        kind: WalkWidgetActionKind,
+        message: String,
+        now: Date = Date()
+    ) -> WalkWidgetActionState {
+        .init(
+            kind: kind,
+            phase: .succeeded,
+            followUp: .none,
+            message: message,
+            updatedAt: now.timeIntervalSince1970,
+            expiresAt: now.addingTimeInterval(12).timeIntervalSince1970
+        )
+    }
+
+    /// 산책 위젯 액션 실패 상태를 생성합니다.
+    /// - Parameters:
+    ///   - kind: 실패한 산책 액션 종류입니다.
+    ///   - followUp: 실패 후 추천할 다음 행동입니다.
+    ///   - message: 사용자에게 노출할 실패 문구입니다.
+    ///   - now: 상태 생성 기준 시각입니다.
+    /// - Returns: 실패 단계와 후속 행동을 포함한 액션 상태입니다.
+    static func failed(
+        kind: WalkWidgetActionKind,
+        followUp: WalkWidgetActionFollowUp,
+        message: String,
+        now: Date = Date()
+    ) -> WalkWidgetActionState {
+        .init(
+            kind: kind,
+            phase: .failed,
+            followUp: followUp,
+            message: message,
+            updatedAt: now.timeIntervalSince1970,
+            expiresAt: now.addingTimeInterval(30).timeIntervalSince1970
+        )
+    }
+}
+
 struct WalkWidgetSnapshot: Codable, Equatable {
     let isWalking: Bool
     let elapsedSeconds: Int
     let petName: String
     let status: WalkWidgetSnapshotStatus
     let statusMessage: String?
+    let actionState: WalkWidgetActionState?
     let updatedAt: TimeInterval
+
+    var normalizedActionState: WalkWidgetActionState? {
+        guard let actionState else { return nil }
+        return actionState.isExpired ? nil : actionState
+    }
+
+    var timelineReloadSignature: String {
+        [
+            String(isWalking),
+            petName,
+            status.rawValue,
+            statusMessage ?? "",
+            normalizedActionState?.kind.rawValue ?? "",
+            normalizedActionState?.phase.rawValue ?? "",
+            normalizedActionState?.followUp.rawValue ?? "",
+            normalizedActionState?.message ?? ""
+        ].joined(separator: "|")
+    }
 
     static let initial = WalkWidgetSnapshot(
         isWalking: false,
@@ -24,6 +163,7 @@ struct WalkWidgetSnapshot: Codable, Equatable {
         petName: "반려견",
         status: .ready,
         statusMessage: nil,
+        actionState: nil,
         updatedAt: Date().timeIntervalSince1970
     )
 }
@@ -290,14 +430,37 @@ final class DefaultWalkWidgetSnapshotStore: WalkWidgetSnapshotStoring {
         else {
             return .initial
         }
-        return decoded
+        return WalkWidgetSnapshot(
+            isWalking: decoded.isWalking,
+            elapsedSeconds: decoded.elapsedSeconds,
+            petName: decoded.petName,
+            status: decoded.status,
+            statusMessage: decoded.statusMessage,
+            actionState: decoded.normalizedActionState,
+            updatedAt: decoded.updatedAt
+        )
     }
 
     /// 위젯 스냅샷을 저장합니다.
     /// - Parameter snapshot: 위젯 표시용으로 직렬화할 최신 스냅샷입니다.
     func save(_ snapshot: WalkWidgetSnapshot) {
-        guard let data = try? encoder.encode(snapshot) else { return }
+        let previous = load()
+        let normalizedSnapshot = WalkWidgetSnapshot(
+            isWalking: snapshot.isWalking,
+            elapsedSeconds: snapshot.elapsedSeconds,
+            petName: snapshot.petName,
+            status: snapshot.status,
+            statusMessage: snapshot.statusMessage,
+            actionState: snapshot.normalizedActionState,
+            updatedAt: snapshot.updatedAt
+        )
+        guard let data = try? encoder.encode(normalizedSnapshot) else { return }
         storage.set(data, forKey: WalkWidgetBridgeContract.snapshotStorageKey)
+        #if canImport(WidgetKit)
+        if previous.timelineReloadSignature != normalizedSnapshot.timelineReloadSignature {
+            WidgetCenter.shared.reloadTimelines(ofKind: WalkWidgetBridgeContract.walkWidgetKind)
+        }
+        #endif
     }
 
     /// App Group 저장소를 우선 사용하고, 실패 시 표준 저장소를 반환합니다.

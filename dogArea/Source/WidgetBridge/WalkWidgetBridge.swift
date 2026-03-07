@@ -4,6 +4,7 @@ import Foundation
 enum WalkWidgetBridgeContract {
     static let appGroupIdentifier = "group.com.th.dogArea.shared"
     static let snapshotStorageKey = "walk.widget.snapshot.v1"
+    static let walkWidgetKind = "com.th.dogArea.walk-control"
     static let territorySnapshotStorageKey = "territory.widget.snapshot.v1"
     static let territoryWidgetKind = "com.th.dogArea.territory-status"
     static let hotspotSnapshotStorageKey = "hotspot.widget.snapshot.v1"
@@ -23,6 +24,7 @@ enum WalkWidgetBridgeContract {
 enum WalkWidgetActionKind: String, Codable, CaseIterable {
     case startWalk = "start_walk"
     case endWalk = "end_walk"
+    case openWalkTab = "open_walk_tab"
     case claimQuestReward = "claim_quest_reward"
     case openRivalTab = "open_rival_tab"
 

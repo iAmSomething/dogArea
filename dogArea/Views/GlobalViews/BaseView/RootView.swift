@@ -25,6 +25,7 @@ struct RootView: View {
     @State private var didDispatchUITestWidgetRoute = false
     @StateObject private var mapViewModelStore = MapViewModelStore()
     private let widgetActionStore: WalkWidgetActionRequestStoring = DefaultWalkWidgetActionRequestStore.shared
+    private let walkWidgetSnapshotStore: WalkWidgetSnapshotStoring = DefaultWalkWidgetSnapshotStore.shared
     private let territoryWidgetSnapshotSyncService: TerritoryWidgetSnapshotSyncing = DefaultTerritoryWidgetSnapshotSyncService()
     private let hotspotWidgetSnapshotSyncService: HotspotWidgetSnapshotSyncing = DefaultHotspotWidgetSnapshotSyncService()
     private let questRivalWidgetSnapshotSyncService: QuestRivalWidgetSnapshotSyncing = DefaultQuestRivalWidgetSnapshotSyncService()
@@ -259,6 +260,8 @@ struct RootView: View {
         switch route.kind {
         case .startWalk, .endWalk:
             dispatchWalkWidgetAction(route)
+        case .openWalkTab:
+            selectedTab = 2
         case .openRivalTab:
             selectedTab = 3
         case .claimQuestReward:
@@ -272,6 +275,12 @@ struct RootView: View {
     private func dispatchWalkWidgetAction(_ route: WalkWidgetActionRoute) {
         if isAuthenticationOverlayActive {
             pendingWalkWidgetRoute = route
+            updateWalkWidgetActionState(
+                .requiresAppOpen(
+                    kind: route.kind,
+                    message: "로그인 후 앱에서 계속 확인해 주세요."
+                )
+            )
             selectedTab = 2
             #if DEBUG
             print("[WidgetAction] deferred walk action during auth overlay actionId=\(route.actionId)")
@@ -296,6 +305,23 @@ struct RootView: View {
                 ]
             )
         }
+    }
+
+    /// 산책 위젯 액션 상태를 최신 스냅샷에 반영합니다.
+    /// - Parameter actionState: 위젯에 표시할 최신 액션 상태입니다.
+    private func updateWalkWidgetActionState(_ actionState: WalkWidgetActionState) {
+        let current = walkWidgetSnapshotStore.load()
+        walkWidgetSnapshotStore.save(
+            WalkWidgetSnapshot(
+                isWalking: current.isWalking,
+                elapsedSeconds: current.elapsedSeconds,
+                petName: current.petName,
+                status: current.status,
+                statusMessage: current.statusMessage,
+                actionState: actionState,
+                updatedAt: Date().timeIntervalSince1970
+            )
+        )
     }
 
     /// 인증 오버레이 해제 후 대기 중인 위젯 산책 액션이 있으면 즉시 재처리합니다.
