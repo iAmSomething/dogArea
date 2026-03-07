@@ -7,6 +7,7 @@ struct ProfileEditorImageSection: View {
     let subtitle: String?
     let remoteURL: String?
     @Binding var selectedImage: UIImage?
+    let previewAccessibilityIdentifier: String
     let resetButtonTitle: String
     let resetButtonEnabled: Bool
     let allowsCamera: Bool
@@ -23,40 +24,65 @@ struct ProfileEditorImageSection: View {
                 subTitle: subtitle ?? ""
             )
 
-            Group {
-                if let selectedImage {
-                    Image(uiImage: selectedImage)
-                        .resizable()
-                        .scaledToFill()
-                } else if let remoteURL,
-                          let url = URL(string: remoteURL) {
-                    KFImage(url)
-                        .resizable()
-                        .scaledToFill()
-                } else {
-                    ZStack {
-                        Color.appTextLightGray.opacity(0.18)
-                        Image(systemName: "photo")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundStyle(Color.appTextDarkGray.opacity(0.6))
+            Button {
+                pickerSourceType = .photoLibrary
+            } label: {
+                VStack(alignment: .leading, spacing: 8) {
+                    ZStack(alignment: .bottomTrailing) {
+                        Group {
+                            if let selectedImage {
+                                Image(uiImage: selectedImage)
+                                    .resizable()
+                                    .scaledToFill()
+                            } else if let remoteURL,
+                                      let url = URL(string: remoteURL) {
+                                KFImage(url)
+                                    .resizable()
+                                    .scaledToFill()
+                            } else {
+                                ZStack {
+                                    Color.appTextLightGray.opacity(0.18)
+                                    Image(systemName: "photo")
+                                        .font(.system(size: 18, weight: .semibold))
+                                        .foregroundStyle(Color.appTextDarkGray.opacity(0.6))
+                                }
+                            }
+                        }
+                        .frame(width: 94, height: 94)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(Color.appTextLightGray.opacity(0.6), lineWidth: 1)
+                        )
+
+                        Label("사진 변경", systemImage: "photo.on.rectangle.angled")
+                            .font(.appScaledFont(for: .SemiBold, size: 10, relativeTo: .caption2))
+                            .foregroundStyle(Color.appInk)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 5)
+                            .background(Color.appSurface.opacity(0.96))
+                            .overlay(
+                                Capsule()
+                                    .stroke(Color.appTextLightGray.opacity(0.72), lineWidth: 1)
+                            )
+                            .clipShape(Capsule())
+                            .padding(8)
                     }
+
+                    Text("사진을 탭하면 앨범이 바로 열립니다.")
+                        .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .caption))
+                        .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
+                        .fixedSize(horizontal: false, vertical: true)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
-            .frame(width: 94, height: 94)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(Color.appTextLightGray.opacity(0.6), lineWidth: 1)
-            )
-            .accessibilityLabel("\(title) 미리보기")
+            .buttonStyle(.plain)
+            .accessibilityIdentifier(previewAccessibilityIdentifier)
+            .accessibilityLabel("\(title) 사진 변경")
+            .accessibilityHint("탭하면 사진 보관함을 엽니다.")
 
             HStack(spacing: 8) {
-                Button("앨범") {
-                    pickerSourceType = .photoLibrary
-                }
-                .buttonStyle(AppFilledButtonStyle(role: .secondary, fillsWidth: false))
-                .frame(minHeight: 44)
-
                 if allowsCamera {
                     Button("카메라") {
                         guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
