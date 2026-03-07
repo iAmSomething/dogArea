@@ -48,6 +48,40 @@ final class FeatureRegressionUITests: XCTestCase {
         )
     }
 
+    /// 산책 종료 알럿이 주 행동/보조 행동/파괴적 행동을 분리된 위계로 노출하는지 검증합니다.
+    func testFeatureRegression_MapStopAlertPresentsClearActionHierarchy() throws {
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.MapForceWalkingState"])
+
+        XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.")
+        XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
+
+        let primaryAction = mapPrimaryAction(in: app)
+        XCTAssertTrue(waitUntilHittable(primaryAction, timeout: 8), "산책 종료 버튼이 탭 가능한 상태가 아닙니다.")
+        XCTAssertEqual(primaryAction.label, "산책 종료", "강제 산책 상태에서 종료 버튼이 노출되어야 합니다.")
+        primaryAction.tap()
+
+        let alertSurface = screenElement(identifier: "customAlert.surface", in: app)
+        let alertHost = screenElement(identifier: "map.alert.host", in: app)
+        let primaryAlertAction = screenElement(identifier: "customAlert.action.primary", in: app)
+        let secondaryAlertAction = screenElement(identifier: "customAlert.action.secondary", in: app)
+        let destructiveAlertAction = screenElement(identifier: "customAlert.action.destructive", in: app)
+
+        let alertPresented = waitUntilExists(alertSurface, timeout: 4)
+            || waitUntilExists(alertHost, timeout: 1)
+            || waitUntilExists(primaryAlertAction, timeout: 1)
+        XCTAssertTrue(alertPresented, "산책 종료 알럿이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(primaryAlertAction, timeout: 2), "주 행동 버튼이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(secondaryAlertAction, timeout: 2), "보조 행동 버튼이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(destructiveAlertAction, timeout: 2), "파괴적 행동 버튼이 노출되지 않았습니다.")
+
+        XCTAssertEqual(primaryAlertAction.label, "저장 후 종료", "주 행동 버튼 문구가 의도와 다릅니다.")
+        XCTAssertEqual(secondaryAlertAction.label, "계속 걷기", "보조 행동 버튼 문구가 의도와 다릅니다.")
+        XCTAssertEqual(destructiveAlertAction.label, "기록 폐기", "파괴적 행동 버튼 문구가 의도와 다릅니다.")
+
+        secondaryAlertAction.tap()
+        XCTAssertTrue(waitUntilGone(alertSurface, timeout: 3), "계속 걷기 탭 후 알럿이 닫히지 않았습니다.")
+    }
+
     /// 산책 목록 탭의 핵심 콘텐츠 진입점이 하단 탭바에 가려지지 않는지 검증합니다.
     func testFeatureRegression_WalkListPrimaryContentIsNotObscuredByTabBar() throws {
         let app = launchAppForFeatureRegression()

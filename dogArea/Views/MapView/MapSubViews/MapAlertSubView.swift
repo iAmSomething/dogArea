@@ -12,37 +12,54 @@ struct MapAlertSubView: View {
   @ObservedObject var myAlert: CustomAlertViewModel
   var body: some View {
     if myAlert.isAlert {
-      var ca : CustomAlert
+      let alertView: CustomAlert
       switch myAlert.alertType {
-      case .annotationSelected(_) :
-        ca = CustomAlert(presentAlert: $myAlert.isAlert,
-                         alertModel: myAlert.alertType.model,
-                         leftButtonAction: {
-        },rightButtonAction: {
-          if let marker = viewModel.selectedMarker {
-            viewModel.removeLocation(marker.id)
-          }})
-      case .custom(let alert, let leftAction, let rightAction) :
-          ca = CustomAlert(presentAlert: $myAlert.isAlert, alertModel: alert , leftButtonAction: leftAction, rightButtonAction: rightAction)
+      case .annotationSelected:
+        alertView = CustomAlert(
+          presentAlert: $myAlert.isAlert,
+          alertModel: myAlert.alertType.model,
+          leftButtonAction: {},
+          rightButtonAction: {
+            if let marker = viewModel.selectedMarker {
+              viewModel.removeLocation(marker.id)
+            }
+          }
+        )
+      case .custom(let alert, let leftAction, let rightAction):
+        alertView = CustomAlert(
+          presentAlert: $myAlert.isAlert,
+          alertModel: alert,
+          leftButtonAction: leftAction,
+          rightButtonAction: rightAction
+        )
       case .customThreeButton(let alert, let leftAction, let middleAction, let rightAction):
-        ca = CustomAlert(
-            presentAlert: $myAlert.isAlert,
-            alertModel: alert,
-            leftButtonAction: leftAction,
-            middleButtonAction: middleAction,
-            rightButtonAction: rightAction
+        alertView = CustomAlert(
+          presentAlert: $myAlert.isAlert,
+          alertModel: alert,
+          leftButtonAction: leftAction,
+          middleButtonAction: middleAction,
+          rightButtonAction: rightAction
         )
       case .loggedOut, .authRequired:
-        ca = CustomAlert(presentAlert: $myAlert.isAlert,
-                         alertModel: myAlert.alertType.model)
+        alertView = CustomAlert(
+          presentAlert: $myAlert.isAlert,
+          alertModel: myAlert.alertType.model
+        )
       case .deletePolygon(let id):
-        ca = CustomAlert(presentAlert: $myAlert.isAlert,
-                         alertModel: myAlert.alertType.model, leftButtonAction: {viewModel.deletePolygonAndRefresh(id)
-        },rightButtonAction: {
-          
-        })
+        alertView = CustomAlert(
+          presentAlert: $myAlert.isAlert,
+          alertModel: myAlert.alertType.model,
+          leftButtonAction: {},
+          rightButtonAction: {
+            viewModel.deletePolygonAndRefresh(id)
+          }
+        )
       }
-      return AnyView(ca)
+      return AnyView(
+        alertView
+          .transition(.opacity.combined(with: .scale(scale: 0.96)))
+          .accessibilityIdentifier("map.alert.host")
+      )
     }
     else {
       return AnyView(EmptyView())

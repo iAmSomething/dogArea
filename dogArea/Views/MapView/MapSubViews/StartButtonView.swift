@@ -197,9 +197,9 @@ struct StartButtonView: View {
             myAlert.callAlert(
                 type: .customThreeButton(
                     .threeChoiceAlert(
-                        title: "산책 종료",
-                        message: "현재 산책 기록을 어떻게 처리할까요?",
-                        first: "저장하고 종료",
+                        title: "산책을 마칠까요?",
+                        message: "저장 후 종료하면 이번 경로와 영역이 기록되고, 계속 걷기를 누르면 산책을 이어갈 수 있어요.",
+                        first: "저장 후 종료",
                         second: "계속 걷기",
                         third: "기록 폐기"
                     ),
