@@ -53,12 +53,18 @@ assertTrue(bridge.contains("territorySnapshotStorageKey"), "widget bridge contra
 assertTrue(bridge.contains("territoryWidgetKind"), "widget bridge contract should define territory widget kind")
 
 assertTrue(snapshotStore.contains("enum TerritoryWidgetSnapshotStatus"), "snapshot store should define territory widget status enum")
+assertTrue(snapshotStore.contains("enum TerritoryWidgetGoalContextStatus"), "snapshot store should define territory widget goal context status enum")
+assertTrue(snapshotStore.contains("struct TerritoryWidgetGoalContextSnapshot"), "snapshot store should define territory widget goal context snapshot")
 assertTrue(snapshotStore.contains("struct TerritoryWidgetSummarySnapshot"), "snapshot store should define territory summary snapshot")
+assertTrue(snapshotStore.contains("goalContext"), "territory summary snapshot should carry goal context")
+assertTrue(snapshotStore.contains("contextKey"), "territory widget snapshot should persist a context key")
 assertTrue(snapshotStore.contains("final class DefaultTerritoryWidgetSnapshotStore"), "snapshot store should include territory snapshot storage implementation")
 
 assertTrue(widget.contains("struct TerritoryStatusTimelineProvider"), "widget extension should provide territory timeline provider")
 assertTrue(widget.contains("struct TerritoryStatusWidget"), "widget extension should define territory widget")
 assertTrue(widget.contains("supportedFamilies([.systemSmall, .systemMedium])"), "territory widget should support small and medium families")
+assertTrue(widget.contains("goalSummarySection"), "territory widget should render a goal summary section in medium layout")
+assertTrue(widget.contains("다음 목표"), "territory widget should expose next-goal copy")
 assertTrue(bundle.contains("TerritoryStatusWidget()"), "widget bundle should register territory status widget")
 
 print("PASS: territory status widget unit checks")

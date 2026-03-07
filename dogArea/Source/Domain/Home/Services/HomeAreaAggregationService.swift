@@ -82,6 +82,20 @@ protocol HomeAreaAggregationServicing {
     ) -> [AreaMilestoneCandidate]
 }
 
+protocol TerritoryWidgetGoalContextServicing {
+    /// 선택 반려견/로컬 산책 기록 기준의 위젯 목표 문맥을 계산합니다.
+    /// - Parameters:
+    ///   - userInfo: 현재 로그인 사용자 정보입니다. 선택 반려견 컨텍스트를 함께 포함합니다.
+    ///   - polygons: 로컬에 저장된 전체 산책 다각형 목록입니다.
+    ///   - areaReferenceSnapshot: 비교 구역/featured 목표 기준이 담긴 스냅샷입니다.
+    /// - Returns: 위젯에서 바로 렌더링할 수 있는 목표 문맥 스냅샷입니다.
+    func makeGoalContext(
+        userInfo: UserInfo?,
+        polygons: [Polygon],
+        areaReferenceSnapshot: AreaReferenceSnapshot
+    ) -> TerritoryWidgetGoalContextSnapshot
+}
+
 struct HomeAreaAggregationService: HomeAreaAggregationServicing {
     /// 선택 반려견/전체 보기 상태를 반영해 홈 화면에 노출할 산책 기록만 필터링합니다.
     /// - Parameters:
@@ -208,5 +222,107 @@ struct HomeAreaAggregationService: HomeAreaAggregationServicing {
                 thresholdArea: area.area
             )
         }
+    }
+}
+
+struct TerritoryWidgetGoalContextService: TerritoryWidgetGoalContextServicing {
+    private let areaAggregationService: HomeAreaAggregationServicing
+
+    /// 영역 위젯 목표 문맥 서비스를 생성합니다.
+    /// - Parameter areaAggregationService: 홈 목표 계산과 동일한 비교군/면적 집계 규칙을 제공하는 서비스입니다.
+    init(areaAggregationService: HomeAreaAggregationServicing = HomeAreaAggregationService()) {
+        self.areaAggregationService = areaAggregationService
+    }
+
+    /// 선택 반려견/로컬 산책 기록 기준의 위젯 목표 문맥을 계산합니다.
+    /// - Parameters:
+    ///   - userInfo: 현재 로그인 사용자 정보입니다. 선택 반려견 컨텍스트를 함께 포함합니다.
+    ///   - polygons: 로컬에 저장된 전체 산책 다각형 목록입니다.
+    ///   - areaReferenceSnapshot: 비교 구역/featured 목표 기준이 담긴 스냅샷입니다.
+    /// - Returns: 위젯에서 바로 렌더링할 수 있는 목표 문맥 스냅샷입니다.
+    func makeGoalContext(
+        userInfo: UserInfo?,
+        polygons: [Polygon],
+        areaReferenceSnapshot: AreaReferenceSnapshot
+    ) -> TerritoryWidgetGoalContextSnapshot {
+        let selectedPet = userInfo?.selectedPet
+        let contextLabel = makeContextLabel(selectedPetName: selectedPet?.petName)
+
+        guard areaReferenceSnapshot.allAreas.isEmpty == false else {
+            return TerritoryWidgetGoalContextSnapshot(
+                status: .unavailable,
+                contextLabel: contextLabel,
+                nextGoalName: nil,
+                nextGoalAreaM2: nil,
+                remainingAreaM2: nil,
+                progressRatio: nil,
+                message: "앱을 열어 비교 구역을 다시 불러오면 다음 목표를 계산해드릴게요."
+            )
+        }
+
+        let filteredPolygons = areaAggregationService.filteredPolygons(
+            from: polygons,
+            selectedPetId: selectedPet?.petId,
+            showsAllRecords: false
+        )
+
+        guard filteredPolygons.isEmpty == false else {
+            return TerritoryWidgetGoalContextSnapshot(
+                status: .emptyData,
+                contextLabel: contextLabel,
+                nextGoalName: nil,
+                nextGoalAreaM2: nil,
+                remainingAreaM2: nil,
+                progressRatio: nil,
+                message: "첫 산책을 시작하면 다음 목표와 남은 면적을 바로 보여드릴게요."
+            )
+        }
+
+        let totalArea = filteredPolygons.map(\.walkingArea).reduce(0.0, +)
+        let selectedPetNameWithYi = (selectedPet?.petName ?? "강아지").addYi()
+        let currentArea = areaAggregationService.makeCurrentArea(
+            totalArea: totalArea,
+            selectedPetNameWithYi: selectedPetNameWithYi
+        )
+        let featuredGoalAreas = areaReferenceSnapshot.featuredAreas.sorted { $0.area < $1.area }
+        let areaCollection = AreaMeterCollection(areas: areaReferenceSnapshot.allAreas)
+
+        guard let nextGoal = areaAggregationService.nextReferenceArea(
+            currentArea: currentArea,
+            areaCollection: areaCollection,
+            featuredGoalAreas: featuredGoalAreas
+        ) else {
+            return TerritoryWidgetGoalContextSnapshot(
+                status: .completed,
+                contextLabel: contextLabel,
+                nextGoalName: nil,
+                nextGoalAreaM2: nil,
+                remainingAreaM2: nil,
+                progressRatio: 1.0,
+                message: "준비된 비교 구역을 모두 달성했어요. 앱에서 새 기준을 확인해보세요."
+            )
+        }
+
+        let remainingArea = max(0, nextGoal.area - currentArea.area)
+        let progressRatio = min(1.0, max(0.0, currentArea.area / nextGoal.area))
+        return TerritoryWidgetGoalContextSnapshot(
+            status: .ready,
+            contextLabel: contextLabel,
+            nextGoalName: nextGoal.areaName,
+            nextGoalAreaM2: nextGoal.area,
+            remainingAreaM2: remainingArea,
+            progressRatio: progressRatio,
+            message: "\(nextGoal.areaName)까지 \(remainingArea.calculatedAreaString) 남았어요."
+        )
+    }
+
+    /// 위젯 목표 카드 상단에 표시할 선택 반려견 문맥 라벨을 생성합니다.
+    /// - Parameter selectedPetName: 현재 선택 반려견 이름입니다.
+    /// - Returns: 위젯 목표 문맥을 설명하는 짧은 라벨 문자열입니다.
+    private func makeContextLabel(selectedPetName: String?) -> String {
+        guard let selectedPetName, selectedPetName.isEmpty == false else {
+            return "현재 기록 기준"
+        }
+        return "선택 반려견 · \(selectedPetName)"
     }
 }

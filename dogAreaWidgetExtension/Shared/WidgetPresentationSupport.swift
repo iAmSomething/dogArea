@@ -35,4 +35,26 @@ enum WidgetFormatting {
         formatter.setLocalizedDateFormatFromTemplate("HHmm")
         return formatter.string(from: Date(timeIntervalSince1970: timestamp))
     }
+
+    /// 제곱미터 면적을 위젯 표시용 문자열로 변환합니다.
+    /// - Parameter areaM2: 변환할 원본 면적(`m²`)입니다.
+    /// - Returns: `㎡ / 만 ㎡ / k㎡` 규칙이 반영된 위젯 표시 문자열입니다.
+    static func formattedArea(_ areaM2: Double) -> String {
+        let area = max(0, areaM2)
+        if area > 100_000 {
+            return String(format: "%.2f", area / 1_000_000) + "k㎡"
+        }
+        if area > 10_000 {
+            return String(format: "%.2f", area / 10_000) + "만 ㎡"
+        }
+        return String(format: "%.2f", area) + "㎡"
+    }
+
+    /// 진행률 비율을 위젯 표시용 백분율 문자열로 변환합니다.
+    /// - Parameter ratio: `0...1` 범위로 정규화된 진행률입니다.
+    /// - Returns: 퍼센트 단위가 포함된 위젯 표시 문자열입니다.
+    static func formattedPercent(_ ratio: Double) -> String {
+        let normalized = min(1.0, max(0.0, ratio))
+        return "\(Int((normalized * 100).rounded()))%"
+    }
 }

@@ -371,6 +371,9 @@ final class DefaultTerritoryWidgetSnapshotSyncService: TerritoryWidgetSnapshotSy
     private let summaryService: TerritoryWidgetSummaryServiceProtocol
     private let snapshotStore: TerritoryWidgetSnapshotStoring
     private let userSessionStore: UserSessionStoreProtocol
+    private let walkRepository: WalkRepositoryProtocol
+    private let areaReferenceRepository: AreaReferenceRepository
+    private let goalContextService: TerritoryWidgetGoalContextServicing
     private let preferenceStore: UserDefaults
     private let syncTTL: TimeInterval
     private let staleGraceInterval: TimeInterval
@@ -380,6 +383,9 @@ final class DefaultTerritoryWidgetSnapshotSyncService: TerritoryWidgetSnapshotSy
     ///   - summaryService: 서버 요약 RPC 호출 서비스입니다.
     ///   - snapshotStore: 앱 그룹 기반 위젯 스냅샷 저장소입니다.
     ///   - userSessionStore: 현재 로그인 사용자 컨텍스트 조회 저장소입니다.
+    ///   - walkRepository: 선택 반려견 기준 로컬 산책 영역을 읽어오는 저장소입니다.
+    ///   - areaReferenceRepository: 다음 목표 계산에 사용할 비교 구역 저장소입니다.
+    ///   - goalContextService: 선택 반려견 기준 목표 문맥을 계산하는 서비스입니다.
     ///   - preferenceStore: 마지막 동기화 메타데이터를 저장할 기본 설정 저장소입니다.
     ///   - syncTTL: RPC 재조회 최소 간격(초)입니다.
     ///   - staleGraceInterval: 오프라인 캐시를 허용할 최대 유예 시간(초)입니다.
@@ -387,6 +393,9 @@ final class DefaultTerritoryWidgetSnapshotSyncService: TerritoryWidgetSnapshotSy
         summaryService: TerritoryWidgetSummaryServiceProtocol = TerritoryWidgetSummaryService(),
         snapshotStore: TerritoryWidgetSnapshotStoring = DefaultTerritoryWidgetSnapshotStore.shared,
         userSessionStore: UserSessionStoreProtocol = DefaultUserSessionStore.shared,
+        walkRepository: WalkRepositoryProtocol = WalkRepositoryContainer.shared,
+        areaReferenceRepository: AreaReferenceRepository = SupabaseAreaReferenceRepository.shared,
+        goalContextService: TerritoryWidgetGoalContextServicing = TerritoryWidgetGoalContextService(),
         preferenceStore: UserDefaults = .standard,
         syncTTL: TimeInterval = 15 * 60,
         staleGraceInterval: TimeInterval = 6 * 60 * 60
@@ -394,6 +403,9 @@ final class DefaultTerritoryWidgetSnapshotSyncService: TerritoryWidgetSnapshotSy
         self.summaryService = summaryService
         self.snapshotStore = snapshotStore
         self.userSessionStore = userSessionStore
+        self.walkRepository = walkRepository
+        self.areaReferenceRepository = areaReferenceRepository
+        self.goalContextService = goalContextService
         self.preferenceStore = preferenceStore
         self.syncTTL = syncTTL
         self.staleGraceInterval = staleGraceInterval
@@ -404,7 +416,8 @@ final class DefaultTerritoryWidgetSnapshotSyncService: TerritoryWidgetSnapshotSy
     ///   - force: `true`면 TTL을 무시하고 즉시 갱신합니다.
     ///   - now: TTL/상태 계산 기준 시각입니다.
     func sync(force: Bool, now: Date) async {
-        guard shouldSync(force: force, now: now) else { return }
+        let contextKey = resolveContextKey()
+        guard shouldSync(force: force, now: now, contextKey: contextKey) else { return }
 
         guard let user = userSessionStore.currentUserInfo(),
               user.id.isEmpty == false else {
@@ -413,23 +426,51 @@ final class DefaultTerritoryWidgetSnapshotSyncService: TerritoryWidgetSnapshotSy
         }
 
         do {
+            let polygons = walkRepository.fetchPolygons()
+            async let areaReferenceSnapshot = areaReferenceRepository.fetchSnapshot()
             let summary = try await summaryService.fetchSummary(now: now)
-            saveMemberSnapshot(summary: summary, now: now)
+            let goalContext = goalContextService.makeGoalContext(
+                userInfo: user,
+                polygons: polygons,
+                areaReferenceSnapshot: await areaReferenceSnapshot
+            )
+            saveMemberSnapshot(
+                summary: summary,
+                goalContext: goalContext,
+                contextKey: contextKey,
+                now: now
+            )
         } catch {
-            saveFailureSnapshot(now: now)
+            saveFailureSnapshot(contextKey: contextKey, now: now)
         }
     }
 
-    /// TTL과 이전 상태를 기준으로 이번 동기화를 수행할지 판단합니다.
+    /// TTL과 현재 반려견 컨텍스트를 기준으로 이번 동기화를 수행할지 판단합니다.
     /// - Parameters:
     ///   - force: `true`면 즉시 동기화합니다.
     ///   - now: 판단 기준 시각입니다.
+    ///   - contextKey: 현재 로그인 사용자/반려견 컨텍스트 키입니다.
     /// - Returns: 동기화가 필요하면 `true`, 스킵 가능하면 `false`입니다.
-    private func shouldSync(force: Bool, now: Date) -> Bool {
+    private func shouldSync(force: Bool, now: Date, contextKey: String) -> Bool {
         if force { return true }
         let snapshot = snapshotStore.load()
+        if snapshot.contextKey != contextKey {
+            return true
+        }
         let age = now.timeIntervalSince1970 - snapshot.updatedAt
         return age >= syncTTL
+    }
+
+    /// 현재 사용자/선택 반려견 조합으로 컨텍스트 식별 키를 생성합니다.
+    /// - Returns: 다계정/다견 전환 시 stale 스냅샷을 구분할 컨텍스트 키 문자열입니다.
+    private func resolveContextKey() -> String {
+        guard let user = userSessionStore.currentUserInfo(),
+              user.id.isEmpty == false else {
+            return "guest"
+        }
+        let selectedPet = userSessionStore.selectedPet(from: user)
+        let petId = selectedPet?.petId.lowercased() ?? "none"
+        return "\(user.id.lowercased())|\(petId)"
     }
 
     /// 비회원 상태 스냅샷을 저장합니다.
@@ -437,8 +478,9 @@ final class DefaultTerritoryWidgetSnapshotSyncService: TerritoryWidgetSnapshotSy
     private func saveGuestSnapshot(now: Date) {
         let snapshot = TerritoryWidgetSnapshot(
             status: .guestLocked,
-            message: "로그인 후 오늘/주간 영역 현황을 위젯에서 확인할 수 있어요.",
+            message: "로그인 후 오늘/주간 영역 현황과 다음 목표를 위젯에서 확인할 수 있어요.",
             summary: nil,
+            contextKey: "guest",
             updatedAt: now.timeIntervalSince1970
         )
         save(snapshot, now: now)
@@ -447,12 +489,26 @@ final class DefaultTerritoryWidgetSnapshotSyncService: TerritoryWidgetSnapshotSy
     /// 서버 요약 응답을 회원 상태 스냅샷으로 저장합니다.
     /// - Parameters:
     ///   - summary: 서버에서 조회한 최신 영역 요약 DTO입니다.
+    ///   - goalContext: 선택 반려견 기준으로 계산한 목표 문맥입니다.
+    ///   - contextKey: 사용자/반려견 컨텍스트 키입니다.
     ///   - now: 저장 시각입니다.
-    private func saveMemberSnapshot(summary: TerritoryWidgetSummaryDTO, now: Date) {
-        let snapshotStatus: TerritoryWidgetSnapshotStatus = summary.hasData ? .memberReady : .emptyData
-        let snapshotMessage: String = summary.hasData
-            ? "오늘/주간/방어 예정 지표를 표시합니다."
-            : "아직 집계된 타일이 없어요. 첫 산책을 시작해보세요."
+    private func saveMemberSnapshot(
+        summary: TerritoryWidgetSummaryDTO,
+        goalContext: TerritoryWidgetGoalContextSnapshot,
+        contextKey: String,
+        now: Date
+    ) {
+        let hasMeaningfulGoalContext = goalContext.status == .ready || goalContext.status == .completed
+        let snapshotStatus: TerritoryWidgetSnapshotStatus =
+            (summary.hasData || hasMeaningfulGoalContext) ? .memberReady : .emptyData
+        let snapshotMessage: String
+        if summary.hasData || goalContext.status == .ready {
+            snapshotMessage = "오늘/주간 지표와 다음 목표를 함께 표시합니다."
+        } else if goalContext.status == .completed {
+            snapshotMessage = "비교 구역 기준은 모두 달성했고, 최신 타일 지표를 함께 표시합니다."
+        } else {
+            snapshotMessage = "첫 산책 후 다음 목표와 영역 요약을 함께 보여드릴게요."
+        }
 
         let snapshot = TerritoryWidgetSnapshot(
             status: snapshotStatus,
@@ -462,20 +518,24 @@ final class DefaultTerritoryWidgetSnapshotSyncService: TerritoryWidgetSnapshotSy
                 weeklyTileCount: summary.weeklyTileCount,
                 defenseScheduledTileCount: summary.defenseScheduledTileCount,
                 scoreUpdatedAt: summary.scoreUpdatedAt,
-                refreshedAt: summary.refreshedAt
+                refreshedAt: summary.refreshedAt,
+                goalContext: goalContext
             ),
+            contextKey: contextKey,
             updatedAt: now.timeIntervalSince1970
         )
         save(snapshot, now: now)
     }
 
     /// 서버 조회 실패 시 마지막 성공 스냅샷 기반 상태로 저장합니다.
-    /// - Parameter now: 저장 시각입니다.
-    private func saveFailureSnapshot(now: Date) {
+    /// - Parameters:
+    ///   - contextKey: 현재 사용자/반려견 컨텍스트 키입니다.
+    ///   - now: 저장 시각입니다.
+    private func saveFailureSnapshot(contextKey: String, now: Date) {
         let current = snapshotStore.load()
         let cachedSummary = current.summary
 
-        if let cachedSummary {
+        if current.contextKey == contextKey, let cachedSummary {
             let cacheAge = now.timeIntervalSince1970 - cachedSummary.refreshedAt
             let status: TerritoryWidgetSnapshotStatus = cacheAge <= staleGraceInterval ? .offlineCached : .syncDelayed
             let message: String = cacheAge <= staleGraceInterval
@@ -486,6 +546,7 @@ final class DefaultTerritoryWidgetSnapshotSyncService: TerritoryWidgetSnapshotSy
                     status: status,
                     message: message,
                     summary: cachedSummary,
+                    contextKey: contextKey,
                     updatedAt: now.timeIntervalSince1970
                 ),
                 now: now
@@ -498,6 +559,7 @@ final class DefaultTerritoryWidgetSnapshotSyncService: TerritoryWidgetSnapshotSy
                 status: .syncDelayed,
                 message: "데이터를 아직 불러오지 못했어요. 앱을 열어 동기화해주세요.",
                 summary: nil,
+                contextKey: contextKey,
                 updatedAt: now.timeIntervalSince1970
             ),
             now: now
