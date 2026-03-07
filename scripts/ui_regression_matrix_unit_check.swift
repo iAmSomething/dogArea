@@ -29,6 +29,7 @@ for token in [
     "DA-HOME-001",
     "FR-MAP-001",
     "FR-MAP-002",
+    "FR-MAP-003",
     "FR-GOAL-001",
     "FR-HOME-QUEST-001",
     "FR-AUTH-001",
@@ -58,6 +59,7 @@ assertTrue(
 for testName in [
     "testFeatureRegression_MapPrimaryActionIsNotObscuredByTabBar",
     "testFeatureRegression_MapAddPointControlRemainsHittableWhileWalking",
+    "testFeatureRegression_MapStopAlertPresentsClearActionHierarchy",
     "testFeatureRegression_WalkListPrimaryContentIsNotObscuredByTabBar",
     "testFeatureRegression_TerritoryGoalNavigationHidesAndRestoresTabBar",
     "testFeatureRegression_HomeMissionLifecycleSeparatesCompletedMissionState",
@@ -84,6 +86,10 @@ assertTrue(
 assertTrue(
     featureRegressionScript.contains("testFeatureRegression_MapAddPointControlRemainsHittableWhileWalking"),
     "run_feature_regression_ui_tests.sh should run the walking add-point regression"
+)
+assertTrue(
+    featureRegressionScript.contains("testFeatureRegression_MapStopAlertPresentsClearActionHierarchy"),
+    "run_feature_regression_ui_tests.sh should run the map stop alert hierarchy regression"
 )
 assertTrue(
     featureRegressionScript.contains("testFeatureRegression_HomeMissionLifecycleSeparatesCompletedMissionState"),
