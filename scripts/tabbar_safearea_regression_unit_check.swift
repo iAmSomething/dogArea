@@ -29,6 +29,7 @@ let scaffold = load("dogArea/Views/GlobalViews/BaseView/AppTabScaffold.swift")
 let homeView = load("dogArea/Views/HomeView/HomeView.swift")
 let mapView = load("dogArea/Views/MapView/MapView.swift")
 let mapTopChromeView = load("dogArea/Views/MapView/MapSubViews/MapTopChromeView.swift")
+let mapBottomControlOverlayView = load("dogArea/Views/MapView/MapSubViews/MapBottomControlOverlayView.swift")
 let walkListView = load("dogArea/Views/WalkListView/WalkListView.swift")
 let settingsView = load("dogArea/Views/ProfileSettingView/NotificationCenterView.swift")
 let rivalView = load("dogArea/Views/ProfileSettingView/RivalTabView.swift")
@@ -96,8 +97,36 @@ for (name, source) in [
     )
 }
 assertTrue(
-    mapView.contains(".appTabFloatingOverlayPadding("),
-    "MapView should use shared floating overlay padding for its CTA"
+    mapView.contains("MapBottomControlOverlayView("),
+    "MapView should compose bottom controls through the shared bottom overlay container"
+)
+assertTrue(
+    mapBottomControlOverlayView.contains("@Environment(\\.appTabBarReservedHeight)"),
+    "Map bottom control overlay should consume the shared reserved tab bar height"
+)
+assertTrue(
+    mapBottomControlOverlayView.contains("AppTabLayoutMetrics.floatingOverlayLift"),
+    "Map bottom control overlay should derive bottom spacing from shared floating overlay metrics"
+)
+assertTrue(
+    mapBottomControlOverlayView.contains("AppTabLayoutMetrics.minimumBottomPadding"),
+    "Map bottom control overlay should preserve shared minimum bottom padding"
+)
+assertTrue(
+    mapBottomControlOverlayView.contains("MapChromeLayoutMetrics.horizontalPadding"),
+    "Map bottom control overlay should align floating controls with shared chrome spacing"
+)
+assertTrue(
+    mapBottomControlOverlayView.contains(".zIndex(3)"),
+    "Map bottom control overlay should keep floating controls above the primary CTA and tray"
+)
+assertTrue(
+    mapBottomControlOverlayView.contains(".frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)"),
+    "Map bottom control overlay should own the full bottom overlay frame"
+)
+assertTrue(
+    !mapView.contains(".appTabFloatingOverlayPadding("),
+    "MapView should no longer manage floating overlay padding inline after overlay extraction"
 )
 assertTrue(
     mapTopChromeView.contains("AppTabLayoutMetrics.topOverlaySpacing("),

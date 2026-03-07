@@ -470,6 +470,12 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         ProcessInfo.processInfo.arguments.contains("-UITest.ForceWalkCountdown")
     }
 
+    /// UI 테스트에서 지도 화면을 산책 중 상태로 강제 시작할지 여부를 반환합니다.
+    /// - Returns: `-UITest.MapForceWalkingState` 인자가 포함되면 `true`를 반환합니다.
+    private static func shouldForceWalkingStateForUITest() -> Bool {
+        ProcessInfo.processInfo.arguments.contains("-UITest.MapForceWalkingState")
+    }
+
     private let locationManager = CLLocationManager()
     private var timer: Timer? = nil
     private var isLocationUpdatesRunning: Bool = false
@@ -824,6 +830,11 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         ) ?? .auto
         self.prepareRecoverableSessionIfNeeded()
         self.reloadSelectedPetContext()
+        if Self.shouldForceWalkingStateForUITest() {
+            self.isWalking = true
+            self.showOnlyOne = true
+            self.currentWalkingPetName = self.selectedPetName
+        }
         self.setupWatchConnectivity()
         self.setupLifecycleObservers()
         self.refreshWeatherOverlayRisk()

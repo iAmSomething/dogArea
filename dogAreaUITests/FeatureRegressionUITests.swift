@@ -30,6 +30,24 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertTrue(primaryAction.isHittable, "지도 산책 시작 버튼이 하단 탭바에 가려져 탭 불가능합니다.")
     }
 
+    /// 회원 상태로 산책을 시작한 뒤 영역 추가 버튼이 가려지지 않고 탭 가능한지 검증합니다.
+    func testFeatureRegression_MapAddPointControlRemainsHittableWhileWalking() throws {
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.MapForceWalkingState"])
+
+        XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.")
+        XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
+
+        let addPointButton = app.buttons["map.addPoint"]
+        XCTAssertTrue(
+            waitUntilExists(addPointButton, timeout: 8),
+            "산책 중 상태에서 영역 추가 버튼이 나타나지 않았습니다."
+        )
+        XCTAssertTrue(
+            waitUntilHittable(addPointButton, timeout: 2),
+            "산책 중 영역 추가 버튼이 다른 오버레이에 가려져 탭 불가능합니다."
+        )
+    }
+
     /// 산책 목록 탭의 핵심 콘텐츠 진입점이 하단 탭바에 가려지지 않는지 검증합니다.
     func testFeatureRegression_WalkListPrimaryContentIsNotObscuredByTabBar() throws {
         let app = launchAppForFeatureRegression()
@@ -503,11 +521,21 @@ final class FeatureRegressionUITests: XCTestCase {
 
     /// 지도 탭의 산책 시작/종료 주행동을 접근성 트리 타입과 무관하게 조회합니다.
     /// - Parameter app: 테스트 대상 앱 인스턴스입니다.
-    /// - Returns: `"map.walk.primaryAction"` 식별자를 가진 첫 번째 접근성 요소입니다.
+    /// - Returns: `"map.walk.primaryAction"` 식별자를 우선 사용하고, 필요 시 `"map.bottomControls"`로 fallback한 첫 번째 접근성 요소입니다.
     private func mapPrimaryAction(in app: XCUIApplication) -> XCUIElement {
-        app.descendants(matching: .any)
+        let primaryAction = app.descendants(matching: .any)
             .matching(identifier: "map.walk.primaryAction")
             .firstMatch
+        if primaryAction.exists {
+            return primaryAction
+        }
+
+        let bottomControls = app.buttons["map.bottomControls"]
+        if bottomControls.exists {
+            return bottomControls
+        }
+
+        return primaryAction
     }
 
     /// 접근성 타입과 무관하게 화면 식별자에 대응하는 첫 번째 요소를 조회합니다.
