@@ -16,9 +16,11 @@ struct NotificationCenterView: View {
     }
 
     @StateObject var viewModel = SettingViewModel()
-    @EnvironmentObject var loading: LoadingViewModel
     @EnvironmentObject var authFlow: AuthFlowCoordinator
+    @Environment(\.openURL) var openURL
+    @Environment(\.scenePhase) var scenePhase
     @State private var activeSheet: ActiveSheet? = nil
+    @State private var activeDocument: SettingsDocumentContent? = nil
     @State private var toastMessage: String? = nil
     @State private var isLogoutAlertPresented: Bool = false
     @State private var isAccountDeleteAlertPresented: Bool = false
@@ -33,6 +35,16 @@ struct NotificationCenterView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Color.appTabScaffoldBackground.ignoresSafeArea())
+        .task(id: authFlow.isLoggedIn) {
+            viewModel.reloadUserInfo()
+            await viewModel.refreshProductSurface()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            guard newPhase == .active else { return }
+            Task {
+                await viewModel.refreshProductSurface()
+            }
+        }
         .alert("로그아웃할까요?", isPresented: $isLogoutAlertPresented) {
             Button("취소", role: .cancel) { }
             Button("로그아웃", role: .destructive) {
@@ -51,37 +63,6 @@ struct NotificationCenterView: View {
         } message: {
             Text("탈퇴 시 계정 정보와 프로필 데이터가 삭제되며 복구할 수 없습니다.")
         }
-    }
-
-    private var memberContent: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 16) {
-                settingsHeader(
-                    title: "설정",
-                    subtitle: "프로필, 반려견, 계정 상태를 한 번에 관리해요."
-                )
-
-                memberProfileCard
-
-                if let season = viewModel.seasonProfileSummary {
-                    seasonSummaryCard(summary: season)
-                }
-
-                petInfoCard
-
-                accountActionCard
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 24)
-        }
-        .appTabRootScrollLayout(extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding)
-        .onAppear {
-            viewModel.reloadUserInfo()
-        }
-        .onChange(of: authFlow.isLoggedIn) { _, isLoggedIn in
-            guard isLoggedIn else { return }
-            viewModel.reloadUserInfo()
-        }
         .sheet(item: $activeSheet) { sheet in
             switch sheet {
             case .profileEdit:
@@ -97,6 +78,39 @@ struct NotificationCenterView: View {
                 PetManagementSheet(viewModel: viewModel)
             }
         }
+        .sheet(item: $activeDocument) { document in
+            SettingsDocumentSheetView(document: document) {
+                activeDocument = nil
+            }
+        }
+    }
+
+    var memberContent: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 16) {
+                settingsHeader(
+                    title: "설정",
+                    subtitle: "프로필, 실제 설정, 법적 문서와 지원 정보를 한 곳에서 관리해요."
+                )
+
+                memberProfileCard
+
+                if let season = viewModel.seasonProfileSummary {
+                    seasonSummaryCard(summary: season)
+                }
+
+                petInfoCard
+                appSettingsCard
+                legalDocumentsCard
+                supportCard
+                appInfoCard
+                accountActionCard
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 24)
+        }
+        .appTabRootScrollLayout(extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding)
+        .accessibilityIdentifier("screen.settings.member")
         .overlay(alignment: .bottom) {
             if let toastMessage {
                 SimpleMessageView(message: toastMessage)
@@ -106,25 +120,68 @@ struct NotificationCenterView: View {
         }
     }
 
-    private var guestLockedContent: some View {
+    var guestLockedContent: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
                 settingsHeader(
                     title: "설정",
-                    subtitle: "로그인 후 프로필과 동기화 기능을 사용할 수 있어요."
+                    subtitle: "로그인 없이도 운영 정보와 문의 경로를 확인할 수 있어요."
                 )
 
                 guestSignInCard
-
                 guestFeaturePreviewCard
+                appSettingsCard
+                legalDocumentsCard
+                supportCard
+                appInfoCard
             }
             .padding(.horizontal, 16)
             .padding(.top, 24)
         }
         .appTabRootScrollLayout(extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding)
+        .accessibilityIdentifier("screen.settings.guest")
     }
 
-    private var memberProfileCard: some View {
+    var appSettingsCard: some View {
+        SettingsActionSectionCardView(
+            title: "앱 설정",
+            subtitle: "실제 권한 상태와 시스템 설정 진입 경로를 제공합니다.",
+            accessibilityIdentifier: "settings.section.appSettings",
+            actions: viewModel.appSettingsActions,
+            onSelect: handleSettingsAction
+        )
+    }
+
+    var legalDocumentsCard: some View {
+        SettingsActionSectionCardView(
+            title: "개인정보 / 법적 문서",
+            subtitle: "개인정보처리방침, 이용약관, 사용 기술 안내를 앱 안에서 확인합니다.",
+            accessibilityIdentifier: "settings.section.legal",
+            actions: viewModel.legalDocumentActions,
+            onSelect: handleSettingsAction
+        )
+    }
+
+    var supportCard: some View {
+        SettingsActionSectionCardView(
+            title: "지원 / 문의",
+            subtitle: "문의 메일과 버그 리포트, 저장소 공개 채널로 바로 이동합니다.",
+            accessibilityIdentifier: "settings.section.support",
+            actions: viewModel.supportActions,
+            onSelect: handleSettingsAction
+        )
+    }
+
+    var appInfoCard: some View {
+        SettingsAppInfoCardView(
+            title: "앱 정보",
+            subtitle: "현재 버전, 빌드, 로그인 상태를 한눈에 확인할 수 있어요.",
+            accessibilityIdentifier: "settings.section.appInfo",
+            rows: viewModel.appInfoRows
+        )
+    }
+
+    var memberProfileCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .center, spacing: 14) {
                 Button {
@@ -189,7 +246,7 @@ struct NotificationCenterView: View {
         .appCardSurface()
     }
 
-    private var petInfoCard: some View {
+    var petInfoCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("반려견 정보")
@@ -309,7 +366,7 @@ struct NotificationCenterView: View {
         .appCardSurface()
     }
 
-    private var accountActionCard: some View {
+    var accountActionCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("계정")
                 .font(.appScaledFont(for: .SemiBold, size: 18, relativeTo: .headline))
@@ -345,7 +402,7 @@ struct NotificationCenterView: View {
         .appCardSurface()
     }
 
-    private var guestSignInCard: some View {
+    var guestSignInCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("현재는 게스트 모드예요")
                 .font(.appScaledFont(for: .SemiBold, size: 20, relativeTo: .title3))
@@ -366,7 +423,7 @@ struct NotificationCenterView: View {
         .appCardSurface()
     }
 
-    private var guestFeaturePreviewCard: some View {
+    var guestFeaturePreviewCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("로그인하면 가능한 기능")
                 .font(.appScaledFont(for: .SemiBold, size: 16, relativeTo: .headline))
@@ -376,6 +433,7 @@ struct NotificationCenterView: View {
                 Text("• 반려견 프로필/사진 관리")
                 Text("• 산책 데이터 백업 및 동기화")
                 Text("• 라이벌/시즌 기능 전체 사용")
+                Text("• 로그인 없이도 아래의 문서/지원/앱 정보는 확인 가능")
             }
             .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .body))
             .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
@@ -388,7 +446,7 @@ struct NotificationCenterView: View {
     ///   - title: 헤더의 메인 타이틀 텍스트입니다.
     ///   - subtitle: 메인 타이틀 하단에 표시할 보조 설명 텍스트입니다.
     /// - Returns: 설정 화면 톤에 맞춘 헤더 뷰입니다.
-    private func settingsHeader(title: String, subtitle: String) -> some View {
+    func settingsHeader(title: String, subtitle: String) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .font(.appScaledFont(for: .SemiBold, size: 34, relativeTo: .largeTitle))
@@ -403,7 +461,7 @@ struct NotificationCenterView: View {
     /// 시즌 진행 정보를 요약 카드 형태로 렌더링합니다.
     /// - Parameter summary: 사용자 시즌 상태(랭크, 점수, 기여도)를 담은 요약 모델입니다.
     /// - Returns: 시즌 프레임 스타일이 반영된 요약 카드 뷰입니다.
-    private func seasonSummaryCard(summary: SeasonProfileSummary) -> some View {
+    func seasonSummaryCard(summary: SeasonProfileSummary) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("시즌 진행 현황")
                 .font(.appScaledFont(for: .SemiBold, size: 16, relativeTo: .headline))
@@ -426,10 +484,22 @@ struct NotificationCenterView: View {
                 .stroke(SeasonProfileFrameStyle.style(for: summary.rankTier).stroke, lineWidth: 1)
         )
     }
+
+    /// 설정 액션을 외부 URL 또는 내부 문서 시트로 라우팅합니다.
+    /// - Parameter action: 사용자가 탭한 설정 항목입니다.
+    func handleSettingsAction(_ action: SettingsSurfaceAction) {
+        switch action.target {
+        case .external(let url):
+            openURL(url)
+        case .document(let document):
+            activeDocument = document
+        }
+    }
+
     /// 회원탈퇴 요청을 수행하고 성공 시 인증 상태를 정리합니다.
     /// - Returns: 없음. 처리 결과는 토스트 메시지와 인증 상태에 반영됩니다.
     @MainActor
-    private func handleAccountDeletion() async {
+    func handleAccountDeletion() async {
         let result = await viewModel.deleteAccount()
         switch result {
         case .success:

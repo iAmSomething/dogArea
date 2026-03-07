@@ -177,6 +177,49 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertTrue(logoutButton.isHittable, "로그아웃 버튼이 탭 가능한 상태가 아닙니다.")
     }
 
+    /// 설정 탭이 실제 앱 설정/법적 문서/지원/앱 정보 섹션을 모두 노출하는지 검증합니다.
+    func testFeatureRegression_SettingsProductSectionsExposeOperationalEntries() throws {
+        let app = launchAppForFeatureRegression()
+        XCTAssertTrue(waitUntilExists(app.buttons["tab.4"], timeout: 12), "탭바가 렌더링되지 않았습니다.")
+        XCTAssertTrue(openTab(index: 4, app: app), "설정 탭 진입에 실패했습니다.")
+
+        XCTAssertTrue(
+            revealExistingElementByVerticalScroll(app.staticTexts["앱 설정"], app: app, maxSwipes: 8),
+            "앱 설정 섹션 제목이 노출되지 않았습니다."
+        )
+        XCTAssertTrue(
+            revealExistingElementByVerticalScroll(app.staticTexts["시스템 설정 열기"], app: app, maxSwipes: 2),
+            "앱 설정 섹션의 시스템 설정 행을 찾지 못했습니다."
+        )
+
+        XCTAssertTrue(
+            revealExistingElementByVerticalScroll(app.staticTexts["개인정보 / 법적 문서"], app: app, maxSwipes: 6),
+            "법적 문서 섹션 제목이 노출되지 않았습니다."
+        )
+        XCTAssertTrue(
+            revealExistingElementByVerticalScroll(app.staticTexts["개인정보처리방침"], app: app, maxSwipes: 2),
+            "개인정보처리방침 행이 노출되지 않았습니다."
+        )
+
+        XCTAssertTrue(
+            revealExistingElementByVerticalScroll(app.staticTexts["지원 / 문의"], app: app, maxSwipes: 6),
+            "지원 섹션 제목이 노출되지 않았습니다."
+        )
+        XCTAssertTrue(
+            revealExistingElementByVerticalScroll(app.staticTexts["개발자 문의 메일"], app: app, maxSwipes: 2),
+            "개발자 문의 메일 행이 노출되지 않았습니다."
+        )
+
+        XCTAssertTrue(
+            revealExistingElementByVerticalScroll(app.staticTexts["앱 정보"], app: app, maxSwipes: 6),
+            "앱 정보 섹션 제목이 노출되지 않았습니다."
+        )
+        XCTAssertTrue(
+            revealExistingElementByVerticalScroll(app.staticTexts["앱 버전"], app: app, maxSwipes: 2),
+            "앱 버전 정보 행이 노출되지 않았습니다."
+        )
+    }
+
     /// 회원 상태에서 프로필 편집 저장 성공 후 편집 값이 다시 시트에 반영되는지 검증합니다.
     func testFeatureRegression_MemberProfileEditPersistsUpdatedPetName() throws {
         let credentials = try XCTUnwrap(
@@ -662,6 +705,26 @@ final class FeatureRegressionUITests: XCTestCase {
             if element.exists && element.isHittable { return true }
         }
         return element.exists && element.isHittable
+    }
+
+    /// 세로 스크롤을 반복해 대상 요소가 접근성 트리에 나타날 때까지 탐색합니다.
+    /// - Parameters:
+    ///   - element: 존재 여부를 기준으로 탐색할 대상 요소입니다.
+    ///   - app: 스와이프 제스처를 전달할 앱 인스턴스입니다.
+    ///   - maxSwipes: 최대 스와이프 횟수입니다.
+    /// - Returns: 제한 횟수 내 요소가 존재하면 `true`, 아니면 `false`입니다.
+    private func revealExistingElementByVerticalScroll(
+        _ element: XCUIElement,
+        app: XCUIApplication,
+        maxSwipes: Int
+    ) -> Bool {
+        if element.exists { return true }
+        for _ in 0..<maxSwipes {
+            app.swipeUp()
+            usleep(260_000)
+            if element.exists { return true }
+        }
+        return element.exists
     }
 
     /// 가능한 경우 단일 탭 동작을 수행하고 성공 여부를 반환합니다.
