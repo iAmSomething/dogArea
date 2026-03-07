@@ -1043,6 +1043,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             return
         }
         walkStatusMessage = nil
+        syncWalkWidgetSnapshot(force: true)
     }
 
     func clearRuntimeGuardStatus() {

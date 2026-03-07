@@ -31,7 +31,16 @@ extension MapViewModel {
                     userKey: currentMetricUserId(),
                     payload: ["action": route.kind.rawValue, "reason": "already_walking"]
                 )
-                syncWalkWidgetSnapshot(force: true, statusOverride: .sessionConflict, messageOverride: walkStatusMessage)
+                syncWalkWidgetSnapshot(
+                    force: true,
+                    statusOverride: .sessionConflict,
+                    messageOverride: walkStatusMessage,
+                    actionStateOverride: .failed(
+                        kind: route.kind,
+                        followUp: .openApp,
+                        message: "이미 산책 중이에요. 앱에서 현재 세션을 확인해 주세요."
+                    )
+                )
                 return
             }
             guard isLocationPermissionDenied == false else {
@@ -41,7 +50,16 @@ extension MapViewModel {
                     userKey: currentMetricUserId(),
                     payload: ["action": route.kind.rawValue, "reason": "location_denied"]
                 )
-                syncWalkWidgetSnapshot(force: true, statusOverride: .locationDenied, messageOverride: walkStatusMessage)
+                syncWalkWidgetSnapshot(
+                    force: true,
+                    statusOverride: .locationDenied,
+                    messageOverride: walkStatusMessage,
+                    actionStateOverride: .failed(
+                        kind: route.kind,
+                        followUp: .openApp,
+                        message: "위치 권한이 필요해요. 앱에서 권한을 확인해 주세요."
+                    )
+                )
                 return
             }
             startWalkNow()
@@ -51,7 +69,13 @@ extension MapViewModel {
                 userKey: currentMetricUserId(),
                 payload: ["action": route.kind.rawValue, "source": route.source]
             )
-            syncWalkWidgetSnapshot(force: true)
+            syncWalkWidgetSnapshot(
+                force: true,
+                actionStateOverride: .succeeded(
+                    kind: route.kind,
+                    message: "산책을 시작했어요."
+                )
+            )
             syncWalkLiveActivity(force: true)
 
         case .endWalk:
@@ -62,7 +86,16 @@ extension MapViewModel {
                     userKey: currentMetricUserId(),
                     payload: ["action": route.kind.rawValue, "reason": "no_active_session"]
                 )
-                syncWalkWidgetSnapshot(force: true, statusOverride: .sessionConflict, messageOverride: walkStatusMessage)
+                syncWalkWidgetSnapshot(
+                    force: true,
+                    statusOverride: .sessionConflict,
+                    messageOverride: walkStatusMessage,
+                    actionStateOverride: .failed(
+                        kind: route.kind,
+                        followUp: .openApp,
+                        message: "종료할 산책을 찾지 못했어요. 앱에서 현재 상태를 확인해 주세요."
+                    )
+                )
                 return
             }
             endWalk()
@@ -72,10 +105,16 @@ extension MapViewModel {
                 userKey: currentMetricUserId(),
                 payload: ["action": route.kind.rawValue, "source": route.source]
             )
-            syncWalkWidgetSnapshot(force: true)
+            syncWalkWidgetSnapshot(
+                force: true,
+                actionStateOverride: .succeeded(
+                    kind: route.kind,
+                    message: "산책을 종료했어요."
+                )
+            )
             syncWalkLiveActivity(force: true)
 
-        case .claimQuestReward, .openRivalTab:
+        case .claimQuestReward, .openRivalTab, .openWalkTab:
             metricTracker.track(
                 .widgetActionRejected,
                 userKey: currentMetricUserId(),
@@ -89,22 +128,26 @@ extension MapViewModel {
     ///   - force: `true`면 최소 간격 제한 없이 즉시 저장합니다.
     ///   - statusOverride: 상태를 강제로 지정할 때 사용하는 값입니다.
     ///   - messageOverride: 상태 메시지를 강제로 지정할 때 사용하는 값입니다.
+    ///   - actionStateOverride: 위젯 액션 상태를 강제로 지정할 때 사용하는 값입니다.
     func syncWalkWidgetSnapshot(
         force: Bool = false,
         statusOverride: WalkWidgetSnapshotStatus? = nil,
-        messageOverride: String? = nil
+        messageOverride: String? = nil,
+        actionStateOverride: WalkWidgetActionState? = nil
     ) {
         let now = Date()
         if force == false, now.timeIntervalSince(lastWidgetSnapshotSyncAt) < widgetSnapshotSyncInterval {
             return
         }
 
+        let currentSnapshot = widgetSnapshotStore.load()
         let snapshot = WalkWidgetSnapshot(
             isWalking: isWalking,
             elapsedSeconds: Int(max(0, time.rounded(.down))),
             petName: currentWalkingPetName,
             status: statusOverride ?? (isLocationPermissionDenied ? .locationDenied : .ready),
             statusMessage: messageOverride,
+            actionState: actionStateOverride ?? currentSnapshot.normalizedActionState,
             updatedAt: now.timeIntervalSince1970
         )
         widgetSnapshotStore.save(snapshot)

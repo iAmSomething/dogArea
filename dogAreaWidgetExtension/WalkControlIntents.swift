@@ -39,6 +39,37 @@ struct EndWalkIntent: AppIntent {
     #endif
 }
 
+struct OpenWalkTabIntent: AppIntent {
+    static var title: LocalizedStringResource = "앱에서 확인"
+    static var openAppWhenRun: Bool = true
+
+    /// 위젯에서 지도 탭 진입용 딥링크를 생성합니다.
+    /// - Returns: 앱의 지도 탭으로 이동할 인텐트 결과입니다.
+    #if compiler(>=6.0)
+    func perform() async throws -> some IntentResult & OpensIntent {
+        return .result(opensIntent: OpenURLIntent(makeOpenWalkURL()))
+    }
+    #else
+    func perform() async throws -> some IntentResult {
+        _ = makeOpenWalkURL()
+        return .result()
+    }
+    #endif
+
+    /// 지도 탭 진입 전용 위젯 딥링크 URL을 생성합니다.
+    /// - Returns: 지도 탭 라우팅에 사용할 딥링크 URL입니다.
+    private func makeOpenWalkURL() -> URL {
+        let route = WalkWidgetActionRequest(
+            kind: .openWalkTab,
+            actionId: UUID().uuidString.lowercased(),
+            source: "widget_open_map",
+            contextId: nil,
+            requestedAt: Date().timeIntervalSince1970
+        )
+        return route.asRoute().makeURL() ?? URL(string: "dogarea://widget/walk")!
+    }
+}
+
 struct ClaimQuestRewardIntent: AppIntent {
     static var title: LocalizedStringResource = "퀘스트 보상 받기"
     static var openAppWhenRun: Bool = true
@@ -107,12 +138,13 @@ struct OpenRivalTabIntent: AppIntent {
 ///   - contextId: 액션에 연결할 선택적 컨텍스트 식별자입니다.
 /// - Returns: 앱으로 전달할 딥링크 URL입니다.
 private func preparePendingRoute(kind: WalkWidgetActionKind, contextId: String?) -> URL {
+    let now = Date()
     let route = WalkWidgetActionRequest(
         kind: kind,
         actionId: UUID().uuidString.lowercased(),
         source: "widget_intent",
         contextId: contextId,
-        requestedAt: Date().timeIntervalSince1970
+        requestedAt: now.timeIntervalSince1970
     )
     DefaultWalkWidgetActionRequestStore.shared.setPending(route)
 
@@ -124,9 +156,10 @@ private func preparePendingRoute(kind: WalkWidgetActionKind, contextId: String?)
                 isWalking: current.isWalking,
                 elapsedSeconds: current.elapsedSeconds,
                 petName: current.petName,
-                status: .ready,
-                statusMessage: "앱에서 요청을 처리 중입니다.",
-                updatedAt: Date().timeIntervalSince1970
+                status: current.status,
+                statusMessage: nil,
+                actionState: .pending(kind: kind, now: now),
+                updatedAt: now.timeIntervalSince1970
             )
         )
     }

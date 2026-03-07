@@ -47,6 +47,16 @@ struct WalkControlWidgetEntryView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
+            if let activeActionState {
+                HStack(spacing: 6) {
+                    WidgetStatusBadge(title: actionBadgeTitle, color: actionBadgeColor)
+                    if activeActionState.phase == .pending {
+                        ProgressView()
+                            .controlSize(.small)
+                    }
+                }
+            }
+
             Text(entry.snapshot.isWalking ? "산책 중" : "산책 대기")
                 .font(.headline)
             Text(entry.snapshot.petName)
@@ -61,7 +71,7 @@ struct WalkControlWidgetEntryView: View {
                     .font(.system(.body, design: .rounded).monospacedDigit())
             }
 
-            if let statusMessage = entry.snapshot.statusMessage,
+            if let statusMessage = effectiveStatusMessage,
                statusMessage.isEmpty == false {
                 Text(statusMessage)
                     .font(.caption2)
@@ -71,29 +81,125 @@ struct WalkControlWidgetEntryView: View {
 
             Spacer(minLength: 2)
 
-            if entry.snapshot.isWalking {
-                Button(intent: EndWalkIntent()) {
-                    Label("산책 종료", systemImage: "stop.fill")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.red)
-            } else {
-                Button(intent: StartWalkIntent()) {
-                    Label("산책 시작", systemImage: "play.fill")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.green)
-            }
+            primaryActionButton
         }
         .containerBackground(.fill.tertiary, for: .widget)
     }
 
+    private var activeActionState: WalkWidgetActionState? {
+        entry.snapshot.normalizedActionState
+    }
+
+    private var effectiveStatusMessage: String? {
+        activeActionState?.message ?? entry.snapshot.statusMessage
+    }
+
+    private var preferredActionKind: WalkWidgetActionKind {
+        activeActionState?.kind ?? (entry.snapshot.isWalking ? .endWalk : .startWalk)
+    }
+
+    private var actionBadgeTitle: String {
+        guard let activeActionState else { return "" }
+        switch activeActionState.phase {
+        case .pending:
+            return "처리 중"
+        case .requiresAppOpen:
+            return "앱 확인"
+        case .succeeded:
+            return "완료"
+        case .failed:
+            return "다시 확인"
+        }
+    }
+
+    private var actionBadgeColor: Color {
+        guard let activeActionState else { return .secondary.opacity(0.16) }
+        switch activeActionState.phase {
+        case .pending:
+            return .blue.opacity(0.18)
+        case .requiresAppOpen:
+            return .orange.opacity(0.20)
+        case .succeeded:
+            return .green.opacity(0.20)
+        case .failed:
+            return .red.opacity(0.18)
+        }
+    }
+
+    @ViewBuilder
+    private var primaryActionButton: some View {
+        if let activeActionState,
+           activeActionState.phase == .pending {
+            Label("처리 중", systemImage: "hourglass")
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .foregroundStyle(.secondary)
+                .background(Color.secondary.opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        } else if let activeActionState,
+                  activeActionState.followUp == .openApp {
+            Button(intent: OpenWalkTabIntent()) {
+                Label("앱에서 확인", systemImage: "arrow.up.right.square")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+        } else if let activeActionState,
+                  activeActionState.phase == .failed,
+                  activeActionState.followUp == .retry {
+            retryActionButton
+        } else {
+            defaultActionButton
+        }
+    }
+
+    @ViewBuilder
+    private var retryActionButton: some View {
+        switch preferredActionKind {
+        case .startWalk:
+            Button(intent: StartWalkIntent()) {
+                Label("다시 시도", systemImage: "arrow.clockwise")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.orange)
+        case .endWalk:
+            Button(intent: EndWalkIntent()) {
+                Label("다시 시도", systemImage: "arrow.clockwise")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.orange)
+        case .openWalkTab, .claimQuestReward, .openRivalTab:
+            Button(intent: OpenWalkTabIntent()) {
+                Label("앱에서 확인", systemImage: "arrow.up.right.square")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+        }
+    }
+
+    @ViewBuilder
+    private var defaultActionButton: some View {
+        if entry.snapshot.isWalking {
+            Button(intent: EndWalkIntent()) {
+                Label("산책 종료", systemImage: "stop.fill")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.red)
+        } else {
+            Button(intent: StartWalkIntent()) {
+                Label("산책 시작", systemImage: "play.fill")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.green)
+        }
+    }
 }
 
 struct WalkControlWidget: Widget {
-    private let kind = "com.th.dogArea.walk-control"
+    private let kind = WalkWidgetBridgeContract.walkWidgetKind
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: WalkControlTimelineProvider()) { entry in
@@ -116,6 +222,7 @@ struct WalkControlWidget: Widget {
             petName: "나무",
             status: .ready,
             statusMessage: nil,
+            actionState: nil,
             updatedAt: Date().timeIntervalSince1970
         )
     )
