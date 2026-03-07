@@ -109,8 +109,18 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
 let migration = load("supabase/migrations/20260227195500_season_anti_farming_rules.sql")
-let syncWalkFunction = load("supabase/functions/sync-walk/index.ts")
+let syncWalkFunction = loadMany([
+    "supabase/functions/sync-walk/index.ts",
+    "supabase/functions/sync-walk/support/core.ts",
+    "supabase/functions/sync-walk/support/types.ts",
+    "supabase/functions/sync-walk/handlers/points_stage.ts",
+    "supabase/functions/sync-walk/handlers/points_stage_post_processing.ts"
+])
 let doc = load("docs/season-anti-farming-v1.md")
 let schemaDoc = load("docs/supabase-schema-v1.md")
 let migrationDoc = load("docs/supabase-migration.md")

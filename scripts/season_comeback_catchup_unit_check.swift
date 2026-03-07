@@ -80,7 +80,13 @@ func loadMany(_ relativePaths: [String]) -> String {
 }
 
 let migration = load("supabase/migrations/20260227223000_season_comeback_catchup_buff.sql")
-let syncWalkFunction = load("supabase/functions/sync-walk/index.ts")
+let syncWalkFunction = loadMany([
+    "supabase/functions/sync-walk/index.ts",
+    "supabase/functions/sync-walk/support/core.ts",
+    "supabase/functions/sync-walk/support/types.ts",
+    "supabase/functions/sync-walk/handlers/points_stage.ts",
+    "supabase/functions/sync-walk/handlers/points_stage_post_processing.ts"
+])
 let userDefaultsStore = loadMany([
     "dogArea/Source/UserdefaultSetting.swift",
     "dogArea/Source/UserDefaultsSupport/UserSessionModels.swift",

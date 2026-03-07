@@ -38,7 +38,7 @@ export type EdgeAuthContext = {
   authHeader: string;
   accessToken: string;
   userId: string | null;
-  userClient: ReturnType<typeof createClient> | null;
+  userClient: any | null;
 };
 
 type EdgeAuthSuccess = {
@@ -190,7 +190,7 @@ const resolveMemberContext = async (
   supabaseAnonKey: string,
   authHeader: string,
   accessToken: string,
-): Promise<{ userId: string; userClient: ReturnType<typeof createClient> } | null> => {
+): Promise<{ userId: string; userClient: any } | null> => {
   const userClient = createClient(supabaseURL, supabaseAnonKey, {
     global: { headers: { Authorization: authHeader } },
   });
