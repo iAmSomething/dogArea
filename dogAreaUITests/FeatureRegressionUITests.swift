@@ -229,6 +229,30 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertTrue(logoutButton.isHittable, "로그아웃 버튼이 탭 가능한 상태가 아닙니다.")
     }
 
+    /// 회원가입 시트가 rate-limited resend 상태를 유지하고 중복 resend 탭을 막는지 검증합니다.
+    func testFeatureRegression_SignUpMailRateLimitedStateDisablesResendAction() throws {
+        let app = launchAppForFeatureRegression(
+            extraArguments: [
+                "-UITest.SignUpMailPreviewRoute",
+                "-UITest.SignUpMailStateStub", "rate_limited",
+                "-UITest.SignUpMailRemaining", "48",
+                "-UITest.SignUpMailPreviewEmail", "rate-limited@dogarea.test"
+            ]
+        )
+
+        XCTAssertTrue(presentSignInFlowIfNeeded(app), "로그인 화면 진입에 실패했습니다.")
+
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "screen.signup", in: app), timeout: 6),
+            "회원가입 시트가 열리지 않았습니다."
+        )
+
+        let resendButton = app.descendants(matching: .any).matching(identifier: "signup.mail.resend").firstMatch
+        XCTAssertTrue(waitUntilExists(resendButton, timeout: 4), "메일 resend 버튼을 찾지 못했습니다.")
+        XCTAssertFalse(resendButton.isEnabled, "rate-limited 상태에서 resend 버튼은 비활성화되어야 합니다.")
+        XCTAssertTrue(resendButton.label.contains("48초 후 다시"), "남은 시간 버튼 문구가 노출되지 않았습니다.")
+    }
+
     /// 설정 탭이 실제 앱 설정/법적 문서/지원/앱 정보 섹션을 모두 노출하는지 검증합니다.
     func testFeatureRegression_SettingsProductSectionsExposeOperationalEntries() throws {
         let app = launchAppForFeatureRegression()
@@ -828,7 +852,8 @@ final class FeatureRegressionUITests: XCTestCase {
     /// - Returns: 로그인 화면 또는 로그인 진입 버튼이 노출될 때까지 중간 단계를 처리한 경우 `true`를 반환합니다.
     @discardableResult
     private func presentSignInFlowIfNeeded(_ app: XCUIApplication) -> Bool {
-        if waitUntilExists(screenElement(identifier: "screen.signin", in: app), timeout: 1.2) {
+        if waitUntilExists(screenElement(identifier: "screen.signin", in: app), timeout: 1.2) ||
+            waitUntilExists(screenElement(identifier: "screen.signup", in: app), timeout: 1.2) {
             return true
         }
 
@@ -838,7 +863,8 @@ final class FeatureRegressionUITests: XCTestCase {
             usleep(300_000)
         }
 
-        if waitUntilExists(screenElement(identifier: "screen.signin", in: app), timeout: 1.2) {
+        if waitUntilExists(screenElement(identifier: "screen.signin", in: app), timeout: 1.2) ||
+            waitUntilExists(screenElement(identifier: "screen.signup", in: app), timeout: 1.2) {
             return true
         }
 
@@ -848,7 +874,30 @@ final class FeatureRegressionUITests: XCTestCase {
             usleep(300_000)
         }
 
-        return waitUntilExists(screenElement(identifier: "screen.signin", in: app), timeout: 2.5)
+        if waitUntilExists(screenElement(identifier: "screen.signin", in: app), timeout: 1.2) ||
+            waitUntilExists(screenElement(identifier: "screen.signup", in: app), timeout: 1.2) {
+            return true
+        }
+
+        let settingsTabButton = app.buttons["tab.4"]
+        if waitUntilExists(settingsTabButton, timeout: 2.5) {
+            settingsTabButton.tap()
+            usleep(300_000)
+
+            let settingsSignInButton = app.buttons["settings.open.signin"]
+            if waitUntilExists(settingsSignInButton, timeout: 2.5) {
+                settingsSignInButton.tap()
+                usleep(300_000)
+
+                if waitUntilExists(memberUpgradeSignInButton, timeout: 2.5) {
+                    memberUpgradeSignInButton.tap()
+                    usleep(300_000)
+                }
+            }
+        }
+
+        return waitUntilExists(screenElement(identifier: "screen.signin", in: app), timeout: 2.5) ||
+            waitUntilExists(screenElement(identifier: "screen.signup", in: app), timeout: 2.5)
     }
 
     /// 커스텀 탭 인덱스로 탭 전환을 시도합니다.
