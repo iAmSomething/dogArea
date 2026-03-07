@@ -10,6 +10,7 @@ swift scripts/backend_contract_versioning_unit_check.swift
 swift scripts/backend_edge_observability_unit_check.swift
 swift scripts/backend_edge_failure_dashboard_unit_check.swift
 swift scripts/backend_edge_auth_unification_unit_check.swift
+swift scripts/backend_edge_auth_inventory_unit_check.swift
 swift scripts/backend_request_id_idempotency_unit_check.swift
 swift scripts/backend_scheduler_ops_unit_check.swift
 swift scripts/widget_summary_rpc_response_model_unit_check.swift

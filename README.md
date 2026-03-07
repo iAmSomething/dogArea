@@ -54,6 +54,7 @@
 - Backend scheduler 운영 기준 v1: `docs/backend-scheduler-ops-standard-v1.md`
 - Widget summary RPC 공통 응답 모델 v1: `docs/widget-summary-rpc-common-response-model-v1.md`
 - Backend Edge auth policy v1: `docs/backend-edge-auth-policy-v1.md`
+- Backend Edge auth mode inventory v1: `docs/backend-edge-auth-mode-inventory-v1.md`
 - Backend Edge observability 표준 v1: `docs/backend-edge-observability-standard-v1.md`
 - Backend Edge error taxonomy v1: `docs/backend-edge-error-taxonomy-v1.md`
 - Backend Edge incident runbook v1: `docs/backend-edge-incident-runbook-v1.md`
