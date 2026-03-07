@@ -3,6 +3,9 @@
 ## 1. 목적
 `profiles/pets/walk_sessions/walk_points/area_milestones/walk_session_pets`와 Storage 정책을 운영 기준으로 검증하기 위한 실행 절차/SQL 세트를 고정한다.
 
+연계 운영 문서:
+- `docs/backend-scheduler-ops-standard-v1.md`
+
 연결 이슈:
 - #22 `[Task] Supabase 스키마/RLS/Storage 운영 고도화`
 
