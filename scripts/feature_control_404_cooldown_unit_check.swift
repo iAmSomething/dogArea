@@ -15,7 +15,14 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
-let infra = load("dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift")
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
+let infra = loadMany([
+    "dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift",
+    "dogArea/Source/Infrastructure/Supabase/Services/SupabaseEdgeSupportServices.swift"
+])
 
 assertTrue(
     infra.contains("feature.control.unavailable.until.v1"),

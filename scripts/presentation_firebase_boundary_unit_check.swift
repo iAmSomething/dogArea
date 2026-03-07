@@ -27,7 +27,10 @@ let signInView = loadMany([
 ])
 let signingViewModel = load("dogArea/Views/SigningView/SigningViewModel.swift")
 let settingViewModel = load("dogArea/Views/ProfileSettingView/SettingViewModel.swift")
-let infra = load("dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift")
+let infra = loadMany([
+    "dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift",
+    "dogArea/Source/Infrastructure/Supabase/Services/SupabaseAuthAndAssetServices.swift"
+])
 let app = load("dogArea/dogAreaApp.swift")
 let project = load("dogArea.xcodeproj/project.pbxproj")
 

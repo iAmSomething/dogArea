@@ -13,8 +13,21 @@ func assertTrue(_ condition: Bool, _ message: String) {
 }
 
 let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-let sourcePath = root.appendingPathComponent("dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift")
-let source = String(decoding: try! Data(contentsOf: sourcePath), as: UTF8.self)
+
+func load(_ relativePath: String) -> String {
+    let url = root.appendingPathComponent(relativePath)
+    let data = try! Data(contentsOf: url)
+    return String(decoding: data, as: UTF8.self)
+}
+
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
+let source = loadMany([
+    "dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift",
+    "dogArea/Source/Infrastructure/Supabase/Services/SupabaseAuthAndAssetServices.swift"
+])
 
 assertTrue(
     source.contains("private func normalizedAuthRateLimitMessage("),

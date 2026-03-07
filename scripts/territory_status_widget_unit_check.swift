@@ -15,8 +15,15 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
 let migration = load("supabase/migrations/20260303190000_territory_widget_summary_rpc.sql")
-let infra = load("dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift")
+let infra = loadMany([
+    "dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift",
+    "dogArea/Source/Infrastructure/Supabase/Services/SupabaseWidgetAndAreaServices.swift"
+])
 let bridge = load("dogArea/Source/WidgetBridge/WalkWidgetBridge.swift")
 let snapshotStore = load("dogArea/Source/WidgetBridge/WalkWidgetSnapshotStore.swift")
 let widget = load("dogAreaWidgetExtension/WalkControlWidget.swift")

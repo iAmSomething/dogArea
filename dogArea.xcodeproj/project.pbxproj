@@ -122,6 +122,11 @@
 		DA16C1E12B060C7B008FC133 /* SelectedPolygonCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA16C1E02B060C7B008FC133 /* SelectedPolygonCell.swift */; };
 		DA1731712AE200C100EF10C8 /* ProfileRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1731702AE200C100EF10C8 /* ProfileRepository.swift */; };
 		DA1731732AE2017500EF10C8 /* SupabaseInfrastructure.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1731722AE2017500EF10C8 /* SupabaseInfrastructure.swift */; };
+		A41300010000000000000021 /* SupabaseEdgeSupportServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41300010000000000000011 /* SupabaseEdgeSupportServices.swift */; };
+		A41300010000000000000022 /* SupabaseSyncServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41300010000000000000012 /* SupabaseSyncServices.swift */; };
+		A41300010000000000000023 /* SupabasePresenceAndQuestServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41300010000000000000013 /* SupabasePresenceAndQuestServices.swift */; };
+		A41300010000000000000024 /* SupabaseWidgetAndAreaServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41300010000000000000014 /* SupabaseWidgetAndAreaServices.swift */; };
+		A41300010000000000000025 /* SupabaseAuthAndAssetServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41300010000000000000015 /* SupabaseAuthAndAssetServices.swift */; };
 		DA1731762AE20A4D00EF10C8 /* WalkBackfillDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1731752AE20A4D00EF10C8 /* WalkBackfillDTO.swift */; };
 		DA354FFD2B01DF1F00E4094A /* TimeIntervalExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA354FFC2B01DF1F00E4094A /* TimeIntervalExtensions.swift */; };
 		DA3550022B01E0F900E4094A /* UnderLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3550012B01E0F900E4094A /* UnderLine.swift */; };
@@ -413,6 +418,11 @@
 		DA16C1E02B060C7B008FC133 /* SelectedPolygonCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectedPolygonCell.swift; sourceTree = "<group>"; };
 		DA1731702AE200C100EF10C8 /* ProfileRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileRepository.swift; sourceTree = "<group>"; };
 		DA1731722AE2017500EF10C8 /* SupabaseInfrastructure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Infrastructure/Supabase/SupabaseInfrastructure.swift; sourceTree = "<group>"; };
+		A41300010000000000000011 /* SupabaseEdgeSupportServices.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SupabaseEdgeSupportServices.swift; sourceTree = "<group>"; };
+		A41300010000000000000012 /* SupabaseSyncServices.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SupabaseSyncServices.swift; sourceTree = "<group>"; };
+		A41300010000000000000013 /* SupabasePresenceAndQuestServices.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SupabasePresenceAndQuestServices.swift; sourceTree = "<group>"; };
+		A41300010000000000000014 /* SupabaseWidgetAndAreaServices.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SupabaseWidgetAndAreaServices.swift; sourceTree = "<group>"; };
+		A41300010000000000000015 /* SupabaseAuthAndAssetServices.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SupabaseAuthAndAssetServices.swift; sourceTree = "<group>"; };
 		DA1731752AE20A4D00EF10C8 /* WalkBackfillDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Data/Walk/WalkBackfillDTO.swift; sourceTree = "<group>"; };
 		DA27AD832B061A1B001283D4 /* dogAreaRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = dogAreaRelease.entitlements; sourceTree = "<group>"; };
 		DA27AD842B061AC5001283D4 /* dogAreaDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = dogAreaDebug.entitlements; sourceTree = "<group>"; };
@@ -892,6 +902,18 @@
 			path = WalkListView;
 			sourceTree = "<group>";
 		};
+		A41300010000000000000001 /* SupabaseServices */ = {
+			isa = PBXGroup;
+			children = (
+				A41300010000000000000011 /* SupabaseEdgeSupportServices.swift */,
+				A41300010000000000000012 /* SupabaseSyncServices.swift */,
+				A41300010000000000000013 /* SupabasePresenceAndQuestServices.swift */,
+				A41300010000000000000014 /* SupabaseWidgetAndAreaServices.swift */,
+				A41300010000000000000015 /* SupabaseAuthAndAssetServices.swift */,
+			);
+			path = Infrastructure/Supabase/Services;
+			sourceTree = "<group>";
+		};
 		DA3F9BAC2AE0F2410048550C /* Source */ = {
 			isa = PBXGroup;
 			children = (
@@ -902,6 +924,7 @@
 				DA4513882AFB2D68007AD69B /* WalkRepository.swift */,
 				DA1731752AE20A4D00EF10C8 /* WalkBackfillDTO.swift */,
 				DA1731722AE2017500EF10C8 /* SupabaseInfrastructure.swift */,
+				A41300010000000000000001 /* SupabaseServices */,
 				DA3EB0AC2B04A1E100AEA65D /* Cluster.swift */,
 				DA16C1D82B05DCC8008FC133 /* CornerShape.swift */,
 				DA16C1DB2B05E4DF008FC133 /* TimeCheckable.swift */,
@@ -1554,6 +1577,11 @@
 				DA822CDD2AFB60B6001EC94D /* MapSettingView.swift in Sources */,
 				DA71C83D2AD787AC00081ED0 /* dogAreaApp.swift in Sources */,
 				DA1731732AE2017500EF10C8 /* SupabaseInfrastructure.swift in Sources */,
+				A41300010000000000000021 /* SupabaseEdgeSupportServices.swift in Sources */,
+				A41300010000000000000022 /* SupabaseSyncServices.swift in Sources */,
+				A41300010000000000000023 /* SupabasePresenceAndQuestServices.swift in Sources */,
+				A41300010000000000000024 /* SupabaseWidgetAndAreaServices.swift in Sources */,
+				A41300010000000000000025 /* SupabaseAuthAndAssetServices.swift in Sources */,
 				A37800010000000000000001 /* AppTabScaffold.swift in Sources */,
 				DA3F9BA52AE0F14F0048550C /* MapModel.swift in Sources */,
 				DAE148A11420000000000001 /* MapAreaCalculationService.swift in Sources */,

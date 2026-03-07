@@ -25,6 +25,7 @@ let userdefaultSetting = loadMany([
     "dogArea/Source/UserdefaultSetting.swift",
     "dogArea/Source/ProfileSyncOutboxStore.swift",
     "dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift",
+    "dogArea/Source/Infrastructure/Supabase/Services/SupabaseSyncServices.swift",
     "dogArea/Source/AppSession/AppFeatureGate.swift",
     "dogArea/Source/AppSession/GuestDataUpgradeService.swift",
     "dogArea/Source/AppSession/AuthFlowCoordinator.swift"

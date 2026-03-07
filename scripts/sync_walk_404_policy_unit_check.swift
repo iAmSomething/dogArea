@@ -19,7 +19,10 @@ func loadMany(_ relativePaths: [String]) -> String {
     relativePaths.map(load).joined(separator: "\n")
 }
 
-let infra = load("dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift")
+let infra = loadMany([
+    "dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift",
+    "dogArea/Source/Infrastructure/Supabase/Services/SupabaseSyncServices.swift"
+])
 let syncStore = loadMany([
     "dogArea/Source/UserdefaultSetting.swift",
     "dogArea/Source/AppSession/AppFeatureGate.swift",

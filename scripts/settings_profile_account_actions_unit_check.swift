@@ -29,7 +29,10 @@ let notificationCenterView = load("dogArea/Views/ProfileSettingView/Notification
 let petManagementSheet = load("dogArea/Views/ProfileSettingView/Components/PetManagementSheet.swift")
 let petManagementEditSheet = load("dogArea/Views/ProfileSettingView/Components/PetManagementEditPetSheet.swift")
 let petManagementService = load("dogArea/Source/Domain/Profile/Services/SettingsPetManagementService.swift")
-let supabaseInfrastructure = load("dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift")
+let supabaseInfrastructure = loadMany([
+    "dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift",
+    "dogArea/Source/Infrastructure/Supabase/Services/SupabaseAuthAndAssetServices.swift"
+])
 let profileEditorCards = load("dogArea/Views/GlobalViews/ProfileEditor/ProfileEditorCards.swift")
 let profileEditorImageSection = load("dogArea/Views/GlobalViews/ProfileEditor/ProfileEditorImageSection.swift")
 
