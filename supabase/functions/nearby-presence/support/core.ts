@@ -6,6 +6,9 @@ export const json = (body: unknown, status = 200) =>
 
 export const roundCoord = (value: number) => Math.round(value * 10_000) / 10_000;
 
+export const asRecord = (value: unknown): Record<string, unknown> =>
+  typeof value === "object" && value !== null ? value as Record<string, unknown> : {};
+
 export const asUUIDOrNull = (value: unknown): string | null => {
   if (typeof value !== "string") return null;
   const normalized = value.trim().toLowerCase();

@@ -46,5 +46,5 @@ export async function handleGetHotspots(
     console.error("privacy audit insert failed", audit.error.message);
   }
 
-  return json({ hotspots });
+  return json({ request_id: context.requestId, hotspots });
 }

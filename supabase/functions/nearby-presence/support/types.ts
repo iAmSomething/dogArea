@@ -7,6 +7,9 @@ export type Action =
 
 export type RequestDTO = {
   action: Action;
+  request_id?: string;
+  requestId?: string;
+  action_id?: string;
   userId?: string;
   excludedUserIds?: string[];
   deviceKey?: string;
@@ -15,6 +18,7 @@ export type RequestDTO = {
   lng?: number;
   speedMps?: number;
   sequence?: number;
+  idempotency_key?: string;
   idempotencyKey?: string;
   updatedAt?: string;
   ttlSeconds?: number;
@@ -71,6 +75,7 @@ export type NearbyPresenceClient = any;
 export type NearbyPresenceRequestContext = {
   client: NearbyPresenceClient;
   body: RequestDTO;
+  requestId: string;
 };
 
 export type LivePresenceUpsertPayload = {

@@ -150,6 +150,25 @@ else:
 PY
 }
 
+harness_first_pet_id() {
+  local json="$1"
+  JSON_PAYLOAD="$json" python3 - <<'PY'
+import json
+import os
+
+raw = os.environ.get("JSON_PAYLOAD", "")
+obj = json.loads(raw)
+snapshot = obj.get("snapshot") if isinstance(obj, dict) else None
+pets = snapshot.get("pets") if isinstance(snapshot, dict) else None
+if isinstance(pets, list):
+    for pet in pets:
+        if isinstance(pet, dict) and isinstance(pet.get("id"), str) and pet["id"].strip():
+            print(pet["id"].strip())
+            raise SystemExit(0)
+print("")
+PY
+}
+
 harness_uuid() {
   python3 - <<'PY'
 import uuid

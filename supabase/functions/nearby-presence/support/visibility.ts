@@ -1,4 +1,5 @@
-import { asUUIDOrNull, geohashEncode, json, roundCoord } from "./core.ts";
+import { asRecord, asUUIDOrNull, geohashEncode, json, roundCoord } from "./core.ts";
+import { resolveCanonicalIdempotencyKey } from "../../_shared/request_keys.ts";
 import type { NearbyPresenceClient, RequestDTO } from "./types.ts";
 
 export async function readVisibilitySetting(
@@ -36,7 +37,10 @@ export async function handleSetVisibility(
     updated_at: new Date().toISOString(),
   });
   if (error) return json({ error: error.message }, 500);
-  return json({ ok: true });
+  return json({ ok: true, request_id: resolveCanonicalIdempotencyKey(asRecord(body), {
+    keys: ["request_id", "requestId", "action_id"],
+    fallback: null,
+  }) });
 }
 
 export async function handleUpsertPresence(
@@ -82,6 +86,7 @@ export async function handleUpsertPresence(
   });
   if (error) return json({ error: error.message }, 500);
 
+  const bodyRecord = asRecord(body)
   const livePresenceResult = await upsertLivePresence(client, {
     userId,
     sessionId: body.sessionId,
@@ -90,7 +95,10 @@ export async function handleUpsertPresence(
     longitude: lngRounded,
     speedMps: body.speedMps,
     sequence: body.sequence,
-    idempotencyKey: body.idempotencyKey,
+    idempotencyKey: resolveCanonicalIdempotencyKey(bodyRecord, {
+      keys: ["idempotency_key", "idempotencyKey", "request_id", "requestId", "action_id"],
+      fallback: null,
+    }) ?? undefined,
     updatedAt: body.updatedAt,
     ttlSeconds: body.ttlSeconds,
   });
@@ -98,6 +106,10 @@ export async function handleUpsertPresence(
 
   return json({
     ok: true,
+    request_id: resolveCanonicalIdempotencyKey(bodyRecord, {
+      keys: ["request_id", "requestId", "action_id"],
+      fallback: null,
+    }),
     geohash7,
     live_presence: livePresenceResult.row,
   });

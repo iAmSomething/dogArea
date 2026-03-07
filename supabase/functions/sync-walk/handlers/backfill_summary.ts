@@ -47,6 +47,7 @@ export async function handleBackfillSummary(
   );
 
   return json({
+    request_id: context.requestId,
     summary: {
       session_count: safeSessions.length,
       point_count: pointCount,

@@ -34,6 +34,8 @@ sync_profile_snapshot_member="$(harness_request_json \
   "$member_auth" \
   '{"action":"get_profile_snapshot"}')"
 harness_expect_status "sync-profile.snapshot.member" "200" "$sync_profile_snapshot_member" "route=/functions/v1/sync-profile action=get_profile_snapshot"
+member_snapshot_body="$(harness_response_body "$sync_profile_snapshot_member")"
+member_pet_id="${DOGAREA_SUPABASE_SMOKE_PET_ID:-$(harness_first_pet_id "$member_snapshot_body")}"
 
 sync_profile_invalid_token="$(harness_request_json \
   "POST" \
@@ -56,7 +58,7 @@ sync_walk_stage_member="$(harness_request_json \
   "$SUPABASE_URL/functions/v1/sync-walk" \
   "$SUPABASE_ANON_KEY" \
   "$member_auth" \
-  "{\"action\":\"sync_walk_stage\",\"stage\":\"session\",\"walk_session_id\":\"$fixed_session_id\",\"idempotency_key\":\"smoke-416-session\",\"payload\":{\"created_at\":1700000000,\"started_at\":1700000000,\"ended_at\":1700000600,\"duration_sec\":600,\"area_m2\":12.5,\"source_device\":\"ios-smoke\"}}")"
+  "{\"action\":\"sync_walk_stage\",\"stage\":\"session\",\"walk_session_id\":\"$fixed_session_id\",\"request_id\":\"smoke-426-sync-walk-session-request\",\"idempotency_key\":\"smoke-416-session\",\"payload\":{\"created_at\":1700000000,\"started_at\":1700000000,\"ended_at\":1700000600,\"duration_sec\":600,\"area_m2\":12.5,\"source_device\":\"ios\",\"pet_id\":\"$member_pet_id\"}}")"
 harness_expect_status "sync-walk.session.member" "200" "$sync_walk_stage_member" "route=/functions/v1/sync-walk action=sync_walk_stage"
 
 sync_walk_summary_member="$(harness_request_json \

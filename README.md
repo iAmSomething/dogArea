@@ -49,6 +49,7 @@
 - Supabase integration smoke matrix v1: `docs/supabase-integration-smoke-matrix-v1.md`
 - Backend 계약 버저닝 정책 v1: `docs/backend-contract-versioning-policy-v1.md`
 - Backend 고위험 계약 매트릭스 v1: `docs/backend-high-risk-contract-matrix-v1.md`
+- Backend request correlation/idempotency 정책 v1: `docs/backend-request-correlation-idempotency-policy-v1.md`
 - Backend Edge auth policy v1: `docs/backend-edge-auth-policy-v1.md`
 - Backend Edge observability 표준 v1: `docs/backend-edge-observability-standard-v1.md`
 - Backend Edge error taxonomy v1: `docs/backend-edge-error-taxonomy-v1.md`

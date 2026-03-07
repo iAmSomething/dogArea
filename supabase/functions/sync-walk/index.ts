@@ -1,4 +1,5 @@
 import { resolveEdgeAuthContext } from "../_shared/edge_auth.ts";
+import { resolveCanonicalIdempotencyKey, resolveCanonicalRequestId } from "../_shared/request_keys.ts";
 import { handleBackfillSummary } from "./handlers/backfill_summary.ts";
 import { dispatchSyncWalkStage, isSupportedSyncStage } from "./handlers/stage_dispatcher.ts";
 import { asRecord, json, toUUIDOrNull } from "./support/core.ts";
@@ -28,7 +29,6 @@ Deno.serve(async (req) => {
 
   const userClient = auth.context.userClient!;
   const userId = auth.context.userId!;
-  const requestId = auth.context.requestId;
 
   let body: RequestDTO;
   try {
@@ -40,6 +40,9 @@ Deno.serve(async (req) => {
   if (!body.action) {
     return json({ error: "ACTION_REQUIRED" }, 400);
   }
+
+  const bodyRecord = asRecord(body);
+  const requestId = resolveCanonicalRequestId(bodyRecord, auth.context.requestId);
 
   if (body.action === "get_backfill_summary") {
     const sessionIds = (body.session_ids ?? [])
@@ -63,12 +66,17 @@ Deno.serve(async (req) => {
     return json({ error: "INVALID_PAYLOAD" }, 400);
   }
 
+  const idempotencyKey = resolveCanonicalIdempotencyKey(bodyRecord, {
+    keys: ["idempotency_key", "idempotencyKey", "request_id", "requestId"],
+    fallback: requestId,
+  });
+
   return dispatchSyncWalkStage(body.stage, {
     userClient,
     userId,
     requestId,
     walkSessionId,
-    idempotencyKey: body.idempotency_key ?? null,
+    idempotencyKey,
     payload,
   });
 });

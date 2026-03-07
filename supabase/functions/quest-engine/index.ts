@@ -1,4 +1,5 @@
 import { resolveEdgeAuthContext } from "../_shared/edge_auth.ts";
+import { resolveCanonicalIdempotencyKey, resolveCanonicalRequestId } from "../_shared/request_keys.ts";
 
 type Action =
   | "issue_quests"
@@ -13,16 +14,29 @@ type TransitionAction = "expire" | "reroll" | "replace";
 type RequestDTO = {
   action?: Action;
   scope?: QuestScope;
+  cycle_key?: string;
   cycleKey?: string;
+  expires_at?: string;
   expiresAt?: string;
+  instance_id?: string;
   instanceId?: string;
+  target_instance_id?: string;
+  event_id?: string;
   eventId?: string;
+  event_type?: string;
   eventType?: string;
+  delta_value?: number;
   deltaValue?: number;
   payload?: Record<string, unknown>;
+  request_id?: string;
   requestId?: string;
+  idempotency_key?: string;
+  idempotencyKey?: string;
+  transition_action?: TransitionAction;
   transitionAction?: TransitionAction;
+  replacement_template_id?: string;
   replacementTemplateId?: string;
+  now_ts?: string;
 };
 
 const json = (body: unknown, status = 200) =>
@@ -90,13 +104,15 @@ Deno.serve(async (req) => {
 
   if (!body.action) return json({ error: "ACTION_REQUIRED" }, 400);
 
-  const nowISO = new Date().toISOString();
+  const bodyRecord = asRecord(body);
+  const requestId = resolveCanonicalRequestId(bodyRecord, auth.context.requestId);
+  const nowISO = asString(body.now_ts) ?? new Date().toISOString();
 
   switch (body.action) {
     case "issue_quests": {
       const scope = asString(body.scope) ?? "daily";
-      const cycleKey = asString(body.cycleKey);
-      const expiresAt = asString(body.expiresAt);
+      const cycleKey = asString(body.cycle_key ?? body.cycleKey);
+      const expiresAt = asString(body.expires_at ?? body.expiresAt);
 
       const { data, error } = await userClient.rpc("rpc_issue_quest_instances", {
         target_user_id: userId,
@@ -107,12 +123,15 @@ Deno.serve(async (req) => {
       });
       if (error) return json({ error: error.message }, 500);
 
-      return json({ quests: Array.isArray(data) ? data : [] });
+      return json({ request_id: requestId, quests: Array.isArray(data) ? data : [] });
     }
 
     case "ingest_walk_event": {
-      const instanceId = toUUIDOrNull(body.instanceId);
-      const eventId = asString(body.eventId);
+      const instanceId = toUUIDOrNull(body.instance_id ?? body.instanceId ?? body.target_instance_id);
+      const eventId = resolveCanonicalIdempotencyKey(bodyRecord, {
+        keys: ["event_id", "eventId", "idempotency_key", "idempotencyKey", "action_id"],
+        fallback: requestId,
+      });
       if (!instanceId || !eventId) {
         return json({ error: "INVALID_PAYLOAD" }, 400);
       }
@@ -121,36 +140,41 @@ Deno.serve(async (req) => {
         target_user_id: userId,
         target_instance_id: instanceId,
         event_id: eventId,
-        event_type: asString(body.eventType) ?? "walk_event",
-        delta_value: Math.max(0, toNumber(body.deltaValue, 1)),
+        event_type: asString(body.event_type ?? body.eventType) ?? "walk_event",
+        delta_value: Math.max(0, toNumber(body.delta_value ?? body.deltaValue, 1)),
         payload: asRecord(body.payload),
         now_ts: nowISO,
       });
       if (error) return json({ error: error.message }, 500);
 
       const row = Array.isArray(data) && data.length > 0 ? data[0] : null;
-      return json({ progress: row });
+      return json({ request_id: requestId, progress: row });
     }
 
     case "claim_reward": {
-      const instanceId = toUUIDOrNull(body.instanceId);
+      const instanceId = toUUIDOrNull(body.instance_id ?? body.instanceId ?? body.target_instance_id);
       if (!instanceId) return json({ error: "INVALID_PAYLOAD" }, 400);
+
+      const claimRequestId = resolveCanonicalIdempotencyKey(bodyRecord, {
+        keys: ["request_id", "requestId", "idempotency_key", "idempotencyKey", "action_id"],
+        fallback: requestId,
+      });
 
       const { data, error } = await userClient.rpc("rpc_claim_quest_reward", {
         target_user_id: userId,
         target_instance_id: instanceId,
-        request_id: asString(body.requestId),
+        request_id: claimRequestId,
         now_ts: nowISO,
       });
       if (error) return json({ error: error.message }, 500);
 
       const row = Array.isArray(data) && data.length > 0 ? data[0] : null;
-      return json({ claim: row });
+      return json({ request_id: requestId, claim: row });
     }
 
     case "transition_status": {
-      const instanceId = toUUIDOrNull(body.instanceId);
-      const transitionAction = asString(body.transitionAction);
+      const instanceId = toUUIDOrNull(body.instance_id ?? body.instanceId ?? body.target_instance_id);
+      const transitionAction = asString(body.transition_action ?? body.transitionAction);
       if (!instanceId || !transitionAction) {
         return json({ error: "INVALID_PAYLOAD" }, 400);
       }
@@ -159,13 +183,13 @@ Deno.serve(async (req) => {
         target_user_id: userId,
         target_instance_id: instanceId,
         transition_action: transitionAction,
-        replacement_template_id: asString(body.replacementTemplateId),
+        replacement_template_id: asString(body.replacement_template_id ?? body.replacementTemplateId),
         now_ts: nowISO,
       });
       if (error) return json({ error: error.message }, 500);
 
       const row = Array.isArray(data) && data.length > 0 ? data[0] : null;
-      return json({ transition: row });
+      return json({ request_id: requestId, transition: row });
     }
 
     case "list_active": {
@@ -178,7 +202,7 @@ Deno.serve(async (req) => {
         .limit(30);
 
       if (error) return json({ error: error.message }, 500);
-      return json({ quests: data ?? [] });
+      return json({ request_id: requestId, quests: data ?? [] });
     }
 
     default:
