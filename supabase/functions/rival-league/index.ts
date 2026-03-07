@@ -1,4 +1,6 @@
 import { resolveEdgeAuthContext } from "../_shared/edge_auth.ts";
+import { requireSupabaseRuntimeEnv } from "../_shared/edge_runtime.ts";
+import { errorJson, json, methodNotAllowed, parseJsonBody } from "../_shared/http.ts";
 
 type Action = "get_my_league" | "get_leaderboard" | "export_my_data" | "delete_my_data";
 type LeaderboardPeriod = "day" | "week" | "season";
@@ -9,20 +11,12 @@ type RequestDTO = {
   topN?: number;
 };
 
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-
 Deno.serve(async (req) => {
-  if (req.method !== "POST") return json({ error: "METHOD_NOT_ALLOWED" }, 405);
+  if (req.method !== "POST") return methodNotAllowed();
 
-  const supabaseURL = Deno.env.get("SUPABASE_URL");
-  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
-  if (!supabaseURL || !supabaseAnonKey) {
-    return json({ error: "SERVER_MISCONFIGURED" }, 500);
-  }
+  const runtime = requireSupabaseRuntimeEnv();
+  if (!runtime.ok) return runtime.response;
+  const { supabaseURL, supabaseAnonKey } = runtime.value;
 
   const auth = await resolveEdgeAuthContext({
     req,
@@ -39,14 +33,11 @@ Deno.serve(async (req) => {
   const userClient = auth.context.userClient!;
   const userId = auth.context.userId!;
 
-  let body: RequestDTO;
-  try {
-    body = await req.json();
-  } catch {
-    return json({ error: "INVALID_JSON" }, 400);
-  }
+  const parsedBody = await parseJsonBody<RequestDTO>(req);
+  if (!parsedBody.ok) return parsedBody.response;
+  const body = parsedBody.body;
 
-  if (!body.action) return json({ error: "ACTION_REQUIRED" }, 400);
+  if (!body.action) return errorJson("ACTION_REQUIRED", 400);
 
   const nowISO = new Date().toISOString();
   switch (body.action) {
@@ -55,7 +46,7 @@ Deno.serve(async (req) => {
         requested_user_id: userId,
         now_ts: nowISO,
       });
-      if (error) return json({ error: error.message }, 500);
+      if (error) return errorJson(error.message, 500);
       const row = Array.isArray(data) && data.length > 0 ? data[0] : null;
       return json({ league: row });
     }
@@ -69,7 +60,7 @@ Deno.serve(async (req) => {
           now_ts: nowISO,
         },
       });
-      if (error) return json({ error: error.message }, 500);
+      if (error) return errorJson(error.message, 500);
       return json({ leaderboard: Array.isArray(data) ? data : [] });
     }
     case "export_my_data": {
@@ -77,7 +68,7 @@ Deno.serve(async (req) => {
         requested_user_id: userId,
         now_ts: nowISO,
       });
-      if (error) return json({ error: error.message }, 500);
+      if (error) return errorJson(error.message, 500);
       return json({ export: data });
     }
     case "delete_my_data": {
@@ -85,11 +76,11 @@ Deno.serve(async (req) => {
         requested_user_id: userId,
         now_ts: nowISO,
       });
-      if (error) return json({ error: error.message }, 500);
+      if (error) return errorJson(error.message, 500);
       const row = Array.isArray(data) && data.length > 0 ? data[0] : null;
       return json({ deleted: row });
     }
     default:
-      return json({ error: "UNSUPPORTED_ACTION" }, 400);
+      return errorJson("UNSUPPORTED_ACTION", 400);
   }
 });

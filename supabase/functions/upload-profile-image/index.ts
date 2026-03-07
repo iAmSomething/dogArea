@@ -1,5 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { resolveEdgeAuthContext } from "../_shared/edge_auth.ts";
+import { requireSupabaseRuntimeEnv } from "../_shared/edge_runtime.ts";
+import { errorJson, json, methodNotAllowed, parseJsonBody } from "../_shared/http.ts";
+import { asString } from "../_shared/parsers.ts";
 import {
   resolveProfileImageObjectPath,
   uploadPublicStorageObject,
@@ -13,18 +16,6 @@ type RequestDTO = {
 };
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
-
-const json = (body: Record<string, unknown>, status = 200) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-
-const asString = (value: unknown): string | null => {
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
-};
 
 const sanitizeOwnerId = (value: string): string | null => {
   const trimmed = value.trim().toLowerCase();
@@ -49,15 +40,13 @@ const decodeBase64 = (raw: string): Uint8Array | null => {
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") {
-    return json({ error: "METHOD_NOT_ALLOWED" }, 405);
+    return methodNotAllowed();
   }
 
-  const supabaseURL = Deno.env.get("SUPABASE_URL");
-  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
-  const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!supabaseURL || !supabaseAnonKey || !supabaseServiceRoleKey) {
-    return json({ error: "SERVER_MISCONFIGURED" }, 500);
-  }
+  const runtime = requireSupabaseRuntimeEnv({ serviceRole: true });
+  if (!runtime.ok) return runtime.response;
+  const { supabaseURL, supabaseAnonKey } = runtime.value;
+  const supabaseServiceRoleKey = runtime.value.supabaseServiceRoleKey!;
 
   const auth = await resolveEdgeAuthContext({
     req,
@@ -73,33 +62,30 @@ Deno.serve(async (req) => {
     return auth.response;
   }
 
-  let body: RequestDTO;
-  try {
-    body = await req.json();
-  } catch {
-    return json({ error: "INVALID_JSON" }, 400);
-  }
+  const parsedBody = await parseJsonBody<RequestDTO>(req);
+  if (!parsedBody.ok) return parsedBody.response;
+  const body = parsedBody.body;
 
   const ownerIdRaw = asString(body.ownerId);
   if (!ownerIdRaw) {
-    return json({ error: "OWNER_ID_REQUIRED" }, 400);
+    return errorJson("OWNER_ID_REQUIRED", 400);
   }
   const ownerId = sanitizeOwnerId(ownerIdRaw);
   if (!ownerId) {
-    return json({ error: "INVALID_OWNER_ID" }, 400);
+    return errorJson("INVALID_OWNER_ID", 400);
   }
 
   const imageBase64 = asString(body.imageBase64);
   if (!imageBase64) {
-    return json({ error: "IMAGE_BASE64_REQUIRED" }, 400);
+    return errorJson("IMAGE_BASE64_REQUIRED", 400);
   }
 
   const imageBytes = decodeBase64(imageBase64);
   if (!imageBytes) {
-    return json({ error: "INVALID_IMAGE_BASE64" }, 400);
+    return errorJson("INVALID_IMAGE_BASE64", 400);
   }
   if (imageBytes.byteLength == 0 || imageBytes.byteLength > MAX_IMAGE_BYTES) {
-    return json({ error: "INVALID_IMAGE_SIZE" }, 400);
+    return errorJson("INVALID_IMAGE_SIZE", 400);
   }
 
   const imageKind = body.imageKind === "pet" ? "pet" : "user";
@@ -116,7 +102,7 @@ Deno.serve(async (req) => {
   });
 
   if (!storageResult.ok) {
-    return json({ error: storageResult.code, detail: storageResult.message }, 500);
+    return errorJson(storageResult.code, 500, { detail: storageResult.message });
   }
 
   return json({

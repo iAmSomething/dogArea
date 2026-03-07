@@ -50,6 +50,7 @@ let questEngine = load("supabase/functions/quest-engine/index.ts")
 let featureControl = load("supabase/functions/feature-control/index.ts")
 let uploadProfileImage = load("supabase/functions/upload-profile-image/index.ts")
 let sharedStorageHelper = load("supabase/functions/_shared/storage_upload.ts")
+let sharedRuntimeHelper = load("supabase/functions/_shared/edge_runtime.ts")
 
 for field in ["function_name", "request_id", "version", "latency_ms", "auth_mode", "fallback_used", "rpc_name"] {
     assertTrue(standardDoc.contains(field), "standard doc should define \(field) field")
@@ -85,7 +86,13 @@ assertTrue(nearbyPresence.contains("suppression_reason") && nearbyPresence.conta
 assertTrue(nearbyPresence.contains("console.error(\"nearby hotspot rpc failed\""), "nearby presence should log hotspot rpc failure")
 assertTrue(syncWalk.contains("resolveEdgeAuthContext"), "sync-walk should route auth failures through shared helper")
 assertTrue(questEngine.contains("resolveCanonicalRequestId") && questEngine.contains("request_id: requestId"), "quest-engine should expose canonical request id trace mentioned in the matrix")
-assertTrue(featureControl.contains("json({ error: \"SERVER_MISCONFIGURED\" }"), "feature-control should expose legacy error shape covered by the matrix")
+assertTrue(
+    (featureControl.contains("json({ error: \"SERVER_MISCONFIGURED\" }") ||
+        featureControl.contains("errorJson(\"SERVER_MISCONFIGURED\", 500)") ||
+        featureControl.contains("requireSupabaseRuntimeEnv")) &&
+        sharedRuntimeHelper.contains("errorJson(\"SERVER_MISCONFIGURED\", 500)"),
+    "feature-control should expose legacy error shape covered by the matrix"
+)
 assertTrue(uploadProfileImage.contains("uploadPublicStorageObject"), "upload-profile-image should use shared storage upload helper")
 assertTrue(sharedStorageHelper.contains("\"STORAGE_UPLOAD_FAILED\"") && sharedStorageHelper.contains("\"PUBLIC_URL_FAILED\""), "shared storage helper should define canonical storage failure codes")
 

@@ -2,6 +2,15 @@ import {
   ensureAuthenticatedUserMatch,
   resolveEdgeAuthContext,
 } from "../_shared/edge_auth.ts";
+import { requireSupabaseRuntimeEnv } from "../_shared/edge_runtime.ts";
+import { errorJson, json, methodNotAllowed, parseJsonBody } from "../_shared/http.ts";
+import {
+  asRecord,
+  asString,
+  toBoolean,
+  toNullableInt,
+  toUUIDOrNull,
+} from "../_shared/parsers.ts";
 
 type SyncStage = "profile" | "pet";
 type Action = "sync_profile_stage" | "get_profile_snapshot";
@@ -15,51 +24,6 @@ type RequestDTO = {
   payload?: Record<string, unknown>;
 };
 
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-
-const asRecord = (value: unknown): Record<string, unknown> =>
-  typeof value === "object" && value !== null ? value as Record<string, unknown> : {};
-
-const asString = (value: unknown): string | null => {
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
-};
-
-const toBoolean = (value: unknown, fallback: boolean): boolean => {
-  if (typeof value === "boolean") return value;
-  if (typeof value === "string") {
-    const normalized = value.trim().toLowerCase();
-    if (normalized === "true" || normalized === "1") return true;
-    if (normalized === "false" || normalized === "0") return false;
-  }
-  return fallback;
-};
-
-const toNullableInt = (value: unknown): number | null => {
-  if (value === null || value === undefined) return null;
-  if (typeof value === "number" && Number.isInteger(value)) return value;
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    if (trimmed.length === 0) return null;
-    const parsed = Number(trimmed);
-    if (Number.isInteger(parsed)) return parsed;
-  }
-  return null;
-};
-
-const toUUIDOrNull = (value: unknown): string | null => {
-  const raw = asString(value);
-  if (!raw) return null;
-  const normalized = raw.toLowerCase();
-  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
-  return uuidPattern.test(normalized) ? normalized : null;
-};
-
 const normalizeGender = (value: unknown): "unknown" | "male" | "female" => {
   const raw = asString(value)?.toLowerCase();
   if (raw === "male" || raw === "female") return raw;
@@ -67,13 +31,11 @@ const normalizeGender = (value: unknown): "unknown" | "male" | "female" => {
 };
 
 Deno.serve(async (req) => {
-  if (req.method !== "POST") return json({ error: "METHOD_NOT_ALLOWED" }, 405);
+  if (req.method !== "POST") return methodNotAllowed();
 
-  const supabaseURL = Deno.env.get("SUPABASE_URL");
-  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
-  if (!supabaseURL || !supabaseAnonKey) {
-    return json({ error: "SERVER_MISCONFIGURED" }, 500);
-  }
+  const runtime = requireSupabaseRuntimeEnv();
+  if (!runtime.ok) return runtime.response;
+  const { supabaseURL, supabaseAnonKey } = runtime.value;
 
   const auth = await resolveEdgeAuthContext({
     req,
@@ -90,15 +52,12 @@ Deno.serve(async (req) => {
   const userClient = auth.context.userClient!;
   const userId = auth.context.userId!;
 
-  let body: RequestDTO;
-  try {
-    body = await req.json();
-  } catch {
-    return json({ error: "INVALID_JSON" }, 400);
-  }
+  const parsedBody = await parseJsonBody<RequestDTO>(req);
+  if (!parsedBody.ok) return parsedBody.response;
+  const body = parsedBody.body;
 
   const action = body.action;
-  if (!action) return json({ error: "ACTION_REQUIRED" }, 400);
+  if (!action) return errorJson("ACTION_REQUIRED", 400);
 
   const requestedUserId = toUUIDOrNull(body.user_id);
   const userMismatchResponse = ensureAuthenticatedUserMatch(auth.context, requestedUserId);
@@ -112,14 +71,14 @@ Deno.serve(async (req) => {
       .select("id,display_name,profile_image_url,profile_message,updated_at")
       .eq("id", userId)
       .maybeSingle();
-    if (profileError) return json({ error: profileError.message }, 500);
+    if (profileError) return errorJson(profileError.message, 500);
 
     const { data: pets, error: petsError } = await userClient
       .from("pets")
       .select("id,owner_user_id,name,photo_url,breed,age_years,gender,is_active,updated_at")
       .eq("owner_user_id", userId)
       .order("created_at", { ascending: true });
-    if (petsError) return json({ error: petsError.message }, 500);
+    if (petsError) return errorJson(petsError.message, 500);
 
     return json({
       snapshot: {
@@ -130,7 +89,7 @@ Deno.serve(async (req) => {
   }
 
   if (action !== "sync_profile_stage") {
-    return json({ error: "UNSUPPORTED_ACTION" }, 400);
+    return errorJson("UNSUPPORTED_ACTION", 400);
   }
 
   const stage = body.stage;
@@ -138,7 +97,7 @@ Deno.serve(async (req) => {
   const idempotencyKey = asString(body.idempotency_key) ?? null;
 
   if (!stage) {
-    return json({ error: "STAGE_REQUIRED" }, 400);
+    return errorJson("STAGE_REQUIRED", 400);
   }
 
   if (stage === "profile") {
@@ -156,20 +115,20 @@ Deno.serve(async (req) => {
         updated_at: new Date().toISOString(),
       }, { onConflict: "id" });
 
-    if (error) return json({ error: error.message }, 500);
+    if (error) return errorJson(error.message, 500);
     return json({ ok: true, stage, user_id: userId, idempotency_key: idempotencyKey });
   }
 
   if (stage === "pet") {
     const petId = toUUIDOrNull(body.pet_id ?? payload.pet_id ?? payload.id);
-    if (!petId) return json({ error: "INVALID_PET_ID" }, 400);
+    if (!petId) return errorJson("INVALID_PET_ID", 400);
 
     const name = asString(payload.name);
-    if (!name) return json({ error: "PET_NAME_REQUIRED" }, 400);
+    if (!name) return errorJson("PET_NAME_REQUIRED", 400);
 
     const ageYears = toNullableInt(payload.age_years);
     if (ageYears !== null && (ageYears < 0 || ageYears > 30)) {
-      return json({ error: "INVALID_AGE_RANGE" }, 400);
+      return errorJson("INVALID_AGE_RANGE", 400);
     }
 
     const { error } = await userClient
@@ -186,9 +145,9 @@ Deno.serve(async (req) => {
         updated_at: new Date().toISOString(),
       }, { onConflict: "id" });
 
-    if (error) return json({ error: error.message }, 500);
+    if (error) return errorJson(error.message, 500);
     return json({ ok: true, stage, user_id: userId, pet_id: petId, idempotency_key: idempotencyKey });
   }
 
-  return json({ error: "UNSUPPORTED_STAGE" }, 400);
+  return errorJson("UNSUPPORTED_STAGE", 400);
 });
