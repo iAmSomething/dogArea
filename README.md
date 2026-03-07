@@ -52,6 +52,7 @@
 - Backend request correlation/idempotency 정책 v1: `docs/backend-request-correlation-idempotency-policy-v1.md`
 - Backend migration drift / RPC CI 체크 v1: `docs/backend-migration-drift-rpc-ci-check-v1.md`
 - Backend scheduler 운영 기준 v1: `docs/backend-scheduler-ops-standard-v1.md`
+- Widget summary RPC 공통 응답 모델 v1: `docs/widget-summary-rpc-common-response-model-v1.md`
 - Backend Edge auth policy v1: `docs/backend-edge-auth-policy-v1.md`
 - Backend Edge observability 표준 v1: `docs/backend-edge-observability-standard-v1.md`
 - Backend Edge error taxonomy v1: `docs/backend-edge-error-taxonomy-v1.md`
