@@ -35,6 +35,7 @@
 - 날씨 리스크 모델/Provider 정책 v1: `docs/weather-risk-provider-policy-v1.md`
 - 날씨 snapshot/provider 확장 v1: `docs/weather-snapshot-provider-v1.md`
 - 홈 refresh entrypoint 정리 v1: `docs/home-refresh-entrypoint-v1.md`
+- 홈 미션 pet context snapshot v1: `docs/home-mission-pet-context-snapshot-v1.md`
 - 날씨 치환/스트릭 보호 서버 엔진 v1: `docs/weather-replacement-shield-engine-v1.md`
 - 날씨 연동 UX/fallback/접근성 v1: `docs/weather-ux-fallback-accessibility-v1.md`
 - 퀘스트 Stage1 템플릿/난이도 정책 v1: `docs/quest-stage1-template-difficulty-policy-v1.md`
