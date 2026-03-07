@@ -71,35 +71,39 @@ struct TerritoryStatusWidgetEntryView: View {
     }
 
     private var guestContent: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            WidgetStatusBadge(title: "비회원", color: .orange.opacity(0.2))
-            Text("영역 현황")
+        let guide = WidgetStatePresentationGuide.presentation(
+            for: .guest,
+            surface: .territory
+        )
+        return VStack(alignment: .leading, spacing: 8) {
+            WidgetStatusBadge(title: guide.badgeTitle, color: guide.badgeColor)
+            Text(guide.headline)
                 .font(.headline)
-            Text("로그인 후 오늘/주간 지표와 다음 목표를 위젯에서 볼 수 있어요.")
+            Text(guide.detail)
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(3)
             Spacer(minLength: 2)
-            Text("앱에서 로그인")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.orange)
+            WidgetStateCTAView(cta: guide.cta)
         }
     }
 
     private var emptyContent: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            WidgetStatusBadge(title: "초기 안내", color: .blue.opacity(0.18))
-            Text("첫 타일 점령을 시작해보세요")
+        let guide = WidgetStatePresentationGuide.presentation(
+            for: .empty,
+            surface: .territory
+        )
+        return VStack(alignment: .leading, spacing: 8) {
+            WidgetStatusBadge(title: guide.badgeTitle, color: guide.badgeColor)
+            Text(guide.headline)
                 .font(.headline)
                 .lineLimit(2)
-            Text("첫 산책을 시작하면 다음 목표와 남은 면적을 함께 보여드릴게요.")
+            Text(guide.detail)
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(3)
             Spacer(minLength: 2)
-            Text(updatedAtText)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+            WidgetStateCTAView(cta: guide.cta, tint: .blue)
         }
     }
 
@@ -120,12 +124,37 @@ struct TerritoryStatusWidgetEntryView: View {
                 mediumMetricContent
             }
 
-            if entry.snapshot.status != .memberReady {
-                Text(entry.snapshot.message)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
+            if let guide = nonReadyStateGuide {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(guide.detail)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                    WidgetStateCTAView(
+                        cta: guide.cta,
+                        tint: entry.snapshot.status == .syncDelayed ? .red : .orange
+                    )
+                }
             }
+        }
+    }
+
+    private var nonReadyStateGuide: WidgetStatePresentationContent? {
+        switch entry.snapshot.status {
+        case .offlineCached:
+            return WidgetStatePresentationGuide.presentation(
+                for: .offline,
+                surface: .territory,
+                fallbackMessage: entry.snapshot.message
+            )
+        case .syncDelayed:
+            return WidgetStatePresentationGuide.presentation(
+                for: .syncDelayed,
+                surface: .territory,
+                fallbackMessage: entry.snapshot.message
+            )
+        case .memberReady, .guestLocked, .emptyData:
+            return nil
         }
     }
 
@@ -284,32 +313,26 @@ struct TerritoryStatusWidgetEntryView: View {
     }
 
     private var statusBadgeText: String {
+        if let guide = nonReadyStateGuide {
+            return guide.badgeTitle
+        }
         switch entry.snapshot.status {
         case .memberReady:
             return "실시간"
-        case .offlineCached:
-            return "오프라인"
-        case .syncDelayed:
-            return "지연"
-        case .guestLocked:
-            return "비회원"
-        case .emptyData:
-            return "초기 안내"
+        case .offlineCached, .syncDelayed, .guestLocked, .emptyData:
+            return "실시간"
         }
     }
 
     private var statusBadgeColor: Color {
+        if let guide = nonReadyStateGuide {
+            return guide.badgeColor
+        }
         switch entry.snapshot.status {
         case .memberReady:
             return .green.opacity(0.2)
-        case .offlineCached:
-            return .orange.opacity(0.2)
-        case .syncDelayed:
-            return .red.opacity(0.18)
-        case .guestLocked:
-            return .orange.opacity(0.2)
-        case .emptyData:
-            return .blue.opacity(0.18)
+        case .offlineCached, .syncDelayed, .guestLocked, .emptyData:
+            return .green.opacity(0.2)
         }
     }
 

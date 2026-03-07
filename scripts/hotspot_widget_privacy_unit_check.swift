@@ -71,7 +71,7 @@ assertTrue(widget.contains("struct HotspotStatusWidget"), "widget extension shou
 assertTrue(bundle.contains("HotspotStatusWidget()"), "widget bundle should register hotspot widget")
 assertTrue(widget.contains("signalDistributionSummary"), "widget should summarize distribution without raw counts")
 assertTrue(widget.contains("stageChip"), "widget should render stage chips")
-assertTrue(widget.contains("지역 트렌드 단계를 확인할 수 있어요"), "guest card should describe trend-only exposure")
+assertTrue(widget.contains("익명 핫스팟 단계는 로그인 후 활성화됩니다"), "guest card should describe gated trend-only exposure")
 assertTrue(widget.contains("개인 좌표/정밀 카운트는 제공하지 않습니다"), "widget policy footnote should mention no precise count exposure")
 assertTrue(widget.contains("k-익명 정책으로 백분위 단계만 제공됩니다"), "widget should include k-anon copy")
 assertTrue(!widget.contains("Text(\"높음 \\(summary.highCellCount)"), "widget should not expose raw stage counts on text")

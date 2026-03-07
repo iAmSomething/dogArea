@@ -14,6 +14,207 @@ struct WidgetStatusBadge: View {
     }
 }
 
+enum WidgetStateTaxonomy: String, CaseIterable {
+    case guest = "guest"
+    case empty = "empty"
+    case offline = "offline"
+    case syncDelayed = "sync_delayed"
+}
+
+enum WidgetStateSurfaceContext: Equatable {
+    case territory
+    case hotspot(radiusPreset: HotspotWidgetRadiusPreset)
+    case questRival
+}
+
+struct WidgetStateCTAContent: Equatable {
+    let title: String
+    let systemImage: String
+    let accessibilityLabel: String
+    let accessibilityHint: String
+}
+
+struct WidgetStatePresentationContent {
+    let badgeTitle: String
+    let badgeColor: Color
+    let headline: String
+    let detail: String
+    let cta: WidgetStateCTAContent
+}
+
+enum WidgetStatePresentationGuide {
+    /// 위젯 공통 상태 taxonomy와 표면 종류에 맞는 카피/CTA 구성을 반환합니다.
+    /// - Parameters:
+    ///   - taxonomy: 위젯 상태 taxonomy입니다.
+    ///   - surface: 카피를 적용할 위젯 표면 종류입니다.
+    ///   - fallbackMessage: 서버/스냅샷이 제공한 상태 설명이 있으면 우선 반영할 보조 문구입니다.
+    /// - Returns: 상태 배지, 설명, CTA가 정리된 공통 프레젠테이션 값입니다.
+    static func presentation(
+        for taxonomy: WidgetStateTaxonomy,
+        surface: WidgetStateSurfaceContext,
+        fallbackMessage: String? = nil
+    ) -> WidgetStatePresentationContent {
+        let resolvedFallback = fallbackMessage?.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        switch taxonomy {
+        case .guest:
+            switch surface {
+            case .territory:
+                return .init(
+                    badgeTitle: "로그인 필요",
+                    badgeColor: .orange.opacity(0.20),
+                    headline: "영역 현황을 보려면 로그인해 주세요",
+                    detail: "오늘/주간 지표와 다음 목표를 위젯에서 이어서 볼 수 있어요.",
+                    cta: signInCTA(surfaceName: "영역 현황")
+                )
+            case let .hotspot(radiusPreset):
+                return .init(
+                    badgeTitle: "로그인 필요",
+                    badgeColor: .orange.opacity(0.20),
+                    headline: "\(radiusPreset.shortLabel) 핫스팟을 보려면 로그인해 주세요",
+                    detail: "익명 핫스팟 단계는 로그인 후 활성화됩니다.",
+                    cta: signInCTA(surfaceName: "익명 핫스팟")
+                )
+            case .questRival:
+                return .init(
+                    badgeTitle: "로그인 필요",
+                    badgeColor: .orange.opacity(0.20),
+                    headline: "퀘스트/라이벌을 보려면 로그인해 주세요",
+                    detail: "오늘의 퀘스트 진행률과 라이벌 순위를 위젯에서 이어서 확인할 수 있어요.",
+                    cta: signInCTA(surfaceName: "퀘스트/라이벌")
+                )
+            }
+        case .empty:
+            switch surface {
+            case .territory:
+                return .init(
+                    badgeTitle: "첫 행동",
+                    badgeColor: .blue.opacity(0.18),
+                    headline: "첫 산책을 시작해 보세요",
+                    detail: resolvedFallback ?? "첫 타일을 점령하면 다음 목표와 남은 면적을 바로 보여드릴게요.",
+                    cta: firstActionCTA(
+                        title: "앱에서 첫 산책 시작",
+                        systemImage: "figure.walk",
+                        accessibilityLabel: "앱에서 첫 산책 시작",
+                        accessibilityHint: "앱으로 이동해 첫 타일 점령을 시작합니다."
+                    )
+                )
+            case .hotspot:
+                return .init(
+                    badgeTitle: "첫 행동",
+                    badgeColor: .blue.opacity(0.18),
+                    headline: "익명 공유를 시작해 보세요",
+                    detail: resolvedFallback ?? "공유가 시작되면 주변 익명 신호 단계가 위젯에 표시됩니다.",
+                    cta: firstActionCTA(
+                        title: "앱에서 익명 공유 시작",
+                        systemImage: "antenna.radiowaves.left.and.right",
+                        accessibilityLabel: "앱에서 익명 공유 시작",
+                        accessibilityHint: "앱으로 이동해 익명 위치 공유를 시작합니다."
+                    )
+                )
+            case .questRival:
+                return .init(
+                    badgeTitle: "첫 행동",
+                    badgeColor: .blue.opacity(0.18),
+                    headline: "오늘의 퀘스트를 시작해 보세요",
+                    detail: resolvedFallback ?? "첫 행동이 기록되면 진행률과 라이벌 순위를 바로 보여드릴게요.",
+                    cta: firstActionCTA(
+                        title: "앱에서 퀘스트 시작",
+                        systemImage: "list.bullet.rectangle.portrait",
+                        accessibilityLabel: "앱에서 퀘스트 시작",
+                        accessibilityHint: "앱으로 이동해 오늘의 퀘스트를 확인합니다."
+                    )
+                )
+            }
+        case .offline:
+            return .init(
+                badgeTitle: "오프라인",
+                badgeColor: .orange.opacity(0.20),
+                headline: "마지막 동기화 내용을 보여주고 있어요",
+                detail: resolvedFallback ?? "연결이 복구되면 위젯이 자동으로 최신 상태로 돌아옵니다.",
+                cta: waitRecoveryCTA()
+            )
+        case .syncDelayed:
+            return .init(
+                badgeTitle: "지연",
+                badgeColor: .red.opacity(0.18),
+                headline: "최신 상태 반영이 늦어지고 있어요",
+                detail: resolvedFallback ?? "앱을 열어 최신 상태를 다시 불러와 주세요.",
+                cta: refreshInAppCTA()
+            )
+        }
+    }
+
+    /// 로그인 유도 상태에서 사용할 공통 CTA를 생성합니다.
+    /// - Parameter surfaceName: 로그인 후 확인할 위젯 표면 이름입니다.
+    /// - Returns: 로그인 유도용 CTA 문구와 접근성 메타데이터입니다.
+    private static func signInCTA(surfaceName: String) -> WidgetStateCTAContent {
+        .init(
+            title: "앱에서 로그인",
+            systemImage: "person.crop.circle.badge.checkmark",
+            accessibilityLabel: "앱에서 로그인",
+            accessibilityHint: "\(surfaceName) 위젯을 쓰려면 로그인해야 합니다."
+        )
+    }
+
+    /// 첫 행동 유도 상태에서 사용할 공통 CTA를 생성합니다.
+    /// - Parameters:
+    ///   - title: 사용자에게 노출할 CTA 제목입니다.
+    ///   - systemImage: CTA에 함께 표시할 SF Symbol 이름입니다.
+    ///   - accessibilityLabel: 접근성에 읽힐 CTA 라벨입니다.
+    ///   - accessibilityHint: 접근성 힌트입니다.
+    /// - Returns: 첫 행동 유도용 CTA 문구와 접근성 메타데이터입니다.
+    private static func firstActionCTA(
+        title: String,
+        systemImage: String,
+        accessibilityLabel: String,
+        accessibilityHint: String
+    ) -> WidgetStateCTAContent {
+        .init(
+            title: title,
+            systemImage: systemImage,
+            accessibilityLabel: accessibilityLabel,
+            accessibilityHint: accessibilityHint
+        )
+    }
+
+    /// 오프라인 복구 대기 상태에서 사용할 공통 CTA를 생성합니다.
+    /// - Returns: 연결 복구 대기 상태를 설명하는 CTA 문구와 접근성 메타데이터입니다.
+    private static func waitRecoveryCTA() -> WidgetStateCTAContent {
+        .init(
+            title: "연결 복구 대기 중",
+            systemImage: "wifi.slash",
+            accessibilityLabel: "연결 복구 대기 중",
+            accessibilityHint: "네트워크가 복구되면 위젯이 자동으로 다시 갱신됩니다."
+        )
+    }
+
+    /// 최신화 지연 상태에서 사용할 공통 CTA를 생성합니다.
+    /// - Returns: 앱 재진입 최신화 유도용 CTA 문구와 접근성 메타데이터입니다.
+    private static func refreshInAppCTA() -> WidgetStateCTAContent {
+        .init(
+            title: "앱에서 최신 상태 확인",
+            systemImage: "arrow.clockwise",
+            accessibilityLabel: "앱에서 최신 상태 확인",
+            accessibilityHint: "앱으로 이동해 최신 상태를 다시 불러옵니다."
+        )
+    }
+}
+
+struct WidgetStateCTAView: View {
+    let cta: WidgetStateCTAContent
+    var tint: Color = .orange
+
+    var body: some View {
+        Label(cta.title, systemImage: cta.systemImage)
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(tint)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(cta.accessibilityLabel)
+            .accessibilityHint(cta.accessibilityHint)
+    }
+}
+
 enum WidgetFormatting {
     /// 경과 시간을 `HH:MM:SS` 형식으로 변환합니다.
     /// - Parameter elapsedSeconds: 변환할 경과 시간(초)입니다.

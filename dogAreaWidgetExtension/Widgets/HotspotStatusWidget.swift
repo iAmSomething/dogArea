@@ -150,47 +150,48 @@ struct HotspotStatusWidgetEntryView: View {
     }
 
     private var guestContent: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        let guide = WidgetStatePresentationGuide.presentation(
+            for: .guest,
+            surface: .hotspot(radiusPreset: currentPreset)
+        )
+        return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 8) {
-                WidgetStatusBadge(title: "비회원", color: .orange.opacity(0.2))
+                WidgetStatusBadge(title: guide.badgeTitle, color: guide.badgeColor)
                 Spacer(minLength: 0)
                 presetBadge(currentPreset)
             }
-            Text("익명 핫스팟")
+            Text(guide.headline)
                 .font(.headline)
-            Text("\(currentPreset.shortLabel) 기준으로 지역 트렌드 단계를 확인할 수 있어요. 로그인 후 활성화됩니다.")
+            Text(guide.detail)
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(3)
             Spacer(minLength: 2)
-            Text("앱에서 로그인")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.orange)
+            WidgetStateCTAView(cta: guide.cta)
         }
     }
 
     private var emptyContent: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        let guide = WidgetStatePresentationGuide.presentation(
+            for: .empty,
+            surface: .hotspot(radiusPreset: currentPreset),
+            fallbackMessage: entry.snapshot.message
+        )
+        return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 8) {
-                WidgetStatusBadge(title: "신호 부족", color: .blue.opacity(0.18))
+                WidgetStatusBadge(title: guide.badgeTitle, color: guide.badgeColor)
                 Spacer(minLength: 0)
                 presetBadge(currentPreset)
             }
-            Text("주변 익명 신호를 수집 중입니다")
+            Text(guide.headline)
                 .font(.headline)
                 .lineLimit(2)
-            Text(currentPreset.widgetSummaryDetail)
+            Text(guide.detail)
                 .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
-            Text(entry.snapshot.message)
-                .font(.caption2)
                 .foregroundStyle(.secondary)
                 .lineLimit(3)
             Spacer(minLength: 2)
-            Text(updatedAtText)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+            WidgetStateCTAView(cta: guide.cta, tint: .blue)
         }
     }
 
@@ -198,7 +199,7 @@ struct HotspotStatusWidgetEntryView: View {
         let summary = entry.snapshot.summary ?? .zero(radiusPreset: entry.snapshot.radiusPreset)
         return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 8) {
-                WidgetStatusBadge(title: signalTitle(summary.signalLevel), color: signalColor(summary.signalLevel))
+                WidgetStatusBadge(title: statusBadgeTitle(summary), color: statusBadgeColor(summary))
                 Spacer(minLength: 0)
                 presetBadge(summary.radiusPreset)
             }
@@ -209,12 +210,42 @@ struct HotspotStatusWidgetEntryView: View {
                 mediumBody(summary: summary)
             }
 
-            if entry.snapshot.status != .memberReady {
+            if let guide = nonReadyStateGuide {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(guide.detail)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                    WidgetStateCTAView(
+                        cta: guide.cta,
+                        tint: entry.snapshot.status == .syncDelayed ? .red : .orange
+                    )
+                }
+            } else if entry.snapshot.status == .privacyGuarded {
                 Text(entry.snapshot.message)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
             }
+        }
+    }
+
+    private var nonReadyStateGuide: WidgetStatePresentationContent? {
+        switch entry.snapshot.status {
+        case .offlineCached:
+            return WidgetStatePresentationGuide.presentation(
+                for: .offline,
+                surface: .hotspot(radiusPreset: currentPreset),
+                fallbackMessage: entry.snapshot.message
+            )
+        case .syncDelayed:
+            return WidgetStatePresentationGuide.presentation(
+                for: .syncDelayed,
+                surface: .hotspot(radiusPreset: currentPreset),
+                fallbackMessage: entry.snapshot.message
+            )
+        case .guestLocked, .emptyData, .memberReady, .privacyGuarded:
+            return nil
         }
     }
 
@@ -370,6 +401,32 @@ struct HotspotStatusWidgetEntryView: View {
         case .none:
             return .blue.opacity(0.16)
         }
+    }
+
+    /// 현재 스냅샷 상태와 신호 단계에 맞는 배지 제목을 반환합니다.
+    /// - Parameter summary: 익명 핫스팟 요약 스냅샷입니다.
+    /// - Returns: 상태 우선 규칙이 반영된 배지 제목입니다.
+    private func statusBadgeTitle(_ summary: HotspotWidgetSummarySnapshot) -> String {
+        if let guide = nonReadyStateGuide {
+            return guide.badgeTitle
+        }
+        if entry.snapshot.status == .privacyGuarded {
+            return "보호 중"
+        }
+        return signalTitle(summary.signalLevel)
+    }
+
+    /// 현재 스냅샷 상태와 신호 단계에 맞는 배지 색상을 반환합니다.
+    /// - Parameter summary: 익명 핫스팟 요약 스냅샷입니다.
+    /// - Returns: 상태 우선 규칙이 반영된 배지 색상입니다.
+    private func statusBadgeColor(_ summary: HotspotWidgetSummarySnapshot) -> Color {
+        if let guide = nonReadyStateGuide {
+            return guide.badgeColor
+        }
+        if entry.snapshot.status == .privacyGuarded {
+            return .blue.opacity(0.18)
+        }
+        return signalColor(summary.signalLevel)
     }
 
     /// 프라이버시 가드 상태를 설명하는 보조 문구를 생성합니다.

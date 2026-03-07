@@ -23,6 +23,7 @@
 - 근처 사용자 익명 핫스팟 명세 v1: `docs/nearby-anonymous-hotspot-v1.md`
 - 핫스팟 위젯 프라이버시 매핑 v1: `docs/hotspot-widget-privacy-mapping-v1.md`
 - 핫스팟 위젯 반경 preset v1: `docs/hotspot-widget-radius-preset-v1.md`
+- Widget state CTA taxonomy v1: `docs/widget-state-cta-taxonomy-v1.md`
 - Widget Lock Screen accessory family plan v1: `docs/widget-lock-screen-accessory-family-plan-v1.md`
 - Walk widget action state model v1: `docs/walk-widget-action-state-model-v1.md`
 - Walk widget pet context policy v1: `docs/walk-widget-pet-context-policy-v1.md`
