@@ -55,6 +55,7 @@
 - Backend scheduler 운영 기준 v1: `docs/backend-scheduler-ops-standard-v1.md`
 - Backend realtime/moderation retention policy v1: `docs/backend-realtime-moderation-retention-policy-v1.md`
 - Widget summary RPC 공통 응답 모델 v1: `docs/widget-summary-rpc-common-response-model-v1.md`
+- UX copy guideline v1: `docs/ux-copy-guideline-v1.md`
 - Backend Edge auth policy v1: `docs/backend-edge-auth-policy-v1.md`
 - Backend Edge auth mode inventory v1: `docs/backend-edge-auth-mode-inventory-v1.md`
 - Backend Edge secret inventory / rotation runbook v1: `docs/backend-edge-secret-inventory-rotation-runbook-v1.md`
