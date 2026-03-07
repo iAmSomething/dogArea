@@ -24,7 +24,10 @@ let signInView = loadMany([
     "dogArea/Views/SigningView/Components/AuthUserInfo.swift",
     "dogArea/Views/SigningView/Components/EmailSignUpSheetView.swift"
 ])
-let infra = load("dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift")
+let infra = loadMany([
+    "dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift",
+    "dogArea/Source/Infrastructure/Supabase/Services/SupabaseAuthAndAssetServices.swift"
+])
 
 assertTrue(
     signInView.contains("@State private var confirmPassword: String = \"\""),

@@ -16,7 +16,14 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
-let infra = load("dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift")
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
+let infra = loadMany([
+    "dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift",
+    "dogArea/Source/Infrastructure/Supabase/Services/SupabaseAuthAndAssetServices.swift"
+])
 let signingVM = load("dogArea/Views/SigningView/SigningViewModel.swift")
 let function = load("supabase/functions/upload-profile-image/index.ts")
 let readme = load("supabase/functions/upload-profile-image/README.md")

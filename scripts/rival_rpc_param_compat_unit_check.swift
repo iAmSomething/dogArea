@@ -15,7 +15,14 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
-let infra = load("dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift")
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
+let infra = loadMany([
+    "dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift",
+    "dogArea/Source/Infrastructure/Supabase/Services/SupabasePresenceAndQuestServices.swift"
+])
 let compatMigration = load("supabase/migrations/20260305224000_rival_rpc_postgrest_compat_fix.sql")
 let hotfixMigration = load("supabase/migrations/20260305225500_rival_leaderboard_ambiguity_hotfix.sql")
 let delegateMigration = load("supabase/migrations/20260305231000_rival_leaderboard_three_arg_delegate.sql")

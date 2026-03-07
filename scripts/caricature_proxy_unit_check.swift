@@ -17,12 +17,19 @@ func read(_ path: String) -> String {
     (try? String(contentsOfFile: path, encoding: .utf8)) ?? ""
 }
 
+func readMany(_ paths: [String]) -> String {
+    paths.map(read).joined(separator: "\n")
+}
+
 let function = read("supabase/functions/caricature/index.ts")
 let functionReadme = read("supabase/functions/caricature/README.md")
 let imageVM = read("dogArea/Views/ImageGeneratorView/ImageGenerateViewModel.swift")
 let imageView = read("dogArea/Views/ImageGeneratorView/TextToImageView.swift")
 let signingVM = read("dogArea/Views/SigningView/SigningViewModel.swift")
-let supabaseInfrastructure = read("dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift")
+let supabaseInfrastructure = readMany([
+    "dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift",
+    "dogArea/Source/Infrastructure/Supabase/Services/SupabaseEdgeSupportServices.swift"
+])
 let infoPlist = read("dogArea/Info.plist")
 let pbxproj = read("dogArea.xcodeproj/project.pbxproj")
 let migration = read("supabase/migrations/20260226234500_caricature_jobs_observability_columns.sql")
