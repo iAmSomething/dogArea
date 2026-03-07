@@ -38,9 +38,11 @@ let iosPRCheck = load("scripts/ios_pr_check.sh")
 
 let territoryMigration = load("supabase/migrations/20260303190000_territory_widget_summary_rpc.sql")
 let hotspotMigration = load("supabase/migrations/20260303203000_hotspot_widget_summary_rpc.sql")
+let compatRolloutMigration = load("supabase/migrations/20260307154000_widget_summary_envelope_compat_rollout.sql")
 let questRivalMigration = loadMany([
     "supabase/migrations/20260303203100_widget_quest_rival_summary_rpc.sql",
-    "supabase/migrations/20260305224000_rival_rpc_postgrest_compat_fix.sql"
+    "supabase/migrations/20260305224000_rival_rpc_postgrest_compat_fix.sql",
+    "supabase/migrations/20260307154000_widget_summary_envelope_compat_rollout.sql"
 ])
 let widgetServices = loadMany([
     "dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift",
@@ -77,12 +79,17 @@ assertTrue(territoryMigration.contains("has_data") && territoryMigration.contain
 assertTrue(hotspotMigration.contains("has_data") && hotspotMigration.contains("refreshed_at") && hotspotMigration.contains("is_cached") && hotspotMigration.contains("server_policy"), "hotspot widget rpc should expose hotspot meta fields")
 assertTrue(questRivalMigration.contains("has_data") && questRivalMigration.contains("refreshed_at"), "quest/rival widget rpc should expose has_data/refreshed_at")
 assertTrue(questRivalMigration.contains("rpc_get_widget_quest_rival_summary(payload jsonb)"), "quest/rival widget rpc should already have payload jsonb compat path")
+assertTrue(compatRolloutMigration.contains("rpc_get_widget_territory_summary(payload jsonb)"), "compat rollout migration should add territory payload wrapper")
+assertTrue(compatRolloutMigration.contains("rpc_get_widget_hotspot_summary(payload jsonb)"), "compat rollout migration should add hotspot payload wrapper")
+assertTrue(compatRolloutMigration.contains("summary_type") && compatRolloutMigration.contains("widget_summary_v1"), "compat rollout migration should emit canonical envelope metadata")
 
 assertTrue(widgetServices.contains("struct TerritoryWidgetSummaryDTO"), "infra should define territory widget summary dto")
 assertTrue(widgetServices.contains("struct HotspotWidgetSummaryDTO"), "infra should define hotspot widget summary dto")
 assertTrue(widgetServices.contains("struct QuestRivalWidgetSummaryDTO"), "infra should define quest/rival widget summary dto")
 assertTrue(widgetServices.contains("case hasData = \"has_data\""), "current widget services should decode has_data from top-level")
 assertTrue(widgetServices.contains("case refreshedAt = \"refreshed_at\""), "current widget services should decode refreshed_at from top-level")
+assertTrue(widgetServices.contains("\"payload\""), "widget services should send wrapper payload requests")
+assertTrue(widgetServices.contains("EnvelopeResponseDTO"), "widget services should support canonical envelope decoding")
 assertTrue(widgetServices.contains("rpc/rpc_get_widget_territory_summary"), "territory widget service should call territory rpc")
 assertTrue(widgetServices.contains("rpc/rpc_get_widget_hotspot_summary"), "hotspot widget service should call hotspot rpc")
 assertTrue(widgetServices.contains("rpc/rpc_get_widget_quest_rival_summary"), "quest/rival widget service should call quest/rival rpc")

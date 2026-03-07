@@ -19,7 +19,10 @@ func loadMany(_ relativePaths: [String]) -> String {
     relativePaths.map(load).joined(separator: "\n")
 }
 
-let migration = load("supabase/migrations/20260303203000_hotspot_widget_summary_rpc.sql")
+let migration = loadMany([
+    "supabase/migrations/20260303203000_hotspot_widget_summary_rpc.sql",
+    "supabase/migrations/20260307154000_widget_summary_envelope_compat_rollout.sql"
+])
 let infra = loadMany([
     "dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift",
     "dogArea/Source/Infrastructure/Supabase/Services/SupabasePresenceAndQuestServices.swift",
@@ -38,6 +41,7 @@ let policyDoc = load("docs/hotspot-widget-privacy-mapping-v1.md")
 
 assertTrue(migration.contains("create table if not exists public.widget_hotspot_summary_cache"), "migration should create hotspot summary cache table")
 assertTrue(migration.contains("create or replace function public.rpc_get_widget_hotspot_summary"), "migration should create hotspot widget summary rpc")
+assertTrue(migration.contains("rpc_get_widget_hotspot_summary(payload jsonb)"), "migration should add payload wrapper canonical path for hotspot widget rpc")
 assertTrue(migration.contains("rate_limited_cache"), "migration should include rate-limit cache policy")
 assertTrue(migration.contains("privacy_mode"), "migration should include privacy mode field")
 assertTrue(migration.contains("suppression_reason"), "migration should include suppression reason field")
@@ -47,6 +51,8 @@ assertTrue(infra.contains("struct HotspotWidgetSummaryDTO"), "infra should defin
 assertTrue(infra.contains("protocol HotspotWidgetSummaryServiceProtocol"), "infra should define hotspot widget summary protocol")
 assertTrue(infra.contains("struct HotspotWidgetSummaryService"), "infra should include hotspot widget summary service")
 assertTrue(infra.contains("rpc/rpc_get_widget_hotspot_summary"), "infra should call hotspot summary rpc")
+assertTrue(infra.contains("\"payload\""), "hotspot widget service should prefer payload wrapper requests")
+assertTrue(infra.contains("EnvelopeResponseDTO"), "hotspot widget service should support canonical envelope decoding")
 assertTrue(infra.contains("DefaultHotspotWidgetSnapshotSyncService"), "infra should include hotspot widget snapshot sync service")
 assertTrue(infra.contains("privacy_mode"), "nearby service should decode privacy_mode")
 assertTrue(infra.contains("suppression_reason"), "nearby service should decode suppression_reason")

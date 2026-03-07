@@ -373,7 +373,20 @@ struct QuestRewardClaimService: QuestRewardClaimServiceProtocol {
 }
 
 struct QuestRivalWidgetSummaryService: QuestRivalWidgetSummaryServiceProtocol {
-    private struct ResponseDTO: Decodable {
+    private struct ResponseDTO {
+        let questInstanceId: String?
+        let questTitle: String?
+        let questProgressValue: Double?
+        let questTargetValue: Double?
+        let questClaimable: Bool?
+        let questRewardPoint: Int?
+        let rivalRank: Int?
+        let rivalLeague: String?
+        let refreshedAt: String?
+        let hasData: Bool?
+    }
+
+    private struct LegacyResponseDTO: Decodable {
         let questInstanceId: String?
         let questTitle: String?
         let questProgressValue: Double?
@@ -396,6 +409,40 @@ struct QuestRivalWidgetSummaryService: QuestRivalWidgetSummaryServiceProtocol {
             case rivalLeague = "rival_league"
             case refreshedAt = "refreshed_at"
             case hasData = "has_data"
+        }
+    }
+
+    private struct EnvelopeResponseDTO: Decodable {
+        struct SummaryDTO: Decodable {
+            let questInstanceId: String?
+            let questTitle: String?
+            let questProgressValue: Double?
+            let questTargetValue: Double?
+            let questClaimable: Bool?
+            let questRewardPoint: Int?
+            let rivalRank: Int?
+            let rivalLeague: String?
+
+            enum CodingKeys: String, CodingKey {
+                case questInstanceId = "quest_instance_id"
+                case questTitle = "quest_title"
+                case questProgressValue = "quest_progress_value"
+                case questTargetValue = "quest_target_value"
+                case questClaimable = "quest_claimable"
+                case questRewardPoint = "quest_reward_point"
+                case rivalRank = "rival_rank"
+                case rivalLeague = "rival_league"
+            }
+        }
+
+        let hasData: Bool?
+        let refreshedAt: String?
+        let summary: SummaryDTO?
+
+        enum CodingKeys: String, CodingKey {
+            case hasData = "has_data"
+            case refreshedAt = "refreshed_at"
+            case summary
         }
     }
 
@@ -460,16 +507,58 @@ struct QuestRivalWidgetSummaryService: QuestRivalWidgetSummaryServiceProtocol {
     /// - Returns: 퀘스트 진행률, 보상 가능 여부, 라이벌 순위를 포함한 요약 DTO입니다.
     func fetchSummary(now: Date) async throws -> QuestRivalWidgetSummaryDTO {
         do {
-            return try await fetchFromSummaryRPC(now: now)
+            return try await fetchFromCanonicalSummaryRPC(now: now)
         } catch {
-            return try await fetchFromFallback(now: now)
+            do {
+                return try await fetchFromLegacySummaryRPC(now: now)
+            } catch {
+                return try await fetchFromFallback(now: now)
+            }
         }
     }
 
-    /// 전용 요약 RPC 응답을 조회해 위젯 DTO로 변환합니다.
+    /// canonical wrapper 요청으로 전용 요약 RPC 응답을 조회해 위젯 DTO로 변환합니다.
     /// - Parameter now: 서버 집계 기준 시각입니다.
     /// - Returns: 서버 결합 집계 응답을 정규화한 위젯 요약 DTO입니다.
-    private func fetchFromSummaryRPC(now: Date) async throws -> QuestRivalWidgetSummaryDTO {
+    private func fetchFromCanonicalSummaryRPC(now: Date) async throws -> QuestRivalWidgetSummaryDTO {
+        let payload: [String: Any] = [
+            "payload": [
+                "in_now_ts": ISO8601DateFormatter().string(from: now)
+            ]
+        ]
+        let data = try await client.request(
+            .rest(path: "rpc/rpc_get_widget_quest_rival_summary"),
+            method: .post,
+            bodyData: try JSONSerialization.data(withJSONObject: payload)
+        )
+        let decoded = try decodeSummaryResponse(data: data)
+        let questTarget = max(1.0, decoded.questTargetValue ?? 1.0)
+        let questProgress = max(0.0, decoded.questProgressValue ?? 0.0)
+        let questRatio = min(1.0, max(0.0, questProgress / questTarget))
+        let questTitle = (decoded.questTitle ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let resolvedTitle = questTitle.isEmpty ? "오늘의 퀘스트를 준비 중입니다." : questTitle
+        let refreshedAt = SupabaseISO8601.parseEpoch(decoded.refreshedAt) ?? now.timeIntervalSince1970
+        return QuestRivalWidgetSummaryDTO(
+            questInstanceId: decoded.questInstanceId?.canonicalUUIDString,
+            questTitle: resolvedTitle,
+            questProgressValue: questProgress,
+            questTargetValue: questTarget,
+            questProgressRatio: questRatio,
+            questClaimable: decoded.questClaimable ?? false,
+            questRewardPoint: max(0, decoded.questRewardPoint ?? 0),
+            rivalRank: decoded.rivalRank,
+            rivalRankDelta: 0,
+            rivalLeague: decoded.rivalLeague ?? "onboarding",
+            refreshedAt: refreshedAt,
+            hasData: decoded.hasData
+                ?? (decoded.questInstanceId != nil || decoded.rivalRank != nil)
+        )
+    }
+
+    /// legacy positional 요청으로 전용 요약 RPC 응답을 조회해 위젯 DTO로 변환합니다.
+    /// - Parameter now: 서버 집계 기준 시각입니다.
+    /// - Returns: 서버 결합 집계 응답을 정규화한 위젯 요약 DTO입니다.
+    private func fetchFromLegacySummaryRPC(now: Date) async throws -> QuestRivalWidgetSummaryDTO {
         let payload: [String: Any] = [
             "in_now_ts": ISO8601DateFormatter().string(from: now)
         ]
@@ -537,12 +626,49 @@ struct QuestRivalWidgetSummaryService: QuestRivalWidgetSummaryServiceProtocol {
     /// - Returns: 단일 요약 응답 DTO입니다.
     private func decodeSummaryResponse(data: Data) throws -> ResponseDTO {
         let decoder = JSONDecoder()
-        if let object = try? decoder.decode(ResponseDTO.self, from: data) {
-            return object
+        if let envelope = try? decoder.decode(EnvelopeResponseDTO.self, from: data),
+           let summary = envelope.summary {
+            return ResponseDTO(
+                questInstanceId: summary.questInstanceId,
+                questTitle: summary.questTitle,
+                questProgressValue: summary.questProgressValue,
+                questTargetValue: summary.questTargetValue,
+                questClaimable: summary.questClaimable,
+                questRewardPoint: summary.questRewardPoint,
+                rivalRank: summary.rivalRank,
+                rivalLeague: summary.rivalLeague,
+                refreshedAt: envelope.refreshedAt,
+                hasData: envelope.hasData
+            )
         }
-        if let rows = try? decoder.decode([ResponseDTO].self, from: data),
+        if let object = try? decoder.decode(LegacyResponseDTO.self, from: data) {
+            return ResponseDTO(
+                questInstanceId: object.questInstanceId,
+                questTitle: object.questTitle,
+                questProgressValue: object.questProgressValue,
+                questTargetValue: object.questTargetValue,
+                questClaimable: object.questClaimable,
+                questRewardPoint: object.questRewardPoint,
+                rivalRank: object.rivalRank,
+                rivalLeague: object.rivalLeague,
+                refreshedAt: object.refreshedAt,
+                hasData: object.hasData
+            )
+        }
+        if let rows = try? decoder.decode([LegacyResponseDTO].self, from: data),
            let first = rows.first {
-            return first
+            return ResponseDTO(
+                questInstanceId: first.questInstanceId,
+                questTitle: first.questTitle,
+                questProgressValue: first.questProgressValue,
+                questTargetValue: first.questTargetValue,
+                questClaimable: first.questClaimable,
+                questRewardPoint: first.questRewardPoint,
+                rivalRank: first.rivalRank,
+                rivalLeague: first.rivalLeague,
+                refreshedAt: first.refreshedAt,
+                hasData: first.hasData
+            )
         }
         throw SupabaseHTTPError.invalidResponse
     }
@@ -633,4 +759,3 @@ struct QuestRivalWidgetSummaryService: QuestRivalWidgetSummaryServiceProtocol {
         return RivalFallbackSummary(rank: nil, league: "onboarding")
     }
 }
-
