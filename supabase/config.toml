@@ -368,6 +368,30 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+[functions.sync-walk]
+verify_jwt = false
+
+[functions.sync-profile]
+verify_jwt = false
+
+[functions.rival-league]
+verify_jwt = false
+
+[functions.quest-engine]
+verify_jwt = false
+
+[functions.nearby-presence]
+verify_jwt = false
+
+[functions.upload-profile-image]
+verify_jwt = false
+
+[functions.caricature]
+verify_jwt = false
+
+[functions.feature-control]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

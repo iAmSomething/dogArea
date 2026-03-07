@@ -150,6 +150,11 @@ while [[ "$iteration" -le "$ITERATIONS" ]]; do
     echo "[AuthSmoke] FAIL nearby-presence set_visibility returned 401 with app authorization policy"
     exit 1
   fi
+  if [[ "$nearby_visibility_member_status" == "401" ]]; then
+    echo "[AuthSmoke] FAIL nearby-presence set_visibility returned 401 with member token"
+    echo "[AuthSmoke] member body=$(printf '%s' "$nearby_visibility_member" | tail -n +2)"
+    exit 1
+  fi
 
   nearby_hotspots_member="$(request_json \
     "POST" \
@@ -167,6 +172,11 @@ while [[ "$iteration" -le "$ITERATIONS" ]]; do
   nearby_hotspots_app_status="$(printf '%s' "$nearby_hotspots_app" | head -n 1)"
   if [[ "$nearby_hotspots_app_status" == "401" ]]; then
     echo "[AuthSmoke] FAIL nearby-presence get_hotspots returned 401 with app authorization policy"
+    exit 1
+  fi
+  if [[ "$nearby_hotspots_member_status" == "401" ]]; then
+    echo "[AuthSmoke] FAIL nearby-presence get_hotspots returned 401 with member token"
+    echo "[AuthSmoke] member body=$(printf '%s' "$nearby_hotspots_member" | tail -n +2)"
     exit 1
   fi
   if is_server_error "$nearby_hotspots_member_status" || is_server_error "$nearby_hotspots_app_status"; then
@@ -194,6 +204,11 @@ while [[ "$iteration" -le "$ITERATIONS" ]]; do
     echo "[AuthSmoke] FAIL upload-profile-image returned 401 with app authorization policy"
     exit 1
   fi
+  if [[ "$upload_profile_member_status" == "401" ]]; then
+    echo "[AuthSmoke] FAIL upload-profile-image returned 401 with member token"
+    echo "[AuthSmoke] member body=$(printf '%s' "$upload_profile_member" | tail -n +2)"
+    exit 1
+  fi
 
   feature_control_member="$(request_json \
     "POST" \
@@ -211,6 +226,11 @@ while [[ "$iteration" -le "$ITERATIONS" ]]; do
   feature_control_app_status="$(printf '%s' "$feature_control_app" | head -n 1)"
   if [[ "$feature_control_app_status" == "401" ]]; then
     echo "[AuthSmoke] FAIL feature-control returned 401 with app authorization policy"
+    exit 1
+  fi
+  if [[ "$feature_control_member_status" == "401" ]]; then
+    echo "[AuthSmoke] FAIL feature-control returned 401 with member token"
+    echo "[AuthSmoke] member body=$(printf '%s' "$feature_control_member" | tail -n +2)"
     exit 1
   fi
 
@@ -236,4 +256,4 @@ while [[ "$iteration" -le "$ITERATIONS" ]]; do
   iteration=$((iteration + 1))
 done
 
-echo "[AuthSmoke] PASS: app authorization policy endpoints returned no 401 responses"
+echo "[AuthSmoke] PASS: member/app authorization policy endpoints returned no 401 responses"

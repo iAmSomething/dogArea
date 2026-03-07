@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { resolveEdgeAuthContext } from "../_shared/edge_auth.ts";
 
 type ProviderName = "gemini" | "openai";
 type ProviderHint = "auto" | ProviderName;
@@ -226,18 +227,23 @@ Deno.serve(async (req) => {
     return json({ errorCode: "SERVER_MISCONFIGURED", message: "missing supabase env" }, 500);
   }
 
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return json({ errorCode: "UNAUTHORIZED", message: "authorization header required" }, 401);
-  }
-  const token = authHeader.replace("Bearer ", "").trim();
-  if (!token) {
-    return json({ errorCode: "UNAUTHORIZED", message: "empty bearer token" }, 401);
+  const auth = await resolveEdgeAuthContext({
+    req,
+    policy: {
+      functionName: "caricature",
+      kind: "member_required",
+      version: SCHEMA_VERSION,
+    },
+    supabaseURL,
+    supabaseAnonKey,
+    supabaseServiceRoleKey,
+  });
+  if (!auth.ok) {
+    return auth.response;
   }
 
-  const userClient = createClient(supabaseURL, supabaseAnonKey, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-  });
+  const authContext = auth.context;
+  const userClient = authContext.userClient!;
   const serviceClient = createClient(supabaseURL, supabaseServiceRoleKey);
 
   let body: RequestDTO;
@@ -248,7 +254,7 @@ Deno.serve(async (req) => {
   }
 
   const requestVersion = body.version ?? SCHEMA_VERSION;
-  const requestId = body.requestId ?? crypto.randomUUID();
+  const requestId = body.requestId ?? authContext.requestId;
   const petId = toUUID(body.petId);
   if (!petId) {
     return json({
@@ -275,14 +281,7 @@ Deno.serve(async (req) => {
     : "auto";
   const chain = providerOrder(providerHint);
 
-  let authenticatedUserId: string | null = null;
-  try {
-    const { data: userResult } = await userClient.auth.getUser(token);
-    authenticatedUserId = userResult?.user?.id ?? null;
-  } catch {
-    authenticatedUserId = null;
-  }
-
+  const authenticatedUserId = authContext.userId;
   const payloadUserId = toUUID(body.userId);
   const resolvedUserId = authenticatedUserId ?? payloadUserId ?? petId;
   const sourceType: "path" | "url" = body.sourceImageUrl ? "url" : "path";

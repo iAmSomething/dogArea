@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { resolveEdgeAuthContext } from "../_shared/edge_auth.ts";
 
 type SyncStage = "session" | "points" | "meta";
 type Action = "sync_walk_stage" | "get_backfill_summary";
@@ -110,22 +110,20 @@ Deno.serve(async (req) => {
     return json({ error: "SERVER_MISCONFIGURED" }, 500);
   }
 
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return json({ error: "UNAUTHORIZED" }, 401);
-  }
-  const token = authHeader.replace("Bearer ", "").trim();
-  if (!token) return json({ error: "UNAUTHORIZED" }, 401);
-
-  const userClient = createClient(supabaseURL, supabaseAnonKey, {
-    global: { headers: { Authorization: authHeader } },
+  const auth = await resolveEdgeAuthContext({
+    req,
+    policy: {
+      functionName: "sync-walk",
+      kind: "member_required",
+    },
+    supabaseURL,
+    supabaseAnonKey,
   });
-
-  const { data: userResult, error: userError } = await userClient.auth.getUser(token);
-  if (userError || !userResult?.user) {
-    return json({ error: "UNAUTHORIZED" }, 401);
+  if (!auth.ok) {
+    return auth.response;
   }
-  const userId = userResult.user.id;
+  const userClient = auth.context.userClient!;
+  const userId = auth.context.userId!;
 
   let body: RequestDTO;
   try {

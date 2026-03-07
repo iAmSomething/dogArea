@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { resolveEdgeAuthContext } from "../_shared/edge_auth.ts";
 
 type RequestDTO = {
   ownerId?: string;
@@ -54,9 +55,18 @@ Deno.serve(async (req) => {
     return json({ error: "SERVER_MISCONFIGURED" }, 500);
   }
 
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return json({ error: "UNAUTHORIZED" }, 401);
+  const auth = await resolveEdgeAuthContext({
+    req,
+    policy: {
+      functionName: "upload-profile-image",
+      kind: "member_or_anon",
+    },
+    supabaseURL,
+    supabaseAnonKey,
+    supabaseServiceRoleKey,
+  });
+  if (!auth.ok) {
+    return auth.response;
   }
 
   let body: RequestDTO;
