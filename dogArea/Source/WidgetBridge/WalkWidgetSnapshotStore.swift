@@ -26,6 +26,87 @@ enum WalkWidgetActionFollowUp: String, Codable {
     case openApp = "open_app"
 }
 
+enum WalkWidgetStartPolicy: String, Codable {
+    case selectedPetImmediate = "selected_pet_immediate"
+    case selectedPetCountdown = "selected_pet_countdown"
+    case fixedPetReserved = "fixed_pet_reserved"
+
+    var detailText: String {
+        switch self {
+        case .selectedPetImmediate:
+            return "현재 선택 반려견으로 바로 시작해요."
+        case .selectedPetCountdown:
+            return "현재 선택 반려견으로 카운트다운 시작해요."
+        case .fixedPetReserved:
+            return "고정 반려견 시작은 준비 중이에요."
+        }
+    }
+}
+
+enum WalkWidgetPetContextSource: String, Codable {
+    case selectedPet = "selected_pet"
+    case fallbackActivePet = "fallback_active_pet"
+    case walkingLocked = "walking_locked"
+    case noActivePet = "no_active_pet"
+
+    var badgeTitle: String {
+        switch self {
+        case .selectedPet:
+            return "선택 반려견"
+        case .fallbackActivePet:
+            return "자동 대체"
+        case .walkingLocked:
+            return "산책 고정"
+        case .noActivePet:
+            return "앱 확인"
+        }
+    }
+}
+
+struct WalkWidgetPetContext: Codable, Equatable {
+    let petId: String?
+    let petName: String
+    let source: WalkWidgetPetContextSource
+    let startPolicy: WalkWidgetStartPolicy
+    let fallbackReason: String?
+
+    var badgeTitle: String {
+        source.badgeTitle
+    }
+
+    var detailText: String {
+        switch source {
+        case .selectedPet:
+            return startPolicy.detailText
+        case .fallbackActivePet:
+            return fallbackReason ?? "선택 반려견을 찾지 못해 활성 반려견으로 조정했어요."
+        case .walkingLocked:
+            return "산책 시작 시 확정된 반려견을 유지해요."
+        case .noActivePet:
+            return "활성 반려견이 없어 앱에서 먼저 확인이 필요해요."
+        }
+    }
+
+    var blocksInlineStart: Bool {
+        source == .noActivePet
+    }
+
+    /// 이전 스냅샷 형식에서 반려견 문맥을 복원합니다.
+    /// - Parameters:
+    ///   - petName: 레거시 스냅샷에 저장된 반려견 이름입니다.
+    ///   - isWalking: 현재 산책 진행 여부입니다.
+    /// - Returns: 문맥 정보가 없던 스냅샷을 위한 기본 반려견 문맥입니다.
+    static func legacyFallback(petName: String, isWalking: Bool) -> WalkWidgetPetContext {
+        .init(
+            petId: nil,
+            petName: petName,
+            source: isWalking ? .walkingLocked : .selectedPet,
+            startPolicy: .selectedPetImmediate,
+            fallbackReason: nil
+        )
+    }
+}
+
 struct WalkWidgetActionState: Codable, Equatable {
     let kind: WalkWidgetActionKind
     let phase: WalkWidgetActionPhase
@@ -134,10 +215,15 @@ struct WalkWidgetSnapshot: Codable, Equatable {
     let isWalking: Bool
     let elapsedSeconds: Int
     let petName: String
+    let petContext: WalkWidgetPetContext?
     let status: WalkWidgetSnapshotStatus
     let statusMessage: String?
     let actionState: WalkWidgetActionState?
     let updatedAt: TimeInterval
+
+    var normalizedPetContext: WalkWidgetPetContext {
+        petContext ?? .legacyFallback(petName: petName, isWalking: isWalking)
+    }
 
     var normalizedActionState: WalkWidgetActionState? {
         guard let actionState else { return nil }
@@ -147,7 +233,10 @@ struct WalkWidgetSnapshot: Codable, Equatable {
     var timelineReloadSignature: String {
         [
             String(isWalking),
-            petName,
+            normalizedPetContext.petName,
+            normalizedPetContext.source.rawValue,
+            normalizedPetContext.startPolicy.rawValue,
+            normalizedPetContext.fallbackReason ?? "",
             status.rawValue,
             statusMessage ?? "",
             normalizedActionState?.kind.rawValue ?? "",
@@ -161,6 +250,13 @@ struct WalkWidgetSnapshot: Codable, Equatable {
         isWalking: false,
         elapsedSeconds: 0,
         petName: "반려견",
+        petContext: .init(
+            petId: nil,
+            petName: "반려견",
+            source: .noActivePet,
+            startPolicy: .selectedPetImmediate,
+            fallbackReason: nil
+        ),
         status: .ready,
         statusMessage: nil,
         actionState: nil,
@@ -434,6 +530,7 @@ final class DefaultWalkWidgetSnapshotStore: WalkWidgetSnapshotStoring {
             isWalking: decoded.isWalking,
             elapsedSeconds: decoded.elapsedSeconds,
             petName: decoded.petName,
+            petContext: decoded.petContext ?? decoded.normalizedPetContext,
             status: decoded.status,
             statusMessage: decoded.statusMessage,
             actionState: decoded.normalizedActionState,
@@ -449,6 +546,7 @@ final class DefaultWalkWidgetSnapshotStore: WalkWidgetSnapshotStoring {
             isWalking: snapshot.isWalking,
             elapsedSeconds: snapshot.elapsedSeconds,
             petName: snapshot.petName,
+            petContext: snapshot.normalizedPetContext,
             status: snapshot.status,
             statusMessage: snapshot.statusMessage,
             actionState: snapshot.normalizedActionState,

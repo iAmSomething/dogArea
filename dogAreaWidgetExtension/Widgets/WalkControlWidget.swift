@@ -55,14 +55,21 @@ struct WalkControlWidgetEntryView: View {
                             .controlSize(.small)
                     }
                 }
+            } else {
+                WidgetStatusBadge(title: petContext.badgeTitle, color: petContextBadgeColor)
             }
 
             Text(entry.snapshot.isWalking ? "산책 중" : "산책 대기")
                 .font(.headline)
-            Text(entry.snapshot.petName)
+            Text(petContext.petName)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
+
+            Text(petContext.detailText)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
 
             HStack(spacing: 6) {
                 Image(systemName: "clock")
@@ -88,6 +95,10 @@ struct WalkControlWidgetEntryView: View {
 
     private var activeActionState: WalkWidgetActionState? {
         entry.snapshot.normalizedActionState
+    }
+
+    private var petContext: WalkWidgetPetContext {
+        entry.snapshot.normalizedPetContext
     }
 
     private var effectiveStatusMessage: String? {
@@ -126,9 +137,29 @@ struct WalkControlWidgetEntryView: View {
         }
     }
 
+    private var petContextBadgeColor: Color {
+        switch petContext.source {
+        case .selectedPet:
+            return .green.opacity(0.18)
+        case .fallbackActivePet:
+            return .orange.opacity(0.18)
+        case .walkingLocked:
+            return .blue.opacity(0.18)
+        case .noActivePet:
+            return .red.opacity(0.18)
+        }
+    }
+
     @ViewBuilder
     private var primaryActionButton: some View {
-        if let activeActionState,
+        if entry.snapshot.isWalking == false,
+          petContext.blocksInlineStart {
+            Button(intent: OpenWalkTabIntent()) {
+                Label("앱에서 반려견 확인", systemImage: "pawprint")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+        } else if let activeActionState,
            activeActionState.phase == .pending {
             Label("처리 중", systemImage: "hourglass")
                 .frame(maxWidth: .infinity)
@@ -220,6 +251,13 @@ struct WalkControlWidget: Widget {
             isWalking: true,
             elapsedSeconds: 824,
             petName: "나무",
+            petContext: .init(
+                petId: "preview-pet",
+                petName: "나무",
+                source: .walkingLocked,
+                startPolicy: .selectedPetImmediate,
+                fallbackReason: nil
+            ),
             status: .ready,
             statusMessage: nil,
             actionState: nil,

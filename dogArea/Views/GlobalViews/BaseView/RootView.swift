@@ -316,6 +316,7 @@ struct RootView: View {
                 isWalking: current.isWalking,
                 elapsedSeconds: current.elapsedSeconds,
                 petName: current.petName,
+                petContext: current.petContext ?? current.normalizedPetContext,
                 status: current.status,
                 statusMessage: current.statusMessage,
                 actionState: actionState,
