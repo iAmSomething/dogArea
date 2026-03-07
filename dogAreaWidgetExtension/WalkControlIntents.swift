@@ -9,12 +9,20 @@ struct StartWalkIntent: AppIntent {
     /// - Returns: 앱 실행 후 소비할 요청을 기록한 인텐트 결과입니다.
     #if compiler(>=6.0)
     func perform() async throws -> some IntentResult & OpensIntent {
-        let openURL = preparePendingRoute(kind: .startWalk, contextId: nil)
+        let snapshot = DefaultWalkWidgetSnapshotStore.shared.load()
+        let openURL = preparePendingRoute(
+            kind: .startWalk,
+            contextId: snapshot.normalizedPetContext.petId
+        )
         return .result(opensIntent: OpenURLIntent(openURL))
     }
     #else
     func perform() async throws -> some IntentResult {
-        _ = preparePendingRoute(kind: .startWalk, contextId: nil)
+        let snapshot = DefaultWalkWidgetSnapshotStore.shared.load()
+        _ = preparePendingRoute(
+            kind: .startWalk,
+            contextId: snapshot.normalizedPetContext.petId
+        )
         return .result()
     }
     #endif
@@ -156,6 +164,7 @@ private func preparePendingRoute(kind: WalkWidgetActionKind, contextId: String?)
                 isWalking: current.isWalking,
                 elapsedSeconds: current.elapsedSeconds,
                 petName: current.petName,
+                petContext: current.petContext ?? current.normalizedPetContext,
                 status: current.status,
                 statusMessage: nil,
                 actionState: .pending(kind: kind, now: now),
