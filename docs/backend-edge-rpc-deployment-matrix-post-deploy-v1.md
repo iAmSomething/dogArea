@@ -146,6 +146,7 @@ bash scripts/run_supabase_smoke_matrix.sh
 - live smoke case naming: `scripts/run_supabase_smoke_matrix.sh`
 - member/app auth smoke: `scripts/auth_member_401_smoke_check.sh`
 - drift/static gate: `scripts/backend_migration_drift_check.sh`
+- rollback / roll-forward runbook: `docs/backend-deploy-rollback-roll-forward-runbook-v1.md`
 - fallback/compat sunset 기준: `docs/backend-legacy-fallback-compat-sunset-plan-v1.md`
 - sync-walk 404 ops nuance: `docs/sync-walk-404-fallback-policy-v1.md`
 - auth mode boundary: `docs/backend-edge-auth-mode-inventory-v1.md`

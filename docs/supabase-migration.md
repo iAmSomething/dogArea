@@ -5,6 +5,7 @@
 
 연계 운영 문서:
 - `docs/backend-scheduler-ops-standard-v1.md`
+- `docs/backend-deploy-rollback-roll-forward-runbook-v1.md`
 
 연결 이슈:
 - #22 `[Task] Supabase 스키마/RLS/Storage 운영 고도화`
