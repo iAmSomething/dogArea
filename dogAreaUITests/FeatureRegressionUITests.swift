@@ -552,6 +552,26 @@ final class FeatureRegressionUITests: XCTestCase {
         )
     }
 
+    /// 영역 위젯 딥링크가 홈 루트가 아니라 목표 상세 화면으로 직접 진입하는지 검증합니다.
+    func testFeatureRegression_TerritoryWidgetRouteOpensGoalDetail() throws {
+        let app = launchAppForFeatureRegression(
+            extraArguments: ["-UITest.TerritoryWidgetRouteStatus", "member_ready"]
+        )
+        let territoryGoalScreen = screenElement(identifier: "screen.territoryGoal", in: app)
+        XCTAssertTrue(
+            waitUntilExists(territoryGoalScreen, timeout: 10),
+            "영역 위젯 딥링크가 목표 상세 화면으로 직접 진입하지 못했습니다."
+        )
+        XCTAssertTrue(
+            waitUntilExists(app.staticTexts["위젯에서 바로 다음 목표 상세로 열었어요. 남은 면적과 최근 정복 흐름을 이어서 확인해보세요."], timeout: 3),
+            "영역 위젯 진입 배너가 노출되지 않았습니다."
+        )
+        XCTAssertTrue(
+            waitUntilGone(app.buttons["tab.2"], timeout: 2),
+            "영역 목표 상세 화면에서는 하단 탭바가 숨겨져야 합니다."
+        )
+    }
+
     /// 기능 회귀 검증용 런타임 인자로 앱을 실행합니다.
     /// - Parameters:
     ///   - style: 테스트에 적용할 인터페이스 스타일입니다.

@@ -57,7 +57,11 @@ assertTrue(homeViewModel.contains("var nextGoalArea"), "home view model should e
 assertTrue(homeViewModel.contains("var remainingAreaToGoal"), "home view model should expose remaining-area helper")
 assertTrue(homeViewModel.contains("var goalProgressRatio"), "home view model should expose progress ratio helper")
 
-assertTrue(homeView.contains("TerritoryGoalView(viewModel: TerritoryGoalViewModel(homeViewModel: viewModel))"), "home view should navigate into territory goal detail")
+assertTrue(homeView.contains(".navigationDestination(isPresented: $isTerritoryGoalPresented)"), "home view should present territory goal detail destination")
+assertTrue(homeView.contains("TerritoryGoalView("), "home view should render territory goal detail destination")
+assertTrue(homeView.contains("TerritoryGoalViewModel("), "home view should build territory goal view model")
+assertTrue(homeView.contains("homeViewModel: viewModel"), "home view should pass home view model into territory goal detail")
+assertTrue(homeView.contains("entryContext: territoryGoalEntryContext"), "home view should forward widget entry context into territory goal detail")
 assertTrue(areaDetail.contains("AreaDetailReferenceCatalogSectionView"), "comparison detail should render catalog section view")
 
 print("PASS: home goal tracker UI unit checks")

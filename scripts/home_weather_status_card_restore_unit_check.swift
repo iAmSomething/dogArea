@@ -18,11 +18,12 @@ func load(_ relativePath: String) -> String {
 let homeView = load("dogArea/Views/HomeView/HomeView.swift")
 
 assertTrue(
-    homeView.contains("weatherMissionStatusCard(summary: viewModel.weatherMissionStatusSummary)"),
+    homeView.contains("HomeMissionSectionView(") &&
+    homeView.contains("weatherMissionStatusSummary: viewModel.weatherMissionStatusSummary"),
     "home daily mission section should render weather mission status card"
 )
 assertTrue(
-    homeView.contains("if let shieldSummary = viewModel.weatherShieldDailySummary") && homeView.contains("weatherShieldSummaryCard(summary: shieldSummary)"),
+    homeView.contains("weatherShieldDailySummary: viewModel.weatherShieldDailySummary"),
     "home daily mission section should render weather shield summary card when available"
 )
 

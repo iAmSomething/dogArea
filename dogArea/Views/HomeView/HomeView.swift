@@ -11,6 +11,7 @@ struct HomeView: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject var authFlow: AuthFlowCoordinator
+    @Binding private var externalRoute: HomeExternalRoute?
     @StateObject var viewModel = HomeViewModel()
     @State private var animatedQuestProgress: [String: Double] = [:]
     @State private var questProgressPulseMissionId: String? = nil
@@ -32,8 +33,15 @@ struct HomeView: View {
     @State private var homeScrollOffsetY: CGFloat = 0
     @State private var isSeasonDetailPresented: Bool = false
     @State private var isTerritoryGoalPresented: Bool = false
+    @State private var territoryGoalEntryContext: TerritoryGoalEntryContext? = nil
     @State private var hasAppearedOnce: Bool = false
     @State private var isHomeVisible: Bool = false
+
+    /// 외부 라우트를 주입받아 홈 화면을 초기화합니다.
+    /// - Parameter externalRoute: 위젯/딥링크에서 전달된 홈 외부 라우트 바인딩입니다.
+    init(externalRoute: Binding<HomeExternalRoute?> = .constant(nil as HomeExternalRoute?)) {
+        _externalRoute = externalRoute
+    }
 
     private var isQuestMotionReduced: Bool {
         accessibilityReduceMotion
@@ -65,155 +73,7 @@ struct HomeView: View {
                 Color.appTabScaffoldBackground
                     .ignoresSafeArea()
 
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 16) {
-                        Color.clear
-                            .frame(height: 0)
-                            .id("home.scroll.top")
-                        GeometryReader { proxy in
-                            Color.clear.preference(
-                                key: HomeScrollOffsetPreferenceKey.self,
-                                value: proxy.frame(in: .named("home.scroll")).minY
-                            )
-                        }
-                        .frame(height: 0)
-
-                        homeHeaderSection
-                        if let report = viewModel.guestDataUpgradeReport {
-                            guestDataUpgradeCard(report: report)
-                        }
-                        if let message = viewModel.aggregationStatusMessage {
-                            HomeStatusBannerView(message: message, isWarning: false)
-                        }
-                        if let message = viewModel.indoorMissionStatusMessage {
-                            HomeStatusBannerView(message: message, isWarning: false)
-                        }
-                        if let message = viewModel.seasonCatchupBuffStatusMessage {
-                            HomeStatusBannerView(
-                                message: message,
-                                isWarning: viewModel.seasonCatchupBuffStatusWarning
-                            )
-                        }
-                        if viewModel.pets.count > 1 {
-                            homePetSelector
-                        }
-                        if viewModel.pets.isEmpty == false {
-                            if viewModel.isShowingAllRecordsOverride {
-                                selectedPetContextBanner
-                            }
-                            if viewModel.shouldShowSelectedPetEmptyState {
-                                selectedPetContextBanner
-                                selectedPetEmptyStateCard
-                            }
-                        }
-                        homeWeeklySnapshotSection
-                        seasonMotionCard(summary: viewModel.seasonMotionSummary)
-                        weatherDetailCard(presentation: viewModel.weatherDetailPresentation)
-                        if viewModel.indoorMissionBoard.shouldDisplayCard {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("오늘 미션 안내")
-                                    .font(.appScaledFont(for: .SemiBold, size: 30, relativeTo: .title2))
-                                Text("완료 기준, 부족분, 완료된 미션을 한 번에 확인하세요.")
-                                    .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .caption))
-                                    .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            weatherMissionStatusCard(summary: viewModel.weatherMissionStatusSummary)
-                            if let shieldSummary = viewModel.weatherShieldDailySummary {
-                                weatherShieldSummaryCard(summary: shieldSummary)
-                            }
-                            indoorMissionCard(board: viewModel.indoorMissionBoard)
-                        }
-                        territoryHeaderSection
-                        goalTrackerCard
-                        recentConqueredCard
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 20)
-                }
-                .coordinateSpace(name: "home.scroll")
-                .onPreferenceChange(HomeScrollOffsetPreferenceKey.self) { value in
-                    homeScrollOffsetY = value
-                }
-                .refreshable {
-                    viewModel.fetchData()
-                }
-                .onAppear{
-                    isHomeVisible = true
-                    if hasAppearedOnce {
-                        viewModel.refreshForVisibleReentry()
-                    } else {
-                        hasAppearedOnce = true
-                    }
-                    seasonAnimatedProgress = viewModel.seasonMotionSummary.progress
-                    if viewModel.seasonMotionSummary.weatherShieldActive {
-                        startSeasonShieldRingAnimationIfNeeded()
-                    }
-                }
-                .onDisappear {
-                    isHomeVisible = false
-                }
-                .onChange(of: scenePhase) { _, newPhase in
-                    guard newPhase == .active, isHomeVisible else { return }
-                    viewModel.refreshForAppResumeIfNeeded()
-                }
-                .onChange(of: viewModel.aggregationStatusMessage) { _, newValue in
-                guard newValue != nil else { return }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                    viewModel.clearAggregationStatusMessage()
-                }
-                }.onChange(of: viewModel.indoorMissionStatusMessage) { _, newValue in
-                guard newValue != nil else { return }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.8) {
-                    viewModel.clearIndoorMissionStatusMessage()
-                }
-                }.onChange(of: viewModel.weatherFeedbackResultMessage) { _, newValue in
-                guard newValue != nil else { return }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3.2) {
-                    viewModel.clearWeatherFeedbackResultMessage()
-                }
-                }.onChange(of: viewModel.questMotionEvent) { _, event in
-                handleQuestMotionEvent(event)
-                }.onChange(of: viewModel.questCompletionPresentation) { _, payload in
-                guard let payload else { return }
-                presentQuestCompletionModal(payload)
-                }.onChange(of: viewModel.seasonMotionSummary.progress) { _, progress in
-                animateSeasonProgress(to: progress)
-                }.onChange(of: viewModel.seasonMotionSummary.weatherShieldActive) { _, active in
-                if active {
-                    startSeasonShieldRingAnimationIfNeeded()
-                } else {
-                    seasonShieldRotation = 0
-                }
-                }.onChange(of: viewModel.seasonMotionEvent) { _, event in
-                handleSeasonMotionEvent(event)
-                }.onChange(of: viewModel.seasonResultPresentation) { _, payload in
-                guard let payload else { return }
-                presentSeasonResultModal(payload)
-                }.onChange(of: viewModel.seasonResetTransitionToken) { _, token in
-                guard token != nil else { return }
-                presentSeasonResetTransitionBanner()
-                }.onChange(of: viewModel.areaMilestonePresentation) { _, event in
-                guard event != nil else { return }
-                presentAreaMilestoneOverlay()
-                }.onChange(of: authFlow.guestDataUpgradeResult?.executedAt) { _, _ in
-                viewModel.refreshGuestDataUpgradeReport()
-                }.onChange(of: isLowPowerModeEnabled) { _, enabled in
-                if enabled {
-                    seasonShieldRotation = 0
-                } else if viewModel.seasonMotionSummary.weatherShieldActive {
-                    startSeasonShieldRingAnimationIfNeeded()
-                }
-                }.onReceive(NotificationCenter.default.publisher(for: .NSProcessInfoPowerStateDidChange)) { _ in
-                isLowPowerModeEnabled = ProcessInfo.processInfo.isLowPowerModeEnabled
-                }.sheet(isPresented: $isSeasonDetailPresented) {
-                HomeSeasonDetailSheetView(
-                    summary: viewModel.seasonMotionSummary,
-                    remainingTimeText: viewModel.seasonRemainingTimeText,
-                    onClose: { isSeasonDetailPresented = false }
-                )
-                }
-                .appTabRootScrollLayout(extraBottomPadding: 12)
+                homeDashboardScrollView
 
                 scrollToTopFloatingButton(proxy: scrollProxy)
 
@@ -256,9 +116,315 @@ struct HomeView: View {
 
             }
             .navigationDestination(isPresented: $isTerritoryGoalPresented) {
-                TerritoryGoalView(viewModel: TerritoryGoalViewModel(homeViewModel: viewModel))
+                TerritoryGoalView(
+                    viewModel: TerritoryGoalViewModel(
+                        homeViewModel: viewModel,
+                        entryContext: territoryGoalEntryContext
+                    )
+                )
             }
         }
+    }
+
+    /// 홈 대시보드의 스크롤 컨테이너와 생명주기 modifier를 구성합니다.
+    /// - Returns: 홈 카드/배너/시트/상태 반응을 포함한 스크롤 뷰입니다.
+    private var homeDashboardScrollView: some View {
+        configuredHomeDashboardScrollView(
+            ScrollView(showsIndicators: false) {
+                homeDashboardContent
+            }
+        )
+    }
+
+    /// 홈 대시보드의 카드와 배너 콘텐츠를 순서대로 렌더링합니다.
+    /// - Returns: 홈 스크롤 내부에 배치되는 메인 콘텐츠 뷰입니다.
+    private var homeDashboardContent: some View {
+        VStack(spacing: 16) {
+            Color.clear
+                .frame(height: 0)
+                .id("home.scroll.top")
+            GeometryReader { proxy in
+                Color.clear.preference(
+                    key: HomeScrollOffsetPreferenceKey.self,
+                    value: proxy.frame(in: .named("home.scroll")).minY
+                )
+            }
+            .frame(height: 0)
+
+            homeHeaderSection
+            homeGuestDataUpgradeSection
+            homeStatusBannerSection
+            homeSelectedPetContextSection
+            homeWeeklySnapshotSection
+            seasonMotionCard(summary: viewModel.seasonMotionSummary)
+            weatherDetailCard(presentation: viewModel.weatherDetailPresentation)
+            homeMissionSection
+            territoryHeaderSection
+            goalTrackerCard
+            recentConqueredCard
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 20)
+    }
+
+    /// 게스트 데이터 이관 리포트 카드를 필요할 때만 렌더링합니다.
+    private var homeGuestDataUpgradeSection: some View {
+        Group {
+            if let report = viewModel.guestDataUpgradeReport {
+                guestDataUpgradeCard(report: report)
+            }
+        }
+    }
+
+    /// 홈 상태 배너들을 우선순위 순으로 묶어서 렌더링합니다.
+    private var homeStatusBannerSection: some View {
+        Group {
+            if let message = viewModel.aggregationStatusMessage {
+                HomeStatusBannerView(message: message, isWarning: false)
+            }
+            if let message = viewModel.indoorMissionStatusMessage {
+                HomeStatusBannerView(message: message, isWarning: false)
+            }
+            if let message = viewModel.seasonCatchupBuffStatusMessage {
+                HomeStatusBannerView(
+                    message: message,
+                    isWarning: viewModel.seasonCatchupBuffStatusWarning
+                )
+            }
+        }
+    }
+
+    /// 선택 반려견 문맥과 다중 반려견 전환 영역을 묶어 렌더링합니다.
+    private var homeSelectedPetContextSection: some View {
+        Group {
+            if viewModel.pets.count > 1 {
+                homePetSelector
+            }
+            if viewModel.pets.isEmpty == false {
+                if viewModel.isShowingAllRecordsOverride {
+                    selectedPetContextBanner
+                }
+                if viewModel.shouldShowSelectedPetEmptyState {
+                    selectedPetContextBanner
+                    selectedPetEmptyStateCard
+                }
+            }
+        }
+    }
+
+    /// 날씨 기반 미션 카드와 보조 상태 카드를 한 섹션으로 렌더링합니다.
+    private var homeMissionSection: some View {
+        Group {
+            if viewModel.indoorMissionBoard.shouldDisplayCard {
+                homeMissionSectionContent
+            }
+        }
+    }
+
+    /// 홈 대시보드에서 미션 카드 직전의 소개 문구와 상태 카드를 묶습니다.
+    private var homeMissionSectionContent: some View {
+        HomeMissionSectionView(
+            board: viewModel.indoorMissionBoard,
+            presentation: viewModel.indoorMissionPresentation,
+            weatherMissionStatusSummary: viewModel.weatherMissionStatusSummary,
+            weatherShieldDailySummary: viewModel.weatherShieldDailySummary,
+            questWidgetTab: $questWidgetTab,
+            questReminderEnabled: viewModel.questReminderEnabled,
+            onSetQuestReminderEnabled: viewModel.setQuestReminderEnabled,
+            canSubmitWeatherMismatchFeedback: viewModel.canSubmitWeatherMismatchFeedback,
+            weatherFeedbackRemainingCount: viewModel.weatherFeedbackRemainingCount,
+            weatherFeedbackWeeklyLimit: viewModel.weatherFeedbackWeeklyLimit,
+            weatherFeedbackResultMessage: viewModel.weatherFeedbackResultMessage,
+            questAlternativeActionSuggestion: viewModel.questAlternativeActionSuggestion,
+            seasonSummary: viewModel.seasonMotionSummary,
+            isSeasonMotionReduced: isSeasonMotionReduced,
+            seasonGaugeWaveOffset: seasonGaugeWaveOffset,
+            animatedQuestProgress: animatedQuestProgress,
+            questProgressPulseMissionId: questProgressPulseMissionId,
+            questClaimPulseMissionId: questClaimPulseMissionId,
+            isQuestMotionReduced: isQuestMotionReduced,
+            onSubmitWeatherMismatchFeedback: { viewModel.submitWeatherMismatchFeedback() },
+            onActivateEasyDayMode: { viewModel.activateEasyDayMode() },
+            onRecordIndoorMissionAction: viewModel.recordIndoorMissionAction,
+            onFinalizeIndoorMission: viewModel.finalizeIndoorMission,
+            onSyncMissionAppearProgress: { mission in
+                if animatedQuestProgress[mission.id] == nil {
+                    animatedQuestProgress[mission.id] = mission.progress.progressRatio
+                }
+            },
+            onSyncMissionProgress: { mission, next in
+                if isQuestMotionReduced {
+                    animatedQuestProgress[mission.id] = next
+                } else {
+                    withAnimation(.easeOut(duration: 0.34)) {
+                        animatedQuestProgress[mission.id] = next
+                    }
+                }
+            }
+        )
+    }
+
+    /// 홈 대시보드 스크롤 뷰에 상태 동기화, 시트, 전역 레이아웃 modifier를 적용합니다.
+    /// - Parameter content: 홈 본문 카드가 이미 배치된 스크롤 컨테이너입니다.
+    /// - Returns: 홈 화면 수명주기와 이벤트 반응이 연결된 스크롤 뷰입니다.
+    private func configuredHomeDashboardScrollView<Content: View>(_ content: Content) -> some View {
+        let lifecycleConfigured = configuredHomeDashboardLifecycle(content)
+        let eventConfigured = configuredHomeDashboardEventHandlers(lifecycleConfigured)
+        return configuredHomeDashboardPresentation(eventConfigured)
+    }
+
+    /// 홈 스크롤 뷰의 기본 수명주기와 스크롤 상태 동기화를 적용합니다.
+    /// - Parameter content: 홈 카드가 배치된 스크롤 컨테이너입니다.
+    /// - Returns: 기본 lifecycle modifier가 연결된 타입 소거 뷰입니다.
+    private func configuredHomeDashboardLifecycle<Content: View>(_ content: Content) -> AnyView {
+        AnyView(
+            content
+                .coordinateSpace(name: "home.scroll")
+                .onPreferenceChange(HomeScrollOffsetPreferenceKey.self) { value in
+                    homeScrollOffsetY = value
+                }
+                .refreshable {
+                    viewModel.fetchData()
+                }
+                .onAppear {
+                    isHomeVisible = true
+                    consumeExternalRouteIfNeeded()
+                    if hasAppearedOnce {
+                        viewModel.refreshForVisibleReentry()
+                    } else {
+                        hasAppearedOnce = true
+                    }
+                    seasonAnimatedProgress = viewModel.seasonMotionSummary.progress
+                    if viewModel.seasonMotionSummary.weatherShieldActive {
+                        startSeasonShieldRingAnimationIfNeeded()
+                    }
+                }
+                .onDisappear {
+                    isHomeVisible = false
+                }
+        )
+    }
+
+    /// 홈 스크롤 뷰에 상태 변화 기반 반응 modifier를 적용합니다.
+    /// - Parameter content: lifecycle modifier가 반영된 홈 스크롤 뷰입니다.
+    /// - Returns: 상태 변화 핸들러가 연결된 타입 소거 뷰입니다.
+    private func configuredHomeDashboardEventHandlers<Content: View>(_ content: Content) -> AnyView {
+        let statusConfigured = configuredHomeDashboardStatusHandlers(content)
+        let motionConfigured = configuredHomeDashboardMotionHandlers(statusConfigured)
+        let systemConfigured = configuredHomeDashboardSystemHandlers(motionConfigured)
+        return AnyView(systemConfigured)
+    }
+
+    /// 홈 상태 배너와 앱 복귀 갱신 이벤트를 묶어 적용합니다.
+    /// - Parameter content: lifecycle modifier가 반영된 홈 스크롤 뷰입니다.
+    /// - Returns: 상태 배너/복귀 갱신 핸들러가 적용된 타입 소거 뷰입니다.
+    private func configuredHomeDashboardStatusHandlers<Content: View>(_ content: Content) -> AnyView {
+        AnyView(
+            content
+                .onChange(of: scenePhase) { _, newPhase in
+                    guard newPhase == .active, isHomeVisible else { return }
+                    viewModel.refreshForAppResumeIfNeeded()
+                }
+                .onChange(of: viewModel.aggregationStatusMessage) { _, newValue in
+                    guard newValue != nil else { return }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                        viewModel.clearAggregationStatusMessage()
+                    }
+                }
+                .onChange(of: viewModel.indoorMissionStatusMessage) { _, newValue in
+                    guard newValue != nil else { return }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.8) {
+                        viewModel.clearIndoorMissionStatusMessage()
+                    }
+                }
+                .onChange(of: viewModel.weatherFeedbackResultMessage) { _, newValue in
+                    guard newValue != nil else { return }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3.2) {
+                        viewModel.clearWeatherFeedbackResultMessage()
+                    }
+                }
+        )
+    }
+
+    /// 퀘스트/시즌/영역 마일스톤 같은 홈 프레젠테이션 이벤트를 묶어 적용합니다.
+    /// - Parameter content: 상태 배너 핸들러가 연결된 홈 스크롤 뷰입니다.
+    /// - Returns: 홈 프레젠테이션 이벤트 반응이 적용된 타입 소거 뷰입니다.
+    private func configuredHomeDashboardMotionHandlers<Content: View>(_ content: Content) -> AnyView {
+        AnyView(
+            content
+                .onChange(of: viewModel.questMotionEvent) { _, event in
+                    handleQuestMotionEvent(event)
+                }
+                .onChange(of: viewModel.questCompletionPresentation) { _, payload in
+                    guard let payload else { return }
+                    presentQuestCompletionModal(payload)
+                }
+                .onChange(of: viewModel.seasonMotionSummary.progress) { _, progress in
+                    animateSeasonProgress(to: progress)
+                }
+                .onChange(of: viewModel.seasonMotionSummary.weatherShieldActive) { _, active in
+                    if active {
+                        startSeasonShieldRingAnimationIfNeeded()
+                    } else {
+                        seasonShieldRotation = 0
+                    }
+                }
+                .onChange(of: viewModel.seasonMotionEvent) { _, event in
+                    handleSeasonMotionEvent(event)
+                }
+                .onChange(of: viewModel.seasonResultPresentation) { _, payload in
+                    guard let payload else { return }
+                    presentSeasonResultModal(payload)
+                }
+                .onChange(of: viewModel.seasonResetTransitionToken) { _, token in
+                    guard token != nil else { return }
+                    presentSeasonResetTransitionBanner()
+                }
+                .onChange(of: viewModel.areaMilestonePresentation) { _, event in
+                    guard event != nil else { return }
+                    presentAreaMilestoneOverlay()
+                }
+        )
+    }
+
+    /// 인증 결과, 외부 라우트, 저전력 상태 같은 시스템 이벤트를 묶어 적용합니다.
+    /// - Parameter content: 프레젠테이션 이벤트가 연결된 홈 스크롤 뷰입니다.
+    /// - Returns: 시스템 이벤트 반응이 적용된 타입 소거 뷰입니다.
+    private func configuredHomeDashboardSystemHandlers<Content: View>(_ content: Content) -> AnyView {
+        AnyView(
+            content
+                .onChange(of: authFlow.guestDataUpgradeResult?.executedAt) { _, _ in
+                    viewModel.refreshGuestDataUpgradeReport()
+                }
+                .onChange(of: externalRoute?.id) { _, _ in
+                    consumeExternalRouteIfNeeded()
+                }
+                .onChange(of: isLowPowerModeEnabled) { _, enabled in
+                    if enabled {
+                        seasonShieldRotation = 0
+                    } else if viewModel.seasonMotionSummary.weatherShieldActive {
+                        startSeasonShieldRingAnimationIfNeeded()
+                    }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .NSProcessInfoPowerStateDidChange)) { _ in
+                    isLowPowerModeEnabled = ProcessInfo.processInfo.isLowPowerModeEnabled
+                }
+        )
+    }
+
+    /// 홈 스크롤 뷰에 시트와 전역 레이아웃 modifier를 적용합니다.
+    /// - Parameter content: 상태 변화 핸들러가 연결된 홈 스크롤 뷰입니다.
+    /// - Returns: 최종 홈 대시보드 스크롤 뷰입니다.
+    private func configuredHomeDashboardPresentation<Content: View>(_ content: Content) -> some View {
+        content
+            .sheet(isPresented: $isSeasonDetailPresented) {
+                HomeSeasonDetailSheetView(
+                    summary: viewModel.seasonMotionSummary,
+                    remainingTimeText: viewModel.seasonRemainingTimeText,
+                    onClose: { isSeasonDetailPresented = false }
+                )
+            }
+            .appTabRootScrollLayout(extraBottomPadding: 12)
     }
 
     /// 홈 대시보드 상단 인사말과 레벨 배지를 렌더링합니다.
@@ -380,8 +546,23 @@ struct HomeView: View {
             nextGoalAreaText: viewModel.nextGoalArea?.area.calculatedAreaString ?? "완료",
             remainingAreaText: viewModel.remainingAreaToGoal.calculatedAreaString,
             progressRatio: viewModel.goalProgressRatio,
-            onOpenDetail: { isTerritoryGoalPresented = true }
+            onOpenDetail: {
+                territoryGoalEntryContext = nil
+                isTerritoryGoalPresented = true
+            }
         )
+    }
+
+    /// 외부 라우트를 한 번 소비해 홈 상세 네비게이션 상태에 반영합니다.
+    /// - Returns: 없음. 처리한 라우트는 즉시 제거해 중복 네비게이션을 방지합니다.
+    private func consumeExternalRouteIfNeeded() {
+        guard let externalRoute else { return }
+        switch externalRoute.destination {
+        case .territoryGoalDetail:
+            territoryGoalEntryContext = externalRoute.territoryGoalEntryContext
+            isTerritoryGoalPresented = true
+        }
+        self.externalRoute = nil
     }
 
     private var selectedPetContextBanner: some View {
@@ -439,209 +620,11 @@ struct HomeView: View {
         .padding(.horizontal, 16)
     }
 
-    private func weatherMissionStatusCard(summary: WeatherMissionStatusSummary) -> some View {
-        HomeWeatherMissionStatusCardView(summary: summary)
-    }
-
     /// 홈에서 원시 날씨 수치와 관측 상태를 요약하는 상세 카드를 렌더링합니다.
     /// - Parameter presentation: 홈 카드가 직접 사용할 날씨 상세 프레젠테이션 상태입니다.
     /// - Returns: 기온/체감/습도/강수/공기질을 보여주는 상세 카드 뷰입니다.
     private func weatherDetailCard(presentation: HomeWeatherSnapshotCardPresentation) -> some View {
         HomeWeatherSnapshotCardView(presentation: presentation)
-    }
-
-    private func weatherShieldSummaryCard(summary: WeatherShieldDailySummary) -> some View {
-        HomeWeatherShieldSummaryCardView(summary: summary)
-    }
-
-    private func indoorMissionCard(board: IndoorMissionBoard) -> some View {
-        let presentation = viewModel.indoorMissionPresentation
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text(questWidgetTab == .daily ? presentation.sectionTitle : "주간 퀘스트 요약")
-                    .font(.appFont(for: .SemiBold, size: 18))
-                Spacer()
-                if board.riskLevel != .clear && questWidgetTab == .daily {
-                    Text(board.riskLevel.displayTitle)
-                        .font(.appFont(for: .SemiBold, size: 11))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.appYellow)
-                        .cornerRadius(8)
-                }
-            }
-            questWidgetTabSelector
-            questReminderToggleRow
-
-            if questWidgetTab == .daily {
-                Text(presentation.sectionSubtitle)
-                    .font(.appFont(for: .Light, size: 12))
-                    .foregroundStyle(Color.appTextDarkGray)
-                    .fixedSize(horizontal: false, vertical: true)
-                HStack {
-                    Text(viewModel.weatherMissionStatusSummary.appliedAtText)
-                        .font(.appFont(for: .Light, size: 11))
-                        .foregroundStyle(Color.appTextDarkGray)
-                    Spacer()
-                    Text(viewModel.weatherMissionStatusSummary.shieldUsageText)
-                        .font(.appFont(for: .SemiBold, size: 11))
-                        .foregroundStyle(Color.appTextDarkGray)
-                }
-                if board.riskLevel != .clear {
-                    HStack(spacing: 8) {
-                        Button("체감 날씨 다름") {
-                            viewModel.submitWeatherMismatchFeedback()
-                        }
-                        .disabled(viewModel.canSubmitWeatherMismatchFeedback == false)
-                        .font(.appFont(for: .SemiBold, size: 11))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 7)
-                        .background(viewModel.canSubmitWeatherMismatchFeedback ? Color.appYellow : Color.appTextLightGray)
-                        .cornerRadius(8)
-
-                        Text("주간 남은 반영 \(viewModel.weatherFeedbackRemainingCount)/\(viewModel.weatherFeedbackWeeklyLimit)")
-                            .font(.appFont(for: .Light, size: 11))
-                            .foregroundStyle(Color.appTextDarkGray)
-                    }
-                }
-                if presentation.rationaleItems.isEmpty == false {
-                    VStack(alignment: .leading, spacing: 7) {
-                        Text("진행 가이드")
-                            .font(.appFont(for: .SemiBold, size: 12))
-                        ForEach(Array(presentation.rationaleItems.enumerated()), id: \.offset) { index, item in
-                            HStack(alignment: .top, spacing: 6) {
-                                Circle()
-                                    .fill(Color.appInk)
-                                    .frame(width: 5, height: 5)
-                                    .padding(.top, 5)
-                                Text(item)
-                                    .font(.appFont(for: .Light, size: 11))
-                                    .foregroundStyle(Color.appTextDarkGray)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-                            .accessibilityIdentifier("home.quest.rationale.\(index)")
-                        }
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 10)
-                    .background(Color.appYellowPale.opacity(0.35))
-                    .cornerRadius(10)
-                    .accessibilityElement(children: .contain)
-                    .accessibilityIdentifier("home.quest.rationale.card")
-                }
-                if let difficulty = board.difficultySummary {
-                    missionDifficultySummary(difficulty)
-                }
-                if let extensionMessage = board.extensionMessage {
-                    Text(extensionMessage)
-                        .font(.appFont(for: .Light, size: 11))
-                        .foregroundStyle(Color.appTextDarkGray)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 6)
-                        .background(
-                            board.extensionState == .active || board.extensionState == .consumed
-                            ? Color.appYellowPale
-                            : Color.appTextLightGray.opacity(0.28)
-                        )
-                        .cornerRadius(8)
-                }
-                if let feedbackMessage = viewModel.weatherFeedbackResultMessage {
-                    Text(feedbackMessage)
-                        .font(.appFont(for: .Light, size: 11))
-                        .foregroundStyle(Color.appTextDarkGray)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 6)
-                        .background(Color.appYellowPale)
-                        .cornerRadius(8)
-                }
-
-                if presentation.activeMissions.isEmpty && presentation.completedMissions.isEmpty {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(presentation.emptyTitle)
-                            .font(.appFont(for: .SemiBold, size: 13))
-                        Text(presentation.emptyMessage)
-                            .font(.appFont(for: .Light, size: 12))
-                            .foregroundStyle(Color.appTextDarkGray)
-                    }
-                    .padding(.vertical, 4)
-                } else {
-                    indoorMissionSection(
-                        title: "지금 진행할 미션",
-                        accessibilityIdentifier: "home.quest.section.active",
-                        rows: presentation.activeMissions
-                    )
-                    if let completedTitle = presentation.completedSectionTitle {
-                        indoorMissionSection(
-                            title: completedTitle,
-                            accessibilityIdentifier: "home.quest.section.completed",
-                            rows: presentation.completedMissions
-                        )
-                    }
-                }
-            } else {
-                weeklyQuestSummary(board: board)
-            }
-
-            if let suggestion = viewModel.questAlternativeActionSuggestion {
-                questAlternativeSuggestionCard(suggestion)
-            }
-        }
-        .padding(14)
-        .background(Color.white)
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.appTextLightGray, lineWidth: 0.5)
-        )
-        .padding(.horizontal, 16)
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("home.quest.card.daily")
-    }
-
-    /// 퀘스트 위젯에서 일일/주간 뷰를 전환하는 탭 선택 행입니다.
-    private var questWidgetTabSelector: some View {
-        HomeQuestWidgetTabSelectorView(selectedTab: questWidgetTab) { tab in
-            questWidgetTab = tab
-        }
-    }
-
-    /// 하루 1회 퀘스트 리마인드 알림 설정 토글 행입니다.
-    private var questReminderToggleRow: some View {
-        HomeQuestReminderToggleRowView(
-            isEnabled: Binding(
-                get: { viewModel.questReminderEnabled },
-                set: { viewModel.setQuestReminderEnabled($0) }
-            )
-        )
-    }
-
-    /// 주간 퀘스트 진행도와 완료 현황을 요약해서 보여줍니다.
-    private func weeklyQuestSummary(board: IndoorMissionBoard) -> some View {
-        let summary = viewModel.seasonMotionSummary
-        let completedDaily = board.missions.filter { $0.progress.isCompleted }.count
-        let totalDaily = board.missions.count
-
-        return HomeWeeklyQuestSummaryView(
-            summary: summary,
-            completedDailyCount: completedDaily,
-            totalDailyCount: totalDaily,
-            isSeasonMotionReduced: isSeasonMotionReduced,
-            seasonGaugeWaveOffset: seasonGaugeWaveOffset
-        )
-    }
-
-    /// 퀘스트 실패/만료 시 다음 행동을 안내하는 제안 카드입니다.
-    private func questAlternativeSuggestionCard(_ text: String) -> some View {
-        HomeQuestAlternativeSuggestionCardView(text: text)
-    }
-
-    private func missionDifficultySummary(_ summary: IndoorMissionDifficultySummary) -> some View {
-        HomeMissionDifficultySummaryView(
-            summary: summary,
-            onActivateEasyDayMode: {
-                viewModel.activateEasyDayMode()
-            }
-        )
     }
 
     private func seasonMotionCard(summary: SeasonMotionSummary) -> some View {
@@ -897,60 +880,327 @@ struct HomeView: View {
         }
     }
 
-    /// 홈 미션 카드를 활성/완료 섹션 단위로 렌더링합니다.
+}
+
+private struct HomeMissionSectionView: View {
+    let board: IndoorMissionBoard
+    let presentation: HomeIndoorMissionBoardPresentation
+    let weatherMissionStatusSummary: WeatherMissionStatusSummary
+    let weatherShieldDailySummary: WeatherShieldDailySummary?
+    @Binding var questWidgetTab: HomeQuestWidgetTab
+    let questReminderEnabled: Bool
+    let onSetQuestReminderEnabled: (Bool) -> Void
+    let canSubmitWeatherMismatchFeedback: Bool
+    let weatherFeedbackRemainingCount: Int
+    let weatherFeedbackWeeklyLimit: Int
+    let weatherFeedbackResultMessage: String?
+    let questAlternativeActionSuggestion: String?
+    let seasonSummary: SeasonMotionSummary
+    let isSeasonMotionReduced: Bool
+    let seasonGaugeWaveOffset: CGFloat
+    let animatedQuestProgress: [String: Double]
+    let questProgressPulseMissionId: String?
+    let questClaimPulseMissionId: String?
+    let isQuestMotionReduced: Bool
+    let onSubmitWeatherMismatchFeedback: () -> Void
+    let onActivateEasyDayMode: () -> Void
+    let onRecordIndoorMissionAction: (String) -> Void
+    let onFinalizeIndoorMission: (String) -> Void
+    let onSyncMissionAppearProgress: (IndoorMissionCardModel) -> Void
+    let onSyncMissionProgress: (IndoorMissionCardModel, Double) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("오늘 미션 안내")
+                .font(.appScaledFont(for: .SemiBold, size: 30, relativeTo: .title2))
+            Text("완료 기준, 부족분, 완료된 미션을 한 번에 확인하세요.")
+                .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .caption))
+                .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+
+        HomeWeatherMissionStatusCardView(summary: weatherMissionStatusSummary)
+
+        if let weatherShieldDailySummary {
+            HomeWeatherShieldSummaryCardView(summary: weatherShieldDailySummary)
+        }
+
+        HomeIndoorMissionCardContainerView(
+            board: board,
+            presentation: presentation,
+            weatherMissionStatusSummary: weatherMissionStatusSummary,
+            questWidgetTab: $questWidgetTab,
+            questReminderEnabled: questReminderEnabled,
+            onSetQuestReminderEnabled: onSetQuestReminderEnabled,
+            canSubmitWeatherMismatchFeedback: canSubmitWeatherMismatchFeedback,
+            weatherFeedbackRemainingCount: weatherFeedbackRemainingCount,
+            weatherFeedbackWeeklyLimit: weatherFeedbackWeeklyLimit,
+            weatherFeedbackResultMessage: weatherFeedbackResultMessage,
+            questAlternativeActionSuggestion: questAlternativeActionSuggestion,
+            seasonSummary: seasonSummary,
+            isSeasonMotionReduced: isSeasonMotionReduced,
+            seasonGaugeWaveOffset: seasonGaugeWaveOffset,
+            animatedQuestProgress: animatedQuestProgress,
+            questProgressPulseMissionId: questProgressPulseMissionId,
+            questClaimPulseMissionId: questClaimPulseMissionId,
+            isQuestMotionReduced: isQuestMotionReduced,
+            onSubmitWeatherMismatchFeedback: onSubmitWeatherMismatchFeedback,
+            onActivateEasyDayMode: onActivateEasyDayMode,
+            onRecordIndoorMissionAction: onRecordIndoorMissionAction,
+            onFinalizeIndoorMission: onFinalizeIndoorMission,
+            onSyncMissionAppearProgress: onSyncMissionAppearProgress,
+            onSyncMissionProgress: onSyncMissionProgress
+        )
+    }
+}
+
+private struct HomeIndoorMissionCardContainerView: View {
+    let board: IndoorMissionBoard
+    let presentation: HomeIndoorMissionBoardPresentation
+    let weatherMissionStatusSummary: WeatherMissionStatusSummary
+    @Binding var questWidgetTab: HomeQuestWidgetTab
+    let questReminderEnabled: Bool
+    let onSetQuestReminderEnabled: (Bool) -> Void
+    let canSubmitWeatherMismatchFeedback: Bool
+    let weatherFeedbackRemainingCount: Int
+    let weatherFeedbackWeeklyLimit: Int
+    let weatherFeedbackResultMessage: String?
+    let questAlternativeActionSuggestion: String?
+    let seasonSummary: SeasonMotionSummary
+    let isSeasonMotionReduced: Bool
+    let seasonGaugeWaveOffset: CGFloat
+    let animatedQuestProgress: [String: Double]
+    let questProgressPulseMissionId: String?
+    let questClaimPulseMissionId: String?
+    let isQuestMotionReduced: Bool
+    let onSubmitWeatherMismatchFeedback: () -> Void
+    let onActivateEasyDayMode: () -> Void
+    let onRecordIndoorMissionAction: (String) -> Void
+    let onFinalizeIndoorMission: (String) -> Void
+    let onSyncMissionAppearProgress: (IndoorMissionCardModel) -> Void
+    let onSyncMissionProgress: (IndoorMissionCardModel, Double) -> Void
+
+    private var completedDailyCount: Int {
+        board.missions.filter { $0.progress.isCompleted }.count
+    }
+
+    private var totalDailyCount: Int {
+        board.missions.count
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(questWidgetTab == .daily ? presentation.sectionTitle : "주간 퀘스트 요약")
+                    .font(.appFont(for: .SemiBold, size: 18))
+                Spacer()
+                if board.riskLevel != .clear && questWidgetTab == .daily {
+                    Text(board.riskLevel.displayTitle)
+                        .font(.appFont(for: .SemiBold, size: 11))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.appYellow)
+                        .cornerRadius(8)
+                }
+            }
+
+            HomeQuestWidgetTabSelectorView(selectedTab: questWidgetTab) { tab in
+                questWidgetTab = tab
+            }
+
+            HomeQuestReminderToggleRowView(
+                isEnabled: Binding(
+                    get: { questReminderEnabled },
+                    set: { onSetQuestReminderEnabled($0) }
+                )
+            )
+
+            if questWidgetTab == .daily {
+                dailyMissionContent
+            } else {
+                HomeWeeklyQuestSummaryView(
+                    summary: seasonSummary,
+                    completedDailyCount: completedDailyCount,
+                    totalDailyCount: totalDailyCount,
+                    isSeasonMotionReduced: isSeasonMotionReduced,
+                    seasonGaugeWaveOffset: seasonGaugeWaveOffset
+                )
+            }
+
+            if let questAlternativeActionSuggestion {
+                HomeQuestAlternativeSuggestionCardView(text: questAlternativeActionSuggestion)
+            }
+        }
+        .padding(14)
+        .background(Color.white)
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.appTextLightGray, lineWidth: 0.5)
+        )
+        .padding(.horizontal, 16)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("home.quest.card.daily")
+    }
+
+    @ViewBuilder
+    private var dailyMissionContent: some View {
+        Text(presentation.sectionSubtitle)
+            .font(.appFont(for: .Light, size: 12))
+            .foregroundStyle(Color.appTextDarkGray)
+            .fixedSize(horizontal: false, vertical: true)
+
+        HStack {
+            Text(weatherMissionStatusSummary.appliedAtText)
+                .font(.appFont(for: .Light, size: 11))
+                .foregroundStyle(Color.appTextDarkGray)
+            Spacer()
+            Text(weatherMissionStatusSummary.shieldUsageText)
+                .font(.appFont(for: .SemiBold, size: 11))
+                .foregroundStyle(Color.appTextDarkGray)
+        }
+
+        if board.riskLevel != .clear {
+            HStack(spacing: 8) {
+                Button("체감 날씨 다름") {
+                    onSubmitWeatherMismatchFeedback()
+                }
+                .disabled(canSubmitWeatherMismatchFeedback == false)
+                .font(.appFont(for: .SemiBold, size: 11))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .background(canSubmitWeatherMismatchFeedback ? Color.appYellow : Color.appTextLightGray)
+                .cornerRadius(8)
+
+                Text("주간 남은 반영 \(weatherFeedbackRemainingCount)/\(weatherFeedbackWeeklyLimit)")
+                    .font(.appFont(for: .Light, size: 11))
+                    .foregroundStyle(Color.appTextDarkGray)
+            }
+        }
+
+        if presentation.rationaleItems.isEmpty == false {
+            VStack(alignment: .leading, spacing: 7) {
+                Text("진행 가이드")
+                    .font(.appFont(for: .SemiBold, size: 12))
+                ForEach(Array(presentation.rationaleItems.enumerated()), id: \.offset) { index, item in
+                    HStack(alignment: .top, spacing: 6) {
+                        Circle()
+                            .fill(Color.appInk)
+                            .frame(width: 5, height: 5)
+                            .padding(.top, 5)
+                        Text(item)
+                            .font(.appFont(for: .Light, size: 11))
+                            .foregroundStyle(Color.appTextDarkGray)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .accessibilityIdentifier("home.quest.rationale.\(index)")
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 10)
+            .background(Color.appYellowPale.opacity(0.35))
+            .cornerRadius(10)
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("home.quest.rationale.card")
+        }
+
+        if let difficulty = board.difficultySummary {
+            HomeMissionDifficultySummaryView(
+                summary: difficulty,
+                onActivateEasyDayMode: onActivateEasyDayMode
+            )
+        }
+
+        if let extensionMessage = board.extensionMessage {
+            Text(extensionMessage)
+                .font(.appFont(for: .Light, size: 11))
+                .foregroundStyle(Color.appTextDarkGray)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background(
+                    board.extensionState == .active || board.extensionState == .consumed
+                    ? Color.appYellowPale
+                    : Color.appTextLightGray.opacity(0.28)
+                )
+                .cornerRadius(8)
+        }
+
+        if let weatherFeedbackResultMessage {
+            Text(weatherFeedbackResultMessage)
+                .font(.appFont(for: .Light, size: 11))
+                .foregroundStyle(Color.appTextDarkGray)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background(Color.appYellowPale)
+                .cornerRadius(8)
+        }
+
+        if presentation.activeMissions.isEmpty && presentation.completedMissions.isEmpty {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(presentation.emptyTitle)
+                    .font(.appFont(for: .SemiBold, size: 13))
+                Text(presentation.emptyMessage)
+                    .font(.appFont(for: .Light, size: 12))
+                    .foregroundStyle(Color.appTextDarkGray)
+            }
+            .padding(.vertical, 4)
+        } else {
+            missionRowsSection(
+                title: "지금 진행할 미션",
+                accessibilityIdentifier: "home.quest.section.active",
+                rows: presentation.activeMissions
+            )
+            if let completedTitle = presentation.completedSectionTitle {
+                missionRowsSection(
+                    title: completedTitle,
+                    accessibilityIdentifier: "home.quest.section.completed",
+                    rows: presentation.completedMissions
+                )
+            }
+        }
+    }
+
+    /// 홈 미션 카드 내부에서 섹션 제목과 미션 행 목록을 렌더링합니다.
     /// - Parameters:
-    ///   - title: 섹션 제목입니다.
-    ///   - accessibilityIdentifier: UI 테스트와 접근성 탐색에 사용할 식별자입니다.
-    ///   - rows: 섹션에 포함될 미션 행 프레젠테이션 목록입니다.
-    /// - Returns: 홈 미션 카드 내부에 표시할 섹션 뷰입니다.
-    private func indoorMissionSection(
+    ///   - title: 카드 안에서 노출할 섹션 제목입니다.
+    ///   - accessibilityIdentifier: 접근성 및 UI 테스트 식별자입니다.
+    ///   - rows: 섹션에 렌더링할 미션 행 프레젠테이션 목록입니다.
+    /// - Returns: 제목과 행 목록을 포함한 섹션 뷰입니다.
+    private func missionRowsSection(
         title: String,
         accessibilityIdentifier: String,
         rows: [HomeIndoorMissionRowPresentation]
     ) -> some View {
-        guard rows.isEmpty == false else {
-            return AnyView(EmptyView())
-        }
-        return AnyView(
-            VStack(alignment: .leading, spacing: 8) {
-                Text(title)
-                    .font(.appFont(for: .SemiBold, size: 13))
-                    .foregroundStyle(Color.appTextDarkGray)
-                ForEach(rows) { row in
-                    indoorMissionRow(presentation: row)
-                }
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.appFont(for: .SemiBold, size: 13))
+                .foregroundStyle(Color.appTextDarkGray)
+            ForEach(rows) { row in
+                missionRow(presentation: row)
             }
-            .accessibilityElement(children: .contain)
-            .accessibilityIdentifier(accessibilityIdentifier)
-        )
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier(accessibilityIdentifier)
     }
 
     /// 개별 실내 미션 프레젠테이션을 홈 카드 행으로 렌더링합니다.
-    /// - Parameter presentation: 렌더링할 미션 행 프레젠테이션 정보입니다.
-    /// - Returns: 홈 카드 내부의 개별 미션 행 뷰입니다.
-    private func indoorMissionRow(presentation: HomeIndoorMissionRowPresentation) -> some View {
+    /// - Parameter presentation: 렌더링할 미션 행 프레젠테이션입니다.
+    /// - Returns: 애니메이션 상태와 액션을 포함한 홈 미션 행 뷰입니다.
+    private func missionRow(presentation: HomeIndoorMissionRowPresentation) -> some View {
         let mission = presentation.mission
         return HomeIndoorMissionRowView(
             presentation: presentation,
-            animatedProgress: questProgressValue(for: mission),
+            animatedProgress: animatedQuestProgress[mission.id] ?? mission.progress.progressRatio,
             isQuestMotionReduced: isQuestMotionReduced,
             showClaimPulse: questClaimPulseMissionId == mission.id,
             showProgressPulse: questProgressPulseMissionId == mission.id,
-            onRecordAction: { viewModel.recordIndoorMissionAction(mission.id) },
-            onFinalize: { viewModel.finalizeIndoorMission(mission.id) },
+            onRecordAction: { onRecordIndoorMissionAction(mission.id) },
+            onFinalize: { onFinalizeIndoorMission(mission.id) },
             onAppearSync: {
-                if animatedQuestProgress[mission.id] == nil {
-                    animatedQuestProgress[mission.id] = mission.progress.progressRatio
-                }
+                onSyncMissionAppearProgress(mission)
             },
             onProgressSync: { next in
-                if isQuestMotionReduced {
-                    animatedQuestProgress[mission.id] = next
-                } else {
-                    withAnimation(.easeOut(duration: 0.34)) {
-                        animatedQuestProgress[mission.id] = next
-                    }
-                }
+                onSyncMissionProgress(mission, next)
             }
         )
     }

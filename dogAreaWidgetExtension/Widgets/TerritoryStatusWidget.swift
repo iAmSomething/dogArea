@@ -57,7 +57,17 @@ struct TerritoryStatusWidgetEntryView: View {
                 dataContent
             }
         }
+        .widgetURL(territoryWidgetURL)
         .containerBackground(.fill.tertiary, for: .widget)
+    }
+
+    private var territoryWidgetURL: URL? {
+        TerritoryWidgetDeepLinkRoute(
+            destination: .goalDetail,
+            source: "territory_widget",
+            status: entry.snapshot.status
+        )
+        .makeURL()
     }
 
     private var guestContent: some View {
