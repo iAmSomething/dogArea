@@ -29,6 +29,8 @@ enum WalkWidgetActionKind: String, Codable, CaseIterable {
     case endWalk = "end_walk"
     case openWalkTab = "open_walk_tab"
     case claimQuestReward = "claim_quest_reward"
+    case openQuestDetail = "open_quest_detail"
+    case openQuestRecovery = "open_quest_recovery"
     case openRivalTab = "open_rival_tab"
 
     var deepLinkValue: String {

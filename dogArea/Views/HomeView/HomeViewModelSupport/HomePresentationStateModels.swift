@@ -244,6 +244,14 @@ enum TerritoryGoalEntrySource: String, Equatable {
     case territoryWidget = "territory_widget"
 }
 
+enum QuestWidgetEntrySource: String, Equatable {
+    case questRivalWidget = "quest_rival_widget"
+}
+
+enum HomeExternalScrollTarget: String, Equatable {
+    case questMissionSection = "home.quest.section"
+}
+
 struct TerritoryGoalEntryContext: Equatable {
     let source: TerritoryGoalEntrySource
     let widgetStatus: TerritoryWidgetSnapshotStatus
@@ -273,12 +281,44 @@ struct TerritoryGoalEntryContext: Equatable {
     }
 }
 
+struct QuestWidgetEntryContext: Equatable {
+    let source: QuestWidgetEntrySource
+    let routeKind: WalkWidgetActionKind
+    let widgetStatus: QuestRivalWidgetSnapshotStatus
+
+    var bannerMessage: String {
+        switch routeKind {
+        case .claimQuestReward:
+            return "위젯에서 보상 수령을 요청했어요. 이 카드에서 처리 결과와 다음 행동을 바로 확인해보세요."
+        case .openQuestRecovery:
+            return "위젯 수령 상태와 앱 상태가 어긋났을 수 있어요. 이 카드에서 다시 확인하고 복구해보세요."
+        case .openQuestDetail:
+            return "위젯에서 퀘스트 상세로 바로 이어졌어요. 부족한 진행량과 완료 조건을 여기서 이어서 확인해보세요."
+        case .openRivalTab, .openWalkTab, .startWalk, .endWalk:
+            return "위젯에서 현재 퀘스트 요약을 열었어요."
+        }
+    }
+
+    var isWarning: Bool {
+        switch routeKind {
+        case .openQuestRecovery:
+            return true
+        case .claimQuestReward:
+            return widgetStatus == .claimFailed || widgetStatus == .syncDelayed
+        case .openQuestDetail, .openRivalTab, .openWalkTab, .startWalk, .endWalk:
+            return false
+        }
+    }
+}
+
 struct HomeExternalRoute: Identifiable, Equatable {
     enum Destination: String, Equatable {
         case territoryGoalDetail = "territory_goal_detail"
+        case questMissionBoard = "quest_mission_board"
     }
 
     let id = UUID()
     let destination: Destination
     let territoryGoalEntryContext: TerritoryGoalEntryContext?
+    let questWidgetEntryContext: QuestWidgetEntryContext?
 }

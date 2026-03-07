@@ -27,6 +27,7 @@
 - Walk widget pet context policy v1: `docs/walk-widget-pet-context-policy-v1.md`
 - Territory widget goal deeplink v1: `docs/territory-widget-goal-deeplink-v1.md`
 - Territory widget next goal summary v1: `docs/territory-widget-next-goal-summary-v1.md`
+- Quest/Rival widget next action recovery v1: `docs/quest-rival-widget-next-action-recovery-v1.md`
 - 라이벌 프라이버시 하드 가드 v1: `docs/rival-privacy-hard-guard-v1.md`
 - 라이벌 프라이버시 정책 Stage1 v1: `docs/rival-privacy-policy-stage1-v1.md`
 - 라이벌 공정 리그 매칭 v1: `docs/rival-fair-league-v1.md`

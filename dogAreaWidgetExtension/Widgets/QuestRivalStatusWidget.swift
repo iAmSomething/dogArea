@@ -87,8 +87,8 @@ struct QuestRivalStatusWidgetEntryView: View {
                 .foregroundStyle(.secondary)
                 .lineLimit(3)
             Spacer(minLength: 2)
-            Button(intent: OpenRivalTabIntent()) {
-                Label("라이벌 열기", systemImage: "person.3.fill")
+            Button(intent: OpenQuestDetailIntent()) {
+                Label("퀘스트 상세 보기", systemImage: "list.bullet.rectangle.portrait")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
@@ -139,20 +139,11 @@ struct QuestRivalStatusWidgetEntryView: View {
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(.secondary)
             }
-            if summary.questClaimable, summary.questInstanceId != nil {
-                Button(intent: ClaimQuestRewardIntent()) {
-                    Label("보상 받기", systemImage: "gift.fill")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.orange)
-            } else {
-                Button(intent: OpenRivalTabIntent()) {
-                    Label("라이벌", systemImage: "person.3.fill")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
-            }
+            Text(nextActionCaption(summary))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+            primaryActionButton(summary: summary, prominent: true)
         }
     }
 
@@ -186,23 +177,298 @@ struct QuestRivalStatusWidgetEntryView: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                 Spacer(minLength: 8)
-                if summary.rivalRankDelta != 0 {
+                if shouldShowQuestRemainingText(summary) {
+                    Text(questRemainingText(summary))
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.orange)
+                } else if summary.rivalRankDelta != 0 {
                     Text("변화 \(summary.rivalRankDelta > 0 ? "+" : "")\(summary.rivalRankDelta)")
                         .font(.caption2)
                         .foregroundStyle(summary.rivalRankDelta > 0 ? .green : .orange)
                 }
             }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(nextActionHeadline(summary))
+                    .font(.caption.weight(.semibold))
+                Text(nextActionCaption(summary))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
             HStack(spacing: 8) {
+                primaryActionButton(summary: summary, prominent: true)
+                secondaryActionButton(summary: summary)
+            }
+        }
+    }
+
+    /// 현재 스냅샷 기준으로 가장 우선해야 할 다음 행동 종류를 계산합니다.
+    /// - Parameter summary: 퀘스트/라이벌 위젯 요약 스냅샷입니다.
+    /// - Returns: 위젯이 우선 제안해야 할 행동 종류입니다.
+    private func primaryActionKind(for summary: QuestRivalWidgetSummarySnapshot) -> WalkWidgetActionKind {
+        switch entry.snapshot.status {
+        case .claimInFlight, .claimFailed:
+            return .openQuestRecovery
+        case .claimSucceeded:
+            return .openRivalTab
+        case .guestLocked:
+            return .openQuestDetail
+        case .emptyData:
+            return .openQuestDetail
+        case .offlineCached, .syncDelayed, .memberReady:
+            if summary.questClaimable, summary.questInstanceId != nil {
+                return .claimQuestReward
+            }
+            if summary.questProgressRatio >= 0.999 {
+                return .openQuestRecovery
+            }
+            return .openQuestDetail
+        }
+    }
+
+    /// 현재 스냅샷 기준으로 보조 행동 종류를 계산합니다.
+    /// - Parameter summary: 퀘스트/라이벌 위젯 요약 스냅샷입니다.
+    /// - Returns: 함께 노출할 보조 행동 종류가 있으면 반환하고, 없으면 `nil`을 반환합니다.
+    private func secondaryActionKind(for summary: QuestRivalWidgetSummarySnapshot) -> WalkWidgetActionKind? {
+        switch primaryActionKind(for: summary) {
+        case .claimQuestReward:
+            return .openRivalTab
+        case .openQuestRecovery:
+            return .openQuestDetail
+        case .openQuestDetail:
+            return .openRivalTab
+        case .openRivalTab:
+            return .openQuestDetail
+        case .startWalk, .endWalk, .openWalkTab:
+            return nil
+        }
+    }
+
+    /// 다음 행동 영역의 제목 문구를 계산합니다.
+    /// - Parameter summary: 퀘스트/라이벌 위젯 요약 스냅샷입니다.
+    /// - Returns: 상태별로 달라지는 다음 행동 제목입니다.
+    private func nextActionHeadline(_ summary: QuestRivalWidgetSummarySnapshot) -> String {
+        switch primaryActionKind(for: summary) {
+        case .claimQuestReward:
+            return "지금 보상 받을 수 있어요"
+        case .openQuestRecovery:
+            return entry.snapshot.status == .claimInFlight
+                ? "앱에서 수령을 마무리해 주세요"
+                : "앱에서 다시 확인이 필요해요"
+        case .openQuestDetail:
+            return shouldShowQuestRemainingText(summary)
+                ? questRemainingText(summary)
+                : "퀘스트 상세로 이어서 확인해 보세요"
+        case .openRivalTab:
+            return "라이벌 순위를 이어서 확인해 보세요"
+        case .startWalk, .endWalk, .openWalkTab:
+            return "앱에서 확인해 보세요"
+        }
+    }
+
+    /// 다음 행동 영역의 보조 설명 문구를 계산합니다.
+    /// - Parameter summary: 퀘스트/라이벌 위젯 요약 스냅샷입니다.
+    /// - Returns: 상태별 CTA와 복구 맥락을 설명하는 보조 문구입니다.
+    private func nextActionCaption(_ summary: QuestRivalWidgetSummarySnapshot) -> String {
+        switch primaryActionKind(for: summary) {
+        case .claimQuestReward:
+            return "보상 \(summary.questRewardPoint)pt를 지금 수령할 수 있어요."
+        case .openQuestRecovery:
+            if entry.snapshot.status == .claimInFlight {
+                return "위젯 요청은 접수됐어요. 앱에서 처리 결과를 확인하고 마무리해 주세요."
+            }
+            return "수령이 실패했거나 상태가 어긋났을 수 있어요. 앱에서 복구·재시도해 주세요."
+        case .openQuestDetail:
+            return shouldShowQuestRemainingText(summary)
+                ? "퀘스트 카드에서 남은 진행량과 완료 조건을 바로 확인할 수 있어요."
+                : "앱과 위젯 상태가 아직 완전히 맞지 않을 수 있어요."
+        case .openRivalTab:
+            return "보상 이후 순위 변화와 리그 흐름을 라이벌 탭에서 확인해 보세요."
+        case .startWalk, .endWalk, .openWalkTab:
+            return "앱에서 현재 상태를 다시 확인해 주세요."
+        }
+    }
+
+    /// 진행 부족 상태인지 여부를 계산합니다.
+    /// - Parameter summary: 퀘스트/라이벌 위젯 요약 스냅샷입니다.
+    /// - Returns: 부족분 안내를 노출해야 하면 `true`, 아니면 `false`입니다.
+    private func shouldShowQuestRemainingText(_ summary: QuestRivalWidgetSummarySnapshot) -> Bool {
+        let shouldEvaluateGap = entry.snapshot.status == .memberReady ||
+            entry.snapshot.status == .offlineCached ||
+            entry.snapshot.status == .syncDelayed
+        guard shouldEvaluateGap else { return false }
+        return summary.questClaimable == false && summary.questProgressRatio < 0.999
+    }
+
+    /// 목표 달성까지 남은 진행량을 사용자 문구로 변환합니다.
+    /// - Parameter summary: 퀘스트/라이벌 위젯 요약 스냅샷입니다.
+    /// - Returns: `얼마나 더 필요하다`를 축약한 위젯 문구입니다.
+    private func questRemainingText(_ summary: QuestRivalWidgetSummarySnapshot) -> String {
+        let remaining = max(summary.questTargetValue - summary.questProgressValue, 0)
+        return "보상까지 \(WidgetFormatting.formattedProgressDelta(remaining)) 남음"
+    }
+
+    /// primary CTA 버튼을 렌더링합니다.
+    /// - Parameters:
+    ///   - summary: 퀘스트/라이벌 위젯 요약 스냅샷입니다.
+    ///   - prominent: 강조 버튼 스타일 적용 여부입니다.
+    /// - Returns: 상태에 맞는 primary CTA 버튼입니다.
+    @ViewBuilder
+    private func primaryActionButton(
+        summary: QuestRivalWidgetSummarySnapshot,
+        prominent: Bool
+    ) -> some View {
+        actionButton(
+            kind: primaryActionKind(for: summary),
+            title: actionTitle(for: primaryActionKind(for: summary)),
+            prominent: prominent
+        )
+    }
+
+    /// secondary CTA 버튼을 렌더링합니다.
+    /// - Parameter summary: 퀘스트/라이벌 위젯 요약 스냅샷입니다.
+    /// - Returns: 보조 CTA가 있으면 버튼을 렌더링하고, 없으면 빈 뷰를 렌더링합니다.
+    @ViewBuilder
+    private func secondaryActionButton(summary: QuestRivalWidgetSummarySnapshot) -> some View {
+        if let kind = secondaryActionKind(for: summary) {
+            actionButton(kind: kind, title: actionTitle(for: kind), prominent: false)
+        }
+    }
+
+    /// CTA 종류에 대응하는 버튼 제목을 반환합니다.
+    /// - Parameter kind: 렌더링할 CTA 종류입니다.
+    /// - Returns: 버튼에 표시할 사용자 문구입니다.
+    private func actionTitle(for kind: WalkWidgetActionKind) -> String {
+        switch kind {
+        case .claimQuestReward:
+            return "보상 받기"
+        case .openQuestDetail:
+            return "퀘스트 상세 보기"
+        case .openQuestRecovery:
+            return "앱에서 마무리"
+        case .openRivalTab:
+            return "라이벌 보기"
+        case .openWalkTab:
+            return "앱에서 확인"
+        case .startWalk:
+            return "산책 시작"
+        case .endWalk:
+            return "산책 종료"
+        }
+    }
+
+    /// CTA 종류에 대응하는 SF Symbol 이름을 반환합니다.
+    /// - Parameter kind: 렌더링할 CTA 종류입니다.
+    /// - Returns: 버튼 라벨에 사용할 시스템 이미지 이름입니다.
+    private func actionSymbolName(for kind: WalkWidgetActionKind) -> String {
+        switch kind {
+        case .claimQuestReward:
+            return "gift.fill"
+        case .openQuestDetail:
+            return "list.bullet.rectangle.portrait"
+        case .openQuestRecovery:
+            return "arrow.trianglehead.clockwise"
+        case .openRivalTab:
+            return "person.3.fill"
+        case .openWalkTab:
+            return "arrow.up.right.square"
+        case .startWalk:
+            return "figure.walk"
+        case .endWalk:
+            return "stop.fill"
+        }
+    }
+
+    /// CTA 종류에 맞는 인텐트 버튼을 렌더링합니다.
+    /// - Parameters:
+    ///   - kind: 렌더링할 CTA 종류입니다.
+    ///   - title: 버튼 제목입니다.
+    ///   - prominent: 강조 버튼 스타일 적용 여부입니다.
+    /// - Returns: 인텐트와 스타일이 적용된 버튼 뷰입니다.
+    @ViewBuilder
+    private func actionButton(kind: WalkWidgetActionKind, title: String, prominent: Bool) -> some View {
+        switch kind {
+        case .claimQuestReward:
+            if prominent {
                 Button(intent: ClaimQuestRewardIntent()) {
-                    Label("보상 받기", systemImage: "gift.fill")
+                    Label(title, systemImage: actionSymbolName(for: kind))
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.orange)
-                .disabled(summary.questClaimable == false || summary.questInstanceId == nil)
-
-                Button(intent: OpenRivalTabIntent()) {
-                    Label("라이벌", systemImage: "person.3.fill")
+            } else {
+                Button(intent: ClaimQuestRewardIntent()) {
+                    Label(title, systemImage: actionSymbolName(for: kind))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+            }
+        case .openQuestDetail:
+            if prominent {
+                Button(intent: OpenQuestDetailIntent()) {
+                    Label(title, systemImage: actionSymbolName(for: kind))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.orange)
+            } else {
+                Button(intent: OpenQuestDetailIntent()) {
+                    Label(title, systemImage: actionSymbolName(for: kind))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+            }
+        case .openQuestRecovery:
+            if prominent {
+                Button(intent: OpenQuestRecoveryIntent()) {
+                    Label(title, systemImage: actionSymbolName(for: kind))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.orange)
+            } else {
+                Button(intent: OpenQuestRecoveryIntent()) {
+                    Label(title, systemImage: actionSymbolName(for: kind))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+            }
+        case .openRivalTab:
+            Button(intent: OpenRivalTabIntent()) {
+                Label(title, systemImage: actionSymbolName(for: kind))
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+        case .openWalkTab:
+            Button(intent: OpenWalkTabIntent()) {
+                Label(title, systemImage: actionSymbolName(for: kind))
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+        case .startWalk:
+            if prominent {
+                Button(intent: StartWalkIntent()) {
+                    Label(title, systemImage: actionSymbolName(for: kind))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+            } else {
+                Button(intent: StartWalkIntent()) {
+                    Label(title, systemImage: actionSymbolName(for: kind))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+            }
+        case .endWalk:
+            if prominent {
+                Button(intent: EndWalkIntent()) {
+                    Label(title, systemImage: actionSymbolName(for: kind))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+            } else {
+                Button(intent: EndWalkIntent()) {
+                    Label(title, systemImage: actionSymbolName(for: kind))
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
@@ -282,7 +548,7 @@ struct QuestRivalStatusWidget: Widget {
             QuestRivalStatusWidgetEntryView(entry: entry)
         }
         .configurationDisplayName("퀘스트/라이벌 상태")
-        .description("오늘의 퀘스트 진행률과 보상, 라이벌 순위를 빠르게 확인합니다.")
+        .description("오늘 해야 할 다음 행동과 퀘스트 보상 상태, 라이벌 순위를 빠르게 확인합니다.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }

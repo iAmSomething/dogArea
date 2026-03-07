@@ -133,7 +133,7 @@ extension MapViewModel {
             )
             syncWalkLiveActivity(force: true)
 
-        case .claimQuestReward, .openRivalTab, .openWalkTab:
+        case .claimQuestReward, .openQuestDetail, .openQuestRecovery, .openRivalTab, .openWalkTab:
             metricTracker.track(
                 .widgetActionRejected,
                 userKey: currentMetricUserId(),

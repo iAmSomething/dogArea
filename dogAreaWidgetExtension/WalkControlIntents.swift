@@ -104,9 +104,9 @@ struct ClaimQuestRewardIntent: AppIntent {
     private func prepareQuestRewardRoute(contextId: String?) -> URL {
         let snapshotStore = DefaultQuestRivalWidgetSnapshotStore.shared
         let current = snapshotStore.load()
-        let status: QuestRivalWidgetSnapshotStatus = contextId == nil ? .emptyData : .claimInFlight
+        let status: QuestRivalWidgetSnapshotStatus = contextId == nil ? .claimFailed : .claimInFlight
         let message: String = contextId == nil
-            ? "수령 가능한 보상을 찾지 못했어요."
+            ? "위젯 상태가 최신이 아니에요. 앱에서 퀘스트 카드를 다시 확인해 주세요."
             : "앱에서 보상 수령을 처리 중입니다."
         snapshotStore.save(
             QuestRivalWidgetSnapshot(
@@ -119,6 +119,48 @@ struct ClaimQuestRewardIntent: AppIntent {
         )
         return preparePendingRoute(kind: .claimQuestReward, contextId: contextId)
     }
+}
+
+struct OpenQuestDetailIntent: AppIntent {
+    static var title: LocalizedStringResource = "퀘스트 상세 보기"
+    static var openAppWhenRun: Bool = true
+
+    /// 위젯에서 퀘스트 상세 확인 라우트를 앱 공유 저장소에 기록합니다.
+    /// - Returns: 앱의 홈 퀘스트 카드 위치로 이동할 인텐트 결과입니다.
+    #if compiler(>=6.0)
+    func perform() async throws -> some IntentResult & OpensIntent {
+        let questInstanceId = DefaultQuestRivalWidgetSnapshotStore.shared.load().summary?.questInstanceId
+        let openURL = preparePendingRoute(kind: .openQuestDetail, contextId: questInstanceId)
+        return .result(opensIntent: OpenURLIntent(openURL))
+    }
+    #else
+    func perform() async throws -> some IntentResult {
+        let questInstanceId = DefaultQuestRivalWidgetSnapshotStore.shared.load().summary?.questInstanceId
+        _ = preparePendingRoute(kind: .openQuestDetail, contextId: questInstanceId)
+        return .result()
+    }
+    #endif
+}
+
+struct OpenQuestRecoveryIntent: AppIntent {
+    static var title: LocalizedStringResource = "앱에서 마무리"
+    static var openAppWhenRun: Bool = true
+
+    /// 위젯에서 퀘스트 보상 복구 라우트를 앱 공유 저장소에 기록합니다.
+    /// - Returns: 앱의 홈 퀘스트 카드 위치로 이동할 인텐트 결과입니다.
+    #if compiler(>=6.0)
+    func perform() async throws -> some IntentResult & OpensIntent {
+        let questInstanceId = DefaultQuestRivalWidgetSnapshotStore.shared.load().summary?.questInstanceId
+        let openURL = preparePendingRoute(kind: .openQuestRecovery, contextId: questInstanceId)
+        return .result(opensIntent: OpenURLIntent(openURL))
+    }
+    #else
+    func perform() async throws -> some IntentResult {
+        let questInstanceId = DefaultQuestRivalWidgetSnapshotStore.shared.load().summary?.questInstanceId
+        _ = preparePendingRoute(kind: .openQuestRecovery, contextId: questInstanceId)
+        return .result()
+    }
+    #endif
 }
 
 struct OpenRivalTabIntent: AppIntent {
