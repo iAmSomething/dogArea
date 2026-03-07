@@ -23,8 +23,18 @@ func load(_ relativePath: String) -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
+func loadMany(_ relativePaths: [String]) -> String {
+    relativePaths.map(load).joined(separator: "\n")
+}
+
 let migration = load("supabase/migrations/20260303120000_quest_stage2_progress_claim_engine.sql")
-let syncWalk = load("supabase/functions/sync-walk/index.ts")
+let syncWalk = loadMany([
+    "supabase/functions/sync-walk/index.ts",
+    "supabase/functions/sync-walk/support/core.ts",
+    "supabase/functions/sync-walk/support/types.ts",
+    "supabase/functions/sync-walk/handlers/points_stage.ts",
+    "supabase/functions/sync-walk/handlers/points_stage_post_processing.ts"
+])
 let questEngine = load("supabase/functions/quest-engine/index.ts")
 let doc = load("docs/quest-stage2-progress-claim-engine-v1.md")
 let report = load("docs/cycle-205-quest-stage2-engine-report-2026-03-03.md")

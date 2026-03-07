@@ -9,6 +9,7 @@ swift scripts/supabase_integration_harness_unit_check.swift
 swift scripts/backend_contract_versioning_unit_check.swift
 swift scripts/backend_edge_observability_unit_check.swift
 swift scripts/backend_edge_auth_unification_unit_check.swift
+swift scripts/sync_walk_stage_handler_split_unit_check.swift
 
 if [[ "${DOGAREA_RUN_SUPABASE_SMOKE:-0}" != "1" ]]; then
   echo "[dogArea-backend] DOGAREA_RUN_SUPABASE_SMOKE=1 이 아니므로 실 Supabase smoke matrix는 건너뜁니다."
