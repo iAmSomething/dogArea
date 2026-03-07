@@ -209,6 +209,7 @@ limit 4;
 - migration: `supabase/migrations/20260305103000_walk_live_presence_schema_rpc_ttl_rls.sql`
 - RPC: `public.rpc_cleanup_walk_live_presence(in_now_ts timestamptz default now())`
 - 내장 scheduler: `pg_cron` job `walk_live_presence_ttl_cleanup`
+- retention baseline: `docs/backend-realtime-moderation-retention-policy-v1.md`
 
 실행 기준:
 
