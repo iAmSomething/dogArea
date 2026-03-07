@@ -647,6 +647,7 @@ struct WalkLiveActivityState: Equatable {
     let isWalking: Bool
     let elapsedSeconds: Int
     let pointCount: Int
+    let capturedAreaM2: Double
     let petName: String
     let autoEndStage: WalkLiveActivityAutoEndStage
     let statusMessage: String?
@@ -659,6 +660,7 @@ struct WalkLiveActivityAttributes: ActivityAttributes {
     struct ContentState: Codable, Hashable {
         let elapsedSeconds: Int
         let pointCount: Int
+        let capturedAreaM2: Double
         let petName: String
         let autoEndStage: WalkLiveActivityAutoEndStage
         let statusMessage: String?
@@ -672,11 +674,12 @@ struct WalkLiveActivityAttributes: ActivityAttributes {
 @available(iOS 16.1, *)
 extension WalkLiveActivityState {
     /// Live Activity 업데이트에 필요한 ContentState를 생성합니다.
-    /// - Returns: 경과 시간/포인트/자동종료 단계를 포함한 상태 payload입니다.
+    /// - Returns: 경과 시간, 영역 증가량, 포인트 수, 자동종료 단계를 포함한 상태 payload입니다.
     func makeContentState() -> WalkLiveActivityAttributes.ContentState {
         WalkLiveActivityAttributes.ContentState(
             elapsedSeconds: elapsedSeconds,
             pointCount: pointCount,
+            capturedAreaM2: capturedAreaM2,
             petName: petName,
             autoEndStage: autoEndStage,
             statusMessage: statusMessage,
