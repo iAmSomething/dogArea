@@ -75,7 +75,7 @@ struct TerritoryStatusWidgetEntryView: View {
             WidgetStatusBadge(title: "비회원", color: .orange.opacity(0.2))
             Text("영역 현황")
                 .font(.headline)
-            Text("로그인 후 오늘/주간 지표와 방어 예정 타일을 위젯에서 볼 수 있어요.")
+            Text("로그인 후 오늘/주간 지표와 다음 목표를 위젯에서 볼 수 있어요.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(3)
@@ -92,7 +92,7 @@ struct TerritoryStatusWidgetEntryView: View {
             Text("첫 타일 점령을 시작해보세요")
                 .font(.headline)
                 .lineLimit(2)
-            Text(entry.snapshot.message)
+            Text("첫 산책을 시작하면 다음 목표와 남은 면적을 함께 보여드릴게요.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(3)
@@ -148,8 +148,16 @@ struct TerritoryStatusWidgetEntryView: View {
     private var mediumMetricContent: some View {
         let summary = entry.snapshot.summary ?? .zero
         return VStack(alignment: .leading, spacing: 8) {
-            Text("영역 현황")
-                .font(.headline)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("영역 현황")
+                    .font(.headline)
+                Text(summary.goalContext?.contextLabel ?? "앱에서 목표 기준을 다시 동기화해주세요.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+
+            goalSummarySection(summary.goalContext)
 
             HStack(spacing: 8) {
                 metricTile(title: "오늘", value: summary.todayTileCount, tint: .green)
@@ -157,6 +165,91 @@ struct TerritoryStatusWidgetEntryView: View {
                 metricTile(title: "방어 예정", value: summary.defenseScheduledTileCount, tint: .orange)
             }
         }
+    }
+
+    /// 중형 위젯에서 다음 목표/남은 면적 요약 블록을 렌더링합니다.
+    /// - Parameter goalContext: 선택 반려견 기준으로 계산된 목표 문맥 스냅샷입니다.
+    /// - Returns: 목표 확정 상태와 fallback 상태를 공통 카드로 표현한 요약 뷰입니다.
+    private func goalSummarySection(_ goalContext: TerritoryWidgetGoalContextSnapshot?) -> some View {
+        let resolvedStatus = goalContext?.status ?? .unavailable
+        let accentColor: Color
+        let titleText: String
+        let detailText: String
+        let captionText: String
+        let progressRatio: Double?
+
+        switch resolvedStatus {
+        case .ready:
+            accentColor = .orange
+            titleText = goalContext?.nextGoalName ?? "다음 목표"
+            let remainingText = WidgetFormatting.formattedArea(goalContext?.remainingAreaM2 ?? 0)
+            let goalAreaText = WidgetFormatting.formattedArea(goalContext?.nextGoalAreaM2 ?? 0)
+            detailText = "남은 \(remainingText) · 목표 \(goalAreaText)"
+            captionText = goalContext?.message ?? "다음 산책 목표를 계산했어요."
+            progressRatio = goalContext?.progressRatio
+        case .completed:
+            accentColor = .green
+            titleText = "준비된 목표 완료"
+            detailText = "현재 비교 구역 기준을 모두 달성했어요."
+            captionText = goalContext?.message ?? "앱에서 새 비교 구역을 확인해보세요."
+            progressRatio = 1.0
+        case .emptyData:
+            accentColor = .blue
+            titleText = "다음 목표 준비 중"
+            detailText = "첫 산책 후 남은 면적을 계산해드릴게요."
+            captionText = goalContext?.message ?? "기록이 쌓이면 바로 목표를 보여드릴게요."
+            progressRatio = nil
+        case .unavailable:
+            accentColor = .gray
+            titleText = "목표 동기화 필요"
+            detailText = "앱을 열어 비교 구역을 다시 불러와주세요."
+            captionText = goalContext?.message ?? "오프라인이 길어지면 목표 계산이 늦어질 수 있어요."
+            progressRatio = nil
+        }
+
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .top, spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("다음 목표")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Text(titleText)
+                        .font(.headline)
+                        .lineLimit(1)
+                    Text(detailText)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 8)
+                if let progressRatio {
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("진행")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                        Text(WidgetFormatting.formattedPercent(progressRatio))
+                            .font(.title3.weight(.bold))
+                            .foregroundStyle(accentColor)
+                            .monospacedDigit()
+                    }
+                }
+            }
+
+            if let progressRatio {
+                ProgressView(value: progressRatio)
+                    .tint(accentColor)
+                    .scaleEffect(x: 1, y: 1.2, anchor: .center)
+            }
+
+            Text(captionText)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+        }
+        .padding(.vertical, 10)
+        .padding(.horizontal, 10)
+        .background(accentColor.opacity(0.12))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     /// 중형 위젯에서 개별 지표 타일을 렌더링합니다.
@@ -230,7 +323,7 @@ struct TerritoryStatusWidget: Widget {
             TerritoryStatusWidgetEntryView(entry: entry)
         }
         .configurationDisplayName("영역 현황")
-        .description("오늘/주간 점령 지표와 방어 예정 타일을 빠르게 확인합니다.")
+        .description("오늘/주간 점령 지표와 다음 목표를 빠르게 확인합니다.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }

@@ -272,19 +272,46 @@ enum TerritoryWidgetSnapshotStatus: String, Codable {
     case syncDelayed = "sync_delayed"
 }
 
+enum TerritoryWidgetGoalContextStatus: String, Codable {
+    case ready = "ready"
+    case emptyData = "empty_data"
+    case completed = "completed"
+    case unavailable = "unavailable"
+}
+
+struct TerritoryWidgetGoalContextSnapshot: Codable, Equatable {
+    let status: TerritoryWidgetGoalContextStatus
+    let contextLabel: String
+    let nextGoalName: String?
+    let nextGoalAreaM2: Double?
+    let remainingAreaM2: Double?
+    let progressRatio: Double?
+    let message: String
+
+    var hasConfirmedGoal: Bool {
+        status == .ready &&
+        nextGoalName?.isEmpty == false &&
+        nextGoalAreaM2 != nil &&
+        remainingAreaM2 != nil &&
+        progressRatio != nil
+    }
+}
+
 struct TerritoryWidgetSummarySnapshot: Codable, Equatable {
     let todayTileCount: Int
     let weeklyTileCount: Int
     let defenseScheduledTileCount: Int
     let scoreUpdatedAt: TimeInterval?
     let refreshedAt: TimeInterval
+    let goalContext: TerritoryWidgetGoalContextSnapshot?
 
     static let zero = TerritoryWidgetSummarySnapshot(
         todayTileCount: 0,
         weeklyTileCount: 0,
         defenseScheduledTileCount: 0,
         scoreUpdatedAt: nil,
-        refreshedAt: Date().timeIntervalSince1970
+        refreshedAt: Date().timeIntervalSince1970,
+        goalContext: nil
     )
 }
 
@@ -292,14 +319,57 @@ struct TerritoryWidgetSnapshot: Codable, Equatable {
     let status: TerritoryWidgetSnapshotStatus
     let message: String
     let summary: TerritoryWidgetSummarySnapshot?
+    let contextKey: String
     let updatedAt: TimeInterval
+
+    enum CodingKeys: String, CodingKey {
+        case status
+        case message
+        case summary
+        case contextKey
+        case updatedAt
+    }
+
+    /// 영역 위젯 스냅샷을 명시적인 컨텍스트 키와 함께 생성합니다.
+    /// - Parameters:
+    ///   - status: 현재 위젯 상태입니다.
+    ///   - message: 상태 설명 문구입니다.
+    ///   - summary: 렌더링할 영역 요약 스냅샷입니다.
+    ///   - contextKey: 사용자/반려견 컨텍스트 식별 키입니다.
+    ///   - updatedAt: 마지막 갱신 시각입니다.
+    init(
+        status: TerritoryWidgetSnapshotStatus,
+        message: String,
+        summary: TerritoryWidgetSummarySnapshot?,
+        contextKey: String,
+        updatedAt: TimeInterval
+    ) {
+        self.status = status
+        self.message = message
+        self.summary = summary
+        self.contextKey = contextKey
+        self.updatedAt = updatedAt
+    }
 
     static let initial = TerritoryWidgetSnapshot(
         status: .guestLocked,
         message: "로그인 후 내 영역 현황을 위젯에서 빠르게 확인해보세요.",
         summary: nil,
+        contextKey: "guest",
         updatedAt: Date().timeIntervalSince1970
     )
+
+    /// 레거시 스냅샷까지 호환하도록 영역 위젯 스냅샷을 디코딩합니다.
+    /// - Parameter decoder: 공유 저장소의 직렬화 데이터를 해석할 디코더입니다.
+    /// - Throws: 지원하지 않는 형식일 때 디코딩 오류를 그대로 전달합니다.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.status = try container.decode(TerritoryWidgetSnapshotStatus.self, forKey: .status)
+        self.message = try container.decode(String.self, forKey: .message)
+        self.summary = try container.decodeIfPresent(TerritoryWidgetSummarySnapshot.self, forKey: .summary)
+        self.contextKey = try container.decodeIfPresent(String.self, forKey: .contextKey) ?? "guest"
+        self.updatedAt = try container.decode(TimeInterval.self, forKey: .updatedAt)
+    }
 }
 
 enum HotspotWidgetSignalLevel: String, Codable {
