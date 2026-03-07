@@ -49,6 +49,10 @@
 - Supabase integration smoke matrix v1: `docs/supabase-integration-smoke-matrix-v1.md`
 - Backend 계약 버저닝 정책 v1: `docs/backend-contract-versioning-policy-v1.md`
 - Backend 고위험 계약 매트릭스 v1: `docs/backend-high-risk-contract-matrix-v1.md`
+- Backend Edge observability 표준 v1: `docs/backend-edge-observability-standard-v1.md`
+- Backend Edge error taxonomy v1: `docs/backend-edge-error-taxonomy-v1.md`
+- Backend Edge incident runbook v1: `docs/backend-edge-incident-runbook-v1.md`
+- Backend Edge observability adoption matrix v1: `docs/backend-edge-observability-adoption-matrix-v1.md`
 - 릴리즈 회귀 체크리스트 v1: `docs/release-regression-checklist-v1.md`
 - 릴리즈 회귀 실행 리포트(2026-02-26): `docs/release-regression-report-2026-02-26.md`
 - 게임 레이어 공통 관측/QA 기준 v1: `docs/game-layer-observability-qa-v1.md`
