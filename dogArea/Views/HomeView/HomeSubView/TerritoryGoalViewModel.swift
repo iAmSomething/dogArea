@@ -3,12 +3,16 @@ import Combine
 
 final class TerritoryGoalViewModel: ObservableObject {
     let homeViewModel: HomeViewModel
+    let entryContext: TerritoryGoalEntryContext?
     private var cancellables: Set<AnyCancellable> = []
 
     /// 홈 ViewModel을 주입받아 Territory Goal 화면에서 재사용합니다.
-    /// - Parameter homeViewModel: 기존 데이터/비즈니스 로직을 보유한 홈 ViewModel입니다.
-    init(homeViewModel: HomeViewModel) {
+    /// - Parameters:
+    ///   - homeViewModel: 기존 데이터/비즈니스 로직을 보유한 홈 ViewModel입니다.
+    ///   - entryContext: 위젯 등 외부 진입에서 전달된 상세 진입 맥락입니다.
+    init(homeViewModel: HomeViewModel, entryContext: TerritoryGoalEntryContext? = nil) {
         self.homeViewModel = homeViewModel
+        self.entryContext = entryContext
 
         homeViewModel.objectWillChange
             .sink { [weak self] _ in
@@ -31,6 +35,14 @@ final class TerritoryGoalViewModel: ObservableObject {
 
     var headerEyebrowText: String {
         "영역 목표 상세"
+    }
+
+    var entryBannerMessage: String? {
+        entryContext?.bannerMessage
+    }
+
+    var entryBannerIsWarning: Bool {
+        entryContext?.isWarning ?? false
     }
 
     var goalMeaningText: String {

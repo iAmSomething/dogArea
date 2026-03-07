@@ -22,7 +22,10 @@ struct RootView: View {
     @State private var selectedTab = RootView.initialSelectedTabForRuntime()
     @State private var tabBarVisibility: AppTabBarVisibility = .automatic
     @State private var pendingWalkWidgetRoute: WalkWidgetActionRoute? = nil
+    @State private var pendingHomeRoute: HomeExternalRoute? = nil
+    @State private var deferredTerritoryWidgetRoute: TerritoryWidgetDeepLinkRoute? = nil
     @State private var didDispatchUITestWidgetRoute = false
+    @State private var didDispatchUITestTerritoryWidgetRoute = false
     @StateObject private var mapViewModelStore = MapViewModelStore()
     private let widgetActionStore: WalkWidgetActionRequestStoring = DefaultWalkWidgetActionRequestStore.shared
     private let walkWidgetSnapshotStore: WalkWidgetSnapshotStoring = DefaultWalkWidgetSnapshotStore.shared
@@ -31,7 +34,6 @@ struct RootView: View {
     private let questRivalWidgetSnapshotSyncService: QuestRivalWidgetSnapshotSyncing = DefaultQuestRivalWidgetSnapshotSyncService()
     private let questRewardClaimService: QuestRewardClaimServiceProtocol = QuestRewardClaimService()
     private let questRivalSnapshotStore: QuestRivalWidgetSnapshotStoring = DefaultQuestRivalWidgetSnapshotStore.shared
-    private var homeView = HomeView()
     private var walkListView = WalkListView()
     private var notificationCenterView = NotificationCenterView()
     private var isAuthenticationOverlayActive: Bool {
@@ -61,6 +63,22 @@ struct RootView: View {
             actionId: "ui-test-widget-route",
             source: "ui-test",
             contextId: nil
+        )
+    }
+
+    /// UI 테스트 런타임에서 지정한 영역 위젯 라우트를 복원합니다.
+    /// - Returns: 영역 위젯 상태 인자가 있으면 상세 진입 라우트를 반환하고, 없으면 `nil`을 반환합니다.
+    private static func initialUITestTerritoryWidgetRoute() -> TerritoryWidgetDeepLinkRoute? {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard let index = arguments.firstIndex(of: "-UITest.TerritoryWidgetRouteStatus"),
+              arguments.indices.contains(index + 1),
+              let status = TerritoryWidgetSnapshotStatus(rawValue: arguments[index + 1]) else {
+            return nil
+        }
+        return TerritoryWidgetDeepLinkRoute(
+            destination: .goalDetail,
+            source: "ui-test-territory-widget",
+            status: status
         )
     }
 
@@ -135,6 +153,7 @@ struct RootView: View {
             }
             .onAppear {
                 dispatchUITestWidgetActionIfNeeded()
+                dispatchUITestTerritoryWidgetRouteIfNeeded()
                 consumePendingWidgetActionIfNeeded()
                 syncTerritoryWidgetSnapshot(force: true)
                 syncHotspotWidgetSnapshot(force: true)
@@ -163,6 +182,7 @@ struct RootView: View {
                     mapViewModelStore.prepareIfNeeded()
                 }
                 dispatchPendingWalkWidgetActionIfNeeded()
+                dispatchDeferredTerritoryWidgetRouteIfNeeded()
             }
 
     }
@@ -171,7 +191,7 @@ struct RootView: View {
     private var tabContent: some View {
         if selectedTab == 0 {
             AppTabRootContainer(accessibilityIdentifier: "screen.home") {
-                homeView
+                HomeView(externalRoute: $pendingHomeRoute)
             }
         } else if selectedTab == 1 {
             AppTabRootContainer(
@@ -221,17 +241,27 @@ struct RootView: View {
         }
     }
 
-    /// 위젯에서 전달된 딥링크를 파싱해 지도 탭 액션으로 전달합니다.
+    /// 위젯에서 전달된 딥링크를 파싱해 각 목적지에 맞는 화면 라우트로 전달합니다.
     /// - Parameter url: 앱으로 유입된 URL 스킴 딥링크입니다.
     private func routeWidgetDeepLinkIfNeeded(_ url: URL) {
         #if DEBUG
         print("[WidgetAction] onOpenURL received: \(url.absoluteString)")
         #endif
-        guard let route = WalkWidgetActionRoute.parse(from: url) else { return }
-        #if DEBUG
-        print("[WidgetAction] parsed deep link kind=\(route.kind.rawValue) actionId=\(route.actionId) source=\(route.source)")
-        #endif
-        dispatchWidgetAction(route)
+        if let route = WalkWidgetActionRoute.parse(from: url) {
+            #if DEBUG
+            print("[WidgetAction] parsed deep link kind=\(route.kind.rawValue) actionId=\(route.actionId) source=\(route.source)")
+            #endif
+            dispatchWidgetAction(route)
+            return
+        }
+        if let territoryRoute = TerritoryWidgetDeepLinkRoute.parse(from: url) {
+            #if DEBUG
+            print(
+                "[WidgetAction] parsed territory deep link destination=\(territoryRoute.destination.rawValue) status=\(territoryRoute.status.rawValue) source=\(territoryRoute.source)"
+            )
+            #endif
+            dispatchTerritoryWidgetRoute(territoryRoute)
+        }
     }
 
     /// 공유 저장소에 대기 중인 위젯 액션 요청을 소비해 앱 내부 액션으로 전달합니다.
@@ -251,6 +281,14 @@ struct RootView: View {
         dispatchWidgetAction(route)
     }
 
+    /// UI 테스트 런타임에서 지정한 영역 위젯 라우트를 한 번만 홈 상세로 전달합니다.
+    private func dispatchUITestTerritoryWidgetRouteIfNeeded() {
+        guard didDispatchUITestTerritoryWidgetRoute == false,
+              let route = Self.initialUITestTerritoryWidgetRoute() else { return }
+        didDispatchUITestTerritoryWidgetRoute = true
+        dispatchTerritoryWidgetRoute(route)
+    }
+
     /// 위젯 액션 라우트를 종류에 맞는 탭/서비스로 전달합니다.
     /// - Parameter route: 앱 내부에서 처리할 위젯 액션 라우트입니다.
     private func dispatchWidgetAction(_ route: WalkWidgetActionRoute) {
@@ -268,6 +306,35 @@ struct RootView: View {
             selectedTab = 0
             handleQuestRewardClaimFromWidget(route)
         }
+    }
+
+    /// 영역 위젯 딥링크를 홈의 목표 상세 화면으로 연결합니다.
+    /// - Parameter route: 영역 위젯이 전달한 목적지/상태 딥링크 정보입니다.
+    private func dispatchTerritoryWidgetRoute(_ route: TerritoryWidgetDeepLinkRoute) {
+        #if DEBUG
+        print(
+            "[WidgetAction] dispatch territory destination=\(route.destination.rawValue) status=\(route.status.rawValue) source=\(route.source)"
+        )
+        #endif
+        if route.status == .guestLocked && authFlow.isLoggedIn == false {
+            deferredTerritoryWidgetRoute = route
+            selectedTab = 0
+            _ = authFlow.requireMember(trigger: .walkHistory)
+            return
+        }
+        if isAuthenticationOverlayActive {
+            deferredTerritoryWidgetRoute = route
+            return
+        }
+        deferredTerritoryWidgetRoute = nil
+        selectedTab = 0
+        pendingHomeRoute = HomeExternalRoute(
+            destination: .territoryGoalDetail,
+            territoryGoalEntryContext: TerritoryGoalEntryContext(
+                source: .territoryWidget,
+                widgetStatus: route.status
+            )
+        )
     }
 
     /// 산책 관련 위젯 액션을 지도 탭으로 전달합니다.
@@ -329,6 +396,16 @@ struct RootView: View {
     private func dispatchPendingWalkWidgetActionIfNeeded() {
         guard let pendingWalkWidgetRoute else { return }
         dispatchWalkWidgetAction(pendingWalkWidgetRoute)
+    }
+
+    /// 인증 오버레이 동안 보류된 영역 위젯 딥링크를 인증 해제 직후 재처리합니다.
+    private func dispatchDeferredTerritoryWidgetRouteIfNeeded() {
+        guard let deferredTerritoryWidgetRoute else { return }
+        self.deferredTerritoryWidgetRoute = nil
+        if deferredTerritoryWidgetRoute.status == .guestLocked && authFlow.isLoggedIn == false {
+            return
+        }
+        dispatchTerritoryWidgetRoute(deferredTerritoryWidgetRoute)
     }
 
     /// 위젯 보상 수령 액션을 멱등 요청으로 처리하고 스냅샷 상태를 갱신합니다.

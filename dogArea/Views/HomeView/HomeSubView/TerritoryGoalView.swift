@@ -16,6 +16,12 @@ struct TerritoryGoalView: View {
                         sourceText: viewModel.areaSourceText,
                         freshnessText: viewModel.freshnessText
                     )
+                    if let entryBannerMessage = viewModel.entryBannerMessage {
+                        HomeStatusBannerView(
+                            message: entryBannerMessage,
+                            isWarning: viewModel.entryBannerIsWarning
+                        )
+                    }
                     TerritoryGoalOverviewCardView(
                         currentAreaText: viewModel.currentAreaText,
                         currentAreaName: viewModel.homeViewModel.myArea.areaName,

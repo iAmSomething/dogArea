@@ -46,8 +46,8 @@ assertTrue(homeViewModel.contains("recordWeatherShieldUsage"), "IndoorMissionSto
 assertTrue(homeViewModel.contains("return (.clear, .fallback)"), "fallback should keep default clear risk")
 assertTrue(homeViewModel.contains("localizedCopy(\"기본 모드\", \"Base Mode\")"), "weather status builder should define localized fallback badge copy")
 
-assertTrue(homeView.contains("weatherMissionStatusCard(summary:"), "HomeView should render weather mission status card")
-assertTrue(homeView.contains("weatherShieldSummaryCard(summary:"), "HomeView should render weather shield summary card")
+assertTrue(homeView.contains("HomeWeatherMissionStatusCardView(summary:"), "HomeView should render weather mission status card")
+assertTrue(homeView.contains("HomeWeatherShieldSummaryCardView(summary:"), "HomeView should render weather shield summary card")
 
 assertTrue(mapView.contains("weatherOverlayStatusText"), "MapView should display weather status text")
 assertTrue(mapViewModel.contains("weatherOverlayFallbackActive"), "MapViewModel should track fallback state")

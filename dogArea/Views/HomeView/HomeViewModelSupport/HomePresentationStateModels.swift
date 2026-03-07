@@ -239,3 +239,46 @@ struct HomeIndoorMissionBoardPresentation: Equatable {
         emptyMessage: "날씨 기준이 바뀌면 새로운 미션이 자동으로 열립니다."
     )
 }
+
+enum TerritoryGoalEntrySource: String, Equatable {
+    case territoryWidget = "territory_widget"
+}
+
+struct TerritoryGoalEntryContext: Equatable {
+    let source: TerritoryGoalEntrySource
+    let widgetStatus: TerritoryWidgetSnapshotStatus
+
+    var bannerMessage: String {
+        switch widgetStatus {
+        case .memberReady:
+            return "위젯에서 바로 다음 목표 상세로 열었어요. 남은 면적과 최근 정복 흐름을 이어서 확인해보세요."
+        case .offlineCached:
+            return "위젯에 저장된 최근 스냅샷으로 열었어요. 연결이 돌아오면 최신 목표를 다시 확인해보세요."
+        case .syncDelayed:
+            return "위젯 동기화가 지연돼 최근 스냅샷으로 열었어요. 새로고침 후 목표 기준을 다시 확인해보세요."
+        case .emptyData:
+            return "아직 목표 데이터가 충분하지 않아요. 다음 산책에서 첫 영역을 넓혀 기준을 만들어보세요."
+        case .guestLocked:
+            return "로그인 후 영역 목표 상세로 바로 이어졌어요. 다음 산책 목표를 여기서 정리해보세요."
+        }
+    }
+
+    var isWarning: Bool {
+        switch widgetStatus {
+        case .offlineCached, .syncDelayed:
+            return true
+        case .memberReady, .emptyData, .guestLocked:
+            return false
+        }
+    }
+}
+
+struct HomeExternalRoute: Identifiable, Equatable {
+    enum Destination: String, Equatable {
+        case territoryGoalDetail = "territory_goal_detail"
+    }
+
+    let id = UUID()
+    let destination: Destination
+    let territoryGoalEntryContext: TerritoryGoalEntryContext?
+}
