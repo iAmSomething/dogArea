@@ -30,12 +30,24 @@ extension HomeViewModel {
         refreshAreaReferenceCatalogs()
         refreshGuestDataUpgradeReport()
         refreshIndoorMissions()
-        refreshWeatherSnapshot()
     }
 
     /// 공용 날씨 스냅샷 저장소에서 최신 값을 읽어 홈 상태에 반영합니다.
-    func refreshWeatherSnapshot() {
+    /// - Parameter now: 관측 시각의 신선도와 보정 여부를 계산할 기준 시각입니다.
+    func refreshWeatherSnapshot(now: Date = Date()) {
         latestWeatherSnapshot = weatherSnapshotStore.loadSnapshot()
+        updateWeatherDetailPresentation(now: now)
+    }
+
+    /// 최신 날씨 스냅샷과 오늘 미션 상태를 조합해 상세 카드 프레젠테이션을 갱신합니다.
+    /// - Parameter now: 상세 카드의 관측 시각/보정 상태를 계산할 기준 시각입니다.
+    func updateWeatherDetailPresentation(now: Date = Date()) {
+        weatherDetailPresentation = weatherSnapshotPresentationService.makePresentation(
+            snapshot: latestWeatherSnapshot,
+            missionSummary: weatherMissionStatusSummary,
+            now: now,
+            localizedCopy: localizedCopy(ko:en:)
+        )
     }
 
     func refreshAreaReferenceCatalogs() {

@@ -99,7 +99,7 @@ struct WeatherMissionStatusSummary: Equatable {
 
     static let empty = WeatherMissionStatusSummary(
         badgeText: "정상",
-        title: "오늘 날씨 연동 상태",
+        title: "오늘 미션 영향 요약",
         reasonText: "기본 퀘스트 진행",
         appliedAtText: "적용 시점 -",
         shieldUsageText: "보호 사용 0회",
@@ -107,7 +107,7 @@ struct WeatherMissionStatusSummary: Equatable {
         policyText: "날씨 위험도에 따라 실외 목표와 실내 대체 미션이 자동으로 정리됩니다.",
         lifecycleGuideText: "기준 횟수를 채운 뒤 완료 확인을 눌러야 보상이 확정됩니다.",
         fallbackNotice: nil,
-        accessibilityText: "오늘 날씨 연동 상태. 기본 퀘스트 진행.",
+        accessibilityText: "오늘 미션 영향 요약. 기본 퀘스트 진행.",
         isFallback: false,
         riskLevel: .clear
     )
@@ -117,6 +117,83 @@ struct WeatherShieldDailySummary: Equatable {
     let dayKey: String
     let applyCount: Int
     let lastAppliedAtText: String
+}
+
+struct HomeWeatherMetricPresentation: Identifiable, Equatable {
+    let id: String
+    let title: String
+    let valueText: String
+    let detailText: String?
+    let accessibilityText: String
+}
+
+struct HomeWeatherSnapshotCardPresentation: Equatable {
+    let title: String
+    let subtitle: String
+    let statusBadgeText: String
+    let metrics: [HomeWeatherMetricPresentation]
+    let observedAtText: String
+    let sourceLineText: String
+    let missionHintText: String
+    let accessibilityText: String
+    let isPlaceholder: Bool
+    let isFallback: Bool
+
+    static let placeholder = HomeWeatherSnapshotCardPresentation(
+        title: "지금 날씨 상세",
+        subtitle: "기온, 체감, 습도, 강수, 공기질을 한 번에 확인하세요.",
+        statusBadgeText: "준비 중",
+        metrics: [
+            .init(
+                id: "temperature",
+                title: "기온",
+                valueText: "확인 중",
+                detailText: nil,
+                accessibilityText: "기온 확인 중"
+            ),
+            .init(
+                id: "feelsLike",
+                title: "체감",
+                valueText: "확인 중",
+                detailText: nil,
+                accessibilityText: "체감 온도 확인 중"
+            ),
+            .init(
+                id: "humidity",
+                title: "습도",
+                valueText: "확인 중",
+                detailText: nil,
+                accessibilityText: "습도 확인 중"
+            ),
+            .init(
+                id: "precipitationState",
+                title: "강수 여부",
+                valueText: "확인 중",
+                detailText: nil,
+                accessibilityText: "강수 여부 확인 중"
+            ),
+            .init(
+                id: "precipitationAmount",
+                title: "강수량",
+                valueText: "확인 중",
+                detailText: nil,
+                accessibilityText: "강수량 확인 중"
+            ),
+            .init(
+                id: "dust",
+                title: "미세먼지",
+                valueText: "확인 중",
+                detailText: nil,
+                accessibilityText: "미세먼지 확인 중"
+            )
+        ],
+        observedAtText: "관측 시각 확인 중",
+        sourceLineText: "최근 관측값을 준비 중입니다. 산책 기록이 생기면 자동으로 채워져요.",
+        missionHintText: "미션 영향 요약은 아래 카드에서 따로 보여줘요.",
+        accessibilityText: "지금 날씨 상세. 최근 관측값을 준비 중입니다.",
+        isPlaceholder: true,
+        isFallback: true
+    )
 }
 
 enum HomeIndoorMissionLifecycleState: String, Equatable {

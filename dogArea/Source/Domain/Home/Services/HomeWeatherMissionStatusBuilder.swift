@@ -128,7 +128,7 @@ final class HomeWeatherMissionStatusBuilder: HomeWeatherMissionStatusBuilding {
 
         return WeatherMissionStatusSummary(
             badgeText: badgeText,
-            title: localizedCopy("오늘 날씨 연동 상태", "Today's Weather Status"),
+            title: localizedCopy("오늘 미션 영향 요약", "Today's Mission Impact"),
             reasonText: reasonText,
             appliedAtText: appliedAtText,
             shieldUsageText: shieldText,

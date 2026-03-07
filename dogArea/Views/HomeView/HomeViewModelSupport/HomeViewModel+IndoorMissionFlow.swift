@@ -22,7 +22,7 @@ extension HomeViewModel {
         if applyIndoorMissionUITestScenarioIfNeeded(now: now) {
             return
         }
-        refreshWeatherSnapshot()
+        refreshWeatherSnapshot(now: now)
         let missionContext = makeIndoorMissionPetContext(reference: now)
         indoorMissionBoard = indoorMissionStore.buildBoard(now: now, context: missionContext)
         questAlternativeActionSuggestion = makeQuestAlternativeActionSuggestion(for: indoorMissionBoard)
@@ -37,6 +37,7 @@ extension HomeViewModel {
             shieldApplyCount: shieldDailySummary?.applyCount ?? 0,
             localizedCopy: localizedCopy(ko:en:)
         )
+        updateWeatherDetailPresentation(now: now)
         updateIndoorMissionPresentation()
         if indoorMissionBoard.isIndoorReplacementActive {
             let exposureKey = "\(indoorMissionBoard.dayKey)|\(indoorMissionBoard.riskLevel.rawValue)"
@@ -442,11 +443,12 @@ extension HomeViewModel {
 
         let dayKey = indoorMissionStore.dayStampForPreview(now: now)
         indoorMissionBoard = makeIndoorMissionUITestBoard(dayKey: dayKey)
+        latestWeatherSnapshot = makeIndoorMissionUITestWeatherSnapshot(now: now)
         weatherFeedbackRemainingCount = indoorMissionStore.weeklyFeedbackLimit
         weatherShieldDailySummary = .init(dayKey: dayKey, applyCount: 1, lastAppliedAtText: "09:30")
         weatherMissionStatusSummary = .init(
             badgeText: "치환",
-            title: "오늘 날씨 연동 상태",
+            title: "오늘 미션 영향 요약",
             reasonText: "강풍과 강수 위험 때문에 오늘은 실내 대체 미션을 우선 진행합니다.",
             appliedAtText: "적용 시점 09:30",
             shieldUsageText: "보호 사용 1회",
@@ -454,13 +456,35 @@ extension HomeViewModel {
             policyText: "실외 목표 대신 실내 대체 미션 3개가 열렸고, 행동 +1은 실제로 끝낸 루틴만 기록하는 체크입니다.",
             lifecycleGuideText: "기준 횟수를 채운 뒤 완료 확인을 눌러야 보상이 확정되고, 완료된 미션은 아래 아카이브로 이동합니다.",
             fallbackNotice: nil,
-            accessibilityText: "오늘 날씨 연동 상태. 강풍과 강수 위험 때문에 실내 대체 미션이 열렸습니다.",
+            accessibilityText: "오늘 미션 영향 요약. 강풍과 강수 위험 때문에 실내 대체 미션이 열렸습니다.",
             isFallback: false,
             riskLevel: .bad
         )
         questAlternativeActionSuggestion = "오늘은 실내 루틴을 실제로 수행한 횟수만 기록하고, 완료된 미션은 아래 완료 영역에서 확인하세요."
+        updateWeatherDetailPresentation(now: now)
         updateIndoorMissionPresentation()
         return true
+    }
+
+    /// 홈 미션 UI 테스트에서 사용할 원시 날씨 스냅샷을 생성합니다.
+    /// - Parameter now: 테스트 관측 시각의 기준이 되는 현재 시각입니다.
+    /// - Returns: 상세 카드가 안정적으로 렌더링할 수 있는 테스트용 날씨 스냅샷입니다.
+    func makeIndoorMissionUITestWeatherSnapshot(now: Date) -> WeatherSnapshot {
+        WeatherSnapshot(
+            level: .bad,
+            observedAt: now.addingTimeInterval(-15 * 60).timeIntervalSince1970,
+            weatherSource: .live,
+            airQualitySource: .live,
+            location: .init(latitude: 37.4979, longitude: 127.0276),
+            temperatureC: 14.2,
+            apparentTemperatureC: 12.9,
+            relativeHumidityPercent: 78.0,
+            isPrecipitating: true,
+            precipitationMMPerHour: 3.6,
+            windMps: 5.1,
+            pm2_5: 18.0,
+            pm10: 31.0
+        )
     }
 
     /// UI 테스트에서 사용할 홈 미션 보드를 생성합니다.
