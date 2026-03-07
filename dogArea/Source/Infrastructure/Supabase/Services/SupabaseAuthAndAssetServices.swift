@@ -47,7 +47,7 @@ enum SupabaseAuthError: LocalizedError {
             }()
             switch errorCode {
             case "over_email_send_rate_limit":
-                return "Supabase 이메일 발송 한도를 초과했습니다.\(retryText) 잠시 후 재시도하거나 SMTP/Rate Limit 설정을 확인해주세요."
+                return "메일 요청이 많아 잠시 뒤 다시 시도할 수 있어요.\(retryText)"
             default:
                 if let message, message.isEmpty == false {
                     return "요청이 너무 많아 인증이 제한되었습니다: \(message)\(retryText)"

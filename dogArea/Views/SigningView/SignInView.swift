@@ -12,6 +12,7 @@ import SwiftUI
 struct SignInView: View {
     /// Apple Developer 서명 준비 전까지 Apple 로그인 노출을 차단합니다.
     private let isAppleSignInTemporarilyDisabled: Bool
+    private let launchArguments = ProcessInfo.processInfo.arguments
 
     @State private var userId: AuthUserInfo? = nil
     @State private var path = NavigationPath()
@@ -46,130 +47,155 @@ struct SignInView: View {
     }
 
     var body: some View {
-        NavigationStack(path: $path) {
-            VStack(spacing: 14) {
-                TitleTextView(title: "로그인/회원가입", subTitle: "계정 정보가 필요해요!")
+        if shouldPresentUITestSignUpPreviewRoute {
+            EmailSignUpSheetView(
+                initialEmail: resolvedUITestSignUpPreviewEmail,
+                authUseCase: authUseCase,
+                onOutcome: applyAuthOutcome
+            )
+        } else {
+            NavigationStack(path: $path) {
+                VStack(spacing: 14) {
+                    TitleTextView(title: "로그인/회원가입", subTitle: "계정 정보가 필요해요!")
 
-                if isAppleSignInTemporarilyDisabled == false {
-                    AppleSigninButton(
-                        authUseCase: authUseCase,
-                        onOutcome: applyAuthOutcome,
-                        onError: { authErrorMessage = $0 }
-                    )
+                    if isAppleSignInTemporarilyDisabled == false {
+                        AppleSigninButton(
+                            authUseCase: authUseCase,
+                            onOutcome: applyAuthOutcome,
+                            onError: { authErrorMessage = $0 }
+                        )
 
-                    HStack {
-                        Rectangle().fill(Color.appTextLightGray.opacity(0.5)).frame(height: 0.7)
-                        Text("또는 이메일")
-                            .font(.appFont(for: .Light, size: 12))
+                        HStack {
+                            Rectangle().fill(Color.appTextLightGray.opacity(0.5)).frame(height: 0.7)
+                            Text("또는 이메일")
+                                .font(.appFont(for: .Light, size: 12))
+                                .foregroundStyle(Color.appTextDarkGray)
+                            Rectangle().fill(Color.appTextLightGray.opacity(0.5)).frame(height: 0.7)
+                        }
+                        .padding(.horizontal, 20)
+                    } else {
+                        Text("Apple 로그인은 준비 중입니다. 현재 이메일 로그인/회원가입만 사용할 수 있어요.")
+                            .font(.appFont(for: .Regular, size: 12))
                             .foregroundStyle(Color.appTextDarkGray)
-                        Rectangle().fill(Color.appTextLightGray.opacity(0.5)).frame(height: 0.7)
+                            .padding(.horizontal, 20)
+                    }
+
+                    VStack(spacing: 8) {
+                        TextField("이메일", text: $email)
+                            .keyboardType(.emailAddress)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled(true)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 12)
+                            .background(Color.appSurface)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .stroke(Color.appTextLightGray.opacity(0.7), lineWidth: 1)
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .accessibilityIdentifier("signin.email")
+
+                        SecureField("비밀번호", text: $password)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 12)
+                            .background(Color.appSurface)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .stroke(Color.appTextLightGray.opacity(0.7), lineWidth: 1)
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .accessibilityIdentifier("signin.password")
+
+                        Button("이메일 로그인") {
+                            runEmailSignIn()
+                        }
+                        .accessibilityIdentifier("signin.login")
+                        .buttonStyle(AppFilledButtonStyle(role: .primary))
+                        .disabled(emailAuthLoading)
+
+                        Button("이메일 회원가입") {
+                            presentSignUpSheet()
+                        }
+                        .accessibilityIdentifier("signin.signup")
+                        .buttonStyle(.plain)
+                        .font(.appFont(for: .Regular, size: 14))
+                        .foregroundStyle(Color.appTextDarkGray)
+                        .frame(maxWidth: .infinity)
+                        .frame(minHeight: 44)
+                        .contentShape(Rectangle())
+                        .disabled(emailAuthLoading)
                     }
                     .padding(.horizontal, 20)
-                } else {
-                    Text("Apple 로그인은 준비 중입니다. 현재 이메일 로그인/회원가입만 사용할 수 있어요.")
-                        .font(.appFont(for: .Regular, size: 12))
-                        .foregroundStyle(Color.appTextDarkGray)
-                        .padding(.horizontal, 20)
-                }
+                    .appCardSurface()
+                    .padding(.horizontal, 16)
 
-                VStack(spacing: 8) {
-                    TextField("이메일", text: $email)
-                        .keyboardType(.emailAddress)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled(true)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 12)
-                        .background(Color.appSurface)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .stroke(Color.appTextLightGray.opacity(0.7), lineWidth: 1)
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        .accessibilityIdentifier("signin.email")
-
-                    SecureField("비밀번호", text: $password)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 12)
-                        .background(Color.appSurface)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .stroke(Color.appTextLightGray.opacity(0.7), lineWidth: 1)
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        .accessibilityIdentifier("signin.password")
-
-                    Button("이메일 로그인") {
-                        runEmailSignIn()
+                    if emailAuthLoading {
+                        ProgressView("이메일 인증 처리 중...")
+                            .font(.appFont(for: .Regular, size: 12))
                     }
-                    .accessibilityIdentifier("signin.login")
-                    .buttonStyle(AppFilledButtonStyle(role: .primary))
-                    .disabled(emailAuthLoading)
 
-                    Button("이메일 회원가입") {
-                        presentSignUpSheet()
+                    if let authErrorMessage, authErrorMessage.isEmpty == false {
+                        Text(authErrorMessage)
+                            .font(.appFont(for: .Regular, size: 12))
+                            .foregroundStyle(Color.appRed)
+                            .padding(.horizontal, 20)
                     }
-                    .accessibilityIdentifier("signin.signup")
-                    .buttonStyle(.plain)
-                    .font(.appFont(for: .Regular, size: 14))
-                    .foregroundStyle(Color.appTextDarkGray)
-                    .frame(maxWidth: .infinity)
-                    .frame(minHeight: 44)
-                    .contentShape(Rectangle())
-                    .disabled(emailAuthLoading)
-                }
-                .padding(.horizontal, 20)
-                .appCardSurface()
-                .padding(.horizontal, 16)
 
-                if emailAuthLoading {
-                    ProgressView("이메일 인증 처리 중...")
-                        .font(.appFont(for: .Regular, size: 12))
+                    Spacer()
                 }
-
-                if let authErrorMessage, authErrorMessage.isEmpty == false {
-                    Text(authErrorMessage)
-                        .font(.appFont(for: .Regular, size: 12))
-                        .foregroundStyle(Color.appRed)
-                        .padding(.horizontal, 20)
+                .navigationDestination(item: $userId, destination: { info in
+                    ProfileSettingsView(
+                        path: $path,
+                        viewModel: .init(info: info),
+                        onSignupCompleted: onAuthenticated
+                    )
+                })
+                .sheet(isPresented: $isSignUpSheetPresented) {
+                    EmailSignUpSheetView(
+                        initialEmail: email,
+                        authUseCase: authUseCase,
+                        onOutcome: applyAuthOutcome
+                    )
                 }
-
-                Spacer()
-            }
-            .navigationDestination(item: $userId, destination: { info in
-                ProfileSettingsView(
-                    path: $path,
-                    viewModel: .init(info: info),
-                    onSignupCompleted: onAuthenticated
-                )
-            })
-            .sheet(isPresented: $isSignUpSheetPresented) {
-                EmailSignUpSheetView(
-                    initialEmail: email,
-                    authUseCase: authUseCase,
-                    onOutcome: applyAuthOutcome
-                )
-            }
-            .frame(maxHeight: .infinity)
-            .background(Color.appBackground)
-            .overlay(alignment: .topLeading) {
-                Color.clear
-                    .frame(width: 2, height: 2)
-                    .allowsHitTesting(false)
-                    .accessibilityIdentifier("screen.signin")
-            }
-            .toolbar {
-                if allowDismiss {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("나중에") {
-                            onDismiss()
+                .frame(maxHeight: .infinity)
+                .background(Color.appBackground)
+                .overlay(alignment: .topLeading) {
+                    Color.clear
+                        .frame(width: 2, height: 2)
+                        .allowsHitTesting(false)
+                        .accessibilityIdentifier("screen.signin")
+                }
+                .toolbar {
+                    if allowDismiss {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button("나중에") {
+                                onDismiss()
+                            }
+                            .font(.appFont(for: .Regular, size: 14))
+                            .tint(Color.appTextDarkGray)
+                            .accessibilityIdentifier("signin.dismiss")
                         }
-                        .font(.appFont(for: .Regular, size: 14))
-                        .tint(Color.appTextDarkGray)
-                        .accessibilityIdentifier("signin.dismiss")
                     }
                 }
             }
         }
+    }
+
+    /// 회원가입 메일 상태 회귀 테스트에서 시트 네비게이션 의존성을 제거할 직접 진입 라우트 활성 여부를 반환합니다.
+    private var shouldPresentUITestSignUpPreviewRoute: Bool {
+        launchArguments.contains("-UITest.SignUpMailPreviewRoute")
+    }
+
+    /// 회귀 테스트용 직접 회원가입 라우트에서 초기 메일 프리뷰에 사용할 이메일을 반환합니다.
+    private var resolvedUITestSignUpPreviewEmail: String {
+        guard let index = launchArguments.firstIndex(of: "-UITest.SignUpMailPreviewEmail"),
+              launchArguments.indices.contains(index + 1) else {
+            return email
+        }
+        let previewEmail = launchArguments[index + 1]
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+        return previewEmail.isEmpty ? email : previewEmail
     }
 
     /// 이메일 로그인 요청을 실행하고 결과에 따라 인증 플로우를 분기합니다.

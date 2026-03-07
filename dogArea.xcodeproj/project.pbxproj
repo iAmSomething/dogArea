@@ -100,6 +100,11 @@
 		A45200010000000000000001 /* SettingsEditableImageButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45200010000000000000011 /* SettingsEditableImageButton.swift */; };
 		A45300010000000000000001 /* HomeIndoorMissionPresentationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45300010000000000000011 /* HomeIndoorMissionPresentationService.swift */; };
 		A50600010000000000000001 /* HomeIndoorMissionPetContextSnapshotService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50600010000000000000011 /* HomeIndoorMissionPetContextSnapshotService.swift */; };
+		A50700010000000000000001 /* AuthMailActionModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50700010000000000000011 /* AuthMailActionModels.swift */; };
+		A50700010000000000000002 /* AuthMailActionStateMachine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50700010000000000000012 /* AuthMailActionStateMachine.swift */; };
+		A50700010000000000000003 /* AuthMailActionStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50700010000000000000013 /* AuthMailActionStateStore.swift */; };
+		A50700010000000000000004 /* SupabaseAuthMailActionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50700010000000000000014 /* SupabaseAuthMailActionService.swift */; };
+		A50700010000000000000005 /* AuthMailActionStatusCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50700010000000000000015 /* AuthMailActionStatusCardView.swift */; };
 		A45600010000000000000001 /* HomeWeatherSnapshotPresentationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45600010000000000000011 /* HomeWeatherSnapshotPresentationService.swift */; };
 		A45600010000000000000002 /* HomeWeatherSnapshotCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45600010000000000000012 /* HomeWeatherSnapshotCardView.swift */; };
 		A45600010000000000000003 /* HomeWeatherSnapshotMetricTileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45600010000000000000013 /* HomeWeatherSnapshotMetricTileView.swift */; };
@@ -436,6 +441,11 @@
 		A45200010000000000000011 /* SettingsEditableImageButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsEditableImageButton.swift; sourceTree = "<group>"; };
 		A45300010000000000000011 /* HomeIndoorMissionPresentationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeIndoorMissionPresentationService.swift; sourceTree = "<group>"; };
 		A50600010000000000000011 /* HomeIndoorMissionPetContextSnapshotService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeIndoorMissionPetContextSnapshotService.swift; sourceTree = "<group>"; };
+		A50700010000000000000011 /* AuthMailActionModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthMailActionModels.swift; sourceTree = "<group>"; };
+		A50700010000000000000012 /* AuthMailActionStateMachine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthMailActionStateMachine.swift; sourceTree = "<group>"; };
+		A50700010000000000000013 /* AuthMailActionStateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthMailActionStateStore.swift; sourceTree = "<group>"; };
+		A50700010000000000000014 /* SupabaseAuthMailActionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseAuthMailActionService.swift; sourceTree = "<group>"; };
+		A50700010000000000000015 /* AuthMailActionStatusCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthMailActionStatusCardView.swift; sourceTree = "<group>"; };
 		A45600010000000000000011 /* HomeWeatherSnapshotPresentationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherSnapshotPresentationService.swift; sourceTree = "<group>"; };
 		A45600010000000000000012 /* HomeWeatherSnapshotCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherSnapshotCardView.swift; sourceTree = "<group>"; };
 		A45600010000000000000013 /* HomeWeatherSnapshotMetricTileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherSnapshotMetricTileView.swift; sourceTree = "<group>"; };
@@ -787,6 +797,7 @@
 			isa = PBXGroup;
 			children = (
 				A37500010000000000000017 /* AuthUserInfo.swift */,
+				A50700010000000000000015 /* AuthMailActionStatusCardView.swift */,
 				A37500010000000000000018 /* EmailSignUpSheetView.swift */,
 				414CE261F0EB5ECCEED97F09 /* MemberUpgradeSheetView.swift */,
 				29F07A82B4C3550CACA2C6ED /* GuestDataUpgradePromptSheetView.swift */,
@@ -1004,6 +1015,7 @@
 				A41300010000000000000013 /* SupabasePresenceAndQuestServices.swift */,
 				A41300010000000000000014 /* SupabaseWidgetAndAreaServices.swift */,
 				A41300010000000000000015 /* SupabaseAuthAndAssetServices.swift */,
+				A50700010000000000000014 /* SupabaseAuthMailActionService.swift */,
 			);
 			path = Infrastructure/Supabase/Services;
 			sourceTree = "<group>";
@@ -1018,6 +1030,7 @@
 				A41500010000000000000015 /* AppPreferenceStores.swift */,
 				A41500010000000000000016 /* FeatureFlagStore.swift */,
 				A41500010000000000000017 /* AppMetricTracker.swift */,
+				A50700010000000000000013 /* AuthMailActionStateStore.swift */,
 				A41500010000000000000018 /* SyncOutboxStore.swift */,
 			);
 			path = UserDefaultsSupport;
@@ -1295,6 +1308,7 @@
 		DAF0A0014200000000000001 /* Domain */ = {
 			isa = PBXGroup;
 			children = (
+				A50700010000000000000021 /* Auth */,
 				DAF0A0024200000000000001 /* Home */,
 				DAF0A0044200000000000001 /* Map */,
 				A37600010000000000000001 /* Profile */,
@@ -1302,6 +1316,31 @@
 				A45700010000000000000021 /* Weather */,
 			);
 			path = Domain;
+			sourceTree = "<group>";
+		};
+		A50700010000000000000021 /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				A50700010000000000000022 /* Models */,
+				A50700010000000000000023 /* Services */,
+			);
+			path = Auth;
+			sourceTree = "<group>";
+		};
+		A50700010000000000000022 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A50700010000000000000011 /* AuthMailActionModels.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		A50700010000000000000023 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				A50700010000000000000012 /* AuthMailActionStateMachine.swift */,
+			);
+			path = Services;
 			sourceTree = "<group>";
 		};
 		DAF0A0024200000000000001 /* Home */ = {
@@ -1747,6 +1786,7 @@
 				A41300010000000000000023 /* SupabasePresenceAndQuestServices.swift in Sources */,
 				A41300010000000000000024 /* SupabaseWidgetAndAreaServices.swift in Sources */,
 				A41300010000000000000025 /* SupabaseAuthAndAssetServices.swift in Sources */,
+				A50700010000000000000004 /* SupabaseAuthMailActionService.swift in Sources */,
 				A37800010000000000000001 /* AppTabScaffold.swift in Sources */,
 				DA3F9BA52AE0F14F0048550C /* MapModel.swift in Sources */,
 				DAE148A11420000000000001 /* MapAreaCalculationService.swift in Sources */,
@@ -1757,12 +1797,15 @@
 				A50000010000000000000002 /* SettingsProductSurfaceService.swift in Sources */,
 				DA4513832AFB25C2007AD69B /* PositionMarkerView.swift in Sources */,
 				DA8BB9F22B02FE3A00E350C4 /* HomeViewModel.swift in Sources */,
+				A50700010000000000000001 /* AuthMailActionModels.swift in Sources */,
+				A50700010000000000000002 /* AuthMailActionStateMachine.swift in Sources */,
 				A37500010000000000000021 /* HomeMissionModels.swift in Sources */,
 				A37500010000000000000022 /* IndoorMissionStore.swift in Sources */,
 				A37500010000000000000023 /* SeasonMotionStore.swift in Sources */,
 				A45700010000000000000001 /* WeatherSnapshot.swift in Sources */,
 				A45700010000000000000002 /* OpenMeteoWeatherSnapshotProvider.swift in Sources */,
 				A45700010000000000000003 /* WeatherSnapshotStore.swift in Sources */,
+				A50700010000000000000003 /* AuthMailActionStateStore.swift in Sources */,
 				DAE147A11420000000000001 /* HomeWeeklyStatisticsService.swift in Sources */,
 				DAE147A31420000000000001 /* HomeWeatherMissionStatusBuilder.swift in Sources */,
 				A45300010000000000000001 /* HomeIndoorMissionPresentationService.swift in Sources */,
@@ -1786,6 +1829,7 @@
 				DA390A752AFE1AFC00BACF2B /* SimpleMessageView.swift in Sources */,
 				DAC19F2C2B0B43BB002FE2E8 /* SignInView.swift in Sources */,
 				A37500010000000000000027 /* AuthUserInfo.swift in Sources */,
+				A50700010000000000000005 /* AuthMailActionStatusCardView.swift in Sources */,
 				A37500010000000000000028 /* EmailSignUpSheetView.swift in Sources */,
 				A37600010000000000000023 /* ProfileEditorCards.swift in Sources */,
 				A37600010000000000000025 /* ProfileEditorImageSection.swift in Sources */,

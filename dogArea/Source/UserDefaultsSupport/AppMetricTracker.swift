@@ -3,6 +3,10 @@ import Foundation
 enum AppMetricEvent: String {
     case walkSaveSuccess = "walk_save_success"
     case walkSaveFailed = "walk_save_failed"
+    case authMailActionSucceeded = "auth_mail_action_succeeded"
+    case authMailActionRateLimited = "auth_mail_action_rate_limited"
+    case authMailActionFailed = "auth_mail_action_failed"
+    case authMailActionSuppressed = "auth_mail_action_suppressed"
     case watchActionReceived = "watch_action_received"
     case watchActionProcessed = "watch_action_processed"
     case watchActionApplied = "watch_action_applied"
