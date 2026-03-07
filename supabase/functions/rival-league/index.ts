@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { resolveEdgeAuthContext } from "../_shared/edge_auth.ts";
 
 type Action = "get_my_league" | "get_leaderboard" | "export_my_data" | "delete_my_data";
 type LeaderboardPeriod = "day" | "week" | "season";
@@ -24,21 +24,20 @@ Deno.serve(async (req) => {
     return json({ error: "SERVER_MISCONFIGURED" }, 500);
   }
 
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return json({ error: "UNAUTHORIZED" }, 401);
-  }
-  const token = authHeader.replace("Bearer ", "").trim();
-  if (!token) return json({ error: "UNAUTHORIZED" }, 401);
-
-  const userClient = createClient(supabaseURL, supabaseAnonKey, {
-    global: { headers: { Authorization: authHeader } },
+  const auth = await resolveEdgeAuthContext({
+    req,
+    policy: {
+      functionName: "rival-league",
+      kind: "member_required",
+    },
+    supabaseURL,
+    supabaseAnonKey,
   });
-
-  const { data: userResult, error: userError } = await userClient.auth.getUser(token);
-  if (userError || !userResult?.user) {
-    return json({ error: "UNAUTHORIZED" }, 401);
+  if (!auth.ok) {
+    return auth.response;
   }
+  const userClient = auth.context.userClient!;
+  const userId = auth.context.userId!;
 
   let body: RequestDTO;
   try {
@@ -53,7 +52,7 @@ Deno.serve(async (req) => {
   switch (body.action) {
     case "get_my_league": {
       const { data, error } = await userClient.rpc("rpc_get_my_rival_league", {
-        requested_user_id: userResult.user.id,
+        requested_user_id: userId,
         now_ts: nowISO,
       });
       if (error) return json({ error: error.message }, 500);
@@ -75,7 +74,7 @@ Deno.serve(async (req) => {
     }
     case "export_my_data": {
       const { data, error } = await userClient.rpc("rpc_export_my_rival_data", {
-        requested_user_id: userResult.user.id,
+        requested_user_id: userId,
         now_ts: nowISO,
       });
       if (error) return json({ error: error.message }, 500);
@@ -83,7 +82,7 @@ Deno.serve(async (req) => {
     }
     case "delete_my_data": {
       const { data, error } = await userClient.rpc("rpc_delete_my_rival_data", {
-        requested_user_id: userResult.user.id,
+        requested_user_id: userId,
         now_ts: nowISO,
       });
       if (error) return json({ error: error.message }, 500);

@@ -42,6 +42,7 @@ swift scripts/supabase_ops_hardening_unit_check.swift
 swift scripts/supabase_integration_harness_unit_check.swift
 swift scripts/backend_contract_versioning_unit_check.swift
 swift scripts/backend_edge_observability_unit_check.swift
+swift scripts/backend_edge_auth_unification_unit_check.swift
 swift scripts/rival_privacy_policy_stage1_unit_check.swift
 swift scripts/rival_privacy_policy_confirmed_unit_check.swift
 swift scripts/rival_privacy_hard_guard_unit_check.swift

@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { resolveEdgeAuthContext } from "../_shared/edge_auth.ts";
 
 type Action =
   | "set_visibility"
@@ -257,10 +258,26 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "METHOD_NOT_ALLOWED" }, 405);
 
   const supabaseURL = Deno.env.get("SUPABASE_URL");
+  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
   const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!supabaseURL || !serviceRole) {
+  if (!supabaseURL || !supabaseAnonKey || !serviceRole) {
     return json({ error: "SERVER_MISCONFIGURED" }, 500);
   }
+
+  const auth = await resolveEdgeAuthContext({
+    req,
+    policy: {
+      functionName: "nearby-presence",
+      kind: "member_or_anon",
+    },
+    supabaseURL,
+    supabaseAnonKey,
+    supabaseServiceRoleKey: serviceRole,
+  });
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const client = createClient(supabaseURL, serviceRole);
 
   let body: RequestDTO;
