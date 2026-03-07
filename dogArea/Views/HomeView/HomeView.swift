@@ -105,6 +105,7 @@ struct HomeView: View {
                         }
                         homeWeeklySnapshotSection
                         seasonMotionCard(summary: viewModel.seasonMotionSummary)
+                        weatherDetailCard(presentation: viewModel.weatherDetailPresentation)
                         if viewModel.indoorMissionBoard.shouldDisplayCard {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("오늘 미션 안내")
@@ -425,6 +426,13 @@ struct HomeView: View {
 
     private func weatherMissionStatusCard(summary: WeatherMissionStatusSummary) -> some View {
         HomeWeatherMissionStatusCardView(summary: summary)
+    }
+
+    /// 홈에서 원시 날씨 수치와 관측 상태를 요약하는 상세 카드를 렌더링합니다.
+    /// - Parameter presentation: 홈 카드가 직접 사용할 날씨 상세 프레젠테이션 상태입니다.
+    /// - Returns: 기온/체감/습도/강수/공기질을 보여주는 상세 카드 뷰입니다.
+    private func weatherDetailCard(presentation: HomeWeatherSnapshotCardPresentation) -> some View {
+        HomeWeatherSnapshotCardView(presentation: presentation)
     }
 
     private func weatherShieldSummaryCard(summary: WeatherShieldDailySummary) -> some View {

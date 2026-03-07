@@ -21,6 +21,7 @@ final class HomeViewModel: ObservableObject {
     @Published var weatherFeedbackResultMessage: String? = nil
     @Published var weatherMissionStatusSummary: WeatherMissionStatusSummary = .empty
     @Published var latestWeatherSnapshot: WeatherSnapshot? = nil
+    @Published var weatherDetailPresentation: HomeWeatherSnapshotCardPresentation = .placeholder
     @Published var indoorMissionPresentation: HomeIndoorMissionBoardPresentation = .empty
     @Published var weatherShieldDailySummary: WeatherShieldDailySummary? = nil
     @Published var seasonCatchupBuffStatusMessage: String? = nil
@@ -57,6 +58,7 @@ final class HomeViewModel: ObservableObject {
     let weeklyStatisticsService: HomeWeeklyStatisticsServicing
     let areaAggregationService: HomeAreaAggregationServicing
     let weatherMissionStatusBuilder: HomeWeatherMissionStatusBuilding
+    let weatherSnapshotPresentationService: HomeWeatherSnapshotPresenting
     let indoorMissionPresentationService: HomeIndoorMissionPresenting
     let weatherSnapshotStore: WeatherSnapshotStoreProtocol
     let areaMilestoneDetector: AreaMilestoneDetecting
@@ -124,6 +126,7 @@ final class HomeViewModel: ObservableObject {
         weeklyStatisticsService: HomeWeeklyStatisticsServicing = HomeWeeklyStatisticsService(),
         areaAggregationService: HomeAreaAggregationServicing = HomeAreaAggregationService(),
         weatherMissionStatusBuilder: HomeWeatherMissionStatusBuilding = HomeWeatherMissionStatusBuilder(),
+        weatherSnapshotPresentationService: HomeWeatherSnapshotPresenting = HomeWeatherSnapshotPresentationService(),
         indoorMissionPresentationService: HomeIndoorMissionPresenting = HomeIndoorMissionPresentationService(),
         weatherSnapshotStore: WeatherSnapshotStoreProtocol = WeatherSnapshotStore.shared,
         areaMilestoneDetector: AreaMilestoneDetecting = AreaMilestoneDetector(),
@@ -136,6 +139,7 @@ final class HomeViewModel: ObservableObject {
         self.weeklyStatisticsService = weeklyStatisticsService
         self.areaAggregationService = areaAggregationService
         self.weatherMissionStatusBuilder = weatherMissionStatusBuilder
+        self.weatherSnapshotPresentationService = weatherSnapshotPresentationService
         self.indoorMissionPresentationService = indoorMissionPresentationService
         self.weatherSnapshotStore = weatherSnapshotStore
         self.areaMilestoneDetector = areaMilestoneDetector

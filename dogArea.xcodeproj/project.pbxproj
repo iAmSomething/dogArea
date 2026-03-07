@@ -99,6 +99,9 @@
 		A50000010000000000000006 /* SettingViewModel+ProductSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000010000000000000016 /* SettingViewModel+ProductSurface.swift */; };
 		A45200010000000000000001 /* SettingsEditableImageButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45200010000000000000011 /* SettingsEditableImageButton.swift */; };
 		A45300010000000000000001 /* HomeIndoorMissionPresentationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45300010000000000000011 /* HomeIndoorMissionPresentationService.swift */; };
+		A45600010000000000000001 /* HomeWeatherSnapshotPresentationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45600010000000000000011 /* HomeWeatherSnapshotPresentationService.swift */; };
+		A45600010000000000000002 /* HomeWeatherSnapshotCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45600010000000000000012 /* HomeWeatherSnapshotCardView.swift */; };
+		A45600010000000000000003 /* HomeWeatherSnapshotMetricTileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45600010000000000000013 /* HomeWeatherSnapshotMetricTileView.swift */; };
 		A45700010000000000000001 /* WeatherSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45700010000000000000011 /* WeatherSnapshot.swift */; };
 		A45700010000000000000002 /* OpenMeteoWeatherSnapshotProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45700010000000000000012 /* OpenMeteoWeatherSnapshotProvider.swift */; };
 		A45700010000000000000003 /* WeatherSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45700010000000000000013 /* WeatherSnapshotStore.swift */; };
@@ -431,6 +434,9 @@
 		A50000010000000000000016 /* SettingViewModel+ProductSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SettingViewModel+ProductSurface.swift"; sourceTree = "<group>"; };
 		A45200010000000000000011 /* SettingsEditableImageButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsEditableImageButton.swift; sourceTree = "<group>"; };
 		A45300010000000000000011 /* HomeIndoorMissionPresentationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeIndoorMissionPresentationService.swift; sourceTree = "<group>"; };
+		A45600010000000000000011 /* HomeWeatherSnapshotPresentationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherSnapshotPresentationService.swift; sourceTree = "<group>"; };
+		A45600010000000000000012 /* HomeWeatherSnapshotCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherSnapshotCardView.swift; sourceTree = "<group>"; };
+		A45600010000000000000013 /* HomeWeatherSnapshotMetricTileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherSnapshotMetricTileView.swift; sourceTree = "<group>"; };
 		A45700010000000000000011 /* WeatherSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherSnapshot.swift; sourceTree = "<group>"; };
 		A45700010000000000000012 /* OpenMeteoWeatherSnapshotProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenMeteoWeatherSnapshotProvider.swift; sourceTree = "<group>"; };
 		A45700010000000000000013 /* WeatherSnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherSnapshotStore.swift; sourceTree = "<group>"; };
@@ -661,6 +667,8 @@
 				1882845C4C15BF66EF58B401 /* HomeSeasonMetricPillView.swift */,
 				C671468D748C3AD8C0A7DB8A /* HomeSeasonMotionCardView.swift */,
 				1DBF6EC9508CA4C5CC954AF8 /* HomeSeasonShieldBadgeView.swift */,
+				A45600010000000000000012 /* HomeWeatherSnapshotCardView.swift */,
+				A45600010000000000000013 /* HomeWeatherSnapshotMetricTileView.swift */,
 				A003918476944D94F7E3DC99 /* HomeWeatherMissionStatusCardView.swift */,
 				745503CBDBC7737E36C35467 /* HomeWeatherShieldSummaryCardView.swift */,
 				D8E5D37200B02E2F8E26B734 /* HomeWeeklyQuestSummaryView.swift */,
@@ -1312,6 +1320,7 @@
 				DAE147A01420000000000001 /* HomeWeeklyStatisticsService.swift */,
 				DAE147A21420000000000001 /* HomeWeatherMissionStatusBuilder.swift */,
 				A45300010000000000000011 /* HomeIndoorMissionPresentationService.swift */,
+				A45600010000000000000011 /* HomeWeatherSnapshotPresentationService.swift */,
 				D55F514F099289DA27BC2654 /* HomeAreaAggregationService.swift */,
 			);
 			path = Services;
@@ -1861,11 +1870,14 @@
 				BA480FDD8F1E663F6CF6F9BF /* HomeSeasonMetricPillView.swift in Sources */,
 				B40D68BD38F0288BF600B11C /* HomeSeasonMotionCardView.swift in Sources */,
 				B6ABF3F12D7A7F8761D68EB2 /* HomeSeasonShieldBadgeView.swift in Sources */,
+				A45600010000000000000002 /* HomeWeatherSnapshotCardView.swift in Sources */,
+				A45600010000000000000003 /* HomeWeatherSnapshotMetricTileView.swift in Sources */,
 				337C89763F94598EAAF98C3A /* HomeWeatherMissionStatusCardView.swift in Sources */,
 				8801A48808105C4480F81F16 /* HomeWeatherShieldSummaryCardView.swift in Sources */,
 				21E7CDE1A8E20F90F24FB0C1 /* HomeWeeklyQuestSummaryView.swift in Sources */,
 				BFE9FFE6DBDDDBDF1B846C2E /* AreaReferenceModels.swift in Sources */,
 				BC8F0111242B7C35E0A8C032 /* HomeAreaAggregationService.swift in Sources */,
+				A45600010000000000000001 /* HomeWeatherSnapshotPresentationService.swift in Sources */,
 				882A85330E905DC115EDE641 /* HomePresentationStateModels.swift in Sources */,
 				62EF10563076E17A0B11C076 /* SeasonProfileSummary.swift in Sources */,
 				EE6DAD319CDE2C3D7366547A /* SettingsSeasonProfileSummaryService.swift in Sources */,

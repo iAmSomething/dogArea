@@ -319,6 +319,44 @@ final class FeatureRegressionUITests: XCTestCase {
         )
     }
 
+    /// 홈이 원시 날씨 지표 카드와 미션 영향 카드를 분리해 노출하는지 검증합니다.
+    func testFeatureRegression_HomeWeatherDetailCardShowsRawSnapshotMetrics() throws {
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.HomeMissionLifecycleStub"])
+        let weatherDetailCard = app.descendants(matching: .any).matching(identifier: "home.weather.snapshot").firstMatch
+        let weatherStatusCard = app.descendants(matching: .any).matching(identifier: "home.quest.weatherStatus").firstMatch
+        let temperatureMetric = app.staticTexts["기온"]
+        let feelsLikeMetric = app.staticTexts["체감"]
+        let humidityMetric = app.staticTexts["습도"]
+        let precipitationStateMetric = app.staticTexts["강수 여부"]
+        let precipitationAmountMetric = app.staticTexts["강수량"]
+        let dustMetric = app.staticTexts["미세먼지"]
+        let observedAt = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "관측 시각")).firstMatch
+
+        XCTAssertTrue(openTab(index: 0, app: app), "홈 탭 진입에 실패했습니다.")
+        XCTAssertTrue(
+            revealExistingElementByVerticalScroll(weatherDetailCard, app: app, maxSwipes: 6),
+            "홈 날씨 상세 카드를 화면에 노출하지 못했습니다."
+        )
+        XCTAssertTrue(waitUntilExists(weatherDetailCard, timeout: 4), "홈 날씨 상세 카드가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(weatherStatusCard, timeout: 4), "미션 영향 요약 카드가 함께 노출되지 않았습니다.")
+        XCTAssertTrue(
+            revealExistingElementByVerticalScroll(temperatureMetric, app: app, maxSwipes: 4),
+            "기온 지표가 노출되지 않았습니다."
+        )
+        XCTAssertTrue(waitUntilExists(feelsLikeMetric, timeout: 4), "체감 지표가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(humidityMetric, timeout: 4), "습도 지표가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(precipitationStateMetric, timeout: 4), "강수 여부 지표가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(precipitationAmountMetric, timeout: 4), "강수량 지표가 노출되지 않았습니다.")
+        XCTAssertTrue(
+            revealExistingElementByVerticalScroll(dustMetric, app: app, maxSwipes: 3),
+            "미세먼지 지표가 노출되지 않았습니다."
+        )
+        XCTAssertTrue(
+            revealExistingElementByVerticalScroll(observedAt, app: app, maxSwipes: 2),
+            "관측 시각 안내가 노출되지 않았습니다."
+        )
+    }
+
     /// 회원 상태에서 프로필 편집 저장 성공 후 편집 값이 다시 시트에 반영되는지 검증합니다.
     func testFeatureRegression_MemberProfileEditPersistsUpdatedPetName() throws {
         let credentials = try XCTUnwrap(
