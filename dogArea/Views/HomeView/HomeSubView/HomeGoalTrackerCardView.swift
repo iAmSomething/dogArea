@@ -18,7 +18,7 @@ struct HomeGoalTrackerCardView: View {
                     Text("영역 목표 트래커")
                         .font(.appScaledFont(for: .SemiBold, size: 28, relativeTo: .title3))
                         .foregroundStyle(Color.appDynamicHex(light: 0x7C2D12, dark: 0xFED7AA))
-                    Text("비교군 소스: \(areaReferenceSourceLabel) · Featured \(featuredAreaCount)개")
+                    Text("비교 기준: \(areaReferenceSourceLabel) · 우선 추천 \(featuredAreaCount)개")
                         .font(.appScaledFont(for: .Regular, size: 11, relativeTo: .caption))
                         .foregroundStyle(Color.appDynamicHex(light: 0xC2410C, dark: 0xFDBA74))
                 }

@@ -819,7 +819,7 @@ final class SupabaseAreaReferenceRepository: AreaReferenceRepository, AreaRefere
                 AreaReferenceSection(
                     id: "legacy",
                     catalogCode: "legacy",
-                    catalogName: "로컬 비교군 (Fallback)",
+                    catalogName: "기본 비교 구역",
                     sortOrder: 0,
                     references: legacyItems
                 )
@@ -827,4 +827,3 @@ final class SupabaseAreaReferenceRepository: AreaReferenceRepository, AreaRefere
         )
     }
 }
-

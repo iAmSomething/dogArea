@@ -37,7 +37,7 @@ struct HomeSeasonMotionCardView: View {
                     .font(.appScaledFont(for: .SemiBold, size: 15, relativeTo: .subheadline))
                     .foregroundStyle(Color.appDynamicHex(light: 0x334155, dark: 0xCBD5E1))
                 Spacer()
-                Text("+\(summary.todayScoreDelta) today")
+                Text("오늘 +\(summary.todayScoreDelta)점")
                     .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
                     .foregroundStyle(Color.appDynamicHex(light: 0xF59E0B, dark: 0xFACC15))
             }
@@ -79,7 +79,7 @@ struct HomeSeasonMotionCardView: View {
                     color: Color.appDynamicHex(light: 0xEFF6FF, dark: 0x1E3A8A, alpha: 0.24)
                 )
                 HomeSeasonMetricPillView(
-                    title: "Shield",
+                    title: "보호",
                     value: "\(summary.weatherShieldApplyCount)회",
                     color: Color.appDynamicHex(light: 0xDCFCE7, dark: 0x14532D, alpha: 0.34)
                 )

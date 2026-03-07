@@ -43,7 +43,7 @@ struct HomeSeasonResultOverlayView: View {
                     isVisible: revealContribution
                 )
                 seasonResultRow(
-                    title: "Shield 적용",
+                    title: "보호 적용",
                     value: "\(payload.shieldApplyCount)회",
                     isVisible: revealShield
                 )

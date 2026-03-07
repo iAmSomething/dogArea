@@ -37,13 +37,13 @@ final class AreaDetailViewModel: ObservableObject {
     }
 
     var sourceText: String {
-        homeViewModel.areaReferenceSource == .remote ? "DB 비교군" : "로컬 비교군 (Fallback)"
+        homeViewModel.areaReferenceSource == .remote ? "운영 비교 구역" : "기본 비교 구역"
     }
 
     var sourceDescriptionText: String {
         homeViewModel.areaReferenceSource == .remote
-        ? "운영 중인 비교군 카탈로그를 기준으로 다음 목표를 계산했어요."
-        : "원격 비교군을 불러오지 못해 로컬 비교군으로 대체했어요."
+        ? "운영 중인 비교 구역을 기준으로 다음 목표를 계산했어요."
+        : "온라인 비교 구역을 불러오지 못해 기본 비교 구역으로 보여드리고 있어요."
     }
 
     var freshnessText: String {
@@ -83,7 +83,7 @@ final class AreaDetailViewModel: ObservableObject {
     }
 
     var featuredSummaryText: String {
-        "Featured \(homeViewModel.featuredAreaCount)개를 우선 기준으로 보여줘요."
+        "우선 추천 기준 \(homeViewModel.featuredAreaCount)개를 먼저 보여드려요."
     }
 
     var coverageSummaryText: String {

@@ -26,6 +26,7 @@ let mapView = load("dogArea/Views/MapView/MapView.swift")
 let mapSetting = load("dogArea/Views/MapView/MapSubViews/MapSettingView.swift")
 let userDefaultsSetting = loadMany([
     "dogArea/Source/UserdefaultSetting.swift",
+    "dogArea/Source/WalkSessionMetadataStore.swift",
     "dogArea/Source/UserDefaultsSupport/UserSessionModels.swift",
     "dogArea/Source/UserDefaultsSupport/UserDefaultsCodableExtensions.swift",
     "dogArea/Source/UserDefaultsSupport/UserdefaultSetting+SessionFacade.swift",
@@ -73,7 +74,7 @@ assertTrue(mapView.contains("추정 종료"), "map view must provide estimated f
 assertTrue(mapView.contains("watchStatusBanner"), "map view must show watch status banner")
 assertTrue(mapView.contains("walkStatusMessage"), "map view must render walk status toast")
 
-assertTrue(mapSetting.contains("자동 종료 정책 v1(고정)"), "map setting must expose fixed auto-end policy label")
+assertTrue(mapSetting.contains("자동 종료 기준 적용 중"), "map setting must expose fixed auto-end policy label")
 assertTrue(mapSetting.contains("toggleWalkAutoEndPolicy") == false, "map setting must not expose auto-end toggle")
 assertTrue(mapSetting.contains("autoEndPolicySummaryText"), "map setting should show policy summary text")
 assertTrue(mapSetting.contains("autoEndPolicyHintText"), "map setting should show policy hint text")
