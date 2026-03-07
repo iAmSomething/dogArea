@@ -9,6 +9,7 @@ import SwiftUI
 
 struct HomeView: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+    @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject var authFlow: AuthFlowCoordinator
     @StateObject var viewModel = HomeViewModel()
     @State private var animatedQuestProgress: [String: Double] = [:]
@@ -31,6 +32,8 @@ struct HomeView: View {
     @State private var homeScrollOffsetY: CGFloat = 0
     @State private var isSeasonDetailPresented: Bool = false
     @State private var isTerritoryGoalPresented: Bool = false
+    @State private var hasAppearedOnce: Bool = false
+    @State private var isHomeVisible: Bool = false
 
     private var isQuestMotionReduced: Bool {
         accessibilityReduceMotion
@@ -136,13 +139,25 @@ struct HomeView: View {
                     viewModel.fetchData()
                 }
                 .onAppear{
-                    viewModel.reloadUserInfo()
-                    viewModel.fetchData()
+                    isHomeVisible = true
+                    if hasAppearedOnce {
+                        viewModel.refreshForVisibleReentry()
+                    } else {
+                        hasAppearedOnce = true
+                    }
                     seasonAnimatedProgress = viewModel.seasonMotionSummary.progress
                     if viewModel.seasonMotionSummary.weatherShieldActive {
                         startSeasonShieldRingAnimationIfNeeded()
                     }
-                }.onChange(of: viewModel.aggregationStatusMessage) { _, newValue in
+                }
+                .onDisappear {
+                    isHomeVisible = false
+                }
+                .onChange(of: scenePhase) { _, newPhase in
+                    guard newPhase == .active, isHomeVisible else { return }
+                    viewModel.refreshForAppResumeIfNeeded()
+                }
+                .onChange(of: viewModel.aggregationStatusMessage) { _, newValue in
                 guard newValue != nil else { return }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
                     viewModel.clearAggregationStatusMessage()

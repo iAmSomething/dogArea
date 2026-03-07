@@ -26,11 +26,11 @@ let aggregationService = load("dogArea/Source/Domain/Home/Services/HomeAreaAggre
 assertTrue(!mainFile.contains("enum QuestMotionEventType"), "HomeViewModel should no longer inline quest motion presentation types")
 assertTrue(!mainFile.contains("struct WeatherMissionStatusSummary"), "HomeViewModel should no longer inline weather presentation summary types")
 assertTrue(mainFile.contains("let areaAggregationService: HomeAreaAggregationServicing"), "HomeViewModel should inject area aggregation service")
-assertTrue(!mainFile.contains("func fetchData()"), "HomeViewModel main file should not own session lifecycle functions")
+assertTrue(!mainFile.contains("func fetchData("), "HomeViewModel main file should not own session lifecycle functions")
 assertTrue(!mainFile.contains("func applySelectedPetStatistics"), "HomeViewModel main file should not own aggregation functions")
 assertTrue(!mainFile.contains("func refreshIndoorMissions"), "HomeViewModel main file should not own indoor mission flow functions")
 
-assertTrue(sessionLifecycle.contains("func fetchData()"), "session lifecycle support should own fetchData")
+assertTrue(sessionLifecycle.contains("func fetchData(now: Date = Date())"), "session lifecycle support should own fetchData")
 assertTrue(sessionLifecycle.contains("func refreshAreaReferenceCatalogs()"), "session lifecycle support should own area reference refresh")
 assertTrue(sessionLifecycle.contains("func bindSelectedPetSync()"), "session lifecycle support should own selected pet sync binding")
 
