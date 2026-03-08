@@ -31,6 +31,7 @@ swift scripts/map_motion_pack_unit_check.swift
 swift scripts/map_walking_invalidation_reduction_unit_check.swift
 swift scripts/map_heatmap_trigger_gating_unit_check.swift
 swift scripts/map_walk_point_snapshot_cache_unit_check.swift
+swift scripts/map_hotspot_cluster_trigger_gating_unit_check.swift
 swift scripts/quest_motion_pack_unit_check.swift
 swift scripts/quest_stage1_policy_unit_check.swift
 swift scripts/quest_stage2_engine_unit_check.swift

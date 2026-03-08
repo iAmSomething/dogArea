@@ -53,6 +53,7 @@
 - 날씨 snapshot/provider 확장 v1: `docs/weather-snapshot-provider-v1.md`
 - 맵 heatmap trigger gating v1: `docs/map-heatmap-trigger-gating-v1.md`
 - 맵 route/mark snapshot cache v1: `docs/map-walk-point-snapshot-cache-v1.md`
+- 맵 hotspot cluster trigger gating v1: `docs/map-hotspot-cluster-trigger-gating-v1.md`
 - 홈 refresh entrypoint 정리 v1: `docs/home-refresh-entrypoint-v1.md`
 - 홈 미션 pet context snapshot v1: `docs/home-mission-pet-context-snapshot-v1.md`
 - 날씨 치환/스트릭 보호 서버 엔진 v1: `docs/weather-replacement-shield-engine-v1.md`
