@@ -7,6 +7,8 @@
 
 import Foundation
 import Combine
+import CoreLocation
+
 final class WalkListViewModel: ObservableObject {
     @Published var walkingDatas: [WalkDataModel] = []
     @Published var userInfo: UserInfo? = nil
@@ -14,12 +16,19 @@ final class WalkListViewModel: ObservableObject {
     @Published var selectedPetName: String = "강아지"
     @Published private(set) var isShowingAllRecordsOverride: Bool = false
     @Published private(set) var overviewModel: WalkListOverviewModel = .placeholder
+    @Published private(set) var calendarModel: WalkListCalendarPresentationModel = .placeholder
     @Published private(set) var sectionModels: [WalkListSectionModel] = []
     @Published private(set) var stateCardModel: WalkListStateCardModel? = nil
+
     private var allWalkingDatas: [WalkDataModel] = []
+    private var scopedWalkingDatas: [WalkDataModel] = []
+    private var selectedCalendarDate: Date?
+    private var displayedCalendarMonth: Date
+    private var hasUserAdjustedCalendarMonth = false
     private var cancellables: Set<AnyCancellable> = []
     private let walkRepository: WalkRepositoryProtocol
     private let presentationService: WalkListPresentationServicing
+    private let calendarPresentationService: WalkListCalendarPresentationServicing
 
     var pets: [PetInfo] {
         userInfo?.pet.filter(\.isActive) ?? []
@@ -37,83 +46,115 @@ final class WalkListViewModel: ObservableObject {
 
     init(
         walkRepository: WalkRepositoryProtocol = WalkRepositoryContainer.shared,
-        presentationService: WalkListPresentationServicing = WalkListPresentationService()
+        presentationService: WalkListPresentationServicing = WalkListPresentationService(),
+        calendarPresentationService: WalkListCalendarPresentationServicing = WalkListCalendarPresentationService()
     ) {
         self.walkRepository = walkRepository
         self.presentationService = presentationService
+        self.calendarPresentationService = calendarPresentationService
+        self.displayedCalendarMonth = calendarPresentationService.recommendedDisplayedMonth(
+            records: [],
+            reference: Date(),
+            calendar: Self.currentCalendar
+        )
         bindSelectedPetSync()
-        reloadSelectedPetContext()
+        bindTimeBoundaryRefresh()
+        synchronizeSelectedPetContext()
     }
 
+    /// 저장소 또는 UI 테스트 preview source에서 산책 기록을 다시 불러옵니다.
+    /// 현재 선택 반려견과 선택 날짜 상태를 유지한 채 상단 허브/캘린더/리스트 섹션을 재계산합니다.
     func fetchModel() {
-        self.allWalkingDatas = self.walkRepository.fetchPolygons().map{
-            .init(polygon: $0)
-        }
-        reloadSelectedPetContext()
+        allWalkingDatas = loadWalkRecords()
+        synchronizeSelectedPetContext()
         applySelectedPetFilter()
     }
 
+    /// 사용자가 상단 반려견 칩을 탭했을 때 선택 반려견 기준을 갱신합니다.
+    /// - Parameter petId: 선택할 반려견 식별자입니다.
     func selectPet(_ petId: String) {
         guard pets.contains(where: { $0.petId == petId }) else { return }
         isShowingAllRecordsOverride = false
         UserdefaultSetting.shared.setSelectedPetId(petId, source: "walk_list")
     }
 
+    /// 반려견 기준이 비어 있을 때 전체 기록을 임시로 다시 보여줍니다.
+    /// 선택 날짜는 유지하되 반려견 스코프만 전체 범위로 확장합니다.
     func showAllRecordsTemporarily() {
         guard allWalkingDatas.isEmpty == false else { return }
         isShowingAllRecordsOverride = true
         applySelectedPetFilter()
     }
 
+    /// 전체 기록 보기 오버라이드를 해제하고 다시 선택 반려견 기준으로 돌아갑니다.
     func showSelectedPetRecords() {
         isShowingAllRecordsOverride = false
         applySelectedPetFilter()
     }
 
-    private func reloadSelectedPetContext() {
-        userInfo = UserdefaultSetting.shared.getValue()
-        let selected = UserdefaultSetting.shared.selectedPet(from: userInfo)
-        selectedPetId = selected?.petId ?? ""
-        selectedPetName = selected?.petName ?? "강아지"
-        applySelectedPetFilter()
-    }
-
-    private func bindSelectedPetSync() {
-        NotificationCenter.default.publisher(for: UserdefaultSetting.selectedPetDidChangeNotification)
-            .receive(on: RunLoop.main)
-            .sink { [weak self] _ in
-                self?.isShowingAllRecordsOverride = false
-                self?.reloadSelectedPetContext()
-            }
-            .store(in: &cancellables)
-    }
-
-    private func applySelectedPetFilter() {
-        if isShowingAllRecordsOverride {
-            walkingDatas = allWalkingDatas
-            refreshPresentation()
-            return
+    /// 월별 캘린더에서 날짜를 선택하거나 같은 날짜를 다시 눌러 해제합니다.
+    /// - Parameter date: 사용자가 탭한 날짜의 `startOfDay`입니다.
+    func selectCalendarDate(_ date: Date) {
+        let normalizedDate = Self.currentCalendar.startOfDay(for: date)
+        if let selectedCalendarDate,
+           Self.currentCalendar.isDate(selectedCalendarDate, inSameDayAs: normalizedDate) {
+            self.selectedCalendarDate = nil
+        } else {
+            self.selectedCalendarDate = normalizedDate
         }
-        guard selectedPetId.isEmpty == false else {
-            walkingDatas = allWalkingDatas
-            refreshPresentation()
-            return
-        }
-
-        let tagged = allWalkingDatas.filter { ($0.petId?.isEmpty == false) }
-        let selected = allWalkingDatas.filter { $0.petId == selectedPetId }
-        if selected.isEmpty && tagged.isEmpty {
-            walkingDatas = allWalkingDatas
-            refreshPresentation()
-            return
-        }
-        walkingDatas = selected
         refreshPresentation()
     }
 
-    /// 현재 필터/선택 상태를 기반으로 헤더, 섹션, 상태 카드를 다시 계산합니다.
-    /// - Returns: 없음. 계산 결과는 게시 속성에 반영됩니다.
+    /// 월별 캘린더의 날짜 필터를 해제하고 현재 반려견 범위 전체 기록으로 복귀합니다.
+    func clearCalendarSelection() {
+        selectedCalendarDate = nil
+        refreshPresentation()
+    }
+
+    /// 월별 캘린더를 이전 달로 이동시키고 날짜 필터는 해제합니다.
+    func showPreviousCalendarMonth() {
+        moveCalendarMonth(by: -1)
+    }
+
+    /// 월별 캘린더를 다음 달로 이동시키고 날짜 필터는 해제합니다.
+    func showNextCalendarMonth() {
+        moveCalendarMonth(by: 1)
+    }
+
+    /// 선택 반려견/전체 범위에 따라 현재 화면 스코프를 계산합니다.
+    /// 필요하면 선택 날짜를 정리하고 상단 허브와 섹션을 다시 빌드합니다.
+    private func applySelectedPetFilter() {
+        scopedWalkingDatas = scopedRecords()
+        if hasUserAdjustedCalendarMonth == false {
+            displayedCalendarMonth = calendarPresentationService.recommendedDisplayedMonth(
+                records: scopedWalkingDatas,
+                reference: Date(),
+                calendar: Self.currentCalendar
+            )
+        }
+        refreshPresentation()
+    }
+
+    /// 현재 반려견 스코프와 선택 날짜를 기반으로 개요, 캘린더, 섹션, 상태 카드를 다시 계산합니다.
+    /// 선택 날짜가 더 이상 유효하지 않으면 날짜 필터를 해제한 뒤 한 번 더 재계산합니다.
     private func refreshPresentation() {
+        let calendarSnapshot = calendarPresentationService.makeSnapshot(
+            records: scopedWalkingDatas,
+            displayedMonth: displayedCalendarMonth,
+            selectedDate: selectedCalendarDate,
+            calendar: Self.currentCalendar
+        )
+
+        if let selectedCalendarDate,
+           calendarSnapshot.recordsByDayStart[selectedCalendarDate.timeIntervalSince1970]?.isEmpty != false {
+            self.selectedCalendarDate = nil
+            refreshPresentation()
+            return
+        }
+
+        calendarModel = calendarSnapshot.model
+        walkingDatas = filteredRecords(using: calendarSnapshot.recordsByDayStart)
+
         let petNameById = Dictionary(uniqueKeysWithValues: pets.map { ($0.petId, $0.petName) })
         overviewModel = presentationService.makeOverview(
             visibleRecords: walkingDatas,
@@ -124,12 +165,182 @@ final class WalkListViewModel: ObservableObject {
         )
         sectionModels = presentationService.makeSections(
             visibleRecords: walkingDatas,
-            petNameById: petNameById
+            petNameById: petNameById,
+            selectedCalendarDate: selectedCalendarDate,
+            calendar: Self.currentCalendar
         )
         stateCardModel = presentationService.makeStateCard(
             allRecords: allWalkingDatas,
             selectedPetName: selectedPetName,
             shouldShowSelectedPetEmptyState: shouldShowSelectedPetEmptyState
         )
+    }
+
+    /// 현재 저장된 사용자 정보와 선택 반려견 정보를 다시 동기화합니다.
+    private func synchronizeSelectedPetContext() {
+        userInfo = UserdefaultSetting.shared.getValue()
+        let selected = UserdefaultSetting.shared.selectedPet(from: userInfo)
+        selectedPetId = selected?.petId ?? ""
+        selectedPetName = selected?.petName ?? "강아지"
+    }
+
+    /// 선택 반려견 변경 알림을 구독해 산책 목록 스코프를 동기화합니다.
+    private func bindSelectedPetSync() {
+        NotificationCenter.default.publisher(for: UserdefaultSetting.selectedPetDidChangeNotification)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.isShowingAllRecordsOverride = false
+                self?.synchronizeSelectedPetContext()
+                self?.applySelectedPetFilter()
+            }
+            .store(in: &cancellables)
+    }
+
+    /// 타임존/일자 경계 변경 시 월 캘린더 마킹과 섹션을 즉시 다시 계산하도록 바인딩합니다.
+    private func bindTimeBoundaryRefresh() {
+        NotificationCenter.default.publisher(for: .NSSystemTimeZoneDidChange)
+            .merge(with: NotificationCenter.default.publisher(for: .NSCalendarDayChanged))
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.refreshPresentation()
+            }
+            .store(in: &cancellables)
+    }
+
+    /// 현재 반려견 선택과 전체 보기 오버라이드 상태에 맞는 산책 범위를 반환합니다.
+    /// - Returns: 캘린더와 리스트가 공유할 현재 반려견 스코프 기준 산책 기록 배열입니다.
+    private func scopedRecords() -> [WalkDataModel] {
+        if isShowingAllRecordsOverride {
+            return allWalkingDatas
+        }
+        guard selectedPetId.isEmpty == false else {
+            return allWalkingDatas
+        }
+
+        let tagged = allWalkingDatas.filter { ($0.petId?.isEmpty == false) }
+        let selected = allWalkingDatas.filter { $0.petId == selectedPetId }
+        if selected.isEmpty && tagged.isEmpty {
+            return allWalkingDatas
+        }
+        return selected
+    }
+
+    /// 날짜 필터가 활성화되어 있으면 그 날짜를 커버한 세션만 반환합니다.
+    /// - Parameter recordsByDayStart: 캘린더 스냅샷이 계산한 날짜별 산책 기록 매핑입니다.
+    /// - Returns: 최종 리스트에 노출할 산책 기록 배열입니다.
+    private func filteredRecords(using recordsByDayStart: [TimeInterval: [WalkDataModel]]) -> [WalkDataModel] {
+        guard let selectedCalendarDate else {
+            return scopedWalkingDatas
+        }
+        return recordsByDayStart[selectedCalendarDate.timeIntervalSince1970] ?? []
+    }
+
+    /// 월 이동 버튼 정책에 맞춰 표시 월을 이동시키고 날짜 필터는 해제합니다.
+    /// - Parameter value: 이동할 월 offset입니다. 이전 달은 음수, 다음 달은 양수입니다.
+    private func moveCalendarMonth(by value: Int) {
+        displayedCalendarMonth = calendarPresentationService.shiftedMonth(
+            from: displayedCalendarMonth,
+            by: value,
+            calendar: Self.currentCalendar
+        )
+        hasUserAdjustedCalendarMonth = true
+        selectedCalendarDate = nil
+        refreshPresentation()
+    }
+
+    /// 저장소 또는 UI 테스트 preview source에서 산책 기록 목록을 읽어옵니다.
+    /// - Returns: 최신순으로 정렬된 산책 기록 배열입니다.
+    private func loadWalkRecords() -> [WalkDataModel] {
+        let previewRecords = Self.makeUITestCalendarPreviewRecordsIfNeeded()
+        let source = previewRecords ?? walkRepository.fetchPolygons().map { WalkDataModel(polygon: $0) }
+        return source.sorted { lhs, rhs in
+            lhs.createdAt > rhs.createdAt
+        }
+    }
+
+    /// UI 테스트 전용 월별 캘린더 샘플 산책 기록을 필요할 때만 생성합니다.
+    /// - Returns: `-UITest.WalkListCalendarPreview` 인자가 있으면 고정 샘플 기록 배열, 아니면 `nil`입니다.
+    private static func makeUITestCalendarPreviewRecordsIfNeeded() -> [WalkDataModel]? {
+        guard ProcessInfo.processInfo.arguments.contains("-UITest.WalkListCalendarPreview") else {
+            return nil
+        }
+
+        return [
+            makePreviewRecord(
+                id: "11111111-aaaa-bbbb-cccc-111111111111",
+                start: DateComponents(calendar: currentCalendar, year: 2026, month: 3, day: 8, hour: 9, minute: 20).date ?? Date(),
+                duration: 1_260,
+                area: 7_420,
+                coordinateSeed: (37.5665, 126.9780)
+            ),
+            makePreviewRecord(
+                id: "22222222-aaaa-bbbb-cccc-222222222222",
+                start: DateComponents(calendar: currentCalendar, year: 2026, month: 3, day: 7, hour: 23, minute: 50).date ?? Date(),
+                duration: 1_800,
+                area: 5_860,
+                coordinateSeed: (37.5658, 126.9771)
+            ),
+            makePreviewRecord(
+                id: "33333333-aaaa-bbbb-cccc-333333333333",
+                start: DateComponents(calendar: currentCalendar, year: 2026, month: 3, day: 5, hour: 18, minute: 5).date ?? Date(),
+                duration: 980,
+                area: 4_240,
+                coordinateSeed: (37.5649, 126.9761)
+            )
+        ]
+    }
+
+    /// UI 테스트용 샘플 산책 기록 한 건을 생성합니다.
+    /// - Parameters:
+    ///   - id: 샘플 polygon 식별자입니다.
+    ///   - start: 산책 시작 시각입니다.
+    ///   - duration: 산책 지속 시간(초)입니다.
+    ///   - area: 산책 영역 넓이(㎡)입니다.
+    ///   - coordinateSeed: 샘플 경로를 구성할 기준 좌표입니다.
+    /// - Returns: 월별 캘린더/리스트 회귀 테스트에 사용할 산책 기록 모델입니다.
+    private static func makePreviewRecord(
+        id: String,
+        start: Date,
+        duration: Double,
+        area: Double,
+        coordinateSeed: (Double, Double)
+    ) -> WalkDataModel {
+        let baseLatitude = coordinateSeed.0
+        let baseLongitude = coordinateSeed.1
+        let polygon = Polygon(
+            locations: [
+                Location(
+                    coordinate: CLLocationCoordinate2D(latitude: baseLatitude, longitude: baseLongitude),
+                    id: UUID(),
+                    createdAt: start.timeIntervalSince1970,
+                    pointRole: .mark
+                ),
+                Location(
+                    coordinate: CLLocationCoordinate2D(latitude: baseLatitude + 0.0006, longitude: baseLongitude + 0.0005),
+                    id: UUID(),
+                    createdAt: start.timeIntervalSince1970 + min(duration / 2, 600),
+                    pointRole: .route
+                ),
+                Location(
+                    coordinate: CLLocationCoordinate2D(latitude: baseLatitude + 0.0012, longitude: baseLongitude + 0.0009),
+                    id: UUID(),
+                    createdAt: start.timeIntervalSince1970 + duration,
+                    pointRole: .mark
+                )
+            ],
+            createdAt: start.timeIntervalSince1970,
+            id: UUID(uuidString: id) ?? UUID(),
+            walkingTime: duration,
+            walkingArea: area,
+            imgData: nil,
+            petId: nil
+        )
+        return WalkDataModel(polygon: polygon)
+    }
+
+    private static var currentCalendar: Calendar {
+        var calendar = Calendar.autoupdatingCurrent
+        calendar.locale = Locale.autoupdatingCurrent
+        return calendar
     }
 }

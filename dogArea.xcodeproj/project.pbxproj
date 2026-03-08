@@ -176,6 +176,10 @@
 		A53000010000000000000015 /* WalkListDetailTimelineSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53000010000000000000005 /* WalkListDetailTimelineSectionView.swift */; };
 		A53000010000000000000016 /* WalkListDetailMetaSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53000010000000000000006 /* WalkListDetailMetaSectionView.swift */; };
 		A53000010000000000000017 /* WalkListDetailActionSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53000010000000000000007 /* WalkListDetailActionSectionView.swift */; };
+		A56700010000000000000021 /* WalkListCalendarPresentationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56700010000000000000011 /* WalkListCalendarPresentationModels.swift */; };
+		A56700010000000000000022 /* WalkListCalendarPresentationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56700010000000000000012 /* WalkListCalendarPresentationService.swift */; };
+		A56700010000000000000023 /* WalkListMonthlyCalendarCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56700010000000000000013 /* WalkListMonthlyCalendarCardView.swift */; };
+		A56700010000000000000024 /* WalkListMonthlyCalendarDayCellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56700010000000000000014 /* WalkListMonthlyCalendarDayCellView.swift */; };
 		A83350BB79B3CBB09B4C4963 /* RivalTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21CE83B02069A8E4171B35DE /* RivalTabView.swift */; };
 		A9F5F361DE66BF266C36FED0 /* PositionMarkerViewWithSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92C5F96B5D23BD6D36935CA0 /* PositionMarkerViewWithSelection.swift */; };
 		AC04B82FF13073F98E2EE459 /* AreaDetailRecentConquestSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C4863F9787EC32E41B731A8 /* AreaDetailRecentConquestSectionView.swift */; settings = {COMPILER_FLAGS = "-fobjc-arc"; }; };
@@ -563,6 +567,10 @@
 		A53000010000000000000005 /* WalkListDetailTimelineSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDetailTimelineSectionView.swift; sourceTree = "<group>"; };
 		A53000010000000000000006 /* WalkListDetailMetaSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDetailMetaSectionView.swift; sourceTree = "<group>"; };
 		A53000010000000000000007 /* WalkListDetailActionSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDetailActionSectionView.swift; sourceTree = "<group>"; };
+		A56700010000000000000011 /* WalkListCalendarPresentationModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListCalendarPresentationModels.swift; sourceTree = "<group>"; };
+		A56700010000000000000012 /* WalkListCalendarPresentationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListCalendarPresentationService.swift; sourceTree = "<group>"; };
+		A56700010000000000000013 /* WalkListMonthlyCalendarCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListMonthlyCalendarCardView.swift; sourceTree = "<group>"; };
+		A56700010000000000000014 /* WalkListMonthlyCalendarDayCellView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListMonthlyCalendarDayCellView.swift; sourceTree = "<group>"; };
 		A775802DB2A590A7C7DA0978 /* WalkDetailViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WalkDetailViewModel.swift; path = dogArea/Views/MapView/WalkDetailViewModel.swift; sourceTree = "<group>"; };
 		B3C5EBC2B900522B927AC9AD /* TerritoryGoalOverviewCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TerritoryGoalOverviewCardView.swift; sourceTree = "<group>"; };
 		B76E1FA7BD23351B788C716B /* AreaDetailViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AreaDetailViewModel.swift; sourceTree = "<group>"; };
@@ -1187,6 +1195,8 @@
 				DA390A712AFE168500BACF2B /* SimpleMapView.swift */,
 				DA45137F2AFB1EC1007AD69B /* WalkListCell.swift */,
 				A52900010000000000000004 /* WalkListDashboardHeaderView.swift */,
+				A56700010000000000000013 /* WalkListMonthlyCalendarCardView.swift */,
+				A56700010000000000000014 /* WalkListMonthlyCalendarDayCellView.swift */,
 				A52900010000000000000003 /* WalkListMetricTileView.swift */,
 				A52900010000000000000006 /* WalkListSectionHeaderView.swift */,
 				A52900010000000000000005 /* WalkListStatusCardView.swift */,
@@ -1246,6 +1256,8 @@
 				DA4513852AFB2CFC007AD69B /* WalkListViewModel.swift */,
 				A52900010000000000000001 /* WalkListPresentationModels.swift */,
 				A52900010000000000000002 /* WalkListPresentationService.swift */,
+				A56700010000000000000011 /* WalkListCalendarPresentationModels.swift */,
+				A56700010000000000000012 /* WalkListCalendarPresentationService.swift */,
 				A53000010000000000000001 /* WalkListDetailPresentationModels.swift */,
 				A53000010000000000000002 /* WalkListDetailPresentationService.swift */,
 				DA45138B2AFB36D4007AD69B /* WalkListModel.swift */,
@@ -1921,8 +1933,12 @@
 				DA3F9BA62AE0F14F0048550C /* WalkListView.swift in Sources */,
 				A52900010000000000000011 /* WalkListPresentationModels.swift in Sources */,
 				A52900010000000000000012 /* WalkListPresentationService.swift in Sources */,
+				A56700010000000000000021 /* WalkListCalendarPresentationModels.swift in Sources */,
+				A56700010000000000000022 /* WalkListCalendarPresentationService.swift in Sources */,
 				A52900010000000000000013 /* WalkListMetricTileView.swift in Sources */,
 				A52900010000000000000014 /* WalkListDashboardHeaderView.swift in Sources */,
+				A56700010000000000000023 /* WalkListMonthlyCalendarCardView.swift in Sources */,
+				A56700010000000000000024 /* WalkListMonthlyCalendarDayCellView.swift in Sources */,
 				A52900010000000000000015 /* WalkListStatusCardView.swift in Sources */,
 				A52900010000000000000016 /* WalkListSectionHeaderView.swift in Sources */,
 				A53000010000000000000011 /* WalkListDetailPresentationModels.swift in Sources */,

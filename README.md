@@ -88,6 +88,7 @@
 - Widget summary RPC 공통 응답 모델 v1: `docs/widget-summary-rpc-common-response-model-v1.md`
 - TabBar SF Symbol fallback policy v1: `docs/tabbar-sf-symbol-fallback-policy-v1.md`
 - WalkList design refresh v1: `docs/walklist-design-refresh-v1.md`
+- WalkList month calendar hub v1: `docs/walklist-month-calendar-hub-v1.md`
 - WalkList detail design refresh v1: `docs/walklist-detail-design-refresh-v1.md`
 - UX copy guideline v1: `docs/ux-copy-guideline-v1.md`
 - Auth mail resend state machine v1: `docs/auth-mail-resend-state-machine-v1.md`

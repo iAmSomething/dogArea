@@ -19,10 +19,15 @@ struct WalkListView: View {
             LazyVStack(alignment: .leading, spacing: 18, pinnedViews: [.sectionHeaders]) {
                 WalkListDashboardHeaderView(
                     overview: viewModel.overviewModel,
+                    calendar: viewModel.calendarModel,
                     pets: viewModel.pets,
                     selectedPetId: viewModel.selectedPetId,
                     onSelectPet: viewModel.selectPet(_:),
-                    onRestoreSelected: viewModel.showSelectedPetRecords
+                    onRestoreSelected: viewModel.showSelectedPetRecords,
+                    onPreviousCalendarMonth: viewModel.showPreviousCalendarMonth,
+                    onNextCalendarMonth: viewModel.showNextCalendarMonth,
+                    onSelectCalendarDate: viewModel.selectCalendarDate(_:),
+                    onClearCalendarSelection: viewModel.clearCalendarSelection
                 )
                 .padding(.horizontal, 16)
 
@@ -35,7 +40,7 @@ struct WalkListView: View {
                     if stateCardModel.accessibilityIdentifier == "walklist.empty.filtered" {
                         filteredEmptyStateCard
                             .padding(.horizontal, 16)
-                    } else {
+                    } else if viewModel.calendarModel.isEmptyState == false {
                         emptyHistoryCard
                             .padding(.horizontal, 16)
                     }
@@ -45,14 +50,22 @@ struct WalkListView: View {
                     Section {
                         LazyVStack(spacing: 12) {
                             ForEach(section.items) { item in
-                                NavigationLink(value: item.walkData) {
-                                    WalkListCell(
-                                        walkData: item.walkData,
-                                        petName: item.petName
-                                    )
+                                ZStack(alignment: .topLeading) {
+                                    NavigationLink(value: item.walkData) {
+                                        WalkListCell(
+                                            walkData: item.walkData,
+                                            petName: item.petName
+                                        )
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityIdentifier("walklist.cell")
+
+                                    Color.clear
+                                        .frame(width: 1, height: 1)
+                                        .allowsHitTesting(false)
+                                        .accessibilityElement()
+                                        .accessibilityIdentifier(item.accessibilityIdentifier)
                                 }
-                                .buttonStyle(.plain)
-                                .accessibilityIdentifier("walklist.cell")
                             }
                         }
                         .padding(.horizontal, 16)

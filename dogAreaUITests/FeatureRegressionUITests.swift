@@ -261,14 +261,65 @@ final class FeatureRegressionUITests: XCTestCase {
         let header = screenElement(identifier: "walklist.header", in: app)
         let summary = screenElement(identifier: "walklist.summary", in: app)
         let context = screenElement(identifier: "walklist.context", in: app)
+        let calendarCard = screenElement(identifier: "walklist.calendar.card", in: app)
         let guestLoginButton = app.buttons["walklist.guest.login"]
 
         XCTAssertTrue(waitUntilExists(header, timeout: 8), "산책 목록 헤더 허브가 렌더링되지 않았습니다.")
         XCTAssertTrue(waitUntilExists(summary, timeout: 3), "산책 목록 요약 카드가 노출되지 않았습니다.")
         XCTAssertTrue(waitUntilExists(context, timeout: 3), "산책 목록 필터 문맥 카드가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(calendarCard, timeout: 3), "산책 목록 월별 캘린더 카드가 노출되지 않았습니다.")
         XCTAssertTrue(
             revealElementByVerticalScroll(guestLoginButton, app: app, maxSwipes: 4),
             "게스트 상태의 로그인 CTA가 노출되지 않았습니다."
+        )
+    }
+
+    /// 월별 산책 캘린더에서 날짜를 탭하면 그날 기록만 바로 좁혀 보고 다시 해제할 수 있는지 검증합니다.
+    func testFeatureRegression_WalkListCalendarSelectionFiltersToChosenDate() throws {
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.WalkListCalendarPreview"])
+        XCTAssertTrue(openTab(index: 1, app: app), "산책 목록 탭 진입에 실패했습니다.")
+
+        let calendarCard = screenElement(identifier: "walklist.calendar.card", in: app)
+        XCTAssertTrue(waitUntilExists(calendarCard, timeout: 8), "산책 목록 월별 캘린더 카드가 렌더링되지 않았습니다.")
+
+        let targetDay = app.buttons["walklist.calendar.day.2026-03-08"]
+        XCTAssertTrue(waitUntilExists(targetDay, timeout: 3), "테스트용 날짜 셀을 찾지 못했습니다.")
+        XCTAssertTrue(waitUntilHittable(targetDay, timeout: 2), "테스트용 날짜 셀이 탭 가능한 상태가 아닙니다.")
+
+        targetDay.tap()
+
+        let selectionSummary = screenElement(identifier: "walklist.calendar.selection", in: app)
+        let clearButton = app.buttons["walklist.calendar.clear"]
+        let filteredSection = screenElement(identifier: "walklist.section.filtered", in: app)
+        let sameDayRecord = screenElement(
+            identifier: "walklist.cell.11111111-aaaa-bbbb-cccc-111111111111",
+            in: app
+        )
+        let crossMidnightRecord = screenElement(
+            identifier: "walklist.cell.22222222-aaaa-bbbb-cccc-222222222222",
+            in: app
+        )
+        let previousDayRecord = screenElement(
+            identifier: "walklist.cell.33333333-aaaa-bbbb-cccc-333333333333",
+            in: app
+        )
+
+        XCTAssertTrue(waitUntilExists(selectionSummary, timeout: 2), "날짜 선택 요약 문구가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(clearButton, timeout: 2), "날짜 필터 해제 CTA가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(filteredSection, timeout: 2), "날짜 필터 전용 섹션 헤더가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(sameDayRecord, timeout: 2), "선택일에 시작한 산책 기록이 바로 보여야 합니다.")
+        XCTAssertTrue(
+            revealElementByVerticalScroll(crossMidnightRecord, app: app, maxSwipes: 4),
+            "2026-03-08을 누르면 자정 걸침 세션도 함께 보여야 합니다."
+        )
+        XCTAssertFalse(previousDayRecord.exists, "선택하지 않은 날짜의 산책 기록은 필터 목록에서 빠져야 합니다.")
+
+        clearButton.tap()
+
+        XCTAssertTrue(waitUntilGone(selectionSummary, timeout: 2), "월 전체 보기 복귀 후 선택 요약이 사라지지 않았습니다.")
+        XCTAssertTrue(
+            revealElementByVerticalScroll(previousDayRecord, app: app, maxSwipes: 4),
+            "월 전체 보기 복귀 후 미리보기 전체 기록이 다시 보여야 합니다."
         )
     }
 
