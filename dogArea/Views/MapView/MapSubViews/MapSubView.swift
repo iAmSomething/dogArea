@@ -16,10 +16,12 @@ struct MapSubView: View {
 
     var body: some View {
         MapRenderBudgetProbe.recordMapSubViewBodyEvaluationIfNeeded()
+        let activeWalkSnapshot = viewModel.activeWalkPointSnapshot
+        let selectedPolygonSnapshot = viewModel.walkPointSnapshot(for: viewModel.polygon)
 
         return Map(position: $viewModel.cameraPosition, interactionModes: .all) {
-            if viewModel.isWalking, viewModel.activeWalkRouteCoordinates.count > 1 {
-                MapPolyline(coordinates: viewModel.activeWalkRouteCoordinates)
+            if viewModel.isWalking, activeWalkSnapshot.hasRenderableRoute {
+                MapPolyline(coordinates: activeWalkSnapshot.routeCoordinates)
                     .stroke(routeStrokeColor, style: routeStrokeStyle)
             }
             ForEach(viewModel.activeCaptureRipples()) { ripple in
@@ -68,11 +70,11 @@ struct MapSubView: View {
             }
             if let walkArea = viewModel.polygon.polygon {
                 if viewModel.showOnlyOne {
-                    if viewModel.routeCoordinates(for: viewModel.polygon).count > 1 {
-                        MapPolyline(coordinates: viewModel.routeCoordinates(for: viewModel.polygon))
+                    if selectedPolygonSnapshot.hasRenderableRoute {
+                        MapPolyline(coordinates: selectedPolygonSnapshot.routeCoordinates)
                             .stroke(routeStrokeColor, style: routeStrokeStyle)
                     }
-                    ForEach(viewModel.markLocations(for: viewModel.polygon)) { location in
+                    ForEach(selectedPolygonSnapshot.markLocations) { location in
                         Annotation("", coordinate: location.coordinate) {
                             PositionMarkerView()
                         }
@@ -130,11 +132,11 @@ struct MapSubView: View {
                     }
                 }
             } else {
-                if viewModel.isWalking == false, viewModel.activeWalkRouteCoordinates.count > 1 {
-                    MapPolyline(coordinates: viewModel.activeWalkRouteCoordinates)
+                if viewModel.isWalking == false, activeWalkSnapshot.hasRenderableRoute {
+                    MapPolyline(coordinates: activeWalkSnapshot.routeCoordinates)
                         .stroke(routeStrokeColor, style: routeStrokeStyle)
                 }
-                ForEach(viewModel.activeWalkMarkLocations) { location in
+                ForEach(activeWalkSnapshot.markLocations) { location in
                     Annotation("", coordinate: location.coordinate) {
                         PositionMarkerView()
                             .onTapGesture {
