@@ -30,6 +30,8 @@ struct HomeView: View {
     @State private var seasonResultRevealShield: Bool = false
     @State private var seasonResetBannerVisible: Bool = false
     @State private var seasonGuidePresentation: SeasonGuidePresentation? = nil
+    @State private var homeMissionGuidePresentation: HomeMissionGuidePresentation? = nil
+    @State private var isHomeMissionGuideCoachVisible: Bool = false
     @State private var areaMilestonePop: Bool = false
     @State private var questWidgetTab: HomeQuestWidgetTab = .daily
     @State private var homeScrollOffsetY: CGFloat = 0
@@ -41,8 +43,11 @@ struct HomeView: View {
     @State private var pendingHomeScrollTarget: HomeExternalScrollTarget? = nil
     @State private var hasAppearedOnce: Bool = false
     @State private var isHomeVisible: Bool = false
+    @State private var hasInjectedHomeMissionGuideUITestPresentation: Bool = false
     private let seasonGuidePresentationService: SeasonGuidePresentationProviding = SeasonGuidePresentationService()
     private let seasonGuideStateStore: SeasonGuideStateStoring = DefaultSeasonGuideStateStore.shared
+    private let homeMissionGuidePresentationService: HomeMissionGuidePresentationProviding = HomeMissionGuidePresentationService()
+    private let homeMissionGuideStateStore: HomeMissionGuideStateStoring = DefaultHomeMissionGuideStateStore.shared
     private let walkPrimaryLoopPresentationService: HomeWalkPrimaryLoopPresenting = HomeWalkPrimaryLoopPresentationService()
 
     /// 외부 라우트를 주입받아 홈 화면을 초기화합니다.
@@ -85,6 +90,12 @@ struct HomeView: View {
             hasIndoorMissionReplacement: viewModel.indoorMissionBoard.riskLevel != .clear,
             localizedCopy: viewModel.localizedCopy(ko:en:)
         )
+    }
+
+    /// 홈 미션 섹션 상단에 1회성으로 노출할 코치 카드 프레젠테이션을 계산합니다.
+    private var homeMissionGuideCoachPresentation: HomeMissionGuideCoachPresentation? {
+        guard isHomeMissionGuideCoachVisible else { return nil }
+        return makeHomeMissionGuidePresentation(for: .firstVisitCoach).coachPresentation
     }
 
     var body: some View {
@@ -261,6 +272,7 @@ struct HomeView: View {
         HomeMissionSectionView(
             board: viewModel.indoorMissionBoard,
             presentation: viewModel.indoorMissionPresentation,
+            missionGuideCoachPresentation: homeMissionGuideCoachPresentation,
             weatherMissionStatusSummary: viewModel.weatherMissionStatusSummary,
             weatherShieldDailySummary: viewModel.weatherShieldDailySummary,
             questWidgetTab: $questWidgetTab,
@@ -282,6 +294,8 @@ struct HomeView: View {
             onActivateEasyDayMode: { viewModel.activateEasyDayMode() },
             onRecordIndoorMissionAction: viewModel.recordIndoorMissionAction,
             onFinalizeIndoorMission: viewModel.finalizeIndoorMission,
+            onOpenMissionGuide: { openHomeMissionGuide(for: .helpButtonReentry) },
+            onDismissMissionGuideCoach: dismissHomeMissionGuideCoach,
             onSyncMissionAppearProgress: { mission in
                 if animatedQuestProgress[mission.id] == nil {
                     animatedQuestProgress[mission.id] = mission.progress.progressRatio
@@ -334,6 +348,8 @@ struct HomeView: View {
                     if viewModel.seasonMotionSummary.weatherShieldActive {
                         startSeasonShieldRingAnimationIfNeeded()
                     }
+                    evaluateHomeMissionGuideCoachIfNeeded()
+                    presentHomeMissionGuideIfRequestedForUITest()
                     presentWeatherGuidanceIfRequestedForUITest()
                 }
                 .onDisappear {
@@ -373,6 +389,9 @@ struct HomeView: View {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2.8) {
                         viewModel.clearIndoorMissionStatusMessage()
                     }
+                }
+                .onChange(of: viewModel.indoorMissionBoard.shouldDisplayCard) { _, _ in
+                    evaluateHomeMissionGuideCoachIfNeeded()
                 }
                 .onChange(of: viewModel.weatherFeedbackResultMessage) { _, newValue in
                     guard newValue != nil else { return }
@@ -477,6 +496,12 @@ struct HomeView: View {
                 SeasonGuideSheetView(
                     presentation: presentation,
                     onClose: { seasonGuidePresentation = nil }
+                )
+            }
+            .sheet(item: $homeMissionGuidePresentation) { presentation in
+                HomeMissionGuideSheetView(
+                    presentation: presentation,
+                    onClose: { homeMissionGuidePresentation = nil }
                 )
             }
             .appTabRootScrollLayout(extraBottomPadding: 12)
@@ -719,6 +744,56 @@ struct HomeView: View {
     private func openSeasonGuideFromHomeCard() {
         seasonGuideStateStore.markInitialSeasonGuidePresented()
         seasonGuidePresentation = seasonGuidePresentationService.makePresentation(for: .homeSeasonCard)
+    }
+
+    /// 홈 미션 도움말 sheet가 사용할 프레젠테이션을 생성합니다.
+    /// - Parameter context: 사용자가 도움말을 연 진입 맥락입니다.
+    /// - Returns: 코치 카드와 상세 sheet가 함께 재사용할 홈 미션 도움말 프레젠테이션입니다.
+    private func makeHomeMissionGuidePresentation(for context: HomeMissionGuideEntryContext) -> HomeMissionGuidePresentation {
+        homeMissionGuidePresentationService.makePresentation(
+            board: viewModel.indoorMissionBoard,
+            weatherSummary: viewModel.weatherMissionStatusSummary,
+            context: context,
+            localizedCopy: viewModel.localizedCopy(ko:en:)
+        )
+    }
+
+    /// 홈 미션 도움말의 1회성 코치 카드를 노출할지 평가합니다.
+    /// - Returns: 없음. 필요 시 최초 노출 소비 상태를 기록하고 코치 카드 표시 상태를 갱신합니다.
+    private func evaluateHomeMissionGuideCoachIfNeeded() {
+        if ProcessInfo.processInfo.arguments.contains("-UITest.HomeMissionGuideCoachVisible") {
+            isHomeMissionGuideCoachVisible = true
+            return
+        }
+        guard homeMissionGuideStateStore.hasPresentedInitialGuide() == false else { return }
+        guard viewModel.indoorMissionBoard.shouldDisplayCard else { return }
+        homeMissionGuideStateStore.markInitialGuidePresented()
+        isHomeMissionGuideCoachVisible = true
+    }
+
+    /// 홈 미션 도움말 sheet를 지정된 진입 맥락으로 엽니다.
+    /// - Parameter context: 사용자가 도움말을 연 진입 맥락입니다.
+    /// - Returns: 없음. 코치 카드를 내리고 재진입 가능한 상세 sheet를 표시합니다.
+    private func openHomeMissionGuide(for context: HomeMissionGuideEntryContext) {
+        homeMissionGuideStateStore.markInitialGuidePresented()
+        isHomeMissionGuideCoachVisible = false
+        homeMissionGuidePresentation = makeHomeMissionGuidePresentation(for: context)
+    }
+
+    /// 홈 미션 섹션 상단의 1회성 코치 카드를 닫습니다.
+    /// - Returns: 없음. 최초 노출 상태를 소비하고 현재 코치 카드만 내립니다.
+    private func dismissHomeMissionGuideCoach() {
+        homeMissionGuideStateStore.markInitialGuidePresented()
+        isHomeMissionGuideCoachVisible = false
+    }
+
+    /// UI 테스트 요청이 있으면 홈 미션 도움말 sheet를 강제로 표시합니다.
+    /// - Returns: 없음. 같은 실행에서 중복 주입되지 않도록 1회만 처리합니다.
+    private func presentHomeMissionGuideIfRequestedForUITest() {
+        guard ProcessInfo.processInfo.arguments.contains("-UITest.HomeMissionGuidePresented") else { return }
+        guard hasInjectedHomeMissionGuideUITestPresentation == false else { return }
+        hasInjectedHomeMissionGuideUITestPresentation = true
+        homeMissionGuidePresentation = makeHomeMissionGuidePresentation(for: .helpButtonReentry)
     }
 
     private func animatedSeasonGauge(progress: Double) -> some View {
@@ -965,6 +1040,7 @@ struct HomeView: View {
 private struct HomeMissionSectionView: View {
     let board: IndoorMissionBoard
     let presentation: HomeIndoorMissionBoardPresentation
+    let missionGuideCoachPresentation: HomeMissionGuideCoachPresentation?
     let weatherMissionStatusSummary: WeatherMissionStatusSummary
     let weatherShieldDailySummary: WeatherShieldDailySummary?
     @Binding var questWidgetTab: HomeQuestWidgetTab
@@ -986,18 +1062,35 @@ private struct HomeMissionSectionView: View {
     let onActivateEasyDayMode: () -> Void
     let onRecordIndoorMissionAction: (String) -> Void
     let onFinalizeIndoorMission: (String) -> Void
+    let onOpenMissionGuide: () -> Void
+    let onDismissMissionGuideCoach: () -> Void
     let onSyncMissionAppearProgress: (IndoorMissionCardModel) -> Void
     let onSyncMissionProgress: (IndoorMissionCardModel, Double) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 8) {
-                    Text(presentation.sectionTitle)
-                        .font(.appScaledFont(for: .SemiBold, size: 30, relativeTo: .title2))
-                    Text("보조 흐름")
-                        .appPill(isActive: false)
-                        .accessibilityIdentifier("home.mission.secondaryLabel")
+                HStack(alignment: .top, spacing: 8) {
+                    HStack(spacing: 8) {
+                        Text(presentation.sectionTitle)
+                            .font(.appScaledFont(for: .SemiBold, size: 30, relativeTo: .title2))
+                        Text("보조 흐름")
+                            .appPill(isActive: false)
+                            .accessibilityIdentifier("home.mission.secondaryLabel")
+                    }
+                    Spacer(minLength: 12)
+                    Button(action: onOpenMissionGuide) {
+                        Text("미션이 뭔가요?")
+                            .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .headline))
+                            .foregroundStyle(Color.appInk)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 10)
+                            .frame(minHeight: 44)
+                            .background(Color.appYellowPale.opacity(0.95))
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("home.quest.help.open")
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 Text("산책이 어려운 날에만 확인하는 보조 카드예요. 기본은 산책 기록입니다.")
@@ -1005,6 +1098,14 @@ private struct HomeMissionSectionView: View {
                     .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+
+            if let missionGuideCoachPresentation {
+                HomeMissionGuideCoachCardView(
+                    presentation: missionGuideCoachPresentation,
+                    onOpenGuide: onOpenMissionGuide,
+                    onDismiss: onDismissMissionGuideCoach
+                )
+            }
 
             HomeWeatherMissionStatusCardView(summary: weatherMissionStatusSummary)
 

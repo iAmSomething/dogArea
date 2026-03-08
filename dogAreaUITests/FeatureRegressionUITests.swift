@@ -702,6 +702,49 @@ final class FeatureRegressionUITests: XCTestCase {
         )
     }
 
+    /// 홈 미션 도움말 레이어가 무엇/왜/어떻게/완료 후 변화와 재진입 흐름을 모두 설명하는지 검증합니다.
+    func testFeatureRegression_HomeMissionHelpLayerExplainsWhatWhyHowAndOutcome() throws {
+        let app = launchAppForFeatureRegression(
+            extraArguments: [
+                "-UITest.HomeMissionLifecycleStub",
+                "-UITest.HomeMissionGuideCoachVisible"
+            ]
+        )
+        let dailyMissionCard = screenElement(identifier: "home.quest.card.daily", in: app)
+        let coachCard = screenElement(identifier: "home.quest.help.coach", in: app)
+        let coachOpenButton = app.buttons["home.quest.help.coach.open"]
+        let headerHelpButton = app.buttons["home.quest.help.open"]
+        let guideSheet = screenElement(identifier: "home.quest.help.sheet", in: app)
+        let closeButton = app.buttons["home.quest.help.close"]
+
+        XCTAssertTrue(openTab(index: 0, app: app), "홈 탭 진입에 실패했습니다.")
+        XCTAssertTrue(
+            revealExistingElementByVerticalScroll(dailyMissionCard, app: app, maxSwipes: 6),
+            "홈 미션 카드를 화면에 노출하지 못했습니다."
+        )
+        XCTAssertTrue(waitUntilExists(coachCard, timeout: 4), "홈 미션 1회성 코치 카드가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(coachOpenButton, timeout: 2), "홈 미션 코치 카드의 설명 보기 버튼이 노출되지 않았습니다.")
+
+        coachOpenButton.tap()
+        XCTAssertTrue(waitUntilExists(guideSheet, timeout: 4), "홈 미션 도움말 시트가 열리지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(screenElement(identifier: "home.quest.help.axis.what", in: app), timeout: 2), "무엇 축 설명이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(screenElement(identifier: "home.quest.help.axis.why", in: app), timeout: 2), "왜 축 설명이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(screenElement(identifier: "home.quest.help.axis.how", in: app), timeout: 2), "어떻게 축 설명이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(screenElement(identifier: "home.quest.help.axis.outcome", in: app), timeout: 2), "완료 후 변화 축 설명이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(screenElement(identifier: "home.quest.help.compare.auto", in: app), timeout: 2), "산책 자동 기록 비교 카드가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(screenElement(identifier: "home.quest.help.compare.manual", in: app), timeout: 2), "실내 자가 기록 비교 카드가 노출되지 않았습니다.")
+
+        XCTAssertTrue(tapIfExists(closeButton), "홈 미션 도움말 닫기 버튼 탭에 실패했습니다.")
+        XCTAssertTrue(waitUntilGone(guideSheet, timeout: 3), "홈 미션 도움말 시트가 닫히지 않았습니다.")
+
+        XCTAssertTrue(
+            revealExistingElementByVerticalScroll(headerHelpButton, app: app, maxSwipes: 2),
+            "홈 미션 재진입 도움말 버튼이 노출되지 않았습니다."
+        )
+        headerHelpButton.tap()
+        XCTAssertTrue(waitUntilExists(guideSheet, timeout: 4), "홈 미션 도움말 시트가 재진입 경로에서 다시 열리지 않았습니다.")
+    }
+
     /// 홈이 원시 날씨 지표 카드와 미션 영향 카드를 분리해 노출하는지 검증합니다.
     func testFeatureRegression_HomeWeatherDetailCardShowsRawSnapshotMetrics() throws {
         let app = launchAppForFeatureRegression(extraArguments: ["-UITest.HomeMissionLifecycleStub"])
