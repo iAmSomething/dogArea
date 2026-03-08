@@ -178,6 +178,8 @@ minimum_password_length = 6
 password_requirements = ""
 
 [auth.rate_limit]
+# Production canonical abuse-guard values live in docs/auth-abuse-guard-policy-v1.md.
+# Local CLI values below are for local development only and must not be treated as hosted production values.
 # Number of emails that can be sent per hour. Requires auth.email.smtp to be enabled.
 email_sent = 2
 # Number of SMS messages that can be sent per hour. Requires auth.sms to be enabled.
@@ -194,6 +196,7 @@ token_verifications = 30
 web3 = 30
 
 # Configure one of the supported captcha providers: `hcaptcha`, `turnstile`.
+# Production enablement / step-up policy is defined in docs/auth-abuse-guard-policy-v1.md.
 # [auth.captcha]
 # enabled = true
 # provider = "hcaptcha"

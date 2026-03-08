@@ -13,6 +13,7 @@ swift scripts/backend_edge_auth_unification_unit_check.swift
 swift scripts/backend_edge_auth_inventory_unit_check.swift
 swift scripts/backend_edge_secret_inventory_unit_check.swift
 swift scripts/backend_gemini_api_key_canonical_unit_check.swift
+swift scripts/auth_abuse_guard_policy_unit_check.swift
 swift scripts/auth_smtp_provider_checklist_unit_check.swift
 swift scripts/auth_service_mail_channel_separation_unit_check.swift
 swift scripts/auth_mail_observability_unit_check.swift
