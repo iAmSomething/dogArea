@@ -7,15 +7,18 @@
 
 import Foundation
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 struct CustomTabBar: View {
     @Binding var selectedTab: Int
 
     private let sideItems: [TabVisualItem] = [
-        .init(id: 0, title: "홈", icon: "house"),
-        .init(id: 1, title: "산책 목록", icon: "list.bullet"),
-        .init(id: 3, title: "라이벌", icon: "person.2"),
-        .init(id: 4, title: "설정", icon: "gearshape")
+        .init(id: 0, title: "홈", defaultSymbolName: "house", selectedSymbolName: "house.fill"),
+        .init(id: 1, title: "산책 목록", defaultSymbolName: "list.bullet", selectedSymbolName: "list.bullet.circle.fill"),
+        .init(id: 3, title: "라이벌", defaultSymbolName: "person.2", selectedSymbolName: "person.2.fill"),
+        .init(id: 4, title: "설정", defaultSymbolName: "gearshape", selectedSymbolName: "gearshape.fill")
     ]
 
     var body: some View {
@@ -51,11 +54,12 @@ struct CustomTabBar: View {
     /// 일반 탭 아이템 버튼을 렌더링합니다.
     private func tabItemButton(for item: TabVisualItem) -> some View {
         let isSelected = selectedTab == item.id
+        let resolvedSymbolName = item.resolvedSymbolName(isSelected: isSelected)
         return Button {
             selectedTab = item.id
         } label: {
             VStack(spacing: 4) {
-                Image(systemName: isSelected ? "\(item.icon).fill" : item.icon)
+                Image(systemName: resolvedSymbolName)
                     .font(.system(size: 19, weight: .semibold))
                     .frame(width: 28, height: 22)
                     .foregroundStyle(
@@ -63,6 +67,7 @@ struct CustomTabBar: View {
                         ? Color.appDynamicHex(light: 0xF59E0B, dark: 0xEAB308)
                         : Color.appDynamicHex(light: 0x94A3B8, dark: 0x64748B)
                     )
+                    .accessibilityHidden(true)
                 Text(item.title)
                     .font(.appScaledFont(for: .SemiBold, size: 11, relativeTo: .caption))
                     .foregroundStyle(
@@ -80,6 +85,7 @@ struct CustomTabBar: View {
         .contentShape(Rectangle())
         .accessibilityIdentifier("tab.\(item.id)")
         .accessibilityLabel(item.title)
+        .accessibilityValue(isSelected ? "selected:\(resolvedSymbolName)" : "default:\(resolvedSymbolName)")
     }
 
     /// 중앙 지도 액션을 강조한 탭 버튼입니다.
@@ -126,7 +132,29 @@ struct CustomTabBar: View {
 private struct TabVisualItem: Equatable {
     let id: Int
     let title: String
-    let icon: String
+    let defaultSymbolName: String
+    let selectedSymbolName: String
+
+    /// 현재 선택 상태에 맞는 SF Symbol 이름을 반환합니다.
+    /// - Parameter isSelected: 탭이 현재 선택 상태인지 여부입니다.
+    /// - Returns: 현재 상태에서 실제로 렌더링에 사용할 유효한 SF Symbol 이름입니다.
+    func resolvedSymbolName(isSelected: Bool) -> String {
+        guard isSelected else { return defaultSymbolName }
+        return Self.preferredSymbolName(primary: selectedSymbolName, fallback: defaultSymbolName)
+    }
+
+    /// 우선 사용할 심볼이 유효한지 확인하고, 실패하면 fallback 심볼을 반환합니다.
+    /// - Parameters:
+    ///   - primary: 선택 상태에서 우선 사용할 심볼 이름입니다.
+    ///   - fallback: 우선 심볼을 사용할 수 없을 때 대체할 기본 심볼 이름입니다.
+    /// - Returns: 현재 런타임에서 렌더링 가능한 안전한 SF Symbol 이름입니다.
+    private static func preferredSymbolName(primary: String, fallback: String) -> String {
+#if canImport(UIKit)
+        return UIImage(systemName: primary) == nil ? fallback : primary
+#else
+        return primary
+#endif
+    }
 }
 
 #Preview {

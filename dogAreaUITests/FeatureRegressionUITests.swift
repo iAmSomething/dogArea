@@ -112,6 +112,12 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertTrue(waitUntilExists(emptyCard, timeout: 2), "산책 목록 탭의 기본 비어 있음 상태를 찾지 못했습니다.")
     }
 
+    /// 산책 목록 탭을 선택해도 선택 아이콘이 유효한 SF Symbol로 유지되는지 검증합니다.
+    func testFeatureRegression_WalkListTabSelectedIconRemainsVisibleInBothStyles() throws {
+        try assertWalkListTabSelectedIconRemainsVisible(style: .light)
+        try assertWalkListTabSelectedIconRemainsVisible(style: .dark)
+    }
+
     /// 홈의 영역 목표 상세 진입 시 탭바가 숨겨지고 뒤로 복귀 시 다시 표시되는지 검증합니다.
     func testFeatureRegression_TerritoryGoalNavigationHidesAndRestoresTabBar() throws {
         let app = launchAppForFeatureRegression()
@@ -654,6 +660,25 @@ final class FeatureRegressionUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 12), "앱이 foreground 상태로 실행되지 않았습니다.")
         return app
+    }
+
+    /// 지정한 인터페이스 스타일에서 산책 목록 탭의 선택 아이콘 해상 상태를 검증합니다.
+    /// - Parameter style: 검증에 사용할 인터페이스 스타일입니다.
+    /// - Throws: XCTest assertion 실패 시 에러를 전파합니다.
+    private func assertWalkListTabSelectedIconRemainsVisible(style: InterfaceStyle) throws {
+        let app = launchAppForFeatureRegression(style: style)
+        let walkListTab = app.buttons["tab.1"]
+
+        XCTAssertTrue(waitUntilExists(walkListTab, timeout: 12), "산책 목록 탭 버튼(tab.1)을 찾지 못했습니다.")
+        XCTAssertTrue(openTab(index: 1, app: app), "산책 목록 탭 진입에 실패했습니다.")
+
+        let resolvedValue = walkListTab.value as? String
+        XCTAssertEqual(
+            resolvedValue,
+            "selected:list.bullet.circle.fill",
+            "산책 목록 탭 선택 상태에서 유효한 selected SF Symbol이 유지되어야 합니다."
+        )
+        XCTAssertTrue(walkListTab.isHittable, "산책 목록 탭 버튼이 선택 후에도 정상 hit-test 상태를 유지해야 합니다.")
     }
 
     /// 이메일/비밀번호를 입력해 로그인 버튼을 누르고 화면 복귀를 기다립니다.
