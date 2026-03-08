@@ -93,6 +93,7 @@
 - Backend migration drift / RPC CI 체크 v1: `docs/backend-migration-drift-rpc-ci-check-v1.md`
 - Backend scheduler 운영 기준 v1: `docs/backend-scheduler-ops-standard-v1.md`
 - Backend realtime/moderation retention policy v1: `docs/backend-realtime-moderation-retention-policy-v1.md`
+- Backend realtime retention cleanup rollout v1: `docs/backend-realtime-retention-cleanup-rollout-v1.md`
 - Widget summary RPC 공통 응답 모델 v1: `docs/widget-summary-rpc-common-response-model-v1.md`
 - TabBar SF Symbol fallback policy v1: `docs/tabbar-sf-symbol-fallback-policy-v1.md`
 - WalkList design refresh v1: `docs/walklist-design-refresh-v1.md`

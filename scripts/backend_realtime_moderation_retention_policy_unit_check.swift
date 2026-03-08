@@ -40,7 +40,8 @@ let migrations = loadMany([
     "supabase/migrations/20260301153000_rival_stage2_leaderboard_backend.sql",
     "supabase/migrations/20260303203000_hotspot_widget_summary_rpc.sql",
     "supabase/migrations/20260305103000_walk_live_presence_schema_rpc_ttl_rls.sql",
-    "supabase/migrations/20260305165000_walk_live_presence_anti_abuse_engine.sql"
+    "supabase/migrations/20260305165000_walk_live_presence_anti_abuse_engine.sql",
+    "supabase/migrations/20260309043000_realtime_retention_cleanup_rollout.sql"
 ])
 
 for token in [
@@ -74,8 +75,9 @@ for policyValue in [
     assertTrue(doc.contains(policyValue), "retention doc should define policy value \(policyValue)")
 }
 
-assertTrue(doc.contains("#467"), "retention doc should reference cleanup rollout follow-up issue")
-assertTrue(doc.contains("freshness policy는 있음, retention enforcement는 미완료"), "retention doc should call out nearby_presence enforcement gap")
+assertTrue(doc.contains("#470"), "retention doc should reference cleanup rollout issue")
+assertTrue(doc.contains("rpc_cleanup_realtime_retention"), "retention doc should mention canonical cleanup RPC")
+assertTrue(doc.contains("view_realtime_retention_delete_debt"), "retention doc should mention delete debt view")
 assertTrue(doc.contains("stale exclusion을 retention enforcement로 오해하지 않는다."), "retention doc should define the stale-vs-delete rule")
 
 assertTrue(migrations.contains("expires_at timestamptz not null default (now() + interval '90 seconds')"), "migrations should keep walk_live_presence ttl source")
@@ -83,11 +85,15 @@ assertTrue(migrations.contains("where last_seen_at >= now() - interval '10 minut
 assertTrue(migrations.contains("cache_ttl_seconds integer := 300;"), "migrations should keep widget hotspot cache TTL source")
 assertTrue(migrations.contains("min_refresh_gap_seconds integer := 20;"), "migrations should keep widget hotspot min refresh gap source")
 assertTrue(migrations.contains("walk_live_presence_ttl_cleanup"), "migrations should keep live presence cleanup scheduler")
+assertTrue(migrations.contains("realtime_retention_cleanup_hourly"), "migrations should add retention cleanup scheduler")
+assertTrue(migrations.contains("rpc_cleanup_realtime_retention"), "migrations should define retention cleanup RPC")
+assertTrue(migrations.contains("view_realtime_retention_delete_debt"), "migrations should define delete debt view")
 assertTrue(migrations.contains("privacy_guard_audit_logs"), "migrations should define privacy guard audit logs")
 assertTrue(migrations.contains("live_presence_abuse_events"), "migrations should define abuse events")
 assertTrue(migrations.contains("rival_abuse_audit_logs"), "migrations should define rival abuse audit logs")
 
 assertTrue(schedulerOps.contains("live_presence.ttl_cleanup"), "scheduler ops doc should still document live_presence ttl cleanup")
+assertTrue(schedulerOps.contains("realtime.retention_cleanup"), "scheduler ops doc should document realtime retention cleanup")
 assertTrue(readme.contains("docs/backend-realtime-moderation-retention-policy-v1.md"), "README should link retention policy doc")
 assertTrue(backendCheck.contains("backend_realtime_moderation_retention_policy_unit_check.swift"), "backend_pr_check should run retention policy check")
 assertTrue(iosPRCheck.contains("backend_realtime_moderation_retention_policy_unit_check.swift"), "ios_pr_check should run retention policy check")
