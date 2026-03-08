@@ -17,6 +17,8 @@
 | `FR-MAP-001` | `docs/walk-start-stop-ux-v1.md` | 지도 진입 후 산책 시작 버튼 노출 | `FeatureRegressionUITests/testFeatureRegression_MapPrimaryActionIsNotObscuredByTabBar` | 실제 기기에서 탭바가 CTA를 가리지 않는지 확인 |
 | `FR-MAP-002` | `docs/walk-start-stop-ux-v1.md` | 산책 시작 후 영역 추가 버튼 노출/터치 | `FeatureRegressionUITests/testFeatureRegression_MapAddPointControlRemainsHittableWhileWalking` | 산책 중 영역 추가 버튼이 CTA와 겹치지 않고 눌리는지 확인 |
 | `FR-MAP-003` | `docs/walk-start-stop-ux-v1.md`, `#451` | 산책 종료 알럿의 행동 위계 노출 | `FeatureRegressionUITests/testFeatureRegression_MapStopAlertPresentsClearActionHierarchy` | 저장 후 종료 / 계속 걷기 / 기록 폐기 우선순위가 즉시 이해되는지 확인 |
+| `FR-WALK-001` | `docs/walklist-design-refresh-v1.md` | 산책 목록 첫 진입 시 핵심 카드/셀 접근 가능 | `FeatureRegressionUITests/testFeatureRegression_WalkListPrimaryContentIsNotObscuredByTabBar` | 작은 화면에서도 첫 셀/상태 카드가 탭바에 가리지 않는지 확인 |
+| `FR-WALK-002` | `docs/walklist-design-refresh-v1.md` | 산책 목록 상단 허브의 요약/필터 문맥 노출 | `FeatureRegressionUITests/testFeatureRegression_WalkListHeaderSurfacesOverviewAndContextCards` | 상단 허브가 요약 카드, 필터 문맥, 게스트 CTA를 함께 설명하는지 확인 |
 | `FR-GOAL-001` | `docs/home-goal-tracker-ui-v1.md`, `docs/territory-goal-view-detail-ui-v1.md` | 홈 목표 상세 진입/복귀 | `FeatureRegressionUITests/testFeatureRegression_TerritoryGoalNavigationHidesAndRestoresTabBar` | 상세 진입 시 탭바 숨김, 복귀 시 재노출 확인 |
 | `FR-HOME-QUEST-001` | `docs/home-goal-tracker-ui-v1.md`, `#453` | 홈 미션 카드의 완료 기준/아카이브 상태 분리 | `FeatureRegressionUITests/testFeatureRegression_HomeMissionLifecycleSeparatesCompletedMissionState` | 완료 미션이 별도 아카이브로 이동하고 자가 기록 가이드가 노출되는지 확인 |
 | `FR-AUTH-001` | `docs/profile-edit-flow-v1.md`, `docs/supabase-auth-apple-plan.md` | 설정 탭의 로그인/로그아웃 진입점 | `FeatureRegressionUITests/testFeatureRegression_SettingsAuthEntryPoints` | guest/member 상태별 CTA 문구 확인 |

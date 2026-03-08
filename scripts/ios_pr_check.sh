@@ -106,6 +106,7 @@ swift scripts/weather_feedback_loop_unit_check.swift
 swift scripts/quest_failure_buffer_unit_check.swift
 swift scripts/pet_adaptive_quest_unit_check.swift
 swift scripts/pet_context_badge_empty_state_unit_check.swift
+swift scripts/walklist_design_refresh_unit_check.swift
 swift scripts/area_reference_db_ui_unit_check.swift
 swift scripts/walk_repository_contract_unit_check.swift
 swift scripts/walk_repository_backfill_unit_check.swift

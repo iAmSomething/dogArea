@@ -618,9 +618,27 @@ final class DesignAuditUITests: XCTestCase {
 
     /// 최상단 모달을 닫기 위해 버튼 탭 또는 스와이프를 시도합니다.
     private func dismissTopModalIfNeeded(_ app: XCUIApplication) {
+        let closeIdentifierCandidates = [
+            "map.settings.close",
+            "home.season.detail.close",
+            "sheet.rival.consent.cancel",
+            "sheet.settings.profileEdit.cancel",
+            "sheet.settings.petManagement.close",
+            "sheet.settings.petManagement.edit.cancel",
+            "signin.dismiss"
+        ]
+        for identifier in closeIdentifierCandidates {
+            let button = app.buttons[identifier]
+            if button.exists {
+                button.tap()
+                usleep(250_000)
+                return
+            }
+        }
+
         let closeCandidates = ["닫기", "취소", "완료", "나중에", "Close", "Done"]
         for title in closeCandidates {
-            let button = app.buttons[title]
+            let button = app.buttons.matching(NSPredicate(format: "label == %@", title)).firstMatch
             if button.exists {
                 button.tap()
                 usleep(250_000)

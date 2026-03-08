@@ -8,187 +8,119 @@
 import SwiftUI
 
 struct WalkListView: View {
-    @ObservedObject private var viewModel = WalkListViewModel()
-    @State private var scrollPosition: CGFloat = 0
+    @StateObject private var viewModel = WalkListViewModel()
     @EnvironmentObject var authFlow: AuthFlowCoordinator
-    @Environment(\.colorScheme) var scheme
+
     var body: some View {
         ScrollView {
-            LazyVStack(pinnedViews: [.sectionHeaders]) {
+            LazyVStack(alignment: .leading, spacing: 18, pinnedViews: [.sectionHeaders]) {
+                WalkListDashboardHeaderView(
+                    overview: viewModel.overviewModel,
+                    pets: viewModel.pets,
+                    selectedPetId: viewModel.selectedPetId,
+                    onSelectPet: viewModel.selectPet(_:),
+                    onRestoreSelected: viewModel.showSelectedPetRecords
+                )
+                .padding(.horizontal, 16)
+
                 if authFlow.isGuestMode {
                     guestUpgradeCard
                         .padding(.horizontal, 16)
-                        .padding(.top, 10)
                 }
-                if viewModel.pets.isEmpty == false {
-                    petContextSwitcher
-                        .padding(.horizontal, 16)
-                        .padding(.top, 8)
-                }
-                if viewModel.walkingDatas.isEmpty {
-                    if viewModel.shouldShowSelectedPetEmptyState {
+
+                if let stateCardModel = viewModel.stateCardModel {
+                    if stateCardModel.accessibilityIdentifier == "walklist.empty.filtered" {
                         filteredEmptyStateCard
+                            .padding(.horizontal, 16)
                     } else {
                         emptyHistoryCard
+                            .padding(.horizontal, 16)
                     }
-                } else {
-                    if viewModel.walkingDatas.thisWeekList.isEmpty == false {
-                        Section(content: {
-                            VStack {
-                                ForEach(viewModel.walkingDatas.thisWeekList.reversed(), id:\.self) { walk in
-                                    NavigationLink(value: walk) {
-                                        WalkListCell(walkData: walk)
-                                    }.padding()
-                                        .accessibilityIdentifier("walklist.cell")
-                                        .cornerRadius(15)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 15)
-                                                .stroke(Color.appTextDarkGray, lineWidth: 0.3)
-                                        )
-                                        .padding(.horizontal, 15)
-                                }
-                            }
-                        }, header: {HStack {
-                            Text("이번 주 산책 목록")
-                                .font(.appFont(for: .SemiBold, size: 20))
-                                .padding()
-                            Spacer()
-                        }.background(scheme == .dark ? Color.black : Color.white)
-                        })
-                    }
-                    if viewModel.walkingDatas.exceptThisWeek.isEmpty == false {
-                        Section(content: {
-                            VStack {
-                                ForEach(viewModel.walkingDatas.exceptThisWeek.reversed(), id:\.self) { walk in
-                                    NavigationLink(value: walk) {
-                                        WalkListCell(walkData: walk)
-                                    }.padding()
-                                        .accessibilityIdentifier("walklist.cell")
-                                        .cornerRadius(15)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 15)
-                                                .stroke(Color.appTextDarkGray, lineWidth: 0.3)
-                                        )
-                                        .padding(.horizontal, 15)
+                }
 
+                ForEach(viewModel.sectionModels) { section in
+                    Section {
+                        LazyVStack(spacing: 12) {
+                            ForEach(section.items) { item in
+                                NavigationLink(value: item.walkData) {
+                                    WalkListCell(
+                                        walkData: item.walkData,
+                                        petName: item.petName
+                                    )
                                 }
+                                .buttonStyle(.plain)
+                                .accessibilityIdentifier("walklist.cell")
                             }
-
-                        }, header: {HStack {
-                            Text("이전 산책 목록")
-                                .font(.appFont(for: .SemiBold, size: 20))
-                                .padding()
-                            Spacer()
-                        }.background(scheme == .dark ? Color.black : Color.white)
-                        })
+                        }
+                        .padding(.horizontal, 16)
+                    } header: {
+                        WalkListSectionHeaderView(model: section)
+                            .padding(.horizontal, 16)
+                            .background(Color.appTabScaffoldBackground)
                     }
                 }
             }
-            .padding(.top, 8)
+            .padding(.top, 24)
+            .padding(.bottom, 12)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(Color.appTabScaffoldBackground.ignoresSafeArea())
         .refreshable {
             viewModel.fetchModel()
         }
-        .appTabRootScrollLayout(extraBottomPadding: 12)
-        .onAppear{
+        .appTabRootScrollLayout(extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding)
+        .onAppear {
             viewModel.fetchModel()
-        }.navigationDestination(for: WalkDataModel.self) { model in
-                WalkListDetailView(model: model)
-        }.navigationTitle("산책 목록")
-            .font(.appFont(for: .ExtraBold, size: 36))
-            .accessibilityIdentifier("screen.walkList.content")
+        }
+        .navigationDestination(for: WalkDataModel.self) { model in
+            WalkListDetailView(model: model)
+        }
+        .accessibilityIdentifier("screen.walkList.content")
     }
 
     var guestUpgradeCard: some View {
-        HStack(spacing: 8) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("게스트 모드")
-                    .font(.appFont(for: .SemiBold, size: 13))
-                Text("로그인하면 산책 기록을 백업하고 다른 기기와 동기화할 수 있어요.")
-                    .font(.appFont(for: .Light, size: 11))
-                    .foregroundStyle(Color.appTextDarkGray)
-            }
-            Spacer()
-            Button("로그인") {
-                _ = authFlow.requestAccess(feature: .cloudSync)
-            }
-            .accessibilityIdentifier("walklist.guest.login")
-            .buttonStyle(AppFilledButtonStyle(role: .secondary, fillsWidth: false))
-        }
-        .padding(10)
-        .appCardSurface()
-    }
-
-    var petContextSwitcher: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 10) {
-                Text(viewModel.isShowingAllRecordsOverride
-                     ? "전체 기록 보기 모드 · 선택 반려견 \(viewModel.selectedPetName)"
-                     : "선택 반려견 기준 · \(viewModel.selectedPetName)")
-                .appPill(isActive: viewModel.isShowingAllRecordsOverride == false)
-                .accessibilityLabel(
-                    viewModel.isShowingAllRecordsOverride
-                        ? "전체 기록 보기 모드, 선택 반려견 \(viewModel.selectedPetName)"
-                        : "선택 반려견 기준, \(viewModel.selectedPetName)"
-                )
-                if viewModel.isShowingAllRecordsOverride {
-                    Button("기준으로 돌아가기") {
-                        viewModel.showSelectedPetRecords()
-                    }
-                    .buttonStyle(AppFilledButtonStyle(role: .secondary, fillsWidth: false))
-                    .accessibilityLabel("선택 반려견 기준으로 돌아가기")
-                }
-                Spacer(minLength: 0)
-            }
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(viewModel.pets, id: \.petId) { pet in
-                        Text(pet.petName)
-                            .appPill(isActive: viewModel.selectedPetId == pet.petId)
-                            .onTapGesture {
-                                viewModel.selectPet(pet.petId)
-                            }
-                    }
-                }
-            }
+        let model = WalkListStateCardModel(
+            accessibilityIdentifier: "walklist.guest.card",
+            badge: "게스트 모드",
+            title: "기록은 이 기기에만 저장되고 있어요",
+            message: "로그인하면 산책 기록을 백업하고 다른 기기와 동기화할 수 있어요. 지금 보는 목록 구조는 그대로 유지됩니다.",
+            footnote: "다음 행동: 로그인 후 기록을 안전하게 보관하세요.",
+            primaryActionTitle: "로그인",
+            symbolName: "person.crop.circle.badge.plus"
+        )
+        return WalkListStatusCardView(
+            model: model,
+            actionAccessibilityIdentifier: "walklist.guest.login"
+        ) {
+            _ = authFlow.requestAccess(feature: .cloudSync)
         }
     }
 
     var filteredEmptyStateCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("\(viewModel.selectedPetName) 산책 기록이 아직 없어요")
-                .font(.appFont(for: .SemiBold, size: 14))
-            Text("필터 기준으로는 0건입니다. 전체 기록으로 전환하면 다른 반려견 기록을 확인할 수 있어요.")
-                .font(.appFont(for: .Light, size: 12))
-                .foregroundStyle(Color.appTextDarkGray)
-            Button("전체 기록 보기") {
-                viewModel.showAllRecordsTemporarily()
-            }
-            .accessibilityIdentifier("walklist.showAllRecords")
-            .buttonStyle(AppFilledButtonStyle(role: .secondary, fillsWidth: false))
-            .accessibilityLabel("전체 기록 보기")
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
-        .appCardSurface()
-        .padding(.horizontal, 16)
-        .padding(.top, 12)
+        statusCardView(for: viewModel.stateCardModel)
     }
 
     var emptyHistoryCard: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("아직 저장된 산책 기록이 없어요")
-                .font(.appFont(for: .SemiBold, size: 14))
-            Text("지도에서 산책을 기록하면 목록에 자동으로 추가됩니다.")
-                .font(.appFont(for: .Light, size: 12))
-                .foregroundStyle(Color.appTextDarkGray)
+        statusCardView(for: viewModel.stateCardModel)
+    }
+
+    /// 상태 카드 모델에 맞는 액션을 연결한 뷰를 생성합니다.
+    /// - Parameter model: 현재 목록 상태를 설명하는 카드 모델입니다.
+    /// - Returns: 현재 상태와 액션 wiring이 반영된 카드 뷰입니다.
+    @ViewBuilder
+    func statusCardView(for model: WalkListStateCardModel?) -> some View {
+        if let model {
+            WalkListStatusCardView(
+                model: model,
+                actionAccessibilityIdentifier: model.primaryActionTitle == "전체 기록 보기"
+                    ? "walklist.showAllRecords"
+                    : nil
+            ) {
+                if model.primaryActionTitle == "전체 기록 보기" {
+                    viewModel.showAllRecordsTemporarily()
+                }
+            }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
-        .appCardSurface()
-        .padding(.horizontal, 16)
-        .padding(.top, 12)
-        .accessibilityIdentifier("walklist.empty")
     }
 }
 

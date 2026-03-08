@@ -108,8 +108,33 @@ final class FeatureRegressionUITests: XCTestCase {
             return
         }
 
+        let contextCard = screenElement(identifier: "walklist.context", in: app)
+        if waitUntilExists(contextCard, timeout: 2) {
+            XCTAssertTrue(contextCard.isHittable, "산책 목록 상단 문맥 카드가 기본 진입 화면에서 탭바에 가려지면 안 됩니다.")
+            return
+        }
+
         let emptyCard = app.otherElements["walklist.empty"]
         XCTAssertTrue(waitUntilExists(emptyCard, timeout: 2), "산책 목록 탭의 기본 비어 있음 상태를 찾지 못했습니다.")
+    }
+
+    /// 산책 목록 상단 허브가 요약 카드와 필터 문맥 카드를 일관되게 노출하는지 검증합니다.
+    func testFeatureRegression_WalkListHeaderSurfacesOverviewAndContextCards() throws {
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.AutoGuest"])
+        XCTAssertTrue(openTab(index: 1, app: app), "산책 목록 탭 진입에 실패했습니다.")
+
+        let header = screenElement(identifier: "walklist.header", in: app)
+        let summary = screenElement(identifier: "walklist.summary", in: app)
+        let context = screenElement(identifier: "walklist.context", in: app)
+        let guestLoginButton = app.buttons["walklist.guest.login"]
+
+        XCTAssertTrue(waitUntilExists(header, timeout: 8), "산책 목록 헤더 허브가 렌더링되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(summary, timeout: 3), "산책 목록 요약 카드가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(context, timeout: 3), "산책 목록 필터 문맥 카드가 노출되지 않았습니다.")
+        XCTAssertTrue(
+            revealElementByVerticalScroll(guestLoginButton, app: app, maxSwipes: 4),
+            "게스트 상태의 로그인 CTA가 노출되지 않았습니다."
+        )
     }
 
     /// 산책 목록 탭을 선택해도 선택 아이콘이 유효한 SF Symbol로 유지되는지 검증합니다.
@@ -1165,9 +1190,27 @@ final class FeatureRegressionUITests: XCTestCase {
     /// 최상단 모달을 닫기 위해 버튼 탭 또는 스와이프를 시도합니다.
     /// - Parameter app: 테스트 대상 앱 인스턴스입니다.
     private func dismissTopModalIfNeeded(_ app: XCUIApplication) {
+        let closeIdentifierCandidates = [
+            "map.settings.close",
+            "home.season.detail.close",
+            "sheet.rival.consent.cancel",
+            "sheet.settings.profileEdit.cancel",
+            "sheet.settings.petManagement.close",
+            "sheet.settings.petManagement.edit.cancel",
+            "signin.dismiss"
+        ]
+        for identifier in closeIdentifierCandidates {
+            let button = app.buttons[identifier]
+            if button.exists {
+                button.tap()
+                usleep(250_000)
+                return
+            }
+        }
+
         let closeCandidates = ["닫기", "취소", "완료", "나중에", "Close", "Done"]
         for title in closeCandidates {
-            let button = app.buttons[title]
+            let button = app.buttons.matching(NSPredicate(format: "label == %@", title)).firstMatch
             if button.exists {
                 button.tap()
                 usleep(250_000)

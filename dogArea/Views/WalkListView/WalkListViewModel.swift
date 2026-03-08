@@ -13,9 +13,13 @@ final class WalkListViewModel: ObservableObject {
     @Published var selectedPetId: String = ""
     @Published var selectedPetName: String = "강아지"
     @Published private(set) var isShowingAllRecordsOverride: Bool = false
+    @Published private(set) var overviewModel: WalkListOverviewModel = .placeholder
+    @Published private(set) var sectionModels: [WalkListSectionModel] = []
+    @Published private(set) var stateCardModel: WalkListStateCardModel? = nil
     private var allWalkingDatas: [WalkDataModel] = []
     private var cancellables: Set<AnyCancellable> = []
     private let walkRepository: WalkRepositoryProtocol
+    private let presentationService: WalkListPresentationServicing
 
     var pets: [PetInfo] {
         userInfo?.pet.filter(\.isActive) ?? []
@@ -31,8 +35,12 @@ final class WalkListViewModel: ObservableObject {
         return selected.isEmpty
     }
 
-    init(walkRepository: WalkRepositoryProtocol = WalkRepositoryContainer.shared) {
+    init(
+        walkRepository: WalkRepositoryProtocol = WalkRepositoryContainer.shared,
+        presentationService: WalkListPresentationServicing = WalkListPresentationService()
+    ) {
         self.walkRepository = walkRepository
+        self.presentationService = presentationService
         bindSelectedPetSync()
         reloadSelectedPetContext()
     }
@@ -83,10 +91,12 @@ final class WalkListViewModel: ObservableObject {
     private func applySelectedPetFilter() {
         if isShowingAllRecordsOverride {
             walkingDatas = allWalkingDatas
+            refreshPresentation()
             return
         }
         guard selectedPetId.isEmpty == false else {
             walkingDatas = allWalkingDatas
+            refreshPresentation()
             return
         }
 
@@ -94,8 +104,32 @@ final class WalkListViewModel: ObservableObject {
         let selected = allWalkingDatas.filter { $0.petId == selectedPetId }
         if selected.isEmpty && tagged.isEmpty {
             walkingDatas = allWalkingDatas
+            refreshPresentation()
             return
         }
         walkingDatas = selected
+        refreshPresentation()
+    }
+
+    /// 현재 필터/선택 상태를 기반으로 헤더, 섹션, 상태 카드를 다시 계산합니다.
+    /// - Returns: 없음. 계산 결과는 게시 속성에 반영됩니다.
+    private func refreshPresentation() {
+        let petNameById = Dictionary(uniqueKeysWithValues: pets.map { ($0.petId, $0.petName) })
+        overviewModel = presentationService.makeOverview(
+            visibleRecords: walkingDatas,
+            allRecords: allWalkingDatas,
+            selectedPetName: selectedPetName,
+            selectedPetId: selectedPetId,
+            isShowingAllRecordsOverride: isShowingAllRecordsOverride
+        )
+        sectionModels = presentationService.makeSections(
+            visibleRecords: walkingDatas,
+            petNameById: petNameById
+        )
+        stateCardModel = presentationService.makeStateCard(
+            allRecords: allWalkingDatas,
+            selectedPetName: selectedPetName,
+            shouldShowSelectedPetEmptyState: shouldShowSelectedPetEmptyState
+        )
     }
 }

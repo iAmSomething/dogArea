@@ -74,6 +74,7 @@
 - Backend realtime/moderation retention policy v1: `docs/backend-realtime-moderation-retention-policy-v1.md`
 - Widget summary RPC 공통 응답 모델 v1: `docs/widget-summary-rpc-common-response-model-v1.md`
 - TabBar SF Symbol fallback policy v1: `docs/tabbar-sf-symbol-fallback-policy-v1.md`
+- WalkList design refresh v1: `docs/walklist-design-refresh-v1.md`
 - UX copy guideline v1: `docs/ux-copy-guideline-v1.md`
 - Auth mail resend state machine v1: `docs/auth-mail-resend-state-machine-v1.md`
 - Auth CAPTCHA insertion & fallback UX v1: `docs/auth-captcha-insertion-fallback-ux-v1.md`
