@@ -302,7 +302,10 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private var isMapViewActive: Bool = false
     private var lastLocationSideEffectAt: Date = .distantPast
     private let locationSideEffectInterval: TimeInterval = 1.0
-    @Published var time: TimeInterval = 0.0
+    private let mapLocationPublishMinimumDistance: CLLocationDistance = 6.0
+    private let mapLocationPublishMaximumInterval: TimeInterval = 2.0
+    private let mapLocationPublishAccuracyDelta: CLLocationAccuracy = 25.0
+    var time: TimeInterval = 0.0
     @Published var startTime = Date()
     @Published var location: CLLocation?
     @Published var polygon : Polygon = Polygon(walkingTime: 0.0, walkingArea: 0.0)
@@ -378,6 +381,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private var lastAcceptedLivePresenceLocation: CLLocation?
     private var lastAcceptedLivePresenceAt: Date = .distantPast
     private var isPresenceFlushInFlight: Bool = false
+    private var captureRippleExpiryTasks: [UUID: Task<Void, Never>] = [:]
     private var lastNearbyFetchedAt: Date = .distantPast
     private var lastNearbyHotspotErrorLogAt: Date = .distantPast
     private var suppressedNearbyHotspotErrorCount: Int = 0
@@ -587,17 +591,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     struct TrailMarker: Identifiable {
         let id: UUID
         let coordinate: CLLocationCoordinate2D
-        let age: TimeInterval
-
-        var opacity: Double {
-            let ratio = min(1.0, max(0.0, age / 5.0))
-            return 0.75 - (ratio * 0.65)
-        }
-
-        var scale: Double {
-            let ratio = min(1.0, max(0.0, age / 5.0))
-            return 0.95 + ((1.0 - ratio) * 0.25)
-        }
+        let recordedAt: TimeInterval
     }
 
     struct ReturnToOriginSuggestionContext: Equatable {
@@ -686,6 +680,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     deinit {
         timer?.invalidate()
         nearbyTickTimer?.invalidate()
+        cancelAllCaptureRippleExpiryTasks()
         locationManager.stopUpdatingLocation()
         liveActivitySyncTask?.cancel()
         syncFlushTask?.cancel()
@@ -1231,12 +1226,6 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         isMapMotionReduced ? 0.35 : 0.52
     }
 
-    /// 지도 모션 보조 타이머를 구동해야 하는지 반환합니다.
-    /// - Returns: 캡처 리플이 남아있거나 산책 중 궤적 애니메이션이 필요하면 `true`입니다.
-    var shouldDriveMapMotionTicker: Bool {
-        captureRipples.isEmpty == false || isWalking
-    }
-
     var activeTrailMarkers: [TrailMarker] {
         guard isWalking, currentCameraDistance <= trailVisibleMaxCameraDistance else { return [] }
         let now = Date().timeIntervalSince1970
@@ -1247,7 +1236,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             .compactMap { point in
                 let age = max(0, now - point.createdAt)
                 guard age <= trailLifetime else { return nil }
-                return TrailMarker(id: point.id, coordinate: point.coordinate, age: age)
+                return TrailMarker(id: point.id, coordinate: point.coordinate, recordedAt: point.createdAt)
             }
             .prefix(trailLimit)
             .map { $0 }
@@ -1260,27 +1249,74 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         return captureRipples.filter { nowTs - $0.createdAt <= captureRippleDuration }
     }
 
-    func captureRippleProgress(for ripple: CaptureRipple, now: Date = Date()) -> Double {
-        let elapsed = max(0, now.timeIntervalSince1970 - ripple.createdAt)
-        return min(1.0, elapsed / max(0.001, captureRippleDuration))
-    }
-
     func compactMapMotionArtifacts(now: Date = Date()) {
         let valid = activeCaptureRipples(at: now)
         if valid.count != captureRipples.count {
+            let removedIDs = Set(captureRipples.map(\.id)).subtracting(valid.map(\.id))
+            removedIDs.forEach { cancelCaptureRippleExpiry(for: $0) }
             captureRipples = valid
         }
+    }
+
+    /// 현재 산책 세션의 경과 시간을 화면 표시 기준으로 계산합니다.
+    /// - Parameter now: 경과 시간을 계산할 기준 시각입니다.
+    /// - Returns: 진행 중 세션이면 `startTime` 기준 최신 경과 시간, 아니면 마지막으로 저장된 산책 시간입니다.
+    func displayedWalkElapsedTime(at now: Date = Date()) -> TimeInterval {
+        guard isWalking else { return max(0, time) }
+        return max(time, now.timeIntervalSince(startTime))
     }
 
     private func pushCaptureRipple(at coordinate: CLLocationCoordinate2D, source: PointAppendSource) {
         let ripple = CaptureRipple(coordinate: coordinate)
         captureRipples.append(ripple)
-        if captureRipples.count > maxCaptureRipples {
-            captureRipples.removeFirst(captureRipples.count - maxCaptureRipples)
-        }
+        scheduleCaptureRippleExpiry(for: ripple)
+        trimCaptureRipplesIfNeeded()
         if source != .auto {
             triggerCaptureHapticIfNeeded()
         }
+    }
+
+    /// 캡처 리플 만료 시각에 맞춰 해당 리플을 자동 제거하도록 예약합니다.
+    /// - Parameter ripple: 만료 제거를 예약할 리플 모델입니다.
+    private func scheduleCaptureRippleExpiry(for ripple: CaptureRipple) {
+        cancelCaptureRippleExpiry(for: ripple.id)
+        captureRippleExpiryTasks[ripple.id] = Task { [weak self] in
+            let delayNanoseconds = UInt64(max(0.001, captureRippleDuration) * 1_000_000_000)
+            try? await Task.sleep(nanoseconds: delayNanoseconds)
+            guard Task.isCancelled == false else { return }
+            await MainActor.run {
+                self?.removeCaptureRipple(withID: ripple.id)
+            }
+        }
+    }
+
+    /// 저장 개수 상한을 넘은 오래된 리플을 제거해 어노테이션 수를 제한합니다.
+    private func trimCaptureRipplesIfNeeded() {
+        guard captureRipples.count > maxCaptureRipples else { return }
+        let overflowCount = captureRipples.count - maxCaptureRipples
+        let removed = Array(captureRipples.prefix(overflowCount))
+        removed.forEach { cancelCaptureRippleExpiry(for: $0.id) }
+        captureRipples.removeFirst(overflowCount)
+    }
+
+    /// 식별자에 대응하는 캡처 리플을 제거하고 예약된 만료 작업도 정리합니다.
+    /// - Parameter id: 제거할 캡처 리플 식별자입니다.
+    private func removeCaptureRipple(withID id: UUID) {
+        cancelCaptureRippleExpiry(for: id)
+        captureRipples.removeAll { $0.id == id }
+    }
+
+    /// 예약된 캡처 리플 만료 작업을 취소합니다.
+    /// - Parameter id: 취소할 리플 식별자입니다.
+    private func cancelCaptureRippleExpiry(for id: UUID) {
+        captureRippleExpiryTasks[id]?.cancel()
+        captureRippleExpiryTasks[id] = nil
+    }
+
+    /// 모든 캡처 리플 만료 예약을 취소하고 메모리를 정리합니다.
+    private func cancelAllCaptureRippleExpiryTasks() {
+        captureRippleExpiryTasks.values.forEach { $0.cancel() }
+        captureRippleExpiryTasks.removeAll()
     }
 
     private func triggerCaptureHapticIfNeeded(now: Date = Date()) {
@@ -3577,7 +3613,7 @@ extension MapViewModel {
                 self.evaluateReturnToOriginSuggestionIfNeeded(with: location, now: Date())
                 self.updateMovementState(with: location)
             }
-            self.location = location
+            self.publishMapLocationIfNeeded(location)
             self.handleAutoPointRecord(with: location)
             let now = Date()
             if now.timeIntervalSince(self.lastLocationSideEffectAt) >= self.locationSideEffectInterval {
@@ -3590,6 +3626,28 @@ extension MapViewModel {
                 }
             }
         }
+    }
+
+    /// 새 위치 샘플이 지도 루트 재렌더링이 필요할 만큼 의미 있는 변화일 때만 `location`을 갱신합니다.
+    /// - Parameter location: 최근 Core Location 위치 샘플입니다.
+    private func publishMapLocationIfNeeded(_ location: CLLocation) {
+        guard shouldPublishMapLocation(location) else { return }
+        self.location = location
+    }
+
+    /// 현재 지도 표시에 반영된 위치와 비교해 새 샘플을 publish해야 하는지 판단합니다.
+    /// - Parameter location: 최근 Core Location 위치 샘플입니다.
+    /// - Returns: 좌표/정확도/시간 변화가 충분해 지도 UI 갱신이 필요하면 `true`입니다.
+    private func shouldPublishMapLocation(_ location: CLLocation) -> Bool {
+        guard let current = self.location else { return true }
+
+        let movedDistance = location.distance(from: current)
+        let timestampGap = location.timestamp.timeIntervalSince(current.timestamp)
+        let accuracyDelta = abs(location.horizontalAccuracy - current.horizontalAccuracy)
+
+        return movedDistance >= mapLocationPublishMinimumDistance
+            || timestampGap >= mapLocationPublishMaximumInterval
+            || accuracyDelta >= mapLocationPublishAccuracyDelta
     }
 
     /// 위치 객체를 기준으로 지도의 중심/축척을 설정합니다.

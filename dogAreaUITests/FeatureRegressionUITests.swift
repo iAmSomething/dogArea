@@ -88,6 +88,37 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertTrue(waitUntilExists(bottomControls, timeout: 3), "종료 알럿 해제 후 하단 control overlay가 다시 보여야 합니다.")
     }
 
+    /// 산책 중 지도 루트가 250ms ticker에 의해 반복 재평가되지 않는지 render probe로 검증합니다.
+    func testFeatureRegression_MapWalkingRuntimeKeepsRootRenderCountBelowThreshold() throws {
+        let app = launchAppForFeatureRegression(
+            extraArguments: ["-UITest.MapForceWalkingState", "-UITest.TrackMapRenderBudget"]
+        )
+
+        XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.")
+        XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
+
+        let renderCount = screenElement(identifier: "map.debug.renderCount", in: app)
+        let renderReset = app.buttons["map.debug.renderCount.reset"]
+        XCTAssertTrue(waitUntilExists(renderCount, timeout: 4), "지도 render budget probe를 찾지 못했습니다.")
+        XCTAssertTrue(waitUntilExists(renderReset, timeout: 2), "지도 render budget reset probe를 찾지 못했습니다.")
+
+        usleep(800_000)
+        renderReset.tap()
+
+        usleep(3_200_000)
+
+        let measured = parseInteger(from: renderCount.label) ?? parseInteger(from: renderCount.value as? String)
+        XCTAssertNotNil(measured, "지도 render budget probe 값을 읽지 못했습니다.")
+        if let measured {
+            print("[FeatureRegressionUITests][MapRenderBudget] mapSubViewBodyCount=\(measured)")
+            XCTAssertLessThanOrEqual(
+                measured,
+                6,
+                "산책 중 지도 루트 body가 3초 동안 과도하게 재평가되었습니다. count=\(measured)"
+            )
+        }
+    }
+
     /// 산책 목록 탭의 핵심 콘텐츠 진입점이 하단 탭바에 가려지지 않는지 검증합니다.
     func testFeatureRegression_WalkListPrimaryContentIsNotObscuredByTabBar() throws {
         let app = launchAppForFeatureRegression()
@@ -970,6 +1001,16 @@ final class FeatureRegressionUITests: XCTestCase {
                 return
             }
         }
+    }
+
+    /// 문자열 또는 접근성 값에서 첫 번째 정수를 추출합니다.
+    /// - Parameter value: 정수를 추출할 원본 문자열입니다.
+    /// - Returns: 파싱 가능한 첫 번째 정수가 있으면 해당 값을 반환하고, 없으면 `nil`입니다.
+    private func parseInteger(from value: String?) -> Int? {
+        guard let value, value.isEmpty == false else { return nil }
+        let digits = value.filter(\.isNumber)
+        guard digits.isEmpty == false else { return nil }
+        return Int(digits)
     }
 
     /// 테스트 프로세스 환경변수에서 이메일 로그인용 계정을 로드합니다.

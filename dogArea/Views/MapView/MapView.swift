@@ -39,6 +39,7 @@ struct MapView : View{
     var body : some View {
         var composed = AnyView(rootContent)
         composed = AnyView(composed.onAppear {
+            MapRenderBudgetProbe.resetIfNeeded()
             viewModel.activateMapRuntimeServices()
             viewModel.reloadSelectedPetContext()
             viewModel.updateAnnotations(cameraDistance: self.distance)

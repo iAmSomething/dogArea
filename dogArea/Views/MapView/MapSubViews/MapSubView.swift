@@ -8,49 +8,37 @@
 import Foundation
 import SwiftUI
 import _MapKit_SwiftUI
-import Combine
 
 struct MapSubView: View {
     @ObservedObject var myAlert: CustomAlertViewModel
     @ObservedObject var viewModel: MapViewModel
-    @State private var motionNow: Date = Date()
     @State private var clusterPulseActive: Bool = false
-    private let motionTicker = Timer.publish(every: 0.25, on: .main, in: .common).autoconnect()
 
     var body: some View {
-        Map(position: $viewModel.cameraPosition,
-            interactionModes: .all){
+        MapRenderBudgetProbe.recordMapSubViewBodyEvaluationIfNeeded()
+
+        return Map(position: $viewModel.cameraPosition, interactionModes: .all) {
             if viewModel.isWalking, viewModel.activeWalkRouteCoordinates.count > 1 {
                 MapPolyline(coordinates: viewModel.activeWalkRouteCoordinates)
                     .stroke(routeStrokeColor, style: routeStrokeStyle)
             }
-            ForEach(viewModel.activeCaptureRipples(at: motionNow)) { ripple in
-                let progress = viewModel.captureRippleProgress(for: ripple, now: motionNow)
+            ForEach(viewModel.activeCaptureRipples()) { ripple in
                 Annotation("", coordinate: ripple.coordinate) {
-                    ZStack {
-                        Circle()
-                            .stroke(Color.appYellow.opacity(0.7), lineWidth: 2)
-                            .frame(width: 16, height: 16)
-                            .scaleEffect(0.5 + (progress * 2.2))
-                            .opacity(1.0 - progress)
-                        Circle()
-                            .stroke(Color.appYellowPale.opacity(0.55), lineWidth: 1.5)
-                            .frame(width: 12, height: 12)
-                            .scaleEffect(0.6 + (progress * 1.6))
-                            .opacity(max(0.0, 0.8 - progress))
-                    }
+                    MapCaptureRippleAnnotationView(
+                        duration: viewModel.captureRippleDuration,
+                        isReducedMotion: viewModel.isMapMotionReduced
+                    )
                     .allowsHitTesting(false)
                 }
             }
             if viewModel.isWalking {
                 ForEach(viewModel.activeTrailMarkers) { trail in
                     Annotation("", coordinate: trail.coordinate) {
-                        Image(systemName: "pawprint.fill")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(Color.appInk.opacity(0.8))
-                            .scaleEffect(trail.scale)
-                            .opacity(trail.opacity)
-                            .allowsHitTesting(false)
+                        MapTrailMarkerAnnotationView(
+                            trail: trail,
+                            isReducedMotion: viewModel.isMapMotionReduced
+                        )
+                        .allowsHitTesting(false)
                     }
                 }
             }
@@ -78,7 +66,7 @@ struct MapSubView: View {
                     }
                 }
             }
-            if let walkArea = viewModel.polygon.polygon{
+            if let walkArea = viewModel.polygon.polygon {
                 if viewModel.showOnlyOne {
                     if viewModel.routeCoordinates(for: viewModel.polygon).count > 1 {
                         MapPolyline(coordinates: viewModel.routeCoordinates(for: viewModel.polygon))
@@ -107,9 +95,8 @@ struct MapSubView: View {
                                 .foregroundColor(.appTextDarkGray)
                         }
                     }
-                }
-                else {
-                    ForEach(viewModel.centerLocations.indices, id:\.self) { index in
+                } else {
+                    ForEach(viewModel.centerLocations.indices, id: \.self) { index in
                         Annotation("", coordinate: viewModel.centerLocations[index].center) {
                             VStack {
                                 Image(systemName: "pawprint.fill")
@@ -120,7 +107,6 @@ struct MapSubView: View {
                                     .cornerRadius(10)
                                     .shadow(radius: 5)
                                 if viewModel.centerLocations[index].sumLocs.count == 1 {
-                                    
                                 } else {
                                     Text("\(viewModel.centerLocations[index].sumLocs.count)")
                                         .font(.appFont(for: .Regular, size: 12))
@@ -135,16 +121,15 @@ struct MapSubView: View {
                         }
                     }
                     ForEach(viewModel.renderablePolygonOverlays) { item in
-                        if let p  = item.polygon {
-                            MapPolygon(p)
+                        if let polygon = item.polygon {
+                            MapPolygon(polygon)
                                 .stroke(Color.appYellow, lineWidth: 0.5)
                                 .foregroundStyle(Color.appYellow.opacity(0.3))
                                 .annotationTitles(.visible)
                         }
                     }
                 }
-            }
-            else { 
+            } else {
                 if viewModel.isWalking == false, viewModel.activeWalkRouteCoordinates.count > 1 {
                     MapPolyline(coordinates: viewModel.activeWalkRouteCoordinates)
                         .stroke(routeStrokeColor, style: routeStrokeStyle)
@@ -159,13 +144,14 @@ struct MapSubView: View {
                     }
                 }
             }
-        }.mapControls {
+        }
+        .mapControls {
 //            mapControls
         }
-        .onReceive(motionTicker) { now in
-            guard viewModel.shouldDriveMapMotionTicker else { return }
-            motionNow = now
-            viewModel.compactMapMotionArtifacts(now: now)
+        .overlay(alignment: .topLeading) {
+            if MapRenderBudgetProbe.isEnabled {
+                MapRenderBudgetProbeOverlay()
+            }
         }
         .onChange(of: viewModel.clusterMotionToken) {
             guard viewModel.clusterMotionTransition != .none else { return }
@@ -271,9 +257,149 @@ struct MapSubView: View {
     }
 
     var mapControls: some View {
-        VStack{
+        VStack {
             MapUserLocationButton()
-            
-        }.mapControlVisibility(.visible)
+        }
+        .mapControlVisibility(.visible)
+    }
+}
+
+private struct MapCaptureRippleAnnotationView: View {
+    let duration: Double
+    let isReducedMotion: Bool
+    @State private var isAnimated: Bool = false
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(Color.appYellow.opacity(0.7), lineWidth: 2)
+                .frame(width: 16, height: 16)
+                .scaleEffect(isAnimated ? 2.7 : 0.5)
+                .opacity(isAnimated ? 0.0 : 1.0)
+            Circle()
+                .stroke(Color.appYellowPale.opacity(0.55), lineWidth: 1.5)
+                .frame(width: 12, height: 12)
+                .scaleEffect(isAnimated ? 2.2 : 0.6)
+                .opacity(isAnimated ? 0.0 : 0.8)
+        }
+        .onAppear {
+            withAnimation(.easeOut(duration: effectiveDuration)) {
+                isAnimated = true
+            }
+        }
+    }
+
+    private var effectiveDuration: Double {
+        isReducedMotion ? max(0.18, duration * 0.65) : duration
+    }
+}
+
+private struct MapTrailMarkerAnnotationView: View {
+    private struct VisualState {
+        let scale: Double
+        let opacity: Double
+    }
+
+    let trail: MapViewModel.TrailMarker
+    let isReducedMotion: Bool
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: tickInterval)) { context in
+            let visualState = makeVisualState(at: context.date)
+            Image(systemName: "pawprint.fill")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(Color.appInk.opacity(0.8))
+                .scaleEffect(visualState.scale)
+                .opacity(visualState.opacity)
+        }
+    }
+
+    /// 기준 시각에 맞춰 트레일 마커의 스케일/투명도 상태를 계산합니다.
+    /// - Parameter now: 현재 렌더 기준 시각입니다.
+    /// - Returns: 현재 시점에 적용할 트레일 마커 시각 상태입니다.
+    private func makeVisualState(at now: Date) -> VisualState {
+        let age = max(0, now.timeIntervalSince1970 - trail.recordedAt)
+        let ratio = min(1.0, max(0.0, age / 5.0))
+        return VisualState(
+            scale: 0.95 + ((1.0 - ratio) * 0.25),
+            opacity: 0.75 - (ratio * 0.65)
+        )
+    }
+
+    private var tickInterval: TimeInterval {
+        isReducedMotion ? 0.5 : 0.25
+    }
+}
+
+private struct MapRenderBudgetProbeOverlay: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            TimelineView(.periodic(from: .now, by: 0.5)) { _ in
+                Text(MapRenderBudgetProbe.currentCountText())
+                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(Color.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.black.opacity(0.72))
+                    .clipShape(Capsule())
+                    .accessibilityIdentifier("map.debug.renderCount")
+            }
+
+            Button("reset") {
+                MapRenderBudgetProbe.reset()
+            }
+            .font(.system(size: 10, weight: .semibold, design: .monospaced))
+            .foregroundStyle(Color.white)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Color.black.opacity(0.72))
+            .clipShape(Capsule())
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("map.debug.renderCount.reset")
+        }
+        .padding(.top, 12)
+        .padding(.leading, 12)
+    }
+}
+
+enum MapRenderBudgetProbe {
+    private static let lock = NSLock()
+    private static var mapSubViewBodyCount: Int = 0
+
+    static var isEnabled: Bool {
+        ProcessInfo.processInfo.arguments.contains("-UITest.TrackMapRenderBudget")
+    }
+
+    /// 지도 루트 body 평가 카운터를 초기화합니다.
+    static func resetIfNeeded() {
+        guard isEnabled else { return }
+        lock.lock()
+        mapSubViewBodyCount = 0
+        lock.unlock()
+    }
+
+    /// UI 테스트가 안정화 이후 구간만 다시 측정할 수 있도록 카운터를 즉시 초기화합니다.
+    static func reset() {
+        guard isEnabled else { return }
+        lock.lock()
+        mapSubViewBodyCount = 0
+        lock.unlock()
+    }
+
+    /// 지도 루트 body 평가 횟수를 누적합니다.
+    static func recordMapSubViewBodyEvaluationIfNeeded() {
+        guard isEnabled else { return }
+        lock.lock()
+        mapSubViewBodyCount += 1
+        lock.unlock()
+    }
+
+    /// 현재 누적된 지도 루트 body 평가 횟수를 문자열로 반환합니다.
+    /// - Returns: UI 테스트 접근성에서 읽을 수 있는 평가 횟수 문자열입니다.
+    static func currentCountText() -> String {
+        lock.lock()
+        let count = mapSubViewBodyCount
+        lock.unlock()
+        return "\(count)"
     }
 }
