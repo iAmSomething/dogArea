@@ -308,6 +308,12 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         ProcessInfo.processInfo.arguments.contains("-UITest.MapOpenSeasonTileDetail")
     }
 
+    /// UI 테스트에서 시즌 설명 가이드를 자동으로 열어둘지 여부를 반환합니다.
+    /// - Returns: `-UITest.SeasonGuideAutoPresent` 인자가 포함되면 `true`를 반환합니다.
+    private static func shouldAutoPresentSeasonGuideForUITest() -> Bool {
+        ProcessInfo.processInfo.arguments.contains("-UITest.SeasonGuideAutoPresent")
+    }
+
     private let locationManager = CLLocationManager()
     private var timer: Timer? = nil
     private var isLocationUpdatesRunning: Bool = false
@@ -351,6 +357,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     @Published private(set) var seasonTileMapTiles: [MapSeasonTilePresentation] = []
     @Published private(set) var seasonTileSummaryPresentation: MapSeasonTileSummaryPresentation? = nil
     @Published private(set) var selectedSeasonTileGeohash: String? = nil
+    @Published private(set) var seasonGuidePresentation: SeasonGuidePresentation? = nil
     @Published var nearbyHotspotEnabled: Bool = true
     @Published var locationSharingEnabled: Bool = false
     @Published var nearbyHotspots: [NearbyHotspotDTO] = [] {
@@ -399,11 +406,14 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private let nearbyService = NearbyPresenceService()
     private let heatmapAggregationService: MapHeatmapAggregationServicing
     private let seasonTilePresentationService: MapSeasonTilePresentationServicing
+    private let seasonGuidePresentationService: SeasonGuidePresentationProviding
+    private let seasonGuideStateStore: SeasonGuideStateStoring
     private let hotspotClusterRenderingService: MapHotspotClusterRenderingServicing
     private var nearbyTickTimer: Timer? = nil
     private var heatmapAggregationSnapshot: MapHeatmapAggregationSnapshot?
     private var hotspotClusterSnapshot: MapHotspotClusterSnapshot?
     private var heatmapRefreshTask: Task<Void, Never>?
+    private var seasonGuideAutoPresentationTask: Task<Void, Never>?
     private var latestHeatmapRefreshRequestID: UUID?
     private var lastPresenceSentAt: Date = .distantPast
     private var lastPresenceSentCoordinate: CLLocationCoordinate2D?
@@ -644,6 +654,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         areaCalculationService: MapAreaCalculationServicing = MapAreaCalculationService(),
         heatmapAggregationService: MapHeatmapAggregationServicing = MapHeatmapAggregationService(),
         seasonTilePresentationService: MapSeasonTilePresentationServicing = MapSeasonTilePresentationService(),
+        seasonGuidePresentationService: SeasonGuidePresentationProviding = SeasonGuidePresentationService(),
+        seasonGuideStateStore: SeasonGuideStateStoring = DefaultSeasonGuideStateStore.shared,
         walkPointSnapshotService: MapWalkPointSnapshotServicing = MapWalkPointSnapshotService(),
         clusterAnnotationService: MapClusterAnnotationServicing = MapClusterAnnotationService(),
         hotspotClusterRenderingService: MapHotspotClusterRenderingServicing? = nil,
@@ -661,6 +673,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         self.areaCalculationService = areaCalculationService
         self.heatmapAggregationService = heatmapAggregationService
         self.seasonTilePresentationService = seasonTilePresentationService
+        self.seasonGuidePresentationService = seasonGuidePresentationService
+        self.seasonGuideStateStore = seasonGuideStateStore
         self.walkPointSnapshotService = walkPointSnapshotService
         self.clusterAnnotationService = clusterAnnotationService
         self.hotspotClusterRenderingService = hotspotClusterRenderingService
@@ -729,6 +743,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         timer?.invalidate()
         nearbyTickTimer?.invalidate()
         heatmapRefreshTask?.cancel()
+        seasonGuideAutoPresentationTask?.cancel()
         cancelAllCaptureRippleExpiryTasks()
         locationManager.stopUpdatingLocation()
         liveActivitySyncTask?.cancel()
@@ -769,6 +784,10 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         flushSyncOutboxIfNeeded(force: true)
         flushLivePresenceOutboxIfNeeded()
         refreshWeatherRiskFromProviderIfNeeded(location: locationManager.location, force: true)
+        if Self.shouldForceSeasonTileMapVisibleForUITest(), polygonList.isEmpty {
+            applyUITestSeasonTilePreviewIfNeeded()
+        }
+        evaluateSeasonGuidePresentationIfNeeded()
     }
 
     /// 지도 탭이 화면에서 사라질 때 불필요한 위치/폴링 작업을 중단합니다.
@@ -776,6 +795,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         isMapViewActive = false
         nearbyTickTimer?.invalidate()
         nearbyTickTimer = nil
+        seasonGuideAutoPresentationTask?.cancel()
         refreshPresenceHeartbeatState()
         if isWalking == false {
             stopLocationUpdatesIfNeeded()
@@ -2483,6 +2503,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
            seasonTileMapTiles.contains(where: { $0.geohash == selectedSeasonTileGeohash }) == false {
             self.selectedSeasonTileGeohash = nil
         }
+        evaluateSeasonGuidePresentationIfNeeded()
     }
 
     /// UI 테스트에서 시즌 점령 지도 샘플 타일과 요약 카드를 주입합니다.
@@ -2494,6 +2515,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         if Self.shouldAutoOpenSeasonTileDetailForUITest() {
             selectedSeasonTileGeohash = representativeSeasonTile?.geohash
         }
+        evaluateSeasonGuidePresentationIfNeeded()
     }
 
     var isCloudSyncAvailableForSession: Bool {
@@ -2665,6 +2687,10 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         return seasonTilePresentationService.makeDetailPresentation(for: tile)
     }
 
+    var hasSeasonGuidePresentation: Bool {
+        seasonGuidePresentation != nil
+    }
+
     private var selectedSeasonTile: MapSeasonTilePresentation? {
         guard let selectedSeasonTileGeohash else { return nil }
         return seasonTileMapTiles.first { $0.geohash == selectedSeasonTileGeohash }
@@ -2765,6 +2791,25 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         selectedSeasonTileGeohash = nil
     }
 
+    /// 지도 시즌 요약에서 시즌 설명 가이드를 수동으로 엽니다.
+    func presentSeasonGuideFromMapHelp() {
+        seasonGuideAutoPresentationTask?.cancel()
+        seasonGuideStateStore.markInitialSeasonGuidePresented()
+        seasonGuidePresentation = seasonGuidePresentationService.makePresentation(for: .mapSummary)
+    }
+
+    /// 열린 시즌 설명 가이드를 닫습니다.
+    func dismissSeasonGuide() {
+        seasonGuideAutoPresentationTask?.cancel()
+        seasonGuidePresentation = nil
+    }
+
+    /// UI 테스트에서 시즌 타일이 실제로 준비된 뒤 시즌 설명 가이드 자동 노출을 다시 평가합니다.
+    func triggerUITestSeasonGuidePresentationIfNeeded() {
+        guard Self.shouldAutoPresentSeasonGuideForUITest() else { return }
+        evaluateSeasonGuidePresentationIfNeeded()
+    }
+
     /// 대표 시즌 타일을 골라 상세 패널을 엽니다.
     func openRepresentativeSeasonTileDetail() {
         if let selectedSeasonTile {
@@ -2779,6 +2824,39 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private var representativeSeasonTile: MapSeasonTilePresentation? {
         seasonTileMapTiles.max { lhs, rhs in
             representativePriority(for: lhs) < representativePriority(for: rhs)
+        }
+    }
+
+    /// 현재 지도 상태에서 시즌 설명 가이드를 자동으로 보여줄지 평가합니다.
+    private func evaluateSeasonGuidePresentationIfNeeded() {
+        guard isMapViewActive else { return }
+        guard isSeasonTileMapVisible else { return }
+        guard seasonTileMapTiles.isEmpty == false else { return }
+        guard seasonGuidePresentation == nil else { return }
+
+        if Self.shouldAutoPresentSeasonGuideForUITest() {
+            scheduleSeasonGuideAutoPresentation(for: .firstSeasonVisit)
+            return
+        }
+
+        guard Self.isRunningUITestRuntime() == false else { return }
+        guard seasonGuideStateStore.hasPresentedInitialSeasonGuide() == false else { return }
+
+        seasonGuideStateStore.markInitialSeasonGuidePresented()
+        scheduleSeasonGuideAutoPresentation(for: .firstSeasonVisit)
+    }
+
+    /// 시즌 설명 가이드 자동 노출을 다음 메인 런루프로 예약해 지도 호스트가 완전히 올라온 뒤 표시합니다.
+    /// - Parameter context: 자동으로 열 시즌 가이드의 진입 맥락입니다.
+    private func scheduleSeasonGuideAutoPresentation(for context: SeasonGuideEntryContext) {
+        let presentation = seasonGuidePresentationService.makePresentation(for: context)
+        seasonGuideAutoPresentationTask?.cancel()
+        seasonGuideAutoPresentationTask = Task { @MainActor [weak self] in
+            await Task.yield()
+            guard let self else { return }
+            guard self.isMapViewActive else { return }
+            guard self.seasonGuidePresentation == nil else { return }
+            self.seasonGuidePresentation = presentation
         }
     }
 

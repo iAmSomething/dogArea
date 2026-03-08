@@ -29,6 +29,7 @@ struct HomeView: View {
     @State private var seasonResultRevealContribution: Bool = false
     @State private var seasonResultRevealShield: Bool = false
     @State private var seasonResetBannerVisible: Bool = false
+    @State private var seasonGuidePresentation: SeasonGuidePresentation? = nil
     @State private var areaMilestonePop: Bool = false
     @State private var questWidgetTab: HomeQuestWidgetTab = .daily
     @State private var homeScrollOffsetY: CGFloat = 0
@@ -40,6 +41,8 @@ struct HomeView: View {
     @State private var pendingHomeScrollTarget: HomeExternalScrollTarget? = nil
     @State private var hasAppearedOnce: Bool = false
     @State private var isHomeVisible: Bool = false
+    private let seasonGuidePresentationService: SeasonGuidePresentationProviding = SeasonGuidePresentationService()
+    private let seasonGuideStateStore: SeasonGuideStateStoring = DefaultSeasonGuideStateStore.shared
 
     /// 외부 라우트를 주입받아 홈 화면을 초기화합니다.
     /// - Parameter externalRoute: 위젯/딥링크에서 전달된 홈 외부 라우트 바인딩입니다.
@@ -455,6 +458,12 @@ struct HomeView: View {
                     onClose: { isWeatherGuidancePresented = false }
                 )
             }
+            .sheet(item: $seasonGuidePresentation) { presentation in
+                SeasonGuideSheetView(
+                    presentation: presentation,
+                    onClose: { seasonGuidePresentation = nil }
+                )
+            }
             .appTabRootScrollLayout(extraBottomPadding: 12)
     }
 
@@ -684,10 +693,17 @@ struct HomeView: View {
             gaugeWaveOffset: seasonGaugeWaveOffset,
             shieldRotation: seasonShieldRotation,
             remainingTimeText: viewModel.seasonRemainingTimeText,
+            onOpenGuide: { openSeasonGuideFromHomeCard() },
             onOpenDetail: {
                 isSeasonDetailPresented = true
             }
         )
+    }
+
+    /// 홈 시즌 카드에서 시즌 설명 가이드를 엽니다.
+    private func openSeasonGuideFromHomeCard() {
+        seasonGuideStateStore.markInitialSeasonGuidePresented()
+        seasonGuidePresentation = seasonGuidePresentationService.makePresentation(for: .homeSeasonCard)
     }
 
     private func animatedSeasonGauge(progress: Double) -> some View {

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MapSeasonTileSummaryCardView: View {
     let summary: MapSeasonTileSummaryPresentation
+    let onOpenGuide: (() -> Void)?
     let onOpenDetail: (() -> Void)?
 
     var body: some View {
@@ -59,6 +60,24 @@ struct MapSeasonTileSummaryCardView: View {
                     text: summary.selectionHintLine,
                     accessibilityIdentifier: "map.season.summary.selectionHint"
                 )
+                if let onOpenGuide {
+                    Button(action: onOpenGuide) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "questionmark.circle.fill")
+                                .font(.system(size: 12, weight: .semibold))
+                            Text("시즌이 뭔가요?")
+                                .font(.appFont(for: .SemiBold, size: 12))
+                        }
+                        .foregroundStyle(Color.appInk)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 10)
+                        .background(Color.appDynamicHex(light: 0xEFF6FF, dark: 0x1E3A8A, alpha: 0.22))
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("map.season.summary.openGuide")
+                }
                 if let onOpenDetail {
                     Button(action: onOpenDetail) {
                         HStack(spacing: 8) {
