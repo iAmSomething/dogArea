@@ -33,11 +33,13 @@ let supabaseInfrastructure = readMany([
 let infoPlist = read("dogArea/Info.plist")
 let pbxproj = read("dogArea.xcodeproj/project.pbxproj")
 let migration = read("supabase/migrations/20260226234500_caricature_jobs_observability_columns.sql")
+let legacyGeminiEnvLookup = "Deno.env.get(\"" + "GEMINI" + "_KEY\")"
 
 Check.assertTrue(function.contains("const SCHEMA_VERSION = \"2026-02-26.v1\""), "edge function should define request schema version")
 Check.assertTrue(function.contains("requestId"), "edge function should track requestId")
 Check.assertTrue(function.contains("sourceImagePath or sourceImageUrl is required"), "edge function should validate source image")
-Check.assertTrue(function.contains("Deno.env.get(\"GEMINI_API_KEY\") ?? Deno.env.get(\"GEMINI_KEY\")"), "edge function should support GEMINI_API_KEY and GEMINI_KEY")
+Check.assertTrue(function.contains("Deno.env.get(\"GEMINI_API_KEY\")"), "edge function should read GEMINI_API_KEY")
+Check.assertTrue(!function.contains(legacyGeminiEnvLookup), "edge function should not support the removed Gemini alias")
 Check.assertTrue(function.contains("caricature_url"), "edge function should update pets caricature_url")
 Check.assertTrue(function.contains("ALL_PROVIDERS_FAILED"), "edge function should expose recoverable provider failure")
 Check.assertTrue(functionReadme.contains("Request Schema"), "README should define request schema")

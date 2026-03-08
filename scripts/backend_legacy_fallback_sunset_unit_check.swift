@@ -51,6 +51,7 @@ let scriptBundle = loadMany([
     "scripts/backend_request_id_idempotency_unit_check.swift",
     "scripts/area_reference_catalog_seed_unit_check.swift"
 ])
+let removedGeminiAliasMessage = "should not support the removed Gemini alias"
 
 for token in [
     "temporary_compat_debt",
@@ -62,7 +63,6 @@ for token in [
     "rpc_get_nearby_hotspots",
     "requestId",
     "eventId",
-    "GEMINI_KEY",
     "feature-control",
     "area_references.category = legacy",
     "#479"
@@ -89,7 +89,7 @@ assertTrue(
     requestPolicy.contains("legacy alias `instanceId`, `target_instance_id`, `eventId`도 계속 허용합니다."),
     "request policy should still mention quest legacy aliases"
 )
-assertTrue(secretRunbook.contains("`GEMINI_KEY`는 compatibility alias로만 유지합니다."), "secret runbook should still describe GEMINI_KEY as compatibility alias")
+assertTrue(secretRunbook.contains("legacy alias는 `#479`에서 제거되었습니다."), "secret runbook should record the legacy Gemini alias removal")
 assertTrue(areaGovernance.contains("`legacy`"), "area governance doc should still mention legacy category")
 assertTrue(authInventory.contains("legacy compat delegate"), "auth inventory should still mention compat delegate paths")
 assertTrue(syncWalkPolicy.contains("legacy route fallback: `sync_walk`"), "sync-walk policy should still mention legacy route fallback")
@@ -100,7 +100,8 @@ assertTrue(questReadme.contains("legacy alias `requestId` / `eventId` / `instanc
 assertTrue(scriptBundle.contains("SyncWalkFunctionRoute.legacy"), "sync-walk unit check bundle should still cover route fallback")
 assertTrue(scriptBundle.contains("delegate migration should route 3-arg leaderboard RPC"), "rival rpc unit check bundle should still cover delegate migration")
 assertTrue(scriptBundle.contains("feature-control service should define cooldown duration"), "feature-control unit check bundle should still cover cooldown")
-assertTrue(scriptBundle.contains("GEMINI_API_KEY and GEMINI_KEY"), "caricature unit check bundle should still cover Gemini legacy alias")
+assertTrue(scriptBundle.contains("edge function should read GEMINI_API_KEY"), "caricature unit check bundle should verify the canonical Gemini key")
+assertTrue(scriptBundle.contains(removedGeminiAliasMessage), "caricature unit check bundle should verify removal of the legacy Gemini alias")
 assertTrue(
     scriptBundle.contains("canonical and legacy instance id aliases") &&
         scriptBundle.contains("canonical and legacy event id aliases"),

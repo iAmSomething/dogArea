@@ -39,6 +39,7 @@ let backendCheck = load("scripts/backend_pr_check.sh")
 let iosPRCheck = load("scripts/ios_pr_check.sh")
 let authSmoke = load("scripts/auth_member_401_smoke_check.sh")
 let config = load("supabase/config.toml")
+let legacyGeminiEnvLookup = "Deno.env.get(\"" + "GEMINI" + "_KEY\")"
 let functionSources = loadMany([
     "supabase/functions/sync-walk/index.ts",
     "supabase/functions/sync-profile/index.ts",
@@ -61,7 +62,6 @@ for token in [
     "SUPABASE_SERVICE_ROLE_KEY",
     "OPENAI_API_KEY",
     "GEMINI_API_KEY",
-    "GEMINI_KEY",
     "SUPABASE_AUTH_EXTERNAL_APPLE_SECRET",
     "S3_SECRET_KEY"
 ] {
@@ -71,7 +71,7 @@ for token in [
 assertTrue(doc.contains("`SUPABASE_ANON_KEY`는 **service role secret과 같은 수준의 비밀키가 아닙니다.**"), "doc should distinguish anon key from real secrets")
 assertTrue(doc.contains("highest severity"), "doc should define highest severity incident rule for service role key")
 assertTrue(doc.contains("ALL_PROVIDERS_FAILED"), "doc should document provider failure mode")
-assertTrue(doc.contains("#479"), "doc should reference legacy Gemini key follow-up")
+assertTrue(doc.contains("#479"), "doc should reference Gemini key canonicalization history")
 
 for functionName in [
     "sync-walk",
@@ -91,10 +91,12 @@ for snippet in [
     "Deno.env.get(\"SUPABASE_ANON_KEY\")",
     "Deno.env.get(\"SUPABASE_SERVICE_ROLE_KEY\")",
     "Deno.env.get(\"OPENAI_API_KEY\")",
-    "Deno.env.get(\"GEMINI_API_KEY\") ?? Deno.env.get(\"GEMINI_KEY\")"
+    "Deno.env.get(\"GEMINI_API_KEY\")"
 ] {
     assertTrue(functionSources.contains(snippet), "function sources should still include \(snippet)")
 }
+
+assertTrue(!functionSources.contains(legacyGeminiEnvLookup), "function sources should not include the removed Gemini alias")
 
 assertTrue(config.contains("openai_api_key = \"env(OPENAI_API_KEY)\""), "config should reference OPENAI_API_KEY")
 assertTrue(config.contains("secret = \"env(SUPABASE_AUTH_EXTERNAL_APPLE_SECRET)\""), "config should reference Apple external auth secret")

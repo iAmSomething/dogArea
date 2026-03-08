@@ -71,7 +71,6 @@ DogArea backend에는 장애 회피와 호환성 유지를 위한 fallback/compa
 | `rpc_get_widget_quest_rival_summary(timestamptz)` delegate | canonical `payload jsonb` + compat delegate | `temporary_compat_debt` | 기존 timestamptz caller compat 유지 | payload wrapper만 남겨도 되는지 caller inventory 확인 후 제거 검토 | `scripts/rival_rpc_param_compat_unit_check.swift`, `widget-quest-rival.summary.member` |
 | `rpc_get_nearby_hotspots` legacy signature | latest `in_center_*` + legacy `center_*` fallback | `temporary_compat_debt` | migration hotfix 이후 signature 편차 흡수 | latest signature smoke와 widget hotspot smoke 안정화 후 legacy signature 제거 검토 | `supabase/functions/nearby-presence/support/hotspot_compat.ts`, `scripts/backend_migration_drift_rpc_contract_unit_check.swift`, `nearby-presence.hotspots.app_policy`, `widget-hotspot.summary.member` |
 | `quest-engine` request key alias | `requestId`, `eventId`, `instanceId`, `target_instance_id` 허용 | `temporary_compat_debt` | 기존 transport/event payload와의 호환 유지 | canonical `request_id`, `idempotency_key`, `event_id`, `instance_id`만 남겨도 앱/스크립트가 깨지지 않을 때 제거 | `docs/backend-request-correlation-idempotency-policy-v1.md`, `scripts/backend_request_id_idempotency_unit_check.swift` |
-| `caricature` Gemini key alias | canonical `GEMINI_API_KEY` + legacy `GEMINI_KEY` | `temporary_compat_debt` | 이전 env/secret store 이름 호환 | `#479`에서 단일화. secret inventory 정리 후 legacy alias 제거 | `docs/backend-edge-secret-inventory-rotation-runbook-v1.md`, `scripts/caricature_proxy_unit_check.swift`, `#479` |
 | `feature-control` 404 cooldown | function unavailable cooldown | `long_lived_safety_rail` | 미배포 상태에서 flag/KPI read 폭주를 막음 | rollout/deploy 가드가 더 강한 중앙 제어로 대체되기 전 유지 | `scripts/feature_control_404_cooldown_unit_check.swift`, `feature-control.flags.anon`, `feature-control.rollout_kpis.anon` |
 | `caricature` provider fallback | `Gemini -> OpenAI` provider fallback | `long_lived_safety_rail` | provider outage/쿼터/정책 변동 시 기능 가용성 유지 | single-provider 운영 전략이 제품적으로 승인되기 전 유지 | `supabase/functions/caricature/README.md`, `scripts/caricature_proxy_unit_check.swift`, `docs/image-provider-router-v1.md` |
 | `area_references.category = legacy` seed | authoritative source 미정/과거 비교군 유지용 legacy rows | `legacy_data_bridge` | 과거 비교군 가시성 유지, seed 정합성 유지 | authoritative catalog replacement와 `is_active` 정리 계획이 생기면 축소. 즉시 삭제 금지 | `docs/area-references-data-governance.md`, `scripts/area_reference_catalog_seed_unit_check.swift` |
@@ -116,12 +115,11 @@ DogArea backend에는 장애 회피와 호환성 유지를 위한 fallback/compa
 
 가장 먼저 sunset 검토할 후보:
 
-1. `GEMINI_KEY` alias -> `#479`
-2. `rpc_get_nearby_hotspots` legacy signature
-3. `rpc_get_widget_quest_rival_summary(timestamptz)` delegate
-4. `rpc_get_rival_leaderboard` 3-arg delegate
-5. `sync_walk` legacy route
-6. `quest-engine` legacy request alias
+1. `rpc_get_nearby_hotspots` legacy signature
+2. `rpc_get_widget_quest_rival_summary(timestamptz)` delegate
+3. `rpc_get_rival_leaderboard` 3-arg delegate
+4. `sync_walk` legacy route
+5. `quest-engine` legacy request alias
 
 지금은 sunset 비권장:
 
@@ -146,11 +144,10 @@ DogArea backend에는 장애 회피와 호환성 유지를 위한 fallback/compa
 - `docs/area-references-data-governance.md`
 - `#417`
 - `#427`
-- `#479`
+- `#479` (Gemini key alias removal completed)
 
 ## Validation
 
 - `swift scripts/backend_legacy_fallback_sunset_unit_check.swift`
 - `bash scripts/backend_pr_check.sh`
 - `DOGAREA_SKIP_BUILD=1 bash scripts/ios_pr_check.sh`
-
