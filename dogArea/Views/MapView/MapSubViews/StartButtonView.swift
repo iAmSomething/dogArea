@@ -40,13 +40,7 @@ struct StartButtonView: View {
                 primaryActionButton
 
                 if viewModel.isWalking {
-                    walkMetricCard(
-                        title: viewModel.currentWalkingPetName,
-                        value: viewModel.time.simpleWalkingTimeInterval,
-                        subtitle: "산책 진행 중",
-                        emphasized: false,
-                        tapAction: nil
-                    )
+                    walkElapsedTimeCard
                 } else {
                     idleHintCard
                 }
@@ -105,6 +99,24 @@ struct StartButtonView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
         .mapChromePill(.accent)
+    }
+
+    private var walkElapsedTimeCard: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(viewModel.currentWalkingPetName)
+                .font(.appFont(for: .SemiBold, size: 12))
+                .foregroundStyle(MapChromePalette.secondaryText)
+                .lineLimit(1)
+            MapWalkingElapsedTimeValueText(viewModel: viewModel)
+            Text("산책 진행 중")
+                .font(.appFont(for: .Light, size: 11))
+                .foregroundStyle(MapChromePalette.secondaryText)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .mapChromePill(.neutral)
     }
 
     private var primaryActionButton: some View {
@@ -218,6 +230,20 @@ struct StartButtonView: View {
                     }
                 )
             )
+        }
+    }
+}
+
+private struct MapWalkingElapsedTimeValueText: View {
+    @ObservedObject var viewModel: MapViewModel
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 1.0)) { context in
+            Text(viewModel.displayedWalkElapsedTime(at: context.date).simpleWalkingTimeInterval)
+                .font(.appFont(for: .SemiBold, size: 16))
+                .foregroundStyle(MapChromePalette.primaryText)
+                .lineLimit(2)
+                .minimumScaleFactor(0.8)
         }
     }
 }
