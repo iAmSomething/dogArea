@@ -1529,6 +1529,13 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 
     private func pauseWalkForAuthorizationDowngrade() {
         guard isWalking else { return }
+        if Self.shouldForceWalkingStateForUITest() {
+            walkStatusMessage = "UI 테스트 강제 산책 상태를 유지합니다."
+            syncWatchContext(force: true)
+            syncWalkWidgetSnapshot(force: true)
+            syncWalkLiveActivity(force: true)
+            return
+        }
         timerStop()
         persistActiveWalkSession(force: true)
         prepareRecoverableSessionIfNeeded()

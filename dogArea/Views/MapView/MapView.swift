@@ -37,7 +37,7 @@ struct MapView : View{
     }
     
     var body : some View {
-        var composed = AnyView(mapContent)
+        var composed = AnyView(rootContent)
         composed = AnyView(composed.onAppear {
             viewModel.activateMapRuntimeServices()
             viewModel.reloadSelectedPetContext()
@@ -130,6 +130,20 @@ struct MapView : View{
         return composed
     }
 
+    private var rootContent: some View {
+        ZStack {
+            mapContent
+                .allowsHitTesting(!isCriticalModalPresented)
+                .accessibilityHidden(isCriticalModalPresented)
+
+            if isCriticalModalPresented {
+                MapAlertSubView(viewModel: viewModel, myAlert: myAlert)
+                    .zIndex(10)
+            }
+        }
+        .appTabBarVisibility(resolvedTabBarVisibility)
+    }
+
     private var mapContent: some View {
         GeometryReader { proxy in
             ZStack {
@@ -143,7 +157,6 @@ struct MapView : View{
                         .easeInOut(duration: viewModel.weatherOverlayAnimationDuration),
                         value: viewModel.weatherOverlayRiskLevel
                     )
-                MapAlertSubView(viewModel: viewModel, myAlert: myAlert)
             }
             .overlay(alignment: .top) {
                 MapTopChromeView(
@@ -162,10 +175,24 @@ struct MapView : View{
                 )
             }
             .overlay(alignment: .bottom) {
-                mapBottomControlOverlay
+                if shouldShowBottomControls {
+                    mapBottomControlOverlay
+                }
             }
             .appTabBarContentPadding(extra: 8)
         }
+    }
+
+    private var isCriticalModalPresented: Bool {
+        myAlert.isAlert
+    }
+
+    private var shouldShowBottomControls: Bool {
+        !isCriticalModalPresented && !endWalkingViewPresented
+    }
+
+    private var resolvedTabBarVisibility: AppTabBarVisibility {
+        (isCriticalModalPresented || endWalkingViewPresented) ? .hidden : .automatic
     }
 
     private var statusOverlayView: some View {

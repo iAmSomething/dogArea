@@ -65,6 +65,8 @@ final class FeatureRegressionUITests: XCTestCase {
         let primaryAlertAction = screenElement(identifier: "customAlert.action.primary", in: app)
         let secondaryAlertAction = screenElement(identifier: "customAlert.action.secondary", in: app)
         let destructiveAlertAction = screenElement(identifier: "customAlert.action.destructive", in: app)
+        let bottomControls = screenElement(identifier: "map.bottomControls", in: app)
+        let activeTabBarButton = app.buttons["tab.2"]
 
         let alertPresented = waitUntilExists(alertSurface, timeout: 4)
             || waitUntilExists(alertHost, timeout: 1)
@@ -77,9 +79,13 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertEqual(primaryAlertAction.label, "저장 후 종료", "주 행동 버튼 문구가 의도와 다릅니다.")
         XCTAssertEqual(secondaryAlertAction.label, "계속 걷기", "보조 행동 버튼 문구가 의도와 다릅니다.")
         XCTAssertEqual(destructiveAlertAction.label, "기록 폐기", "파괴적 행동 버튼 문구가 의도와 다릅니다.")
+        XCTAssertTrue(waitUntilGone(activeTabBarButton, timeout: 2), "종료 알럿 표시 중에는 전역 탭바가 숨겨져야 합니다.")
+        XCTAssertTrue(waitUntilGone(bottomControls, timeout: 2), "종료 알럿 표시 중에는 하단 control overlay가 숨겨져야 합니다.")
 
         secondaryAlertAction.tap()
         XCTAssertTrue(waitUntilGone(alertSurface, timeout: 3), "계속 걷기 탭 후 알럿이 닫히지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(activeTabBarButton, timeout: 3), "종료 알럿 해제 후 전역 탭바가 다시 보여야 합니다.")
+        XCTAssertTrue(waitUntilExists(bottomControls, timeout: 3), "종료 알럿 해제 후 하단 control overlay가 다시 보여야 합니다.")
     }
 
     /// 산책 목록 탭의 핵심 콘텐츠 진입점이 하단 탭바에 가려지지 않는지 검증합니다.
