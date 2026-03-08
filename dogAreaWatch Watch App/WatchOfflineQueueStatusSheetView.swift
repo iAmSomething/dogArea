@@ -16,6 +16,7 @@ struct WatchOfflineQueueStatusSheetView: View {
             VStack(alignment: .leading, spacing: 12) {
                 headerSection
                 statusSection
+                syncSignalSection
                 queuedActionSection
                 guidanceSection
             }
@@ -25,7 +26,7 @@ struct WatchOfflineQueueStatusSheetView: View {
 
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("오프라인 큐 상태")
+            Text("동기화 상태")
                 .font(.headline.weight(.semibold))
             Text(queueStatus.summaryDetail)
                 .font(.caption2)
@@ -36,6 +37,8 @@ struct WatchOfflineQueueStatusSheetView: View {
 
     private var statusSection: some View {
         VStack(alignment: .leading, spacing: 8) {
+            detailRow(label: "회복 상태", value: queueStatus.syncRecovery.headline)
+            detailRow(label: "마지막 동기화", value: formattedTimestamp(queueStatus.lastSyncAt))
             detailRow(label: "대기 건수", value: "\(queueStatus.pendingCount)건")
             detailRow(label: "마지막 큐 적재", value: formattedTimestamp(queueStatus.lastQueuedAt))
             detailRow(label: "가장 오래된 요청", value: formattedTimestamp(queueStatus.oldestQueuedAt))
@@ -51,6 +54,37 @@ struct WatchOfflineQueueStatusSheetView: View {
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(.orange)
                     .lineLimit(4)
+            }
+        }
+        .padding(10)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.white.opacity(0.08))
+        )
+    }
+
+    private var syncSignalSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("어긋남 징후")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            if queueStatus.syncRecovery.signals.isEmpty {
+                Text("지금은 특별한 어긋남 징후가 없어요.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(queueStatus.syncRecovery.signals, id: \.self) { signal in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(signal.title)
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(signal.tone.tintColor)
+                        Text(signal.detail)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(3)
+                    }
+                }
             }
         }
         .padding(10)
@@ -110,6 +144,13 @@ struct WatchOfflineQueueStatusSheetView: View {
                 .foregroundStyle(.secondary)
                 .lineLimit(4)
 
+            if let cooldownRemainingText = queueStatus.syncRecovery.cooldownRemainingText {
+                Text(cooldownRemainingText)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.orange)
+                    .lineLimit(2)
+            }
+
             if queueStatus.shouldOfferManualSync {
                 Button(action: onManualSync) {
                     Label(queueStatus.manualSyncButtonTitle, systemImage: "arrow.clockwise")
@@ -118,7 +159,7 @@ struct WatchOfflineQueueStatusSheetView: View {
                         .padding(.vertical, 6)
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(queueStatus.isManualSyncHighlighted ? .orange : .blue)
+                .tint(queueStatus.manualSyncButtonTone.tintColor)
                 .disabled(queueStatus.isManualSyncEnabled == false)
             }
         }

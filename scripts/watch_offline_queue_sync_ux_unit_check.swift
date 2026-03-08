@@ -45,7 +45,9 @@ assertTrue(statusState.contains("var warningText"), "queue state should expose s
 
 assertTrue(cardView.contains("큐 상태 보기"), "queue card should expose detail CTA")
 assertTrue(cardView.contains("manualSyncButtonTitle"), "queue card should reuse manual sync title policy")
-assertTrue(sheetView.contains("오프라인 큐 상태"), "queue sheet should explain offline queue state")
+assertTrue(sheetView.contains("동기화 상태"), "queue sheet should explain sync status")
+assertTrue(sheetView.contains("어긋남 징후"), "queue sheet should expose out-of-sync signals section")
+assertTrue(sheetView.contains("회복 상태"), "queue sheet should expose recovery headline row")
 assertTrue(sheetView.contains("중복 전송 안내"), "queue sheet should explain idempotency")
 assertTrue(sheetView.contains("다음 행동"), "queue sheet should define next action guidance")
 

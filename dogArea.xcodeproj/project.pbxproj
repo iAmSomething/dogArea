@@ -243,6 +243,7 @@
 		DAB314DA2B3C1D7C000357C7 /* WatchWalkSummaryMetricGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB314D92B3C1D7C000357C7 /* WatchWalkSummaryMetricGridView.swift */; };
 		DAB314DC2B3C1D7D000357C7 /* WatchWalkEndDecisionSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB314DB2B3C1D7D000357C7 /* WatchWalkEndDecisionSheetView.swift */; };
 		DAB314DE2B3C1D7E000357C7 /* WatchWalkCompletionSummarySheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB314DD2B3C1D7E000357C7 /* WatchWalkCompletionSummarySheetView.swift */; };
+		DAB314E22B3C1D7F000357C7 /* WatchSyncRecoveryPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB314E12B3C1D7F000357C7 /* WatchSyncRecoveryPresentation.swift */; };
 		DAC19F0E2B0AE5AC002FE2E8 /* ImagePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F0D2B0AE5AC002FE2E8 /* ImagePicker.swift */; };
 		DAC19F102B0AF661002FE2E8 /* TitleTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F0F2B0AF661002FE2E8 /* TitleTextView.swift */; };
 		DAC19F132B0AFCAC002FE2E8 /* UserdefaultSetting.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F122B0AFCAC002FE2E8 /* UserdefaultSetting.swift */; };
@@ -587,6 +588,7 @@
 		DAB314D92B3C1D7C000357C7 /* WatchWalkSummaryMetricGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchWalkSummaryMetricGridView.swift; sourceTree = "<group>"; };
 		DAB314DB2B3C1D7D000357C7 /* WatchWalkEndDecisionSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchWalkEndDecisionSheetView.swift; sourceTree = "<group>"; };
 		DAB314DD2B3C1D7E000357C7 /* WatchWalkCompletionSummarySheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchWalkCompletionSummarySheetView.swift; sourceTree = "<group>"; };
+		DAB314E12B3C1D7F000357C7 /* WatchSyncRecoveryPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSyncRecoveryPresentation.swift; sourceTree = "<group>"; };
 		DAC19F0D2B0AE5AC002FE2E8 /* ImagePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePicker.swift; sourceTree = "<group>"; };
 		DAC19F0F2B0AF661002FE2E8 /* TitleTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitleTextView.swift; sourceTree = "<group>"; };
 		DAC19F122B0AFCAC002FE2E8 /* UserdefaultSetting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserdefaultSetting.swift; sourceTree = "<group>"; };
@@ -1298,6 +1300,7 @@
 				DAB314D92B3C1D7C000357C7 /* WatchWalkSummaryMetricGridView.swift */,
 				DAB314DB2B3C1D7D000357C7 /* WatchWalkEndDecisionSheetView.swift */,
 				DAB314DD2B3C1D7E000357C7 /* WatchWalkCompletionSummarySheetView.swift */,
+				DAB314E12B3C1D7F000357C7 /* WatchSyncRecoveryPresentation.swift */,
 				DAB314B52B3C1B4B000357C7 /* Assets.xcassets */,
 				DAB314B72B3C1B4B000357C7 /* Preview Content */,
 			);
@@ -2011,6 +2014,7 @@
 				DAB314DA2B3C1D7C000357C7 /* WatchWalkSummaryMetricGridView.swift in Sources */,
 				DAB314DC2B3C1D7D000357C7 /* WatchWalkEndDecisionSheetView.swift in Sources */,
 				DAB314DE2B3C1D7E000357C7 /* WatchWalkCompletionSummarySheetView.swift in Sources */,
+				DAB314E22B3C1D7F000357C7 /* WatchSyncRecoveryPresentation.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
