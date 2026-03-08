@@ -16,6 +16,7 @@ select
   ) as oldest_overdue_at
 from public.nearby_presence p
 cross join boundaries
+group by boundaries.now_ts
 
 union all
 
@@ -31,6 +32,7 @@ select
   ) as oldest_overdue_at
 from public.widget_hotspot_summary_cache c
 cross join boundaries
+group by boundaries.now_ts
 
 union all
 
@@ -46,6 +48,7 @@ select
   ) as oldest_overdue_at
 from public.privacy_guard_audit_logs l
 cross join boundaries
+group by boundaries.now_ts
 
 union all
 
@@ -63,6 +66,7 @@ select
   ) as oldest_overdue_at
 from public.live_presence_abuse_states s
 cross join boundaries
+group by boundaries.now_ts
 
 union all
 
@@ -78,6 +82,7 @@ select
   ) as oldest_overdue_at
 from public.live_presence_abuse_device_windows w
 cross join boundaries
+group by boundaries.now_ts
 
 union all
 
@@ -93,6 +98,7 @@ select
   ) as oldest_overdue_at
 from public.live_presence_abuse_events e
 cross join boundaries
+group by boundaries.now_ts
 
 union all
 
@@ -107,7 +113,8 @@ select
     where r.created_at <= boundaries.now_ts - interval '90 days'
   ) as oldest_overdue_at
 from public.rival_abuse_audit_logs r
-cross join boundaries;
+cross join boundaries
+group by boundaries.now_ts;
 
 grant select on public.view_realtime_retention_delete_debt to service_role;
 
