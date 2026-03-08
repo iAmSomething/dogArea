@@ -7,6 +7,7 @@ struct HomeSeasonMotionCardView: View {
     let gaugeWaveOffset: CGFloat
     let shieldRotation: Double
     let remainingTimeText: String
+    let onOpenGuide: () -> Void
     let onOpenDetail: () -> Void
 
     var body: some View {
@@ -65,11 +66,18 @@ struct HomeSeasonMotionCardView: View {
                     .font(.appScaledFont(for: .Regular, size: 11, relativeTo: .caption))
                     .foregroundStyle(Color.appDynamicHex(light: 0x94A3B8, dark: 0xCBD5E1))
                 Spacer()
-                Button("상세보기 >", action: onOpenDetail)
-                    .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
-                    .foregroundStyle(Color.appDynamicHex(light: 0x334155, dark: 0xE2E8F0))
-                    .accessibilityIdentifier("home.season.detail")
-                    .frame(minHeight: 44)
+                HStack(spacing: 12) {
+                    Button("시즌이 뭔가요?", action: onOpenGuide)
+                        .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
+                        .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
+                        .accessibilityIdentifier("home.season.guide")
+                        .frame(minHeight: 44)
+                    Button("상세보기 >", action: onOpenDetail)
+                        .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
+                        .foregroundStyle(Color.appDynamicHex(light: 0x334155, dark: 0xE2E8F0))
+                        .accessibilityIdentifier("home.season.detail")
+                        .frame(minHeight: 44)
+                }
             }
 
             HStack(spacing: 8) {
@@ -98,7 +106,7 @@ struct HomeSeasonMotionCardView: View {
                 .stroke(Color.appDynamicHex(light: 0xE2E8F0, dark: 0x334155), lineWidth: 1)
         )
         .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 3)
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .contain)
         .accessibilityLabel(
             "시즌 점수 \(Int(summary.score.rounded()))점, 랭크 \(summary.rankTier.title), 보호 \(summary.weatherShieldApplyCount)회, 남은 시간 \(remainingTimeText)"
         )

@@ -103,6 +103,55 @@ final class FeatureRegressionUITests: XCTestCase {
         )
     }
 
+    /// 지도 시즌 요약 진입 시 시즌 설명 가이드가 자동으로 열리는지 검증합니다.
+    func testFeatureRegression_MapSeasonGuideAutoPresentsOnFirstVisit() throws {
+        let app = launchAppForFeatureRegression(
+            extraArguments: [
+                "-UITest.MapForceSeasonTileVisible",
+                "-UITest.SeasonGuideAutoPresent"
+            ]
+        )
+
+        XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.")
+        XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
+
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "season.guide.sheet", in: app), timeout: 5),
+            "지도 첫 진입 시즌 설명 가이드가 자동 노출되지 않았습니다."
+        )
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "season.guide.concept.tile", in: app), timeout: 2),
+            "시즌 타일 개념 카드가 노출되지 않았습니다."
+        )
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "season.guide.rule.repeatWalk", in: app), timeout: 2),
+            "반복 산책 점수 규칙이 노출되지 않았습니다."
+        )
+    }
+
+    /// 홈 시즌 카드의 재진입 CTA가 시즌 설명 가이드를 다시 여는지 검증합니다.
+    func testFeatureRegression_HomeSeasonGuideEntryReopensGuideSheet() throws {
+        let app = launchAppForFeatureRegression()
+
+        XCTAssertTrue(openTab(index: 0, app: app), "홈 탭 진입에 실패했습니다.")
+
+        let guideButton = app.buttons["home.season.guide"]
+        XCTAssertTrue(
+            revealExistingElementByVerticalScroll(guideButton, app: app, maxSwipes: 6),
+            "홈 시즌 설명 재진입 버튼이 노출되지 않았습니다."
+        )
+        guideButton.tap()
+
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "season.guide.sheet", in: app), timeout: 4),
+            "홈 시즌 카드에서 시즌 설명 가이드가 열리지 않았습니다."
+        )
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "season.guide.flow.5", in: app), timeout: 2),
+            "시즌 설명 가이드의 산책 가치 설명 단계가 노출되지 않았습니다."
+        )
+    }
+
     /// 산책 종료 알럿이 주 행동/보조 행동/파괴적 행동을 분리된 위계로 노출하는지 검증합니다.
     func testFeatureRegression_MapStopAlertPresentsClearActionHierarchy() throws {
         let app = launchAppForFeatureRegression(extraArguments: ["-UITest.MapForceWalkingState"])

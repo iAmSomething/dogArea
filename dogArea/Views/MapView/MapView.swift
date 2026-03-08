@@ -22,6 +22,7 @@ struct MapView : View{
     @State private var isCameraSeeingSomewhere: Bool = false
     @State private var distance = 2000.0
     @State private var selectedPolygonData: WalkDataModel? = nil
+    @State private var seasonGuideSheetPresentation: SeasonGuidePresentation? = nil
     @State private var recoveryIssue: RecoveryIssue? = nil
     @State private var activeBanner: MapTopBannerCandidate? = nil
     @State private var bannerSuppressedUntil: [MapTopBannerKind: Date] = [:]
@@ -41,6 +42,7 @@ struct MapView : View{
         composed = AnyView(composed.onAppear {
             MapRenderBudgetProbe.resetIfNeeded()
             viewModel.activateMapRuntimeServices()
+            seasonGuideSheetPresentation = viewModel.seasonGuidePresentation
             viewModel.reloadSelectedPetContext()
             viewModel.updateAnnotations(cameraDistance: self.distance)
             recomputeBannerQueue()
@@ -51,6 +53,13 @@ struct MapView : View{
             DispatchQueue.main.asyncAfter(deadline: .now() + clearDelay) {
                 viewModel.clearWalkStatusMessage()
             }
+        })
+        composed = AnyView(composed.onChange(of: viewModel.seasonTileMapTiles.count) { _, newCount in
+            guard newCount > 0 else { return }
+            viewModel.triggerUITestSeasonGuidePresentationIfNeeded()
+        })
+        composed = AnyView(composed.onChange(of: viewModel.seasonGuidePresentation) { _, newValue in
+            seasonGuideSheetPresentation = newValue
         })
         composed = AnyView(composed.onChange(of: viewModel.runtimeGuardStatusText) { _, newValue in
             guard newValue.isEmpty == false else { return }
@@ -106,6 +115,17 @@ struct MapView : View{
             MapSettingView(viewModel: self.viewModel, myAlert: self.myAlert)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
+        })
+        composed = AnyView(composed.sheet(item: $seasonGuideSheetPresentation, onDismiss: {
+            viewModel.dismissSeasonGuide()
+        }) { presentation in
+            SeasonGuideSheetView(
+                presentation: presentation,
+                onClose: {
+                    seasonGuideSheetPresentation = nil
+                    viewModel.dismissSeasonGuide()
+                }
+            )
         })
         composed = AnyView(composed.fullScreenCover(isPresented: $isWalkingViewPresented) {
             StartModalView(
@@ -176,6 +196,7 @@ struct MapView : View{
                         ? AnyView(
                             MapSeasonTileSummaryCardView(
                                 summary: viewModel.seasonTileSummaryCardPresentation,
+                                onOpenGuide: { viewModel.presentSeasonGuideFromMapHelp() },
                                 onOpenDetail: viewModel.seasonTileMapTiles.isEmpty
                                     ? nil
                                     : { viewModel.openRepresentativeSeasonTileDetail() }
