@@ -147,6 +147,7 @@ swift scripts/walk_return_to_origin_suggestion_unit_check.swift
 swift scripts/map_area_calculation_service_unit_check.swift
 swift scripts/map_chrome_hierarchy_unit_check.swift
 swift scripts/map_custom_alert_redesign_unit_check.swift
+swift scripts/map_stop_alert_modal_layering_unit_check.swift
 swift scripts/map_bottom_controls_hit_testing_unit_check.swift
 swift scripts/map_log_unreachable_cleanup_unit_check.swift
 swift scripts/map_append_walk_point_discardable_unit_check.swift

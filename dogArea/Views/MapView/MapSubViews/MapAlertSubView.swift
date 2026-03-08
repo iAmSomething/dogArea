@@ -56,9 +56,13 @@ struct MapAlertSubView: View {
         )
       }
       return AnyView(
-        alertView
-          .transition(.opacity.combined(with: .scale(scale: 0.96)))
-          .accessibilityIdentifier("map.alert.host")
+        ZStack {
+          alertView
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .ignoresSafeArea()
+        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+        .accessibilityIdentifier("map.alert.host")
       )
     }
     else {
