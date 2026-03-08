@@ -340,6 +340,10 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     @Published var locationSharingEnabled: Bool = false
     @Published var nearbyHotspots: [NearbyHotspotDTO] = [] {
         didSet {
+            guard oldValue != nearbyHotspots
+                    || (nearbyHotspots.isEmpty && renderableNearbyHotspotNodes.isEmpty == false) else {
+                return
+            }
             refreshRenderableNearbyHotspots()
         }
     }
@@ -380,8 +384,10 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     let metricTracker = AppMetricTracker.shared
     private let nearbyService = NearbyPresenceService()
     private let heatmapAggregationService: MapHeatmapAggregationServicing
+    private let hotspotClusterRenderingService: MapHotspotClusterRenderingServicing
     private var nearbyTickTimer: Timer? = nil
     private var heatmapAggregationSnapshot: MapHeatmapAggregationSnapshot?
+    private var hotspotClusterSnapshot: MapHotspotClusterSnapshot?
     private var heatmapRefreshTask: Task<Void, Never>?
     private var latestHeatmapRefreshRequestID: UUID?
     private var lastPresenceSentAt: Date = .distantPast
@@ -624,6 +630,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         heatmapAggregationService: MapHeatmapAggregationServicing = MapHeatmapAggregationService(),
         walkPointSnapshotService: MapWalkPointSnapshotServicing = MapWalkPointSnapshotService(),
         clusterAnnotationService: MapClusterAnnotationServicing = MapClusterAnnotationService(),
+        hotspotClusterRenderingService: MapHotspotClusterRenderingServicing? = nil,
         widgetSnapshotStore: WalkWidgetSnapshotStoring = DefaultWalkWidgetSnapshotStore.shared,
         liveActivityService: WalkLiveActivityServicing = WalkLiveActivityService(),
         eventCenter: AppEventCenterProtocol = DefaultAppEventCenter.shared
@@ -639,6 +646,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         self.heatmapAggregationService = heatmapAggregationService
         self.walkPointSnapshotService = walkPointSnapshotService
         self.clusterAnnotationService = clusterAnnotationService
+        self.hotspotClusterRenderingService = hotspotClusterRenderingService
+            ?? MapHotspotClusterRenderingService(clusterAnnotationService: clusterAnnotationService)
         self.widgetSnapshotStore = widgetSnapshotStore
         self.liveActivityService = liveActivityService
         self.eventCenter = eventCenter
@@ -2642,8 +2651,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     /// 뷰포트/LOD/캡 규칙으로 근처 핫스팟 렌더링 노드를 계산합니다.
     func refreshRenderableNearbyHotspots() {
         guard isNearbyHotspotFeatureAvailable, nearbyHotspotEnabled else {
-            renderableNearbyHotspotNodes = []
-            selectedNearbyHotspotID = nil
+            clearRenderableNearbyHotspots(preserveSnapshot: false)
             return
         }
 
@@ -2659,8 +2667,35 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 
         let viewportCenter = resolvedHotspotViewportCenter()
         let distance = max(180.0, resolvedHotspotViewportDistance())
-        let nodes = clusterAnnotationService.renderHotspots(
+        let datasetFingerprint = hotspotClusterRenderingService.makeDatasetFingerprint(from: inputs)
+        let viewportFingerprint = hotspotClusterRenderingService.makeViewportFingerprint(
+            viewportCenter: viewportCenter,
+            cameraDistance: distance
+        )
+        let tuningFingerprint = hotspotClusterRenderingService.makeTuningFingerprint(
+            maxVisible: hotspotMaxVisible,
+            pageMultiplier: hotspotPageMultiplier,
+            clusterDistanceThreshold: hotspotClusterDistanceThreshold,
+            distanceRatio: clusterCellDistanceRatio,
+            minCellMeters: clusterCellMinMeters,
+            maxCellMeters: clusterCellMaxMeters
+        )
+
+        if hotspotClusterRenderingService.canReuseSnapshot(
+            hotspotClusterSnapshot,
+            datasetFingerprint: datasetFingerprint,
+            viewportFingerprint: viewportFingerprint,
+            tuningFingerprint: tuningFingerprint
+        ) {
+            synchronizeSelectedNearbyHotspotID()
+            return
+        }
+
+        let snapshot = hotspotClusterRenderingService.makeRenderSnapshot(
             hotspots: inputs,
+            datasetFingerprint: datasetFingerprint,
+            viewportFingerprint: viewportFingerprint,
+            tuningFingerprint: tuningFingerprint,
             viewportCenter: viewportCenter,
             cameraDistance: distance,
             maxVisible: hotspotMaxVisible,
@@ -2671,11 +2706,34 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             maxCellMeters: clusterCellMaxMeters
         )
 
-        renderableNearbyHotspotNodes = nodes
+        applyRenderableNearbyHotspotSnapshot(snapshot)
+    }
+
+    /// 최신 핫스팟 렌더링 snapshot을 화면 상태에 반영합니다.
+    /// - Parameter snapshot: 화면에 반영할 최신 핫스팟 렌더링 snapshot입니다.
+    private func applyRenderableNearbyHotspotSnapshot(_ snapshot: MapHotspotClusterSnapshot) {
+        hotspotClusterSnapshot = snapshot
+        renderableNearbyHotspotNodes = snapshot.nodes
+        synchronizeSelectedNearbyHotspotID()
+    }
+
+    /// 현재 선택된 핫스팟이 최신 렌더링 노드에 없으면 선택 상태를 해제합니다.
+    private func synchronizeSelectedNearbyHotspotID() {
+        let nodes = hotspotClusterSnapshot?.nodes ?? renderableNearbyHotspotNodes
         if let selectedNearbyHotspotID,
            nodes.contains(where: { $0.id == selectedNearbyHotspotID }) == false {
             self.selectedNearbyHotspotID = nil
         }
+    }
+
+    /// 핫스팟 렌더링 표시 상태를 비우고 필요 시 snapshot 재사용 상태도 함께 초기화합니다.
+    /// - Parameter preserveSnapshot: `true`면 마지막 snapshot을 유지하고, `false`면 함께 비웁니다.
+    private func clearRenderableNearbyHotspots(preserveSnapshot: Bool) {
+        if preserveSnapshot == false {
+            hotspotClusterSnapshot = nil
+        }
+        renderableNearbyHotspotNodes = []
+        selectedNearbyHotspotID = nil
     }
 
     /// 핫스팟 렌더링 계산에 사용할 뷰포트 중심 좌표를 해석합니다.

@@ -181,6 +181,8 @@
 		A50200010000000000000002 /* MapWalkPointSnapshotService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50200010000000000000012 /* MapWalkPointSnapshotService.swift */; };
 		A50300010000000000000001 /* MapHeatmapSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50300010000000000000011 /* MapHeatmapSnapshot.swift */; };
 		A50300010000000000000002 /* MapHeatmapAggregationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50300010000000000000012 /* MapHeatmapAggregationService.swift */; };
+		A50400010000000000000001 /* MapHotspotClusterSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50400010000000000000011 /* MapHotspotClusterSnapshot.swift */; };
+		A50400010000000000000002 /* MapHotspotClusterRenderingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50400010000000000000012 /* MapHotspotClusterRenderingService.swift */; };
 		DA3F9BA62AE0F14F0048550C /* WalkListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9B9F2AE0F14F0048550C /* WalkListView.swift */; };
 		DA3F9BAE2AE0F2410048550C /* ViewUtility.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9BAD2AE0F2410048550C /* ViewUtility.swift */; };
 		A45000010000000000000011 /* MapChromeSurfaceStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45000010000000000000001 /* MapChromeSurfaceStyle.swift */; };
@@ -556,6 +558,8 @@
 		A50200010000000000000012 /* MapWalkPointSnapshotService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapWalkPointSnapshotService.swift; sourceTree = "<group>"; };
 		A50300010000000000000011 /* MapHeatmapSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapHeatmapSnapshot.swift; sourceTree = "<group>"; };
 		A50300010000000000000012 /* MapHeatmapAggregationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapHeatmapAggregationService.swift; sourceTree = "<group>"; };
+		A50400010000000000000011 /* MapHotspotClusterSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapHotspotClusterSnapshot.swift; sourceTree = "<group>"; };
+		A50400010000000000000012 /* MapHotspotClusterRenderingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapHotspotClusterRenderingService.swift; sourceTree = "<group>"; };
 		DA3F9B9F2AE0F14F0048550C /* WalkListView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WalkListView.swift; sourceTree = "<group>"; };
 		DA3F9BAD2AE0F2410048550C /* ViewUtility.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ViewUtility.swift; sourceTree = "<group>"; };
 		A45000010000000000000001 /* MapChromeSurfaceStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapChromeSurfaceStyle.swift; sourceTree = "<group>"; };
@@ -1511,6 +1515,7 @@
 			children = (
 				DA3F9B9D2AE0F14F0048550C /* MapModel.swift */,
 				A50300010000000000000011 /* MapHeatmapSnapshot.swift */,
+				A50400010000000000000011 /* MapHotspotClusterSnapshot.swift */,
 				A50200010000000000000011 /* MapWalkPointSnapshot.swift */,
 			);
 			path = Models;
@@ -1522,6 +1527,7 @@
 				DAE148A01420000000000001 /* MapAreaCalculationService.swift */,
 				A50300010000000000000012 /* MapHeatmapAggregationService.swift */,
 				DAE147B01420000000000001 /* MapClusterAnnotationService.swift */,
+				A50400010000000000000012 /* MapHotspotClusterRenderingService.swift */,
 				A50200010000000000000012 /* MapWalkPointSnapshotService.swift */,
 			);
 			path = Services;
@@ -1902,9 +1908,11 @@
 				A37800010000000000000001 /* AppTabScaffold.swift in Sources */,
 				DA3F9BA52AE0F14F0048550C /* MapModel.swift in Sources */,
 				A50300010000000000000001 /* MapHeatmapSnapshot.swift in Sources */,
+				A50400010000000000000001 /* MapHotspotClusterSnapshot.swift in Sources */,
 				A50200010000000000000001 /* MapWalkPointSnapshot.swift in Sources */,
 				DAE148A11420000000000001 /* MapAreaCalculationService.swift in Sources */,
 				A50300010000000000000002 /* MapHeatmapAggregationService.swift in Sources */,
+				A50400010000000000000002 /* MapHotspotClusterRenderingService.swift in Sources */,
 				A50200010000000000000002 /* MapWalkPointSnapshotService.swift in Sources */,
 				DAE147B11420000000000001 /* MapClusterAnnotationService.swift in Sources */,
 				A37600010000000000000021 /* ProfileEditorDraft.swift in Sources */,
