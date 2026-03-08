@@ -37,12 +37,19 @@ export type WeatherReplacementSummaryDTO = {
   applied: boolean;
   shield_applied: boolean;
   blocked_reason: string | null;
+  base_risk_level: string | null;
   risk_level: string | null;
   replacement_reason: string | null;
   replacement_count_today: number;
   daily_replacement_limit: number;
   shield_used_this_week: number;
   weekly_shield_limit: number;
+  shield_apply_count_today: number;
+  shield_last_applied_at: string | null;
+  feedback_used_this_week: number;
+  weekly_feedback_limit: number;
+  feedback_remaining_count: number;
+  refreshed_at: string;
 };
 
 export type SeasonPipelineSummaryDTO = {

@@ -29,7 +29,7 @@ struct DayBoundarySplitContribution {
     }()
 }
 
-enum IndoorWeatherRiskLevel: String, CaseIterable {
+enum IndoorWeatherRiskLevel: String, CaseIterable, Codable {
     case clear
     case caution
     case bad
@@ -66,6 +66,7 @@ enum IndoorWeatherRiskLevel: String, CaseIterable {
 enum IndoorWeatherRiskSource: String, Equatable {
     case environment
     case snapshot
+    case serverSummary
     case userOverride
     case fallback
 }

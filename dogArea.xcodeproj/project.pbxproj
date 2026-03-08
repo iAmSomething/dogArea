@@ -118,6 +118,9 @@
 		A50700010000000000000003 /* AuthMailActionStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50700010000000000000013 /* AuthMailActionStateStore.swift */; };
 		A50700010000000000000004 /* SupabaseAuthMailActionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50700010000000000000014 /* SupabaseAuthMailActionService.swift */; };
 		A50700010000000000000005 /* AuthMailActionStatusCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50700010000000000000015 /* AuthMailActionStatusCardView.swift */; };
+		A47500010000000000000001 /* WeatherReplacementSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = A47500010000000000000011 /* WeatherReplacementSummary.swift */; };
+		A47500010000000000000002 /* WeatherReplacementSummaryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A47500010000000000000012 /* WeatherReplacementSummaryStore.swift */; };
+		A47500010000000000000003 /* SupabaseWeatherReplacementServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = A47500010000000000000013 /* SupabaseWeatherReplacementServices.swift */; };
 		A45600010000000000000001 /* HomeWeatherSnapshotPresentationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45600010000000000000011 /* HomeWeatherSnapshotPresentationService.swift */; };
 		A45600010000000000000002 /* HomeWeatherSnapshotCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45600010000000000000012 /* HomeWeatherSnapshotCardView.swift */; };
 		A45600010000000000000003 /* HomeWeatherSnapshotMetricTileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45600010000000000000013 /* HomeWeatherSnapshotMetricTileView.swift */; };
@@ -485,6 +488,9 @@
 		A50700010000000000000013 /* AuthMailActionStateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthMailActionStateStore.swift; sourceTree = "<group>"; };
 		A50700010000000000000014 /* SupabaseAuthMailActionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseAuthMailActionService.swift; sourceTree = "<group>"; };
 		A50700010000000000000015 /* AuthMailActionStatusCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthMailActionStatusCardView.swift; sourceTree = "<group>"; };
+		A47500010000000000000011 /* WeatherReplacementSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherReplacementSummary.swift; sourceTree = "<group>"; };
+		A47500010000000000000012 /* WeatherReplacementSummaryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherReplacementSummaryStore.swift; sourceTree = "<group>"; };
+		A47500010000000000000013 /* SupabaseWeatherReplacementServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseWeatherReplacementServices.swift; sourceTree = "<group>"; };
 		A45600010000000000000011 /* HomeWeatherSnapshotPresentationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherSnapshotPresentationService.swift; sourceTree = "<group>"; };
 		A45600010000000000000012 /* HomeWeatherSnapshotCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherSnapshotCardView.swift; sourceTree = "<group>"; };
 		A45600010000000000000013 /* HomeWeatherSnapshotMetricTileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherSnapshotMetricTileView.swift; sourceTree = "<group>"; };
@@ -1107,6 +1113,7 @@
 				A41300010000000000000013 /* SupabasePresenceAndQuestServices.swift */,
 				A41300010000000000000014 /* SupabaseWidgetAndAreaServices.swift */,
 				A41300010000000000000015 /* SupabaseAuthAndAssetServices.swift */,
+				A47500010000000000000013 /* SupabaseWeatherReplacementServices.swift */,
 				A50700010000000000000014 /* SupabaseAuthMailActionService.swift */,
 			);
 			path = Infrastructure/Supabase/Services;
@@ -1502,6 +1509,7 @@
 			isa = PBXGroup;
 			children = (
 				A45700010000000000000011 /* WeatherSnapshot.swift */,
+				A47500010000000000000011 /* WeatherReplacementSummary.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -1518,6 +1526,7 @@
 			isa = PBXGroup;
 			children = (
 				A45700010000000000000013 /* WeatherSnapshotStore.swift */,
+				A47500010000000000000012 /* WeatherReplacementSummaryStore.swift */,
 			);
 			path = Stores;
 			sourceTree = "<group>";
@@ -1945,6 +1954,9 @@
 				A45700010000000000000001 /* WeatherSnapshot.swift in Sources */,
 				A45700010000000000000002 /* OpenMeteoWeatherSnapshotProvider.swift in Sources */,
 				A45700010000000000000003 /* WeatherSnapshotStore.swift in Sources */,
+				A47500010000000000000001 /* WeatherReplacementSummary.swift in Sources */,
+				A47500010000000000000002 /* WeatherReplacementSummaryStore.swift in Sources */,
+				A47500010000000000000003 /* SupabaseWeatherReplacementServices.swift in Sources */,
 				A50700010000000000000003 /* AuthMailActionStateStore.swift in Sources */,
 				DAE147A11420000000000001 /* HomeWeeklyStatisticsService.swift in Sources */,
 				DAE147A31420000000000001 /* HomeWeatherMissionStatusBuilder.swift in Sources */,
