@@ -389,6 +389,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     let maxProcessedWatchActions = 500
     var lastWatchContextSyncAt: Date = .distantPast
     var lastAppliedWatchActionId: String = ""
+    var lastWatchCompletionSummaryPayload: [String: Any]? = nil
     var lastAppliedWidgetActionId: String = ""
     let processedWatchActionStorageKey = "watch.processedActionIds"
     private let activeWalkSessionStorageKey = "walk.activeSession.v1"
@@ -511,7 +512,13 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         case startWalk
         case addPoint
         case endWalk
+        case discardWalk
         case syncState
+    }
+
+    enum WatchCompletionSummaryResult: String {
+        case saved
+        case discarded
     }
 
     struct WatchActionEnvelope {
@@ -919,6 +926,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         }
         else {
             clearActiveWalkSession()
+            lastWatchCompletionSummaryPayload = nil
             self.reloadSelectedPetContext()
             startLocationUpdatesIfAuthorized()
             setTrackingMode()

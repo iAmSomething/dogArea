@@ -44,7 +44,14 @@ enum WatchActionType: String {
     case startWalk = "startWalk"
     case addPoint = "addPoint"
     case endWalk = "endWalk"
+    case discardWalk = "discardWalk"
     case syncState = "syncState"
+}
+
+enum WatchWalkEndDecision {
+    case saveAndEnd
+    case continueWalking
+    case discardRecord
 }
 
 private struct WatchAckSnapshot: Codable, Equatable {
@@ -57,6 +64,7 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
     @Published var isWalking = false
     @Published var walkingTime: TimeInterval = 0
     @Published var walkingArea: Double = 0
+    @Published var currentWalkPointCount: Int = 0
     @Published var isReachable = false
     @Published var lastSyncAt: TimeInterval = 0
     @Published var pendingActionCount: Int = 0
@@ -70,9 +78,11 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
         lastSyncAt: nil
     )
     @Published private(set) var queueStatus: WatchOfflineQueueStatusState = .empty(isReachable: false)
+    @Published private(set) var walkCompletionSummary: WatchWalkCompletionSummaryState?
 
     private let actionQueueStorageKey = "watch.pendingActions.v1"
     private let ackSnapshotStorageKey = "watch.lastAckSnapshot.v1"
+    private let presentedCompletionSummaryActionIdStorageKey = "watch.presentedCompletionSummaryActionId.v1"
     private let watchContractVersion = "watch.remote.v1"
     private let watchActionMessageType = "watch_action"
     private let watchAckMessageType = "watch_ack"
@@ -84,14 +94,24 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
     private var actionTypeByActionId: [String: WatchActionType] = [:]
     private var resetWorkItems: [WatchActionType: DispatchWorkItem] = [:]
     private var lastCompletedActionId: String = ""
+    private var lastPresentedCompletionSummaryActionId: String = ""
 
     init(hapticService: WatchActionHapticServicing = DefaultWatchActionHapticService()) {
         self.hapticService = hapticService
         super.init()
         loadPendingActions()
         loadAckSnapshot()
+        loadPresentedCompletionSummaryActionId()
         refreshQueueStatus()
         activateSession()
+    }
+
+    var currentPointCount: Int {
+        currentWalkPointCount
+    }
+
+    var currentWalkingPetName: String {
+        petContext.petName
     }
 
     /// 워치 액션 버튼이 현재 렌더링해야 할 프레젠테이션 상태를 계산합니다.
@@ -215,6 +235,29 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
             return
         }
         sendAction(action)
+    }
+
+    /// 종료 결정 sheet에서 선택한 액션을 watch transport 경로로 전달하거나 로컬 상태만 정리합니다.
+    /// - Parameter decision: 사용자가 종료 시트에서 선택한 의사결정입니다.
+    func handleWalkEndDecision(_ decision: WatchWalkEndDecision) {
+        switch decision {
+        case .saveAndEnd:
+            sendAction(.endWalk)
+        case .continueWalking:
+            presentBanner(
+                title: "산책 계속",
+                detail: "지금 산책을 그대로 이어서 기록합니다.",
+                tone: .neutral,
+                playsHaptic: false
+            )
+        case .discardRecord:
+            sendAction(.discardWalk)
+        }
+    }
+
+    /// 완료 요약 sheet를 닫고 현재 표시 중인 요약 상태를 초기화합니다.
+    func dismissWalkCompletionSummary() {
+        walkCompletionSummary = nil
     }
 
     /// 사용자가 큐 상태 화면에서 수동 재동기화를 요청했을 때 reachability에 맞춰 처리합니다.
@@ -341,11 +384,18 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
               let decoded = try? JSONDecoder().decode([WatchActionDTO].self, from: data) else {
             pendingActions = []
             pendingActionCount = 0
+            actionTypeByActionId = [:]
             refreshQueueStatus()
             return
         }
         pendingActions = decoded
         pendingActionCount = decoded.count
+        actionTypeByActionId = Dictionary(
+            uniqueKeysWithValues: decoded.compactMap { action in
+                guard let type = WatchActionType(rawValue: action.action) else { return nil }
+                return (action.actionId, type)
+            }
+        )
         refreshQueueStatus()
     }
 
@@ -366,6 +416,13 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
         lastAckStatus = decoded.status
         lastAckActionId = decoded.actionId
         lastAckAt = decoded.ackAt
+    }
+
+    /// 이전에 이미 표시한 완료 요약 action id를 복원해 중복 sheet 노출을 방지합니다.
+    private func loadPresentedCompletionSummaryActionId() {
+        lastPresentedCompletionSummaryActionId = UserDefaults.standard.string(
+            forKey: presentedCompletionSummaryActionIdStorageKey
+        ) ?? ""
     }
 
     /// 현재 마지막 ACK 상태를 UserDefaults에 영속화합니다.
@@ -404,6 +461,19 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
         refreshQueueStatus()
     }
 
+    /// iPhone이 전달한 완료 요약을 새 action id 기준으로 한 번만 표시합니다.
+    /// - Parameter context: iPhone 앱이 내려준 최신 application context입니다.
+    private func presentWalkCompletionSummaryIfNeeded(from context: [String: Any]) {
+        guard let summary = WatchWalkCompletionSummaryState.make(from: context) else { return }
+        guard summary.actionId != lastPresentedCompletionSummaryActionId else { return }
+        lastPresentedCompletionSummaryActionId = summary.actionId
+        UserDefaults.standard.set(
+            summary.actionId,
+            forKey: presentedCompletionSummaryActionIdStorageKey
+        )
+        walkCompletionSummary = summary
+    }
+
     /// pending queue를 가능한 transport 경로로 전달합니다.
     /// reachability가 없으면 queue를 유지하고 개수만 갱신합니다.
     private func flushPendingActions() {
@@ -432,12 +502,14 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
             self.isWalking = context["isWalking"] as? Bool ?? false
             self.walkingTime = context["time"] as? TimeInterval ?? 0
             self.walkingArea = context["area"] as? Double ?? 0
+            self.currentWalkPointCount = context["point_count"] as? Int ?? 0
             self.lastSyncAt = context["last_sync_at"] as? TimeInterval ?? 0
             self.petContext = WatchSelectedPetContextState.make(
                 from: context,
                 fallbackIsWalking: self.isWalking,
                 fallbackLastSyncAt: self.lastSyncAt
             )
+            self.presentWalkCompletionSummaryIfNeeded(from: context)
             if let appliedActionId = context["last_action_id_applied"] as? String, appliedActionId.isEmpty == false {
                 self.applyCompletedState(for: appliedActionId, statusText: context["watch_status"] as? String)
             }

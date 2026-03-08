@@ -18,11 +18,12 @@ extension MapViewModel {
             "isWalking": isWalking,
             "time": time,
             "area": calculateArea(),
+            "point_count": polygon.locations.count,
             "last_sync_at": now.timeIntervalSince1970,
             "watch_status": watchSyncStatusText,
             "last_action_id_applied": lastAppliedWatchActionId,
             "selected_pet_context": makeWatchSelectedPetContextPayload(lastSyncAt: now.timeIntervalSince1970)
-        ]
+        ].merging(makeWatchCompletionSummaryContext()) { _, new in new }
         try? watchSession.updateApplicationContext(context)
     }
 
@@ -56,11 +57,12 @@ extension MapViewModel {
             "isWalking": self.isWalking,
             "time": self.time,
             "area": self.polygon.walkingArea,
+            "point_count": self.polygon.locations.count,
             "last_sync_at": now.timeIntervalSince1970,
             "watch_status": self.watchSyncStatusText,
             "last_action_id_applied": self.lastAppliedWatchActionId,
             "selected_pet_context": self.makeWatchSelectedPetContextPayload(lastSyncAt: now.timeIntervalSince1970)
-        ]
+        ].merging(self.makeWatchCompletionSummaryContext()) { _, new in new }
 
         do {
             try watchSession.updateApplicationContext(context)
@@ -102,6 +104,56 @@ extension MapViewModel {
             payload["pet_id"] = petId
         }
         return payload
+    }
+
+    /// 마지막 watch 종료/폐기 결과가 있으면 application context에 포함할 완료 요약 payload를 구성합니다.
+    /// - Returns: 완료 요약이 있으면 `watch_completion_summary` 딕셔너리를 담은 context 조각을 반환합니다.
+    private func makeWatchCompletionSummaryContext() -> [String: Any] {
+        guard let payload = lastWatchCompletionSummaryPayload else { return [:] }
+        return ["watch_completion_summary": payload]
+    }
+
+    /// watch가 요청한 종료/폐기 직전 현재 산책 상태를 완료 요약 payload로 스냅샷합니다.
+    /// - Parameters:
+    ///   - actionId: 완료 요약을 특정 watch 액션과 연결하기 위한 action id입니다.
+    ///   - result: 저장 완료인지 기록 폐기인지 나타내는 요약 결과 타입입니다.
+    private func captureWatchCompletionSummary(
+        actionId: String,
+        result: WatchCompletionSummaryResult
+    ) {
+        let pointCount = polygon.locations.count
+        let areaValue = calculateArea()
+        let petName = currentWalkingPetName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ? selectedPetName
+            : currentWalkingPetName
+        let detail: String
+        let followUpNote: String
+
+        switch result {
+        case .saved:
+            if pointCount > 2 {
+                detail = "이번 산책 기록을 저장하고 손목에서 바로 마무리했어요."
+            } else {
+                detail = "포인트가 적어 간단히 마감했어요."
+            }
+            followUpNote = "퀘스트와 영역 반영 상세는 iPhone 앱에서 이어서 확인할 수 있어요."
+        case .discarded:
+            detail = "이번 산책 기록은 저장하지 않고 폐기했어요."
+            followUpNote = "새 산책을 시작하면 다시 기록을 쌓을 수 있어요."
+        }
+
+        lastWatchCompletionSummaryPayload = [
+            "action_id": actionId,
+            "result": result.rawValue,
+            "title": result == .saved ? "저장하고 종료했어요" : "기록을 폐기했어요",
+            "detail": detail,
+            "pet_name": petName,
+            "elapsed_time": time,
+            "area": areaValue,
+            "point_count": pointCount,
+            "generated_at": Date().timeIntervalSince1970,
+            "follow_up_note": followUpNote
+        ]
     }
 
     /// 워치 컨텍스트 업데이트 가능 상태를 확인하고 사용 가능한 세션을 반환합니다.
@@ -285,6 +337,7 @@ extension MapViewModel {
             guard self.isWalking == false else {
                 return .rejected(message: "이미 산책이 진행 중이에요. 현재 세션을 먼저 확인해 주세요.")
             }
+            self.lastWatchCompletionSummaryPayload = nil
             let petContext = self.applyRequestedWalkPetContextIfNeeded(
                 envelope.requestedContextId,
                 source: "watch_start_context"
@@ -315,8 +368,23 @@ extension MapViewModel {
             guard self.isWalking else {
                 return .rejected(message: "종료할 산책이 아직 없어요.")
             }
+            self.captureWatchCompletionSummary(
+                actionId: envelope.actionId,
+                result: .saved
+            )
             self.endWalk()
             self.latestWatchActionText = "워치 종료 반영 \(Self.statusTimeString(from: Date()))"
+            self.metricTracker.track(.watchActionApplied, userKey: self.currentMetricUserId(), payload: ["action": action.rawValue])
+        case .discardWalk:
+            guard self.isWalking else {
+                return .rejected(message: "폐기할 산책이 아직 없어요.")
+            }
+            self.captureWatchCompletionSummary(
+                actionId: envelope.actionId,
+                result: .discarded
+            )
+            self.discardCurrentWalk()
+            self.latestWatchActionText = "워치 폐기 반영 \(Self.statusTimeString(from: Date()))"
             self.metricTracker.track(.watchActionApplied, userKey: self.currentMetricUserId(), payload: ["action": action.rawValue])
         case .syncState:
             self.latestWatchActionText = "워치 상태 재동기화 \(Self.statusTimeString(from: Date()))"
