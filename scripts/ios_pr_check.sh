@@ -39,6 +39,7 @@ swift scripts/map_hotspot_cluster_trigger_gating_unit_check.swift
 swift scripts/quest_motion_pack_unit_check.swift
 swift scripts/quest_stage1_policy_unit_check.swift
 swift scripts/quest_surface_policy_unit_check.swift
+swift scripts/map_quest_feedback_policy_unit_check.swift
 swift scripts/quest_stage2_engine_unit_check.swift
 swift scripts/season_motion_pack_unit_check.swift
 swift scripts/release_regression_checklist_unit_check.swift

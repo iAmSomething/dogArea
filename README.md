@@ -72,6 +72,7 @@
 - 날씨 연동 UX/fallback/접근성 v1: `docs/weather-ux-fallback-accessibility-v1.md`
 - 퀘스트 Stage1 템플릿/난이도 정책 v1: `docs/quest-stage1-template-difficulty-policy-v1.md`
 - 퀘스트 표면 정책(홈/지도/위젯 경계) v1: `docs/quest-surface-policy-v1.md`
+- 지도 퀘스트 피드백 HUD 정책 v1: `docs/map-quest-feedback-hud-v1.md`
 - 퀘스트 Stage2 진행/클레임 백엔드 엔진 v1: `docs/quest-stage2-progress-claim-engine-v1.md`
 - 퀘스트 실패 완충(자동 연장 슬롯) v1: `docs/quest-failure-buffer-v1.md`
 - 퀘스트 Stage3 UX/리마인드 v1: `docs/quest-stage3-ux-reminder-v1.md`

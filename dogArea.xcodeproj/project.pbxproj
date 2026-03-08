@@ -27,6 +27,8 @@
 		A56300010000000000000004 /* HomeMissionTrackingModeOverviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56300010000000000000014 /* HomeMissionTrackingModeOverviewView.swift */; };
 		A46400010000000000000001 /* QuestSurfacePolicyModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A46400010000000000000011 /* QuestSurfacePolicyModels.swift */; };
 		A46400010000000000000002 /* QuestSurfacePolicyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A46400010000000000000012 /* QuestSurfacePolicyService.swift */; };
+		A46500010000000000000001 /* QuestMapFeedbackPolicyModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A46500010000000000000011 /* QuestMapFeedbackPolicyModels.swift */; };
+		A46500010000000000000002 /* QuestMapFeedbackPolicyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A46500010000000000000012 /* QuestMapFeedbackPolicyService.swift */; };
 		A56500010000000000000006 /* MapWalkActiveValueCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56500010000000000000016 /* MapWalkActiveValueCardView.swift */; };
 		A56500010000000000000007 /* MapWalkSavedOutcomeCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56500010000000000000017 /* MapWalkSavedOutcomeCardView.swift */; };
 		A56500010000000000000008 /* WalkCompletionValueFlowCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56500010000000000000018 /* WalkCompletionValueFlowCardView.swift */; };
@@ -568,6 +570,8 @@
 		A45800010000000000000013 /* HomeWeatherGuidanceSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherGuidanceSheetView.swift; sourceTree = "<group>"; };
 		A46400010000000000000011 /* QuestSurfacePolicyModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuestSurfacePolicyModels.swift; sourceTree = "<group>"; };
 		A46400010000000000000012 /* QuestSurfacePolicyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuestSurfacePolicyService.swift; sourceTree = "<group>"; };
+		A46500010000000000000011 /* QuestMapFeedbackPolicyModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuestMapFeedbackPolicyModels.swift; sourceTree = "<group>"; };
+		A46500010000000000000012 /* QuestMapFeedbackPolicyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuestMapFeedbackPolicyService.swift; sourceTree = "<group>"; };
 		A47500010000000000000011 /* WeatherReplacementSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherReplacementSummary.swift; sourceTree = "<group>"; };
 		A47500010000000000000012 /* WeatherReplacementSummaryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherReplacementSummaryStore.swift; sourceTree = "<group>"; };
 		A47500010000000000000013 /* SupabaseWeatherReplacementServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseWeatherReplacementServices.swift; sourceTree = "<group>"; };
@@ -1001,6 +1005,7 @@
 			isa = PBXGroup;
 			children = (
 				A46400010000000000000011 /* QuestSurfacePolicyModels.swift */,
+				A46500010000000000000011 /* QuestMapFeedbackPolicyModels.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -1009,6 +1014,7 @@
 			isa = PBXGroup;
 			children = (
 				A46400010000000000000012 /* QuestSurfacePolicyService.swift */,
+				A46500010000000000000012 /* QuestMapFeedbackPolicyService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -2164,6 +2170,7 @@
 				A50700010000000000000003 /* AuthMailActionStateStore.swift in Sources */,
 				A56300010000000000000001 /* HomeMissionTrackingModels.swift in Sources */,
 				A46400010000000000000001 /* QuestSurfacePolicyModels.swift in Sources */,
+				A46500010000000000000001 /* QuestMapFeedbackPolicyModels.swift in Sources */,
 				A56400010000000000000003 /* HomeMissionGuideStateStore.swift in Sources */,
 				A56500010000000000000004 /* WalkValueGuideStateStore.swift in Sources */,
 				DAE147A11420000000000001 /* HomeWeeklyStatisticsService.swift in Sources */,
@@ -2173,6 +2180,7 @@
 				A56400010000000000000002 /* HomeMissionGuidePresentationService.swift in Sources */,
 				A50600010000000000000001 /* HomeIndoorMissionPetContextSnapshotService.swift in Sources */,
 				A46400010000000000000002 /* QuestSurfacePolicyService.swift in Sources */,
+				A46500010000000000000002 /* QuestMapFeedbackPolicyService.swift in Sources */,
 				DAED25022AFA1D430044715A /* SplashView.swift in Sources */,
 				DA99F9E62AFA4F3E00B1483F /* Color.swift in Sources */,
 				DA3F9BD32AE0FF8A0048550C /* RootView.swift in Sources */,
