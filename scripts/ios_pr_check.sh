@@ -53,6 +53,7 @@ swift scripts/issue_532_closure_evidence_unit_check.swift
 swift scripts/issue_530_closure_evidence_unit_check.swift
 swift scripts/issue_529_closure_evidence_unit_check.swift
 swift scripts/issue_522_closure_evidence_unit_check.swift
+swift scripts/issue_520_closure_evidence_unit_check.swift
 swift scripts/game_layer_observability_qa_unit_check.swift
 swift scripts/game_layer_kpi_dashboard_unit_check.swift
 swift scripts/fault_injection_matrix_unit_check.swift
