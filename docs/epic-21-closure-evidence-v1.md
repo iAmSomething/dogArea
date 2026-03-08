@@ -1,12 +1,12 @@
-# Epic #21 Closure Evidence Snapshot (2026-03-09)
+# Epic #21 Closure Evidence Snapshot (2026-03-09, Resolved)
 
 - 대상 에픽: #21 `[Epic] 2026 안정화/고도화: Supabase 전환 + 다견 + watchOS + 캐리커처`
 - 근거 수집 이슈: #412 `[Epic/QA] #21 종료를 위한 운영 검증·보안 근거 수집`
-- 잔여 blocker 이슈: #595 `[Epic/QA] #21 closure blocker: linked migration rollout 재개 및 stats evidence 재수집`
+- 해결 이슈: #595 `[Epic/QA] #21 closure blocker: linked migration rollout 재개 및 stats evidence 재수집`
 
 ## 1. 목적
 
-`#21`의 남은 DoD 3개를 2026-03-09 기준으로 재점검하고, 바로 닫을 수 있는 항목과 아직 남겨야 하는 blocker를 분리한다.
+`#21`의 남은 DoD 3개를 2026-03-09 기준으로 재점검하고, linked rollout 및 SQL parity blocker를 해소한 뒤 에픽 종료 가능 여부를 다시 확정한다.
 
 ## 2. 실행 기준
 
@@ -29,34 +29,27 @@
 
 | DoD | 상태 | 근거 | 메모 |
 | --- | --- | --- | --- |
-| 하위 이슈 DoD 완료 + main 병합 기준 빌드/배포/회귀 통과 | `BLOCKED` | `bash scripts/backend_pr_check.sh` PASS, `bash scripts/ios_pr_check.sh` PASS, `npx --yes supabase migration list --linked`에서 마지막 migration 1건 drift 확인 | linked DB에 `20260309043000_realtime_retention_cleanup_rollout.sql` 미적용 상태가 남아 있어 `배포 통과`를 아직 체크할 수 없다. |
-| Supabase 운영 검증 SQL 결과와 앱 통계(산책수/시간/면적) 합치 | `BLOCKED` | `sync-walk action=get_backfill_summary`와 `view_owner_walk_stats` 비교 결과 `session_count / point_count / total_area_m2`는 일치 | SQL 뷰 `public.view_owner_walk_stats`에 `total_duration_sec`가 없어 시간까지 포함한 완전 일치 증거를 남길 수 없다. |
+| 하위 이슈 DoD 완료 + main 병합 기준 빌드/배포/회귀 통과 | `PASS` | `bash scripts/backend_pr_check.sh` PASS, `DOGAREA_RUN_SUPABASE_SMOKE=1 ... bash scripts/backend_pr_check.sh` PASS, `bash scripts/ios_pr_check.sh` PASS, `npx --yes supabase migration list --linked` local==remote | linked rollout blocker였던 `20260309043000_realtime_retention_cleanup_rollout.sql` 적용 완료. |
+| Supabase 운영 검증 SQL 결과와 앱 통계(산책수/시간/면적) 합치 | `PASS` | `sync-walk action=get_backfill_summary`와 `view_owner_walk_stats` 비교 결과 `session_count / point_count / total_area_m2 / total_duration_sec` 전부 일치 | `view_owner_walk_stats`에 `total_duration_sec`를 추가하는 migration 적용 완료. |
 | 서비스 롤 키/모델 API 키 앱 노출 0건 | `PASS` | `swift scripts/security_key_exposure_unit_check.swift` PASS | 저장소 기준 하드코딩 시크릿 노출 0건 확인. |
 
 ## 4. linked Supabase 배포 상태
 
-### 4.1 migration list 결과
+### 4.1 migration push 결과
+
+`npx --yes supabase db push --linked` 재실행 결과:
+
+- `20260309043000_realtime_retention_cleanup_rollout.sql` 적용 성공
+- `20260309044338_owner_walk_stats_duration_parity.sql` 적용 성공
+
+### 4.2 migration list 결과
 
 `npx --yes supabase migration list --linked` 재실행 결과:
 
-- `20260307154000_widget_summary_envelope_compat_rollout.sql` 적용됨
-- `20260307193000_backend_edge_failure_dashboard_view.sql` 적용됨
-- `20260308103000_weather_canonical_server_state.sql` 적용됨
-- `20260309043000_realtime_retention_cleanup_rollout.sql` 미적용
+- local == remote
+- drift 0건
 
-즉, linked DB drift는 마지막 migration 1건만 남은 상태다.
-
-### 4.2 db push 재시도 결과
-
-`npx --yes supabase db push --linked` 실행 결과:
-
-- 위 3개 migration은 원격에 반영됨
-- 마지막 migration `20260309043000_realtime_retention_cleanup_rollout.sql`에서 실패
-- 실패 코드: `SQLSTATE 42803`
-- 실패 지점: `public.view_realtime_retention_delete_debt`
-- 원인 요약: `boundaries.now_ts`가 `GROUP BY` 또는 aggregate 없이 view select에 포함됨
-
-따라서 `#21` DoD의 `배포 통과`는 아직 충족되지 않는다. 이 blocker는 `#595`로 분리했다.
+즉, linked DB rollout blocker는 해소됐다.
 
 ## 5. Supabase SQL vs 앱 통계 근거
 
@@ -90,20 +83,16 @@
   - `session_count = 2`
   - `point_count = 9`
   - `total_area_m2 = 12.5`
+  - `total_duration_sec = 1357`
 
 판정:
 
-- `session_count / point_count / total_area_m2`는 SQL 뷰와 app-facing summary가 일치
-- 하지만 `view_owner_walk_stats`에는 `total_duration_sec` 컬럼이 존재하지 않음
-- 따라서 `산책수/시간/면적` 전부를 포함한 DoD는 아직 닫을 수 없음
+- `session_count / point_count / total_area_m2 / total_duration_sec` 모두 SQL 뷰와 app-facing summary가 일치
+- `산책수/시간/면적`을 포함한 DoD는 충족됨
 
 ### 5.3 남은 작업
 
-`#595`에서 아래를 마무리해야 한다.
-
-1. `20260309043000_realtime_retention_cleanup_rollout.sql` 수정 및 linked 적용
-2. `view_owner_walk_stats` 또는 동등 SQL surface에 `total_duration_sec` 근거 추가
-3. 같은 방식으로 `get_backfill_summary`와 SQL 결과를 다시 비교해 `시간`까지 포함한 완전 일치 증적 확보
+없음. `#595` 범위는 모두 해소됐다.
 
 ## 6. 보안 점검 근거
 
@@ -123,10 +112,10 @@
 
 ## 7. 결론
 
-2026-03-09 기준 `#21`은 아직 닫지 않는다.
+2026-03-09 기준 `#21`의 남은 DoD 3개는 모두 충족된다.
 
-- `보안 점검` DoD는 `PASS`
-- `빌드/회귀`는 현재 `main` 기준 체크가 통과했지만, linked migration drift가 남아 있어 `배포 통과`로 닫을 수 없음
-- `SQL vs 앱 통계`는 `건수/포인트/면적`은 맞지만 `시간(total_duration_sec)` 근거가 빠져 있어 완결 아님
+- `보안 점검` DoD: PASS
+- `빌드/배포/회귀` DoD: PASS
+- `SQL vs 앱 통계` DoD: PASS
 
-즉, 현재 상태는 **에픽 종료 직전 단계**이며, blocker는 `#595` 하나로 수렴된다.
+즉, `#21`은 이제 닫을 수 있다. `#595`는 해결 완료 blocker로 정리한다.
