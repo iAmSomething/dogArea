@@ -16,6 +16,16 @@ protocol HomeIndoorMissionPresenting {
 }
 
 final class HomeIndoorMissionPresentationService: HomeIndoorMissionPresenting {
+    private let trackingModePresentationService: HomeMissionTrackingModePresenting
+
+    /// 홈 실내 미션 프레젠테이션 서비스를 생성합니다.
+    /// - Parameter trackingModePresentationService: 자동 추적형/직접 체크형 표현을 일관되게 생성하는 서비스입니다.
+    init(
+        trackingModePresentationService: HomeMissionTrackingModePresenting = HomeMissionTrackingPresentationService()
+    ) {
+        self.trackingModePresentationService = trackingModePresentationService
+    }
+
     /// 실내 미션 보드와 날씨 요약을 바탕으로 홈 카드 프레젠테이션 모델을 생성합니다.
     /// - Parameters:
     ///   - board: 현재 일일 실내 미션 보드 상태입니다.
@@ -51,6 +61,13 @@ final class HomeIndoorMissionPresentationService: HomeIndoorMissionPresenting {
             sectionSubtitle: boardSubtitle(
                 board: board,
                 weatherSummary: weatherSummary,
+                localizedCopy: localizedCopy
+            ),
+            trackingOverviewTitle: localizedCopy(
+                "미션마다 기록 방식이 달라요",
+                "Mission tracking works differently by type"
+            ),
+            trackingModes: trackingModePresentationService.makeBoardTrackingModes(
                 localizedCopy: localizedCopy
             ),
             rationaleItems: rationaleItems(
@@ -212,11 +229,20 @@ final class HomeIndoorMissionPresentationService: HomeIndoorMissionPresenting {
             id: mission.id,
             mission: mission,
             lifecycleState: lifecycleState,
+            trackingMode: trackingModePresentationService.makeManualRowTrackingMode(
+                for: mission,
+                localizedCopy: localizedCopy
+            ),
+            trackingSummaryText: trackingModePresentationService.makeManualTrackingSummary(
+                for: mission,
+                lifecycleState: lifecycleState,
+                localizedCopy: localizedCopy
+            ),
             badgeText: badgeText,
             requirementText: requirementText,
             progressText: progressText,
             remainingText: remainingText,
-            guideTitle: localizedCopy("이렇게 기록하세요", "How to Log"),
+            guideTitle: localizedCopy("직접 체크 순서", "Self-Log Flow"),
             guideItems: guideItems(for: mission, localizedCopy: localizedCopy),
             lifecycleMessage: lifecycleMessage,
             rewardFootnote: rewardFootnote(for: mission, riskLevel: riskLevel, localizedCopy: localizedCopy),

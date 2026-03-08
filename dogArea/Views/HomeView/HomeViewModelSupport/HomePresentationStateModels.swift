@@ -208,6 +208,8 @@ struct HomeIndoorMissionRowPresentation: Identifiable, Equatable {
     let id: String
     let mission: IndoorMissionCardModel
     let lifecycleState: HomeIndoorMissionLifecycleState
+    let trackingMode: HomeMissionTrackingModePresentation
+    let trackingSummaryText: String
     let badgeText: String
     let requirementText: String
     let progressText: String
@@ -223,6 +225,8 @@ struct HomeIndoorMissionRowPresentation: Identifiable, Equatable {
 struct HomeIndoorMissionBoardPresentation: Equatable {
     let sectionTitle: String
     let sectionSubtitle: String
+    let trackingOverviewTitle: String
+    let trackingModes: [HomeMissionTrackingModePresentation]
     let rationaleItems: [String]
     let activeMissions: [HomeIndoorMissionRowPresentation]
     let completedMissions: [HomeIndoorMissionRowPresentation]
@@ -233,6 +237,8 @@ struct HomeIndoorMissionBoardPresentation: Equatable {
     static let empty = HomeIndoorMissionBoardPresentation(
         sectionTitle: "실내 미션 보조 안내",
         sectionSubtitle: "실외 산책이 어려운 날에만 여는 보조 흐름입니다.",
+        trackingOverviewTitle: "추적 방식",
+        trackingModes: [],
         rationaleItems: [],
         activeMissions: [],
         completedMissions: [],

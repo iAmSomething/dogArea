@@ -63,6 +63,15 @@ struct HomeIndoorMissionRowView: View {
                                 .cornerRadius(6)
                         }
                     }
+                    HomeMissionTrackingBadgeView(
+                        mode: presentation.trackingMode,
+                        accessibilityIdentifier: "home.quest.row.\(mission.id).tracking"
+                    )
+                    Text(presentation.trackingSummaryText)
+                        .font(.appFont(for: .Light, size: 11))
+                        .foregroundStyle(Color.appDynamicHex(light: 0x334155, dark: 0xCBD5E1))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("home.quest.row.\(mission.id).trackingSummary")
                     Text(presentation.requirementText)
                         .font(.appFont(for: .Light, size: 12))
                         .foregroundStyle(Color.appTextDarkGray)

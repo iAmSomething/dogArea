@@ -208,7 +208,7 @@ final class HomeMissionGuidePresentationService: HomeMissionGuidePresentationPro
         [
             HomeMissionGuideComparisonPresentation(
                 id: "auto",
-                title: localizedCopy("산책 기반 자동 기록", "Walk Missions"),
+                title: localizedCopy("산책 중 자동 반영", "Auto During Walks"),
                 body: localizedCopy(
                     "산책을 시작하면 시간, 경로, 영역이 자동으로 쌓입니다. 사용자가 `+1`을 누를 필요가 없습니다.",
                     "When you start a walk, time, route, and territory are tracked automatically. You do not manually press `+1`."
@@ -216,7 +216,7 @@ final class HomeMissionGuidePresentationService: HomeMissionGuidePresentationPro
             ),
             HomeMissionGuideComparisonPresentation(
                 id: "manual",
-                title: localizedCopy("실내 보조 미션", "Indoor Backup Missions"),
+                title: localizedCopy("실내 행동 직접 기록", "Log Indoor Actions Yourself"),
                 body: localizedCopy(
                     "실제로 한 행동만 직접 기록해야 합니다. 기준 횟수를 채운 뒤 완료를 눌러야 보상이 확정됩니다.",
                     "You log only the actions you actually completed. The reward is finalized only after you reach the target and confirm completion."
