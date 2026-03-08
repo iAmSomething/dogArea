@@ -45,8 +45,8 @@ final class HomeIndoorMissionPresentationService: HomeIndoorMissionPresenting {
 
         return HomeIndoorMissionBoardPresentation(
             sectionTitle: localizedCopy(
-                board.riskLevel == .clear ? "오늘 미션 안내" : "오늘 실내 대체 미션 안내",
-                board.riskLevel == .clear ? "Today's Mission Guide" : "Today's Indoor Replacement Missions"
+                board.riskLevel == .clear ? "실내 미션 보조 안내" : "오늘 실내 대체 미션 안내",
+                board.riskLevel == .clear ? "Indoor Mission Backup Guide" : "Today's Indoor Replacement Missions"
             ),
             sectionSubtitle: boardSubtitle(
                 board: board,
@@ -61,10 +61,10 @@ final class HomeIndoorMissionPresentationService: HomeIndoorMissionPresenting {
             activeMissions: activeRows,
             completedMissions: completedRows,
             completedSectionTitle: completedTitle,
-            emptyTitle: localizedCopy("오늘 진행할 미션이 없어요.", "No missions are active today."),
+            emptyTitle: localizedCopy("오늘은 실내 미션이 열리지 않았어요.", "No indoor missions are active today."),
             emptyMessage: localizedCopy(
-                "날씨 기준과 연장 상태를 확인한 뒤 새 미션이 열리면 여기서 바로 진행할 수 있어요.",
-                "When weather or extension conditions open a mission, it will appear here."
+                "기본 루프는 산책 기록입니다. 날씨 기준이나 연장 상태 때문에 보조 미션이 열리면 여기서 바로 진행할 수 있어요.",
+                "The primary loop is the walk record. If weather or extension conditions open a backup mission, it will appear here."
             )
         )
     }
@@ -82,17 +82,20 @@ final class HomeIndoorMissionPresentationService: HomeIndoorMissionPresenting {
     ) -> String {
         if board.riskLevel != .clear {
             return localizedCopy(
-                "실외 대신 열린 실내 미션입니다. 카드마다 완료 기준과 부족분을 바로 확인하세요.",
+                "실외 산책이 어려워 보조로 열린 실내 미션입니다. 카드마다 완료 기준과 부족분을 바로 확인하세요.",
                 "Indoor replacement missions are open. Review each card for the exact requirement and remaining steps."
             )
         }
         if board.extensionState == .active || board.extensionState == .consumed {
             return localizedCopy(
-                "전일 연장 슬롯과 오늘 상태를 한 번에 정리했습니다.",
+                "기본 루프는 산책이고, 이 카드는 전일 연장 슬롯과 오늘의 보조 미션 상태만 정리합니다.",
                 "This summarizes today's mission state together with the carry-over extension slot."
             )
         }
-        return weatherSummary.reasonText
+        return localizedCopy(
+            "실내 미션은 악천후나 예외 상황에서만 보조로 열립니다. 기본은 산책 기록입니다.",
+            "Indoor missions open only as backup on bad-weather or exception days. The primary loop is still the walk record."
+        )
     }
 
     /// 카드 상단의 미션 진행 가이드 목록을 생성합니다.

@@ -99,15 +99,15 @@ struct WeatherMissionStatusSummary: Equatable {
 
     static let empty = WeatherMissionStatusSummary(
         badgeText: "정상",
-        title: "오늘 미션 영향 요약",
-        reasonText: "기본 퀘스트 진행",
+        title: "실내 미션 전환 요약",
+        reasonText: "기본 루프는 산책입니다.",
         appliedAtText: "적용 시점 -",
         shieldUsageText: "보호 사용 0회",
-        policyTitle: "오늘 미션 기준",
-        policyText: "날씨 위험도에 따라 실외 목표와 실내 대체 미션이 자동으로 정리됩니다.",
-        lifecycleGuideText: "기준 횟수를 채운 뒤 완료 확인을 눌러야 보상이 확정됩니다.",
+        policyTitle: "실내 미션이 열리는 기준",
+        policyText: "실내 미션은 악천후나 예외 상황에서만 산책을 보조하는 흐름입니다.",
+        lifecycleGuideText: "실내 미션을 진행했다면 기준 횟수를 채운 뒤 완료 확인을 눌러야 보상이 확정됩니다.",
         fallbackNotice: nil,
-        accessibilityText: "오늘 미션 영향 요약. 기본 퀘스트 진행.",
+        accessibilityText: "실내 미션 전환 요약. 기본 루프는 산책입니다.",
         isFallback: false,
         riskLevel: .clear
     )
@@ -231,14 +231,14 @@ struct HomeIndoorMissionBoardPresentation: Equatable {
     let emptyMessage: String
 
     static let empty = HomeIndoorMissionBoardPresentation(
-        sectionTitle: "오늘 미션 안내",
-        sectionSubtitle: "완료 기준과 부족분을 카드에서 바로 확인하세요.",
+        sectionTitle: "실내 미션 보조 안내",
+        sectionSubtitle: "실외 산책이 어려운 날에만 여는 보조 흐름입니다.",
         rationaleItems: [],
         activeMissions: [],
         completedMissions: [],
         completedSectionTitle: nil,
-        emptyTitle: "오늘 진행할 미션이 없어요.",
-        emptyMessage: "날씨 기준이 바뀌면 새로운 미션이 자동으로 열립니다."
+        emptyTitle: "오늘은 실내 미션이 열리지 않았어요.",
+        emptyMessage: "기본 루프는 산책 기록입니다. 악천후가 오면 보조 미션이 자동으로 열립니다."
     )
 }
 

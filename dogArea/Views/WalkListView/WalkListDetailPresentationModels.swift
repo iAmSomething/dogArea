@@ -16,6 +16,8 @@ struct WalkListDetailHeroModel {
     let subtitle: String
     let petBadge: String
     let statusBadge: String?
+    let loopSummaryTitle: String
+    let loopSummaryBody: String
 }
 
 struct WalkListDetailMetricModel: Identifiable {

@@ -92,30 +92,30 @@ final class HomeWeatherMissionStatusBuilder: HomeWeatherMissionStatusBuilding {
         )
 
         let policyTitle = localizedCopy(
-            "오늘 미션 기준",
-            "Today's Mission Policy"
+            "실내 미션이 열리는 기준",
+            "When Indoor Missions Open"
         )
         let policyText: String
         if status.source == .fallback {
             policyText = localizedCopy(
-                "연결이 복구될 때까지 최근 안전 기준으로 실내/실외 모드를 보수적으로 정해요.",
-                "Until connectivity recovers, indoor or outdoor mission mode is chosen conservatively from the latest safe baseline."
+                "연결이 복구될 때까지 산책 안전 기준을 보수적으로 보고, 필요하면 실내 보조 흐름만 먼저 열어둡니다.",
+                "Until connectivity recovers, the app uses a conservative walk safety baseline and opens only the indoor backup flow when needed."
             )
         } else if board.riskLevel == .clear {
             policyText = localizedCopy(
-                "오늘은 기본 실외 미션 기준으로 진행합니다. 악천후가 되면 실내 대체 미션이 자동으로 열려요.",
-                "Today uses the default outdoor mission baseline. Indoor replacement missions open automatically when severe weather appears."
+                "오늘의 기본 루프는 산책 기록입니다. 악천후가 되면 그때만 실내 미션이 보조로 열려요.",
+                "Today's primary loop is the walk record. Indoor missions open only as a backup when severe weather appears."
             )
         } else {
             policyText = localizedCopy(
-                "오늘은 날씨 위험 때문에 실내 대체 미션이 열렸어요. `행동 +1 기록`은 실제로 끝낸 행동 1회를 남기는 체크입니다.",
-                "Indoor replacement missions are open due to weather risk. `Log +1` is a self-reported count for one action you actually completed."
+                "오늘은 날씨 위험 때문에 산책 보조용 실내 미션이 열렸어요. `행동 +1 기록`은 실제로 끝낸 행동 1회를 남기는 체크입니다.",
+                "Indoor backup missions are open today because of weather risk. `Log +1` records one action you actually completed."
             )
         }
 
         let lifecycleGuideText = localizedCopy(
-            "기준 횟수를 채운 뒤 `완료 확인` 또는 `보상 받기`를 눌러야 미션이 완료로 확정됩니다.",
-            "A mission is finalized only after you reach the target count and confirm it."
+            "실내 미션을 진행했다면 기준 횟수를 채운 뒤 `완료 확인` 또는 `보상 받기`를 눌러야 완료가 확정됩니다.",
+            "If you use an indoor mission, it is finalized only after you reach the target count and confirm it."
         )
 
         let fallbackNotice: String?
@@ -136,7 +136,7 @@ final class HomeWeatherMissionStatusBuilder: HomeWeatherMissionStatusBuilding {
 
         return WeatherMissionStatusSummary(
             badgeText: badgeText,
-            title: localizedCopy("오늘 미션 영향 요약", "Today's Mission Impact"),
+            title: localizedCopy("실내 미션 전환 요약", "Indoor Mission Shift Summary"),
             reasonText: reasonText,
             appliedAtText: appliedAtText,
             shieldUsageText: shieldText,

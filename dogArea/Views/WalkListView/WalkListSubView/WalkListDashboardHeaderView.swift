@@ -24,6 +24,13 @@ struct WalkListDashboardHeaderView: View {
             }
             .padding(.horizontal, 2)
 
+            WalkListPrimaryLoopSummaryCardView(
+                badgeText: overview.primaryLoopBadge,
+                title: overview.primaryLoopTitle,
+                message: overview.primaryLoopMessage,
+                secondaryFlowText: overview.primaryLoopSecondaryFlowText
+            )
+
             VStack(alignment: .leading, spacing: 12) {
                 Text("최근 요약")
                     .font(.appScaledFont(for: .SemiBold, size: 16, relativeTo: .headline))

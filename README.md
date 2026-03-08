@@ -54,6 +54,7 @@
 - 날씨 snapshot/provider 확장 v1: `docs/weather-snapshot-provider-v1.md`
 - 홈 날씨 반려견 가이드 시트 v1: `docs/home-weather-pet-guidance-sheet-v1.md`
 - 날씨 canonical server state v1: `docs/weather-canonical-server-state-v1.md`
+- 산책 기본 루프 정보 위계 v1: `docs/walk-primary-loop-information-hierarchy-v1.md`
 - 홈 refresh 중복 제거 umbrella v1: `docs/home-refresh-dedup-lightweight-v1.md`
 - 맵 파생 계산 경량화 umbrella v1: `docs/map-derived-calculation-lightweight-v1.md`
 - 맵 시즌 점령 지도 시각화 v1: `docs/map-season-tile-occupation-visualization-v1.md`
