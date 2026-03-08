@@ -12,6 +12,10 @@ protocol QuestMapFeedbackPolicyResolving {
     /// - Returns: 현재 지도 HUD가 어떤 정도로 접혀야 하는지 나타내는 상태입니다.
     func collapsedState(hasCriticalBanner: Bool, hasMultipleMissionSignals: Bool) -> QuestMapFeedbackCollapsedState
 
+    /// 상단 배너 계층과 milestone toast의 분리 운영 규칙을 설명합니다.
+    /// - Returns: `#468` 오버레이 우선순위 매트릭스 문서를 가리키는 설명 문자열입니다.
+    func overlayPriorityReference() -> String
+
     /// 현재 대표 미션 후보와 자동 추적 규칙으로 확장 체크리스트 섹션을 생성합니다.
     /// - Parameters:
     ///   - candidate: 현재 지도 HUD가 대표로 삼는 미션 후보입니다.
@@ -54,6 +58,12 @@ final class QuestMapFeedbackPolicyService: QuestMapFeedbackPolicyResolving {
             return .hiddenByCriticalBanner
         }
         return hasMultipleMissionSignals ? .compactSingleLine : .expanded
+    }
+
+    /// 상단 배너 계층과 milestone toast의 분리 운영 규칙을 설명합니다.
+    /// - Returns: `#468` 오버레이 우선순위 매트릭스 문서를 가리키는 설명 문자열입니다.
+    func overlayPriorityReference() -> String {
+        "상단 슬롯/토스트 슬롯 공존 규칙은 #468 문서와 `QuestMapOverlayPriorityService`를 기준으로 구현합니다."
     }
 
     /// 현재 대표 미션 후보와 자동 추적 규칙으로 확장 체크리스트 섹션을 생성합니다.
