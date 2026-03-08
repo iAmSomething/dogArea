@@ -39,16 +39,22 @@ final class WalkDetailViewModel: ObservableObject {
     @Published var showCameraPicker: Bool = false
     @Published var showPhotoLibraryPicker: Bool = false
     @Published var toastMessage: String? = nil
+    @Published private(set) var isContextBound: Bool = false
 
     private weak var context: WalkDetailContextProviding?
+    private let walkValueFlowPresentationService: MapWalkValueFlowPresenting
 
     /// 산책 상세 전용 뷰모델을 초기화합니다.
-    init() {}
+    /// - Parameter walkValueFlowPresentationService: 산책 종료 전후 가치 설명 카드 생성을 담당하는 서비스입니다.
+    init(walkValueFlowPresentationService: MapWalkValueFlowPresenting = MapWalkValueFlowPresentationService()) {
+        self.walkValueFlowPresentationService = walkValueFlowPresentationService
+    }
 
     /// 외부 산책 컨텍스트를 연결합니다.
     /// - Parameter context: 산책 데이터/종료 액션을 제공하는 컨텍스트입니다.
     func bind(context: WalkDetailContextProviding) {
         self.context = context
+        isContextBound = true
     }
 
     /// 공유/미리보기에서 사용할 우선 이미지를 계산합니다.
@@ -70,6 +76,18 @@ final class WalkDetailViewModel: ObservableObject {
     func durationText() -> String {
         guard let context else { return "-" }
         return context.walkDuration.simpleWalkingTimeInterval
+    }
+
+    /// 산책 종료 확인 화면에 노출할 가치 설명 프레젠테이션을 생성합니다.
+    /// - Returns: 저장 후 이어질 결과를 설명하는 프레젠테이션입니다. 컨텍스트가 없으면 `nil`입니다.
+    func completionValuePresentation() -> WalkCompletionValuePresentation? {
+        guard let context else { return nil }
+        return walkValueFlowPresentationService.makeCompletionValuePresentation(
+            petName: context.walkPetName,
+            durationText: context.walkDuration.simpleWalkingTimeInterval,
+            areaText: context.calculatedAreaString(areaSize: context.walkAreaM2, isPyong: !isMeter),
+            pointCount: context.walkPointCount
+        )
     }
 
     /// 면적 단위를 미터/평 기준으로 토글합니다.

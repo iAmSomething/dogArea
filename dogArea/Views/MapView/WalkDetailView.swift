@@ -41,6 +41,11 @@ struct WalkDetailView: View {
             }.frame(maxWidth: .infinity)
                 .padding(.horizontal, 30)
                 .padding(.bottom, 20)
+            if let completionValuePresentation = detailViewModel.completionValuePresentation() {
+                WalkCompletionValueFlowCardView(presentation: completionValuePresentation)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 16)
+            }
             VStack{
                 HStack {
                     Text("공유하기")
@@ -106,18 +111,17 @@ struct WalkDetailView: View {
                 .background(Color(red: 0.99, green: 0.73, blue: 0.73))
                 .cornerRadius(15)
                 .padding(.horizontal, 70)
-            Button(action: {
-                detailViewModel.confirmWalkEnd(mapCapturedImage: mapImageProvider.capturedImage)
-                dismiss()
-            },
+                .accessibilityIdentifier("walk.detail.saveToPhotos")
+            Button(action: handleConfirmWalkEnd,
                    label:  {
-                Text("확인")
+                Text("저장하고 종료")
                     .foregroundStyle(.black)
                     .frame(maxWidth: .infinity)
             }).frame(maxWidth: .infinity, maxHeight: 50)
                 .background(Color(red: 0.99, green: 0.73, blue: 0.73))
                 .cornerRadius(15)
                 .padding(.horizontal, 70)
+                .accessibilityIdentifier("walk.detail.confirm")
         }.overlay(
             Group {
                 if let toastMessage = detailViewModel.toastMessage {
@@ -145,6 +149,16 @@ struct WalkDetailView: View {
     /// 공유 시트에 전달할 아이템을 구성하고 공유 플로우를 시작합니다.
     private func prepareShareItems() {
         detailViewModel.prepareShareSheet(mapCapturedImage: mapImageProvider.capturedImage)
+    }
+
+    /// 산책 종료 확인 시트를 먼저 닫고 다음 메인 런루프에 실제 종료 저장을 실행합니다.
+    private func handleConfirmWalkEnd() {
+        let capturedImage = mapImageProvider.capturedImage
+        dismiss()
+        Task { @MainActor in
+            await Task.yield()
+            detailViewModel.confirmWalkEnd(mapCapturedImage: capturedImage)
+        }
     }
 }
 //

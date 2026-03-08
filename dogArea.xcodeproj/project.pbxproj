@@ -11,6 +11,15 @@
 		02B810B0791CFB600F8406EB /* HomeSelectedPetEmptyStateCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D14629580BEDCDCAE5B9EC3 /* HomeSelectedPetEmptyStateCardView.swift */; };
 		0ADA547D465997E8A4EFE806 /* HomeSeasonResetTransitionBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E7F38C996B1C42E27210E77 /* HomeSeasonResetTransitionBannerView.swift */; };
 		0AE5139ADDB458D1C96FB1E5 /* MapWalkStartPresentationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D9BD7A05F8857B29C523B95 /* MapWalkStartPresentationModels.swift */; };
+		A56500010000000000000001 /* WalkValueGuidePresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56500010000000000000011 /* WalkValueGuidePresentation.swift */; };
+		A56500010000000000000002 /* WalkValueGuidePresentationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56500010000000000000012 /* WalkValueGuidePresentationService.swift */; };
+		A56500010000000000000003 /* MapWalkValueFlowPresentationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56500010000000000000013 /* MapWalkValueFlowPresentationService.swift */; };
+		A56500010000000000000004 /* WalkValueGuideStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56500010000000000000014 /* WalkValueGuideStateStore.swift */; };
+		A56500010000000000000005 /* WalkValueGuideSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56500010000000000000015 /* WalkValueGuideSheetView.swift */; };
+		A56500010000000000000006 /* MapWalkActiveValueCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56500010000000000000016 /* MapWalkActiveValueCardView.swift */; };
+		A56500010000000000000007 /* MapWalkSavedOutcomeCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56500010000000000000017 /* MapWalkSavedOutcomeCardView.swift */; };
+		A56500010000000000000008 /* WalkCompletionValueFlowCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56500010000000000000018 /* WalkCompletionValueFlowCardView.swift */; };
+		A56500010000000000000009 /* MapWalkValueFlowPresentationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56500010000000000000019 /* MapWalkValueFlowPresentationModels.swift */; };
 		106E27D50C08D7997FD7982D /* RivalNetworkErrorInterpreter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4548C0C604B933CC43644FA /* RivalNetworkErrorInterpreter.swift */; };
 		127B2251C5595A11763BE6D4 /* MapSeasonTileDetailCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244A2DC41EA14E7143F727B2 /* MapSeasonTileDetailCardView.swift */; };
 		17BEA4EED401E70749B3A96B /* HomeQuestWidgetTabSelectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84B94FEE2D80935CA3AA5917 /* HomeQuestWidgetTabSelectorView.swift */; };
@@ -575,6 +584,15 @@
 		A53000010000000000000005 /* WalkListDetailTimelineSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDetailTimelineSectionView.swift; sourceTree = "<group>"; };
 		A53000010000000000000006 /* WalkListDetailMetaSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDetailMetaSectionView.swift; sourceTree = "<group>"; };
 		A53000010000000000000007 /* WalkListDetailActionSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDetailActionSectionView.swift; sourceTree = "<group>"; };
+		A56500010000000000000011 /* WalkValueGuidePresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkValueGuidePresentation.swift; sourceTree = "<group>"; };
+		A56500010000000000000012 /* WalkValueGuidePresentationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkValueGuidePresentationService.swift; sourceTree = "<group>"; };
+		A56500010000000000000013 /* MapWalkValueFlowPresentationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapWalkValueFlowPresentationService.swift; sourceTree = "<group>"; };
+		A56500010000000000000014 /* WalkValueGuideStateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkValueGuideStateStore.swift; sourceTree = "<group>"; };
+		A56500010000000000000015 /* WalkValueGuideSheetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogArea/Views/GlobalViews/WalkGuide/WalkValueGuideSheetView.swift; sourceTree = SOURCE_ROOT; };
+		A56500010000000000000016 /* MapWalkActiveValueCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapWalkActiveValueCardView.swift; sourceTree = "<group>"; };
+		A56500010000000000000017 /* MapWalkSavedOutcomeCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapWalkSavedOutcomeCardView.swift; sourceTree = "<group>"; };
+		A56500010000000000000018 /* WalkCompletionValueFlowCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkCompletionValueFlowCardView.swift; sourceTree = "<group>"; };
+		A56500010000000000000019 /* MapWalkValueFlowPresentationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapWalkValueFlowPresentationModels.swift; sourceTree = "<group>"; };
 		A56700010000000000000011 /* WalkListCalendarPresentationModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListCalendarPresentationModels.swift; sourceTree = "<group>"; };
 		A56700010000000000000012 /* WalkListCalendarPresentationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListCalendarPresentationService.swift; sourceTree = "<group>"; };
 		A56700010000000000000013 /* WalkListMonthlyCalendarCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListMonthlyCalendarCardView.swift; sourceTree = "<group>"; };
@@ -972,6 +990,7 @@
 				A41000010000000000000012 /* MapViewModel+WidgetRuntimeSupport.swift */,
 				A41000010000000000000013 /* MapViewModel+WatchConnectivitySupport.swift */,
 				6D9BD7A05F8857B29C523B95 /* MapWalkStartPresentationModels.swift */,
+				A56500010000000000000019 /* MapWalkValueFlowPresentationModels.swift */,
 			);
 			name = MapViewModelSupport;
 			path = MapViewModelSupport;
@@ -1024,6 +1043,7 @@
 				A41500010000000000000017 /* AppMetricTracker.swift */,
 				A50700010000000000000013 /* AuthMailActionStateStore.swift */,
 				A56800010000000000000013 /* SeasonGuideStateStore.swift */,
+				A56500010000000000000014 /* WalkValueGuideStateStore.swift */,
 				A41500010000000000000018 /* SyncOutboxStore.swift */,
 			);
 			path = UserDefaultsSupport;
@@ -1123,6 +1143,14 @@
 			path = SeasonGuide;
 			sourceTree = "<group>";
 		};
+		A56500010000000000000020 /* WalkGuide */ = {
+			isa = PBXGroup;
+			children = (
+				A56500010000000000000015 /* WalkValueGuideSheetView.swift */,
+			);
+			path = WalkGuide;
+			sourceTree = "<group>";
+		};
 		AEEB7566FB4DD44BCB259429 /* SettingViewModelSupport */ = {
 			isa = PBXGroup;
 			children = (
@@ -1183,6 +1211,7 @@
 				DAC19F222B0B379C002FE2E8 /* Loading */,
 				DAF0A0084200000000000001 /* Recovery */,
 				A56800010000000000000004 /* SeasonGuide */,
+				A56500010000000000000020 /* WalkGuide */,
 				A37600010000000000000004 /* ProfileEditor */,
 				DA390A742AFE1AFC00BACF2B /* SimpleMessageView.swift */,
 				DA4513822AFB25C2007AD69B /* PositionMarkerView.swift */,
@@ -1352,6 +1381,9 @@
 				DA8BB9E42B024B1900E350C4 /* MapCapture.swift */,
 				DA16C1E02B060C7B008FC133 /* SelectedPolygonCell.swift */,
 				88896E82F3229510BDBEB73E /* MapWalkStartMeaningCardView.swift */,
+				A56500010000000000000016 /* MapWalkActiveValueCardView.swift */,
+				A56500010000000000000017 /* MapWalkSavedOutcomeCardView.swift */,
+				A56500010000000000000018 /* WalkCompletionValueFlowCardView.swift */,
 			);
 			path = MapSubViews;
 			sourceTree = "<group>";
@@ -1633,6 +1665,7 @@
 				A50300010000000000000011 /* MapHeatmapSnapshot.swift */,
 				A50400010000000000000011 /* MapHotspotClusterSnapshot.swift */,
 				A50200010000000000000011 /* MapWalkPointSnapshot.swift */,
+				A56500010000000000000011 /* WalkValueGuidePresentation.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -1646,6 +1679,8 @@
 				A50400010000000000000012 /* MapHotspotClusterRenderingService.swift */,
 				A50200010000000000000012 /* MapWalkPointSnapshotService.swift */,
 				BB7213218B73F5E29A0DF33C /* MapWalkStartPresentationService.swift */,
+				A56500010000000000000012 /* WalkValueGuidePresentationService.swift */,
+				A56500010000000000000013 /* MapWalkValueFlowPresentationService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -2035,10 +2070,13 @@
 				A50300010000000000000001 /* MapHeatmapSnapshot.swift in Sources */,
 				A50400010000000000000001 /* MapHotspotClusterSnapshot.swift in Sources */,
 				A50200010000000000000001 /* MapWalkPointSnapshot.swift in Sources */,
+				A56500010000000000000001 /* WalkValueGuidePresentation.swift in Sources */,
 				DAE148A11420000000000001 /* MapAreaCalculationService.swift in Sources */,
 				A50300010000000000000002 /* MapHeatmapAggregationService.swift in Sources */,
 				A50400010000000000000002 /* MapHotspotClusterRenderingService.swift in Sources */,
 				A50200010000000000000002 /* MapWalkPointSnapshotService.swift in Sources */,
+				A56500010000000000000002 /* WalkValueGuidePresentationService.swift in Sources */,
+				A56500010000000000000003 /* MapWalkValueFlowPresentationService.swift in Sources */,
 				DAE147B11420000000000001 /* MapClusterAnnotationService.swift in Sources */,
 				A37600010000000000000021 /* ProfileEditorDraft.swift in Sources */,
 				A37600010000000000000022 /* SettingsPetManagementService.swift in Sources */,
@@ -2058,6 +2096,7 @@
 				A47500010000000000000002 /* WeatherReplacementSummaryStore.swift in Sources */,
 				A47500010000000000000003 /* SupabaseWeatherReplacementServices.swift in Sources */,
 				A50700010000000000000003 /* AuthMailActionStateStore.swift in Sources */,
+				A56500010000000000000004 /* WalkValueGuideStateStore.swift in Sources */,
 				DAE147A11420000000000001 /* HomeWeeklyStatisticsService.swift in Sources */,
 				DAE147A31420000000000001 /* HomeWeatherMissionStatusBuilder.swift in Sources */,
 				A45300010000000000000001 /* HomeIndoorMissionPresentationService.swift in Sources */,
@@ -2195,6 +2234,7 @@
 				C2A4309E392F82F548955737 /* HomeViewModel+IndoorMissionFlow.swift in Sources */,
 				A45800010000000000000003 /* HomeWeatherGuidanceSheetView.swift in Sources */,
 				A56800010000000000000024 /* SeasonGuideSheetView.swift in Sources */,
+				A56500010000000000000005 /* WalkValueGuideSheetView.swift in Sources */,
 				A41000010000000000000021 /* MapViewModel+WidgetRuntimeSupport.swift in Sources */,
 				A41000010000000000000022 /* MapViewModel+WatchConnectivitySupport.swift in Sources */,
 				71C13F32C41AB0D41B9E1BC5 /* RivalTabViewModel+SessionLifecycle.swift in Sources */,
@@ -2209,6 +2249,10 @@
 				0AE5139ADDB458D1C96FB1E5 /* MapWalkStartPresentationModels.swift in Sources */,
 				EF2C2E848B145E8605EA2C5B /* MapWalkStartPresentationService.swift in Sources */,
 				9A4AE14306E5C9D0388F3E74 /* MapWalkStartMeaningCardView.swift in Sources */,
+				A56500010000000000000006 /* MapWalkActiveValueCardView.swift in Sources */,
+				A56500010000000000000007 /* MapWalkSavedOutcomeCardView.swift in Sources */,
+				A56500010000000000000008 /* WalkCompletionValueFlowCardView.swift in Sources */,
+				A56500010000000000000009 /* MapWalkValueFlowPresentationModels.swift in Sources */,
 				36010BA30D5F3C5CE6451BD6 /* WalkListPrimaryLoopSummaryCardView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

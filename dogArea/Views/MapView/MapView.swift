@@ -23,6 +23,7 @@ struct MapView : View{
     @State private var distance = 2000.0
     @State private var selectedPolygonData: WalkDataModel? = nil
     @State private var seasonGuideSheetPresentation: SeasonGuidePresentation? = nil
+    @State private var walkValueGuideSheetPresentation: WalkValueGuidePresentation? = nil
     @State private var recoveryIssue: RecoveryIssue? = nil
     @State private var activeBanner: MapTopBannerCandidate? = nil
     @State private var bannerSuppressedUntil: [MapTopBannerKind: Date] = [:]
@@ -43,6 +44,7 @@ struct MapView : View{
             MapRenderBudgetProbe.resetIfNeeded()
             viewModel.activateMapRuntimeServices()
             seasonGuideSheetPresentation = viewModel.seasonGuidePresentation
+            walkValueGuideSheetPresentation = viewModel.walkValueGuidePresentation
             viewModel.reloadSelectedPetContext()
             viewModel.updateAnnotations(cameraDistance: self.distance)
             recomputeBannerQueue()
@@ -60,6 +62,9 @@ struct MapView : View{
         })
         composed = AnyView(composed.onChange(of: viewModel.seasonGuidePresentation) { _, newValue in
             seasonGuideSheetPresentation = newValue
+        })
+        composed = AnyView(composed.onChange(of: viewModel.walkValueGuidePresentation) { _, newValue in
+            walkValueGuideSheetPresentation = newValue
         })
         composed = AnyView(composed.onChange(of: viewModel.runtimeGuardStatusText) { _, newValue in
             guard newValue.isEmpty == false else { return }
@@ -124,6 +129,17 @@ struct MapView : View{
                 onClose: {
                     seasonGuideSheetPresentation = nil
                     viewModel.dismissSeasonGuide()
+                }
+            )
+        })
+        composed = AnyView(composed.sheet(item: $walkValueGuideSheetPresentation, onDismiss: {
+            viewModel.dismissWalkValueGuide()
+        }) { presentation in
+            WalkValueGuideSheetView(
+                presentation: presentation,
+                onClose: {
+                    walkValueGuideSheetPresentation = nil
+                    viewModel.dismissWalkValueGuide()
                 }
             )
         })
@@ -244,6 +260,19 @@ struct MapView : View{
 
     private var statusOverlayView: some View {
         VStack(spacing: 6) {
+            if let presentation = viewModel.walkSavedOutcomePresentation {
+                MapWalkSavedOutcomeCardView(
+                    presentation: presentation,
+                    onOpenHistory: {
+                        NotificationCenter.default.post(name: .openWalkHistoryRequested, object: nil)
+                        viewModel.clearWalkSavedOutcomePresentation()
+                    },
+                    onDismiss: {
+                        viewModel.clearWalkSavedOutcomePresentation()
+                    }
+                )
+            }
+
             if let message = viewModel.walkStatusMessage {
                 HStack(spacing: 10) {
                     Text(message)
@@ -289,7 +318,9 @@ struct MapView : View{
     }
 
     private var statusOverlayContent: AnyView? {
-        guard viewModel.walkStatusMessage != nil || pendingUndoPointID != nil else { return nil }
+        guard viewModel.walkSavedOutcomePresentation != nil || viewModel.walkStatusMessage != nil || pendingUndoPointID != nil else {
+            return nil
+        }
         return AnyView(statusOverlayView)
     }
 

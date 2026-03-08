@@ -192,6 +192,70 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertTrue(waitUntilExists(bottomControls, timeout: 3), "종료 알럿 해제 후 하단 control overlay가 다시 보여야 합니다.")
     }
 
+    /// 지도 첫 진입 시 산책 가치 설명 가이드가 자동으로 열리는지 검증합니다.
+    func testFeatureRegression_MapWalkValueGuideAutoPresentsOnFirstVisit() throws {
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.WalkValueGuideAutoPresent"])
+
+        XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.")
+        XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
+
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "map.walk.guide.sheet", in: app), timeout: 5),
+            "산책 가치 설명 가이드가 자동 노출되지 않았습니다."
+        )
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "map.walk.guide.flow.before", in: app), timeout: 2),
+            "산책 시작 전 가치 설명 단계가 노출되지 않았습니다."
+        )
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "map.walk.guide.flow.during", in: app), timeout: 2),
+            "산책 진행 중 가치 설명 단계가 노출되지 않았습니다."
+        )
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "map.walk.guide.flow.after", in: app), timeout: 2),
+            "산책 저장 후 가치 설명 단계가 노출되지 않았습니다."
+        )
+    }
+
+    /// 산책 진행 중 helper와 저장 후 후속 카드가 순서대로 이어지는지 검증합니다.
+    func testFeatureRegression_MapWalkValueFlowExplainsDuringAndAfterSaving() throws {
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.MapForceWalkingState"])
+
+        XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.")
+        XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "map.walk.activeValue.card", in: app), timeout: 5),
+            "산책 진행 중 가치 설명 카드가 노출되지 않았습니다."
+        )
+
+        let primaryAction = mapPrimaryAction(in: app)
+        XCTAssertTrue(waitUntilHittable(primaryAction, timeout: 6), "산책 종료 버튼이 탭 가능한 상태가 아닙니다.")
+        primaryAction.tap()
+
+        let primaryAlertAction = screenElement(identifier: "customAlert.action.primary", in: app)
+        XCTAssertTrue(waitUntilExists(primaryAlertAction, timeout: 4), "산책 종료 알럿의 주 행동 버튼이 보이지 않습니다.")
+        primaryAlertAction.tap()
+
+        let completionValueCard = screenElement(identifier: "walk.detail.valueFlow.card", in: app)
+        XCTAssertTrue(waitUntilExists(completionValueCard, timeout: 5), "산책 종료 확인 시트의 가치 설명 카드가 노출되지 않았습니다.")
+
+        let confirmButton = app.buttons["walk.detail.confirm"]
+        XCTAssertTrue(waitUntilExists(confirmButton, timeout: 3), "산책 저장 후 종료 버튼이 보이지 않습니다.")
+        confirmButton.tap()
+
+        let savedOutcomeCard = screenElement(identifier: "map.walk.savedOutcome.card", in: app)
+        XCTAssertTrue(waitUntilExists(savedOutcomeCard, timeout: 5), "산책 저장 후 후속 행동 카드가 노출되지 않았습니다.")
+
+        let openHistoryButton = app.buttons["map.walk.savedOutcome.openHistory"]
+        XCTAssertTrue(waitUntilExists(openHistoryButton, timeout: 2), "산책 목록 이동 CTA가 보이지 않습니다.")
+        openHistoryButton.tap()
+
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "screen.walkList", in: app), timeout: 5),
+            "산책 저장 후 목록 화면으로 이동하지 않았습니다."
+        )
+    }
+
     /// 산책 중 지도 루트가 250ms ticker에 의해 반복 재평가되지 않는지 render probe로 검증합니다.
     func testFeatureRegression_MapWalkingRuntimeKeepsRootRenderCountBelowThreshold() throws {
         let app = launchAppForFeatureRegression(

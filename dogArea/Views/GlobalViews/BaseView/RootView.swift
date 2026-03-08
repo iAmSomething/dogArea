@@ -185,6 +185,9 @@ struct RootView: View {
                 syncHotspotWidgetSnapshot(force: false)
                 syncQuestRivalWidgetSnapshot(force: false)
             }
+            .onReceive(NotificationCenter.default.publisher(for: .openWalkHistoryRequested)) { _ in
+                selectedTab = 1
+            }
             .onReceive(NotificationCenter.default.publisher(for: UserdefaultSetting.selectedPetDidChangeNotification)) { _ in
                 syncTerritoryWidgetSnapshot(force: true)
                 syncHotspotWidgetSnapshot(force: true)

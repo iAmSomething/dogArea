@@ -61,7 +61,7 @@ struct WalkListDetailPresentationService: WalkListDetailPresentationServicing {
             petBadge: petName,
             statusBadge: sessionMetadata.map { endReasonText($0.endReason) },
             loopSummaryTitle: "이 산책이 남기는 것",
-            loopSummaryBody: "이 기록은 경로, 영역, 시간 데이터가 남은 산책 결과예요. 홈 목표와 시즌, 오늘 행동 해석은 이런 산책 기록을 기준으로 이어집니다."
+            loopSummaryBody: "이 기록은 경로, 영역, 시간, 포인트 데이터가 남은 산책 결과예요. 산책 목록에서 다시 보고, 홈 목표와 시즌, 오늘 행동 해석까지 같은 기록을 기준으로 이어집니다."
         )
     }
 

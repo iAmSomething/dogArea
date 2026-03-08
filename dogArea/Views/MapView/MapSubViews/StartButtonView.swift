@@ -16,11 +16,21 @@ struct StartButtonView: View {
     @Binding var endWalkingViewPresented: Bool
     @State private var isMeter: Bool = true
     private let walkStartPresentationService: MapWalkStartPresenting = MapWalkStartPresentationService()
+    private let walkValueFlowPresentationService: MapWalkValueFlowPresenting = MapWalkValueFlowPresentationService()
 
     private var walkStartPresentation: MapWalkStartPresentation {
         walkStartPresentationService.makePresentation(
             hasSelectedPet: viewModel.hasSelectedPet,
             selectedPetName: viewModel.selectedPetName
+        )
+    }
+
+    private var activeValuePresentation: MapWalkActiveValuePresentation {
+        walkValueFlowPresentationService.makeActiveValuePresentation(
+            petName: viewModel.currentWalkingPetName,
+            routePointCount: viewModel.polygon.locations.count,
+            durationText: viewModel.displayedWalkElapsedTime(at: Date()).simpleWalkingTimeInterval,
+            areaText: viewModel.calculatedAreaString(isPyong: !isMeter)
         )
     }
 
@@ -30,7 +40,13 @@ struct StartButtonView: View {
                 petSelectionHint
             }
             if !viewModel.isWalking {
-                MapWalkStartMeaningCardView(presentation: walkStartPresentation)
+                MapWalkStartMeaningCardView(
+                    presentation: walkStartPresentation,
+                    onOpenGuide: viewModel.presentWalkValueGuideFromMapHelp
+                )
+            }
+            if viewModel.isWalking {
+                MapWalkActiveValueCardView(presentation: activeValuePresentation)
             }
 
             HStack(spacing: 12) {

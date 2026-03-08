@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MapWalkStartMeaningCardView: View {
     let presentation: MapWalkStartPresentation
+    let onOpenGuide: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -26,6 +27,14 @@ struct MapWalkStartMeaningCardView: View {
                 .font(.appScaledFont(for: .Regular, size: 11, relativeTo: .caption2))
                 .foregroundStyle(MapChromePalette.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
+
+            Button("설명 보기", action: onOpenGuide)
+                .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
+                .foregroundStyle(MapChromePalette.primaryText)
+                .frame(minHeight: 44)
+                .padding(.horizontal, 12)
+                .mapChromePill(.neutral)
+                .accessibilityIdentifier("map.walk.guide.reopen")
         }
         .padding(12)
         .frame(maxWidth: 420, alignment: .leading)
