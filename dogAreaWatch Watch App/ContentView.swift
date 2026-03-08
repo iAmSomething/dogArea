@@ -9,14 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var viewModel = ContentsViewModel()
-
-    private var lastSyncText: String {
-        guard viewModel.lastSyncAt > 0 else { return "-" }
-        let date = Date(timeIntervalSince1970: viewModel.lastSyncAt)
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm:ss"
-        return formatter.string(from: date)
-    }
+    @State private var isQueueStatusPresented = false
 
     var body: some View {
         ScrollView {
@@ -39,6 +32,12 @@ struct ContentView: View {
                     onRefresh: { viewModel.refreshPetContext() }
                 )
 
+                WatchOfflineQueueStatusCardView(
+                    queueStatus: viewModel.queueStatus,
+                    onOpenDetail: { isQueueStatusPresented = true },
+                    onManualSync: { viewModel.handleManualQueueResync() }
+                )
+
                 metricsSection
 
                 VStack(spacing: 8) {
@@ -58,21 +57,14 @@ struct ContentView: View {
                         )
                     }
                 }
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("큐 \(viewModel.pendingActionCount)건")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(viewModel.pendingActionCount > 0 ? .orange : .secondary)
-                    Text("ACK \(viewModel.lastAckStatus)")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                    Text("동기화 \(lastSyncText)")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
             }
             .padding()
+        }
+        .sheet(isPresented: $isQueueStatusPresented) {
+            WatchOfflineQueueStatusSheetView(
+                queueStatus: viewModel.queueStatus,
+                onManualSync: { viewModel.handleManualQueueResync() }
+            )
         }
     }
 

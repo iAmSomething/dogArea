@@ -27,6 +27,7 @@ let mapViewModel = readMany([
 ])
 let watchVM = read("dogAreaWatch Watch App/ContentsViewModel.swift")
 let watchView = read("dogAreaWatch Watch App/ContentView.swift")
+let queueCardView = read("dogAreaWatch Watch App/WatchOfflineQueueStatusCardView.swift")
 let docs = read("docs/watch-connectivity-reliability-v1.md")
 
 Check.assertTrue(mapViewModel.contains("static let version = \"watch.remote.v1\""), "iphone side should define watch contract version")
@@ -43,8 +44,9 @@ Check.assertTrue(watchVM.contains("session.transferUserInfo($0.envelope)"), "wat
 Check.assertTrue(watchVM.contains("lastAckStatus"), "watch view model should expose ack status")
 Check.assertTrue(watchVM.contains("pendingActionCount"), "watch view model should expose pending queue size")
 
-Check.assertTrue(watchView.contains("큐 \\(viewModel.pendingActionCount)건"), "watch UI should render pending queue count")
-Check.assertTrue(watchView.contains("ACK"), "watch UI should show ack state")
+Check.assertTrue(watchView.contains("WatchOfflineQueueStatusCardView"), "watch UI should render queue status card")
+Check.assertTrue(queueCardView.contains("큐 \\(queueStatus.pendingCount)건"), "watch queue card should render pending queue count")
+Check.assertTrue(queueCardView.contains("ACK \\(queueStatus.lastAckStatus)"), "watch queue card should show ack state")
 
 Check.assertTrue(docs.contains("watch.remote.v1"), "docs should describe contract version")
 Check.assertTrue(docs.contains("watch_ack"), "docs should describe ack contract")

@@ -236,6 +236,9 @@
 		DAB314CA2B3C1D75000357C7 /* WatchActionButtonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB314C92B3C1D75000357C7 /* WatchActionButtonView.swift */; };
 		DAB314CC2B3C1D76000357C7 /* WatchSelectedPetContextState.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB314CB2B3C1D76000357C7 /* WatchSelectedPetContextState.swift */; };
 		DAB314CE2B3C1D77000357C7 /* WatchSelectedPetContextCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB314CD2B3C1D77000357C7 /* WatchSelectedPetContextCardView.swift */; };
+		DAB314D22B3C1D78000357C7 /* WatchOfflineQueueStatusState.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB314D12B3C1D78000357C7 /* WatchOfflineQueueStatusState.swift */; };
+		DAB314D42B3C1D79000357C7 /* WatchOfflineQueueStatusCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB314D32B3C1D79000357C7 /* WatchOfflineQueueStatusCardView.swift */; };
+		DAB314D62B3C1D7A000357C7 /* WatchOfflineQueueStatusSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB314D52B3C1D7A000357C7 /* WatchOfflineQueueStatusSheetView.swift */; };
 		DAC19F0E2B0AE5AC002FE2E8 /* ImagePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F0D2B0AE5AC002FE2E8 /* ImagePicker.swift */; };
 		DAC19F102B0AF661002FE2E8 /* TitleTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F0F2B0AF661002FE2E8 /* TitleTextView.swift */; };
 		DAC19F132B0AFCAC002FE2E8 /* UserdefaultSetting.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F122B0AFCAC002FE2E8 /* UserdefaultSetting.swift */; };
@@ -573,6 +576,9 @@
 		DAB314C92B3C1D75000357C7 /* WatchActionButtonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchActionButtonView.swift; sourceTree = "<group>"; };
 		DAB314CB2B3C1D76000357C7 /* WatchSelectedPetContextState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSelectedPetContextState.swift; sourceTree = "<group>"; };
 		DAB314CD2B3C1D77000357C7 /* WatchSelectedPetContextCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSelectedPetContextCardView.swift; sourceTree = "<group>"; };
+		DAB314D12B3C1D78000357C7 /* WatchOfflineQueueStatusState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchOfflineQueueStatusState.swift; sourceTree = "<group>"; };
+		DAB314D32B3C1D79000357C7 /* WatchOfflineQueueStatusCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchOfflineQueueStatusCardView.swift; sourceTree = "<group>"; };
+		DAB314D52B3C1D7A000357C7 /* WatchOfflineQueueStatusSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchOfflineQueueStatusSheetView.swift; sourceTree = "<group>"; };
 		DAC19F0D2B0AE5AC002FE2E8 /* ImagePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePicker.swift; sourceTree = "<group>"; };
 		DAC19F0F2B0AF661002FE2E8 /* TitleTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitleTextView.swift; sourceTree = "<group>"; };
 		DAC19F122B0AFCAC002FE2E8 /* UserdefaultSetting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserdefaultSetting.swift; sourceTree = "<group>"; };
@@ -1277,6 +1283,9 @@
 				DAB314C92B3C1D75000357C7 /* WatchActionButtonView.swift */,
 				DAB314CB2B3C1D76000357C7 /* WatchSelectedPetContextState.swift */,
 				DAB314CD2B3C1D77000357C7 /* WatchSelectedPetContextCardView.swift */,
+				DAB314D12B3C1D78000357C7 /* WatchOfflineQueueStatusState.swift */,
+				DAB314D32B3C1D79000357C7 /* WatchOfflineQueueStatusCardView.swift */,
+				DAB314D52B3C1D7A000357C7 /* WatchOfflineQueueStatusSheetView.swift */,
 				DAB314B52B3C1B4B000357C7 /* Assets.xcassets */,
 				DAB314B72B3C1B4B000357C7 /* Preview Content */,
 			);
@@ -1983,6 +1992,9 @@
 				DAB314CA2B3C1D75000357C7 /* WatchActionButtonView.swift in Sources */,
 				DAB314CC2B3C1D76000357C7 /* WatchSelectedPetContextState.swift in Sources */,
 				DAB314CE2B3C1D77000357C7 /* WatchSelectedPetContextCardView.swift in Sources */,
+				DAB314D22B3C1D78000357C7 /* WatchOfflineQueueStatusState.swift in Sources */,
+				DAB314D42B3C1D79000357C7 /* WatchOfflineQueueStatusCardView.swift in Sources */,
+				DAB314D62B3C1D7A000357C7 /* WatchOfflineQueueStatusSheetView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
