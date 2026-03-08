@@ -43,6 +43,7 @@ struct HomeView: View {
     @State private var isHomeVisible: Bool = false
     private let seasonGuidePresentationService: SeasonGuidePresentationProviding = SeasonGuidePresentationService()
     private let seasonGuideStateStore: SeasonGuideStateStoring = DefaultSeasonGuideStateStore.shared
+    private let walkPrimaryLoopPresentationService: HomeWalkPrimaryLoopPresenting = HomeWalkPrimaryLoopPresentationService()
 
     /// 외부 라우트를 주입받아 홈 화면을 초기화합니다.
     /// - Parameter externalRoute: 위젯/딥링크에서 전달된 홈 외부 라우트 바인딩입니다.
@@ -72,6 +73,18 @@ struct HomeView: View {
     /// 홈 스크롤 최상단 복귀 버튼 노출 여부를 계산합니다.
     private var shouldShowScrollToTopButton: Bool {
         homeScrollOffsetY < -220
+    }
+
+    /// 홈 상단에서 산책 기본 루프 설명 카드에 사용할 프레젠테이션을 계산합니다.
+    private var walkPrimaryLoopPresentation: HomeWalkPrimaryLoopPresentation {
+        walkPrimaryLoopPresentationService.makePresentation(
+            selectedPetName: viewModel.selectedPetName,
+            walkRecordCount: viewModel.allPolygons.count,
+            totalDuration: viewModel.totalTime,
+            totalArea: viewModel.totalArea,
+            hasIndoorMissionReplacement: viewModel.indoorMissionBoard.riskLevel != .clear,
+            localizedCopy: viewModel.localizedCopy(ko:en:)
+        )
     }
 
     var body: some View {
@@ -168,6 +181,7 @@ struct HomeView: View {
             .frame(height: 0)
 
             homeHeaderSection
+            homeWalkPrimaryLoopSection
             homeGuestDataUpgradeSection
             homeStatusBannerSection
             homeSelectedPetContextSection
@@ -232,13 +246,14 @@ struct HomeView: View {
         }
     }
 
+    /// 홈 상단에서 산책이 제품의 기본 루프라는 설명 카드를 렌더링합니다.
+    private var homeWalkPrimaryLoopSection: some View {
+        HomeWalkPrimaryLoopCardView(presentation: walkPrimaryLoopPresentation)
+    }
+
     /// 날씨 기반 미션 카드와 보조 상태 카드를 한 섹션으로 렌더링합니다.
     private var homeMissionSection: some View {
-        Group {
-            if viewModel.indoorMissionBoard.shouldDisplayCard || questWidgetEntryContext != nil {
-                homeMissionSectionContent
-            }
-        }
+        homeMissionSectionContent
     }
 
     /// 홈 대시보드에서 미션 카드 직전의 소개 문구와 상태 카드를 묶습니다.
@@ -977,9 +992,15 @@ private struct HomeMissionSectionView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("오늘 미션 안내")
-                    .font(.appScaledFont(for: .SemiBold, size: 30, relativeTo: .title2))
-                Text("완료 기준, 부족분, 완료된 미션을 한 번에 확인하세요.")
+                HStack(spacing: 8) {
+                    Text(presentation.sectionTitle)
+                        .font(.appScaledFont(for: .SemiBold, size: 30, relativeTo: .title2))
+                    Text("보조 흐름")
+                        .appPill(isActive: false)
+                        .accessibilityIdentifier("home.mission.secondaryLabel")
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                Text("산책이 어려운 날에만 확인하는 보조 카드예요. 기본은 산책 기록입니다.")
                     .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .caption))
                     .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
             }

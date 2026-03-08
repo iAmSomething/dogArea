@@ -635,15 +635,15 @@ extension HomeViewModel {
         weatherShieldDailySummary = .init(dayKey: dayKey, applyCount: 1, lastAppliedAtText: "09:30")
         weatherMissionStatusSummary = .init(
             badgeText: "치환",
-            title: "오늘 미션 영향 요약",
-            reasonText: "강풍과 강수 위험 때문에 오늘은 실내 대체 미션을 우선 진행합니다.",
+            title: "실내 미션 전환 요약",
+            reasonText: "강풍과 강수 위험 때문에 오늘은 산책 보조용 실내 대체 미션이 열렸습니다.",
             appliedAtText: "적용 시점 09:30",
             shieldUsageText: "보호 사용 1회",
-            policyTitle: "오늘 미션 기준",
-            policyText: "실외 목표 대신 실내 대체 미션 3개가 열렸고, 행동 +1은 실제로 끝낸 루틴만 기록하는 체크입니다.",
-            lifecycleGuideText: "기준 횟수를 채운 뒤 완료 확인을 눌러야 보상이 확정되고, 완료된 미션은 아래 아카이브로 이동합니다.",
+            policyTitle: "실내 미션이 열리는 기준",
+            policyText: "오늘은 산책이 어려워 실내 대체 미션 3개가 보조로 열렸고, 행동 +1은 실제로 끝낸 루틴만 기록하는 체크입니다.",
+            lifecycleGuideText: "실내 미션을 진행했다면 기준 횟수를 채운 뒤 완료 확인을 눌러야 보상이 확정되고, 완료된 미션은 아래 아카이브로 이동합니다.",
             fallbackNotice: nil,
-            accessibilityText: "오늘 미션 영향 요약. 강풍과 강수 위험 때문에 실내 대체 미션이 열렸습니다.",
+            accessibilityText: "실내 미션 전환 요약. 강풍과 강수 위험 때문에 실내 대체 미션이 열렸습니다.",
             isFallback: false,
             riskLevel: .bad
         )

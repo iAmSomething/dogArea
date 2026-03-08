@@ -259,12 +259,14 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertTrue(openTab(index: 1, app: app), "산책 목록 탭 진입에 실패했습니다.")
 
         let header = screenElement(identifier: "walklist.header", in: app)
+        let primaryLoopCard = screenElement(identifier: "walklist.primaryLoop.card", in: app)
         let summary = screenElement(identifier: "walklist.summary", in: app)
         let context = screenElement(identifier: "walklist.context", in: app)
         let calendarCard = screenElement(identifier: "walklist.calendar.card", in: app)
         let guestLoginButton = app.buttons["walklist.guest.login"]
 
         XCTAssertTrue(waitUntilExists(header, timeout: 8), "산책 목록 헤더 허브가 렌더링되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(primaryLoopCard, timeout: 3), "산책이 기록의 시작점이라는 허브 카드가 노출되지 않았습니다.")
         XCTAssertTrue(waitUntilExists(summary, timeout: 3), "산책 목록 요약 카드가 노출되지 않았습니다.")
         XCTAssertTrue(waitUntilExists(context, timeout: 3), "산책 목록 필터 문맥 카드가 노출되지 않았습니다.")
         XCTAssertTrue(waitUntilExists(calendarCard, timeout: 3), "산책 목록 월별 캘린더 카드가 노출되지 않았습니다.")
@@ -333,6 +335,7 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertTrue(waitUntilGone(app.buttons["tab.1"], timeout: 2), "산책 상세 화면에서는 하단 탭바가 숨겨져야 합니다.")
 
         XCTAssertTrue(waitUntilExists(screenElement(identifier: "walklist.detail.hero", in: app), timeout: 2), "상단 요약 카드가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(screenElement(identifier: "walklist.detail.loopSummary", in: app), timeout: 2), "산책 기록 의미 요약 카드가 노출되지 않았습니다.")
         XCTAssertTrue(waitUntilExists(screenElement(identifier: "walklist.detail.map", in: app), timeout: 2), "지도 카드가 노출되지 않았습니다.")
         XCTAssertTrue(waitUntilExists(screenElement(identifier: "walklist.detail.timeline", in: app), timeout: 2), "포인트 타임라인 카드가 노출되지 않았습니다.")
         XCTAssertTrue(waitUntilExists(screenElement(identifier: "walklist.detail.meta", in: app), timeout: 2), "세션 메타 카드가 노출되지 않았습니다.")
@@ -350,6 +353,29 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertTrue(waitUntilHittable(shareAction, timeout: 2), "공유 primary CTA가 탭 가능한 상태가 아닙니다.")
         XCTAssertTrue(waitUntilHittable(saveAction, timeout: 2), "저장 secondary CTA가 탭 가능한 상태가 아닙니다.")
         XCTAssertTrue(waitUntilHittable(dismissAction, timeout: 2), "확인 dismiss CTA가 탭 가능한 상태가 아닙니다.")
+    }
+
+    /// 홈과 지도 첫 화면에서 산책이 기본 루프로 읽히고 실내 미션이 보조 흐름으로 내려가는지 검증합니다.
+    func testFeatureRegression_HomeAndMapPrioritizeWalkingAsPrimaryLoop() throws {
+        let app = launchAppForFeatureRegression()
+        XCTAssertTrue(openTab(index: 0, app: app), "홈 탭 진입에 실패했습니다.")
+
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "home.walkPrimaryLoop.card", in: app), timeout: 8),
+            "홈에서 산책 기본 루프 카드가 먼저 보여야 합니다."
+        )
+        let secondaryLabel = screenElement(identifier: "home.mission.secondaryLabel", in: app)
+        XCTAssertTrue(
+            revealExistingElementByVerticalScroll(secondaryLabel, app: app, maxSwipes: 4),
+            "홈 실내 미션 영역은 보조 흐름으로 읽혀야 합니다."
+        )
+
+        XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.")
+        XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "map.walk.startMeaning.card", in: app), timeout: 3),
+            "지도 시작 전 상태에서 산책 의미 카드가 노출되어야 합니다."
+        )
     }
 
     /// 산책 목록 탭을 선택해도 선택 아이콘이 유효한 SF Symbol로 유지되는지 검증합니다.

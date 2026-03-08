@@ -15,11 +15,22 @@ struct StartButtonView: View {
     @Binding var isModalPresented: Bool
     @Binding var endWalkingViewPresented: Bool
     @State private var isMeter: Bool = true
+    private let walkStartPresentationService: MapWalkStartPresenting = MapWalkStartPresentationService()
+
+    private var walkStartPresentation: MapWalkStartPresentation {
+        walkStartPresentationService.makePresentation(
+            hasSelectedPet: viewModel.hasSelectedPet,
+            selectedPetName: viewModel.selectedPetName
+        )
+    }
 
     var body: some View {
         VStack(spacing: 10) {
             if !viewModel.isWalking && viewModel.availablePets.count > 1 {
                 petSelectionHint
+            }
+            if !viewModel.isWalking {
+                MapWalkStartMeaningCardView(presentation: walkStartPresentation)
             }
 
             HStack(spacing: 12) {
@@ -72,11 +83,11 @@ struct StartButtonView: View {
 
     private var idleContextCard: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(viewModel.hasSelectedPet ? viewModel.selectedPetName : "반려견 선택 필요")
+            Text(walkStartPresentation.selectedPetTitle)
                 .font(.appFont(for: .SemiBold, size: 14))
                 .foregroundStyle(MapChromePalette.primaryText)
                 .lineLimit(1)
-            Text(viewModel.hasSelectedPet ? "현재 반려견 기준으로 산책을 시작합니다." : "산책 시작 전에 반려견을 선택해주세요.")
+            Text(walkStartPresentation.selectedPetMessage)
                 .font(.appFont(for: .Light, size: 11))
                 .foregroundStyle(MapChromePalette.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
@@ -88,10 +99,10 @@ struct StartButtonView: View {
 
     private var idleHintCard: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("준비 완료")
+            Text(walkStartPresentation.meaningTitle)
                 .font(.appFont(for: .SemiBold, size: 14))
                 .foregroundStyle(MapChromePalette.primaryText)
-            Text("버튼을 누르면 현재 위치 기준으로 기록을 시작합니다.")
+            Text(walkStartPresentation.meaningMessage)
                 .font(.appFont(for: .Light, size: 11))
                 .foregroundStyle(MapChromePalette.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
@@ -108,7 +119,7 @@ struct StartButtonView: View {
                 .foregroundStyle(MapChromePalette.secondaryText)
                 .lineLimit(1)
             MapWalkingElapsedTimeValueText(viewModel: viewModel)
-            Text("산책 진행 중")
+            Text(walkStartPresentation.walkingStatusText)
                 .font(.appFont(for: .Light, size: 11))
                 .foregroundStyle(MapChromePalette.secondaryText)
                 .lineLimit(2)
@@ -210,7 +221,7 @@ struct StartButtonView: View {
                 type: .customThreeButton(
                     .threeChoiceAlert(
                         title: "산책을 마칠까요?",
-                        message: "저장 후 종료하면 이번 경로와 영역이 기록되고, 계속 걷기를 누르면 산책을 이어갈 수 있어요.",
+                        message: walkStartPresentation.endAlertMessage,
                         first: "저장 후 종료",
                         second: "계속 걷기",
                         third: "기록 폐기"

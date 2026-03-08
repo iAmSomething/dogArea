@@ -29,6 +29,21 @@ struct WalkListDetailHeroSectionView: View {
                 Spacer(minLength: 0)
             }
 
+            VStack(alignment: .leading, spacing: 6) {
+                Text(hero.loopSummaryTitle)
+                    .font(.appScaledFont(for: .SemiBold, size: 13, relativeTo: .subheadline))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
+                Text(hero.loopSummaryBody)
+                    .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .caption))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.appDynamicHex(light: 0xFFF7EB, dark: 0x1E293B, alpha: 0.72))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .accessibilityIdentifier("walklist.detail.loopSummary")
+
             LazyVGrid(
                 columns: [
                     GridItem(.flexible(), spacing: 10, alignment: .top),

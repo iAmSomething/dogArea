@@ -10,7 +10,7 @@ struct WalkListDetailActionSectionView: View {
             Text("다음 행동")
                 .font(.appScaledFont(for: .SemiBold, size: 18, relativeTo: .headline))
                 .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
-            Text("공유를 주 행동으로 두고, 저장과 닫기는 보조 흐름으로 분리했습니다.")
+            Text("이 산책 기록은 다시 보기, 목표 확인, 공유에 활용할 수 있어요. 공유는 가장 적극적인 다음 행동이고 저장과 닫기는 보조 흐름입니다.")
                 .font(.appScaledFont(for: .Regular, size: 13, relativeTo: .body))
                 .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
                 .fixedSize(horizontal: false, vertical: true)
