@@ -164,7 +164,7 @@ struct MapView : View{
                     safeAreaTopInset: proxy.safeAreaInsets.top,
                     weatherStatusText: viewModel.weatherOverlayStatusText,
                     isWeatherFallbackActive: viewModel.weatherOverlayFallbackActive,
-                    heatmapSummaryText: (!viewModel.isWalking && viewModel.isHeatmapFeatureAvailable && viewModel.heatmapEnabled)
+                    heatmapSummaryText: viewModel.isHeatmapVisibleInMapUI
                         ? viewModel.seasonTileStatusSummaryText
                         : nil,
                     bannerContent: activeBanner.map { AnyView(topBannerView(for: $0)) },

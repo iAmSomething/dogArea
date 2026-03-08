@@ -317,6 +317,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             if self.isWalking {
                 self.showOnlyOne = true
             }
+            if oldValue != self.isWalking {
+                handleHeatmapVisibilityStateChanged()
+            }
             self.publishWatchState()
         }
     }
@@ -325,7 +328,12 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     var camera: MapCamera = .init(.init())
     @Published var cameraPosition = MapCameraPosition.automatic
     @Published var selectedMarker: Location? = nil
-    @Published var showOnlyOne: Bool = true
+    @Published var showOnlyOne: Bool = true {
+        didSet {
+            guard oldValue != showOnlyOne else { return }
+            handleHeatmapVisibilityStateChanged()
+        }
+    }
     @Published var heatmapEnabled: Bool = true
     @Published var heatmapCells: [HeatmapCellDTO] = []
     @Published var nearbyHotspotEnabled: Bool = true
@@ -371,7 +379,11 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private let featureFlags = FeatureFlagStore.shared
     let metricTracker = AppMetricTracker.shared
     private let nearbyService = NearbyPresenceService()
+    private let heatmapAggregationService: MapHeatmapAggregationServicing
     private var nearbyTickTimer: Timer? = nil
+    private var heatmapAggregationSnapshot: MapHeatmapAggregationSnapshot?
+    private var heatmapRefreshTask: Task<Void, Never>?
+    private var latestHeatmapRefreshRequestID: UUID?
     private var lastPresenceSentAt: Date = .distantPast
     private var lastPresenceSentCoordinate: CLLocationCoordinate2D?
     private var lastPresenceSuccessfulAt: Date = .distantPast
@@ -609,6 +621,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         weatherSnapshotProvider: WeatherSnapshotProviding = OpenMeteoWeatherSnapshotProvider(),
         weatherSnapshotStore: WeatherSnapshotStoreProtocol = WeatherSnapshotStore.shared,
         areaCalculationService: MapAreaCalculationServicing = MapAreaCalculationService(),
+        heatmapAggregationService: MapHeatmapAggregationServicing = MapHeatmapAggregationService(),
         walkPointSnapshotService: MapWalkPointSnapshotServicing = MapWalkPointSnapshotService(),
         clusterAnnotationService: MapClusterAnnotationServicing = MapClusterAnnotationService(),
         widgetSnapshotStore: WalkWidgetSnapshotStoring = DefaultWalkWidgetSnapshotStore.shared,
@@ -623,6 +636,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         self.weatherSnapshotProvider = weatherSnapshotProvider
         self.weatherSnapshotStore = weatherSnapshotStore
         self.areaCalculationService = areaCalculationService
+        self.heatmapAggregationService = heatmapAggregationService
         self.walkPointSnapshotService = walkPointSnapshotService
         self.clusterAnnotationService = clusterAnnotationService
         self.widgetSnapshotStore = widgetSnapshotStore
@@ -683,6 +697,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     deinit {
         timer?.invalidate()
         nearbyTickTimer?.invalidate()
+        heatmapRefreshTask?.cancel()
         cancelAllCaptureRippleExpiryTasks()
         locationManager.stopUpdatingLocation()
         liveActivitySyncTask?.cancel()
@@ -2306,17 +2321,108 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         self.applyPolygonList(updated)
     }
 
-    func refreshHeatmap(now: Date = Date()) {
-        guard isHeatmapFeatureAvailable else {
-            self.heatmapCells = []
+    /// 현재 지도 표시 조건과 입력 fingerprint를 기준으로 heatmap을 재사용하거나 새로 계산합니다.
+    /// - Parameters:
+    ///   - now: decay weight와 시간 버킷 판단에 사용할 기준 시각입니다.
+    ///   - force: snapshot 재사용을 건너뛰고 새 집계를 강제할지 여부입니다.
+    func refreshHeatmap(now: Date = Date(), force: Bool = false) {
+        guard isHeatmapVisibleInMapUI else {
+            clearHeatmapPresentation(preserveSnapshot: true)
             return
         }
-        let points = self.polygonList.flatMap { $0.locations }
-        self.heatmapCells = HeatmapEngine.aggregate(points: points, now: now, precision: 7)
+
+        let datasetFingerprint = heatmapAggregationService.makeDatasetFingerprint(from: polygonList)
+        if force == false,
+           heatmapAggregationService.canReuseSnapshot(
+               heatmapAggregationSnapshot,
+               datasetFingerprint: datasetFingerprint,
+               reference: now
+           ),
+           let snapshot = heatmapAggregationSnapshot {
+            heatmapRefreshTask?.cancel()
+            heatmapRefreshTask = nil
+            latestHeatmapRefreshRequestID = nil
+            applyHeatmapSnapshot(snapshot)
+            return
+        }
+
+        heatmapRefreshTask?.cancel()
+        let requestID = UUID()
+        latestHeatmapRefreshRequestID = requestID
+        let polygons = polygonList
+        let service = heatmapAggregationService
+
+        heatmapRefreshTask = Task { [weak self] in
+            let snapshot = await service.makeAggregationSnapshot(
+                polygons: polygons,
+                datasetFingerprint: datasetFingerprint,
+                reference: now
+            )
+            guard Task.isCancelled == false else { return }
+            await MainActor.run { [weak self] in
+                self?.applyHeatmapSnapshot(snapshot, requestID: requestID)
+            }
+        }
+    }
+
+    /// heatmap이 실제로 화면에 보이는 상태인지 계산합니다.
+    /// - Returns: feature flag, 사용자 토글, 지도 모드가 모두 heatmap 표시를 허용하면 `true`입니다.
+    var isHeatmapVisibleInMapUI: Bool {
+        isHeatmapFeatureAvailable && heatmapEnabled && isWalking == false && showOnlyOne == false
     }
 
     var isHeatmapFeatureAvailable: Bool {
         featureFlags.isEnabled(.heatmapV1)
+    }
+
+    /// 산책 모드/단일 영역 모드 전환이 heatmap 표시 조건에 영향을 줄 때 표현 상태를 정리합니다.
+    private func handleHeatmapVisibilityStateChanged() {
+        if isHeatmapVisibleInMapUI {
+            refreshHeatmap()
+        } else {
+            clearHeatmapPresentation(preserveSnapshot: true)
+        }
+    }
+
+    /// 화면에서 heatmap을 감춰야 할 때 진행 중 계산을 취소하고 셀 표시 상태를 정리합니다.
+    /// - Parameter preserveSnapshot: 이후 재노출 시 snapshot 재사용을 위해 마지막 계산 결과를 유지할지 여부입니다.
+    private func clearHeatmapPresentation(preserveSnapshot: Bool) {
+        heatmapRefreshTask?.cancel()
+        heatmapRefreshTask = nil
+        latestHeatmapRefreshRequestID = nil
+        heatmapCells = []
+        if preserveSnapshot == false {
+            heatmapAggregationSnapshot = nil
+        }
+    }
+
+    /// background 집계 결과를 현재 지도 상태에 맞게 적용합니다.
+    /// - Parameters:
+    ///   - snapshot: service가 계산한 heatmap snapshot입니다.
+    ///   - requestID: 현재 적용 시도가 최신 요청인지 확인할 식별자입니다.
+    private func applyHeatmapSnapshot(
+        _ snapshot: MapHeatmapAggregationSnapshot,
+        requestID: UUID? = nil
+    ) {
+        if let requestID, latestHeatmapRefreshRequestID != requestID {
+            return
+        }
+
+        heatmapAggregationSnapshot = snapshot
+        heatmapRefreshTask = nil
+        latestHeatmapRefreshRequestID = nil
+
+        guard isHeatmapVisibleInMapUI else {
+            heatmapCells = []
+            return
+        }
+
+        let latestFingerprint = heatmapAggregationService.makeDatasetFingerprint(from: polygonList)
+        guard latestFingerprint == snapshot.datasetFingerprint else {
+            return
+        }
+
+        heatmapCells = snapshot.cells
     }
 
     var isCloudSyncAvailableForSession: Bool {
@@ -2690,7 +2796,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     func toggleHeatmapEnabled() {
         guard isHeatmapFeatureAvailable else {
             self.heatmapEnabled = false
-            self.heatmapCells = []
+            clearHeatmapPresentation(preserveSnapshot: false)
             return
         }
         self.heatmapEnabled.toggle()
@@ -2698,7 +2804,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         if self.heatmapEnabled {
             refreshHeatmap()
         } else {
-            self.heatmapCells = []
+            clearHeatmapPresentation(preserveSnapshot: true)
         }
     }
 
@@ -3302,7 +3408,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         if heatmapAllowed {
             self.refreshHeatmap()
         } else {
-            self.heatmapCells = []
+            clearHeatmapPresentation(preserveSnapshot: false)
         }
 
         if nearbyAllowedForSession == false {
