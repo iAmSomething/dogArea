@@ -46,6 +46,7 @@ swift scripts/quest_stage2_engine_unit_check.swift
 swift scripts/season_motion_pack_unit_check.swift
 swift scripts/release_regression_checklist_unit_check.swift
 swift scripts/epic_21_closure_evidence_unit_check.swift
+swift scripts/epic_123_closure_evidence_unit_check.swift
 swift scripts/game_layer_observability_qa_unit_check.swift
 swift scripts/game_layer_kpi_dashboard_unit_check.swift
 swift scripts/fault_injection_matrix_unit_check.swift
