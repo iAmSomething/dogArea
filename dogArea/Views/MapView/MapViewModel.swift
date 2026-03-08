@@ -296,6 +296,18 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         ProcessInfo.processInfo.arguments.contains("-UITest.MapForceWalkingState")
     }
 
+    /// UI 테스트에서 시즌 점령 지도를 항상 보이게 강제할지 여부를 반환합니다.
+    /// - Returns: `-UITest.MapForceSeasonTileVisible` 인자가 포함되면 `true`를 반환합니다.
+    private static func shouldForceSeasonTileMapVisibleForUITest() -> Bool {
+        ProcessInfo.processInfo.arguments.contains("-UITest.MapForceSeasonTileVisible")
+    }
+
+    /// UI 테스트에서 대표 시즌 타일 상세 패널을 자동으로 열어둘지 여부를 반환합니다.
+    /// - Returns: `-UITest.MapOpenSeasonTileDetail` 인자가 포함되면 `true`를 반환합니다.
+    private static func shouldAutoOpenSeasonTileDetailForUITest() -> Bool {
+        ProcessInfo.processInfo.arguments.contains("-UITest.MapOpenSeasonTileDetail")
+    }
+
     private let locationManager = CLLocationManager()
     private var timer: Timer? = nil
     private var isLocationUpdatesRunning: Bool = false
@@ -338,6 +350,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     @Published var heatmapCells: [HeatmapCellDTO] = []
     @Published private(set) var seasonTileMapTiles: [MapSeasonTilePresentation] = []
     @Published private(set) var seasonTileSummaryPresentation: MapSeasonTileSummaryPresentation? = nil
+    @Published private(set) var selectedSeasonTileGeohash: String? = nil
     @Published var nearbyHotspotEnabled: Bool = true
     @Published var locationSharingEnabled: Bool = false
     @Published var nearbyHotspots: [NearbyHotspotDTO] = [] {
@@ -679,6 +692,11 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         self.locationSharingEnabled = nearbyFeatureOn ? storedLocationSharingEnabled : false
         self.mapMotionReduced = storedMotionReduced
         self.isAddPointLongPressModeEnabled = storedAddPointLongPressMode
+        if Self.shouldForceSeasonTileMapVisibleForUITest() {
+            self.heatmapEnabled = true
+            self.showOnlyOne = false
+            self.isWalking = false
+        }
         self.loadLivePresenceStateFromDefaults()
         self.walkStartCountdownEnabled = userSessionStore.walkStartCountdownEnabled()
         if Self.shouldForceWalkCountdownForUITest() {
@@ -2351,6 +2369,11 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             return
         }
 
+        if Self.shouldForceSeasonTileMapVisibleForUITest(), polygonList.isEmpty {
+            applyUITestSeasonTilePreviewIfNeeded()
+            return
+        }
+
         let datasetFingerprint = heatmapAggregationService.makeDatasetFingerprint(from: polygonList)
         if force == false,
            heatmapAggregationService.canReuseSnapshot(
@@ -2396,7 +2419,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     }
 
     var isHeatmapFeatureAvailable: Bool {
-        featureFlags.isEnabled(.heatmapV1)
+        Self.shouldForceSeasonTileMapVisibleForUITest() || featureFlags.isEnabled(.heatmapV1)
     }
 
     /// 산책 모드/단일 영역 모드 전환이 heatmap 표시 조건에 영향을 줄 때 표현 상태를 정리합니다.
@@ -2417,6 +2440,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         heatmapCells = []
         seasonTileMapTiles = []
         seasonTileSummaryPresentation = nil
+        selectedSeasonTileGeohash = nil
         if preserveSnapshot == false {
             heatmapAggregationSnapshot = nil
         }
@@ -2451,6 +2475,25 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         heatmapCells = snapshot.cells
         seasonTileMapTiles = seasonTilePresentationService.makeTilePresentations(from: snapshot.cells)
         seasonTileSummaryPresentation = seasonTilePresentationService.makeSummaryPresentation(from: seasonTileMapTiles)
+        if Self.shouldAutoOpenSeasonTileDetailForUITest(),
+           selectedSeasonTileGeohash == nil {
+            selectedSeasonTileGeohash = representativeSeasonTile?.geohash
+        }
+        if let selectedSeasonTileGeohash,
+           seasonTileMapTiles.contains(where: { $0.geohash == selectedSeasonTileGeohash }) == false {
+            self.selectedSeasonTileGeohash = nil
+        }
+    }
+
+    /// UI 테스트에서 시즌 점령 지도 샘플 타일과 요약 카드를 주입합니다.
+    private func applyUITestSeasonTilePreviewIfNeeded() {
+        guard seasonTileMapTiles.isEmpty else { return }
+        let previewTiles = Self.makeUITestSeasonTilePreviewTiles()
+        seasonTileMapTiles = previewTiles
+        seasonTileSummaryPresentation = seasonTilePresentationService.makeSummaryPresentation(from: previewTiles)
+        if Self.shouldAutoOpenSeasonTileDetailForUITest() {
+            selectedSeasonTileGeohash = representativeSeasonTile?.geohash
+        }
     }
 
     var isCloudSyncAvailableForSession: Bool {
@@ -2617,6 +2660,16 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             ?? seasonTilePresentationService.makeSummaryPresentation(from: seasonTileMapTiles)
     }
 
+    var seasonTileDetailCardPresentation: MapSeasonTileDetailPresentation? {
+        guard let tile = selectedSeasonTile else { return nil }
+        return seasonTilePresentationService.makeDetailPresentation(for: tile)
+    }
+
+    private var selectedSeasonTile: MapSeasonTilePresentation? {
+        guard let selectedSeasonTileGeohash else { return nil }
+        return seasonTileMapTiles.first { $0.geohash == selectedSeasonTileGeohash }
+    }
+
     /// 시즌 타일 채움 색을 계산합니다.
     /// - Parameter score: 시즌 셀에 누적된 정규화 점수입니다.
     /// - Returns: 시즌 타일 단계에 대응하는 채움 색입니다.
@@ -2656,13 +2709,17 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     /// - Parameter tile: 지도에 렌더링할 시즌 타일 셀 표현입니다.
     /// - Returns: 셀의 상태/강도에 대응하는 채움 투명도입니다.
     func seasonTileFillOpacity(for tile: MapSeasonTilePresentation) -> Double {
-        min(0.68, heatmapOpacity(for: tile.score) + 0.08)
+        let baseOpacity = min(0.68, heatmapOpacity(for: tile.score) + 0.08)
+        return isSeasonTileSelected(tile) ? min(0.78, baseOpacity + 0.08) : baseOpacity
     }
 
     /// 시즌 타일 셀의 테두리 색을 계산합니다.
     /// - Parameter tile: 지도에 렌더링할 시즌 타일 셀 표현입니다.
     /// - Returns: 점령/유지 상태를 식별하는 테두리 색입니다.
     func seasonTileStrokeColor(for tile: MapSeasonTilePresentation) -> Color {
+        if isSeasonTileSelected(tile) {
+            return Color.appYellow
+        }
         switch tile.status {
         case .occupied:
             return Color.appDynamicHex(light: 0xC2410C, dark: 0xFDBA74)
@@ -2675,12 +2732,107 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     /// - Parameter tile: 지도에 렌더링할 시즌 타일 셀 표현입니다.
     /// - Returns: 점령/유지 상태에 대응하는 스트로크 스타일입니다.
     func seasonTileStrokeStyle(for tile: MapSeasonTilePresentation) -> StrokeStyle {
+        if isSeasonTileSelected(tile) {
+            return StrokeStyle(lineWidth: 2.8, lineCap: .round, lineJoin: .round)
+        }
         switch tile.status {
         case .occupied:
             return StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round)
         case .maintained:
             return StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round, dash: [7, 5])
         }
+    }
+
+    /// 시즌 타일 선택 상태를 토글합니다.
+    /// - Parameter tile: 사용자가 선택하거나 해제할 시즌 타일 표현입니다.
+    func toggleSelectedSeasonTile(_ tile: MapSeasonTilePresentation) {
+        if selectedSeasonTileGeohash == tile.geohash {
+            selectedSeasonTileGeohash = nil
+        } else {
+            selectedSeasonTileGeohash = tile.geohash
+        }
+    }
+
+    /// 현재 시즌 타일이 선택 상태인지 반환합니다.
+    /// - Parameter tile: 상태를 확인할 시즌 타일 표현입니다.
+    /// - Returns: 선택된 시즌 타일과 geohash가 같으면 `true`입니다.
+    func isSeasonTileSelected(_ tile: MapSeasonTilePresentation) -> Bool {
+        selectedSeasonTileGeohash == tile.geohash
+    }
+
+    /// 열린 시즌 타일 상세 패널을 닫습니다.
+    func clearSelectedSeasonTile() {
+        selectedSeasonTileGeohash = nil
+    }
+
+    /// 대표 시즌 타일을 골라 상세 패널을 엽니다.
+    func openRepresentativeSeasonTileDetail() {
+        if let selectedSeasonTile {
+            selectedSeasonTileGeohash = selectedSeasonTile.geohash
+            return
+        }
+        selectedSeasonTileGeohash = representativeSeasonTile?.geohash
+    }
+
+    /// 현재 시즌 지도에서 대표로 보여줄 시즌 타일을 계산합니다.
+    /// - Returns: 가장 강한 점령 기여를 가진 시즌 타일이 있으면 반환하고, 없으면 `nil`입니다.
+    private var representativeSeasonTile: MapSeasonTilePresentation? {
+        seasonTileMapTiles.max { lhs, rhs in
+            representativePriority(for: lhs) < representativePriority(for: rhs)
+        }
+    }
+
+    /// UI 테스트에서 지도 summary/detail 회귀를 검증할 샘플 시즌 타일 배열을 만듭니다.
+    /// - Returns: summary 카드와 상세 패널이 열릴 수 있도록 구성한 샘플 시즌 타일 배열입니다.
+    private static func makeUITestSeasonTilePreviewTiles() -> [MapSeasonTilePresentation] {
+        let centers: [(String, CLLocationCoordinate2D, Double)] = [
+            ("ui-preview-a", .init(latitude: 37.5665, longitude: 126.9780), 0.82),
+            ("ui-preview-b", .init(latitude: 37.5665, longitude: 126.9812), 0.46),
+            ("ui-preview-c", .init(latitude: 37.5642, longitude: 126.9780), 0.28)
+        ]
+
+        let service = MapSeasonTilePresentationService()
+        return centers.map { geohash, center, score in
+            MapSeasonTilePresentation(
+                geohash: geohash,
+                polygon: makeUITestSeasonTilePolygon(center: center, latitudeDelta: 0.0010, longitudeDelta: 0.0012),
+                centerCoordinate: center,
+                score: score,
+                intensityLevel: service.intensityLevel(for: score),
+                intensityLabel: "\(service.intensityLevel(for: score) + 1)단계",
+                status: service.status(for: score)
+            )
+        }
+    }
+
+    /// 시즌 타일 대표 선택에 사용할 우선순위 값을 계산합니다.
+    /// - Parameter tile: 우선순위를 계산할 시즌 타일 표현입니다.
+    /// - Returns: 점령 상태, 강도, 점수, geohash 순으로 정렬 가능한 우선순위 튜플입니다.
+    private func representativePriority(
+        for tile: MapSeasonTilePresentation
+    ) -> (Int, Int, Double, String) {
+        let statusPriority = tile.status == .occupied ? 1 : 0
+        return (statusPriority, tile.intensityLevel, tile.score, tile.geohash)
+    }
+
+    /// 중심 좌표를 기준으로 UI 테스트용 시즌 타일 폴리곤을 생성합니다.
+    /// - Parameters:
+    ///   - center: 타일 중심 좌표입니다.
+    ///   - latitudeDelta: 중심 기준 위아래 반경 위도입니다.
+    ///   - longitudeDelta: 중심 기준 좌우 반경 경도입니다.
+    /// - Returns: 지도에 렌더링할 직사각형 타일 폴리곤입니다.
+    private static func makeUITestSeasonTilePolygon(
+        center: CLLocationCoordinate2D,
+        latitudeDelta: Double,
+        longitudeDelta: Double
+    ) -> MKPolygon {
+        let coordinates: [CLLocationCoordinate2D] = [
+            .init(latitude: center.latitude - latitudeDelta, longitude: center.longitude - longitudeDelta),
+            .init(latitude: center.latitude - latitudeDelta, longitude: center.longitude + longitudeDelta),
+            .init(latitude: center.latitude + latitudeDelta, longitude: center.longitude + longitudeDelta),
+            .init(latitude: center.latitude + latitudeDelta, longitude: center.longitude - longitudeDelta)
+        ]
+        return MKPolygon(coordinates: coordinates, count: coordinates.count)
     }
 
     func nearbyHotspotColor(for intensity: Double) -> Color {

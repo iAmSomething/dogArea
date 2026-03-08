@@ -6,6 +6,7 @@ struct MapTopChromeView: View {
     let isWeatherFallbackActive: Bool
     let seasonTileSummaryText: String?
     let seasonTileSummaryContent: AnyView?
+    let seasonTileDetailContent: AnyView?
     let bannerContent: AnyView?
     let statusContent: AnyView?
     let onOpenSettings: () -> Void
@@ -34,6 +35,10 @@ struct MapTopChromeView: View {
 
             if let seasonTileSummaryContent {
                 seasonTileSummaryContent
+            }
+
+            if let seasonTileDetailContent {
+                seasonTileDetailContent
             }
 
             if let bannerContent {

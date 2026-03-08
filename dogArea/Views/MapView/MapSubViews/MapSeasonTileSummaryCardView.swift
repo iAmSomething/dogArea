@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MapSeasonTileSummaryCardView: View {
     let summary: MapSeasonTileSummaryPresentation
+    let onOpenDetail: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -53,6 +54,29 @@ struct MapSeasonTileSummaryCardView: View {
                     text: summary.walkContributionLine,
                     accessibilityIdentifier: "map.season.summary.relation"
                 )
+                summaryRow(
+                    systemImageName: "hand.tap.fill",
+                    text: summary.selectionHintLine,
+                    accessibilityIdentifier: "map.season.summary.selectionHint"
+                )
+                if let onOpenDetail {
+                    Button(action: onOpenDetail) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "info.circle.fill")
+                                .font(.system(size: 12, weight: .semibold))
+                            Text("대표 칸 상세 보기")
+                                .font(.appFont(for: .SemiBold, size: 12))
+                        }
+                        .foregroundStyle(Color.appInk)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 10)
+                        .background(Color.appYellowPale.opacity(0.72))
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("map.season.summary.openDetail")
+                }
             }
         }
         .padding(14)

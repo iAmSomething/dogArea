@@ -68,6 +68,12 @@ struct MapSubView: View {
                         )
                         .annotationTitles(.hidden)
                 }
+                ForEach(viewModel.seasonTileMapTiles) { tile in
+                    Annotation("", coordinate: tile.centerCoordinate) {
+                        seasonTileSelectionHitTarget(for: tile)
+                    }
+                    .annotationTitles(.hidden)
+                }
             }
             if viewModel.isNearbyHotspotFeatureAvailable && viewModel.nearbyHotspotEnabled {
                 ForEach(viewModel.renderableNearbyHotspotNodes) { hotspot in
@@ -154,6 +160,31 @@ struct MapSubView: View {
 
     private var routeStrokeColor: Color {
         Color.appGreen.opacity(0.9)
+    }
+
+    /// 시즌 타일 선택용 hit target을 렌더링합니다.
+    /// - Parameter tile: 상세 패널을 열 시즌 타일 표현입니다.
+    /// - Returns: 지도 위에서 탭 가능한 시즌 타일 선택 뷰입니다.
+    private func seasonTileSelectionHitTarget(for tile: MapSeasonTilePresentation) -> some View {
+        Button {
+            viewModel.toggleSelectedSeasonTile(tile)
+        } label: {
+            Circle()
+                .fill(Color.appInk.opacity(0.001))
+                .frame(width: 44, height: 44)
+                .overlay {
+                    if viewModel.isSeasonTileSelected(tile) {
+                        Circle()
+                            .stroke(Color.appYellow, lineWidth: 2.4)
+                            .frame(width: 18, height: 18)
+                    }
+                }
+        }
+        .buttonStyle(.plain)
+        .contentShape(Circle())
+        .accessibilityIdentifier("map.season.tile.hitTarget")
+        .accessibilityLabel("\(tile.intensityLabel) \(tile.status.rawValue) 칸 상세 보기")
+        .accessibilityHint("이 칸이 왜 이런 상태인지와 다음 산책 힌트를 엽니다.")
     }
 
     /// 핫스팟 렌더 노드를 지도 어노테이션 뷰로 구성합니다.

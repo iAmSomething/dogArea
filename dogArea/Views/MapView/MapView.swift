@@ -175,9 +175,22 @@ struct MapView : View{
                     seasonTileSummaryContent: viewModel.isSeasonTileMapVisible
                         ? AnyView(
                             MapSeasonTileSummaryCardView(
-                                summary: viewModel.seasonTileSummaryCardPresentation
+                                summary: viewModel.seasonTileSummaryCardPresentation,
+                                onOpenDetail: viewModel.seasonTileMapTiles.isEmpty
+                                    ? nil
+                                    : { viewModel.openRepresentativeSeasonTileDetail() }
                             )
                         )
+                        : nil,
+                    seasonTileDetailContent: viewModel.isSeasonTileMapVisible
+                        ? viewModel.seasonTileDetailCardPresentation.map {
+                            AnyView(
+                                MapSeasonTileDetailCardView(
+                                    detail: $0,
+                                    onClose: { viewModel.clearSelectedSeasonTile() }
+                                )
+                            )
+                        }
                         : nil,
                     bannerContent: activeBanner.map { AnyView(topBannerView(for: $0)) },
                     statusContent: statusOverlayContent,
