@@ -132,6 +132,7 @@
 - 이슈 #529 클로저 증적 스냅샷 v1: `docs/issue-529-closure-evidence-v1.md`
 - 이슈 #522 클로저 증적 스냅샷 v1: `docs/issue-522-closure-evidence-v1.md`
 - 이슈 #520 클로저 증적 스냅샷 v1: `docs/issue-520-closure-evidence-v1.md`
+- 이슈 #506 클로저 증적 스냅샷 v1: `docs/issue-506-closure-evidence-v1.md`
 - 게임 레이어 공통 관측/QA 기준 v1: `docs/game-layer-observability-qa-v1.md`
 - 다중 반려견 산책 N:M 2차 설계 v2: `docs/multi-pet-session-nm-v2.md`
 - 다견 1차 선택 반려견 UX v1: `docs/multi-dog-selection-ux-v1.md`
