@@ -169,6 +169,19 @@ struct HeatmapCellDTO: Identifiable, Equatable {
     var id: String { geohash }
     var intensityLevel: Int { Self.intensityLevel(for: score) }
 
+    /// Geohash 셀 경계를 지도 폴리곤으로 변환합니다.
+    /// - Returns: 시즌 타일 셀 경계를 표현하는 `MKPolygon`입니다. Geohash 디코딩에 실패하면 `nil`입니다.
+    func seasonTilePolygon() -> MKPolygon? {
+        guard let bounds = GeohashCoder.decodeBounds(geohash: geohash) else { return nil }
+        var coordinates = [
+            CLLocationCoordinate2D(latitude: bounds.minLatitude, longitude: bounds.minLongitude),
+            CLLocationCoordinate2D(latitude: bounds.maxLatitude, longitude: bounds.minLongitude),
+            CLLocationCoordinate2D(latitude: bounds.maxLatitude, longitude: bounds.maxLongitude),
+            CLLocationCoordinate2D(latitude: bounds.minLatitude, longitude: bounds.maxLongitude)
+        ]
+        return MKPolygon(coordinates: &coordinates, count: coordinates.count)
+    }
+
     static func intensityLevel(for score: Double) -> Int {
         guard score > 0 else { return 0 }
         let level = Int(ceil(score * 5.0) - 1.0)
@@ -186,6 +199,13 @@ struct HeatmapCellDTO: Identifiable, Equatable {
         lhs.centerCoordinate.latitude == rhs.centerCoordinate.latitude &&
         lhs.centerCoordinate.longitude == rhs.centerCoordinate.longitude
     }
+}
+
+struct GeohashBounds: Equatable {
+    let minLatitude: Double
+    let maxLatitude: Double
+    let minLongitude: Double
+    let maxLongitude: Double
 }
 
 struct NearbyHotspotDTO: Identifiable, Equatable {
@@ -336,6 +356,40 @@ private enum GeohashCoder {
         return CLLocationCoordinate2D(
             latitude: (latRange.0 + latRange.1) / 2.0,
             longitude: (lonRange.0 + lonRange.1) / 2.0
+        )
+    }
+
+    /// Geohash가 표현하는 위도/경도 범위를 디코딩합니다.
+    /// - Parameter geohash: 경계를 복원할 geohash 문자열입니다.
+    /// - Returns: 타일 셀의 최소/최대 위도·경도 범위입니다. 잘못된 geohash면 `nil`입니다.
+    static func decodeBounds(geohash: String) -> GeohashBounds? {
+        guard !geohash.isEmpty else { return nil }
+
+        var latRange = (-90.0, 90.0)
+        var lonRange = (-180.0, 180.0)
+        var isEvenBit = true
+
+        for char in geohash.lowercased() {
+            guard let index = base32.firstIndex(of: char) else { return nil }
+
+            for bit in bitMasks {
+                let bitSet = (index & bit) != 0
+                if isEvenBit {
+                    let mid = (lonRange.0 + lonRange.1) / 2.0
+                    if bitSet { lonRange.0 = mid } else { lonRange.1 = mid }
+                } else {
+                    let mid = (latRange.0 + latRange.1) / 2.0
+                    if bitSet { latRange.0 = mid } else { latRange.1 = mid }
+                }
+                isEvenBit.toggle()
+            }
+        }
+
+        return GeohashBounds(
+            minLatitude: latRange.0,
+            maxLatitude: latRange.1,
+            minLongitude: lonRange.0,
+            maxLongitude: lonRange.1
         )
     }
 }

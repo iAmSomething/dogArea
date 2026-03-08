@@ -18,6 +18,7 @@
 		1ED977BE7E5D9002AE1B92AD /* HomeQuestAlternativeSuggestionCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F70B19034ADC4071F655ED9E /* HomeQuestAlternativeSuggestionCardView.swift */; };
 		219A97F376AF1948198AF4DD /* HomeGuestDataUpgradeCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F61462EBA7433ED6BC68778D /* HomeGuestDataUpgradeCardView.swift */; };
 		21E7CDE1A8E20F90F24FB0C1 /* HomeWeeklyQuestSummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8E5D37200B02E2F8E26B734 /* HomeWeeklyQuestSummaryView.swift */; };
+		220A5C5B593A98C896A1CC95 /* MapSeasonTilePresentationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07A9319CC39884A076CAEAAD /* MapSeasonTilePresentationService.swift */; };
 		22EA9355CC79568490A94348 /* dogAreaUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 626E89852AADA163B53AB03D /* dogAreaUITestsLaunchTests.swift */; };
 		23CB28F896D94B88CEF351F7 /* DesignAuditUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D982F3BFEE53C6D1333FF67 /* DesignAuditUITests.swift */; };
 		23F65BCBE5B31BA26CAFD1A5 /* WalkWidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9750A3E12F227C859B34AF85 /* WalkWidgetBridge.swift */; };
@@ -40,6 +41,7 @@
 		43441ACB76FB0EC0CA929CD8 /* HomeAnimatedSeasonGaugeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26182C87E44E1C0D9629CD03 /* HomeAnimatedSeasonGaugeView.swift */; };
 		45CA89EBC76C1FE5200FD88D /* HomeSelectedPetContextBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B7738E4A04B406F4D70AE19 /* HomeSelectedPetContextBannerView.swift */; };
 		4C8C66B1707DD603359C2C39 /* dogAreaWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E916788F22F3DDF144CCE8D4 /* dogAreaWidgetExtension.appex */; };
+		4CA956518324D7B25056E8F3 /* MapSeasonTileSummaryCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 129A67F7268C49E59BE08698 /* MapSeasonTileSummaryCardView.swift */; };
 		4D741EB8E7EC826A55FCC5A5 /* WalkWidgetSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE5D5C2E004FD37BC9E65790 /* WalkWidgetSnapshotStore.swift */; };
 		4DEEE78A71FF3180E38552A9 /* TerritoryGoalOverviewCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3C5EBC2B900522B927AC9AD /* TerritoryGoalOverviewCardView.swift */; settings = {COMPILER_FLAGS = "-fobjc-arc"; }; };
 		4E216BC4B2B8834C43FD8497 /* HomeQuestWidgetTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E44AFE17DBAADDCF10DB273 /* HomeQuestWidgetTab.swift */; };
@@ -72,9 +74,6 @@
 		8FF1D41BEF381990105583A9 /* HomeQuestCompletionOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BD638413305E314572CB8D9 /* HomeQuestCompletionOverlayView.swift */; };
 		9315EFC2423955870AFCC18F /* HomeViewModel+SessionLifecycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BD9767C8CA8497962E480D3 /* HomeViewModel+SessionLifecycle.swift */; };
 		96C72C23EA46A15543F1A458 /* HomeSeasonResultOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 081AACF20D304E61699D792F /* HomeSeasonResultOverlayView.swift */; };
-		A45800010000000000000001 /* HomeWeatherWalkGuidanceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45800010000000000000011 /* HomeWeatherWalkGuidanceService.swift */; };
-		A45800010000000000000002 /* HomeWeatherGuidancePresentationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45800010000000000000012 /* HomeWeatherGuidancePresentationModels.swift */; };
-		A45800010000000000000003 /* HomeWeatherGuidanceSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45800010000000000000013 /* HomeWeatherGuidanceSheetView.swift */; };
 		9B600C1F7FA22CF43EFC09C2 /* RivalTabViewModel+ModerationAndLocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 488E40F27F962EFAA8A02375 /* RivalTabViewModel+ModerationAndLocation.swift */; };
 		9D8804AD0F127C5DDDAEA597 /* ThumbnailImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2615443270FF3222AEBDE893 /* ThumbnailImageView.swift */; };
 		A0C814D250B8F26BDCC21F66 /* UserProfileImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F73B707BA77AC2C69A6BC62B /* UserProfileImageView.swift */; };
@@ -94,6 +93,71 @@
 		A37600010000000000000026 /* PetManagementEditPetSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37600010000000000000016 /* PetManagementEditPetSheet.swift */; };
 		A37600010000000000000027 /* PetManagementEditPetSheetViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37600010000000000000017 /* PetManagementEditPetSheetViewModel.swift */; };
 		A37600010000000000000028 /* PetManagementSheetViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37600010000000000000018 /* PetManagementSheetViewModel.swift */; };
+		A37700010000000000000001 /* AreaReferenceCatalogInsightService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37700010000000000000011 /* AreaReferenceCatalogInsightService.swift */; };
+		A37700010000000000000002 /* AreaDetailCatalogSnapshotSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37700010000000000000012 /* AreaDetailCatalogSnapshotSectionView.swift */; };
+		A37800010000000000000001 /* AppTabScaffold.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37800010000000000000002 /* AppTabScaffold.swift */; };
+		A37900010000000000000001 /* FeatureRegressionUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37900010000000000000002 /* FeatureRegressionUITests.swift */; };
+		A41000010000000000000021 /* MapViewModel+WidgetRuntimeSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41000010000000000000012 /* MapViewModel+WidgetRuntimeSupport.swift */; };
+		A41000010000000000000022 /* MapViewModel+WatchConnectivitySupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41000010000000000000013 /* MapViewModel+WatchConnectivitySupport.swift */; };
+		A41300010000000000000021 /* SupabaseEdgeSupportServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41300010000000000000011 /* SupabaseEdgeSupportServices.swift */; };
+		A41300010000000000000022 /* SupabaseSyncServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41300010000000000000012 /* SupabaseSyncServices.swift */; };
+		A41300010000000000000023 /* SupabasePresenceAndQuestServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41300010000000000000013 /* SupabasePresenceAndQuestServices.swift */; };
+		A41300010000000000000024 /* SupabaseWidgetAndAreaServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41300010000000000000014 /* SupabaseWidgetAndAreaServices.swift */; };
+		A41300010000000000000025 /* SupabaseAuthAndAssetServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41300010000000000000015 /* SupabaseAuthAndAssetServices.swift */; };
+		A41400010000000000000021 /* TerritoryStatusWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41400010000000000000011 /* TerritoryStatusWidget.swift */; };
+		A41400010000000000000022 /* HotspotStatusWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41400010000000000000012 /* HotspotStatusWidget.swift */; };
+		A41400010000000000000023 /* QuestRivalStatusWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41400010000000000000013 /* QuestRivalStatusWidget.swift */; };
+		A41400010000000000000024 /* WalkLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41400010000000000000014 /* WalkLiveActivityWidget.swift */; };
+		A41400010000000000000025 /* WidgetPresentationSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41400010000000000000015 /* WidgetPresentationSupport.swift */; };
+		A41500010000000000000021 /* UserSessionModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41500010000000000000011 /* UserSessionModels.swift */; };
+		A41500010000000000000022 /* UserDefaultsCodableExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41500010000000000000012 /* UserDefaultsCodableExtensions.swift */; };
+		A41500010000000000000023 /* UserdefaultSetting+SessionFacade.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41500010000000000000013 /* UserdefaultSetting+SessionFacade.swift */; };
+		A41500010000000000000024 /* UserSessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41500010000000000000014 /* UserSessionStore.swift */; };
+		A41500010000000000000025 /* AppPreferenceStores.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41500010000000000000015 /* AppPreferenceStores.swift */; };
+		A41500010000000000000026 /* FeatureFlagStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41500010000000000000016 /* FeatureFlagStore.swift */; };
+		A41500010000000000000027 /* AppMetricTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41500010000000000000017 /* AppMetricTracker.swift */; };
+		A41500010000000000000028 /* SyncOutboxStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41500010000000000000018 /* SyncOutboxStore.swift */; };
+		A45000010000000000000011 /* MapChromeSurfaceStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45000010000000000000001 /* MapChromeSurfaceStyle.swift */; };
+		A45000010000000000000012 /* MapTopChromeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45000010000000000000002 /* MapTopChromeView.swift */; };
+		A45000010000000000000013 /* MapFloatingControlColumnView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45000010000000000000003 /* MapFloatingControlColumnView.swift */; };
+		A45200010000000000000001 /* SettingsEditableImageButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45200010000000000000011 /* SettingsEditableImageButton.swift */; };
+		A45300010000000000000001 /* HomeIndoorMissionPresentationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45300010000000000000011 /* HomeIndoorMissionPresentationService.swift */; };
+		A45400010000000000000011 /* MapBottomControlOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45400010000000000000001 /* MapBottomControlOverlayView.swift */; };
+		A45600010000000000000001 /* HomeWeatherSnapshotPresentationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45600010000000000000011 /* HomeWeatherSnapshotPresentationService.swift */; };
+		A45600010000000000000002 /* HomeWeatherSnapshotCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45600010000000000000012 /* HomeWeatherSnapshotCardView.swift */; };
+		A45600010000000000000003 /* HomeWeatherSnapshotMetricTileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45600010000000000000013 /* HomeWeatherSnapshotMetricTileView.swift */; };
+		A45700010000000000000001 /* WeatherSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45700010000000000000011 /* WeatherSnapshot.swift */; };
+		A45700010000000000000002 /* OpenMeteoWeatherSnapshotProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45700010000000000000012 /* OpenMeteoWeatherSnapshotProvider.swift */; };
+		A45700010000000000000003 /* WeatherSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45700010000000000000013 /* WeatherSnapshotStore.swift */; };
+		A45800010000000000000001 /* HomeWeatherWalkGuidanceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45800010000000000000011 /* HomeWeatherWalkGuidanceService.swift */; };
+		A45800010000000000000002 /* HomeWeatherGuidancePresentationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45800010000000000000012 /* HomeWeatherGuidancePresentationModels.swift */; };
+		A45800010000000000000003 /* HomeWeatherGuidanceSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45800010000000000000013 /* HomeWeatherGuidanceSheetView.swift */; };
+		A47500010000000000000001 /* WeatherReplacementSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = A47500010000000000000011 /* WeatherReplacementSummary.swift */; };
+		A47500010000000000000002 /* WeatherReplacementSummaryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A47500010000000000000012 /* WeatherReplacementSummaryStore.swift */; };
+		A47500010000000000000003 /* SupabaseWeatherReplacementServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = A47500010000000000000013 /* SupabaseWeatherReplacementServices.swift */; };
+		A50000010000000000000001 /* SettingsSurfaceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000010000000000000011 /* SettingsSurfaceModels.swift */; };
+		A50000010000000000000002 /* SettingsProductSurfaceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000010000000000000012 /* SettingsProductSurfaceService.swift */; };
+		A50000010000000000000003 /* SettingsActionSectionCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000010000000000000013 /* SettingsActionSectionCardView.swift */; };
+		A50000010000000000000004 /* SettingsAppInfoCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000010000000000000014 /* SettingsAppInfoCardView.swift */; };
+		A50000010000000000000005 /* SettingsDocumentSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000010000000000000015 /* SettingsDocumentSheetView.swift */; };
+		A50000010000000000000006 /* SettingViewModel+ProductSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000010000000000000016 /* SettingViewModel+ProductSurface.swift */; };
+		A50100010000000000000021 /* MapClusterPulseAnnotationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50100010000000000000011 /* MapClusterPulseAnnotationView.swift */; };
+		A50100010000000000000022 /* MapTrailMarkerAnnotationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50100010000000000000012 /* MapTrailMarkerAnnotationView.swift */; };
+		A50100010000000000000023 /* MapRenderBudgetProbeOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50100010000000000000013 /* MapRenderBudgetProbeOverlayView.swift */; };
+		A50100010000000000000024 /* MapClusterMotionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50100010000000000000014 /* MapClusterMotionState.swift */; };
+		A50200010000000000000001 /* MapWalkPointSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50200010000000000000011 /* MapWalkPointSnapshot.swift */; };
+		A50200010000000000000002 /* MapWalkPointSnapshotService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50200010000000000000012 /* MapWalkPointSnapshotService.swift */; };
+		A50300010000000000000001 /* MapHeatmapSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50300010000000000000011 /* MapHeatmapSnapshot.swift */; };
+		A50300010000000000000002 /* MapHeatmapAggregationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50300010000000000000012 /* MapHeatmapAggregationService.swift */; };
+		A50400010000000000000001 /* MapHotspotClusterSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50400010000000000000011 /* MapHotspotClusterSnapshot.swift */; };
+		A50400010000000000000002 /* MapHotspotClusterRenderingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50400010000000000000012 /* MapHotspotClusterRenderingService.swift */; };
+		A50600010000000000000001 /* HomeIndoorMissionPetContextSnapshotService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50600010000000000000011 /* HomeIndoorMissionPetContextSnapshotService.swift */; };
+		A50700010000000000000001 /* AuthMailActionModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50700010000000000000011 /* AuthMailActionModels.swift */; };
+		A50700010000000000000002 /* AuthMailActionStateMachine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50700010000000000000012 /* AuthMailActionStateMachine.swift */; };
+		A50700010000000000000003 /* AuthMailActionStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50700010000000000000013 /* AuthMailActionStateStore.swift */; };
+		A50700010000000000000004 /* SupabaseAuthMailActionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50700010000000000000014 /* SupabaseAuthMailActionService.swift */; };
+		A50700010000000000000005 /* AuthMailActionStatusCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50700010000000000000015 /* AuthMailActionStatusCardView.swift */; };
+		A52752451CC8AC21215318DE /* HomeAnimatedQuestProgressBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B2B32A76C99094D54CD044D /* HomeAnimatedQuestProgressBarView.swift */; };
 		A52900010000000000000011 /* WalkListPresentationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A52900010000000000000001 /* WalkListPresentationModels.swift */; };
 		A52900010000000000000012 /* WalkListPresentationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A52900010000000000000002 /* WalkListPresentationService.swift */; };
 		A52900010000000000000013 /* WalkListMetricTileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A52900010000000000000003 /* WalkListMetricTileView.swift */; };
@@ -107,36 +171,6 @@
 		A53000010000000000000015 /* WalkListDetailTimelineSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53000010000000000000005 /* WalkListDetailTimelineSectionView.swift */; };
 		A53000010000000000000016 /* WalkListDetailMetaSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53000010000000000000006 /* WalkListDetailMetaSectionView.swift */; };
 		A53000010000000000000017 /* WalkListDetailActionSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53000010000000000000007 /* WalkListDetailActionSectionView.swift */; };
-		A50000010000000000000001 /* SettingsSurfaceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000010000000000000011 /* SettingsSurfaceModels.swift */; };
-		A50000010000000000000002 /* SettingsProductSurfaceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000010000000000000012 /* SettingsProductSurfaceService.swift */; };
-		A50000010000000000000003 /* SettingsActionSectionCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000010000000000000013 /* SettingsActionSectionCardView.swift */; };
-		A50000010000000000000004 /* SettingsAppInfoCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000010000000000000014 /* SettingsAppInfoCardView.swift */; };
-		A50000010000000000000005 /* SettingsDocumentSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000010000000000000015 /* SettingsDocumentSheetView.swift */; };
-		A50000010000000000000006 /* SettingViewModel+ProductSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000010000000000000016 /* SettingViewModel+ProductSurface.swift */; };
-		A45200010000000000000001 /* SettingsEditableImageButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45200010000000000000011 /* SettingsEditableImageButton.swift */; };
-		A45300010000000000000001 /* HomeIndoorMissionPresentationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45300010000000000000011 /* HomeIndoorMissionPresentationService.swift */; };
-		A50600010000000000000001 /* HomeIndoorMissionPetContextSnapshotService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50600010000000000000011 /* HomeIndoorMissionPetContextSnapshotService.swift */; };
-		A50700010000000000000001 /* AuthMailActionModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50700010000000000000011 /* AuthMailActionModels.swift */; };
-		A50700010000000000000002 /* AuthMailActionStateMachine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50700010000000000000012 /* AuthMailActionStateMachine.swift */; };
-		A50700010000000000000003 /* AuthMailActionStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50700010000000000000013 /* AuthMailActionStateStore.swift */; };
-		A50700010000000000000004 /* SupabaseAuthMailActionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50700010000000000000014 /* SupabaseAuthMailActionService.swift */; };
-		A50700010000000000000005 /* AuthMailActionStatusCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50700010000000000000015 /* AuthMailActionStatusCardView.swift */; };
-		A47500010000000000000001 /* WeatherReplacementSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = A47500010000000000000011 /* WeatherReplacementSummary.swift */; };
-		A47500010000000000000002 /* WeatherReplacementSummaryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A47500010000000000000012 /* WeatherReplacementSummaryStore.swift */; };
-		A47500010000000000000003 /* SupabaseWeatherReplacementServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = A47500010000000000000013 /* SupabaseWeatherReplacementServices.swift */; };
-		A45600010000000000000001 /* HomeWeatherSnapshotPresentationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45600010000000000000011 /* HomeWeatherSnapshotPresentationService.swift */; };
-		A45600010000000000000002 /* HomeWeatherSnapshotCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45600010000000000000012 /* HomeWeatherSnapshotCardView.swift */; };
-		A45600010000000000000003 /* HomeWeatherSnapshotMetricTileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45600010000000000000013 /* HomeWeatherSnapshotMetricTileView.swift */; };
-		A45700010000000000000001 /* WeatherSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45700010000000000000011 /* WeatherSnapshot.swift */; };
-		A45700010000000000000002 /* OpenMeteoWeatherSnapshotProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45700010000000000000012 /* OpenMeteoWeatherSnapshotProvider.swift */; };
-		A45700010000000000000003 /* WeatherSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45700010000000000000013 /* WeatherSnapshotStore.swift */; };
-		A37700010000000000000001 /* AreaReferenceCatalogInsightService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37700010000000000000011 /* AreaReferenceCatalogInsightService.swift */; };
-		A37700010000000000000002 /* AreaDetailCatalogSnapshotSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37700010000000000000012 /* AreaDetailCatalogSnapshotSectionView.swift */; };
-		A37800010000000000000001 /* AppTabScaffold.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37800010000000000000002 /* AppTabScaffold.swift */; };
-		A37900010000000000000001 /* FeatureRegressionUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37900010000000000000002 /* FeatureRegressionUITests.swift */; };
-		A41000010000000000000021 /* MapViewModel+WidgetRuntimeSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41000010000000000000012 /* MapViewModel+WidgetRuntimeSupport.swift */; };
-		A41000010000000000000022 /* MapViewModel+WatchConnectivitySupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41000010000000000000013 /* MapViewModel+WatchConnectivitySupport.swift */; };
-		A52752451CC8AC21215318DE /* HomeAnimatedQuestProgressBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B2B32A76C99094D54CD044D /* HomeAnimatedQuestProgressBarView.swift */; };
 		A83350BB79B3CBB09B4C4963 /* RivalTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21CE83B02069A8E4171B35DE /* RivalTabView.swift */; };
 		A9F5F361DE66BF266C36FED0 /* PositionMarkerViewWithSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92C5F96B5D23BD6D36935CA0 /* PositionMarkerViewWithSelection.swift */; };
 		AC04B82FF13073F98E2EE459 /* AreaDetailRecentConquestSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C4863F9787EC32E41B731A8 /* AreaDetailRecentConquestSectionView.swift */; settings = {COMPILER_FLAGS = "-fobjc-arc"; }; };
@@ -161,15 +195,6 @@
 		DA16C1E12B060C7B008FC133 /* SelectedPolygonCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA16C1E02B060C7B008FC133 /* SelectedPolygonCell.swift */; };
 		DA1731712AE200C100EF10C8 /* ProfileRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1731702AE200C100EF10C8 /* ProfileRepository.swift */; };
 		DA1731732AE2017500EF10C8 /* SupabaseInfrastructure.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1731722AE2017500EF10C8 /* SupabaseInfrastructure.swift */; };
-		A41300010000000000000021 /* SupabaseEdgeSupportServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41300010000000000000011 /* SupabaseEdgeSupportServices.swift */; };
-		A41300010000000000000022 /* SupabaseSyncServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41300010000000000000012 /* SupabaseSyncServices.swift */; };
-		A41300010000000000000023 /* SupabasePresenceAndQuestServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41300010000000000000013 /* SupabasePresenceAndQuestServices.swift */; };
-		A41300010000000000000024 /* SupabaseWidgetAndAreaServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41300010000000000000014 /* SupabaseWidgetAndAreaServices.swift */; };
-		A41300010000000000000025 /* SupabaseAuthAndAssetServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41300010000000000000015 /* SupabaseAuthAndAssetServices.swift */; };
-		A50100010000000000000021 /* MapClusterPulseAnnotationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50100010000000000000011 /* MapClusterPulseAnnotationView.swift */; };
-		A50100010000000000000022 /* MapTrailMarkerAnnotationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50100010000000000000012 /* MapTrailMarkerAnnotationView.swift */; };
-		A50100010000000000000023 /* MapRenderBudgetProbeOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50100010000000000000013 /* MapRenderBudgetProbeOverlayView.swift */; };
-		A50100010000000000000024 /* MapClusterMotionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50100010000000000000014 /* MapClusterMotionState.swift */; };
 		DA1731762AE20A4D00EF10C8 /* WalkBackfillDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1731752AE20A4D00EF10C8 /* WalkBackfillDTO.swift */; };
 		DA354FFD2B01DF1F00E4094A /* TimeIntervalExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA354FFC2B01DF1F00E4094A /* TimeIntervalExtensions.swift */; };
 		DA3550022B01E0F900E4094A /* UnderLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3550012B01E0F900E4094A /* UnderLine.swift */; };
@@ -187,18 +212,8 @@
 		DA3F9BA32AE0F14F0048550C /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9B9B2AE0F14F0048550C /* MapView.swift */; };
 		DA3F9BA42AE0F14F0048550C /* MapViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9B9C2AE0F14F0048550C /* MapViewModel.swift */; };
 		DA3F9BA52AE0F14F0048550C /* MapModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9B9D2AE0F14F0048550C /* MapModel.swift */; };
-		A50200010000000000000001 /* MapWalkPointSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50200010000000000000011 /* MapWalkPointSnapshot.swift */; };
-		A50200010000000000000002 /* MapWalkPointSnapshotService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50200010000000000000012 /* MapWalkPointSnapshotService.swift */; };
-		A50300010000000000000001 /* MapHeatmapSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50300010000000000000011 /* MapHeatmapSnapshot.swift */; };
-		A50300010000000000000002 /* MapHeatmapAggregationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50300010000000000000012 /* MapHeatmapAggregationService.swift */; };
-		A50400010000000000000001 /* MapHotspotClusterSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50400010000000000000011 /* MapHotspotClusterSnapshot.swift */; };
-		A50400010000000000000002 /* MapHotspotClusterRenderingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50400010000000000000012 /* MapHotspotClusterRenderingService.swift */; };
 		DA3F9BA62AE0F14F0048550C /* WalkListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9B9F2AE0F14F0048550C /* WalkListView.swift */; };
 		DA3F9BAE2AE0F2410048550C /* ViewUtility.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9BAD2AE0F2410048550C /* ViewUtility.swift */; };
-		A45000010000000000000011 /* MapChromeSurfaceStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45000010000000000000001 /* MapChromeSurfaceStyle.swift */; };
-		A45000010000000000000012 /* MapTopChromeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45000010000000000000002 /* MapTopChromeView.swift */; };
-		A45000010000000000000013 /* MapFloatingControlColumnView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45000010000000000000003 /* MapFloatingControlColumnView.swift */; };
-		A45400010000000000000011 /* MapBottomControlOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45400010000000000000001 /* MapBottomControlOverlayView.swift */; };
 		DA3F9BD32AE0FF8A0048550C /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9BD22AE0FF8A0048550C /* RootView.swift */; };
 		DA3F9BD52AE0FF9B0048550C /* CustomTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9BD42AE0FF9B0048550C /* CustomTabBar.swift */; };
 		DA4513802AFB1EC1007AD69B /* WalkListCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA45137F2AFB1EC1007AD69B /* WalkListCell.swift */; };
@@ -286,14 +301,6 @@
 		DAC19F2C2B0B43BB002FE2E8 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F2B2B0B43BB002FE2E8 /* SignInView.swift */; };
 		DAC19F352B0B898D002FE2E8 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = DAC19F342B0B898D002FE2E8 /* Kingfisher */; };
 		DAC19F382B0B9E81002FE2E8 /* StringExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F372B0B9E81002FE2E8 /* StringExtensions.swift */; };
-		A41500010000000000000021 /* UserSessionModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41500010000000000000011 /* UserSessionModels.swift */; };
-		A41500010000000000000022 /* UserDefaultsCodableExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41500010000000000000012 /* UserDefaultsCodableExtensions.swift */; };
-		A41500010000000000000023 /* UserdefaultSetting+SessionFacade.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41500010000000000000013 /* UserdefaultSetting+SessionFacade.swift */; };
-		A41500010000000000000024 /* UserSessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41500010000000000000014 /* UserSessionStore.swift */; };
-		A41500010000000000000025 /* AppPreferenceStores.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41500010000000000000015 /* AppPreferenceStores.swift */; };
-		A41500010000000000000026 /* FeatureFlagStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41500010000000000000016 /* FeatureFlagStore.swift */; };
-		A41500010000000000000027 /* AppMetricTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41500010000000000000017 /* AppMetricTracker.swift */; };
-		A41500010000000000000028 /* SyncOutboxStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41500010000000000000018 /* SyncOutboxStore.swift */; };
 		DAE140101400000000000001 /* ProfileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE140001400000000000001 /* ProfileStore.swift */; };
 		DAE140101400000000000002 /* PetSelectionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE140001400000000000002 /* PetSelectionStore.swift */; };
 		DAE140101400000000000003 /* WalkSessionMetadataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE140001400000000000003 /* WalkSessionMetadataStore.swift */; };
@@ -306,11 +313,6 @@
 		DAED24FB2AFA1C980044715A /* LottieView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAED24FA2AFA1C980044715A /* LottieView.swift */; };
 		DAED25022AFA1D430044715A /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAED25012AFA1D430044715A /* SplashView.swift */; };
 		DAF0A00A4200000000000001 /* RecoveryIssue.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAF0A0094200000000000001 /* RecoveryIssue.swift */; };
-		A41400010000000000000021 /* TerritoryStatusWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41400010000000000000011 /* TerritoryStatusWidget.swift */; };
-		A41400010000000000000022 /* HotspotStatusWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41400010000000000000012 /* HotspotStatusWidget.swift */; };
-		A41400010000000000000023 /* QuestRivalStatusWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41400010000000000000013 /* QuestRivalStatusWidget.swift */; };
-		A41400010000000000000024 /* WalkLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41400010000000000000014 /* WalkLiveActivityWidget.swift */; };
-		A41400010000000000000025 /* WidgetPresentationSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41400010000000000000015 /* WidgetPresentationSupport.swift */; };
 		DF2852F26614BBE6698C20F6 /* WalkControlWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020BF5BBC530202A931EEA4B /* WalkControlWidgetBundle.swift */; };
 		E1996670DB5AF8DEE4111010 /* RivalTabModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19B0F89F9FF220625F0008DB /* RivalTabModels.swift */; };
 		EE6DAD319CDE2C3D7366547A /* SettingsSeasonProfileSummaryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D5A36B3041BCFBBD4C59BDC /* SettingsSeasonProfileSummaryService.swift */; };
@@ -392,12 +394,14 @@
 		012C06744E292D894BC4661B /* HomeQuestReminderToggleRowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeQuestReminderToggleRowView.swift; sourceTree = "<group>"; };
 		020BF5BBC530202A931EEA4B /* WalkControlWidgetBundle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/WalkControlWidgetBundle.swift; sourceTree = SOURCE_ROOT; };
 		078B330462EB7C7D535B09F1 /* AppleSigninButton.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppleSigninButton.swift; sourceTree = "<group>"; };
+		07A9319CC39884A076CAEAAD /* MapSeasonTilePresentationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MapSeasonTilePresentationService.swift; path = dogArea/Source/Domain/Map/Services/MapSeasonTilePresentationService.swift; sourceTree = "<group>"; };
 		081AACF20D304E61699D792F /* HomeSeasonResultOverlayView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeSeasonResultOverlayView.swift; path = HomeSeasonResultOverlayView.swift; sourceTree = "<group>"; };
 		0922EB392D5A2CF01060C9E6 /* HomeViewModel+IndoorMissionFlow.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "HomeViewModel+IndoorMissionFlow.swift"; sourceTree = "<group>"; };
 		0B86CA6EAAA6D2939A4516B9 /* WalkControlIntents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/WalkControlIntents.swift; sourceTree = SOURCE_ROOT; };
 		0DE6E868D63B43E48E230CFC /* TerritoryGoalActionHintCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TerritoryGoalActionHintCardView.swift; sourceTree = "<group>"; };
 		12397094BA00E47FD8BE76B0 /* TerritoryGoalHeaderSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TerritoryGoalHeaderSectionView.swift; sourceTree = "<group>"; };
 		1256D9DE5D8E63B795C90401 /* TerritoryGoalRecentListSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TerritoryGoalRecentListSectionView.swift; sourceTree = "<group>"; };
+		129A67F7268C49E59BE08698 /* MapSeasonTileSummaryCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MapSeasonTileSummaryCardView.swift; path = dogArea/Views/MapView/MapSubViews/MapSeasonTileSummaryCardView.swift; sourceTree = "<group>"; };
 		163BA83441FB36D4D40305D8 /* HomeSeasonDetailSheetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeSeasonDetailSheetView.swift; path = HomeSeasonDetailSheetView.swift; sourceTree = "<group>"; };
 		1882845C4C15BF66EF58B401 /* HomeSeasonMetricPillView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeSeasonMetricPillView.swift; sourceTree = "<group>"; };
 		19B0F89F9FF220625F0008DB /* RivalTabModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RivalTabModels.swift; path = dogArea/Views/ProfileSettingView/RivalTabModels.swift; sourceTree = "<group>"; };
@@ -418,11 +422,6 @@
 		3B7E3AA66F47CA884B345956 /* AreaDetailReferenceCatalogSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AreaDetailReferenceCatalogSectionView.swift; sourceTree = "<group>"; };
 		4122ED3DF3668790F606D542 /* HomeScrollToTopFloatingButtonView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeScrollToTopFloatingButtonView.swift; sourceTree = "<group>"; };
 		414CE261F0EB5ECCEED97F09 /* MemberUpgradeSheetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MemberUpgradeSheetView.swift; sourceTree = "<group>"; };
-		A41400010000000000000011 /* TerritoryStatusWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/Widgets/TerritoryStatusWidget.swift; sourceTree = SOURCE_ROOT; };
-		A41400010000000000000012 /* HotspotStatusWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/Widgets/HotspotStatusWidget.swift; sourceTree = SOURCE_ROOT; };
-		A41400010000000000000013 /* QuestRivalStatusWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/Widgets/QuestRivalStatusWidget.swift; sourceTree = SOURCE_ROOT; };
-		A41400010000000000000014 /* WalkLiveActivityWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/Widgets/WalkLiveActivityWidget.swift; sourceTree = SOURCE_ROOT; };
-		A41400010000000000000015 /* WidgetPresentationSupport.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/Shared/WidgetPresentationSupport.swift; sourceTree = SOURCE_ROOT; };
 		44BB9B1737AC410B5104ECFD /* AreaDetailHeaderSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AreaDetailHeaderSectionView.swift; sourceTree = "<group>"; };
 		488E40F27F962EFAA8A02375 /* RivalTabViewModel+ModerationAndLocation.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "RivalTabViewModel+ModerationAndLocation.swift"; sourceTree = "<group>"; };
 		4A1B2C487816AA2CCCA6186F /* HomeStatusBannerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeStatusBannerView.swift; path = dogArea/Views/HomeView/HomeSubView/HomeStatusBannerView.swift; sourceTree = "<group>"; };
@@ -477,38 +476,83 @@
 		A37600010000000000000016 /* PetManagementEditPetSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetManagementEditPetSheet.swift; sourceTree = "<group>"; };
 		A37600010000000000000017 /* PetManagementEditPetSheetViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetManagementEditPetSheetViewModel.swift; sourceTree = "<group>"; };
 		A37600010000000000000018 /* PetManagementSheetViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetManagementSheetViewModel.swift; sourceTree = "<group>"; };
-		A50000010000000000000011 /* SettingsSurfaceModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSurfaceModels.swift; sourceTree = "<group>"; };
-		A50000010000000000000012 /* SettingsProductSurfaceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsProductSurfaceService.swift; sourceTree = "<group>"; };
-		A50000010000000000000013 /* SettingsActionSectionCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsActionSectionCardView.swift; sourceTree = "<group>"; };
-		A50000010000000000000014 /* SettingsAppInfoCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsAppInfoCardView.swift; sourceTree = "<group>"; };
-		A50000010000000000000015 /* SettingsDocumentSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsDocumentSheetView.swift; sourceTree = "<group>"; };
-		A50000010000000000000016 /* SettingViewModel+ProductSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SettingViewModel+ProductSurface.swift"; sourceTree = "<group>"; };
-		A45200010000000000000011 /* SettingsEditableImageButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsEditableImageButton.swift; sourceTree = "<group>"; };
-		A45300010000000000000011 /* HomeIndoorMissionPresentationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeIndoorMissionPresentationService.swift; sourceTree = "<group>"; };
-		A50600010000000000000011 /* HomeIndoorMissionPetContextSnapshotService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeIndoorMissionPetContextSnapshotService.swift; sourceTree = "<group>"; };
-		A50700010000000000000011 /* AuthMailActionModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthMailActionModels.swift; sourceTree = "<group>"; };
-		A50700010000000000000012 /* AuthMailActionStateMachine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthMailActionStateMachine.swift; sourceTree = "<group>"; };
-		A50700010000000000000013 /* AuthMailActionStateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthMailActionStateStore.swift; sourceTree = "<group>"; };
-		A50700010000000000000014 /* SupabaseAuthMailActionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseAuthMailActionService.swift; sourceTree = "<group>"; };
-		A50700010000000000000015 /* AuthMailActionStatusCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthMailActionStatusCardView.swift; sourceTree = "<group>"; };
-		A47500010000000000000011 /* WeatherReplacementSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherReplacementSummary.swift; sourceTree = "<group>"; };
-		A47500010000000000000012 /* WeatherReplacementSummaryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherReplacementSummaryStore.swift; sourceTree = "<group>"; };
-		A47500010000000000000013 /* SupabaseWeatherReplacementServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseWeatherReplacementServices.swift; sourceTree = "<group>"; };
-		A45600010000000000000011 /* HomeWeatherSnapshotPresentationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherSnapshotPresentationService.swift; sourceTree = "<group>"; };
-		A45600010000000000000012 /* HomeWeatherSnapshotCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherSnapshotCardView.swift; sourceTree = "<group>"; };
-		A45600010000000000000013 /* HomeWeatherSnapshotMetricTileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherSnapshotMetricTileView.swift; sourceTree = "<group>"; };
-		A45800010000000000000011 /* HomeWeatherWalkGuidanceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherWalkGuidanceService.swift; sourceTree = "<group>"; };
-		A45800010000000000000012 /* HomeWeatherGuidancePresentationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherGuidancePresentationModels.swift; sourceTree = "<group>"; };
-		A45800010000000000000013 /* HomeWeatherGuidanceSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherGuidanceSheetView.swift; sourceTree = "<group>"; };
-		A45700010000000000000011 /* WeatherSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherSnapshot.swift; sourceTree = "<group>"; };
-		A45700010000000000000012 /* OpenMeteoWeatherSnapshotProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenMeteoWeatherSnapshotProvider.swift; sourceTree = "<group>"; };
-		A45700010000000000000013 /* WeatherSnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherSnapshotStore.swift; sourceTree = "<group>"; };
 		A37700010000000000000011 /* AreaReferenceCatalogInsightService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaReferenceCatalogInsightService.swift; sourceTree = "<group>"; };
 		A37700010000000000000012 /* AreaDetailCatalogSnapshotSectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaDetailCatalogSnapshotSectionView.swift; sourceTree = "<group>"; };
 		A37800010000000000000002 /* AppTabScaffold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTabScaffold.swift; sourceTree = "<group>"; };
 		A37900010000000000000002 /* FeatureRegressionUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FeatureRegressionUITests.swift; sourceTree = "<group>"; };
 		A41000010000000000000012 /* MapViewModel+WidgetRuntimeSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MapViewModel+WidgetRuntimeSupport.swift"; sourceTree = "<group>"; };
 		A41000010000000000000013 /* MapViewModel+WatchConnectivitySupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MapViewModel+WatchConnectivitySupport.swift"; sourceTree = "<group>"; };
+		A41300010000000000000011 /* SupabaseEdgeSupportServices.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SupabaseEdgeSupportServices.swift; sourceTree = "<group>"; };
+		A41300010000000000000012 /* SupabaseSyncServices.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SupabaseSyncServices.swift; sourceTree = "<group>"; };
+		A41300010000000000000013 /* SupabasePresenceAndQuestServices.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SupabasePresenceAndQuestServices.swift; sourceTree = "<group>"; };
+		A41300010000000000000014 /* SupabaseWidgetAndAreaServices.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SupabaseWidgetAndAreaServices.swift; sourceTree = "<group>"; };
+		A41300010000000000000015 /* SupabaseAuthAndAssetServices.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SupabaseAuthAndAssetServices.swift; sourceTree = "<group>"; };
+		A41400010000000000000011 /* TerritoryStatusWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/Widgets/TerritoryStatusWidget.swift; sourceTree = SOURCE_ROOT; };
+		A41400010000000000000012 /* HotspotStatusWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/Widgets/HotspotStatusWidget.swift; sourceTree = SOURCE_ROOT; };
+		A41400010000000000000013 /* QuestRivalStatusWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/Widgets/QuestRivalStatusWidget.swift; sourceTree = SOURCE_ROOT; };
+		A41400010000000000000014 /* WalkLiveActivityWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/Widgets/WalkLiveActivityWidget.swift; sourceTree = SOURCE_ROOT; };
+		A41400010000000000000015 /* WidgetPresentationSupport.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogAreaWidgetExtension/Shared/WidgetPresentationSupport.swift; sourceTree = SOURCE_ROOT; };
+		A41500010000000000000011 /* UserSessionModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSessionModels.swift; sourceTree = "<group>"; };
+		A41500010000000000000012 /* UserDefaultsCodableExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDefaultsCodableExtensions.swift; sourceTree = "<group>"; };
+		A41500010000000000000013 /* UserdefaultSetting+SessionFacade.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UserdefaultSetting+SessionFacade.swift"; sourceTree = "<group>"; };
+		A41500010000000000000014 /* UserSessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSessionStore.swift; sourceTree = "<group>"; };
+		A41500010000000000000015 /* AppPreferenceStores.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPreferenceStores.swift; sourceTree = "<group>"; };
+		A41500010000000000000016 /* FeatureFlagStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureFlagStore.swift; sourceTree = "<group>"; };
+		A41500010000000000000017 /* AppMetricTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppMetricTracker.swift; sourceTree = "<group>"; };
+		A41500010000000000000018 /* SyncOutboxStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncOutboxStore.swift; sourceTree = "<group>"; };
+		A45000010000000000000001 /* MapChromeSurfaceStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapChromeSurfaceStyle.swift; sourceTree = "<group>"; };
+		A45000010000000000000002 /* MapTopChromeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapTopChromeView.swift; sourceTree = "<group>"; };
+		A45000010000000000000003 /* MapFloatingControlColumnView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapFloatingControlColumnView.swift; sourceTree = "<group>"; };
+		A45200010000000000000011 /* SettingsEditableImageButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsEditableImageButton.swift; sourceTree = "<group>"; };
+		A45300010000000000000011 /* HomeIndoorMissionPresentationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeIndoorMissionPresentationService.swift; sourceTree = "<group>"; };
+		A45400010000000000000001 /* MapBottomControlOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapBottomControlOverlayView.swift; sourceTree = "<group>"; };
+		A45600010000000000000011 /* HomeWeatherSnapshotPresentationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherSnapshotPresentationService.swift; sourceTree = "<group>"; };
+		A45600010000000000000012 /* HomeWeatherSnapshotCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherSnapshotCardView.swift; sourceTree = "<group>"; };
+		A45600010000000000000013 /* HomeWeatherSnapshotMetricTileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherSnapshotMetricTileView.swift; sourceTree = "<group>"; };
+		A45700010000000000000011 /* WeatherSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherSnapshot.swift; sourceTree = "<group>"; };
+		A45700010000000000000012 /* OpenMeteoWeatherSnapshotProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenMeteoWeatherSnapshotProvider.swift; sourceTree = "<group>"; };
+		A45700010000000000000013 /* WeatherSnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherSnapshotStore.swift; sourceTree = "<group>"; };
+		A45800010000000000000011 /* HomeWeatherWalkGuidanceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherWalkGuidanceService.swift; sourceTree = "<group>"; };
+		A45800010000000000000012 /* HomeWeatherGuidancePresentationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherGuidancePresentationModels.swift; sourceTree = "<group>"; };
+		A45800010000000000000013 /* HomeWeatherGuidanceSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherGuidanceSheetView.swift; sourceTree = "<group>"; };
+		A47500010000000000000011 /* WeatherReplacementSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherReplacementSummary.swift; sourceTree = "<group>"; };
+		A47500010000000000000012 /* WeatherReplacementSummaryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherReplacementSummaryStore.swift; sourceTree = "<group>"; };
+		A47500010000000000000013 /* SupabaseWeatherReplacementServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseWeatherReplacementServices.swift; sourceTree = "<group>"; };
+		A50000010000000000000011 /* SettingsSurfaceModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSurfaceModels.swift; sourceTree = "<group>"; };
+		A50000010000000000000012 /* SettingsProductSurfaceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsProductSurfaceService.swift; sourceTree = "<group>"; };
+		A50000010000000000000013 /* SettingsActionSectionCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsActionSectionCardView.swift; sourceTree = "<group>"; };
+		A50000010000000000000014 /* SettingsAppInfoCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsAppInfoCardView.swift; sourceTree = "<group>"; };
+		A50000010000000000000015 /* SettingsDocumentSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsDocumentSheetView.swift; sourceTree = "<group>"; };
+		A50000010000000000000016 /* SettingViewModel+ProductSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SettingViewModel+ProductSurface.swift"; sourceTree = "<group>"; };
+		A50100010000000000000011 /* MapClusterPulseAnnotationView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MapClusterPulseAnnotationView.swift; sourceTree = "<group>"; };
+		A50100010000000000000012 /* MapTrailMarkerAnnotationView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MapTrailMarkerAnnotationView.swift; sourceTree = "<group>"; };
+		A50100010000000000000013 /* MapRenderBudgetProbeOverlayView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MapRenderBudgetProbeOverlayView.swift; sourceTree = "<group>"; };
+		A50100010000000000000014 /* MapClusterMotionState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MapClusterMotionState.swift; sourceTree = "<group>"; };
+		A50200010000000000000011 /* MapWalkPointSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapWalkPointSnapshot.swift; sourceTree = "<group>"; };
+		A50200010000000000000012 /* MapWalkPointSnapshotService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapWalkPointSnapshotService.swift; sourceTree = "<group>"; };
+		A50300010000000000000011 /* MapHeatmapSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapHeatmapSnapshot.swift; sourceTree = "<group>"; };
+		A50300010000000000000012 /* MapHeatmapAggregationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapHeatmapAggregationService.swift; sourceTree = "<group>"; };
+		A50400010000000000000011 /* MapHotspotClusterSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapHotspotClusterSnapshot.swift; sourceTree = "<group>"; };
+		A50400010000000000000012 /* MapHotspotClusterRenderingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapHotspotClusterRenderingService.swift; sourceTree = "<group>"; };
+		A50600010000000000000011 /* HomeIndoorMissionPetContextSnapshotService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeIndoorMissionPetContextSnapshotService.swift; sourceTree = "<group>"; };
+		A50700010000000000000011 /* AuthMailActionModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthMailActionModels.swift; sourceTree = "<group>"; };
+		A50700010000000000000012 /* AuthMailActionStateMachine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthMailActionStateMachine.swift; sourceTree = "<group>"; };
+		A50700010000000000000013 /* AuthMailActionStateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthMailActionStateStore.swift; sourceTree = "<group>"; };
+		A50700010000000000000014 /* SupabaseAuthMailActionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseAuthMailActionService.swift; sourceTree = "<group>"; };
+		A50700010000000000000015 /* AuthMailActionStatusCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthMailActionStatusCardView.swift; sourceTree = "<group>"; };
+		A52900010000000000000001 /* WalkListPresentationModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListPresentationModels.swift; sourceTree = "<group>"; };
+		A52900010000000000000002 /* WalkListPresentationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListPresentationService.swift; sourceTree = "<group>"; };
+		A52900010000000000000003 /* WalkListMetricTileView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListMetricTileView.swift; sourceTree = "<group>"; };
+		A52900010000000000000004 /* WalkListDashboardHeaderView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDashboardHeaderView.swift; sourceTree = "<group>"; };
+		A52900010000000000000005 /* WalkListStatusCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListStatusCardView.swift; sourceTree = "<group>"; };
+		A52900010000000000000006 /* WalkListSectionHeaderView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListSectionHeaderView.swift; sourceTree = "<group>"; };
+		A53000010000000000000001 /* WalkListDetailPresentationModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDetailPresentationModels.swift; sourceTree = "<group>"; };
+		A53000010000000000000002 /* WalkListDetailPresentationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDetailPresentationService.swift; sourceTree = "<group>"; };
+		A53000010000000000000003 /* WalkListDetailHeroSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDetailHeroSectionView.swift; sourceTree = "<group>"; };
+		A53000010000000000000004 /* WalkListDetailMapSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDetailMapSectionView.swift; sourceTree = "<group>"; };
+		A53000010000000000000005 /* WalkListDetailTimelineSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDetailTimelineSectionView.swift; sourceTree = "<group>"; };
+		A53000010000000000000006 /* WalkListDetailMetaSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDetailMetaSectionView.swift; sourceTree = "<group>"; };
+		A53000010000000000000007 /* WalkListDetailActionSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDetailActionSectionView.swift; sourceTree = "<group>"; };
 		A775802DB2A590A7C7DA0978 /* WalkDetailViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WalkDetailViewModel.swift; path = dogArea/Views/MapView/WalkDetailViewModel.swift; sourceTree = "<group>"; };
 		B3C5EBC2B900522B927AC9AD /* TerritoryGoalOverviewCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TerritoryGoalOverviewCardView.swift; sourceTree = "<group>"; };
 		B76E1FA7BD23351B788C716B /* AreaDetailViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AreaDetailViewModel.swift; sourceTree = "<group>"; };
@@ -531,28 +575,6 @@
 		DA16C1E02B060C7B008FC133 /* SelectedPolygonCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectedPolygonCell.swift; sourceTree = "<group>"; };
 		DA1731702AE200C100EF10C8 /* ProfileRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileRepository.swift; sourceTree = "<group>"; };
 		DA1731722AE2017500EF10C8 /* SupabaseInfrastructure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Infrastructure/Supabase/SupabaseInfrastructure.swift; sourceTree = "<group>"; };
-		A41300010000000000000011 /* SupabaseEdgeSupportServices.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SupabaseEdgeSupportServices.swift; sourceTree = "<group>"; };
-		A41300010000000000000012 /* SupabaseSyncServices.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SupabaseSyncServices.swift; sourceTree = "<group>"; };
-		A41300010000000000000013 /* SupabasePresenceAndQuestServices.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SupabasePresenceAndQuestServices.swift; sourceTree = "<group>"; };
-		A41300010000000000000014 /* SupabaseWidgetAndAreaServices.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SupabaseWidgetAndAreaServices.swift; sourceTree = "<group>"; };
-		A41300010000000000000015 /* SupabaseAuthAndAssetServices.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SupabaseAuthAndAssetServices.swift; sourceTree = "<group>"; };
-		A50100010000000000000011 /* MapClusterPulseAnnotationView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MapClusterPulseAnnotationView.swift; sourceTree = "<group>"; };
-		A50100010000000000000012 /* MapTrailMarkerAnnotationView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MapTrailMarkerAnnotationView.swift; sourceTree = "<group>"; };
-		A50100010000000000000013 /* MapRenderBudgetProbeOverlayView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MapRenderBudgetProbeOverlayView.swift; sourceTree = "<group>"; };
-		A50100010000000000000014 /* MapClusterMotionState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MapClusterMotionState.swift; sourceTree = "<group>"; };
-		A52900010000000000000001 /* WalkListPresentationModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListPresentationModels.swift; sourceTree = "<group>"; };
-		A52900010000000000000002 /* WalkListPresentationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListPresentationService.swift; sourceTree = "<group>"; };
-		A52900010000000000000003 /* WalkListMetricTileView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListMetricTileView.swift; sourceTree = "<group>"; };
-		A52900010000000000000004 /* WalkListDashboardHeaderView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDashboardHeaderView.swift; sourceTree = "<group>"; };
-		A52900010000000000000005 /* WalkListStatusCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListStatusCardView.swift; sourceTree = "<group>"; };
-		A52900010000000000000006 /* WalkListSectionHeaderView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListSectionHeaderView.swift; sourceTree = "<group>"; };
-		A53000010000000000000001 /* WalkListDetailPresentationModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDetailPresentationModels.swift; sourceTree = "<group>"; };
-		A53000010000000000000002 /* WalkListDetailPresentationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDetailPresentationService.swift; sourceTree = "<group>"; };
-		A53000010000000000000003 /* WalkListDetailHeroSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDetailHeroSectionView.swift; sourceTree = "<group>"; };
-		A53000010000000000000004 /* WalkListDetailMapSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDetailMapSectionView.swift; sourceTree = "<group>"; };
-		A53000010000000000000005 /* WalkListDetailTimelineSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDetailTimelineSectionView.swift; sourceTree = "<group>"; };
-		A53000010000000000000006 /* WalkListDetailMetaSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDetailMetaSectionView.swift; sourceTree = "<group>"; };
-		A53000010000000000000007 /* WalkListDetailActionSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDetailActionSectionView.swift; sourceTree = "<group>"; };
 		DA1731752AE20A4D00EF10C8 /* WalkBackfillDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Data/Walk/WalkBackfillDTO.swift; sourceTree = "<group>"; };
 		DA27AD832B061A1B001283D4 /* dogAreaRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = dogAreaRelease.entitlements; sourceTree = "<group>"; };
 		DA27AD842B061AC5001283D4 /* dogAreaDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = dogAreaDebug.entitlements; sourceTree = "<group>"; };
@@ -574,18 +596,8 @@
 		DA3F9B9B2AE0F14F0048550C /* MapView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MapView.swift; sourceTree = "<group>"; };
 		DA3F9B9C2AE0F14F0048550C /* MapViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MapViewModel.swift; sourceTree = "<group>"; };
 		DA3F9B9D2AE0F14F0048550C /* MapModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MapModel.swift; sourceTree = "<group>"; };
-		A50200010000000000000011 /* MapWalkPointSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapWalkPointSnapshot.swift; sourceTree = "<group>"; };
-		A50200010000000000000012 /* MapWalkPointSnapshotService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapWalkPointSnapshotService.swift; sourceTree = "<group>"; };
-		A50300010000000000000011 /* MapHeatmapSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapHeatmapSnapshot.swift; sourceTree = "<group>"; };
-		A50300010000000000000012 /* MapHeatmapAggregationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapHeatmapAggregationService.swift; sourceTree = "<group>"; };
-		A50400010000000000000011 /* MapHotspotClusterSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapHotspotClusterSnapshot.swift; sourceTree = "<group>"; };
-		A50400010000000000000012 /* MapHotspotClusterRenderingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapHotspotClusterRenderingService.swift; sourceTree = "<group>"; };
 		DA3F9B9F2AE0F14F0048550C /* WalkListView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WalkListView.swift; sourceTree = "<group>"; };
 		DA3F9BAD2AE0F2410048550C /* ViewUtility.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ViewUtility.swift; sourceTree = "<group>"; };
-		A45000010000000000000001 /* MapChromeSurfaceStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapChromeSurfaceStyle.swift; sourceTree = "<group>"; };
-		A45000010000000000000002 /* MapTopChromeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapTopChromeView.swift; sourceTree = "<group>"; };
-		A45000010000000000000003 /* MapFloatingControlColumnView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapFloatingControlColumnView.swift; sourceTree = "<group>"; };
-		A45400010000000000000001 /* MapBottomControlOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapBottomControlOverlayView.swift; sourceTree = "<group>"; };
 		DA3F9BD22AE0FF8A0048550C /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		DA3F9BD42AE0FF9B0048550C /* CustomTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTabBar.swift; sourceTree = "<group>"; };
 		DA45137D2AFA6DC1007AD69B /* OpenAIConfiguration.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = OpenAIConfiguration.xcconfig; sourceTree = "<group>"; };
@@ -661,14 +673,6 @@
 		DAC19F272B0B37DA002FE2E8 /* LoadingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingViewModel.swift; sourceTree = "<group>"; };
 		DAC19F2B2B0B43BB002FE2E8 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
 		DAC19F372B0B9E81002FE2E8 /* StringExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringExtensions.swift; sourceTree = "<group>"; };
-		A41500010000000000000011 /* UserSessionModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSessionModels.swift; sourceTree = "<group>"; };
-		A41500010000000000000012 /* UserDefaultsCodableExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDefaultsCodableExtensions.swift; sourceTree = "<group>"; };
-		A41500010000000000000013 /* UserdefaultSetting+SessionFacade.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UserdefaultSetting+SessionFacade.swift"; sourceTree = "<group>"; };
-		A41500010000000000000014 /* UserSessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSessionStore.swift; sourceTree = "<group>"; };
-		A41500010000000000000015 /* AppPreferenceStores.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPreferenceStores.swift; sourceTree = "<group>"; };
-		A41500010000000000000016 /* FeatureFlagStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureFlagStore.swift; sourceTree = "<group>"; };
-		A41500010000000000000017 /* AppMetricTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppMetricTracker.swift; sourceTree = "<group>"; };
-		A41500010000000000000018 /* SyncOutboxStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncOutboxStore.swift; sourceTree = "<group>"; };
 		DAE140001400000000000001 /* ProfileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileStore.swift; sourceTree = "<group>"; };
 		DAE140001400000000000002 /* PetSelectionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetSelectionStore.swift; sourceTree = "<group>"; };
 		DAE140001400000000000003 /* WalkSessionMetadataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkSessionMetadataStore.swift; sourceTree = "<group>"; };
@@ -814,26 +818,6 @@
 			path = Sections;
 			sourceTree = "<group>";
 		};
-		A41400010000000000000001 /* Widgets */ = {
-			isa = PBXGroup;
-			children = (
-				2D030E0DFD8D49558700ACB1 /* WalkControlWidget.swift */,
-				A41400010000000000000011 /* TerritoryStatusWidget.swift */,
-				A41400010000000000000012 /* HotspotStatusWidget.swift */,
-				A41400010000000000000013 /* QuestRivalStatusWidget.swift */,
-				A41400010000000000000014 /* WalkLiveActivityWidget.swift */,
-			);
-			path = Widgets;
-			sourceTree = "<group>";
-		};
-		A41400010000000000000002 /* Shared */ = {
-			isa = PBXGroup;
-			children = (
-				A41400010000000000000015 /* WidgetPresentationSupport.swift */,
-			);
-			path = Shared;
-			sourceTree = "<group>";
-		};
 		739206D93B3E1667D2A58593 /* dogAreaWidgetExtension */ = {
 			isa = PBXGroup;
 			children = (
@@ -956,6 +940,118 @@
 			);
 			name = MapViewModelSupport;
 			path = MapViewModelSupport;
+			sourceTree = "<group>";
+		};
+		A41300010000000000000001 /* SupabaseServices */ = {
+			isa = PBXGroup;
+			children = (
+				A41300010000000000000011 /* SupabaseEdgeSupportServices.swift */,
+				A41300010000000000000012 /* SupabaseSyncServices.swift */,
+				A41300010000000000000013 /* SupabasePresenceAndQuestServices.swift */,
+				A41300010000000000000014 /* SupabaseWidgetAndAreaServices.swift */,
+				A41300010000000000000015 /* SupabaseAuthAndAssetServices.swift */,
+				A47500010000000000000013 /* SupabaseWeatherReplacementServices.swift */,
+				A50700010000000000000014 /* SupabaseAuthMailActionService.swift */,
+			);
+			name = SupabaseServices;
+			path = Infrastructure/Supabase/Services;
+			sourceTree = "<group>";
+		};
+		A41400010000000000000001 /* Widgets */ = {
+			isa = PBXGroup;
+			children = (
+				2D030E0DFD8D49558700ACB1 /* WalkControlWidget.swift */,
+				A41400010000000000000011 /* TerritoryStatusWidget.swift */,
+				A41400010000000000000012 /* HotspotStatusWidget.swift */,
+				A41400010000000000000013 /* QuestRivalStatusWidget.swift */,
+				A41400010000000000000014 /* WalkLiveActivityWidget.swift */,
+			);
+			path = Widgets;
+			sourceTree = "<group>";
+		};
+		A41400010000000000000002 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				A41400010000000000000015 /* WidgetPresentationSupport.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		A41500010000000000000001 /* UserDefaultsSupport */ = {
+			isa = PBXGroup;
+			children = (
+				A41500010000000000000011 /* UserSessionModels.swift */,
+				A41500010000000000000012 /* UserDefaultsCodableExtensions.swift */,
+				A41500010000000000000013 /* UserdefaultSetting+SessionFacade.swift */,
+				A41500010000000000000014 /* UserSessionStore.swift */,
+				A41500010000000000000015 /* AppPreferenceStores.swift */,
+				A41500010000000000000016 /* FeatureFlagStore.swift */,
+				A41500010000000000000017 /* AppMetricTracker.swift */,
+				A50700010000000000000013 /* AuthMailActionStateStore.swift */,
+				A41500010000000000000018 /* SyncOutboxStore.swift */,
+			);
+			path = UserDefaultsSupport;
+			sourceTree = "<group>";
+		};
+		A45700010000000000000021 /* Weather */ = {
+			isa = PBXGroup;
+			children = (
+				A45700010000000000000022 /* Models */,
+				A45700010000000000000023 /* Services */,
+				A45700010000000000000024 /* Stores */,
+			);
+			path = Weather;
+			sourceTree = "<group>";
+		};
+		A45700010000000000000022 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A45700010000000000000011 /* WeatherSnapshot.swift */,
+				A47500010000000000000011 /* WeatherReplacementSummary.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		A45700010000000000000023 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				A45700010000000000000012 /* OpenMeteoWeatherSnapshotProvider.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		A45700010000000000000024 /* Stores */ = {
+			isa = PBXGroup;
+			children = (
+				A45700010000000000000013 /* WeatherSnapshotStore.swift */,
+				A47500010000000000000012 /* WeatherReplacementSummaryStore.swift */,
+			);
+			path = Stores;
+			sourceTree = "<group>";
+		};
+		A50700010000000000000021 /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				A50700010000000000000022 /* Models */,
+				A50700010000000000000023 /* Services */,
+			);
+			path = Auth;
+			sourceTree = "<group>";
+		};
+		A50700010000000000000022 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A50700010000000000000011 /* AuthMailActionModels.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		A50700010000000000000023 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				A50700010000000000000012 /* AuthMailActionStateMachine.swift */,
+			);
+			path = Services;
 			sourceTree = "<group>";
 		};
 		AEEB7566FB4DD44BCB259429 /* SettingViewModelSupport */ = {
@@ -1113,36 +1209,6 @@
 			path = WalkListView;
 			sourceTree = "<group>";
 		};
-		A41300010000000000000001 /* SupabaseServices */ = {
-			isa = PBXGroup;
-			children = (
-				A41300010000000000000011 /* SupabaseEdgeSupportServices.swift */,
-				A41300010000000000000012 /* SupabaseSyncServices.swift */,
-				A41300010000000000000013 /* SupabasePresenceAndQuestServices.swift */,
-				A41300010000000000000014 /* SupabaseWidgetAndAreaServices.swift */,
-				A41300010000000000000015 /* SupabaseAuthAndAssetServices.swift */,
-				A47500010000000000000013 /* SupabaseWeatherReplacementServices.swift */,
-				A50700010000000000000014 /* SupabaseAuthMailActionService.swift */,
-			);
-			path = Infrastructure/Supabase/Services;
-			sourceTree = "<group>";
-		};
-		A41500010000000000000001 /* UserDefaultsSupport */ = {
-			isa = PBXGroup;
-			children = (
-				A41500010000000000000011 /* UserSessionModels.swift */,
-				A41500010000000000000012 /* UserDefaultsCodableExtensions.swift */,
-				A41500010000000000000013 /* UserdefaultSetting+SessionFacade.swift */,
-				A41500010000000000000014 /* UserSessionStore.swift */,
-				A41500010000000000000015 /* AppPreferenceStores.swift */,
-				A41500010000000000000016 /* FeatureFlagStore.swift */,
-				A41500010000000000000017 /* AppMetricTracker.swift */,
-				A50700010000000000000013 /* AuthMailActionStateStore.swift */,
-				A41500010000000000000018 /* SyncOutboxStore.swift */,
-			);
-			path = UserDefaultsSupport;
-			sourceTree = "<group>";
-		};
 		DA3F9BAC2AE0F2410048550C /* Source */ = {
 			isa = PBXGroup;
 			children = (
@@ -1261,6 +1327,8 @@
 				E4548C0C604B933CC43644FA /* RivalNetworkErrorInterpreter.swift */,
 				8F2B2A868B6FD9035AC5214F /* RivalHotspotSummaryBuilder.swift */,
 				739206D93B3E1667D2A58593 /* dogAreaWidgetExtension */,
+				07A9319CC39884A076CAEAAD /* MapSeasonTilePresentationService.swift */,
+				129A67F7268C49E59BE08698 /* MapSeasonTileSummaryCardView.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -1444,31 +1512,6 @@
 			path = Domain;
 			sourceTree = "<group>";
 		};
-		A50700010000000000000021 /* Auth */ = {
-			isa = PBXGroup;
-			children = (
-				A50700010000000000000022 /* Models */,
-				A50700010000000000000023 /* Services */,
-			);
-			path = Auth;
-			sourceTree = "<group>";
-		};
-		A50700010000000000000022 /* Models */ = {
-			isa = PBXGroup;
-			children = (
-				A50700010000000000000011 /* AuthMailActionModels.swift */,
-			);
-			path = Models;
-			sourceTree = "<group>";
-		};
-		A50700010000000000000023 /* Services */ = {
-			isa = PBXGroup;
-			children = (
-				A50700010000000000000012 /* AuthMailActionStateMachine.swift */,
-			);
-			path = Services;
-			sourceTree = "<group>";
-		};
 		DAF0A0024200000000000001 /* Home */ = {
 			isa = PBXGroup;
 			children = (
@@ -1502,42 +1545,6 @@
 				DAF0A0064200000000000001 /* Services */,
 			);
 			path = Map;
-			sourceTree = "<group>";
-		};
-		A45700010000000000000021 /* Weather */ = {
-			isa = PBXGroup;
-			children = (
-				A45700010000000000000022 /* Models */,
-				A45700010000000000000023 /* Services */,
-				A45700010000000000000024 /* Stores */,
-			);
-			path = Weather;
-			sourceTree = "<group>";
-		};
-		A45700010000000000000022 /* Models */ = {
-			isa = PBXGroup;
-			children = (
-				A45700010000000000000011 /* WeatherSnapshot.swift */,
-				A47500010000000000000011 /* WeatherReplacementSummary.swift */,
-			);
-			path = Models;
-			sourceTree = "<group>";
-		};
-		A45700010000000000000023 /* Services */ = {
-			isa = PBXGroup;
-			children = (
-				A45700010000000000000012 /* OpenMeteoWeatherSnapshotProvider.swift */,
-			);
-			path = Services;
-			sourceTree = "<group>";
-		};
-		A45700010000000000000024 /* Stores */ = {
-			isa = PBXGroup;
-			children = (
-				A45700010000000000000013 /* WeatherSnapshotStore.swift */,
-				A47500010000000000000012 /* WeatherReplacementSummaryStore.swift */,
-			);
-			path = Stores;
 			sourceTree = "<group>";
 		};
 		DAF0A0054200000000000001 /* Models */ = {
@@ -2105,6 +2112,8 @@
 				71C13F32C41AB0D41B9E1BC5 /* RivalTabViewModel+SessionLifecycle.swift in Sources */,
 				015946C5C501B37603E066FD /* RivalTabViewModel+SharingAndLeaderboard.swift in Sources */,
 				9B600C1F7FA22CF43EFC09C2 /* RivalTabViewModel+ModerationAndLocation.swift in Sources */,
+				220A5C5B593A98C896A1CC95 /* MapSeasonTilePresentationService.swift in Sources */,
+				4CA956518324D7B25056E8F3 /* MapSeasonTileSummaryCardView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

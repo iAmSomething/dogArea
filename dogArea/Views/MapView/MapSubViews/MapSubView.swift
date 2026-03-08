@@ -51,13 +51,22 @@ struct MapSubView: View {
                         .shadow(radius: 5)
                 }
             }
-            if viewModel.isHeatmapVisibleInMapUI {
-                ForEach(viewModel.heatmapCells) { cell in
-                    MapCircle(center: cell.centerCoordinate, radius: 75)
+            if viewModel.isSeasonTileMapVisible {
+                ForEach(viewModel.seasonTileMapTiles) { tile in
+                    MapPolygon(tile.polygon)
                         .foregroundStyle(
-                            viewModel.heatmapColor(for: cell.score)
-                                .opacity(viewModel.heatmapOpacity(for: cell.score))
+                            viewModel.seasonTileFillColor(for: tile)
+                                .opacity(viewModel.seasonTileFillOpacity(for: tile))
                         )
+                        .annotationTitles(.hidden)
+                }
+                ForEach(viewModel.seasonTileMapTiles) { tile in
+                    MapPolygon(tile.polygon)
+                        .stroke(
+                            viewModel.seasonTileStrokeColor(for: tile),
+                            style: viewModel.seasonTileStrokeStyle(for: tile)
+                        )
+                        .annotationTitles(.hidden)
                 }
             }
             if viewModel.isNearbyHotspotFeatureAvailable && viewModel.nearbyHotspotEnabled {

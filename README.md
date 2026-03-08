@@ -55,6 +55,7 @@
 - 날씨 canonical server state v1: `docs/weather-canonical-server-state-v1.md`
 - 홈 refresh 중복 제거 umbrella v1: `docs/home-refresh-dedup-lightweight-v1.md`
 - 맵 파생 계산 경량화 umbrella v1: `docs/map-derived-calculation-lightweight-v1.md`
+- 맵 시즌 점령 지도 시각화 v1: `docs/map-season-tile-occupation-visualization-v1.md`
 - 맵 heatmap trigger gating v1: `docs/map-heatmap-trigger-gating-v1.md`
 - 맵 route/mark snapshot cache v1: `docs/map-walk-point-snapshot-cache-v1.md`
 - 맵 hotspot cluster trigger gating v1: `docs/map-hotspot-cluster-trigger-gating-v1.md`
