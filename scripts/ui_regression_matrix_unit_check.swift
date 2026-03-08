@@ -30,6 +30,8 @@ for token in [
     "FR-MAP-001",
     "FR-MAP-002",
     "FR-MAP-003",
+    "FR-WALK-001",
+    "FR-WALK-002",
     "FR-GOAL-001",
     "FR-HOME-QUEST-001",
     "FR-AUTH-001",
@@ -61,6 +63,7 @@ for testName in [
     "testFeatureRegression_MapAddPointControlRemainsHittableWhileWalking",
     "testFeatureRegression_MapStopAlertPresentsClearActionHierarchy",
     "testFeatureRegression_WalkListPrimaryContentIsNotObscuredByTabBar",
+    "testFeatureRegression_WalkListHeaderSurfacesOverviewAndContextCards",
     "testFeatureRegression_TerritoryGoalNavigationHidesAndRestoresTabBar",
     "testFeatureRegression_HomeMissionLifecycleSeparatesCompletedMissionState",
     "testFeatureRegression_SettingsAuthEntryPoints",
@@ -82,6 +85,10 @@ assertTrue(
 assertTrue(
     featureRegressionScript.contains("testFeatureRegression_WalkListPrimaryContentIsNotObscuredByTabBar"),
     "run_feature_regression_ui_tests.sh should run the walk list tabbar regression"
+)
+assertTrue(
+    featureRegressionScript.contains("testFeatureRegression_WalkListHeaderSurfacesOverviewAndContextCards"),
+    "run_feature_regression_ui_tests.sh should run the walk list header hub regression"
 )
 assertTrue(
     featureRegressionScript.contains("testFeatureRegression_MapAddPointControlRemainsHittableWhileWalking"),

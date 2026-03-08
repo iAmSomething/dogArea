@@ -30,7 +30,11 @@ let homeVM = loadMany([
 ])
 let homeView = load("dogArea/Views/HomeView/HomeView.swift")
 let walkListVM = load("dogArea/Views/WalkListView/WalkListViewModel.swift")
-let walkListView = load("dogArea/Views/WalkListView/WalkListView.swift")
+let walkListView = loadMany([
+    "dogArea/Views/WalkListView/WalkListView.swift",
+    "dogArea/Views/WalkListView/WalkListPresentationService.swift",
+    "dogArea/Views/WalkListView/WalkListSubView/WalkListDashboardHeaderView.swift"
+])
 let uxDoc = load("docs/pet-context-badge-empty-state-v1.md")
 let readme = load("README.md")
 
@@ -50,7 +54,7 @@ assertTrue(homeView.contains("전체 기록 보기"), "HomeView should expose al
 
 assertTrue(walkListView.contains("filteredEmptyStateCard"), "WalkListView should render filtered empty state card")
 assertTrue(walkListView.contains("emptyHistoryCard"), "WalkListView should render default empty history card")
-assertTrue(walkListView.contains("기준으로 돌아가기"), "WalkListView should expose restore-to-selected context action")
+assertTrue(walkListView.contains("기준으로 돌아가기"), "WalkList feature should expose restore-to-selected context action")
 
 assertTrue(uxDoc.contains("선택 반려견 기준"), "UX doc should describe selected pet context badge")
 assertTrue(uxDoc.contains("전체 기록 보기"), "UX doc should describe all-records CTA")
