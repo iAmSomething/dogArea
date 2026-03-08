@@ -42,7 +42,8 @@ assertTrue(widgetView.contains("앱에서 반려견 확인"), "widget view shoul
 assertTrue(widgetView.contains("petContext.badgeTitle"), "widget view should expose pet context badge")
 
 assertTrue(mapWidgetSupport.contains("currentWalkWidgetStartPolicy() -> WalkWidgetStartPolicy"), "map widget support should resolve current start policy")
-assertTrue(mapWidgetSupport.contains("resolveWalkWidgetPetContext() -> WalkWidgetPetContext"), "map widget support should resolve current widget pet context")
+assertTrue(mapWidgetSupport.contains("currentWalkWidgetPetContext() -> WalkWidgetPetContext"), "map widget support should resolve current widget pet context")
+assertTrue(mapWidgetSupport.contains("applyRequestedWalkPetContextIfNeeded"), "map widget support should share requested pet context application across widget and watch")
 assertTrue(mapWidgetSupport.contains("resolveIdleWalkWidgetPetContext(from userInfo: UserInfo?) -> WalkWidgetPetContext"), "map widget support should define idle pet context fallback rules")
 assertTrue(mapWidgetSupport.contains("applyWidgetRequestedPetContextIfNeeded(_ route: WalkWidgetActionRoute) -> WalkWidgetPetContext"), "map widget support should apply pinned widget pet context before start")
 assertTrue(mapWidgetSupport.contains("route.contextId"), "map widget support should inspect route contextId")

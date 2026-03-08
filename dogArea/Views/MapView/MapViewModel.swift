@@ -519,6 +519,12 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         let action: WatchIncomingAction
         let actionId: String
         let sentAt: TimeInterval?
+        let requestedContextId: String?
+    }
+
+    enum WatchActionApplyResult {
+        case accepted(statusText: String?)
+        case rejected(message: String)
     }
 
     enum WatchContract {

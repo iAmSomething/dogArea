@@ -33,6 +33,12 @@ struct ContentView: View {
                     WatchActionBannerView(banner: feedbackBanner)
                 }
 
+                WatchSelectedPetContextCardView(
+                    petContext: viewModel.petContext,
+                    isReachable: viewModel.isReachable,
+                    onRefresh: { viewModel.refreshPetContext() }
+                )
+
                 metricsSection
 
                 VStack(spacing: 8) {

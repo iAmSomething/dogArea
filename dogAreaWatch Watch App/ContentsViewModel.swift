@@ -14,14 +14,18 @@ struct WatchActionDTO: Codable, Equatable {
     let action: String
     let actionId: String
     let sentAt: TimeInterval
+    let contextId: String?
 
     var envelope: [String: Any] {
-        let payload: [String: Any] = [
+        var payload: [String: Any] = [
             "action": action,
             "action_id": actionId,
             "sent_at": sentAt
         ]
-        return [
+        if let contextId, contextId.isEmpty == false {
+            payload["context_id"] = contextId
+        }
+        var envelope: [String: Any] = [
             "version": version,
             "type": type,
             "action": action,
@@ -29,6 +33,10 @@ struct WatchActionDTO: Codable, Equatable {
             "sent_at": sentAt,
             "payload": payload
         ]
+        if let contextId, contextId.isEmpty == false {
+            envelope["context_id"] = contextId
+        }
+        return envelope
     }
 }
 
@@ -50,6 +58,10 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
     @Published var lastAckActionId: String = ""
     @Published var contractVersion: String = "watch.remote.v1"
     @Published private(set) var feedbackBanner: WatchActionFeedbackBanner?
+    @Published private(set) var petContext: WatchSelectedPetContextState = .legacyFallback(
+        isWalking: false,
+        lastSyncAt: nil
+    )
 
     private let actionQueueStorageKey = "watch.pendingActions.v1"
     private let watchContractVersion = "watch.remote.v1"
@@ -76,6 +88,15 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
     /// - Returns: 버튼 타이틀, 설명, 톤, 비활성 여부를 포함한 렌더링 상태입니다.
     func controlPresentation(for action: WatchActionType) -> WatchActionControlPresentation {
         let state = executionStates[action] ?? .idle
+        if action == .startWalk, petContext.blocksInlineStart {
+            return WatchActionControlPresentation(
+                title: "앱에서 반려견 확인",
+                detail: petContext.startBlockedDetail,
+                tone: .warning,
+                isDisabled: true,
+                showsProgress: false
+            )
+        }
         switch state {
         case .idle:
             return WatchActionControlPresentation(
@@ -151,6 +172,15 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
             sendAction(.syncState)
             return
         }
+        if action == .startWalk, petContext.blocksInlineStart {
+            presentBanner(
+                title: "반려견 확인 필요",
+                detail: petContext.startBlockedDetail,
+                tone: .warning
+            )
+            sendAction(.syncState)
+            return
+        }
         if action == .endWalk, executionStates[action] == .confirmRequired {
             sendAction(action)
             return
@@ -192,7 +222,8 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
             type: watchActionMessageType,
             action: action.rawValue,
             actionId: UUID().uuidString.lowercased(),
-            sentAt: Date().timeIntervalSince1970
+            sentAt: Date().timeIntervalSince1970,
+            contextId: action == .startWalk ? petContext.petId : nil
         )
         actionTypeByActionId[dto.actionId] = action
         cooldownDeadlines[action] = Date().addingTimeInterval(action.cooldownInterval)
@@ -308,6 +339,11 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
             self.walkingTime = context["time"] as? TimeInterval ?? 0
             self.walkingArea = context["area"] as? Double ?? 0
             self.lastSyncAt = context["last_sync_at"] as? TimeInterval ?? 0
+            self.petContext = WatchSelectedPetContextState.make(
+                from: context,
+                fallbackIsWalking: self.isWalking,
+                fallbackLastSyncAt: self.lastSyncAt
+            )
             if let appliedActionId = context["last_action_id_applied"] as? String, appliedActionId.isEmpty == false {
                 self.lastAckActionId = appliedActionId
                 self.applyCompletedState(for: appliedActionId, statusText: context["watch_status"] as? String)
@@ -335,6 +371,7 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
         let status = (reply["status"] as? String) ?? "accepted"
         let actionId = (reply["action_id"] as? String) ?? fallbackActionId
         let actionName = reply["action"] as? String
+        let replyMessage = (reply["message"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
         let syncedAt = (reply["last_sync_at"] as? TimeInterval) ?? Date().timeIntervalSince1970
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
@@ -352,7 +389,9 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
                 self.transition(actionType, to: .acknowledged, resetAfter: 1.4)
                 self.presentBanner(
                     title: "전달 완료",
-                    detail: "\(actionType.baseTitle) 요청을 아이폰으로 전달했어요.",
+                    detail: replyMessage?.isEmpty == false
+                        ? replyMessage!
+                        : "\(actionType.baseTitle) 요청을 아이폰으로 전달했어요.",
                     tone: .success
                 )
             case "duplicate":
@@ -366,7 +405,9 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
                 self.transition(actionType, to: .failed, resetAfter: 1.8)
                 self.presentBanner(
                     title: "요청 실패",
-                    detail: "\(actionType.baseTitle) 요청을 처리하지 못했어요. 다시 시도해 주세요.",
+                    detail: replyMessage?.isEmpty == false
+                        ? replyMessage!
+                        : "\(actionType.baseTitle) 요청을 처리하지 못했어요. 다시 시도해 주세요.",
                     tone: .failure
                 )
             }
@@ -448,6 +489,17 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
             detail: detail,
             tone: .success
         )
+    }
+
+    /// 선택 반려견 문맥이 달라 보일 때 iPhone 상태를 다시 요청합니다.
+    func refreshPetContext() {
+        presentBanner(
+            title: "반려견 다시 확인",
+            detail: "iPhone의 최신 반려견 상태를 다시 불러옵니다.",
+            tone: .processing,
+            playsHaptic: false
+        )
+        sendAction(.syncState)
     }
 
     func session(

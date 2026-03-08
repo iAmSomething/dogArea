@@ -28,6 +28,7 @@
 - Walk widget action state model v1: `docs/walk-widget-action-state-model-v1.md`
 - Walk Live Activity priority v1: `docs/walk-live-activity-priority-v1.md`
 - Watch action feedback UX v1: `docs/watch-action-feedback-ux-v1.md`
+- Watch selected pet context UX v1: `docs/watch-selected-pet-context-ux-v1.md`
 - Walk widget pet context policy v1: `docs/walk-widget-pet-context-policy-v1.md`
 - Territory widget goal deeplink v1: `docs/territory-widget-goal-deeplink-v1.md`
 - Territory widget next goal summary v1: `docs/territory-widget-next-goal-summary-v1.md`
