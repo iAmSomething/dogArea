@@ -1,6 +1,10 @@
 import Foundation
 
 extension HomeViewModel {
+    private enum WeatherCanonicalSummaryConstants {
+        static let maxCacheAge: TimeInterval = 30 * 60
+    }
+
     /// 실패/만료 상황에서 사용자가 다음으로 시도할 행동을 안내하는 문구를 생성합니다.
     func makeQuestAlternativeActionSuggestion(for board: IndoorMissionBoard) -> String? {
         switch board.extensionState {
@@ -18,21 +22,76 @@ extension HomeViewModel {
         return nil
     }
 
-    func refreshIndoorMissions(now: Date = Date()) {
+    /// 홈 실내 미션/날씨 상태를 현재 로컬 snapshot과 서버 canonical summary를 조합해 새로고침합니다.
+    /// - Parameters:
+    ///   - now: 집계 기준 시각입니다.
+    ///   - shouldFetchServerSummary: 새로고침 후 서버 canonical summary를 비동기로 다시 조회할지 여부입니다.
+    func refreshIndoorMissions(now: Date = Date(), shouldFetchServerSummary: Bool = true) {
         if applyIndoorMissionUITestScenarioIfNeeded(now: now) {
             return
         }
         refreshWeatherSnapshot(now: now)
+        let baseWeatherStatus = indoorMissionStore.baseWeatherStatus(now: now)
+        let cachedServerSummary = weatherReplacementSummaryStore.loadFreshSummary(
+            maxAge: WeatherCanonicalSummaryConstants.maxCacheAge,
+            for: userInfo?.id
+        )
         let missionContext = makeIndoorMissionPetContext(reference: now)
-        indoorMissionBoard = indoorMissionStore.buildBoard(now: now, context: missionContext)
+        applyIndoorWeatherPresentation(
+            now: now,
+            missionContext: missionContext,
+            baseWeatherStatus: baseWeatherStatus,
+            serverSummary: cachedServerSummary
+        )
+
+        if shouldFetchServerSummary {
+            refreshWeatherCanonicalSummaryIfNeeded(
+                baseWeatherStatus: baseWeatherStatus,
+                now: now
+            )
+        }
+
+        syncSeasonScoreWithWalkSessions(now: now)
+        refreshSeasonMotion(now: now)
+    }
+
+    /// 홈 실내 미션/날씨 카드가 사용할 파생 상태를 계산해 published 상태에 반영합니다.
+    /// - Parameters:
+    ///   - now: 집계 기준 시각입니다.
+    ///   - missionContext: 선택 반려견 기반 실내 미션 컨텍스트입니다.
+    ///   - baseWeatherStatus: 로컬 snapshot 기반 기본 위험도 상태입니다.
+    ///   - serverSummary: 서버 canonical summary입니다. 없으면 로컬 fallback을 사용합니다.
+    func applyIndoorWeatherPresentation(
+        now: Date,
+        missionContext: IndoorMissionPetContext,
+        baseWeatherStatus: IndoorWeatherStatus,
+        serverSummary: WeatherReplacementSummarySnapshot?
+    ) {
+        let weatherStatus = indoorMissionStore.weatherStatus(
+            now: now,
+            serverSummary: serverSummary,
+            baseWeatherStatus: baseWeatherStatus
+        )
+        indoorMissionBoard = indoorMissionStore.buildBoard(
+            now: now,
+            context: missionContext,
+            weatherStatus: weatherStatus,
+            serverSummary: serverSummary
+        )
         questAlternativeActionSuggestion = makeQuestAlternativeActionSuggestion(for: indoorMissionBoard)
-        weatherFeedbackRemainingCount = indoorMissionStore.weatherFeedbackRemainingCount(now: now)
-        let weatherStatus = indoorMissionStore.weatherStatus(now: now)
-        let shieldDailySummary = indoorMissionStore.weatherShieldDailySummary(now: now)
+        weatherFeedbackRemainingCount = indoorMissionStore.weatherFeedbackRemainingCount(
+            now: now,
+            serverSummary: serverSummary
+        )
+        let shieldDailySummary = indoorMissionStore.weatherShieldDailySummary(
+            now: now,
+            serverSummary: serverSummary
+        )
         weatherShieldDailySummary = shieldDailySummary
         weatherMissionStatusSummary = weatherMissionStatusBuilder.makeStatusSummary(
             board: indoorMissionBoard,
             status: weatherStatus,
+            serverSummary: serverSummary,
             now: now,
             shieldApplyCount: shieldDailySummary?.applyCount ?? 0,
             localizedCopy: localizedCopy(ko:en:)
@@ -111,8 +170,38 @@ extension HomeViewModel {
             }
         }
 
-        syncSeasonScoreWithWalkSessions(now: now)
-        refreshSeasonMotion(now: now)
+    }
+
+    /// 현재 홈 상태에 적용할 서버 canonical summary를 비동기로 재조회합니다.
+    /// - Parameters:
+    ///   - baseWeatherStatus: 조회 시점의 기본 위험도 상태입니다.
+    ///   - now: 요청 기준 시각입니다.
+    func refreshWeatherCanonicalSummaryIfNeeded(
+        baseWeatherStatus: IndoorWeatherStatus,
+        now: Date
+    ) {
+        guard AppFeatureGate.isAllowed(.cloudSync, session: AppFeatureGate.currentSession()) else {
+            return
+        }
+        weatherReplacementSummaryTask?.cancel()
+        weatherReplacementSummaryTask = Task { [weak self] in
+            guard let self else { return }
+            do {
+                let summary = try await weatherReplacementSummaryService.fetchSummary(
+                    baseRiskLevel: baseWeatherStatus.baseRisk,
+                    now: now
+                )
+                weatherReplacementSummaryStore.save(summary)
+                guard Task.isCancelled == false else { return }
+                await MainActor.run {
+                    self.refreshIndoorMissions(now: now, shouldFetchServerSummary: false)
+                }
+            } catch {
+                #if DEBUG
+                print("[HomeWeatherCanonical] summary fetch failed: \(error.localizedDescription)")
+                #endif
+            }
+        }
     }
 
     func recordIndoorMissionAction(_ missionId: String) {
@@ -252,6 +341,66 @@ extension HomeViewModel {
     }
 
     func submitWeatherMismatchFeedback(now: Date = Date()) {
+        let baseWeatherStatus = indoorMissionStore.baseWeatherStatus(now: now)
+
+        if AppFeatureGate.isAllowed(.cloudSync, session: AppFeatureGate.currentSession()) {
+            Task { [weak self] in
+                guard let self else { return }
+                do {
+                    let outcome = try await weatherReplacementSummaryService.submitFeedback(
+                        baseRiskLevel: baseWeatherStatus.baseRisk,
+                        requestId: UUID().uuidString.lowercased(),
+                        now: now
+                    )
+                    weatherReplacementSummaryStore.save(outcome.summary)
+                    await MainActor.run {
+                        self.weatherFeedbackRemainingCount = outcome.summary.feedbackRemainingCount
+                        let hasRiskChanged = outcome.originalRisk != outcome.adjustedRisk
+                        self.weatherFeedbackResultMessage = outcome.message
+                        self.indoorMissionStatusMessage = outcome.message
+                        if outcome.accepted {
+                            self.metricTracker.track(
+                                .weatherFeedbackSubmitted,
+                                userKey: self.userInfo?.id,
+                                payload: [
+                                    "fromRisk": outcome.originalRisk.rawValue,
+                                    "toRisk": outcome.adjustedRisk.rawValue,
+                                    "remainingQuota": "\(outcome.summary.feedbackRemainingCount)"
+                                ]
+                            )
+                            self.metricTracker.track(
+                                .weatherRiskReevaluated,
+                                userKey: self.userInfo?.id,
+                                payload: [
+                                    "fromRisk": outcome.originalRisk.rawValue,
+                                    "toRisk": outcome.adjustedRisk.rawValue,
+                                    "changed": hasRiskChanged ? "true" : "false"
+                                ]
+                            )
+                        } else {
+                            self.metricTracker.track(
+                                .weatherFeedbackRateLimited,
+                                userKey: self.userInfo?.id,
+                                payload: [
+                                    "remainingQuota": "\(outcome.summary.feedbackRemainingCount)"
+                                ]
+                            )
+                        }
+                        self.refreshIndoorMissions(now: now, shouldFetchServerSummary: false)
+                    }
+                } catch {
+                    await MainActor.run {
+                        self.weatherFeedbackResultMessage = "연결을 확인한 뒤 다시 시도해주세요."
+                        self.indoorMissionStatusMessage = self.weatherFeedbackResultMessage
+                    }
+                    #if DEBUG
+                    print("[HomeWeatherCanonical] feedback submit failed: \(error.localizedDescription)")
+                    #endif
+                }
+            }
+            return
+        }
+
         let outcome = indoorMissionStore.submitWeatherMismatchFeedback(now: now)
         weatherFeedbackRemainingCount = outcome.remainingWeeklyQuota
 
@@ -266,7 +415,8 @@ extension HomeViewModel {
                 payload: [
                     "fromRisk": outcome.originalRisk.rawValue,
                     "toRisk": outcome.adjustedRisk.rawValue,
-                    "remainingQuota": "\(outcome.remainingWeeklyQuota)"
+                    "remainingQuota": "\(outcome.remainingWeeklyQuota)",
+                    "mode": "guest_fallback"
                 ]
             )
             metricTracker.track(
@@ -275,7 +425,8 @@ extension HomeViewModel {
                 payload: [
                     "fromRisk": outcome.originalRisk.rawValue,
                     "toRisk": outcome.adjustedRisk.rawValue,
-                    "changed": hasRiskChanged ? "true" : "false"
+                    "changed": hasRiskChanged ? "true" : "false",
+                    "mode": "guest_fallback"
                 ]
             )
         } else {
@@ -284,7 +435,8 @@ extension HomeViewModel {
                 .weatherFeedbackRateLimited,
                 userKey: userInfo?.id,
                 payload: [
-                    "remainingQuota": "\(outcome.remainingWeeklyQuota)"
+                    "remainingQuota": "\(outcome.remainingWeeklyQuota)",
+                    "mode": "guest_fallback"
                 ]
             )
         }

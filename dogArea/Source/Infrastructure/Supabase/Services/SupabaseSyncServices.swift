@@ -21,9 +21,49 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
 
     private struct SyncStageResponseDTO: Decodable {
         let seasonScoreSummary: SeasonScoreSummaryDTO?
+        let weatherReplacementSummary: WeatherReplacementSummaryDTO?
 
         enum CodingKeys: String, CodingKey {
             case seasonScoreSummary = "season_score_summary"
+            case weatherReplacementSummary = "weather_replacement_summary"
+        }
+    }
+
+    private struct WeatherReplacementSummaryDTO: Decodable {
+        let applied: Bool?
+        let blockedReason: String?
+        let baseRiskLevel: String?
+        let effectiveRiskLevel: String?
+        let riskLevel: String?
+        let replacementReason: String?
+        let replacementCountToday: Int?
+        let dailyReplacementLimit: Int?
+        let shieldUsedThisWeek: Int?
+        let weeklyShieldLimit: Int?
+        let shieldApplyCountToday: Int?
+        let shieldLastAppliedAt: String?
+        let feedbackUsedThisWeek: Int?
+        let weeklyFeedbackLimit: Int?
+        let feedbackRemainingCount: Int?
+        let refreshedAt: String?
+
+        enum CodingKeys: String, CodingKey {
+            case applied
+            case blockedReason = "blocked_reason"
+            case baseRiskLevel = "base_risk_level"
+            case effectiveRiskLevel = "effective_risk_level"
+            case riskLevel = "risk_level"
+            case replacementReason = "replacement_reason"
+            case replacementCountToday = "replacement_count_today"
+            case dailyReplacementLimit = "daily_replacement_limit"
+            case shieldUsedThisWeek = "shield_used_this_week"
+            case weeklyShieldLimit = "weekly_shield_limit"
+            case shieldApplyCountToday = "shield_apply_count_today"
+            case shieldLastAppliedAt = "shield_last_applied_at"
+            case feedbackUsedThisWeek = "feedback_used_this_week"
+            case weeklyFeedbackLimit = "weekly_feedback_limit"
+            case feedbackRemainingCount = "feedback_remaining_count"
+            case refreshedAt = "refreshed_at"
         }
     }
 
@@ -288,6 +328,7 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
         guard item.stage == .points else { return }
         guard let decoded = try? JSONDecoder().decode(SyncStageResponseDTO.self, from: data),
               let season = decoded.seasonScoreSummary else {
+            persistWeatherReplacementSummaryIfNeeded(item: item, response: try? JSONDecoder().decode(SyncStageResponseDTO.self, from: data))
             return
         }
 
@@ -306,6 +347,49 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
             syncedAt: Date().timeIntervalSince1970
         )
         UserdefaultSetting.shared.updateSeasonCatchupBuffSnapshot(snapshot)
+        persistWeatherReplacementSummaryIfNeeded(item: item, response: decoded)
+    }
+
+    /// `sync-walk` points stage 응답에 포함된 날씨 canonical summary를 로컬 cache로 저장합니다.
+    /// - Parameters:
+    ///   - item: 처리 중인 sync outbox 항목입니다.
+    ///   - response: 디코딩된 sync points stage 응답입니다.
+    private func persistWeatherReplacementSummaryIfNeeded(
+        item: SyncOutboxItem,
+        response: SyncStageResponseDTO?
+    ) {
+        guard item.stage == .points,
+              let summary = response?.weatherReplacementSummary else {
+            return
+        }
+        guard case .member(let userId) = AppFeatureGate.currentSession() else {
+            return
+        }
+        let baseRisk = IndoorWeatherRiskLevel(rawValue: summary.baseRiskLevel ?? "")
+            ?? IndoorWeatherRiskLevel(rawValue: summary.riskLevel ?? "")
+            ?? .clear
+        let effectiveRisk = IndoorWeatherRiskLevel(rawValue: summary.effectiveRiskLevel ?? "")
+            ?? IndoorWeatherRiskLevel(rawValue: summary.riskLevel ?? "")
+            ?? baseRisk
+        let snapshot = WeatherReplacementSummarySnapshot(
+            ownerUserId: userId,
+            baseRiskLevel: baseRisk,
+            effectiveRiskLevel: effectiveRisk,
+            replacementApplied: summary.applied ?? (effectiveRisk != .clear),
+            blockedReason: summary.blockedReason,
+            replacementReason: summary.replacementReason,
+            replacementCountToday: max(0, summary.replacementCountToday ?? 0),
+            dailyReplacementLimit: max(0, summary.dailyReplacementLimit ?? 0),
+            shieldUsedThisWeek: max(0, summary.shieldUsedThisWeek ?? 0),
+            weeklyShieldLimit: max(0, summary.weeklyShieldLimit ?? 0),
+            shieldApplyCountToday: max(0, summary.shieldApplyCountToday ?? 0),
+            shieldLastAppliedAt: SupabaseISO8601.parseEpoch(summary.shieldLastAppliedAt),
+            feedbackUsedThisWeek: max(0, summary.feedbackUsedThisWeek ?? 0),
+            weeklyFeedbackLimit: max(0, summary.weeklyFeedbackLimit ?? 0),
+            feedbackRemainingCount: max(0, summary.feedbackRemainingCount ?? 0),
+            refreshedAt: SupabaseISO8601.parseEpoch(summary.refreshedAt) ?? Date().timeIntervalSince1970
+        )
+        WeatherReplacementSummaryStore.shared.save(snapshot)
     }
 }
 
@@ -373,4 +457,3 @@ struct SupabaseProfileSyncTransport: ProfileSyncServiceProtocol {
         }
     }
 }
-

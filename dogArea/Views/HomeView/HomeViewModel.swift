@@ -62,6 +62,8 @@ final class HomeViewModel: ObservableObject {
     let indoorMissionPresentationService: HomeIndoorMissionPresenting
     let indoorMissionPetContextSnapshotService: HomeIndoorMissionPetContextSnapshotServicing
     let weatherSnapshotStore: WeatherSnapshotStoreProtocol
+    let weatherReplacementSummaryStore: WeatherReplacementSummaryStoreProtocol
+    let weatherReplacementSummaryService: WeatherReplacementSummaryServicing
     let areaMilestoneDetector: AreaMilestoneDetecting
     let areaMilestoneNotificationScheduler: AreaMilestoneNotificationScheduling
     let seasonMotionStore = SeasonMotionStore()
@@ -70,6 +72,7 @@ final class HomeViewModel: ObservableObject {
     var featuredGoalAreas: [AreaMeter] = []
     var areaMilestoneQueue: [AreaMilestoneEvent] = []
     var areaReferenceTask: Task<Void, Never>? = nil
+    var weatherReplacementSummaryTask: Task<Void, Never>? = nil
     var hasSkippedInitialActiveSceneRefresh: Bool = false
     var indoorMissionPetContextPolygonFingerprint: HomeIndoorMissionPetContextPolygonFingerprint? = nil
     var indoorMissionPetContextAggregationSnapshot: HomeIndoorMissionPetContextAggregationSnapshot? = nil
@@ -134,6 +137,8 @@ final class HomeViewModel: ObservableObject {
         indoorMissionPresentationService: HomeIndoorMissionPresenting = HomeIndoorMissionPresentationService(),
         indoorMissionPetContextSnapshotService: HomeIndoorMissionPetContextSnapshotServicing = HomeIndoorMissionPetContextSnapshotService(),
         weatherSnapshotStore: WeatherSnapshotStoreProtocol = WeatherSnapshotStore.shared,
+        weatherReplacementSummaryStore: WeatherReplacementSummaryStoreProtocol = WeatherReplacementSummaryStore.shared,
+        weatherReplacementSummaryService: WeatherReplacementSummaryServicing = SupabaseWeatherReplacementSummaryService(),
         areaMilestoneDetector: AreaMilestoneDetecting = AreaMilestoneDetector(),
         areaMilestoneNotificationScheduler: AreaMilestoneNotificationScheduling = LocalAreaMilestoneNotificationScheduler()
     ) {
@@ -148,6 +153,8 @@ final class HomeViewModel: ObservableObject {
         self.indoorMissionPresentationService = indoorMissionPresentationService
         self.indoorMissionPetContextSnapshotService = indoorMissionPetContextSnapshotService
         self.weatherSnapshotStore = weatherSnapshotStore
+        self.weatherReplacementSummaryStore = weatherReplacementSummaryStore
+        self.weatherReplacementSummaryService = weatherReplacementSummaryService
         self.areaMilestoneDetector = areaMilestoneDetector
         self.areaMilestoneNotificationScheduler = areaMilestoneNotificationScheduler
         self.questReminderScheduler = LocalQuestReminderScheduler()
@@ -167,5 +174,6 @@ final class HomeViewModel: ObservableObject {
 
     deinit {
         areaReferenceTask?.cancel()
+        weatherReplacementSummaryTask?.cancel()
     }
 }

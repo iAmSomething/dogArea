@@ -128,11 +128,28 @@ final class IndoorMissionStore {
     }
 
     func buildBoard(now: Date) -> IndoorMissionBoard {
-        buildBoard(now: now, context: nil)
+        buildBoard(now: now, context: nil, weatherStatus: nil, serverSummary: nil)
     }
 
     func buildBoard(now: Date, context: IndoorMissionPetContext?) -> IndoorMissionBoard {
-        let riskLevel = resolveRiskLevel(now: now)
+        buildBoard(now: now, context: context, weatherStatus: nil, serverSummary: nil)
+    }
+
+    /// 서버 canonical summary를 우선 반영해 실내 미션 보드를 생성합니다.
+    /// - Parameters:
+    ///   - now: 보드 집계 기준 시각입니다.
+    ///   - context: 선택 반려견 기반 난이도 컨텍스트입니다.
+    ///   - weatherStatus: 이미 계산된 날씨 상태가 있으면 재사용합니다.
+    ///   - serverSummary: 서버가 확정한 날씨 canonical summary입니다. 없으면 로컬 fallback 상태를 사용합니다.
+    /// - Returns: 홈 실내 미션 카드 렌더링에 사용할 실내 미션 보드입니다.
+    func buildBoard(
+        now: Date,
+        context: IndoorMissionPetContext?,
+        weatherStatus: IndoorWeatherStatus?,
+        serverSummary: WeatherReplacementSummarySnapshot?
+    ) -> IndoorMissionBoard {
+        let resolvedWeatherStatus = weatherStatus ?? self.weatherStatus(now: now, serverSummary: serverSummary)
+        let riskLevel = resolvedWeatherStatus.adjustedRisk
         let dayKey = dayStamp(for: now)
         let difficultySummary = resolveDifficultySummary(
             context: context,
@@ -186,6 +203,19 @@ final class IndoorMissionStore {
             extensionState: extensionEntry.state,
             extensionMessage: extensionMessage(for: extensionEntry),
             difficultySummary: difficultySummary
+        )
+    }
+
+    /// 로컬 snapshot 기반의 기본 위험도 상태를 조회합니다.
+    /// - Parameter now: 관측 신선도와 fallback 여부를 판단할 기준 시각입니다.
+    /// - Returns: 로컬 snapshot 기준 기본 위험도 상태이며, 클라이언트 로컬 보정은 포함하지 않습니다.
+    func baseWeatherStatus(now: Date = Date()) -> IndoorWeatherStatus {
+        let base = resolveCanonicalBaseRiskProfile()
+        return IndoorWeatherStatus(
+            source: base.source,
+            baseRisk: base.risk,
+            adjustedRisk: base.risk,
+            lastUpdatedAt: resolveBaseObservedAt(source: base.source, now: now)
         )
     }
 
@@ -284,6 +314,38 @@ final class IndoorMissionStore {
         )
     }
 
+    /// 서버 canonical summary를 우선 적용한 날씨 상태를 조회합니다.
+    /// - Parameters:
+    ///   - now: 상태 기준 시각입니다.
+    ///   - serverSummary: 서버가 확정한 canonical summary입니다.
+    ///   - baseWeatherStatus: 이미 계산한 기본 위험도 상태가 있으면 재사용합니다.
+    /// - Returns: 홈 날씨 카드와 실내 미션이 사용할 최종 날씨 상태입니다.
+    func weatherStatus(
+        now: Date = Date(),
+        serverSummary: WeatherReplacementSummarySnapshot?,
+        baseWeatherStatus: IndoorWeatherStatus? = nil
+    ) -> IndoorWeatherStatus {
+        guard let serverSummary else {
+            return weatherStatus(now: now)
+        }
+        let baseStatus = baseWeatherStatus ?? self.baseWeatherStatus(now: now)
+        let resolvedSource: IndoorWeatherRiskSource
+        switch baseStatus.source {
+        case .environment:
+            resolvedSource = .environment
+        case .fallback:
+            resolvedSource = .fallback
+        case .snapshot, .serverSummary, .userOverride:
+            resolvedSource = .serverSummary
+        }
+        return IndoorWeatherStatus(
+            source: resolvedSource,
+            baseRisk: baseStatus.baseRisk,
+            adjustedRisk: serverSummary.effectiveRiskLevel,
+            lastUpdatedAt: serverSummary.refreshedAt
+        )
+    }
+
     func recordWeatherShieldUsage(now: Date = Date()) {
         let dayKey = dayStamp(for: now)
         var map = weatherShieldUsageMap()
@@ -299,19 +361,51 @@ final class IndoorMissionStore {
         let dayKey = dayStamp(for: now)
         let values = weatherShieldUsageMap()[dayKey] ?? []
         guard values.isEmpty == false else { return nil }
-        let lastApplied = values.max() ?? now.timeIntervalSince1970
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ko_KR")
-        formatter.dateFormat = "HH:mm"
         return WeatherShieldDailySummary(
             dayKey: dayKey,
             applyCount: values.count,
-            lastAppliedAtText: formatter.string(from: Date(timeIntervalSince1970: lastApplied))
+            lastAppliedAtText: Self.timeFormatter.string(from: Date(timeIntervalSince1970: values.max() ?? now.timeIntervalSince1970))
+        )
+    }
+
+    /// 서버 canonical summary를 우선 적용한 shield 일일 요약을 조회합니다.
+    /// - Parameters:
+    ///   - now: 일일 summary 기준 시각입니다.
+    ///   - serverSummary: 서버가 확정한 canonical summary입니다.
+    /// - Returns: 홈 shield 카드에 노출할 요약이며, 서버 값이 없으면 로컬 fallback 요약을 반환합니다.
+    func weatherShieldDailySummary(
+        now: Date = Date(),
+        serverSummary: WeatherReplacementSummarySnapshot?
+    ) -> WeatherShieldDailySummary? {
+        guard let serverSummary else {
+            return weatherShieldDailySummary(now: now)
+        }
+        guard serverSummary.shieldApplyCountToday > 0 else { return nil }
+        let lastAppliedAt = serverSummary.shieldLastAppliedAt ?? now.timeIntervalSince1970
+        return WeatherShieldDailySummary(
+            dayKey: dayStamp(for: now),
+            applyCount: serverSummary.shieldApplyCountToday,
+            lastAppliedAtText: Self.timeFormatter.string(from: Date(timeIntervalSince1970: lastAppliedAt))
         )
     }
 
     func weatherFeedbackRemainingCount(now: Date = Date()) -> Int {
         max(0, weeklyFeedbackLimit - feedbackCountInCurrentWeek(now: now))
+    }
+
+    /// 서버 canonical summary를 우선 적용한 체감 피드백 잔여 횟수를 조회합니다.
+    /// - Parameters:
+    ///   - now: 주간 quota 기준 시각입니다.
+    ///   - serverSummary: 서버가 확정한 canonical summary입니다.
+    /// - Returns: 서버 값이 있으면 서버 기준 잔여 횟수, 없으면 로컬 fallback 잔여 횟수입니다.
+    func weatherFeedbackRemainingCount(
+        now: Date = Date(),
+        serverSummary: WeatherReplacementSummarySnapshot?
+    ) -> Int {
+        guard let serverSummary else {
+            return weatherFeedbackRemainingCount(now: now)
+        }
+        return max(0, serverSummary.feedbackRemainingCount)
     }
 
     /// 주어진 시각을 현재 저장소 기준 날짜 키로 변환합니다.
@@ -829,6 +923,26 @@ final class IndoorMissionStore {
         return (.clear, .fallback)
     }
 
+    /// 서버 canonical summary 계산에 사용할 로컬 기본 위험도 프로파일을 조회합니다.
+    /// - Returns: 로컬 override를 제외한 기본 위험도와 소스입니다.
+    private func resolveCanonicalBaseRiskProfile() -> (risk: IndoorWeatherRiskLevel, source: IndoorWeatherRiskSource) {
+        if let env = ProcessInfo.processInfo.environment["WEATHER_RISK_LEVEL"],
+           let level = IndoorWeatherRiskLevel(rawValue: env.lowercased()) {
+            return (level, .environment)
+        }
+        if let snapshot = weatherSnapshotStore.loadSnapshot(),
+           let level = IndoorWeatherRiskLevel(rawValue: snapshot.level.rawValue) {
+            let now = Date().timeIntervalSince1970
+            let age = now - snapshot.observedAt
+            if age <= 7200 {
+                return (level, .snapshot)
+            }
+            let conservative = level == .clear ? IndoorWeatherRiskLevel.caution : level
+            return (conservative, .fallback)
+        }
+        return (.clear, .fallback)
+    }
+
     private func resolveRiskLevel(now: Date = Date()) -> IndoorWeatherRiskLevel {
         weatherStatus(now: now).adjustedRisk
     }
@@ -981,10 +1095,31 @@ final class IndoorMissionStore {
         UserDefaults.standard.set(map, forKey: DefaultsKey.weatherFeedbackDailyAdjustment)
     }
 
+    /// 기본 위험도 소스에 맞는 기준 관측 시각을 계산합니다.
+    /// - Parameters:
+    ///   - source: 기본 위험도 판정에 사용한 소스입니다.
+    ///   - now: fallback 시 사용할 현재 시각입니다.
+    /// - Returns: 기준 관측 시각이며, 알 수 없으면 `now`를 반환합니다.
+    private func resolveBaseObservedAt(source: IndoorWeatherRiskSource, now: Date) -> TimeInterval {
+        switch source {
+        case .snapshot:
+            return weatherSnapshotStore.loadSnapshot()?.observedAt ?? now.timeIntervalSince1970
+        case .environment, .serverSummary, .userOverride, .fallback:
+            return now.timeIntervalSince1970
+        }
+    }
+
     private static let dayFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ko_KR")
         formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
+
+    private static let timeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ko_KR")
+        formatter.dateFormat = "HH:mm"
         return formatter
     }()
 }

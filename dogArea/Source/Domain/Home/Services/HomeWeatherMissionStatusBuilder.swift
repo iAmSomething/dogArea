@@ -13,6 +13,7 @@ protocol HomeWeatherMissionStatusBuilding {
     /// - Parameters:
     ///   - board: 현재 실내 미션 보드 상태입니다.
     ///   - status: 날씨 연동 소스 및 최신 반영 시각을 포함한 상태입니다.
+    ///   - serverSummary: 서버가 확정한 날씨 치환 canonical summary입니다.
     ///   - now: 현재 시각입니다.
     ///   - shieldApplyCount: 당일 날씨 보호 적용 횟수입니다.
     ///   - localizedCopy: 한/영 문구를 현재 로케일에 맞춰 선택하는 함수입니다.
@@ -20,6 +21,7 @@ protocol HomeWeatherMissionStatusBuilding {
     func makeStatusSummary(
         board: IndoorMissionBoard,
         status: IndoorWeatherStatus,
+        serverSummary: WeatherReplacementSummarySnapshot?,
         now: Date,
         shieldApplyCount: Int,
         localizedCopy: (_ ko: String, _ en: String) -> String
@@ -38,6 +40,7 @@ final class HomeWeatherMissionStatusBuilder: HomeWeatherMissionStatusBuilding {
     /// - Parameters:
     ///   - board: 현재 실내 미션 보드 상태입니다.
     ///   - status: 날씨 연동 소스 및 최신 반영 시각을 포함한 상태입니다.
+    ///   - serverSummary: 서버가 확정한 날씨 치환 canonical summary입니다.
     ///   - now: 현재 시각입니다.
     ///   - shieldApplyCount: 당일 날씨 보호 적용 횟수입니다.
     ///   - localizedCopy: 한/영 문구를 현재 로케일에 맞춰 선택하는 함수입니다.
@@ -45,6 +48,7 @@ final class HomeWeatherMissionStatusBuilder: HomeWeatherMissionStatusBuilding {
     func makeStatusSummary(
         board: IndoorMissionBoard,
         status: IndoorWeatherStatus,
+        serverSummary: WeatherReplacementSummarySnapshot?,
         now: Date,
         shieldApplyCount: Int,
         localizedCopy: (_ ko: String, _ en: String) -> String
@@ -64,6 +68,10 @@ final class HomeWeatherMissionStatusBuilder: HomeWeatherMissionStatusBuilding {
                 "실시간 날씨 정보를 불러오지 못해 최근 안전 기준으로 미션을 조정했어요.",
                 "Live weather is unavailable. Missions are adjusted with a conservative safety baseline."
             )
+        } else if let replacementReason = serverSummary?.replacementReason,
+                  replacementReason.isEmpty == false,
+                  board.riskLevel != .clear {
+            reasonText = replacementReason
         } else if board.riskLevel == .clear {
             reasonText = localizedCopy(
                 "날씨 안정 단계로 기본 퀘스트를 진행합니다.",
