@@ -28,14 +28,17 @@ struct WatchActionButtonView: View {
                     Text(presentation.title)
                         .font(.callout.weight(.semibold))
                         .foregroundStyle(.primary)
-                        .lineLimit(1)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                     Text(presentation.detail)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
-                        .lineLimit(2)
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
             }
+            .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
             .background(
@@ -46,5 +49,6 @@ struct WatchActionButtonView: View {
         .buttonStyle(.plain)
         .disabled(presentation.isDisabled)
         .opacity(presentation.isDisabled ? 0.72 : 1)
+        .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }

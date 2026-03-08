@@ -257,6 +257,8 @@
 		DAB314DC2B3C1D7D000357C7 /* WatchWalkEndDecisionSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB314DB2B3C1D7D000357C7 /* WatchWalkEndDecisionSheetView.swift */; };
 		DAB314DE2B3C1D7E000357C7 /* WatchWalkCompletionSummarySheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB314DD2B3C1D7E000357C7 /* WatchWalkCompletionSummarySheetView.swift */; };
 		DAB314E22B3C1D7F000357C7 /* WatchSyncRecoveryPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB314E12B3C1D7F000357C7 /* WatchSyncRecoveryPresentation.swift */; };
+		DAB314E42B3C1D80000357C7 /* WatchMainStatusSummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB314E32B3C1D80000357C7 /* WatchMainStatusSummaryView.swift */; };
+		DAB314E62B3C1D81000357C7 /* WatchPrimaryActionDockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB314E52B3C1D81000357C7 /* WatchPrimaryActionDockView.swift */; };
 		DAC19F0E2B0AE5AC002FE2E8 /* ImagePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F0D2B0AE5AC002FE2E8 /* ImagePicker.swift */; };
 		DAC19F102B0AF661002FE2E8 /* TitleTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F0F2B0AF661002FE2E8 /* TitleTextView.swift */; };
 		DAC19F132B0AFCAC002FE2E8 /* UserdefaultSetting.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAC19F122B0AFCAC002FE2E8 /* UserdefaultSetting.swift */; };
@@ -615,6 +617,8 @@
 		DAB314DB2B3C1D7D000357C7 /* WatchWalkEndDecisionSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchWalkEndDecisionSheetView.swift; sourceTree = "<group>"; };
 		DAB314DD2B3C1D7E000357C7 /* WatchWalkCompletionSummarySheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchWalkCompletionSummarySheetView.swift; sourceTree = "<group>"; };
 		DAB314E12B3C1D7F000357C7 /* WatchSyncRecoveryPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSyncRecoveryPresentation.swift; sourceTree = "<group>"; };
+		DAB314E32B3C1D80000357C7 /* WatchMainStatusSummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchMainStatusSummaryView.swift; sourceTree = "<group>"; };
+		DAB314E52B3C1D81000357C7 /* WatchPrimaryActionDockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchPrimaryActionDockView.swift; sourceTree = "<group>"; };
 		DAC19F0D2B0AE5AC002FE2E8 /* ImagePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePicker.swift; sourceTree = "<group>"; };
 		DAC19F0F2B0AF661002FE2E8 /* TitleTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitleTextView.swift; sourceTree = "<group>"; };
 		DAC19F122B0AFCAC002FE2E8 /* UserdefaultSetting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserdefaultSetting.swift; sourceTree = "<group>"; };
@@ -1325,6 +1329,8 @@
 			children = (
 				DAB314B12B3C1B4A000357C7 /* dogAreaWatchApp.swift */,
 				DAB314B32B3C1B4A000357C7 /* ContentView.swift */,
+				DAB314E32B3C1D80000357C7 /* WatchMainStatusSummaryView.swift */,
+				DAB314E52B3C1D81000357C7 /* WatchPrimaryActionDockView.swift */,
 				DAB314C12B3C1D71000357C7 /* ContentsViewModel.swift */,
 				DAB314C32B3C1D72000357C7 /* WatchActionFeedbackModels.swift */,
 				DAB314C52B3C1D73000357C7 /* WatchActionHapticService.swift */,
@@ -2052,6 +2058,8 @@
 			files = (
 				DAB314B42B3C1B4A000357C7 /* ContentView.swift in Sources */,
 				DAB314B22B3C1B4A000357C7 /* dogAreaWatchApp.swift in Sources */,
+				DAB314E42B3C1D80000357C7 /* WatchMainStatusSummaryView.swift in Sources */,
+				DAB314E62B3C1D81000357C7 /* WatchPrimaryActionDockView.swift in Sources */,
 				DAB314C22B3C1D71000357C7 /* ContentsViewModel.swift in Sources */,
 				DAB314C42B3C1D72000357C7 /* WatchActionFeedbackModels.swift in Sources */,
 				DAB314C62B3C1D73000357C7 /* WatchActionHapticService.swift in Sources */,

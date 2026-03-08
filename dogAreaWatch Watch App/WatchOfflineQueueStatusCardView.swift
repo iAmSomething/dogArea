@@ -40,28 +40,56 @@ struct WatchOfflineQueueStatusCardView: View {
                 .lineLimit(3)
 
             if queueStatus.syncRecovery.signals.isEmpty == false {
-                HStack(spacing: 6) {
-                    ForEach(Array(queueStatus.syncRecovery.signals.prefix(2)), id: \.self) { signal in
-                        infoChip(title: signal.title, tone: signal.tone)
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 6) {
+                        ForEach(Array(queueStatus.syncRecovery.signals.prefix(2)), id: \.self) { signal in
+                            infoChip(title: signal.title, tone: signal.tone)
+                        }
+                    }
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(Array(queueStatus.syncRecovery.signals.prefix(2)), id: \.self) { signal in
+                            infoChip(title: signal.title, tone: signal.tone)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
                     }
                 }
             }
 
-            HStack(spacing: 8) {
-                infoChip(
-                    title: "큐 \(queueStatus.pendingCount)건",
-                    tone: queueStatus.pendingCount > 0 ? .warning : .neutral
-                )
-                if let lastSyncAt = queueStatus.lastSyncAt, lastSyncAt > 0 {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 8) {
                     infoChip(
-                        title: "동기화 \(formattedTimestamp(lastSyncAt))",
+                        title: "큐 \(queueStatus.pendingCount)건",
+                        tone: queueStatus.pendingCount > 0 ? .warning : .neutral
+                    )
+                    if let lastSyncAt = queueStatus.lastSyncAt, lastSyncAt > 0 {
+                        infoChip(
+                            title: "동기화 \(formattedTimestamp(lastSyncAt))",
+                            tone: .neutral
+                        )
+                    }
+                    infoChip(
+                        title: "ACK \(queueStatus.lastAckStatus)",
                         tone: .neutral
                     )
                 }
-                infoChip(
-                    title: "ACK \(queueStatus.lastAckStatus)",
-                    tone: .neutral
-                )
+
+                VStack(alignment: .leading, spacing: 6) {
+                    infoChip(
+                        title: "큐 \(queueStatus.pendingCount)건",
+                        tone: queueStatus.pendingCount > 0 ? .warning : .neutral
+                    )
+                    if let lastSyncAt = queueStatus.lastSyncAt, lastSyncAt > 0 {
+                        infoChip(
+                            title: "동기화 \(formattedTimestamp(lastSyncAt))",
+                            tone: .neutral
+                        )
+                    }
+                    infoChip(
+                        title: "ACK \(queueStatus.lastAckStatus)",
+                        tone: .neutral
+                    )
+                }
             }
 
             if let warningText = queueStatus.warningText {
@@ -71,25 +99,49 @@ struct WatchOfflineQueueStatusCardView: View {
                     .lineLimit(3)
             }
 
-            HStack(spacing: 8) {
-                Button(action: onOpenDetail) {
-                    Label("큐 상태 보기", systemImage: "tray.full")
-                        .font(.caption.weight(.semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 6)
-                }
-                .buttonStyle(.bordered)
-
-                if queueStatus.shouldOfferManualSync {
-                    Button(action: onManualSync) {
-                        Label(queueStatus.manualSyncButtonTitle, systemImage: "arrow.clockwise")
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 8) {
+                    Button(action: onOpenDetail) {
+                        Label("큐 상태 보기", systemImage: "tray.full")
                             .font(.caption.weight(.semibold))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 6)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(queueStatus.manualSyncButtonTone.tintColor)
-                    .disabled(queueStatus.isManualSyncEnabled == false)
+                    .buttonStyle(.bordered)
+
+                    if queueStatus.shouldOfferManualSync {
+                        Button(action: onManualSync) {
+                            Label(queueStatus.manualSyncButtonTitle, systemImage: "arrow.clockwise")
+                                .font(.caption.weight(.semibold))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 6)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(queueStatus.manualSyncButtonTone.tintColor)
+                        .disabled(queueStatus.isManualSyncEnabled == false)
+                    }
+                }
+
+                VStack(spacing: 8) {
+                    Button(action: onOpenDetail) {
+                        Label("큐 상태 보기", systemImage: "tray.full")
+                            .font(.caption.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 6)
+                    }
+                    .buttonStyle(.bordered)
+
+                    if queueStatus.shouldOfferManualSync {
+                        Button(action: onManualSync) {
+                            Label(queueStatus.manualSyncButtonTitle, systemImage: "arrow.clockwise")
+                                .font(.caption.weight(.semibold))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 6)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(queueStatus.manualSyncButtonTone.tintColor)
+                        .disabled(queueStatus.isManualSyncEnabled == false)
+                    }
                 }
             }
         }
