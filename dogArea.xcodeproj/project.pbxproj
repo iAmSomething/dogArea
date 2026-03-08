@@ -177,6 +177,8 @@
 		DA3F9BA32AE0F14F0048550C /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9B9B2AE0F14F0048550C /* MapView.swift */; };
 		DA3F9BA42AE0F14F0048550C /* MapViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9B9C2AE0F14F0048550C /* MapViewModel.swift */; };
 		DA3F9BA52AE0F14F0048550C /* MapModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9B9D2AE0F14F0048550C /* MapModel.swift */; };
+		A50200010000000000000001 /* MapWalkPointSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50200010000000000000011 /* MapWalkPointSnapshot.swift */; };
+		A50200010000000000000002 /* MapWalkPointSnapshotService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50200010000000000000012 /* MapWalkPointSnapshotService.swift */; };
 		DA3F9BA62AE0F14F0048550C /* WalkListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9B9F2AE0F14F0048550C /* WalkListView.swift */; };
 		DA3F9BAE2AE0F2410048550C /* ViewUtility.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F9BAD2AE0F2410048550C /* ViewUtility.swift */; };
 		A45000010000000000000011 /* MapChromeSurfaceStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45000010000000000000001 /* MapChromeSurfaceStyle.swift */; };
@@ -548,6 +550,8 @@
 		DA3F9B9B2AE0F14F0048550C /* MapView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MapView.swift; sourceTree = "<group>"; };
 		DA3F9B9C2AE0F14F0048550C /* MapViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MapViewModel.swift; sourceTree = "<group>"; };
 		DA3F9B9D2AE0F14F0048550C /* MapModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MapModel.swift; sourceTree = "<group>"; };
+		A50200010000000000000011 /* MapWalkPointSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapWalkPointSnapshot.swift; sourceTree = "<group>"; };
+		A50200010000000000000012 /* MapWalkPointSnapshotService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapWalkPointSnapshotService.swift; sourceTree = "<group>"; };
 		DA3F9B9F2AE0F14F0048550C /* WalkListView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WalkListView.swift; sourceTree = "<group>"; };
 		DA3F9BAD2AE0F2410048550C /* ViewUtility.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ViewUtility.swift; sourceTree = "<group>"; };
 		A45000010000000000000001 /* MapChromeSurfaceStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapChromeSurfaceStyle.swift; sourceTree = "<group>"; };
@@ -1502,6 +1506,7 @@
 			isa = PBXGroup;
 			children = (
 				DA3F9B9D2AE0F14F0048550C /* MapModel.swift */,
+				A50200010000000000000011 /* MapWalkPointSnapshot.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -1511,6 +1516,7 @@
 			children = (
 				DAE148A01420000000000001 /* MapAreaCalculationService.swift */,
 				DAE147B01420000000000001 /* MapClusterAnnotationService.swift */,
+				A50200010000000000000012 /* MapWalkPointSnapshotService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -1889,7 +1895,9 @@
 				A50700010000000000000004 /* SupabaseAuthMailActionService.swift in Sources */,
 				A37800010000000000000001 /* AppTabScaffold.swift in Sources */,
 				DA3F9BA52AE0F14F0048550C /* MapModel.swift in Sources */,
+				A50200010000000000000001 /* MapWalkPointSnapshot.swift in Sources */,
 				DAE148A11420000000000001 /* MapAreaCalculationService.swift in Sources */,
+				A50200010000000000000002 /* MapWalkPointSnapshotService.swift in Sources */,
 				DAE147B11420000000000001 /* MapClusterAnnotationService.swift in Sources */,
 				A37600010000000000000021 /* ProfileEditorDraft.swift in Sources */,
 				A37600010000000000000022 /* SettingsPetManagementService.swift in Sources */,

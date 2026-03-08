@@ -497,6 +497,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private let weatherSnapshotProvider: WeatherSnapshotProviding
     private let weatherSnapshotStore: WeatherSnapshotStoreProtocol
     private let areaCalculationService: MapAreaCalculationServicing
+    private let walkPointSnapshotService: MapWalkPointSnapshotServicing
     private let clusterAnnotationService: MapClusterAnnotationServicing
     let widgetSnapshotStore: WalkWidgetSnapshotStoring
     let liveActivityService: WalkLiveActivityServicing
@@ -608,6 +609,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         weatherSnapshotProvider: WeatherSnapshotProviding = OpenMeteoWeatherSnapshotProvider(),
         weatherSnapshotStore: WeatherSnapshotStoreProtocol = WeatherSnapshotStore.shared,
         areaCalculationService: MapAreaCalculationServicing = MapAreaCalculationService(),
+        walkPointSnapshotService: MapWalkPointSnapshotServicing = MapWalkPointSnapshotService(),
         clusterAnnotationService: MapClusterAnnotationServicing = MapClusterAnnotationService(),
         widgetSnapshotStore: WalkWidgetSnapshotStoring = DefaultWalkWidgetSnapshotStore.shared,
         liveActivityService: WalkLiveActivityServicing = WalkLiveActivityService(),
@@ -621,6 +623,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         self.weatherSnapshotProvider = weatherSnapshotProvider
         self.weatherSnapshotStore = weatherSnapshotStore
         self.areaCalculationService = areaCalculationService
+        self.walkPointSnapshotService = walkPointSnapshotService
         self.clusterAnnotationService = clusterAnnotationService
         self.widgetSnapshotStore = widgetSnapshotStore
         self.liveActivityService = liveActivityService
@@ -3519,37 +3522,40 @@ extension MapViewModel {
         polygon.walkingArea = summary.finalAreaM2
     }
 
-    /// 지정 세션 포인트에서 route 역할 좌표만 추출합니다.
-    /// - Parameter points: route 좌표를 추출할 원본 포인트 배열입니다.
-    /// - Returns: route 포인트만 순서대로 변환한 좌표 배열입니다.
-    private func routeCoordinates(from points: [Location]) -> [CLLocationCoordinate2D] {
-        points
-            .filter { $0.pointRole == .route }
-            .map(\.coordinate)
+    /// 현재 세션의 route/mark 파생 snapshot입니다.
+    var activeWalkPointSnapshot: MapWalkPointSnapshot {
+        walkPointSnapshotService.snapshot(for: polygon)
     }
 
     /// 현재 세션의 route 좌표 배열입니다.
     var activeWalkRouteCoordinates: [CLLocationCoordinate2D] {
-        routeCoordinates(from: polygon.locations)
+        activeWalkPointSnapshot.routeCoordinates
     }
 
     /// 현재 세션의 mark 포인트 배열입니다.
     var activeWalkMarkLocations: [Location] {
-        polygon.locations.filter { $0.pointRole == .mark }
+        activeWalkPointSnapshot.markLocations
+    }
+
+    /// 특정 폴리곤 세션의 route/mark 파생 snapshot을 반환합니다.
+    /// - Parameter polygon: 조회 대상 산책 폴리곤입니다.
+    /// - Returns: 해당 세션의 route 좌표와 mark 포인트를 함께 담은 snapshot입니다.
+    func walkPointSnapshot(for polygon: Polygon) -> MapWalkPointSnapshot {
+        walkPointSnapshotService.snapshot(for: polygon)
     }
 
     /// 특정 폴리곤 세션의 route 좌표 배열을 반환합니다.
     /// - Parameter polygon: 조회 대상 산책 폴리곤입니다.
     /// - Returns: 해당 세션의 route 포인트를 좌표로 변환한 배열입니다.
     func routeCoordinates(for polygon: Polygon) -> [CLLocationCoordinate2D] {
-        routeCoordinates(from: polygon.locations)
+        walkPointSnapshot(for: polygon).routeCoordinates
     }
 
     /// 특정 폴리곤 세션의 mark 포인트 배열을 반환합니다.
     /// - Parameter polygon: 조회 대상 산책 폴리곤입니다.
     /// - Returns: 해당 세션의 mark 역할 포인트 배열입니다.
     func markLocations(for polygon: Polygon) -> [Location] {
-        polygon.locations.filter { $0.pointRole == .mark }
+        walkPointSnapshot(for: polygon).markLocations
     }
 
     func calculateArea() -> Double {
