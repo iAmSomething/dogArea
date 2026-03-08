@@ -51,6 +51,7 @@
 - 체감 날씨 피드백 루프 v1: `docs/weather-feedback-loop-v1.md`
 - 날씨 리스크 모델/Provider 정책 v1: `docs/weather-risk-provider-policy-v1.md`
 - 날씨 snapshot/provider 확장 v1: `docs/weather-snapshot-provider-v1.md`
+- 맵 heatmap trigger gating v1: `docs/map-heatmap-trigger-gating-v1.md`
 - 맵 route/mark snapshot cache v1: `docs/map-walk-point-snapshot-cache-v1.md`
 - 홈 refresh entrypoint 정리 v1: `docs/home-refresh-entrypoint-v1.md`
 - 홈 미션 pet context snapshot v1: `docs/home-mission-pet-context-snapshot-v1.md`

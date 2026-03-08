@@ -52,7 +52,7 @@ struct MapSubView: View {
                         .shadow(radius: 5)
                 }
             }
-            if !viewModel.isWalking && !viewModel.showOnlyOne && viewModel.isHeatmapFeatureAvailable && viewModel.heatmapEnabled {
+            if viewModel.isHeatmapVisibleInMapUI {
                 ForEach(viewModel.heatmapCells) { cell in
                     MapCircle(center: cell.centerCoordinate, radius: 75)
                         .foregroundStyle(
