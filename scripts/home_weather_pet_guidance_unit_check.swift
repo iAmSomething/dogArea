@@ -26,6 +26,8 @@ let guidanceModels = load("dogArea/Views/HomeView/HomeViewModelSupport/HomeWeath
 let guidanceService = load("dogArea/Source/Domain/Home/Services/HomeWeatherWalkGuidanceService.swift")
 let weatherCardView = load("dogArea/Views/HomeView/HomeSubView/Cards/HomeWeatherSnapshotCardView.swift")
 let guidanceSheetView = load("dogArea/Views/HomeView/HomeSubView/Presentation/HomeWeatherGuidanceSheetView.swift")
+let primaryActionCardView = load("dogArea/Views/HomeView/HomeSubView/Presentation/HomeWeatherGuidancePrimaryActionCardView.swift")
+let decisionFactorsCardView = load("dogArea/Views/HomeView/HomeSubView/Presentation/HomeWeatherGuidanceDecisionFactorsCardView.swift")
 let uiTests = load("dogAreaUITests/FeatureRegressionUITests.swift")
 let uiScript = load("scripts/run_feature_regression_ui_tests.sh")
 let readme = load("README.md")
@@ -52,8 +54,24 @@ assertTrue(
     "Home weather guidance presentation models should exist"
 )
 assertTrue(
+    guidanceModels.contains("struct HomeWeatherGuidancePrimaryActionPresentation"),
+    "Home weather guidance models should include a primary action presentation"
+)
+assertTrue(
+    guidanceModels.contains("struct HomeWeatherGuidanceDecisionFactorPresentation"),
+    "Home weather guidance models should include decision factor chips"
+)
+assertTrue(
     guidanceService.contains("protocol HomeWeatherWalkGuidancePresenting"),
     "Home weather guidance logic should be extracted behind a protocol"
+)
+assertTrue(
+    guidanceService.contains("makePrimaryAction("),
+    "Guidance service should compute a primary action summary"
+)
+assertTrue(
+    guidanceService.contains("makeDecisionFactors("),
+    "Guidance service should compute decision factor chips"
 )
 assertTrue(
     guidanceService.contains("title: localizedCopy(\"오늘 산책 시 주의\""),
@@ -80,6 +98,22 @@ assertTrue(
     "Guidance sheet should expose a stable root accessibility identifier"
 )
 assertTrue(
+    guidanceSheetView.contains("primaryActionCard"),
+    "Guidance sheet should render the primary action card"
+)
+assertTrue(
+    guidanceSheetView.contains("decisionFactorsCard"),
+    "Guidance sheet should render the decision factors card"
+)
+assertTrue(
+    primaryActionCardView.contains("home.weather.guidance.primaryAction"),
+    "Primary action card should expose a stable accessibility identifier"
+)
+assertTrue(
+    decisionFactorsCardView.contains("home.weather.guidance.decisionFactors"),
+    "Decision factors card should expose a stable accessibility identifier"
+)
+assertTrue(
     guidanceSheetView.contains("home.weather.guidance.section.\\(section.id)"),
     "Guidance sheet should expose stable section identifiers"
 )
@@ -94,6 +128,10 @@ assertTrue(
 assertTrue(
     doc.contains("오늘 산책 시 주의") && doc.contains("산책 권장 방식") && doc.contains("실내 대체 추천"),
     "Guidance doc should describe the three action-oriented sections"
+)
+assertTrue(
+    doc.contains("오늘 추천") && doc.contains("이렇게 판단했어요"),
+    "Guidance doc should describe the primary action and decision factors blocks"
 )
 assertTrue(
     readme.contains("docs/home-weather-pet-guidance-sheet-v1.md"),

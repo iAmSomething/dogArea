@@ -164,6 +164,8 @@
 		A45800010000000000000001 /* HomeWeatherWalkGuidanceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45800010000000000000011 /* HomeWeatherWalkGuidanceService.swift */; };
 		A45800010000000000000002 /* HomeWeatherGuidancePresentationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45800010000000000000012 /* HomeWeatherGuidancePresentationModels.swift */; };
 		A45800010000000000000003 /* HomeWeatherGuidanceSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45800010000000000000013 /* HomeWeatherGuidanceSheetView.swift */; };
+		A45800010000000000000004 /* HomeWeatherGuidancePrimaryActionCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45800010000000000000014 /* HomeWeatherGuidancePrimaryActionCardView.swift */; };
+		A45800010000000000000005 /* HomeWeatherGuidanceDecisionFactorsCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45800010000000000000015 /* HomeWeatherGuidanceDecisionFactorsCardView.swift */; };
 		A47500010000000000000001 /* WeatherReplacementSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = A47500010000000000000011 /* WeatherReplacementSummary.swift */; };
 		A47500010000000000000002 /* WeatherReplacementSummaryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A47500010000000000000012 /* WeatherReplacementSummaryStore.swift */; };
 		A47500010000000000000003 /* SupabaseWeatherReplacementServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = A47500010000000000000013 /* SupabaseWeatherReplacementServices.swift */; };
@@ -572,6 +574,8 @@
 		A45800010000000000000011 /* HomeWeatherWalkGuidanceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherWalkGuidanceService.swift; sourceTree = "<group>"; };
 		A45800010000000000000012 /* HomeWeatherGuidancePresentationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherGuidancePresentationModels.swift; sourceTree = "<group>"; };
 		A45800010000000000000013 /* HomeWeatherGuidanceSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherGuidanceSheetView.swift; sourceTree = "<group>"; };
+		A45800010000000000000014 /* HomeWeatherGuidancePrimaryActionCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherGuidancePrimaryActionCardView.swift; sourceTree = "<group>"; };
+		A45800010000000000000015 /* HomeWeatherGuidanceDecisionFactorsCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherGuidanceDecisionFactorsCardView.swift; sourceTree = "<group>"; };
 		A46400010000000000000011 /* QuestSurfacePolicyModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuestSurfacePolicyModels.swift; sourceTree = "<group>"; };
 		A46400010000000000000012 /* QuestSurfacePolicyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuestSurfacePolicyService.swift; sourceTree = "<group>"; };
 		A46500010000000000000011 /* QuestMapFeedbackPolicyModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuestMapFeedbackPolicyModels.swift; sourceTree = "<group>"; };
@@ -1251,6 +1255,8 @@
 				081AACF20D304E61699D792F /* HomeSeasonResultOverlayView.swift */,
 				163BA83441FB36D4D40305D8 /* HomeSeasonDetailSheetView.swift */,
 				A45800010000000000000013 /* HomeWeatherGuidanceSheetView.swift */,
+				A45800010000000000000014 /* HomeWeatherGuidancePrimaryActionCardView.swift */,
+				A45800010000000000000015 /* HomeWeatherGuidanceDecisionFactorsCardView.swift */,
 				6E7F38C996B1C42E27210E77 /* HomeSeasonResetTransitionBannerView.swift */,
 				D457F4903D0BCF9B5C9B7EFC /* HomeAreaMilestoneBadgeOverlayView.swift */,
 			);
@@ -2332,6 +2338,8 @@
 				B8774AA566F72FF9E7151938 /* HomeViewModel+AreaProgress.swift in Sources */,
 				C2A4309E392F82F548955737 /* HomeViewModel+IndoorMissionFlow.swift in Sources */,
 				A45800010000000000000003 /* HomeWeatherGuidanceSheetView.swift in Sources */,
+				A45800010000000000000004 /* HomeWeatherGuidancePrimaryActionCardView.swift in Sources */,
+				A45800010000000000000005 /* HomeWeatherGuidanceDecisionFactorsCardView.swift in Sources */,
 				A56400010000000000000004 /* HomeMissionGuideSheetView.swift in Sources */,
 				A56800010000000000000024 /* SeasonGuideSheetView.swift in Sources */,
 				A56500010000000000000005 /* WalkValueGuideSheetView.swift in Sources */,
