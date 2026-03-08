@@ -19,6 +19,7 @@ let viewModel = read(root + "/dogAreaWatch Watch App/ContentsViewModel.swift")
 let models = read(root + "/dogAreaWatch Watch App/WatchActionFeedbackModels.swift")
 let buttonView = read(root + "/dogAreaWatch Watch App/WatchActionButtonView.swift")
 let bannerView = read(root + "/dogAreaWatch Watch App/WatchActionBannerView.swift")
+let queueCardView = read(root + "/dogAreaWatch Watch App/WatchOfflineQueueStatusCardView.swift")
 let hapticService = read(root + "/dogAreaWatch Watch App/WatchActionHapticService.swift")
 let checkScript = read(root + "/scripts/ios_pr_check.sh")
 
@@ -43,8 +44,9 @@ assertTrue(viewModel.contains("transition(action, to: .confirmRequired"), "end w
 
 assertTrue(view.contains("WatchActionBannerView"), "watch content should render banner view")
 assertTrue(view.contains("WatchActionButtonView"), "watch content should render button view")
-assertTrue(view.contains("ACK"), "watch content should keep ACK visibility")
-assertTrue(view.contains("큐 \\(viewModel.pendingActionCount)건"), "watch content should keep queue visibility")
+assertTrue(view.contains("WatchOfflineQueueStatusCardView"), "watch content should render queue status card")
+assertTrue(queueCardView.contains("ACK \\(queueStatus.lastAckStatus)"), "queue card should keep ACK visibility")
+assertTrue(queueCardView.contains("큐 \\(queueStatus.pendingCount)건"), "queue card should keep queue visibility")
 
 assertTrue(buttonView.contains("showsProgress"), "button view should support progress state")
 assertTrue(bannerView.contains("WatchActionFeedbackBanner"), "banner view should render typed banner model")

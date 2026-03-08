@@ -47,6 +47,12 @@ enum WatchActionType: String {
     case syncState = "syncState"
 }
 
+private struct WatchAckSnapshot: Codable, Equatable {
+    let status: String
+    let actionId: String
+    let ackAt: TimeInterval?
+}
+
 final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
     @Published var isWalking = false
     @Published var walkingTime: TimeInterval = 0
@@ -56,14 +62,17 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
     @Published var pendingActionCount: Int = 0
     @Published var lastAckStatus: String = "대기"
     @Published var lastAckActionId: String = ""
+    @Published private(set) var lastAckAt: TimeInterval?
     @Published var contractVersion: String = "watch.remote.v1"
     @Published private(set) var feedbackBanner: WatchActionFeedbackBanner?
     @Published private(set) var petContext: WatchSelectedPetContextState = .legacyFallback(
         isWalking: false,
         lastSyncAt: nil
     )
+    @Published private(set) var queueStatus: WatchOfflineQueueStatusState = .empty(isReachable: false)
 
     private let actionQueueStorageKey = "watch.pendingActions.v1"
+    private let ackSnapshotStorageKey = "watch.lastAckSnapshot.v1"
     private let watchContractVersion = "watch.remote.v1"
     private let watchActionMessageType = "watch_action"
     private let watchAckMessageType = "watch_ack"
@@ -80,6 +89,8 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
         self.hapticService = hapticService
         super.init()
         loadPendingActions()
+        loadAckSnapshot()
+        refreshQueueStatus()
         activateSession()
     }
 
@@ -206,6 +217,31 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
         sendAction(action)
     }
 
+    /// 사용자가 큐 상태 화면에서 수동 재동기화를 요청했을 때 reachability에 맞춰 처리합니다.
+    /// 오프라인이면 새 sync action을 큐에 쌓지 않고, 온라인일 때만 queue flush와 상태 재확인을 수행합니다.
+    func handleManualQueueResync() {
+        guard session.activationState == .activated, session.isReachable else {
+            presentBanner(
+                title: "연결 대기 중",
+                detail: "지금은 오프라인이라 자동 재전송을 기다립니다. iPhone이 다시 연결되면 다시 동기화할 수 있어요.",
+                tone: .warning
+            )
+            refreshQueueStatus()
+            return
+        }
+
+        presentBanner(
+            title: pendingActions.isEmpty ? "상태 다시 확인" : "큐 다시 동기화",
+            detail: pendingActions.isEmpty
+                ? "최신 ACK와 상태를 다시 확인합니다."
+                : "대기 중인 요청과 최신 ACK 상태를 다시 확인합니다.",
+            tone: .processing,
+            playsHaptic: false
+        )
+        flushPendingActions()
+        sendAction(.syncState)
+    }
+
     /// WatchConnectivity 세션을 활성화하고 delegate를 연결합니다.
     /// 세션 활성화가 성공하면 이후 액션과 상태 동기화 요청을 받을 수 있습니다.
     private func activateSession() {
@@ -217,6 +253,17 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
     /// 워치 액션을 실제 transport 경로에 태워 전송하거나 큐에 적재합니다.
     /// - Parameter action: 전달할 워치 액션 종류입니다.
     func sendAction(_ action: WatchActionType) {
+        if action == .syncState,
+           (session.activationState != .activated || session.isReachable == false) {
+            presentBanner(
+                title: "오프라인 상태",
+                detail: "상태 다시 확인은 연결이 돌아오면 다시 시도할 수 있어요. 새 동기화 요청은 큐에 추가하지 않았습니다.",
+                tone: .warning
+            )
+            refreshQueueStatus()
+            return
+        }
+
         let dto = WatchActionDTO(
             version: watchContractVersion,
             type: watchActionMessageType,
@@ -251,8 +298,6 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
                 detail: "현재 오프라인이라 큐에 저장했고, 연결되면 자동 전송합니다.",
                 tone: .warning
             )
-            lastAckStatus = "오프라인 큐 저장"
-            lastAckActionId = dto.actionId
         }
         flushPendingActions()
     }
@@ -267,8 +312,6 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
             self?.enqueue(action)
             self?.flushPendingActions()
             DispatchQueue.main.async {
-                self?.lastAckStatus = "즉시 전송 실패, 큐로 보관"
-                self?.lastAckActionId = action.actionId
                 if let fallbackType {
                     self?.transition(fallbackType, to: .queued, resetAfter: fallbackType == .addPoint ? 1.6 : nil)
                     self?.presentBanner(
@@ -288,6 +331,7 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
         pendingActions.append(action)
         persistPendingActions()
         pendingActionCount = pendingActions.count
+        refreshQueueStatus()
     }
 
     /// UserDefaults에 저장된 pending queue를 로드합니다.
@@ -297,10 +341,12 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
               let decoded = try? JSONDecoder().decode([WatchActionDTO].self, from: data) else {
             pendingActions = []
             pendingActionCount = 0
+            refreshQueueStatus()
             return
         }
         pendingActions = decoded
         pendingActionCount = decoded.count
+        refreshQueueStatus()
     }
 
     /// 현재 pending queue를 UserDefaults에 영속화합니다.
@@ -308,6 +354,54 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
     private func persistPendingActions() {
         guard let data = try? JSONEncoder().encode(pendingActions) else { return }
         UserDefaults.standard.set(data, forKey: actionQueueStorageKey)
+    }
+
+    /// UserDefaults에 저장된 마지막 ACK 스냅샷을 복원합니다.
+    /// 저장 데이터가 없거나 복원에 실패하면 기본 ACK 상태를 유지합니다.
+    private func loadAckSnapshot() {
+        guard let data = UserDefaults.standard.data(forKey: ackSnapshotStorageKey),
+              let decoded = try? JSONDecoder().decode(WatchAckSnapshot.self, from: data) else {
+            return
+        }
+        lastAckStatus = decoded.status
+        lastAckActionId = decoded.actionId
+        lastAckAt = decoded.ackAt
+    }
+
+    /// 현재 마지막 ACK 상태를 UserDefaults에 영속화합니다.
+    /// 인코딩에 실패하면 기존 저장 상태를 유지합니다.
+    private func persistAckSnapshot() {
+        let snapshot = WatchAckSnapshot(
+            status: lastAckStatus,
+            actionId: lastAckActionId,
+            ackAt: lastAckAt
+        )
+        guard let data = try? JSONEncoder().encode(snapshot) else { return }
+        UserDefaults.standard.set(data, forKey: ackSnapshotStorageKey)
+    }
+
+    /// 현재 pending queue, ACK, reachability를 카드/시트 공용 상태로 다시 계산합니다.
+    private func refreshQueueStatus() {
+        queueStatus = .make(
+            pendingActions: pendingActions,
+            lastAckStatus: lastAckStatus,
+            lastAckActionId: lastAckActionId,
+            lastAckAt: lastAckAt,
+            isReachable: isReachable
+        )
+    }
+
+    /// 마지막 ACK 상태와 시각을 갱신하고 영속화합니다.
+    /// - Parameters:
+    ///   - status: 사용자에게 보여줄 ACK 상태 문자열입니다.
+    ///   - actionId: ACK와 연결된 action id입니다.
+    ///   - ackAt: ACK를 받은 시각입니다.
+    private func updateAck(status: String, actionId: String, ackAt: TimeInterval?) {
+        lastAckStatus = status
+        lastAckActionId = actionId
+        lastAckAt = ackAt
+        persistAckSnapshot()
+        refreshQueueStatus()
     }
 
     /// pending queue를 가능한 transport 경로로 전달합니다.
@@ -325,7 +419,7 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
         pendingActions.removeAll()
         persistPendingActions()
         pendingActionCount = 0
-        lastAckStatus = "큐 전송 등록 \(queued.count)건"
+        refreshQueueStatus()
     }
 
     /// iPhone에서 내려준 최신 application context를 watch 상태로 반영합니다.
@@ -345,11 +439,14 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
                 fallbackLastSyncAt: self.lastSyncAt
             )
             if let appliedActionId = context["last_action_id_applied"] as? String, appliedActionId.isEmpty == false {
-                self.lastAckActionId = appliedActionId
                 self.applyCompletedState(for: appliedActionId, statusText: context["watch_status"] as? String)
             }
             if let status = context["watch_status"] as? String, status.isEmpty == false {
-                self.lastAckStatus = status
+                let ackAt = self.lastSyncAt > 0 ? self.lastSyncAt : Date().timeIntervalSince1970
+                let actionId = (context["last_action_id_applied"] as? String) ?? self.lastAckActionId
+                self.updateAck(status: status, actionId: actionId, ackAt: ackAt)
+            } else {
+                self.refreshQueueStatus()
             }
         }
     }
@@ -375,9 +472,12 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
         let syncedAt = (reply["last_sync_at"] as? TimeInterval) ?? Date().timeIntervalSince1970
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
-            self.lastAckStatus = "ACK \(status)"
-            self.lastAckActionId = actionId
             self.lastSyncAt = syncedAt
+            self.updateAck(
+                status: "ACK \(status)",
+                actionId: actionId,
+                ackAt: syncedAt
+            )
 
             let actionType = self.actionTypeByActionId[actionId]
                 ?? actionName.flatMap(WatchActionType.init(rawValue:))
@@ -520,6 +620,7 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
         }
         DispatchQueue.main.async { [weak self] in
             self?.isReachable = session.isReachable
+            self?.refreshQueueStatus()
         }
         applyContext(session.receivedApplicationContext)
         if session.isReachable {
@@ -531,6 +632,7 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
     func sessionReachabilityDidChange(_ session: WCSession) {
         DispatchQueue.main.async { [weak self] in
             self?.isReachable = session.isReachable
+            self?.refreshQueueStatus()
             if session.isReachable == false {
                 self?.presentBanner(
                     title: "오프라인 전환",
@@ -556,6 +658,7 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
     func sessionDidBecomeInactive(_ session: WCSession) {
         DispatchQueue.main.async { [weak self] in
             self?.isReachable = session.isReachable
+            self?.refreshQueueStatus()
         }
     }
 
