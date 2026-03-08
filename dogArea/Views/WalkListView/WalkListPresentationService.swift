@@ -21,10 +21,14 @@ protocol WalkListPresentationServicing {
     /// - Parameters:
     ///   - visibleRecords: 현재 화면에 보여줄 산책 기록입니다.
     ///   - petNameById: 반려견 식별자별 이름 매핑입니다.
+    ///   - selectedCalendarDate: 현재 선택된 날짜의 `startOfDay`입니다.
+    ///   - calendar: 날짜 섹션 타이틀 계산에 사용할 로컬 캘린더입니다.
     /// - Returns: 이번 주/이전 기록으로 분류된 섹션 목록입니다.
     func makeSections(
         visibleRecords: [WalkDataModel],
-        petNameById: [String: String]
+        petNameById: [String: String],
+        selectedCalendarDate: Date?,
+        calendar: Calendar
     ) -> [WalkListSectionModel]
 
     /// 목록 비어 있음 상태에 대응하는 안내 카드 모델을 생성합니다.
@@ -115,11 +119,30 @@ struct WalkListPresentationService: WalkListPresentationServicing {
     /// - Parameters:
     ///   - visibleRecords: 현재 화면에 보여줄 산책 기록입니다.
     ///   - petNameById: 반려견 식별자별 이름 매핑입니다.
+    ///   - selectedCalendarDate: 현재 선택된 날짜의 `startOfDay`입니다.
+    ///   - calendar: 날짜 섹션 타이틀 계산에 사용할 로컬 캘린더입니다.
     /// - Returns: 이번 주/이전 기록으로 분류된 섹션 목록입니다.
     func makeSections(
         visibleRecords: [WalkDataModel],
-        petNameById: [String: String]
+        petNameById: [String: String],
+        selectedCalendarDate: Date?,
+        calendar: Calendar
     ) -> [WalkListSectionModel] {
+        if let selectedCalendarDate, visibleRecords.isEmpty == false {
+            return [
+                makeSection(
+                    id: "selectedDate",
+                    title: selectedDateTitle(for: selectedCalendarDate, calendar: calendar),
+                    subtitle: "이 날짜에 걸친 산책 \(visibleRecords.count)건",
+                    accessibilityIdentifier: "walklist.section.filtered",
+                    records: visibleRecords.sorted { lhs, rhs in
+                        lhs.createdAt > rhs.createdAt
+                    },
+                    petNameById: petNameById
+                )
+            ]
+        }
+
         let thisWeekRecords = visibleRecords.thisWeekList.sorted { lhs, rhs in
             lhs.createdAt > rhs.createdAt
         }
@@ -134,6 +157,7 @@ struct WalkListPresentationService: WalkListPresentationServicing {
                     id: "thisWeek",
                     title: "이번 주 산책",
                     subtitle: "가장 최근에 저장한 \(thisWeekRecords.count)건",
+                    accessibilityIdentifier: "walklist.section.thisWeek",
                     records: thisWeekRecords,
                     petNameById: petNameById
                 )
@@ -145,6 +169,7 @@ struct WalkListPresentationService: WalkListPresentationServicing {
                     id: "previous",
                     title: "이전 기록",
                     subtitle: "이번 주 이전에 저장한 \(previousRecords.count)건",
+                    accessibilityIdentifier: "walklist.section.previous",
                     records: previousRecords,
                     petNameById: petNameById
                 )
@@ -217,6 +242,7 @@ struct WalkListPresentationService: WalkListPresentationServicing {
     ///   - id: 섹션 식별자입니다.
     ///   - title: 섹션 제목입니다.
     ///   - subtitle: 섹션 보조 설명입니다.
+    ///   - accessibilityIdentifier: 섹션 헤더 접근성 식별자입니다.
     ///   - records: 섹션에 포함할 산책 기록입니다.
     ///   - petNameById: 반려견 식별자별 이름 매핑입니다.
     /// - Returns: 셀 프레젠테이션 정보가 채워진 섹션 모델입니다.
@@ -224,6 +250,7 @@ struct WalkListPresentationService: WalkListPresentationServicing {
         id: String,
         title: String,
         subtitle: String,
+        accessibilityIdentifier: String?,
         records: [WalkDataModel],
         petNameById: [String: String]
     ) -> WalkListSectionModel {
@@ -231,12 +258,28 @@ struct WalkListPresentationService: WalkListPresentationServicing {
             id: id,
             title: title,
             subtitle: subtitle,
+            accessibilityIdentifier: accessibilityIdentifier,
             items: records.map { record in
                 WalkListSectionItem(
                     walkData: record,
-                    petName: record.petId.flatMap { petNameById[$0] }
+                    petName: record.petId.flatMap { petNameById[$0] },
+                    accessibilityIdentifier: "walklist.cell.\(record.id.uuidString.lowercased())"
                 )
             }
         )
+    }
+
+    /// 선택된 날짜 필터에 표시할 섹션 타이틀을 생성합니다.
+    /// - Parameters:
+    ///   - date: 사용자가 탭한 날짜의 `startOfDay`입니다.
+    ///   - calendar: 날짜 포맷 계산에 사용할 로컬 캘린더입니다.
+    /// - Returns: `M월 d일 (E) 기록` 형식의 문자열입니다.
+    private func selectedDateTitle(for date: Date, calendar: Calendar) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.locale = calendar.locale ?? Locale.autoupdatingCurrent
+        formatter.timeZone = calendar.timeZone
+        formatter.dateFormat = "M월 d일 (E) 기록"
+        return formatter.string(from: date)
     }
 }

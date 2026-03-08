@@ -15,5 +15,6 @@ struct WalkListSectionHeaderView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.top, 4)
         .padding(.bottom, 6)
+        .accessibilityIdentifier(model.accessibilityIdentifier ?? "")
     }
 }

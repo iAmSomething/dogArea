@@ -37,12 +37,14 @@ struct WalkListSectionModel: Identifiable {
     let id: String
     let title: String
     let subtitle: String
+    let accessibilityIdentifier: String?
     let items: [WalkListSectionItem]
 }
 
 struct WalkListSectionItem: Identifiable {
     let walkData: WalkDataModel
     let petName: String?
+    let accessibilityIdentifier: String
 
     var id: UUID {
         walkData.id

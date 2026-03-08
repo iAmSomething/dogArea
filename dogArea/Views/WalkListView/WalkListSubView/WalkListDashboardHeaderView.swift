@@ -2,10 +2,15 @@ import SwiftUI
 
 struct WalkListDashboardHeaderView: View {
     let overview: WalkListOverviewModel
+    let calendar: WalkListCalendarPresentationModel
     let pets: [PetInfo]
     let selectedPetId: String
     let onSelectPet: (String) -> Void
     let onRestoreSelected: () -> Void
+    let onPreviousCalendarMonth: () -> Void
+    let onNextCalendarMonth: () -> Void
+    let onSelectCalendarDate: (Date) -> Void
+    let onClearCalendarSelection: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -92,6 +97,14 @@ struct WalkListDashboardHeaderView: View {
             .appCardSurface()
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("walklist.context")
+
+            WalkListMonthlyCalendarCardView(
+                model: calendar,
+                onPreviousMonth: onPreviousCalendarMonth,
+                onNextMonth: onNextCalendarMonth,
+                onSelectDate: onSelectCalendarDate,
+                onClearSelection: onClearCalendarSelection
+            )
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("walklist.header")
