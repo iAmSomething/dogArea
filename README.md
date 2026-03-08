@@ -74,6 +74,7 @@
 - 퀘스트 표면 정책(홈/지도/위젯 경계) v1: `docs/quest-surface-policy-v1.md`
 - 지도 퀘스트 피드백 HUD 정책 v1: `docs/map-quest-feedback-hud-v1.md`
 - 지도 퀘스트 HUD 최소 정보셋 v1: `docs/map-quest-hud-minimum-info-set-v1.md`
+- 지도 상단 overlay 우선순위 매트릭스 v1: `docs/map-quest-overlay-priority-matrix-v1.md`
 - 퀘스트 Stage2 진행/클레임 백엔드 엔진 v1: `docs/quest-stage2-progress-claim-engine-v1.md`
 - 퀘스트 실패 완충(자동 연장 슬롯) v1: `docs/quest-failure-buffer-v1.md`
 - 퀘스트 Stage3 UX/리마인드 v1: `docs/quest-stage3-ux-reminder-v1.md`
