@@ -371,8 +371,6 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     @Published var syncOutboxLastErrorCodeText: String = ""
     @Published var syncRecoveryToastMessage: String? = nil
     @Published private(set) var captureRipples: [CaptureRipple] = []
-    @Published private(set) var clusterMotionTransition: ClusterMotionTransition = .none
-    @Published private(set) var clusterMotionToken: Int = 0
     @Published private(set) var weatherOverlayRiskLevel: WeatherOverlayRiskLevel = .clear
     @Published private(set) var weatherOverlayOpacity: Double = 0.0
     @Published private(set) var weatherOverlayStatusText: String = "날씨 상태 정상"
@@ -380,6 +378,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     @Published var mapMotionReduced: Bool = false
     @Published var isAddPointLongPressModeEnabled: Bool = false
     let watchSession = WCSession.isSupported() ? WCSession.default : nil
+    let clusterMotionState = MapClusterMotionState()
     private let featureFlags = FeatureFlagStore.shared
     let metricTracker = AppMetricTracker.shared
     private let nearbyService = NearbyPresenceService()
@@ -1306,15 +1305,22 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     /// 캡처 리플 만료 시각에 맞춰 해당 리플을 자동 제거하도록 예약합니다.
     /// - Parameter ripple: 만료 제거를 예약할 리플 모델입니다.
     private func scheduleCaptureRippleExpiry(for ripple: CaptureRipple) {
-        cancelCaptureRippleExpiry(for: ripple.id)
-        captureRippleExpiryTasks[ripple.id] = Task { [weak self] in
-            let delayNanoseconds = UInt64(max(0.001, captureRippleDuration) * 1_000_000_000)
+        let rippleID = ripple.id
+        let delayNanoseconds = UInt64(max(0.001, captureRippleDuration) * 1_000_000_000)
+        cancelCaptureRippleExpiry(for: rippleID)
+        captureRippleExpiryTasks[rippleID] = Task { [weak self] in
             try? await Task.sleep(nanoseconds: delayNanoseconds)
             guard Task.isCancelled == false else { return }
-            await MainActor.run {
-                self?.removeCaptureRipple(withID: ripple.id)
-            }
+            guard let self else { return }
+            await self.removeCaptureRippleOnMainActor(withID: rippleID)
         }
+    }
+
+    /// 메인 액터에서 캡처 리플을 안전하게 제거합니다.
+    /// - Parameter id: 제거할 캡처 리플 식별자입니다.
+    @MainActor
+    private func removeCaptureRippleOnMainActor(withID id: UUID) {
+        removeCaptureRipple(withID: id)
     }
 
     /// 저장 개수 상한을 넘은 오래된 리플을 제거해 어노테이션 수를 제한합니다.
@@ -3860,13 +3866,11 @@ extension MapViewModel {
 
         let nextCount = nextClusters.count
         if nextCount > previousCount {
-            clusterMotionTransition = .decompose
-            clusterMotionToken += 1
+            clusterMotionState.trigger(.decompose)
         } else if nextCount < previousCount {
-            clusterMotionTransition = .merge
-            clusterMotionToken += 1
+            clusterMotionState.trigger(.merge)
         } else {
-            clusterMotionTransition = .none
+            clusterMotionState.reset()
         }
     }
     private func hotspots() async { // 핫스팟 로직 고민해보기
