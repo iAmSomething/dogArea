@@ -328,7 +328,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     var camera: MapCamera = .init(.init())
     @Published var cameraPosition = MapCameraPosition.automatic
     @Published var selectedMarker: Location? = nil
-    @Published var showOnlyOne: Bool = true {
+    @Published var showOnlyOne: Bool = false {
         didSet {
             guard oldValue != showOnlyOne else { return }
             handleHeatmapVisibilityStateChanged()
@@ -336,6 +336,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     }
     @Published var heatmapEnabled: Bool = true
     @Published var heatmapCells: [HeatmapCellDTO] = []
+    @Published private(set) var seasonTileMapTiles: [MapSeasonTilePresentation] = []
+    @Published private(set) var seasonTileSummaryPresentation: MapSeasonTileSummaryPresentation? = nil
     @Published var nearbyHotspotEnabled: Bool = true
     @Published var locationSharingEnabled: Bool = false
     @Published var nearbyHotspots: [NearbyHotspotDTO] = [] {
@@ -383,6 +385,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     let metricTracker = AppMetricTracker.shared
     private let nearbyService = NearbyPresenceService()
     private let heatmapAggregationService: MapHeatmapAggregationServicing
+    private let seasonTilePresentationService: MapSeasonTilePresentationServicing
     private let hotspotClusterRenderingService: MapHotspotClusterRenderingServicing
     private var nearbyTickTimer: Timer? = nil
     private var heatmapAggregationSnapshot: MapHeatmapAggregationSnapshot?
@@ -627,6 +630,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         weatherSnapshotStore: WeatherSnapshotStoreProtocol = WeatherSnapshotStore.shared,
         areaCalculationService: MapAreaCalculationServicing = MapAreaCalculationService(),
         heatmapAggregationService: MapHeatmapAggregationServicing = MapHeatmapAggregationService(),
+        seasonTilePresentationService: MapSeasonTilePresentationServicing = MapSeasonTilePresentationService(),
         walkPointSnapshotService: MapWalkPointSnapshotServicing = MapWalkPointSnapshotService(),
         clusterAnnotationService: MapClusterAnnotationServicing = MapClusterAnnotationService(),
         hotspotClusterRenderingService: MapHotspotClusterRenderingServicing? = nil,
@@ -643,6 +647,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         self.weatherSnapshotStore = weatherSnapshotStore
         self.areaCalculationService = areaCalculationService
         self.heatmapAggregationService = heatmapAggregationService
+        self.seasonTilePresentationService = seasonTilePresentationService
         self.walkPointSnapshotService = walkPointSnapshotService
         self.clusterAnnotationService = clusterAnnotationService
         self.hotspotClusterRenderingService = hotspotClusterRenderingService
@@ -2386,6 +2391,10 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         isHeatmapFeatureAvailable && heatmapEnabled && isWalking == false && showOnlyOne == false
     }
 
+    var isSeasonTileMapVisible: Bool {
+        isHeatmapVisibleInMapUI
+    }
+
     var isHeatmapFeatureAvailable: Bool {
         featureFlags.isEnabled(.heatmapV1)
     }
@@ -2406,6 +2415,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         heatmapRefreshTask = nil
         latestHeatmapRefreshRequestID = nil
         heatmapCells = []
+        seasonTileMapTiles = []
+        seasonTileSummaryPresentation = nil
         if preserveSnapshot == false {
             heatmapAggregationSnapshot = nil
         }
@@ -2438,6 +2449,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         }
 
         heatmapCells = snapshot.cells
+        seasonTileMapTiles = seasonTilePresentationService.makeTilePresentations(from: snapshot.cells)
+        seasonTileSummaryPresentation = seasonTilePresentationService.makeSummaryPresentation(from: seasonTileMapTiles)
     }
 
     var isCloudSyncAvailableForSession: Bool {
@@ -2556,41 +2569,57 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         let level: Int
         let label: String
         let status: String
+        let description: String
 
-        var id: Int { level }
+        var id: String { "\(level)-\(status)" }
     }
 
+    /// 시즌 타일 점수의 4단계 강도를 계산합니다.
+    /// - Parameter score: 시즌 셀에 누적된 정규화 점수입니다.
+    /// - Returns: 0부터 3까지의 강도 단계입니다.
     func seasonTileIntensityLevel(for score: Double) -> Int {
-        guard score > 0 else { return 0 }
-        let level = Int(ceil(score * 4.0) - 1.0)
-        return min(3, max(0, level))
+        seasonTilePresentationService.intensityLevel(for: score)
     }
 
+    /// 시즌 타일 점수를 점령/유지 상태 문구로 변환합니다.
+    /// - Parameter score: 시즌 셀에 누적된 정규화 점수입니다.
+    /// - Returns: 지도 범례와 카드에서 사용할 상태 문구입니다.
     func seasonTileStatusText(for score: Double) -> String {
-        score >= 0.55 ? "점령" : "유지"
+        seasonTilePresentationService.status(for: score).rawValue
     }
 
     var seasonTileLegendItems: [SeasonTileLegendItem] {
-        [
-            .init(level: 0, label: "1단계", status: "유지"),
-            .init(level: 1, label: "2단계", status: "유지"),
-            .init(level: 2, label: "3단계", status: "점령"),
-            .init(level: 3, label: "4단계", status: "점령")
-        ]
+        seasonTilePresentationService.makeLegendPresentations().map {
+            SeasonTileLegendItem(
+                level: $0.level,
+                label: "\($0.level + 1)단계",
+                status: $0.status.rawValue,
+                description: $0.description
+            )
+        }
     }
 
     var seasonOccupiedTileCount: Int {
-        heatmapCells.filter { seasonTileStatusText(for: $0.score) == "점령" }.count
+        seasonTileMapTiles.filter { $0.status == .occupied }.count
     }
 
     var seasonMaintainedTileCount: Int {
-        heatmapCells.filter { seasonTileStatusText(for: $0.score) == "유지" }.count
+        seasonTileMapTiles.filter { $0.status == .maintained }.count
     }
 
     var seasonTileStatusSummaryText: String {
-        "시즌 타일 4단계 · 점령 \(seasonOccupiedTileCount) · 유지 \(seasonMaintainedTileCount)"
+        let summary = seasonTileSummaryCardPresentation
+        return "\(summary.title) · \(summary.countLine)"
     }
 
+    var seasonTileSummaryCardPresentation: MapSeasonTileSummaryPresentation {
+        seasonTileSummaryPresentation
+            ?? seasonTilePresentationService.makeSummaryPresentation(from: seasonTileMapTiles)
+    }
+
+    /// 시즌 타일 채움 색을 계산합니다.
+    /// - Parameter score: 시즌 셀에 누적된 정규화 점수입니다.
+    /// - Returns: 시즌 타일 단계에 대응하는 채움 색입니다.
     func heatmapColor(for score: Double) -> Color {
         let level = seasonTileIntensityLevel(for: score)
         let status = seasonTileStatusText(for: score)
@@ -2604,12 +2633,53 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         }
     }
 
+    /// 시즌 타일 채움 투명도를 계산합니다.
+    /// - Parameter score: 시즌 셀에 누적된 정규화 점수입니다.
+    /// - Returns: 시즌 타일 단계에 대응하는 채움 투명도입니다.
     func heatmapOpacity(for score: Double) -> Double {
         switch seasonTileIntensityLevel(for: score) {
         case 0: return 0.28
         case 1: return 0.38
         case 2: return 0.50
         default: return 0.62
+        }
+    }
+
+    /// 시즌 타일 셀의 채움 색을 계산합니다.
+    /// - Parameter tile: 지도에 렌더링할 시즌 타일 셀 표현입니다.
+    /// - Returns: 셀의 상태/강도에 대응하는 채움 색입니다.
+    func seasonTileFillColor(for tile: MapSeasonTilePresentation) -> Color {
+        heatmapColor(for: tile.score)
+    }
+
+    /// 시즌 타일 셀의 채움 투명도를 계산합니다.
+    /// - Parameter tile: 지도에 렌더링할 시즌 타일 셀 표현입니다.
+    /// - Returns: 셀의 상태/강도에 대응하는 채움 투명도입니다.
+    func seasonTileFillOpacity(for tile: MapSeasonTilePresentation) -> Double {
+        min(0.68, heatmapOpacity(for: tile.score) + 0.08)
+    }
+
+    /// 시즌 타일 셀의 테두리 색을 계산합니다.
+    /// - Parameter tile: 지도에 렌더링할 시즌 타일 셀 표현입니다.
+    /// - Returns: 점령/유지 상태를 식별하는 테두리 색입니다.
+    func seasonTileStrokeColor(for tile: MapSeasonTilePresentation) -> Color {
+        switch tile.status {
+        case .occupied:
+            return Color.appDynamicHex(light: 0xC2410C, dark: 0xFDBA74)
+        case .maintained:
+            return Color.appDynamicHex(light: 0x0F766E, dark: 0x5EEAD4)
+        }
+    }
+
+    /// 시즌 타일 셀의 테두리 스타일을 계산합니다.
+    /// - Parameter tile: 지도에 렌더링할 시즌 타일 셀 표현입니다.
+    /// - Returns: 점령/유지 상태에 대응하는 스트로크 스타일입니다.
+    func seasonTileStrokeStyle(for tile: MapSeasonTilePresentation) -> StrokeStyle {
+        switch tile.status {
+        case .occupied:
+            return StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round)
+        case .maintained:
+            return StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round, dash: [7, 5])
         }
     }
 

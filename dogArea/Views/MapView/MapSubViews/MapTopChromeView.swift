@@ -4,7 +4,8 @@ struct MapTopChromeView: View {
     let safeAreaTopInset: CGFloat
     let weatherStatusText: String
     let isWeatherFallbackActive: Bool
-    let heatmapSummaryText: String?
+    let seasonTileSummaryText: String?
+    let seasonTileSummaryContent: AnyView?
     let bannerContent: AnyView?
     let statusContent: AnyView?
     let onOpenSettings: () -> Void
@@ -14,8 +15,8 @@ struct MapTopChromeView: View {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: MapChromeLayoutMetrics.pillSpacing) {
                     weatherStatusPill
-                    if let heatmapSummaryText, heatmapSummaryText.isEmpty == false {
-                        heatmapSummaryPill(text: heatmapSummaryText)
+                    if let seasonTileSummaryText, seasonTileSummaryText.isEmpty == false {
+                        seasonTileSummaryPill(text: seasonTileSummaryText)
                     }
                 }
 
@@ -29,6 +30,10 @@ struct MapTopChromeView: View {
                     emphasized: false,
                     action: onOpenSettings
                 )
+            }
+
+            if let seasonTileSummaryContent {
+                seasonTileSummaryContent
             }
 
             if let bannerContent {
@@ -57,10 +62,10 @@ struct MapTopChromeView: View {
         .accessibilityLabel("지도 날씨 상태 \(weatherStatusText)")
     }
 
-    /// 히트맵 요약을 chrome pill로 렌더링합니다.
-    /// - Parameter text: 현재 히트맵/시즌 타일 요약 문구입니다.
-    /// - Returns: 지도 상단에 표시할 히트맵 요약 pill 뷰입니다.
-    private func heatmapSummaryPill(text: String) -> some View {
+    /// 시즌 점령 지도 요약을 chrome pill로 렌더링합니다.
+    /// - Parameter text: 현재 시즌 타일 요약 문구입니다.
+    /// - Returns: 지도 상단에 표시할 시즌 점령 지도 요약 pill 뷰입니다.
+    private func seasonTileSummaryPill(text: String) -> some View {
         HStack(spacing: 8) {
             Image(systemName: "square.grid.3x3.fill")
                 .font(.system(size: 11, weight: .semibold))

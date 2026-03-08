@@ -51,7 +51,7 @@ for forbiddenTerm in [
 
 for replacement in [
     "날씨 정보를 잠시 불러오지 못했어요",
-    "산책 분포",
+    "시즌 점령 지도",
     "자동 기록",
     "실행 취소",
     "오늘 +0"

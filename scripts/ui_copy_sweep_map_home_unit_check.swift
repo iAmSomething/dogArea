@@ -67,7 +67,7 @@ for (forbidden, path) in forbiddenPairs {
 
 let expectedPairs: [(String, String)] = [
     ("날씨 정보를 잠시 불러오지 못했어요", "dogArea/Views/MapView/MapViewModel.swift"),
-    ("산책 분포", "dogArea/Views/MapView/MapSubViews/MapSettingView.swift"),
+    ("시즌 점령 지도", "dogArea/Views/MapView/MapSubViews/MapSettingView.swift"),
     ("자동 기록", "dogArea/Views/MapView/MapSubViews/MapFloatingControlColumnView.swift"),
     ("영역 추가 후 실행 취소", "dogArea/Views/MapView/MapSubViews/MapSettingView.swift"),
     ("자동 종료 기준 적용 중", "dogArea/Views/MapView/MapSubViews/MapSettingView.swift"),

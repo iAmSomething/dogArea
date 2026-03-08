@@ -39,8 +39,16 @@ assertTrue(mapViewModel.contains("var isHeatmapVisibleInMapUI: Bool"), "MapViewM
 assertTrue(mapViewModel.contains("clearHeatmapPresentation(preserveSnapshot: true)"), "MapViewModel should clear only the presentation when heatmap is hidden")
 assertTrue(!mapViewModel.contains("self.heatmapCells = HeatmapEngine.aggregate"), "MapViewModel should no longer aggregate heatmap cells directly")
 
-assertTrue(mapSubView.contains("if viewModel.isHeatmapVisibleInMapUI"), "MapSubView should reuse the shared heatmap visibility rule")
-assertTrue(mapView.contains("heatmapSummaryText: viewModel.isHeatmapVisibleInMapUI"), "MapView top chrome should reuse the shared heatmap visibility rule")
+let mapSubViewUsesSharedVisibilityRule =
+    mapSubView.contains("if viewModel.isHeatmapVisibleInMapUI")
+    || mapSubView.contains("if viewModel.isSeasonTileMapVisible")
+assertTrue(mapSubViewUsesSharedVisibilityRule, "MapSubView should reuse the shared map visibility rule")
+
+let mapViewUsesSharedVisibilityRule =
+    mapView.contains("heatmapSummaryText: viewModel.isHeatmapVisibleInMapUI")
+    || mapView.contains("seasonTileSummaryText: viewModel.isHeatmapVisibleInMapUI")
+    || mapView.contains("seasonTileSummaryText: viewModel.isSeasonTileMapVisible")
+assertTrue(mapViewUsesSharedVisibilityRule, "MapView top chrome should reuse the shared map visibility rule")
 
 assertTrue(doc.contains("#503"), "performance report should reference issue #503")
 assertTrue(doc.contains("최소 `2회`"), "performance report should explain the before call frequency")

@@ -48,6 +48,32 @@ final class FeatureRegressionUITests: XCTestCase {
         )
     }
 
+    /// 지도 본면에서 시즌 오버레이가 점령 지도 카드와 의미 설명을 함께 노출하는지 검증합니다.
+    func testFeatureRegression_MapSeasonOccupationSummarySurfacesMeaningOnCanvas() throws {
+        let app = launchAppForFeatureRegression()
+        XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.")
+        XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
+
+        let summaryCard = screenElement(identifier: "map.season.summary.card", in: app)
+        XCTAssertTrue(waitUntilExists(summaryCard, timeout: 6), "시즌 점령 지도 요약 카드가 노출되지 않았습니다.")
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "map.season.summary.status.occupied", in: app), timeout: 2),
+            "점령 상태 범례가 노출되지 않았습니다."
+        )
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "map.season.summary.status.maintained", in: app), timeout: 2),
+            "유지 상태 범례가 노출되지 않았습니다."
+        )
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "map.season.summary.level.4", in: app), timeout: 2),
+            "강도 4단계 스트립이 노출되지 않았습니다."
+        )
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "map.season.summary.relation", in: app), timeout: 2),
+            "산책 반영 관계 설명이 노출되지 않았습니다."
+        )
+    }
+
     /// 산책 종료 알럿이 주 행동/보조 행동/파괴적 행동을 분리된 위계로 노출하는지 검증합니다.
     func testFeatureRegression_MapStopAlertPresentsClearActionHierarchy() throws {
         let app = launchAppForFeatureRegression(extraArguments: ["-UITest.MapForceWalkingState"])
