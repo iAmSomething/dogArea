@@ -89,4 +89,5 @@ class UserdefaultSetting {
 extension Notification.Name {
     static let walkPointRecordedForQuest = Notification.Name("walk.point.recorded.for.quest")
     static let authSessionDidChange = Notification.Name("auth.session.didChange")
+    static let openWalkHistoryRequested = Notification.Name("walk.history.requested")
 }

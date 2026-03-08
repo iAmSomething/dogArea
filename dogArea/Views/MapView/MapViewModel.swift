@@ -314,6 +314,12 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         ProcessInfo.processInfo.arguments.contains("-UITest.SeasonGuideAutoPresent")
     }
 
+    /// UI 테스트에서 산책 가치 설명 가이드를 자동으로 열어둘지 여부를 반환합니다.
+    /// - Returns: `-UITest.WalkValueGuideAutoPresent` 인자가 포함되면 `true`를 반환합니다.
+    private static func shouldAutoPresentWalkValueGuideForUITest() -> Bool {
+        ProcessInfo.processInfo.arguments.contains("-UITest.WalkValueGuideAutoPresent")
+    }
+
     private let locationManager = CLLocationManager()
     private var timer: Timer? = nil
     private var isLocationUpdatesRunning: Bool = false
@@ -358,6 +364,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     @Published private(set) var seasonTileSummaryPresentation: MapSeasonTileSummaryPresentation? = nil
     @Published private(set) var selectedSeasonTileGeohash: String? = nil
     @Published private(set) var seasonGuidePresentation: SeasonGuidePresentation? = nil
+    @Published private(set) var walkValueGuidePresentation: WalkValueGuidePresentation? = nil
     @Published var nearbyHotspotEnabled: Bool = true
     @Published var locationSharingEnabled: Bool = false
     @Published var nearbyHotspots: [NearbyHotspotDTO] = [] {
@@ -388,6 +395,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     @Published var walkStatusMessage: String? = nil
     @Published private(set) var returnToOriginSuggestionContext: ReturnToOriginSuggestionContext? = nil
     @Published var runtimeGuardStatusText: String = ""
+    @Published private(set) var walkSavedOutcomePresentation: MapWalkSavedOutcomePresentation? = nil
     @Published var syncOutboxPendingCount: Int = 0
     @Published var syncOutboxPermanentFailureCount: Int = 0
     @Published var syncOutboxLastErrorCodeText: String = ""
@@ -408,12 +416,16 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private let seasonTilePresentationService: MapSeasonTilePresentationServicing
     private let seasonGuidePresentationService: SeasonGuidePresentationProviding
     private let seasonGuideStateStore: SeasonGuideStateStoring
+    private let walkValueGuidePresentationService: WalkValueGuidePresentationProviding
+    private let walkValueGuideStateStore: WalkValueGuideStateStoring
+    private let walkValueFlowPresentationService: MapWalkValueFlowPresenting
     private let hotspotClusterRenderingService: MapHotspotClusterRenderingServicing
     private var nearbyTickTimer: Timer? = nil
     private var heatmapAggregationSnapshot: MapHeatmapAggregationSnapshot?
     private var hotspotClusterSnapshot: MapHotspotClusterSnapshot?
     private var heatmapRefreshTask: Task<Void, Never>?
     private var seasonGuideAutoPresentationTask: Task<Void, Never>?
+    private var walkValueGuideAutoPresentationTask: Task<Void, Never>?
     private var latestHeatmapRefreshRequestID: UUID?
     private var lastPresenceSentAt: Date = .distantPast
     private var lastPresenceSentCoordinate: CLLocationCoordinate2D?
@@ -656,6 +668,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         seasonTilePresentationService: MapSeasonTilePresentationServicing = MapSeasonTilePresentationService(),
         seasonGuidePresentationService: SeasonGuidePresentationProviding = SeasonGuidePresentationService(),
         seasonGuideStateStore: SeasonGuideStateStoring = DefaultSeasonGuideStateStore.shared,
+        walkValueGuidePresentationService: WalkValueGuidePresentationProviding = WalkValueGuidePresentationService(),
+        walkValueGuideStateStore: WalkValueGuideStateStoring = DefaultWalkValueGuideStateStore.shared,
+        walkValueFlowPresentationService: MapWalkValueFlowPresenting = MapWalkValueFlowPresentationService(),
         walkPointSnapshotService: MapWalkPointSnapshotServicing = MapWalkPointSnapshotService(),
         clusterAnnotationService: MapClusterAnnotationServicing = MapClusterAnnotationService(),
         hotspotClusterRenderingService: MapHotspotClusterRenderingServicing? = nil,
@@ -675,6 +690,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         self.seasonTilePresentationService = seasonTilePresentationService
         self.seasonGuidePresentationService = seasonGuidePresentationService
         self.seasonGuideStateStore = seasonGuideStateStore
+        self.walkValueGuidePresentationService = walkValueGuidePresentationService
+        self.walkValueGuideStateStore = walkValueGuideStateStore
+        self.walkValueFlowPresentationService = walkValueFlowPresentationService
         self.walkPointSnapshotService = walkPointSnapshotService
         self.clusterAnnotationService = clusterAnnotationService
         self.hotspotClusterRenderingService = hotspotClusterRenderingService
@@ -723,10 +741,12 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         self.prepareRecoverableSessionIfNeeded()
         self.reloadSelectedPetContext()
         if Self.shouldForceWalkingStateForUITest() {
+            self.applyUITestWalkingPreviewIfNeeded()
             self.isWalking = true
             self.showOnlyOne = true
             self.currentWalkingPetName = self.selectedPetName
         }
+        self.walkSavedOutcomePresentation = nil
         self.setupWatchConnectivity()
         self.setupLifecycleObservers()
         self.refreshWeatherOverlayRisk()
@@ -744,6 +764,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         nearbyTickTimer?.invalidate()
         heatmapRefreshTask?.cancel()
         seasonGuideAutoPresentationTask?.cancel()
+        walkValueGuideAutoPresentationTask?.cancel()
         cancelAllCaptureRippleExpiryTasks()
         locationManager.stopUpdatingLocation()
         liveActivitySyncTask?.cancel()
@@ -788,6 +809,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             applyUITestSeasonTilePreviewIfNeeded()
         }
         evaluateSeasonGuidePresentationIfNeeded()
+        evaluateWalkValueGuidePresentationIfNeeded()
     }
 
     /// 지도 탭이 화면에서 사라질 때 불필요한 위치/폴링 작업을 중단합니다.
@@ -796,6 +818,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         nearbyTickTimer?.invalidate()
         nearbyTickTimer = nil
         seasonGuideAutoPresentationTask?.cancel()
+        walkValueGuideAutoPresentationTask?.cancel()
         refreshPresenceHeartbeatState()
         if isWalking == false {
             stopLocationUpdatesIfNeeded()
@@ -975,6 +998,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
                             petId: selectedPetId
                         )
                         enqueueSyncOutbox(for: completedPolygon, hasImage: img != nil)
+                        updateWalkSavedOutcomePresentation(savedPolygon: completedPolygon)
+                        walkStatusMessage = "산책 기록을 저장했어요. 목록에서 다시 보며 목표와 미션 반영을 확인할 수 있어요."
                     } else {
                         walkStatusMessage = "로컬 저장에 실패해 동기화 큐 적재를 건너뛰었습니다."
                     }
@@ -987,6 +1012,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             self.resetInactivityTracking(now: Date(), clearAnchor: true)
             self.resetReturnToOriginSuggestionState(clearOrigin: true)
             self.clearActiveWalkSession()
+            self.dismissWalkValueGuide()
         }
         else {
             clearActiveWalkSession()
@@ -1005,6 +1031,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             self.resetInactivityTracking(now: Date(), clearAnchor: true)
             self.resetReturnToOriginSuggestionState(clearOrigin: true)
             self.refreshWalkHybridContributionSummary()
+            self.clearWalkSavedOutcomePresentation()
             self.beginLivePresenceSession(restoredSessionId: nil)
             self.persistActiveWalkSession(force: true)
         }
@@ -1037,6 +1064,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         lastAcceptedWalkLocation = nil
         clearActiveWalkSession()
         endLivePresenceSession(clearOutbox: true)
+        dismissWalkValueGuide()
         withAnimation { [weak self] in
             self?.isWalking = false
         }
@@ -1780,6 +1808,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         withAnimation { [weak self] in
             self?.isWalking = true
         }
+        clearWalkSavedOutcomePresentation()
         beginLivePresenceSession(restoredSessionId: snapshot.sessionId)
         timerSet()
         persistActiveWalkSession(force: true)
@@ -1889,6 +1918,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             )
             enqueueSyncOutbox(for: finalized, hasImage: finalized.binaryImage != nil)
             walkStatusMessage = successMessage
+            updateWalkSavedOutcomePresentation(savedPolygon: finalized)
             metricTracker.track(
                 .recoveryFinalizeConfirmed,
                 userKey: currentMetricUserId(),
@@ -2804,10 +2834,92 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         seasonGuidePresentation = nil
     }
 
+    /// 지도 helper에서 산책 가치 설명 가이드를 수동으로 엽니다.
+    func presentWalkValueGuideFromMapHelp() {
+        walkValueGuideAutoPresentationTask?.cancel()
+        walkValueGuideStateStore.markInitialGuidePresented()
+        walkValueGuidePresentation = walkValueGuidePresentationService.makePresentation(for: .mapHelperReentry)
+    }
+
+    /// 열린 산책 가치 설명 가이드를 닫습니다.
+    func dismissWalkValueGuide() {
+        walkValueGuideAutoPresentationTask?.cancel()
+        walkValueGuidePresentation = nil
+    }
+
+    /// 저장 직후 후속 행동 카드를 닫습니다.
+    func clearWalkSavedOutcomePresentation() {
+        walkSavedOutcomePresentation = nil
+    }
+
+    /// 현재 지도 상태에서 산책 가치 설명 가이드를 자동으로 보여줄지 평가합니다.
+    func evaluateWalkValueGuidePresentationIfNeeded() {
+        guard isMapViewActive else { return }
+        guard isWalking == false else { return }
+        guard walkValueGuidePresentation == nil else { return }
+
+        if Self.shouldAutoPresentWalkValueGuideForUITest() {
+            scheduleWalkValueGuideAutoPresentation(for: .firstWalkVisit)
+            return
+        }
+
+        guard Self.isRunningUITestRuntime() == false else { return }
+        guard polygonList.isEmpty else { return }
+        guard walkValueGuideStateStore.hasPresentedInitialGuide() == false else { return }
+
+        walkValueGuideStateStore.markInitialGuidePresented()
+        scheduleWalkValueGuideAutoPresentation(for: .firstWalkVisit)
+    }
+
+    /// 산책 가치 설명 가이드 자동 노출을 다음 메인 런루프로 예약합니다.
+    /// - Parameter context: 자동으로 열 가이드의 진입 맥락입니다.
+    private func scheduleWalkValueGuideAutoPresentation(for context: WalkValueGuideEntryContext) {
+        let presentation = walkValueGuidePresentationService.makePresentation(for: context)
+        walkValueGuideAutoPresentationTask?.cancel()
+        walkValueGuideAutoPresentationTask = Task { @MainActor [weak self] in
+            await Task.yield()
+            guard let self else { return }
+            guard self.isMapViewActive else { return }
+            guard self.isWalking == false else { return }
+            guard self.walkValueGuidePresentation == nil else { return }
+            self.walkValueGuidePresentation = presentation
+        }
+    }
+
+    /// 저장한 산책을 기준으로 후속 행동 카드를 갱신합니다.
+    /// - Parameter savedPolygon: 저장이 완료된 산책 세션입니다.
+    private func updateWalkSavedOutcomePresentation(savedPolygon: Polygon) {
+        let resolvedPetName = availablePets.first(where: { $0.petId == savedPolygon.petId })?.petName
+            ?? selectedPetName
+        walkSavedOutcomePresentation = walkValueFlowPresentationService.makeSavedOutcomePresentation(
+            petName: resolvedPetName,
+            pointCount: savedPolygon.locations.count,
+            areaText: calculatedAreaString(areaSize: savedPolygon.walkingArea, isPyong: false)
+        )
+    }
+
     /// UI 테스트에서 시즌 타일이 실제로 준비된 뒤 시즌 설명 가이드 자동 노출을 다시 평가합니다.
     func triggerUITestSeasonGuidePresentationIfNeeded() {
         guard Self.shouldAutoPresentSeasonGuideForUITest() else { return }
         evaluateSeasonGuidePresentationIfNeeded()
+    }
+
+    /// UI 테스트용 산책 중 상태에 종료 확인 시트가 열릴 최소 포인트/시간 문맥을 주입합니다.
+    private func applyUITestWalkingPreviewIfNeeded() {
+        guard polygon.locations.count < 3 else { return }
+
+        let previewLocations = Self.makeUITestWalkingPreviewLocations()
+        polygon = Polygon(
+            locations: previewLocations,
+            walkingTime: 12 * 60,
+            walkingArea: 148.0,
+            petId: selectedPetId
+        )
+        polygon.makePolygon(walkArea: 148.0, walkTime: 12 * 60)
+        time = polygon.walkingTime
+        startTime = Date().addingTimeInterval(-polygon.walkingTime)
+        lastPointEventAt = previewLocations.last.map { Date(timeIntervalSince1970: $0.createdAt) }
+        refreshWalkHybridContributionSummary()
     }
 
     /// 대표 시즌 타일을 골라 상세 패널을 엽니다.
@@ -2881,6 +2993,32 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
                 status: service.status(for: score)
             )
         }
+    }
+
+    /// UI 테스트에서 산책 종료 확인 시트와 후속 가치 카드를 검증할 샘플 포인트 배열을 만듭니다.
+    /// - Returns: 종료 확인 시트가 열릴 수 있도록 3개 이상의 포인트를 담은 샘플 배열입니다.
+    private static func makeUITestWalkingPreviewLocations() -> [Location] {
+        let now = Date().timeIntervalSince1970
+        return [
+            Location(
+                coordinate: .init(latitude: 37.5665, longitude: 126.9780),
+                id: UUID(),
+                createdAt: now - 720,
+                pointRole: .route
+            ),
+            Location(
+                coordinate: .init(latitude: 37.5669, longitude: 126.9788),
+                id: UUID(),
+                createdAt: now - 360,
+                pointRole: .route
+            ),
+            Location(
+                coordinate: .init(latitude: 37.5672, longitude: 126.9779),
+                id: UUID(),
+                createdAt: now - 60,
+                pointRole: .mark
+            )
+        ]
     }
 
     /// 시즌 타일 대표 선택에 사용할 우선순위 값을 계산합니다.
