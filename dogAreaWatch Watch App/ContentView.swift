@@ -10,6 +10,7 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var viewModel = ContentsViewModel()
     @State private var isQueueStatusPresented = false
+    @State private var isWalkEndDecisionPresented = false
 
     var body: some View {
         ScrollView {
@@ -48,7 +49,7 @@ struct ContentView: View {
                         )
                         WatchActionButtonView(
                             presentation: viewModel.controlPresentation(for: .endWalk),
-                            action: { viewModel.handleActionTap(.endWalk) }
+                            action: { isWalkEndDecisionPresented = true }
                         )
                     } else {
                         WatchActionButtonView(
@@ -64,6 +65,42 @@ struct ContentView: View {
             WatchOfflineQueueStatusSheetView(
                 queueStatus: viewModel.queueStatus,
                 onManualSync: { viewModel.handleManualQueueResync() }
+            )
+        }
+        .sheet(isPresented: $isWalkEndDecisionPresented) {
+            WatchWalkEndDecisionSheetView(
+                elapsedTime: viewModel.walkingTime,
+                area: viewModel.walkingArea,
+                pointCount: viewModel.currentPointCount,
+                petName: viewModel.currentWalkingPetName,
+                isReachable: viewModel.isReachable,
+                onSaveAndEnd: {
+                    isWalkEndDecisionPresented = false
+                    viewModel.handleWalkEndDecision(.saveAndEnd)
+                },
+                onContinueWalking: {
+                    isWalkEndDecisionPresented = false
+                    viewModel.handleWalkEndDecision(.continueWalking)
+                },
+                onDiscard: {
+                    isWalkEndDecisionPresented = false
+                    viewModel.handleWalkEndDecision(.discardRecord)
+                }
+            )
+        }
+        .sheet(
+            item: Binding(
+                get: { viewModel.walkCompletionSummary },
+                set: { summary in
+                    if summary == nil {
+                        viewModel.dismissWalkCompletionSummary()
+                    }
+                }
+            )
+        ) { summary in
+            WatchWalkCompletionSummarySheetView(
+                summary: summary,
+                onDismiss: { viewModel.dismissWalkCompletionSummary() }
             )
         }
     }

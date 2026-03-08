@@ -86,6 +86,8 @@ extension WatchActionType {
             return "영역 표시하기"
         case .endWalk:
             return "산책 종료"
+        case .discardWalk:
+            return "기록 폐기"
         case .syncState:
             return "상태 동기화"
         }
@@ -99,6 +101,8 @@ extension WatchActionType {
             return "영역 전송 중"
         case .endWalk:
             return "종료 요청 중"
+        case .discardWalk:
+            return "폐기 요청 중"
         case .syncState:
             return "동기화 요청 중"
         }
@@ -112,6 +116,8 @@ extension WatchActionType {
             return "영역 큐 저장"
         case .endWalk:
             return "종료 큐 저장"
+        case .discardWalk:
+            return "폐기 큐 저장"
         case .syncState:
             return "동기화 큐 저장"
         }
@@ -121,7 +127,7 @@ extension WatchActionType {
         switch self {
         case .endWalk:
             return "한 번 더 탭"
-        case .startWalk, .addPoint, .syncState:
+        case .startWalk, .addPoint, .discardWalk, .syncState:
             return baseTitle
         }
     }
@@ -134,6 +140,8 @@ extension WatchActionType {
             return "영역 중복 억제"
         case .endWalk:
             return "종료 대기 중"
+        case .discardWalk:
+            return "폐기 대기 중"
         case .syncState:
             return "동기화 대기 중"
         }
@@ -141,7 +149,7 @@ extension WatchActionType {
 
     var cooldownInterval: TimeInterval {
         switch self {
-        case .startWalk, .endWalk:
+        case .startWalk, .endWalk, .discardWalk:
             return 2.0
         case .addPoint:
             return 1.2
@@ -154,14 +162,14 @@ extension WatchActionType {
         switch self {
         case .endWalk:
             return 3.0
-        case .startWalk, .addPoint, .syncState:
+        case .startWalk, .addPoint, .discardWalk, .syncState:
             return 0.0
         }
     }
 
     var blocksWhileQueued: Bool {
         switch self {
-        case .startWalk, .endWalk:
+        case .startWalk, .endWalk, .discardWalk:
             return true
         case .addPoint, .syncState:
             return false
@@ -175,7 +183,9 @@ extension WatchActionType {
         case .addPoint:
             return "현재 위치를 1회 기록해요"
         case .endWalk:
-            return "오조작 방지를 위해 한 번 더 확인해요"
+            return "저장·계속·폐기 중에서 선택해요"
+        case .discardWalk:
+            return "이번 산책 기록을 저장하지 않아요"
         case .syncState:
             return "최신 상태를 다시 요청해요"
         }

@@ -61,6 +61,7 @@ swift scripts/widget_lock_screen_accessory_plan_unit_check.swift
 swift scripts/watch_action_feedback_ux_unit_check.swift
 swift scripts/watch_selected_pet_context_ux_unit_check.swift
 swift scripts/watch_offline_queue_sync_ux_unit_check.swift
+swift scripts/watch_walk_end_summary_ux_unit_check.swift
 swift scripts/walk_live_activity_priority_unit_check.swift
 swift scripts/walk_widget_action_state_model_unit_check.swift
 swift scripts/walk_widget_pet_context_policy_unit_check.swift
