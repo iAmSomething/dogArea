@@ -182,6 +182,7 @@ swift scripts/feature_control_404_cooldown_unit_check.swift
 swift scripts/home_guest_upgrade_retry_cta_unit_check.swift
 swift scripts/home_weather_status_card_restore_unit_check.swift
 swift scripts/home_weather_detail_card_unit_check.swift
+swift scripts/home_weather_pet_guidance_unit_check.swift
 swift scripts/home_area_milestone_feedback_unit_check.swift
 swift scripts/home_goal_tracker_ui_unit_check.swift
 swift scripts/area_reference_db_ui_unit_check.swift

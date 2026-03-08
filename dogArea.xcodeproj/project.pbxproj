@@ -72,6 +72,9 @@
 		8FF1D41BEF381990105583A9 /* HomeQuestCompletionOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BD638413305E314572CB8D9 /* HomeQuestCompletionOverlayView.swift */; };
 		9315EFC2423955870AFCC18F /* HomeViewModel+SessionLifecycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BD9767C8CA8497962E480D3 /* HomeViewModel+SessionLifecycle.swift */; };
 		96C72C23EA46A15543F1A458 /* HomeSeasonResultOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 081AACF20D304E61699D792F /* HomeSeasonResultOverlayView.swift */; };
+		A45800010000000000000001 /* HomeWeatherWalkGuidanceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45800010000000000000011 /* HomeWeatherWalkGuidanceService.swift */; };
+		A45800010000000000000002 /* HomeWeatherGuidancePresentationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45800010000000000000012 /* HomeWeatherGuidancePresentationModels.swift */; };
+		A45800010000000000000003 /* HomeWeatherGuidanceSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45800010000000000000013 /* HomeWeatherGuidanceSheetView.swift */; };
 		9B600C1F7FA22CF43EFC09C2 /* RivalTabViewModel+ModerationAndLocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 488E40F27F962EFAA8A02375 /* RivalTabViewModel+ModerationAndLocation.swift */; };
 		9D8804AD0F127C5DDDAEA597 /* ThumbnailImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2615443270FF3222AEBDE893 /* ThumbnailImageView.swift */; };
 		A0C814D250B8F26BDCC21F66 /* UserProfileImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F73B707BA77AC2C69A6BC62B /* UserProfileImageView.swift */; };
@@ -494,6 +497,9 @@
 		A45600010000000000000011 /* HomeWeatherSnapshotPresentationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherSnapshotPresentationService.swift; sourceTree = "<group>"; };
 		A45600010000000000000012 /* HomeWeatherSnapshotCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherSnapshotCardView.swift; sourceTree = "<group>"; };
 		A45600010000000000000013 /* HomeWeatherSnapshotMetricTileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherSnapshotMetricTileView.swift; sourceTree = "<group>"; };
+		A45800010000000000000011 /* HomeWeatherWalkGuidanceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherWalkGuidanceService.swift; sourceTree = "<group>"; };
+		A45800010000000000000012 /* HomeWeatherGuidancePresentationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherGuidancePresentationModels.swift; sourceTree = "<group>"; };
+		A45800010000000000000013 /* HomeWeatherGuidanceSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWeatherGuidanceSheetView.swift; sourceTree = "<group>"; };
 		A45700010000000000000011 /* WeatherSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherSnapshot.swift; sourceTree = "<group>"; };
 		A45700010000000000000012 /* OpenMeteoWeatherSnapshotProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenMeteoWeatherSnapshotProvider.swift; sourceTree = "<group>"; };
 		A45700010000000000000013 /* WeatherSnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherSnapshotStore.swift; sourceTree = "<group>"; };
@@ -740,6 +746,7 @@
 			isa = PBXGroup;
 			children = (
 				67C1D6AB713A59C8D7034CB8 /* HomePresentationStateModels.swift */,
+				A45800010000000000000012 /* HomeWeatherGuidancePresentationModels.swift */,
 				2BD9767C8CA8497962E480D3 /* HomeViewModel+SessionLifecycle.swift */,
 				BAE640538C59819A309529D3 /* HomeViewModel+AreaProgress.swift */,
 				0922EB392D5A2CF01060C9E6 /* HomeViewModel+IndoorMissionFlow.swift */,
@@ -971,6 +978,7 @@
 				8BD638413305E314572CB8D9 /* HomeQuestCompletionOverlayView.swift */,
 				081AACF20D304E61699D792F /* HomeSeasonResultOverlayView.swift */,
 				163BA83441FB36D4D40305D8 /* HomeSeasonDetailSheetView.swift */,
+				A45800010000000000000013 /* HomeWeatherGuidanceSheetView.swift */,
 				6E7F38C996B1C42E27210E77 /* HomeSeasonResetTransitionBannerView.swift */,
 				D457F4903D0BCF9B5C9B7EFC /* HomeAreaMilestoneBadgeOverlayView.swift */,
 			);
@@ -1481,6 +1489,7 @@
 				A45300010000000000000011 /* HomeIndoorMissionPresentationService.swift */,
 				A50600010000000000000011 /* HomeIndoorMissionPetContextSnapshotService.swift */,
 				A45600010000000000000011 /* HomeWeatherSnapshotPresentationService.swift */,
+				A45800010000000000000011 /* HomeWeatherWalkGuidanceService.swift */,
 				D55F514F099289DA27BC2654 /* HomeAreaAggregationService.swift */,
 			);
 			path = Services;
@@ -2078,7 +2087,9 @@
 				BFE9FFE6DBDDDBDF1B846C2E /* AreaReferenceModels.swift in Sources */,
 				BC8F0111242B7C35E0A8C032 /* HomeAreaAggregationService.swift in Sources */,
 				A45600010000000000000001 /* HomeWeatherSnapshotPresentationService.swift in Sources */,
+				A45800010000000000000001 /* HomeWeatherWalkGuidanceService.swift in Sources */,
 				882A85330E905DC115EDE641 /* HomePresentationStateModels.swift in Sources */,
+				A45800010000000000000002 /* HomeWeatherGuidancePresentationModels.swift in Sources */,
 				62EF10563076E17A0B11C076 /* SeasonProfileSummary.swift in Sources */,
 				EE6DAD319CDE2C3D7366547A /* SettingsSeasonProfileSummaryService.swift in Sources */,
 				D6C7AC45E842356138A50D6F /* SettingViewModel+ProfileEditing.swift in Sources */,
@@ -2088,6 +2099,7 @@
 				9315EFC2423955870AFCC18F /* HomeViewModel+SessionLifecycle.swift in Sources */,
 				B8774AA566F72FF9E7151938 /* HomeViewModel+AreaProgress.swift in Sources */,
 				C2A4309E392F82F548955737 /* HomeViewModel+IndoorMissionFlow.swift in Sources */,
+				A45800010000000000000003 /* HomeWeatherGuidanceSheetView.swift in Sources */,
 				A41000010000000000000021 /* MapViewModel+WidgetRuntimeSupport.swift in Sources */,
 				A41000010000000000000022 /* MapViewModel+WatchConnectivitySupport.swift in Sources */,
 				71C13F32C41AB0D41B9E1BC5 /* RivalTabViewModel+SessionLifecycle.swift in Sources */,

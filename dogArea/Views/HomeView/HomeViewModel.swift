@@ -22,6 +22,7 @@ final class HomeViewModel: ObservableObject {
     @Published var weatherMissionStatusSummary: WeatherMissionStatusSummary = .empty
     @Published var latestWeatherSnapshot: WeatherSnapshot? = nil
     @Published var weatherDetailPresentation: HomeWeatherSnapshotCardPresentation = .placeholder
+    @Published var weatherGuidancePresentation: HomeWeatherGuidancePresentation = .placeholder
     @Published var indoorMissionPresentation: HomeIndoorMissionBoardPresentation = .empty
     @Published var weatherShieldDailySummary: WeatherShieldDailySummary? = nil
     @Published var seasonCatchupBuffStatusMessage: String? = nil
@@ -59,6 +60,7 @@ final class HomeViewModel: ObservableObject {
     let areaAggregationService: HomeAreaAggregationServicing
     let weatherMissionStatusBuilder: HomeWeatherMissionStatusBuilding
     let weatherSnapshotPresentationService: HomeWeatherSnapshotPresenting
+    let weatherWalkGuidanceService: HomeWeatherWalkGuidancePresenting
     let indoorMissionPresentationService: HomeIndoorMissionPresenting
     let indoorMissionPetContextSnapshotService: HomeIndoorMissionPetContextSnapshotServicing
     let weatherSnapshotStore: WeatherSnapshotStoreProtocol
@@ -134,6 +136,7 @@ final class HomeViewModel: ObservableObject {
         areaAggregationService: HomeAreaAggregationServicing = HomeAreaAggregationService(),
         weatherMissionStatusBuilder: HomeWeatherMissionStatusBuilding = HomeWeatherMissionStatusBuilder(),
         weatherSnapshotPresentationService: HomeWeatherSnapshotPresenting = HomeWeatherSnapshotPresentationService(),
+        weatherWalkGuidanceService: HomeWeatherWalkGuidancePresenting = HomeWeatherWalkGuidanceService(),
         indoorMissionPresentationService: HomeIndoorMissionPresenting = HomeIndoorMissionPresentationService(),
         indoorMissionPetContextSnapshotService: HomeIndoorMissionPetContextSnapshotServicing = HomeIndoorMissionPetContextSnapshotService(),
         weatherSnapshotStore: WeatherSnapshotStoreProtocol = WeatherSnapshotStore.shared,
@@ -150,6 +153,7 @@ final class HomeViewModel: ObservableObject {
         self.areaAggregationService = areaAggregationService
         self.weatherMissionStatusBuilder = weatherMissionStatusBuilder
         self.weatherSnapshotPresentationService = weatherSnapshotPresentationService
+        self.weatherWalkGuidanceService = weatherWalkGuidanceService
         self.indoorMissionPresentationService = indoorMissionPresentationService
         self.indoorMissionPetContextSnapshotService = indoorMissionPetContextSnapshotService
         self.weatherSnapshotStore = weatherSnapshotStore

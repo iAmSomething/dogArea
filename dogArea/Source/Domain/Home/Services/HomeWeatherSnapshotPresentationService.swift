@@ -83,6 +83,7 @@ final class HomeWeatherSnapshotPresentationService: HomeWeatherSnapshotPresentin
                 "Review temperature, feels-like, humidity, precipitation, and air quality at a glance."
             ),
             statusBadgeText: badgeText,
+            detailActionTitle: localizedCopy("오늘 산책 가이드 더보기", "Open Today's Walk Guide"),
             metrics: metrics,
             observedAtText: observedAtText,
             sourceLineText: sourceLineText,
@@ -184,6 +185,7 @@ final class HomeWeatherSnapshotPresentationService: HomeWeatherSnapshotPresentin
                 "Review temperature, feels-like, humidity, precipitation, and air quality at a glance."
             ),
             statusBadgeText: localizedCopy("준비 중", "Pending"),
+            detailActionTitle: localizedCopy("오늘 산책 가이드 더보기", "Open Today's Walk Guide"),
             metrics: HomeWeatherSnapshotCardPresentation.placeholder.metrics.map { metric in
                 HomeWeatherMetricPresentation(
                     id: metric.id,

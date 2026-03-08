@@ -495,6 +495,39 @@ final class FeatureRegressionUITests: XCTestCase {
         )
     }
 
+    /// 홈 날씨 카드의 더보기 시트가 fallback 안내와 행동 가이드 3섹션을 노출하는지 검증합니다.
+    func testFeatureRegression_HomeWeatherGuidanceSheetShowsActionableFallbackAndSections() throws {
+        let app = launchAppForFeatureRegression(
+            extraArguments: [
+                "-UITest.HomeMissionLifecycleStub",
+                "-UITest.AutoGuest",
+                "-UITest.HomeWeatherGuidancePresented"
+            ]
+        )
+        let weatherDetailCard = app.descendants(matching: .any).matching(identifier: "home.weather.snapshot").firstMatch
+        let weatherMoreButton = screenElement(identifier: "home.weather.more", in: app)
+
+        XCTAssertTrue(openTab(index: 0, app: app), "홈 탭 진입에 실패했습니다.")
+        XCTAssertTrue(
+            revealExistingElementByVerticalScroll(weatherDetailCard, app: app, maxSwipes: 6),
+            "홈 날씨 상세 카드를 화면에 노출하지 못했습니다."
+        )
+
+        let closeButton = app.buttons["sheet.home.weatherGuidance.close"]
+        XCTAssertTrue(waitUntilExists(closeButton, timeout: 4), "홈 날씨 가이드 시트가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(app.staticTexts["오늘 산책 시 주의"], timeout: 2), "주의 섹션이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(app.staticTexts["산책 권장 방식"], timeout: 2), "산책 권장 방식 섹션이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(app.staticTexts["실내 대체 추천"], timeout: 2), "실내 대체 추천 섹션이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(app.staticTexts["home.weather.guidance.fallback"], timeout: 2), "프로필 fallback 안내가 노출되지 않았습니다.")
+
+        XCTAssertTrue(tapIfExists(closeButton), "홈 날씨 가이드 시트 닫기 버튼 탭에 실패했습니다.")
+        XCTAssertTrue(waitUntilGone(closeButton, timeout: 3), "홈 날씨 가이드 시트가 닫히지 않았습니다.")
+        XCTAssertTrue(
+            revealExistingElementByVerticalScroll(weatherMoreButton, app: app, maxSwipes: 2),
+            "홈 날씨 가이드 더보기 버튼을 찾지 못했습니다."
+        )
+    }
+
     /// 회원 상태에서 프로필 편집 저장 성공 후 편집 값이 다시 시트에 반영되는지 검증합니다.
     func testFeatureRegression_MemberProfileEditPersistsUpdatedPetName() throws {
         let credentials = try XCTUnwrap(
