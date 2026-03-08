@@ -5,6 +5,26 @@ struct HomeWeatherGuidanceBadgePresentation: Identifiable, Equatable {
     let title: String
 }
 
+struct HomeWeatherGuidancePrimaryActionPresentation: Equatable {
+    let eyebrow: String
+    let title: String
+    let body: String
+    let emphasisText: String
+    let accessibilityText: String
+}
+
+enum HomeWeatherGuidanceDecisionFactorTone: String, Equatable {
+    case weather
+    case pet
+    case fallback
+}
+
+struct HomeWeatherGuidanceDecisionFactorPresentation: Identifiable, Equatable {
+    let id: String
+    let title: String
+    let tone: HomeWeatherGuidanceDecisionFactorTone
+}
+
 struct HomeWeatherGuidanceItemPresentation: Identifiable, Equatable {
     let id: String
     let title: String
@@ -22,6 +42,11 @@ struct HomeWeatherGuidancePresentation: Equatable {
     let title: String
     let subtitle: String
     let observedSummaryText: String
+    let primaryActionTitle: String
+    let primaryAction: HomeWeatherGuidancePrimaryActionPresentation
+    let decisionFactorsTitle: String
+    let decisionFactorsSubtitle: String
+    let decisionFactors: [HomeWeatherGuidanceDecisionFactorPresentation]
     let profileTitle: String
     let profileBadges: [HomeWeatherGuidanceBadgePresentation]
     let profileFallbackNotice: String?
@@ -33,6 +58,21 @@ struct HomeWeatherGuidancePresentation: Equatable {
         title: "오늘 산책 가이드",
         subtitle: "날씨와 반려견 상태를 함께 보고 오늘의 산책 방식을 정리해드릴게요.",
         observedSummaryText: "관측값을 준비하는 동안 기본 안전 기준으로 안내해요.",
+        primaryActionTitle: "오늘 추천",
+        primaryAction: .init(
+            eyebrow: "기본 안전 기준",
+            title: "짧은 확인 산책부터 시작하세요",
+            body: "관측값이 비어 있을 때는 5~10분 확인 산책으로 반응을 보고, 괜찮을 때만 거리를 조금 늘리세요.",
+            emphasisText: "짧게 시작",
+            accessibilityText: "오늘 추천. 짧은 확인 산책부터 시작하세요. 관측값이 비어 있을 때는 5에서 10분 확인 산책으로 반응을 보고, 괜찮을 때만 거리를 조금 늘리세요."
+        ),
+        decisionFactorsTitle: "이렇게 판단했어요",
+        decisionFactorsSubtitle: "날씨 관측과 반려견 문맥이 부족할 때도 안전한 기준부터 적용합니다.",
+        decisionFactors: [
+            .init(id: "factor.defaultWeather", title: "관측값 준비 중", tone: .fallback),
+            .init(id: "factor.defaultProfile", title: "프로필 보완 전", tone: .fallback),
+            .init(id: "factor.defaultBaseline", title: "기본 안전 기준 적용", tone: .fallback)
+        ],
         profileTitle: "기본 안전 기준",
         profileBadges: [
             .init(id: "profile.default", title: "프로필 보완 전")

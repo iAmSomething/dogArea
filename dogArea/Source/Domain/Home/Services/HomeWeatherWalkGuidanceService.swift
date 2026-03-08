@@ -117,6 +117,18 @@ final class HomeWeatherWalkGuidanceService: HomeWeatherWalkGuidancePresenting {
             localizedCopy: localizedCopy
         )
         let badges = makePetBadges(petSignals: petSignals)
+        let primaryAction = makePrimaryAction(
+            snapshot: snapshot,
+            missionSummary: missionSummary,
+            petSignals: petSignals,
+            localizedCopy: localizedCopy
+        )
+        let decisionFactors = makeDecisionFactors(
+            snapshot: snapshot,
+            missionSummary: missionSummary,
+            petSignals: petSignals,
+            localizedCopy: localizedCopy
+        )
         let observedSummary = makeObservedSummary(
             snapshot: snapshot,
             now: now,
@@ -145,6 +157,14 @@ final class HomeWeatherWalkGuidanceService: HomeWeatherWalkGuidancePresenting {
             title: title,
             subtitle: subtitle,
             observedSummaryText: observedSummary,
+            primaryActionTitle: localizedCopy("오늘 추천", "Today's Recommendation"),
+            primaryAction: primaryAction,
+            decisionFactorsTitle: localizedCopy("이렇게 판단했어요", "Why This Guidance"),
+            decisionFactorsSubtitle: localizedCopy(
+                "오늘 날씨와 \(petSignals.displayName) 문맥을 함께 보고 판단했어요.",
+                "This combines today's weather with \(petSignals.displayName)'s context."
+            ),
+            decisionFactors: decisionFactors,
             profileTitle: profileTitle,
             profileBadges: badges,
             profileFallbackNotice: fallbackNotice,
@@ -153,6 +173,8 @@ final class HomeWeatherWalkGuidanceService: HomeWeatherWalkGuidancePresenting {
             accessibilityText: makeAccessibilityText(
                 title: title,
                 observedSummary: observedSummary,
+                primaryAction: primaryAction,
+                decisionFactors: decisionFactors,
                 sections: sections
             )
         )
@@ -218,6 +240,196 @@ final class HomeWeatherWalkGuidanceService: HomeWeatherWalkGuidancePresenting {
             badges.insert(.init(id: "breed", title: breedLabel), at: 1)
         }
         return badges
+    }
+
+    /// 오늘 산책에서 가장 먼저 따라야 할 핵심 행동 가이드를 생성합니다.
+    /// - Parameters:
+    ///   - snapshot: 최신 날씨 스냅샷입니다.
+    ///   - missionSummary: 오늘 미션/위험도 요약입니다.
+    ///   - petSignals: 정규화된 반려견 신호입니다.
+    ///   - localizedCopy: 현재 로케일에 맞는 한/영 문구를 선택하는 함수입니다.
+    /// - Returns: 시트 상단 행동 가이드 카드에 노출할 핵심 추천 프레젠테이션입니다.
+    private func makePrimaryAction(
+        snapshot: WeatherSnapshot?,
+        missionSummary: WeatherMissionStatusSummary,
+        petSignals: PetSignals,
+        localizedCopy: (_ ko: String, _ en: String) -> String
+    ) -> HomeWeatherGuidancePrimaryActionPresentation {
+        guard let snapshot else {
+            let title = localizedCopy("짧은 확인 산책부터 시작하세요", "Start with a short check walk")
+            let body = localizedCopy(
+                "관측값이 비어 있을 때는 5~10분 확인 산책으로 반응을 보고, 괜찮을 때만 거리를 조금 늘리세요.",
+                "When observations are unavailable, begin with a 5–10 minute check walk and extend only if the dog stays comfortable."
+            )
+            return .init(
+                eyebrow: localizedCopy("기본 안전 기준", "Default Safety Baseline"),
+                title: title,
+                body: body,
+                emphasisText: localizedCopy("짧게 시작", "Short Start"),
+                accessibilityText: [title, body].joined(separator: ". ")
+            )
+        }
+
+        let isHotHumid = snapshot.apparentTemperatureC >= Threshold.hotFeelsLikeC || snapshot.relativeHumidityPercent >= Threshold.highHumidityPercent
+        let isCold = snapshot.temperatureC <= Threshold.coldTemperatureC || snapshot.apparentTemperatureC <= Threshold.coldTemperatureC
+        let hasRainOrWind = snapshot.isPrecipitating || snapshot.precipitationMMPerHour >= Threshold.rainNoticeMMPerHour || snapshot.windMps >= Threshold.highWindMps
+        let shouldPreferIndoor = missionSummary.riskLevel == .severe || isSevereOutdoorRisk(snapshot)
+
+        if shouldPreferIndoor {
+            let title = localizedCopy(
+                "\(petSignals.displayName)는 오늘 실내 루틴을 메인으로 잡는 편이 안전해요",
+                "It is safer for \(petSignals.displayName) to treat indoor routines as the main plan today"
+            )
+            let body = localizedCopy(
+                "실외는 배변과 컨디션 확인 중심으로만 짧게 다녀오고, 운동량은 노즈워크나 짧은 훈련으로 채워주세요.",
+                "Keep outdoor time to a brief essential outing and cover activity with scent work or short training indoors."
+            )
+            return .init(
+                eyebrow: localizedCopy("실내 우선", "Indoor First"),
+                title: title,
+                body: body,
+                emphasisText: localizedCopy("용무 중심", "Essentials Only"),
+                accessibilityText: [title, body].joined(separator: ". ")
+            )
+        }
+
+        if isHotHumid {
+            let title = localizedCopy(
+                "\(petSignals.displayName)는 길게 한 번보다 짧게 나누어 걷는 편이 좋아요",
+                "\(petSignals.displayName) is better off with short split outings than one long walk"
+            )
+            let body = localizedCopy(
+                "그늘이 많은 짧은 코스를 먼저 잡고, 물과 휴식 지점을 기준으로 산책 시간을 나누세요.",
+                "Choose short shaded loops first and split the outing around water and rest points."
+            )
+            return .init(
+                eyebrow: localizedCopy("짧고 자주", "Short and Frequent"),
+                title: title,
+                body: body,
+                emphasisText: localizedCopy("그늘 우선", "Shade First"),
+                accessibilityText: [title, body].joined(separator: ". ")
+            )
+        }
+
+        if isCold || hasRainOrWind {
+            let title = localizedCopy(
+                "\(petSignals.displayName)는 오늘 짧은 확인 산책이 더 잘 맞아요",
+                "\(petSignals.displayName) fits a short check walk better today"
+            )
+            let body = localizedCopy(
+                "집 근처 짧은 루프를 일정한 리듬으로 걷고, 젖은 털과 발은 바로 말려주세요.",
+                "Use a short loop near home at a steady pace, then dry the coat and paws right away."
+            )
+            return .init(
+                eyebrow: localizedCopy("짧게 확인", "Short Check"),
+                title: title,
+                body: body,
+                emphasisText: localizedCopy("보온·건조", "Warm and Dry"),
+                accessibilityText: [title, body].joined(separator: ". ")
+            )
+        }
+
+        let title = localizedCopy(
+            "\(petSignals.displayName)는 오늘 평소 루틴을 유지해도 괜찮아요",
+            "\(petSignals.displayName) can keep the usual routine today"
+        )
+        let body = localizedCopy(
+            "첫 몇 분 반응을 본 뒤 속도와 거리를 결정하면 충분해요. 컨디션이 좋으면 평소 코스를 유지해도 괜찮아요.",
+            "Decide speed and distance after the first few minutes. If the dog feels stable, the usual route is fine."
+        )
+        return .init(
+            eyebrow: localizedCopy("평소 루틴 가능", "Normal Routine"),
+            title: title,
+            body: body,
+            emphasisText: localizedCopy("반응 확인 후 유지", "Confirm Then Continue"),
+            accessibilityText: [title, body].joined(separator: ". ")
+        )
+    }
+
+    /// 현재 가이드가 어떤 입력 신호를 근거로 만들어졌는지 칩 형태로 정리합니다.
+    /// - Parameters:
+    ///   - snapshot: 최신 날씨 스냅샷입니다.
+    ///   - missionSummary: 오늘 미션/위험도 요약입니다.
+    ///   - petSignals: 정규화된 반려견 신호입니다.
+    ///   - localizedCopy: 현재 로케일에 맞는 한/영 문구를 선택하는 함수입니다.
+    /// - Returns: 시트 상단 판단 근거 카드에서 노출할 칩 배열입니다.
+    private func makeDecisionFactors(
+        snapshot: WeatherSnapshot?,
+        missionSummary: WeatherMissionStatusSummary,
+        petSignals: PetSignals,
+        localizedCopy: (_ ko: String, _ en: String) -> String
+    ) -> [HomeWeatherGuidanceDecisionFactorPresentation] {
+        var factors: [HomeWeatherGuidanceDecisionFactorPresentation] = []
+
+        if let snapshot {
+            if snapshot.apparentTemperatureC <= Threshold.coldTemperatureC {
+                factors.append(.init(
+                    id: "factor.weather.cold",
+                    title: localizedCopy("체감 \(Int(snapshot.apparentTemperatureC.rounded()))°", "Feels like \(Int(snapshot.apparentTemperatureC.rounded()))°"),
+                    tone: .weather
+                ))
+            }
+            if snapshot.apparentTemperatureC >= Threshold.hotFeelsLikeC || snapshot.relativeHumidityPercent >= Threshold.highHumidityPercent {
+                factors.append(.init(
+                    id: "factor.weather.heatHumidity",
+                    title: localizedCopy("습도 \(Int(snapshot.relativeHumidityPercent.rounded()))%", "Humidity \(Int(snapshot.relativeHumidityPercent.rounded()))%"),
+                    tone: .weather
+                ))
+            }
+            if snapshot.isPrecipitating || snapshot.precipitationMMPerHour >= Threshold.rainNoticeMMPerHour {
+                factors.append(.init(
+                    id: "factor.weather.rain",
+                    title: localizedCopy("강수 \(String(format: "%.1f", snapshot.precipitationMMPerHour))mm/h", "Rain \(String(format: "%.1f", snapshot.precipitationMMPerHour))mm/h"),
+                    tone: .weather
+                ))
+            }
+            if snapshot.windMps >= Threshold.highWindMps {
+                factors.append(.init(
+                    id: "factor.weather.wind",
+                    title: localizedCopy("바람 \(String(format: "%.1f", snapshot.windMps))m/s", "Wind \(String(format: "%.1f", snapshot.windMps))m/s"),
+                    tone: .weather
+                ))
+            }
+            if isDustHigh(snapshot) {
+                factors.append(.init(
+                    id: "factor.weather.dust",
+                    title: localizedCopy("공기질 주의", "Air Quality Caution"),
+                    tone: .weather
+                ))
+            }
+        } else {
+            factors.append(.init(
+                id: "factor.fallback.observation",
+                title: localizedCopy("관측값 준비 중", "Observation Pending"),
+                tone: .fallback
+            ))
+        }
+
+        factors.append(.init(
+            id: "factor.pet.age.\(petSignals.ageProfile.badgeText)",
+            title: petSignals.ageProfile.badgeText,
+            tone: petSignals.ageProfile == .unknown ? .fallback : .pet
+        ))
+        factors.append(.init(
+            id: "factor.pet.activity.\(petSignals.activityProfile.badgeText)",
+            title: petSignals.activityProfile.badgeText,
+            tone: .pet
+        ))
+        factors.append(.init(
+            id: "factor.pet.size.\(petSignals.sizeProfile.badgeText)",
+            title: petSignals.sizeProfile.badgeText,
+            tone: petSignals.sizeProfile == .unknown ? .fallback : .pet
+        ))
+
+        if missionSummary.riskLevel == .severe {
+            factors.append(.init(
+                id: "factor.weather.severe",
+                title: localizedCopy("실내 대체 우선 판정", "Indoor Backup Priority"),
+                tone: .weather
+            ))
+        }
+
+        return Array(factors.prefix(6))
     }
 
     /// 프로필 입력 부족 시 안전한 기본 안내 문구를 생성합니다.
@@ -585,14 +797,17 @@ final class HomeWeatherWalkGuidanceService: HomeWeatherWalkGuidancePresenting {
     private func makeAccessibilityText(
         title: String,
         observedSummary: String,
+        primaryAction: HomeWeatherGuidancePrimaryActionPresentation,
+        decisionFactors: [HomeWeatherGuidanceDecisionFactorPresentation],
         sections: [HomeWeatherGuidanceSectionPresentation]
     ) -> String {
+        let factorText = decisionFactors.map(\.title).joined(separator: ". ")
         let sectionText = sections
             .flatMap { section in
                 [section.title, section.subtitle] + section.items.flatMap { [$0.title, $0.body] }
             }
             .joined(separator: ". ")
-        return [title, observedSummary, sectionText].joined(separator: ". ")
+        return [title, observedSummary, primaryAction.accessibilityText, factorText, sectionText].joined(separator: ". ")
     }
 
     /// 견종 문자열에서 대략적인 체형 분류를 추정합니다.

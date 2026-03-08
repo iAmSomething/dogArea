@@ -9,6 +9,8 @@ struct HomeWeatherGuidanceSheetView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     summaryCard
+                    primaryActionCard
+                    decisionFactorsCard
                     profileCard
                     sectionStack
                     footerCard
@@ -52,6 +54,21 @@ struct HomeWeatherGuidanceSheetView: View {
         .overlay(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
                 .stroke(Color.appDynamicHex(light: 0xFED7AA, dark: 0x78350F), lineWidth: 1)
+        )
+    }
+
+    private var primaryActionCard: some View {
+        HomeWeatherGuidancePrimaryActionCardView(
+            sectionTitle: presentation.primaryActionTitle,
+            presentation: presentation.primaryAction
+        )
+    }
+
+    private var decisionFactorsCard: some View {
+        HomeWeatherGuidanceDecisionFactorsCardView(
+            title: presentation.decisionFactorsTitle,
+            subtitle: presentation.decisionFactorsSubtitle,
+            factors: presentation.decisionFactors
         )
     }
 

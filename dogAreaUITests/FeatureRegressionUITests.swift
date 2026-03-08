@@ -825,6 +825,8 @@ final class FeatureRegressionUITests: XCTestCase {
 
         let closeButton = app.buttons["sheet.home.weatherGuidance.close"]
         XCTAssertTrue(waitUntilExists(closeButton, timeout: 4), "홈 날씨 가이드 시트가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(app.staticTexts["오늘 추천"], timeout: 2), "오늘 추천 카드가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(app.staticTexts["이렇게 판단했어요"], timeout: 2), "판단 근거 카드가 노출되지 않았습니다.")
         XCTAssertTrue(waitUntilExists(app.staticTexts["오늘 산책 시 주의"], timeout: 2), "주의 섹션이 노출되지 않았습니다.")
         XCTAssertTrue(waitUntilExists(app.staticTexts["산책 권장 방식"], timeout: 2), "산책 권장 방식 섹션이 노출되지 않았습니다.")
         XCTAssertTrue(waitUntilExists(app.staticTexts["실내 대체 추천"], timeout: 2), "실내 대체 추천 섹션이 노출되지 않았습니다.")
