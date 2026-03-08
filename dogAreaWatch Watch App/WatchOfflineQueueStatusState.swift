@@ -12,14 +12,19 @@ struct WatchOfflineQueueStatusState: Equatable {
     let queuedActionTitles: [String]
     let lastQueuedAt: TimeInterval?
     let oldestQueuedAt: TimeInterval?
+    let lastSyncAt: TimeInterval?
     let lastAckStatus: String
     let lastAckActionId: String
     let lastAckAt: TimeInterval?
     let isReachable: Bool
+    let syncRecovery: WatchSyncRecoveryState
 
     private let staleThreshold: TimeInterval = 90
 
     var summaryTone: WatchActionFeedbackTone {
+        if syncRecovery.isOutOfSyncLikely {
+            return syncRecovery.headlineTone
+        }
         if pendingCount == 0 {
             return isReachable ? .success : .neutral
         }
@@ -30,6 +35,9 @@ struct WatchOfflineQueueStatusState: Equatable {
     }
 
     var summaryTitle: String {
+        if syncRecovery.isOutOfSyncLikely {
+            return syncRecovery.headline
+        }
         if pendingCount == 0 {
             return "큐가 비어 있어요"
         }
@@ -37,6 +45,9 @@ struct WatchOfflineQueueStatusState: Equatable {
     }
 
     var summaryDetail: String {
+        if syncRecovery.isOutOfSyncLikely {
+            return syncRecovery.detail
+        }
         if pendingCount == 0 {
             return isReachable ? "지금은 바로 전송 가능한 상태예요." : "오프라인이면 새 요청을 큐에 안전하게 저장해요."
         }
@@ -51,6 +62,12 @@ struct WatchOfflineQueueStatusState: Equatable {
     }
 
     var nextActionText: String {
+        if syncRecovery.cooldownRemainingText != nil {
+            return syncRecovery.cooldownRemainingText!
+        }
+        if syncRecovery.isOutOfSyncLikely {
+            return syncRecovery.detail
+        }
         if pendingCount == 0 {
             return "지금은 추가 행동이 필요하지 않아요."
         }
@@ -65,6 +82,13 @@ struct WatchOfflineQueueStatusState: Equatable {
     }
 
     var warningText: String? {
+        if let cooldownRemainingText = syncRecovery.cooldownRemainingText {
+            return cooldownRemainingText
+        }
+        if syncRecovery.isOutOfSyncLikely,
+           let firstWarning = syncRecovery.signals.first(where: { $0.tone == .warning }) {
+            return firstWarning.detail
+        }
         guard pendingCount > 0 else { return nil }
         guard isStale else { return nil }
         return isReachable
@@ -82,18 +106,19 @@ struct WatchOfflineQueueStatusState: Equatable {
     }
 
     var isManualSyncEnabled: Bool {
-        isReachable
+        syncRecovery.isManualSyncEnabled
     }
 
     var manualSyncButtonTitle: String {
-        if isReachable {
-            return pendingCount > 0 ? "지금 다시 동기화" : "상태 다시 확인"
-        }
-        return "연결 후 다시 동기화"
+        syncRecovery.manualSyncButtonTitle
     }
 
     var isManualSyncHighlighted: Bool {
-        pendingCount > 0 && isReachable
+        syncRecovery.isManualSyncHighlighted
+    }
+
+    var manualSyncButtonTone: WatchActionFeedbackTone {
+        syncRecovery.manualSyncButtonTone
     }
 
     var isStale: Bool {
@@ -107,27 +132,39 @@ struct WatchOfflineQueueStatusState: Equatable {
     static func empty(isReachable: Bool) -> WatchOfflineQueueStatusState {
         make(
             pendingActions: [],
+            lastSyncAt: nil,
             lastAckStatus: "대기",
             lastAckActionId: "",
             lastAckAt: nil,
-            isReachable: isReachable
+            isReachable: isReachable,
+            syncRecoveryService: DefaultWatchSyncRecoveryPresentationService(),
+            manualSyncPhase: .idle,
+            nextManualSyncAllowedAt: nil
         )
     }
 
     /// pending queue, ACK, reachability 정보를 화면용 큐 상태 모델로 변환합니다.
     /// - Parameters:
     ///   - pendingActions: 아직 iPhone에 전달되지 않은 watch 액션 queue입니다.
+    ///   - lastSyncAt: 가장 최근 application context 동기화 시각입니다.
     ///   - lastAckStatus: 마지막 ACK 상태 요약 문자열입니다.
     ///   - lastAckActionId: 마지막 ACK에 대응한 action id입니다.
     ///   - lastAckAt: 마지막 ACK를 받은 시각입니다.
     ///   - isReachable: 현재 iPhone과 즉시 통신 가능한 상태인지 여부입니다.
+    ///   - syncRecoveryService: sync recovery 프레젠테이션 상태를 계산할 서비스입니다.
+    ///   - manualSyncPhase: 현재 수동 동기화 recovery 단계입니다.
+    ///   - nextManualSyncAllowedAt: 다시 수동 동기화를 허용할 다음 시각입니다.
     /// - Returns: 카드와 시트가 공통으로 사용할 큐 상태 모델입니다.
     static func make(
         pendingActions: [WatchActionDTO],
+        lastSyncAt: TimeInterval?,
         lastAckStatus: String,
         lastAckActionId: String,
         lastAckAt: TimeInterval?,
-        isReachable: Bool
+        isReachable: Bool,
+        syncRecoveryService: WatchSyncRecoveryPresenting,
+        manualSyncPhase: WatchManualSyncRecoveryPhase,
+        nextManualSyncAllowedAt: TimeInterval?
     ) -> WatchOfflineQueueStatusState {
         let queuedActionTitles = pendingActions
             .map(\.displayTitle)
@@ -137,15 +174,29 @@ struct WatchOfflineQueueStatusState: Equatable {
                 }
             }
         let sentTimes = pendingActions.map(\.sentAt)
+        let now = Date().timeIntervalSince1970
+        let syncRecovery = syncRecoveryService.makeState(
+            pendingCount: pendingActions.count,
+            oldestQueuedAt: sentTimes.min(),
+            lastSyncAt: lastSyncAt,
+            lastAckAt: lastAckAt,
+            lastAckStatus: lastAckStatus,
+            isReachable: isReachable,
+            manualSyncPhase: manualSyncPhase,
+            nextManualSyncAllowedAt: nextManualSyncAllowedAt,
+            now: now
+        )
         return WatchOfflineQueueStatusState(
             pendingCount: pendingActions.count,
             queuedActionTitles: queuedActionTitles,
             lastQueuedAt: sentTimes.max(),
             oldestQueuedAt: sentTimes.min(),
+            lastSyncAt: lastSyncAt,
             lastAckStatus: lastAckStatus,
             lastAckActionId: lastAckActionId,
             lastAckAt: lastAckAt,
-            isReachable: isReachable
+            isReachable: isReachable,
+            syncRecovery: syncRecovery
         )
     }
 }

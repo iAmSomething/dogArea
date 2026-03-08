@@ -39,11 +39,25 @@ struct WatchOfflineQueueStatusCardView: View {
                 .foregroundStyle(.secondary)
                 .lineLimit(3)
 
+            if queueStatus.syncRecovery.signals.isEmpty == false {
+                HStack(spacing: 6) {
+                    ForEach(Array(queueStatus.syncRecovery.signals.prefix(2)), id: \.self) { signal in
+                        infoChip(title: signal.title, tone: signal.tone)
+                    }
+                }
+            }
+
             HStack(spacing: 8) {
                 infoChip(
                     title: "큐 \(queueStatus.pendingCount)건",
                     tone: queueStatus.pendingCount > 0 ? .warning : .neutral
                 )
+                if let lastSyncAt = queueStatus.lastSyncAt, lastSyncAt > 0 {
+                    infoChip(
+                        title: "동기화 \(formattedTimestamp(lastSyncAt))",
+                        tone: .neutral
+                    )
+                }
                 infoChip(
                     title: "ACK \(queueStatus.lastAckStatus)",
                     tone: .neutral
@@ -74,7 +88,7 @@ struct WatchOfflineQueueStatusCardView: View {
                             .padding(.vertical, 6)
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(queueStatus.isManualSyncHighlighted ? .orange : .blue)
+                    .tint(queueStatus.manualSyncButtonTone.tintColor)
                     .disabled(queueStatus.isManualSyncEnabled == false)
                 }
             }
@@ -83,7 +97,18 @@ struct WatchOfflineQueueStatusCardView: View {
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(queueStatus.summaryTone.backgroundColor)
-        )
+            )
+    }
+
+    /// watch 카드용 짧은 시각 문자열을 포맷합니다.
+    /// - Parameter timestamp: 초 단위 Unix timestamp입니다.
+    /// - Returns: 값이 없으면 `없음`, 있으면 `HH:mm:ss` 형식 문자열입니다.
+    private func formattedTimestamp(_ timestamp: TimeInterval?) -> String {
+        guard let timestamp, timestamp > 0 else { return "없음" }
+        let date = Date(timeIntervalSince1970: timestamp)
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm:ss"
+        return formatter.string(from: date)
     }
 
     /// 큐 상태 카드 안에서 짧은 상태 배지를 렌더링합니다.

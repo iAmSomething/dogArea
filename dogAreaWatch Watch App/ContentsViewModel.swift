@@ -89,15 +89,26 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
     private var pendingActions: [WatchActionDTO] = []
     private let session = WCSession.default
     private let hapticService: WatchActionHapticServicing
+    private let syncRecoveryService: WatchSyncRecoveryPresenting
+    private let manualSyncCooldownInterval: TimeInterval = 15
+    private let manualSyncResponseGraceInterval: TimeInterval = 8
     @Published private var executionStates: [WatchActionType: WatchActionExecutionState] = [:]
     private var cooldownDeadlines: [WatchActionType: Date] = [:]
     private var actionTypeByActionId: [String: WatchActionType] = [:]
     private var resetWorkItems: [WatchActionType: DispatchWorkItem] = [:]
     private var lastCompletedActionId: String = ""
     private var lastPresentedCompletionSummaryActionId: String = ""
+    private var manualSyncRecoveryPhase: WatchManualSyncRecoveryPhase = .idle
+    private var nextManualSyncAllowedAt: TimeInterval?
+    private var manualSyncResponseWorkItem: DispatchWorkItem?
+    private var manualSyncCooldownRefreshWorkItem: DispatchWorkItem?
 
-    init(hapticService: WatchActionHapticServicing = DefaultWatchActionHapticService()) {
+    init(
+        hapticService: WatchActionHapticServicing = DefaultWatchActionHapticService(),
+        syncRecoveryService: WatchSyncRecoveryPresenting = DefaultWatchSyncRecoveryPresentationService()
+    ) {
         self.hapticService = hapticService
+        self.syncRecoveryService = syncRecoveryService
         super.init()
         loadPendingActions()
         loadAckSnapshot()
@@ -263,6 +274,7 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
     /// 사용자가 큐 상태 화면에서 수동 재동기화를 요청했을 때 reachability에 맞춰 처리합니다.
     /// 오프라인이면 새 sync action을 큐에 쌓지 않고, 온라인일 때만 queue flush와 상태 재확인을 수행합니다.
     func handleManualQueueResync() {
+        let now = Date().timeIntervalSince1970
         guard session.activationState == .activated, session.isReachable else {
             presentBanner(
                 title: "연결 대기 중",
@@ -273,6 +285,22 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
             return
         }
 
+        if let nextManualSyncAllowedAt, nextManualSyncAllowedAt > now {
+            presentBanner(
+                title: "잠시 후 다시",
+                detail: queueStatus.syncRecovery.cooldownRemainingText ?? "연속 재시도를 막기 위해 잠시 대기해 주세요.",
+                tone: .warning,
+                playsHaptic: false
+            )
+            refreshQueueStatus()
+            return
+        }
+
+        manualSyncRecoveryPhase = .processing(requestedAt: now)
+        nextManualSyncAllowedAt = now + manualSyncCooldownInterval
+        scheduleManualSyncResponseTimeout(requestedAt: now)
+        scheduleManualSyncCooldownRefresh(deadline: now + manualSyncCooldownInterval)
+
         presentBanner(
             title: pendingActions.isEmpty ? "상태 다시 확인" : "큐 다시 동기화",
             detail: pendingActions.isEmpty
@@ -281,6 +309,7 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
             tone: .processing,
             playsHaptic: false
         )
+        refreshQueueStatus()
         flushPendingActions()
         sendAction(.syncState)
     }
@@ -441,11 +470,88 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
     private func refreshQueueStatus() {
         queueStatus = .make(
             pendingActions: pendingActions,
+            lastSyncAt: lastSyncAt > 0 ? lastSyncAt : nil,
             lastAckStatus: lastAckStatus,
             lastAckActionId: lastAckActionId,
             lastAckAt: lastAckAt,
-            isReachable: isReachable
+            isReachable: isReachable,
+            syncRecoveryService: syncRecoveryService,
+            manualSyncPhase: manualSyncRecoveryPhase,
+            nextManualSyncAllowedAt: nextManualSyncAllowedAt
         )
+    }
+
+    /// 수동 동기화 요청 후 지정 시간 안에 ACK 또는 최신 context가 오지 않으면 `응답 대기` 상태로 전환합니다.
+    /// - Parameter requestedAt: 사용자가 수동 동기화를 누른 시각입니다.
+    private func scheduleManualSyncResponseTimeout(requestedAt: TimeInterval) {
+        manualSyncResponseWorkItem?.cancel()
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            guard case .processing(let activeRequestedAt) = self.manualSyncRecoveryPhase,
+                  activeRequestedAt == requestedAt else {
+                return
+            }
+            self.manualSyncRecoveryPhase = .waiting(requestedAt: requestedAt)
+            self.refreshQueueStatus()
+            self.presentBanner(
+                title: "응답 대기 중",
+                detail: "아직 최신 ACK가 없어 자동 회복을 조금 더 기다리는 중입니다.",
+                tone: .warning,
+                playsHaptic: false
+            )
+        }
+        manualSyncResponseWorkItem = workItem
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + manualSyncResponseGraceInterval,
+            execute: workItem
+        )
+    }
+
+    /// 수동 동기화 cooldown이 끝나는 시점에 카드/시트 상태를 다시 계산합니다.
+    /// - Parameter deadline: 다음 수동 동기화를 허용할 절대 시각입니다.
+    private func scheduleManualSyncCooldownRefresh(deadline: TimeInterval) {
+        manualSyncCooldownRefreshWorkItem?.cancel()
+        let interval = max(deadline - Date().timeIntervalSince1970, 0)
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.refreshQueueStatus()
+        }
+        manualSyncCooldownRefreshWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + interval, execute: workItem)
+    }
+
+    /// 수동 동기화 이후 최신 sync/ACK 시각이 갱신되면 recovery 상태를 완료로 전환합니다.
+    /// - Parameter syncTimestamp: recovery 완료를 판단할 최신 동기화 기준 시각입니다.
+    private func completeManualSyncRecoveryIfNeeded(syncTimestamp: TimeInterval) {
+        guard syncTimestamp > 0 else { return }
+        switch manualSyncRecoveryPhase {
+        case .processing(let requestedAt), .waiting(let requestedAt):
+            guard syncTimestamp >= requestedAt else { return }
+            manualSyncResponseWorkItem?.cancel()
+            manualSyncResponseWorkItem = nil
+            manualSyncRecoveryPhase = .recovered(recoveredAt: Date().timeIntervalSince1970)
+            refreshQueueStatus()
+            presentBanner(
+                title: "동기화 확인 완료",
+                detail: "watch와 iPhone 상태를 다시 맞췄어요.",
+                tone: .success
+            )
+            resetManualSyncRecoveryPhaseAfterDelay()
+        case .idle, .recovered:
+            break
+        }
+    }
+
+    /// 성공 배너가 지나가면 수동 recovery 상태를 기본값으로 되돌립니다.
+    private func resetManualSyncRecoveryPhaseAfterDelay() {
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            if case .recovered = self.manualSyncRecoveryPhase {
+                self.manualSyncRecoveryPhase = .idle
+                self.refreshQueueStatus()
+            }
+        }
+        manualSyncResponseWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4, execute: workItem)
     }
 
     /// 마지막 ACK 상태와 시각을 갱신하고 영속화합니다.
@@ -520,6 +626,9 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
             } else {
                 self.refreshQueueStatus()
             }
+            self.completeManualSyncRecoveryIfNeeded(
+                syncTimestamp: max(self.lastSyncAt, self.lastAckAt ?? 0)
+            )
         }
     }
 
@@ -550,6 +659,7 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
                 actionId: actionId,
                 ackAt: syncedAt
             )
+            self.completeManualSyncRecoveryIfNeeded(syncTimestamp: syncedAt)
 
             let actionType = self.actionTypeByActionId[actionId]
                 ?? actionName.flatMap(WatchActionType.init(rawValue:))
@@ -691,8 +801,13 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
             return
         }
         DispatchQueue.main.async { [weak self] in
-            self?.isReachable = session.isReachable
-            self?.refreshQueueStatus()
+            guard let self else { return }
+            self.isReachable = session.isReachable
+            if session.isReachable == false,
+               case .processing(let requestedAt) = self.manualSyncRecoveryPhase {
+                self.manualSyncRecoveryPhase = .waiting(requestedAt: requestedAt)
+            }
+            self.refreshQueueStatus()
         }
         applyContext(session.receivedApplicationContext)
         if session.isReachable {
@@ -703,10 +818,15 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
 
     func sessionReachabilityDidChange(_ session: WCSession) {
         DispatchQueue.main.async { [weak self] in
-            self?.isReachable = session.isReachable
-            self?.refreshQueueStatus()
+            guard let self else { return }
+            self.isReachable = session.isReachable
+            if session.isReachable == false,
+               case .processing(let requestedAt) = self.manualSyncRecoveryPhase {
+                self.manualSyncRecoveryPhase = .waiting(requestedAt: requestedAt)
+            }
+            self.refreshQueueStatus()
             if session.isReachable == false {
-                self?.presentBanner(
+                self.presentBanner(
                     title: "오프라인 전환",
                     detail: "지금 누르는 액션은 큐에 저장했다가 연결되면 자동 전송합니다.",
                     tone: .warning,
