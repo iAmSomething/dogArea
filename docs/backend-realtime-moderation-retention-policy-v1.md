@@ -1,7 +1,8 @@
 # Backend Realtime / Moderation Retention Policy v1
 
-Date: 2026-03-07  
-Issue: #432
+Date: 2026-03-09  
+Issue: #432  
+Rollout: #470
 
 ## 목적
 
@@ -84,20 +85,21 @@ privacy/abuse 판정과 운영 장애 분석에 쓰는 감사성 로그입니다
 - `rpc_cleanup_walk_live_presence()`가 `expires_at <= now()` row를 삭제
 
 운영자는 stale exclusion이 있는 것과 hard delete가 있는 것을 같은 것으로 보면 안 됩니다.
+운영자는 stale exclusion을 retention enforcement로 오해하지 않습니다.
 
 ## Inventory
 
 | Surface | Class | Current freshness gate | Target hard delete / raw retention | Current enforcement | Notes |
 | --- | --- | --- | --- | --- | --- |
 | `walk_live_presence` | `ephemeral_realtime` | `expires_at > now()` | `90초 TTL`, cron debt 허용은 분 단위 | 있음 | `pg_cron` `walk_live_presence_ttl_cleanup` |
-| `nearby_presence` | `ephemeral_realtime` | `last_seen_at >= now() - 10m` | `24시간` inactivity 이후 hard delete | 없음 | 현재는 stale exclusion만 있고 physical cleanup 부재 |
-| `widget_hotspot_summary_cache` | `derived_operational_state` | cache freshness `20초/300초` | `24시간` 이후 hard delete 권장 | 없음 | rebuild 가능한 per-user cache |
+| `nearby_presence` | `ephemeral_realtime` | `last_seen_at >= now() - 10m` | `24시간` inactivity 이후 hard delete | 있음 | `rpc_cleanup_realtime_retention` + hourly cron |
+| `widget_hotspot_summary_cache` | `derived_operational_state` | cache freshness `20초/300초` | `24시간` 이후 hard delete 권장 | 있음 | rebuild 가능한 per-user cache |
 | `user_visibility_settings` | `preference_or_identity` | 없음 | 계정 삭제 또는 explicit privacy reset 시 삭제 | 부분적 | TTL 대상 아님 |
-| `privacy_guard_audit_logs` | `operational_audit` | `view_privacy_guard_alerts_24h`는 조회 집계일 뿐 | raw `30일` | 없음 | privacy suppression / mask / k-anon 근거 |
-| `live_presence_abuse_states` | `derived_operational_state` | sanction / recent state only | `max(sanction_until, updated_at) + 7일` | 없음 | live presence 제재 상태 |
-| `live_presence_abuse_device_windows` | `derived_operational_state` | 최근 rate-limit window만 유효 | `updated_at + 24시간` | 없음 | rate-limit device window |
-| `live_presence_abuse_events` | `operational_audit` | `view_live_presence_abuse_report_24h`는 조회 집계일 뿐 | raw `30일` | 없음 | speed/jump/rate/repeat/sanction 이벤트 |
-| `rival_abuse_audit_logs` | `moderation_audit` | 별도 freshness 없음 | raw `90일` | 없음 | 시즌/리그 남용 판단 근거 |
+| `privacy_guard_audit_logs` | `operational_audit` | `view_privacy_guard_alerts_24h`는 조회 집계일 뿐 | raw `30일` | 있음 | privacy suppression / mask / k-anon 근거 |
+| `live_presence_abuse_states` | `derived_operational_state` | sanction / recent state only | `max(sanction_until, updated_at) + 7일` | 있음 | live presence 제재 상태 |
+| `live_presence_abuse_device_windows` | `derived_operational_state` | 최근 rate-limit window만 유효 | `updated_at + 24시간` | 있음 | rate-limit device window |
+| `live_presence_abuse_events` | `operational_audit` | `view_live_presence_abuse_report_24h`는 조회 집계일 뿐 | raw `30일` | 있음 | speed/jump/rate/repeat/sanction 이벤트 |
+| `rival_abuse_audit_logs` | `moderation_audit` | 별도 freshness 없음 | raw `90일` | 있음 | 시즌/리그 남용 판단 근거 |
 
 ## Surface별 정책
 
@@ -134,8 +136,8 @@ privacy/abuse 판정과 운영 장애 분석에 쓰는 감사성 로그입니다
 
 운영 해석:
 
-- 현재 구현은 hot query에서 stale row를 숨기지만, inactivity cleanup scheduler는 없습니다.
-- 따라서 현재 상태는 **freshness policy는 있음, retention enforcement는 미완료**입니다.
+- 현재 구현은 hot query에서 stale row를 숨기고, `#470` rollout으로 `rpc_cleanup_realtime_retention()` + `realtime_retention_cleanup_hourly`가 `24시간` inactivity row를 물리 삭제합니다.
+- 즉, 이 surface는 이제 stale exclusion과 hard delete가 둘 다 존재합니다.
 
 ### 3. `widget_hotspot_summary_cache`
 
@@ -253,34 +255,41 @@ privacy/abuse 판정과 운영 장애 분석에 쓰는 감사성 로그입니다
 ### 이미 enforcement가 있는 것
 
 - `walk_live_presence` TTL + hard delete scheduler
+- `rpc_cleanup_realtime_retention()` + `pg_cron` `realtime_retention_cleanup_hourly`
+  - `nearby_presence` `24시간` inactivity hard delete
+  - `widget_hotspot_summary_cache` `24시간` hard delete
+  - `privacy_guard_audit_logs` raw `30일` cleanup
+  - `live_presence_abuse_states` `7일` cleanup
+  - `live_presence_abuse_device_windows` `24시간` cleanup
+  - `live_presence_abuse_events` raw `30일` cleanup
+  - `rival_abuse_audit_logs` raw `90일` cleanup
+- `view_realtime_retention_delete_debt`로 overdue row를 surface별로 관측 가능
 - 일부 사용자 삭제 경로에서 `nearby_presence`, `rival_abuse_audit_logs` explicit delete
 - `widget_hotspot_summary_cache`는 `auth.users` cascade에 의해 계정 삭제 시 제거
 
 ### 아직 문서만 있고 enforcement가 없는 것
 
-- `nearby_presence` inactivity hard delete
-- `widget_hotspot_summary_cache` age-based cleanup
-- `privacy_guard_audit_logs` raw retention cleanup
-- `live_presence_abuse_states` / `device_windows` / `events` retention cleanup
-- `rival_abuse_audit_logs` age-based cleanup
+- 없음
+- 단, `pg_cron`이 없는 환경에서는 scheduler가 skip될 수 있으므로 배포 직후 `cron.job`과 `view_realtime_retention_delete_debt`를 확인해야 합니다.
 
 ## 후속 작업
 
 필요한 후속:
 
-- retention cleanup RPC / scheduler / manual runbook 추가
-- privacy/moderation raw log cleanup SQL과 verification query 추가
+- `view_realtime_retention_delete_debt`를 backend failure dashboard / observability view와 연결
+- `realtime_retention_cleanup_hourly` job drift를 운영 알림으로 승격
+- cron 미지원 환경의 manual scheduler fallback 운영 기준 정리
 
 분리 이슈:
 
-- `#467` backend realtime/moderation retention cleanup rollout
+- `#470` backend realtime/moderation retention cleanup rollout
 
 ## 운영 규칙
 
 1. stale exclusion을 retention enforcement로 오해하지 않는다.
 2. 캐시는 source보다 오래 보관하지 않는다.
 3. raw audit는 중기/장기 보관이더라도 무기한 보관하지 않는다.
-4. scheduler가 없는 retention rule은 문서상 target일 뿐이며, rollout 전까지는 "gap"으로 취급한다.
+4. scheduler가 없는 환경은 rollout 미완료가 아니라 배포 제약 상태로 보고, 수동 rerun과 verification query를 함께 운영한다.
 
 ## Validation
 
@@ -291,6 +300,7 @@ privacy/abuse 판정과 운영 장애 분석에 쓰는 감사성 로그입니다
 ## Related
 
 - `docs/backend-scheduler-ops-standard-v1.md`
+- `docs/backend-realtime-retention-cleanup-rollout-v1.md`
 - `docs/nearby-anonymous-hotspot-v1.md`
 - `docs/rival-privacy-hard-guard-v1.md`
 - `docs/backend-edge-failure-dashboard-view-v1.md`
