@@ -49,6 +49,7 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
     @Published var lastAckStatus: String = "대기"
     @Published var lastAckActionId: String = ""
     @Published var contractVersion: String = "watch.remote.v1"
+    @Published private(set) var feedbackBanner: WatchActionFeedbackBanner?
 
     private let actionQueueStorageKey = "watch.pendingActions.v1"
     private let watchContractVersion = "watch.remote.v1"
@@ -56,19 +57,135 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
     private let watchAckMessageType = "watch_ack"
     private var pendingActions: [WatchActionDTO] = []
     private let session = WCSession.default
+    private let hapticService: WatchActionHapticServicing
+    @Published private var executionStates: [WatchActionType: WatchActionExecutionState] = [:]
+    private var cooldownDeadlines: [WatchActionType: Date] = [:]
+    private var actionTypeByActionId: [String: WatchActionType] = [:]
+    private var resetWorkItems: [WatchActionType: DispatchWorkItem] = [:]
+    private var lastCompletedActionId: String = ""
 
-    override init() {
+    init(hapticService: WatchActionHapticServicing = DefaultWatchActionHapticService()) {
+        self.hapticService = hapticService
         super.init()
         loadPendingActions()
         activateSession()
     }
 
+    /// 워치 액션 버튼이 현재 렌더링해야 할 프레젠테이션 상태를 계산합니다.
+    /// - Parameter action: 조회할 워치 액션 종류입니다.
+    /// - Returns: 버튼 타이틀, 설명, 톤, 비활성 여부를 포함한 렌더링 상태입니다.
+    func controlPresentation(for action: WatchActionType) -> WatchActionControlPresentation {
+        let state = executionStates[action] ?? .idle
+        switch state {
+        case .idle:
+            return WatchActionControlPresentation(
+                title: action.baseTitle,
+                detail: action.idleDetail,
+                tone: .neutral,
+                isDisabled: false,
+                showsProgress: false
+            )
+        case .processing:
+            return WatchActionControlPresentation(
+                title: action.processingTitle,
+                detail: "아이폰 응답을 기다리는 중이에요",
+                tone: .processing,
+                isDisabled: true,
+                showsProgress: true
+            )
+        case .queued:
+            return WatchActionControlPresentation(
+                title: action.queuedTitle,
+                detail: "연결되면 자동으로 다시 보냅니다",
+                tone: .warning,
+                isDisabled: action.blocksWhileQueued,
+                showsProgress: false
+            )
+        case .acknowledged:
+            return WatchActionControlPresentation(
+                title: action.baseTitle,
+                detail: "아이폰으로 전달됐어요",
+                tone: .success,
+                isDisabled: false,
+                showsProgress: false
+            )
+        case .completed:
+            return WatchActionControlPresentation(
+                title: action.baseTitle,
+                detail: "상태 반영을 확인했어요",
+                tone: .success,
+                isDisabled: false,
+                showsProgress: false
+            )
+        case .duplicateSuppressed:
+            return WatchActionControlPresentation(
+                title: action.duplicateSuppressedTitle,
+                detail: "방금 같은 요청을 처리했어요",
+                tone: .warning,
+                isDisabled: false,
+                showsProgress: false
+            )
+        case .failed:
+            return WatchActionControlPresentation(
+                title: action.baseTitle,
+                detail: "다시 한 번 시도해 주세요",
+                tone: .failure,
+                isDisabled: false,
+                showsProgress: false
+            )
+        case .confirmRequired:
+            return WatchActionControlPresentation(
+                title: action.confirmationTitle,
+                detail: "3초 안에 다시 탭하면 종료를 보냅니다",
+                tone: .warning,
+                isDisabled: false,
+                showsProgress: false
+            )
+        }
+    }
+
+    /// 사용자가 watch 화면에서 액션 버튼을 탭했을 때 확인 단계와 중복 억제를 포함해 처리합니다.
+    /// - Parameter action: 사용자가 요청한 워치 액션 종류입니다.
+    func handleActionTap(_ action: WatchActionType) {
+        guard action != .syncState else {
+            sendAction(.syncState)
+            return
+        }
+        if action == .endWalk, executionStates[action] == .confirmRequired {
+            sendAction(action)
+            return
+        }
+        if shouldSuppressDuplicateTap(for: action) {
+            transition(action, to: .duplicateSuppressed, resetAfter: 1.2)
+            presentBanner(
+                title: "중복 입력 억제",
+                detail: "같은 요청을 처리 중이라 잠시만 기다려 주세요.",
+                tone: .warning
+            )
+            return
+        }
+        if action == .endWalk {
+            transition(action, to: .confirmRequired, resetAfter: action.confirmationWindow)
+            presentBanner(
+                title: "산책 종료 확인",
+                detail: "오조작 방지를 위해 3초 안에 한 번 더 눌러 주세요.",
+                tone: .warning
+            )
+            return
+        }
+        sendAction(action)
+    }
+
+    /// WatchConnectivity 세션을 활성화하고 delegate를 연결합니다.
+    /// 세션 활성화가 성공하면 이후 액션과 상태 동기화 요청을 받을 수 있습니다.
     private func activateSession() {
         guard WCSession.isSupported() else { return }
         session.delegate = self
         session.activate()
     }
 
+    /// 워치 액션을 실제 transport 경로에 태워 전송하거나 큐에 적재합니다.
+    /// - Parameter action: 전달할 워치 액션 종류입니다.
     func sendAction(_ action: WatchActionType) {
         let dto = WatchActionDTO(
             version: watchContractVersion,
@@ -77,6 +194,18 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
             actionId: UUID().uuidString.lowercased(),
             sentAt: Date().timeIntervalSince1970
         )
+        actionTypeByActionId[dto.actionId] = action
+        cooldownDeadlines[action] = Date().addingTimeInterval(action.cooldownInterval)
+
+        if action != .syncState {
+            transition(action, to: .processing)
+            presentBanner(
+                title: action.processingTitle,
+                detail: "아이폰으로 요청을 보내는 중입니다.",
+                tone: .processing,
+                playsHaptic: false
+            )
+        }
 
         if session.activationState == .activated, session.isReachable {
             sendImmediately(dto)
@@ -84,22 +213,45 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
         }
 
         enqueue(dto)
+        if action != .syncState {
+            transition(action, to: .queued, resetAfter: action == .addPoint ? 1.6 : nil)
+            presentBanner(
+                title: action.queuedTitle,
+                detail: "현재 오프라인이라 큐에 저장했고, 연결되면 자동 전송합니다.",
+                tone: .warning
+            )
+            lastAckStatus = "오프라인 큐 저장"
+            lastAckActionId = dto.actionId
+        }
         flushPendingActions()
     }
 
+    /// 도달 가능한 세션에 액션을 즉시 전송하고 ACK 또는 큐 적재 결과를 반영합니다.
+    /// - Parameter action: 즉시 전송할 워치 액션 DTO입니다.
     private func sendImmediately(_ action: WatchActionDTO) {
+        let fallbackType = WatchActionType(rawValue: action.action)
         session.sendMessage(action.envelope, replyHandler: { [weak self] reply in
-            self?.handleAck(reply, fallbackActionId: action.actionId)
+            self?.handleAck(reply, fallbackActionId: action.actionId, fallbackActionType: fallbackType)
         }, errorHandler: { [weak self] _ in
             self?.enqueue(action)
             self?.flushPendingActions()
             DispatchQueue.main.async {
                 self?.lastAckStatus = "즉시 전송 실패, 큐로 보관"
                 self?.lastAckActionId = action.actionId
+                if let fallbackType {
+                    self?.transition(fallbackType, to: .queued, resetAfter: fallbackType == .addPoint ? 1.6 : nil)
+                    self?.presentBanner(
+                        title: fallbackType.queuedTitle,
+                        detail: "즉시 전송에는 실패했지만 큐에는 안전하게 보관했습니다.",
+                        tone: .warning
+                    )
+                }
             }
         })
     }
 
+    /// pending queue에 동일 action id가 없다면 새 액션을 적재합니다.
+    /// - Parameter action: 적재할 워치 액션 DTO입니다.
     private func enqueue(_ action: WatchActionDTO) {
         guard pendingActions.contains(where: { $0.actionId == action.actionId }) == false else { return }
         pendingActions.append(action)
@@ -107,6 +259,8 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
         pendingActionCount = pendingActions.count
     }
 
+    /// UserDefaults에 저장된 pending queue를 로드합니다.
+    /// 저장 데이터가 없거나 복원에 실패하면 빈 queue 상태로 초기화합니다.
     private func loadPendingActions() {
         guard let data = UserDefaults.standard.data(forKey: actionQueueStorageKey),
               let decoded = try? JSONDecoder().decode([WatchActionDTO].self, from: data) else {
@@ -118,11 +272,15 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
         pendingActionCount = decoded.count
     }
 
+    /// 현재 pending queue를 UserDefaults에 영속화합니다.
+    /// 인코딩에 실패하면 기존 저장 상태를 유지합니다.
     private func persistPendingActions() {
         guard let data = try? JSONEncoder().encode(pendingActions) else { return }
         UserDefaults.standard.set(data, forKey: actionQueueStorageKey)
     }
 
+    /// pending queue를 가능한 transport 경로로 전달합니다.
+    /// reachability가 없으면 queue를 유지하고 개수만 갱신합니다.
     private func flushPendingActions() {
         guard session.activationState == .activated,
               session.isReachable,
@@ -139,6 +297,9 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
         lastAckStatus = "큐 전송 등록 \(queued.count)건"
     }
 
+    /// iPhone에서 내려준 최신 application context를 watch 상태로 반영합니다.
+    /// action 반영 완료 id가 포함되면 해당 버튼 상태도 성공 상태로 갱신합니다.
+    /// - Parameter context: iPhone이 publish한 최신 상태 컨텍스트입니다.
     private func applyContext(_ context: [String: Any]) {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
@@ -149,6 +310,7 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
             self.lastSyncAt = context["last_sync_at"] as? TimeInterval ?? 0
             if let appliedActionId = context["last_action_id_applied"] as? String, appliedActionId.isEmpty == false {
                 self.lastAckActionId = appliedActionId
+                self.applyCompletedState(for: appliedActionId, statusText: context["watch_status"] as? String)
             }
             if let status = context["watch_status"] as? String, status.isEmpty == false {
                 self.lastAckStatus = status
@@ -156,19 +318,136 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
         }
     }
 
-    private func handleAck(_ reply: [String: Any], fallbackActionId: String) {
+    /// iPhone이 반환한 ACK를 해석해 버튼 상태와 피드백 배너를 갱신합니다.
+    /// - Parameters:
+    ///   - reply: iPhone replyHandler가 전달한 ACK payload입니다.
+    ///   - fallbackActionId: reply에 action id가 없을 때 사용할 기본 action id입니다.
+    ///   - fallbackActionType: reply에 action 이름이 없을 때 사용할 기본 액션 종류입니다.
+    private func handleAck(
+        _ reply: [String: Any],
+        fallbackActionId: String,
+        fallbackActionType: WatchActionType?
+    ) {
         let replyType = reply["type"] as? String
         if let replyType, replyType.isEmpty == false, replyType != watchAckMessageType {
             return
         }
         let status = (reply["status"] as? String) ?? "accepted"
         let actionId = (reply["action_id"] as? String) ?? fallbackActionId
+        let actionName = reply["action"] as? String
         let syncedAt = (reply["last_sync_at"] as? TimeInterval) ?? Date().timeIntervalSince1970
         DispatchQueue.main.async { [weak self] in
-            self?.lastAckStatus = "ACK \(status)"
-            self?.lastAckActionId = actionId
-            self?.lastSyncAt = syncedAt
+            guard let self else { return }
+            self.lastAckStatus = "ACK \(status)"
+            self.lastAckActionId = actionId
+            self.lastSyncAt = syncedAt
+
+            let actionType = self.actionTypeByActionId[actionId]
+                ?? actionName.flatMap(WatchActionType.init(rawValue:))
+                ?? fallbackActionType
+
+            guard let actionType, actionType != .syncState else { return }
+            switch status {
+            case "accepted":
+                self.transition(actionType, to: .acknowledged, resetAfter: 1.4)
+                self.presentBanner(
+                    title: "전달 완료",
+                    detail: "\(actionType.baseTitle) 요청을 아이폰으로 전달했어요.",
+                    tone: .success
+                )
+            case "duplicate":
+                self.transition(actionType, to: .duplicateSuppressed, resetAfter: 1.2)
+                self.presentBanner(
+                    title: "중복 입력 억제",
+                    detail: "같은 요청이 이미 처리되어 추가 전송을 막았어요.",
+                    tone: .warning
+                )
+            default:
+                self.transition(actionType, to: .failed, resetAfter: 1.8)
+                self.presentBanner(
+                    title: "요청 실패",
+                    detail: "\(actionType.baseTitle) 요청을 처리하지 못했어요. 다시 시도해 주세요.",
+                    tone: .failure
+                )
+            }
         }
+    }
+
+    /// 현재 액션이 중복 탭 억제 대상인지 판단합니다.
+    /// - Parameter action: 사용자가 다시 탭한 액션 종류입니다.
+    /// - Returns: 중복 탭을 억제해야 하면 `true`를 반환합니다.
+    private func shouldSuppressDuplicateTap(for action: WatchActionType) -> Bool {
+        if executionStates[action] == .processing {
+            return true
+        }
+        if executionStates[action] == .queued, action.blocksWhileQueued {
+            return true
+        }
+        if let deadline = cooldownDeadlines[action], deadline > Date() {
+            return true
+        }
+        if action.blocksWhileQueued, pendingActions.contains(where: { $0.action == action.rawValue }) {
+            return true
+        }
+        return false
+    }
+
+    /// 액션 상태를 변경하고 필요하면 자동 초기화 타이머를 등록합니다.
+    /// - Parameters:
+    ///   - action: 상태를 변경할 액션 종류입니다.
+    ///   - state: 새 실행 상태입니다.
+    ///   - resetAfter: 지정하면 해당 시간 후 상태를 `idle`로 되돌립니다.
+    private func transition(
+        _ action: WatchActionType,
+        to state: WatchActionExecutionState,
+        resetAfter: TimeInterval? = nil
+    ) {
+        executionStates[action] = state
+        resetWorkItems[action]?.cancel()
+        resetWorkItems[action] = nil
+        guard let resetAfter else { return }
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.executionStates[action] = .idle
+        }
+        resetWorkItems[action] = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + resetAfter, execute: workItem)
+    }
+
+    /// 사용자에게 보여줄 상단 피드백 배너를 갱신하고 필요하면 햅틱을 재생합니다.
+    /// - Parameters:
+    ///   - title: 배너 타이틀입니다.
+    ///   - detail: 배너 세부 설명입니다.
+    ///   - tone: 배너 강조 톤입니다.
+    ///   - playsHaptic: `true`이면 tone에 맞는 햅틱을 재생합니다.
+    private func presentBanner(
+        title: String,
+        detail: String,
+        tone: WatchActionFeedbackTone,
+        playsHaptic: Bool = true
+    ) {
+        feedbackBanner = WatchActionFeedbackBanner(title: title, detail: detail, tone: tone)
+        if playsHaptic {
+            hapticService.playFeedback(for: tone)
+        }
+    }
+
+    /// iPhone context에서 반영 완료된 action id를 현재 버튼 상태에 연결합니다.
+    /// - Parameters:
+    ///   - actionId: iPhone이 마지막으로 반영했다고 알려준 action id입니다.
+    ///   - statusText: iPhone이 함께 전달한 상태 텍스트입니다.
+    private func applyCompletedState(for actionId: String, statusText: String?) {
+        guard lastCompletedActionId != actionId else { return }
+        guard let actionType = actionTypeByActionId[actionId], actionType != .syncState else { return }
+        lastCompletedActionId = actionId
+        transition(actionType, to: .completed, resetAfter: 1.8)
+        let detail = statusText?.isEmpty == false
+            ? statusText!
+            : "\(actionType.baseTitle) 요청이 반영되었습니다."
+        presentBanner(
+            title: "반영 완료",
+            detail: detail,
+            tone: .success
+        )
     }
 
     func session(
@@ -178,6 +457,13 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
     ) {
         if let error {
             print("watch session activation failed: \(error.localizedDescription)")
+            DispatchQueue.main.async { [weak self] in
+                self?.presentBanner(
+                    title: "연결 준비 실패",
+                    detail: "워치 연결 준비에 문제가 있어 큐 저장 모드로 동작합니다.",
+                    tone: .warning
+                )
+            }
             return
         }
         DispatchQueue.main.async { [weak self] in
@@ -193,6 +479,14 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
     func sessionReachabilityDidChange(_ session: WCSession) {
         DispatchQueue.main.async { [weak self] in
             self?.isReachable = session.isReachable
+            if session.isReachable == false {
+                self?.presentBanner(
+                    title: "오프라인 전환",
+                    detail: "지금 누르는 액션은 큐에 저장했다가 연결되면 자동 전송합니다.",
+                    tone: .warning,
+                    playsHaptic: false
+                )
+            }
         }
         if session.isReachable {
             sendAction(.syncState)
