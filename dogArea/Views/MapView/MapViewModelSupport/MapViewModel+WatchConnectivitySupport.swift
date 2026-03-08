@@ -11,10 +11,17 @@ extension MapViewModel {
             return
         }
         guard let watchSession = resolveWatchContextSession(updateStatusText: false) else { return }
+        let now = Date()
         let context: [String: Any] = [
+            "version": WatchContract.version,
+            "type": "watch_state",
             "isWalking": isWalking,
             "time": time,
-            "area": calculateArea()
+            "area": calculateArea(),
+            "last_sync_at": now.timeIntervalSince1970,
+            "watch_status": watchSyncStatusText,
+            "last_action_id_applied": lastAppliedWatchActionId,
+            "selected_pet_context": makeWatchSelectedPetContextPayload(lastSyncAt: now.timeIntervalSince1970)
         ]
         try? watchSession.updateApplicationContext(context)
     }
@@ -51,7 +58,8 @@ extension MapViewModel {
             "area": self.polygon.walkingArea,
             "last_sync_at": now.timeIntervalSince1970,
             "watch_status": self.watchSyncStatusText,
-            "last_action_id_applied": self.lastAppliedWatchActionId
+            "last_action_id_applied": self.lastAppliedWatchActionId,
+            "selected_pet_context": self.makeWatchSelectedPetContextPayload(lastSyncAt: now.timeIntervalSince1970)
         ]
 
         do {
@@ -74,6 +82,26 @@ extension MapViewModel {
     /// 워치 액션 deduplication 집합을 저장소에 반영합니다.
     private func persistProcessedWatchActions() {
         preferenceStore.set(self.processedWatchActionOrder, forKey: processedWatchActionStorageKey)
+    }
+
+    /// 현재 선택 반려견 문맥을 watch application context payload 형태로 직렬화합니다.
+    /// - Parameter lastSyncAt: payload가 생성된 마지막 동기화 시각입니다.
+    /// - Returns: watch가 바로 렌더링할 수 있는 반려견 문맥 payload입니다.
+    private func makeWatchSelectedPetContextPayload(lastSyncAt: TimeInterval) -> [String: Any] {
+        let petContext = currentWalkWidgetPetContext()
+        var payload: [String: Any] = [
+            "pet_name": petContext.petName,
+            "badge_title": petContext.badgeTitle,
+            "detail": petContext.detailText,
+            "source": petContext.source.rawValue,
+            "is_read_only": true,
+            "blocks_inline_start": petContext.blocksInlineStart,
+            "last_sync_at": lastSyncAt
+        ]
+        if let petId = petContext.petId, petId.isEmpty == false {
+            payload["pet_id"] = petId
+        }
+        return payload
     }
 
     /// 워치 컨텍스트 업데이트 가능 상태를 확인하고 사용 가능한 세션을 반환합니다.
@@ -183,15 +211,29 @@ extension MapViewModel {
                 "actionId": envelope.actionId
             ]
         )
-        self.applyWatchAction(envelope)
-        return [
+        let applyResult = self.applyWatchAction(envelope)
+        let status: String
+        let message: String?
+        switch applyResult {
+        case let .accepted(statusText):
+            status = "accepted"
+            message = statusText
+        case let .rejected(rejectionMessage):
+            status = "rejected"
+            message = rejectionMessage
+        }
+        var ack: [String: Any] = [
             "version": WatchContract.version,
             "type": WatchContract.ackType,
-            "status": "accepted",
+            "status": status,
             "action": actionName,
             "action_id": envelope.actionId,
             "last_sync_at": Date().timeIntervalSince1970
         ]
+        if let message, message.isEmpty == false {
+            ack["message"] = message
+        }
+        return ack
     }
 
     /// 워치 원본 payload를 타입 안전한 액션 엔벌로프로 변환합니다.
@@ -222,38 +264,66 @@ extension MapViewModel {
             return UUID().uuidString.lowercased()
         }()
         let sentAt = (actionPayload["sent_at"] as? TimeInterval) ?? (payload["sent_at"] as? TimeInterval)
-        return WatchActionEnvelope(version: version, action: action, actionId: actionId, sentAt: sentAt)
+        let requestedContextId = ((actionPayload["context_id"] as? String) ?? (payload["context_id"] as? String))?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return WatchActionEnvelope(
+            version: version,
+            action: action,
+            actionId: actionId,
+            sentAt: sentAt,
+            requestedContextId: requestedContextId?.isEmpty == true ? nil : requestedContextId
+        )
     }
 
     /// 파싱된 워치 액션을 현재 산책 세션 상태에 반영합니다.
     /// - Parameter envelope: 처리할 워치 액션 엔벌로프입니다.
-    private func applyWatchAction(_ envelope: WatchActionEnvelope) {
+    /// - Returns: 액션 반영 성공 여부와 watch ACK에 포함할 상태 문구입니다.
+    private func applyWatchAction(_ envelope: WatchActionEnvelope) -> WatchActionApplyResult {
         let action = envelope.action
         switch action {
         case .startWalk:
-            if self.isWalking == false {
-                self.startWalkNow()
-                self.latestWatchActionText = "워치 시작 반영 \(Self.statusTimeString(from: Date()))"
-                self.metricTracker.track(.watchActionApplied, userKey: self.currentMetricUserId(), payload: ["action": action.rawValue])
+            guard self.isWalking == false else {
+                return .rejected(message: "이미 산책이 진행 중이에요. 현재 세션을 먼저 확인해 주세요.")
+            }
+            let petContext = self.applyRequestedWalkPetContextIfNeeded(
+                envelope.requestedContextId,
+                source: "watch_start_context"
+            )
+            guard petContext.blocksInlineStart == false else {
+                self.walkStatusMessage = "활성 반려견이 없어 앱에서 먼저 확인이 필요합니다."
+                return .rejected(message: "활성 반려견이 없어 앱에서 먼저 확인해 주세요.")
+            }
+            self.startWalkNow()
+            self.latestWatchActionText = "워치 시작 반영 \(Self.statusTimeString(from: Date()))"
+            self.metricTracker.track(.watchActionApplied, userKey: self.currentMetricUserId(), payload: ["action": action.rawValue])
+            if petContext.source == .fallbackActivePet, let fallbackReason = petContext.fallbackReason {
+                self.walkStatusMessage = fallbackReason
+                self.lastAppliedWatchActionId = envelope.actionId
+                self.syncWatchContext(force: true)
+                return .accepted(statusText: fallbackReason)
             }
         case .addPoint:
-            if self.isWalking {
-                if let location = self.location {
-                    self.appendWalkPoint(from: location, recordedAt: Date(), source: .watch)
-                    self.metricTracker.track(.watchActionApplied, userKey: self.currentMetricUserId(), payload: ["action": action.rawValue])
-                }
+            guard self.isWalking else {
+                return .rejected(message: "산책 중일 때만 영역을 추가할 수 있어요.")
             }
+            guard let location = self.location else {
+                return .rejected(message: "현재 위치를 읽지 못했어요. 잠시 후 다시 시도해 주세요.")
+            }
+            self.appendWalkPoint(from: location, recordedAt: Date(), source: .watch)
+            self.metricTracker.track(.watchActionApplied, userKey: self.currentMetricUserId(), payload: ["action": action.rawValue])
         case .endWalk:
-            if self.isWalking {
-                self.endWalk()
-                self.latestWatchActionText = "워치 종료 반영 \(Self.statusTimeString(from: Date()))"
-                self.metricTracker.track(.watchActionApplied, userKey: self.currentMetricUserId(), payload: ["action": action.rawValue])
+            guard self.isWalking else {
+                return .rejected(message: "종료할 산책이 아직 없어요.")
             }
+            self.endWalk()
+            self.latestWatchActionText = "워치 종료 반영 \(Self.statusTimeString(from: Date()))"
+            self.metricTracker.track(.watchActionApplied, userKey: self.currentMetricUserId(), payload: ["action": action.rawValue])
         case .syncState:
             self.latestWatchActionText = "워치 상태 재동기화 \(Self.statusTimeString(from: Date()))"
         }
         self.lastAppliedWatchActionId = envelope.actionId
         self.syncWatchContext(force: true)
+        return .accepted(statusText: self.watchSyncStatusText)
     }
 }
 

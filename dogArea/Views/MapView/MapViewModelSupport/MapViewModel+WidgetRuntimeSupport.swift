@@ -160,7 +160,7 @@ extension MapViewModel {
         }
 
         let currentSnapshot = widgetSnapshotStore.load()
-        let petContext = resolveWalkWidgetPetContext()
+        let petContext = currentWalkWidgetPetContext()
         let snapshot = WalkWidgetSnapshot(
             isWalking: isWalking,
             elapsedSeconds: Int(max(0, time.rounded(.down))),
@@ -187,6 +187,7 @@ extension MapViewModel {
         }
         syncWalkWidgetSnapshot(force: true)
         syncWalkLiveActivity(force: true)
+        syncWatchContext(force: true)
     }
 
     /// 현재 산책에 사용할 반려견이 선택되어 있는지 반환합니다.
@@ -238,9 +239,9 @@ extension MapViewModel {
         walkStartCountdownEnabled ? .selectedPetCountdown : .selectedPetImmediate
     }
 
-    /// 현재 위젯에 표시할 반려견 문맥을 계산합니다.
+    /// 현재 위젯·워치에 표시할 반려견 문맥을 계산합니다.
     /// - Returns: 대기 상태의 선택/대체 문맥 또는 산책 중 잠금 문맥입니다.
-    private func resolveWalkWidgetPetContext() -> WalkWidgetPetContext {
+    func currentWalkWidgetPetContext() -> WalkWidgetPetContext {
         if isWalking {
             return WalkWidgetPetContext(
                 petId: polygon.petId ?? selectedPetId,
@@ -319,37 +320,53 @@ extension MapViewModel {
     /// - Returns: 선택 상태 반영 후 위젯에 노출해야 할 최신 반려견 문맥입니다.
     private func applyWidgetRequestedPetContextIfNeeded(_ route: WalkWidgetActionRoute) -> WalkWidgetPetContext {
         guard route.kind == .startWalk, isWalking == false else {
-            return resolveWalkWidgetPetContext()
+            return currentWalkWidgetPetContext()
         }
 
-        let requestedPetId = route.contextId?.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let requestedPetId, requestedPetId.isEmpty == false else {
-            return resolveWalkWidgetPetContext()
+        return applyRequestedWalkPetContextIfNeeded(route.contextId, source: "widget_start_context")
+    }
+
+    /// 요청에 포함된 반려견 식별자를 현재 선택 상태에 반영하고 최신 문맥을 반환합니다.
+    /// - Parameters:
+    ///   - requestedPetId: 위젯 또는 워치가 고정하려는 반려견 식별자입니다.
+    ///   - source: 선택 상태 변경 출처를 식별하는 문자열입니다.
+    /// - Returns: 반영 이후 앱이 사용해야 할 최신 반려견 문맥입니다.
+    func applyRequestedWalkPetContextIfNeeded(
+        _ requestedPetId: String?,
+        source: String
+    ) -> WalkWidgetPetContext {
+        guard isWalking == false else {
+            return currentWalkWidgetPetContext()
+        }
+
+        let normalizedRequestedPetId = requestedPetId?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let normalizedRequestedPetId, normalizedRequestedPetId.isEmpty == false else {
+            return currentWalkWidgetPetContext()
         }
 
         let userInfo = userSessionStore.currentUserInfo()
         let activePets = userInfo?.pet.filter(\.isActive) ?? []
-        if let matchedPet = activePets.first(where: { $0.petId == requestedPetId }) {
+        if let matchedPet = activePets.first(where: { $0.petId == normalizedRequestedPetId }) {
             if selectedPetId != matchedPet.petId {
-                userSessionStore.setSelectedPetId(matchedPet.petId, source: "widget_start_context")
+                userSessionStore.setSelectedPetId(matchedPet.petId, source: source)
             }
             reloadSelectedPetContext()
-            return resolveWalkWidgetPetContext()
+            return currentWalkWidgetPetContext()
         }
 
         if let fallbackPet = userSessionStore.selectedPet(from: userInfo) ?? activePets.first {
             if selectedPetId != fallbackPet.petId {
                 userSessionStore.setSelectedPetId(
                     fallbackPet.petId,
-                    source: "widget_start_context_fallback"
+                    source: "\(source)_fallback"
                 )
             }
             reloadSelectedPetContext()
-            return resolveWalkWidgetPetContext()
+            return currentWalkWidgetPetContext()
         }
 
         reloadSelectedPetContext()
-        return resolveWalkWidgetPetContext()
+        return currentWalkWidgetPetContext()
     }
 
     /// 중복 위젯 액션 식별자를 검사하고 최신 식별자를 저장합니다.
