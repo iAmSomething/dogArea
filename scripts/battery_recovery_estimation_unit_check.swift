@@ -22,6 +22,8 @@ func loadMany(_ relativePaths: [String]) -> String {
 let mapViewModel = load("dogArea/Views/MapView/MapViewModel.swift")
 let mapView = load("dogArea/Views/MapView/MapView.swift")
 let walkListDetail = load("dogArea/Views/WalkListView/WalkListDetailView.swift")
+let walkListDetailPresentationService = load("dogArea/Views/WalkListView/WalkListDetailPresentationService.swift")
+let walkSessionMetadataStore = load("dogArea/Source/WalkSessionMetadataStore.swift")
 let userDefaults = loadMany([
     "dogArea/Source/UserdefaultSetting.swift",
     "dogArea/Source/UserDefaultsSupport/UserSessionModels.swift",
@@ -50,8 +52,15 @@ assertTrue(mapView.contains("추정 종료"), "map recoverable banner should exp
 assertTrue(mapView.contains("recoverableWalkEstimateText"), "map recoverable banner should display estimate text")
 assertTrue(mapView.contains("case .recoverableSession: return 0"), "banner priority should rank recoverable session first")
 
-assertTrue(userDefaults.contains("case recoveryEstimated = \"recovery_estimated\""), "metadata reason should support recovery_estimated")
-assertTrue(walkListDetail.contains("case .recoveryEstimated"), "walk list detail should render recovery_estimated reason")
+assertTrue(
+    walkSessionMetadataStore.contains("case recoveryEstimated = \"recovery_estimated\"") ||
+    userDefaults.contains("case recoveryEstimated = \"recovery_estimated\""),
+    "metadata reason should support recovery_estimated"
+)
+assertTrue(
+    walkListDetail.contains("recovery_estimated") || walkListDetailPresentationService.contains("case .recoveryEstimated"),
+    "walk list detail should render recovery_estimated reason"
+)
 
 assertTrue(spec.contains("자동 재개 금지"), "spec should forbid auto resume")
 assertTrue(spec.contains("자동 종료/자동 확정 금지"), "spec should forbid auto finalize")

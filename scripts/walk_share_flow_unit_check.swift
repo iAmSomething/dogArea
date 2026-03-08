@@ -18,6 +18,7 @@ func load(_ relativePath: String) -> String {
 let utility = load("dogArea/Source/ViewUtility.swift")
 let walkDetail = load("dogArea/Views/MapView/WalkDetailView.swift")
 let walkListDetail = load("dogArea/Views/WalkListView/WalkListDetailView.swift")
+let walkListDetailActions = load("dogArea/Views/WalkListView/WalkListSubView/WalkListDetailActionSectionView.swift")
 let shareDoc = load("docs/walk-share-flow-v1.md")
 let checklist = load("docs/release-regression-checklist-v1.md")
 
@@ -31,7 +32,7 @@ assertTrue(walkDetail.contains("공유 시트 열기"), "walk detail should expo
 
 assertTrue(walkListDetail.contains("prepareShareItems"), "walk list detail should prepare share payload")
 assertTrue(walkListDetail.contains("ActivityShareSheet(items: shareItems)"), "walk list detail should open activity share sheet")
-assertTrue(walkListDetail.contains("Text(\"공유하기\")"), "walk list detail should expose share button")
+assertTrue(walkListDetailActions.contains("Text(\"공유하기\")"), "walk list detail action section should expose share button")
 
 assertTrue(shareDoc.contains("카카오톡"), "share doc should include Kakao compatibility guidance")
 assertTrue(shareDoc.contains("인스타그램"), "share doc should include Instagram compatibility guidance")

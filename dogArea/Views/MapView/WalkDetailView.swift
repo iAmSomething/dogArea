@@ -14,6 +14,10 @@ struct WalkDetailView: View {
     @StateObject var mapImageProvider = MapImageProvider()
     @StateObject private var detailViewModel = WalkDetailViewModel()
 
+    private var shareItems: [Any] {
+        detailViewModel.shareItems
+    }
+
     var body: some View {
         VStack {
             Image(uiImage: detailViewModel.previewImage(mapCapturedImage: mapImageProvider.capturedImage) ?? UIImage.emptyImg)
@@ -65,7 +69,7 @@ struct WalkDetailView: View {
                     .padding(.top, 10)
                 })
                 Button(action: {
-                    detailViewModel.prepareShareSheet(mapCapturedImage: mapImageProvider.capturedImage)
+                    prepareShareItems()
                 }, label: {
                     HStack {
                         Image(systemName: "square.and.arrow.up")
@@ -123,7 +127,7 @@ struct WalkDetailView: View {
             }.animation(.easeInOut(duration: 0.2), value: detailViewModel.toastMessage)
         )
         .sheet(isPresented: $detailViewModel.showShareSheet) {
-            ActivityShareSheet(items: detailViewModel.shareItems) { _, completed, _, _ in
+            ActivityShareSheet(items: shareItems) { _, completed, _, _ in
                 detailViewModel.handleShareCompletion(completed: completed)
             }
         }
@@ -136,6 +140,11 @@ struct WalkDetailView: View {
         .onAppear {
             detailViewModel.bind(context: viewModel)
         }
+    }
+
+    /// 공유 시트에 전달할 아이템을 구성하고 공유 플로우를 시작합니다.
+    private func prepareShareItems() {
+        detailViewModel.prepareShareSheet(mapCapturedImage: mapImageProvider.capturedImage)
     }
 }
 //

@@ -97,6 +97,13 @@
 		A52900010000000000000014 /* WalkListDashboardHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A52900010000000000000004 /* WalkListDashboardHeaderView.swift */; };
 		A52900010000000000000015 /* WalkListStatusCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A52900010000000000000005 /* WalkListStatusCardView.swift */; };
 		A52900010000000000000016 /* WalkListSectionHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A52900010000000000000006 /* WalkListSectionHeaderView.swift */; };
+		A53000010000000000000011 /* WalkListDetailPresentationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53000010000000000000001 /* WalkListDetailPresentationModels.swift */; };
+		A53000010000000000000012 /* WalkListDetailPresentationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53000010000000000000002 /* WalkListDetailPresentationService.swift */; };
+		A53000010000000000000013 /* WalkListDetailHeroSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53000010000000000000003 /* WalkListDetailHeroSectionView.swift */; };
+		A53000010000000000000014 /* WalkListDetailMapSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53000010000000000000004 /* WalkListDetailMapSectionView.swift */; };
+		A53000010000000000000015 /* WalkListDetailTimelineSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53000010000000000000005 /* WalkListDetailTimelineSectionView.swift */; };
+		A53000010000000000000016 /* WalkListDetailMetaSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53000010000000000000006 /* WalkListDetailMetaSectionView.swift */; };
+		A53000010000000000000017 /* WalkListDetailActionSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53000010000000000000007 /* WalkListDetailActionSectionView.swift */; };
 		A50000010000000000000001 /* SettingsSurfaceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000010000000000000011 /* SettingsSurfaceModels.swift */; };
 		A50000010000000000000002 /* SettingsProductSurfaceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000010000000000000012 /* SettingsProductSurfaceService.swift */; };
 		A50000010000000000000003 /* SettingsActionSectionCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50000010000000000000013 /* SettingsActionSectionCardView.swift */; };
@@ -511,6 +518,13 @@
 		A52900010000000000000004 /* WalkListDashboardHeaderView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDashboardHeaderView.swift; sourceTree = "<group>"; };
 		A52900010000000000000005 /* WalkListStatusCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListStatusCardView.swift; sourceTree = "<group>"; };
 		A52900010000000000000006 /* WalkListSectionHeaderView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListSectionHeaderView.swift; sourceTree = "<group>"; };
+		A53000010000000000000001 /* WalkListDetailPresentationModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDetailPresentationModels.swift; sourceTree = "<group>"; };
+		A53000010000000000000002 /* WalkListDetailPresentationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDetailPresentationService.swift; sourceTree = "<group>"; };
+		A53000010000000000000003 /* WalkListDetailHeroSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDetailHeroSectionView.swift; sourceTree = "<group>"; };
+		A53000010000000000000004 /* WalkListDetailMapSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDetailMapSectionView.swift; sourceTree = "<group>"; };
+		A53000010000000000000005 /* WalkListDetailTimelineSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDetailTimelineSectionView.swift; sourceTree = "<group>"; };
+		A53000010000000000000006 /* WalkListDetailMetaSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDetailMetaSectionView.swift; sourceTree = "<group>"; };
+		A53000010000000000000007 /* WalkListDetailActionSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDetailActionSectionView.swift; sourceTree = "<group>"; };
 		DA1731752AE20A4D00EF10C8 /* WalkBackfillDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Data/Walk/WalkBackfillDTO.swift; sourceTree = "<group>"; };
 		DA27AD832B061A1B001283D4 /* dogAreaRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = dogAreaRelease.entitlements; sourceTree = "<group>"; };
 		DA27AD842B061AC5001283D4 /* dogAreaDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = dogAreaDebug.entitlements; sourceTree = "<group>"; };
@@ -996,6 +1010,11 @@
 				A52900010000000000000003 /* WalkListMetricTileView.swift */,
 				A52900010000000000000006 /* WalkListSectionHeaderView.swift */,
 				A52900010000000000000005 /* WalkListStatusCardView.swift */,
+				A53000010000000000000003 /* WalkListDetailHeroSectionView.swift */,
+				A53000010000000000000004 /* WalkListDetailMapSectionView.swift */,
+				A53000010000000000000005 /* WalkListDetailTimelineSectionView.swift */,
+				A53000010000000000000006 /* WalkListDetailMetaSectionView.swift */,
+				A53000010000000000000007 /* WalkListDetailActionSectionView.swift */,
 				2615443270FF3222AEBDE893 /* ThumbnailImageView.swift */,
 			);
 			path = WalkListSubView;
@@ -1047,6 +1066,8 @@
 				DA4513852AFB2CFC007AD69B /* WalkListViewModel.swift */,
 				A52900010000000000000001 /* WalkListPresentationModels.swift */,
 				A52900010000000000000002 /* WalkListPresentationService.swift */,
+				A53000010000000000000001 /* WalkListDetailPresentationModels.swift */,
+				A53000010000000000000002 /* WalkListDetailPresentationService.swift */,
 				DA45138B2AFB36D4007AD69B /* WalkListModel.swift */,
 				DAA8E4D52B01A03700F9190B /* WalkListDetailView.swift */,
 			);
@@ -1796,6 +1817,13 @@
 				A52900010000000000000014 /* WalkListDashboardHeaderView.swift in Sources */,
 				A52900010000000000000015 /* WalkListStatusCardView.swift in Sources */,
 				A52900010000000000000016 /* WalkListSectionHeaderView.swift in Sources */,
+				A53000010000000000000011 /* WalkListDetailPresentationModels.swift in Sources */,
+				A53000010000000000000012 /* WalkListDetailPresentationService.swift in Sources */,
+				A53000010000000000000013 /* WalkListDetailHeroSectionView.swift in Sources */,
+				A53000010000000000000014 /* WalkListDetailMapSectionView.swift in Sources */,
+				A53000010000000000000015 /* WalkListDetailTimelineSectionView.swift in Sources */,
+				A53000010000000000000016 /* WalkListDetailMetaSectionView.swift in Sources */,
+				A53000010000000000000017 /* WalkListDetailActionSectionView.swift in Sources */,
 				DA3F9BD52AE0FF9B0048550C /* CustomTabBar.swift in Sources */,
 				DAC19F1E2B0B331A002FE2E8 /* SigningViewModel.swift in Sources */,
 				DAC19F102B0AF661002FE2E8 /* TitleTextView.swift in Sources */,
