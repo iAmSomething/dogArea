@@ -137,6 +137,35 @@ final class FeatureRegressionUITests: XCTestCase {
         )
     }
 
+    /// 산책 상세 화면이 요약, 지도, 타임라인, 메타, CTA 위계를 분리해 노출하는지 검증합니다.
+    func testFeatureRegression_WalkListDetailClarifiesSummaryAndActionHierarchy() throws {
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.WalkDetailPreviewRoute"])
+        XCTAssertTrue(openTab(index: 1, app: app), "산책 목록 탭 진입에 실패했습니다.")
+
+        let detailScreen = screenElement(identifier: "screen.walkListDetail.content", in: app)
+        XCTAssertTrue(waitUntilExists(detailScreen, timeout: 8), "산책 상세 화면 preview route 진입에 실패했습니다.")
+        XCTAssertTrue(waitUntilGone(app.buttons["tab.1"], timeout: 2), "산책 상세 화면에서는 하단 탭바가 숨겨져야 합니다.")
+
+        XCTAssertTrue(waitUntilExists(screenElement(identifier: "walklist.detail.hero", in: app), timeout: 2), "상단 요약 카드가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(screenElement(identifier: "walklist.detail.map", in: app), timeout: 2), "지도 카드가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(screenElement(identifier: "walklist.detail.timeline", in: app), timeout: 2), "포인트 타임라인 카드가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(screenElement(identifier: "walklist.detail.meta", in: app), timeout: 2), "세션 메타 카드가 노출되지 않았습니다.")
+
+        let shareAction = app.buttons["walklist.detail.action.share"]
+        let saveAction = app.buttons["walklist.detail.action.save"]
+        let dismissAction = app.buttons["walklist.detail.action.dismiss"]
+
+        XCTAssertTrue(
+            revealElementByVerticalScroll(shareAction, app: app, maxSwipes: 4),
+            "공유 primary CTA가 화면에 노출되지 않았습니다."
+        )
+        XCTAssertTrue(waitUntilExists(saveAction, timeout: 2), "저장 secondary CTA가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(dismissAction, timeout: 2), "확인 dismiss CTA가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilHittable(shareAction, timeout: 2), "공유 primary CTA가 탭 가능한 상태가 아닙니다.")
+        XCTAssertTrue(waitUntilHittable(saveAction, timeout: 2), "저장 secondary CTA가 탭 가능한 상태가 아닙니다.")
+        XCTAssertTrue(waitUntilHittable(dismissAction, timeout: 2), "확인 dismiss CTA가 탭 가능한 상태가 아닙니다.")
+    }
+
     /// 산책 목록 탭을 선택해도 선택 아이콘이 유효한 SF Symbol로 유지되는지 검증합니다.
     func testFeatureRegression_WalkListTabSelectedIconRemainsVisibleInBothStyles() throws {
         try assertWalkListTabSelectedIconRemainsVisible(style: .light)

@@ -1,14 +1,9 @@
-//
-//  WalkListDetailView.swift
-//  dogArea
-//
-//  Created by 김태훈 on 11/13/23.
-//
-
 import SwiftUI
+import UIKit
 import MapKit
+
 struct WalkListDetailView: View {
-    @Environment(\.dismiss) var dismiss
+    @Environment(\.dismiss) private var dismiss
     @State var model: WalkDataModel
     @State private var isMeter: Bool = true
     @State private var showSaveMessage: String? = nil
@@ -16,147 +11,122 @@ struct WalkListDetailView: View {
     @State private var showShareSheet = false
     @State private var selectedLoc: UUID? = nil
     @State private var sessionMetadata: WalkSessionMetadata? = nil
-    @StateObject var imageRenderer = MapImageProvider()
-    var body: some View {
-        let tempPolygon = model.toPolygon()
-        ScrollView{
-            VStack {
-                HStack {
-                    Text("산책한 영역")
-                        .padding(.horizontal, 20)
-                        .font(.appFont(for: .SemiBold, size: 20))
-                    Spacer()
-                }.frame(maxWidth: .infinity)
-                UnderLine()
-                SimpleMapView(polygon: tempPolygon, selectedLocation: $selectedLoc)
-                    .frame(maxWidth: .infinity , minHeight: screenSize.width - 40, maxHeight: .infinity)
-                    .cornerRadius(5)
-                    .padding(.horizontal, 20)
-                    .padding(.bottom,20)
-                HStack {
-                    SimpleKeyValueView(value: ("영역 넓이","\(calculatedAreaString(areaSize: model.walkArea , isPyong : !isMeter))"))
-                        .onTapGesture {isMeter.toggle()}
-                    Spacer()
-                    SimpleKeyValueView(value: ("산책 시간","\(model.walkDuration.simpleWalkingTimeInterval)"))
-                }.frame(maxWidth: .infinity)
-                    .padding(.horizontal, 30)
-                    .padding(.bottom, 20)
-                if let sessionMetadata {
-                    HStack {
-                        Text("종료 사유: \(endReasonText(sessionMetadata.endReason)) · 종료 시각: \(sessionMetadata.endedAt.createdAtTimeDescription)")
-                            .font(.appFont(for: .Light, size: 12))
-                            .foregroundStyle(Color.appTextDarkGray)
-                        Spacer()
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 12)
-                }
-                VStack{
-                    HStack {
-                        Text("영역 표시한 곳")
-                            .padding(.horizontal, 20)
-                            .font(.appFont(for: .SemiBold, size: 20))
+    @State private var pets: [PetInfo] = []
+    @StateObject private var imageRenderer = MapImageProvider()
 
-                        Spacer()
-                    }.frame(maxWidth: .infinity)
-                    UnderLine()
-                    ScrollView(.horizontal) {
-                        LazyHGrid(rows: [GridItem(.fixed(32))] , alignment: .top){
-                            ForEach(model.locations) { loc in
-                                Text("\(loc.createdAt.createdAtTimeHHMM)")
-                                    .font(.appFont(for: .Medium, size: 14))
-                                    .padding(5)
-                                    .foregroundStyle(Color.appTextDarkGray)
-                                    .background(self.selectedLoc == loc.id ? Color.appPeach : Color.appYellowPale)
-                                    .cornerRadius(5)
-                                    .onTapGesture {
-                                        self.selectedLoc = loc.id
-                                    }
-                            }
+    private let presentationService: WalkListDetailPresentationServicing = WalkListDetailPresentationService()
+
+    private var presentationSnapshot: WalkListDetailPresentationSnapshot {
+        presentationService.makeSnapshot(
+            model: model,
+            sessionMetadata: sessionMetadata,
+            pets: pets,
+            isMeter: isMeter,
+            selectedLocationID: selectedLoc
+        )
+    }
+
+    var body: some View {
+        let polygon = model.toPolygon()
+
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                WalkListDetailHeroSectionView(
+                    hero: presentationSnapshot.hero,
+                    metrics: presentationSnapshot.metrics,
+                    onToggleAreaUnit: { isMeter.toggle() }
+                )
+
+                WalkListDetailMapSectionView(
+                    polygon: polygon,
+                    selectedLocation: $selectedLoc,
+                    selectedPointSummary: presentationSnapshot.selectedPointSummary,
+                    hasMapContent: presentationSnapshot.hasMapContent
+                )
+
+                WalkListDetailTimelineSectionView(
+                    chips: presentationSnapshot.timeline,
+                    footnote: presentationSnapshot.timelineFootnote,
+                    onSelect: { selectedLoc = $0 }
+                )
+
+                WalkListDetailMetaSectionView(rows: presentationSnapshot.metaRows)
+
+                WalkListDetailActionSectionView(
+                    onShare: {
+                        shareItems = prepareShareItems()
+                        if shareItems.isEmpty == false {
+                            showShareSheet = true
                         }
-                    }.frame(height: 60)
-                        .padding(.horizontal, 20)
-                }
-                Button(action: {
-                    shareItems = prepareShareItems()
-                    if shareItems.isEmpty == false {
-                        showShareSheet = true
-                    }
-                }, label:  {
-                    Text("공유하기")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .foregroundStyle(.black)
-                }).frame(maxWidth: .infinity, minHeight: 50)
-                    .background(Color(red: 0.99, green: 0.73, blue: 0.73))
-                    .cornerRadius(15)
-                    .padding(.horizontal, 70)
-                Button(action: {
-                    if let img = imageRenderer.capturedImage {
-                        UIImageWriteToSavedPhotosAlbum(img, nil, nil, nil)
-                        showSaveMessage = "사진을 저장했어요!"
-                    } else {
-                        showSaveMessage = "사진 저장에 실패했어요"
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                        showSaveMessage = nil
-                    }
-                },
-                       label:  {
-                    Text("사진으로 저장하기")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .foregroundStyle(.black)
-                }).frame(maxWidth: .infinity, minHeight: 50)
-                    .background(Color(red: 0.99, green: 0.73, blue: 0.73))
-                    .cornerRadius(15)
-                    .padding(.horizontal, 70)
-                Spacer()
-                Button(action: {
-                    dismiss()
-                },
-                       label:  {
-                    Text("확인")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .foregroundStyle(.black)
-                }).frame(maxWidth: .infinity, minHeight: 50)
-                    .background(Color(red: 0.99, green: 0.73, blue: 0.73))
-                    .cornerRadius(15)
-                    .padding(.horizontal, 70)
-            }.overlay(
-                Group {
-                    if let msg = showSaveMessage {
-                        SimpleMessageView(message: msg)
-                            .transition(.opacity)
-                    }
-                }
-                .animation(.easeInOut(duration: 0.2), value: showSaveMessage)
-            ).navigationBarBackButtonHidden()
-        }.padding(.top, 20)
+                    },
+                    onSave: {
+                        if let image = imageRenderer.capturedImage {
+                            UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+                            showToast("사진을 저장했어요!")
+                        } else {
+                            showToast("사진 저장에 실패했어요")
+                        }
+                    },
+                    onDismiss: { dismiss() }
+                )
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 20)
+            .padding(.bottom, 28)
+        }
+        .background(Color.appTabScaffoldBackground.ignoresSafeArea())
+        .overlay(alignment: .top) {
+            if let msg = showSaveMessage {
+                SimpleMessageView(message: msg)
+                    .padding(.top, 12)
+                    .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut(duration: 0.2), value: showSaveMessage)
         .sheet(isPresented: $showShareSheet) {
             ActivityShareSheet(items: shareItems) { _, completed, _, _ in
                 if completed {
-                    showSaveMessage = "공유를 완료했어요!"
+                    showToast("공유를 완료했어요!")
                 }
             }
         }
-        .onAppear {
-            if let polygon = model.toPolygon().polygon {
-                imageRenderer.captureMapImage(for: polygon)
-            }
-            sessionMetadata = WalkSessionMetadataStore.shared.metadata(sessionId: model.id)
-        }
-        .safeAreaPadding(.top, 20)
+        .navigationBarBackButtonHidden()
+        .safeAreaPadding(.top, 12)
         .appTabBarVisibility(.hidden)
-
-    }
-    private func endReasonText(_ reason: WalkSessionEndReason) -> String {
-        switch reason {
-        case .manual: return "수동 종료"
-        case .autoInactive: return "무이동 자동 종료"
-        case .autoTimeout: return "시간 제한 자동 종료"
-        case .recoveryEstimated: return "복구 추정 종료"
+        .accessibilityIdentifier("screen.walkListDetail.content")
+        .onAppear {
+            if selectedLoc == nil {
+                selectedLoc = model.locations.first?.id
+            }
+            loadSessionContextIfNeeded()
+            captureMapImageIfNeeded()
         }
     }
 
+    /// 저장/공유 결과용 토스트 메시지를 잠시 노출합니다.
+    /// - Parameter message: 사용자에게 보여줄 상태 메시지입니다.
+    private func showToast(_ message: String) {
+        showSaveMessage = message
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            showSaveMessage = nil
+        }
+    }
+
+    /// 저장된 세션 메타데이터와 반려견 문맥을 현재 화면 상태에 반영합니다.
+    private func loadSessionContextIfNeeded() {
+        sessionMetadata = WalkSessionMetadataStore.shared.metadata(sessionId: model.id)
+        pets = UserdefaultSetting.shared.getValue()?.pet ?? []
+    }
+
+    /// 지도 공유 카드 생성용 맵 이미지를 준비합니다.
+    private func captureMapImageIfNeeded() {
+        guard imageRenderer.capturedImage == nil,
+              let polygon = model.toPolygon().polygon else { return }
+        imageRenderer.captureMapImage(for: polygon)
+    }
+
+    /// 공유 시트에 전달할 요약 텍스트와 카드 이미지를 구성합니다.
+    /// - Returns: 시스템 공유 시트로 전달할 아이템 배열입니다.
     private func prepareShareItems() -> [Any] {
         let summary = WalkShareSummaryBuilder.build(
             createdAt: model.createdAt,
@@ -177,24 +147,5 @@ struct WalkListDetailView: View {
             return [summary, shareCard]
         }
         return [summary]
-    }
-
-    func calculatedAreaString(areaSize: Double , isPyong: Bool = false) -> String {
-        var str = String(format: "%.2f" , areaSize) + "㎡"
-        if areaSize > 10000.0 {
-            str = String(format: "%.2f" , areaSize/10000) + "만 ㎡"
-        }
-        if areaSize > 100000.0 {
-            str = String(format: "%.2f" , areaSize/1000000) + "k㎡"
-        }
-        if isPyong {
-            if areaSize/3.3 > 10000 {
-                str = String(format: "%.1f" , areaSize/33333) + "만 평"
-
-            } else {
-                str = String(format: "%.1f" , areaSize/3.3) + "평"
-            }
-        }
-        return str
     }
 }

@@ -6,10 +6,13 @@
 //
 
 import SwiftUI
+import CoreLocation
 
 struct WalkListView: View {
     @StateObject private var viewModel = WalkListViewModel()
     @EnvironmentObject var authFlow: AuthFlowCoordinator
+    @State private var isPresentingUITestDetailPreview = false
+    @State private var didPresentUITestDetailPreview = false
 
     var body: some View {
         ScrollView {
@@ -71,9 +74,13 @@ struct WalkListView: View {
         .appTabRootScrollLayout(extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding)
         .onAppear {
             viewModel.fetchModel()
+            presentWalkDetailPreviewIfNeeded()
         }
         .navigationDestination(for: WalkDataModel.self) { model in
             WalkListDetailView(model: model)
+        }
+        .navigationDestination(isPresented: $isPresentingUITestDetailPreview) {
+            WalkListDetailView(model: Self.makeUITestDetailPreviewModel())
         }
         .accessibilityIdentifier("screen.walkList.content")
     }
@@ -121,6 +128,43 @@ struct WalkListView: View {
                 }
             }
         }
+    }
+
+    /// UI 테스트 전용 상세 화면 preview route를 한 번만 실행합니다.
+    private func presentWalkDetailPreviewIfNeeded() {
+        guard didPresentUITestDetailPreview == false,
+              Self.shouldPresentUITestDetailPreviewRoute() else { return }
+        didPresentUITestDetailPreview = true
+        isPresentingUITestDetailPreview = true
+    }
+
+    /// 현재 런치 인자에 산책 상세 preview route 요청이 포함되어 있는지 확인합니다.
+    /// - Returns: `-UITest.WalkDetailPreviewRoute` 인자가 있으면 `true`입니다.
+    private static func shouldPresentUITestDetailPreviewRoute() -> Bool {
+        ProcessInfo.processInfo.arguments.contains("-UITest.WalkDetailPreviewRoute")
+    }
+
+    /// 산책 상세 UI 회귀 테스트에 사용할 고정 preview 데이터를 생성합니다.
+    /// - Returns: 레이아웃과 CTA 위계를 검증할 수 있는 샘플 산책 기록 모델입니다.
+    private static func makeUITestDetailPreviewModel() -> WalkDataModel {
+        let baseTime = Date(timeIntervalSince1970: 1_772_753_400).timeIntervalSince1970
+        let locations: [Location] = [
+            .init(coordinate: CLLocationCoordinate2D(latitude: 37.5665, longitude: 126.9780), id: UUID(uuidString: "11111111-1111-1111-1111-111111111111")!, createdAt: baseTime + 0, pointRole: .mark),
+            .init(coordinate: CLLocationCoordinate2D(latitude: 37.5668, longitude: 126.9785), id: UUID(uuidString: "22222222-2222-2222-2222-222222222222")!, createdAt: baseTime + 180, pointRole: .route),
+            .init(coordinate: CLLocationCoordinate2D(latitude: 37.5672, longitude: 126.9792), id: UUID(uuidString: "33333333-3333-3333-3333-333333333333")!, createdAt: baseTime + 360, pointRole: .mark),
+            .init(coordinate: CLLocationCoordinate2D(latitude: 37.5674, longitude: 126.9798), id: UUID(uuidString: "44444444-4444-4444-4444-444444444444")!, createdAt: baseTime + 540, pointRole: .route),
+            .init(coordinate: CLLocationCoordinate2D(latitude: 37.5670, longitude: 126.9801), id: UUID(uuidString: "55555555-5555-5555-5555-555555555555")!, createdAt: baseTime + 720, pointRole: .mark)
+        ]
+        let polygon = Polygon(
+            locations: locations,
+            createdAt: baseTime,
+            id: UUID(uuidString: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")!,
+            walkingTime: 1_420,
+            walkingArea: 9_784.92,
+            imgData: nil,
+            petId: nil
+        )
+        return WalkDataModel(polygon: polygon)
     }
 }
 
