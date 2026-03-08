@@ -57,10 +57,21 @@ struct MapSeasonTileSummaryPresentation: Equatable {
     let meaningLine: String
     let intensityLine: String
     let walkContributionLine: String
+    let selectionHintLine: String
     let topLevelLabel: String
     let occupiedCount: Int
     let maintainedCount: Int
     let legendItems: [MapSeasonTileLegendPresentation]
+}
+
+/// 지도에서 선택한 시즌 타일 하나를 해석해 보여줄 상세 패널 모델입니다.
+struct MapSeasonTileDetailPresentation: Equatable {
+    let title: String
+    let statusTitle: String
+    let intensityTitle: String
+    let reasonLine: String
+    let nextActionLine: String
+    let contributionLine: String
 }
 
 /// 시즌 타일 점령 지도 시각 모델을 계산하는 계약입니다.
@@ -84,6 +95,11 @@ protocol MapSeasonTilePresentationServicing {
     /// - Parameter tiles: 지도에 표시 중인 시즌 타일 셀 표현 배열입니다.
     /// - Returns: 시즌 점령 지도 의미와 현재 개수를 담은 요약 모델입니다.
     func makeSummaryPresentation(from tiles: [MapSeasonTilePresentation]) -> MapSeasonTileSummaryPresentation
+
+    /// 지도에서 선택한 시즌 타일의 상세 해설 모델을 생성합니다.
+    /// - Parameter tile: 사용자가 선택한 시즌 타일 표현입니다.
+    /// - Returns: 현재 상태, 이유, 다음 행동을 담은 상세 패널 모델입니다.
+    func makeDetailPresentation(for tile: MapSeasonTilePresentation) -> MapSeasonTileDetailPresentation
 
     /// 시즌 타일 지도 범례에 사용할 단계 설명 배열을 생성합니다.
     /// - Returns: 단계/상태별 범례 설명 배열입니다.
@@ -148,6 +164,7 @@ final class MapSeasonTilePresentationService: MapSeasonTilePresentationServicing
             meaningLine: "굵은 테두리는 점령, 점선 테두리는 유지 상태예요.",
             intensityLine: "채움이 진할수록 더 강하게 점령한 칸이에요.",
             walkContributionLine: "산책 경로가 지나간 칸이 누적되며 다음 단계로 올라가요.",
+            selectionHintLine: "칸을 눌러 왜 이런 상태인지와 다음 산책 힌트를 볼 수 있어요.",
             topLevelLabel: "최고 \(topLevel)단계",
             occupiedCount: occupiedCount,
             maintainedCount: maintainedCount,
@@ -164,5 +181,74 @@ final class MapSeasonTilePresentationService: MapSeasonTilePresentationServicing
             .init(level: 2, title: "3단계 점령", description: "막 점령권에 들어온 칸", status: .occupied),
             .init(level: 3, title: "4단계 점령", description: "가장 강하게 점령한 칸", status: .occupied)
         ]
+    }
+
+    /// 지도에서 선택한 시즌 타일의 상세 해설 모델을 생성합니다.
+    /// - Parameter tile: 사용자가 선택한 시즌 타일 표현입니다.
+    /// - Returns: 현재 상태, 이유, 다음 행동을 담은 상세 패널 모델입니다.
+    func makeDetailPresentation(for tile: MapSeasonTilePresentation) -> MapSeasonTileDetailPresentation {
+        MapSeasonTileDetailPresentation(
+            title: detailTitle(for: tile),
+            statusTitle: tile.status.rawValue,
+            intensityTitle: tile.intensityLabel,
+            reasonLine: reasonLine(for: tile),
+            nextActionLine: nextActionLine(for: tile),
+            contributionLine: contributionLine(for: tile)
+        )
+    }
+
+    /// 시즌 타일 상세 패널의 제목을 생성합니다.
+    /// - Parameter tile: 해설할 시즌 타일 표현입니다.
+    /// - Returns: 현재 칸의 의미를 바로 읽을 수 있는 제목입니다.
+    private func detailTitle(for tile: MapSeasonTilePresentation) -> String {
+        switch (tile.status, tile.intensityLevel) {
+        case (.occupied, 3):
+            return "강하게 점령한 시즌 칸"
+        case (.occupied, _):
+            return "새로 점령권에 들어온 시즌 칸"
+        case (.maintained, 0):
+            return "유지 중인 준비 칸"
+        case (.maintained, _):
+            return "방어 중인 시즌 칸"
+        }
+    }
+
+    /// 시즌 타일이 현재 상태로 보이는 이유를 사용자 문장으로 변환합니다.
+    /// - Parameter tile: 해설할 시즌 타일 표현입니다.
+    /// - Returns: 현재 상태가 만들어진 이유 설명입니다.
+    private func reasonLine(for tile: MapSeasonTilePresentation) -> String {
+        switch (tile.status, tile.intensityLevel) {
+        case (.occupied, 3):
+            return "이 칸은 이번 시즌 산책 기여가 충분히 누적돼 강하게 점령한 상태예요."
+        case (.occupied, _):
+            return "최근 산책 기여가 누적돼 이 칸이 점령 상태로 올라온 상태예요."
+        case (.maintained, 0):
+            return "기여가 조금 쌓였지만 아직 점령 전이라 유지 단계로 보이는 칸이에요."
+        case (.maintained, _):
+            return "최근 기여가 끊기지 않아 이 칸을 유지하고 있지만, 아직 더 채울 여지가 있어요."
+        }
+    }
+
+    /// 다음 산책에서 추천할 행동 문구를 생성합니다.
+    /// - Parameter tile: 해설할 시즌 타일 표현입니다.
+    /// - Returns: 사용자가 다음 산책에서 취할 행동 힌트입니다.
+    private func nextActionLine(for tile: MapSeasonTilePresentation) -> String {
+        switch (tile.status, tile.intensityLevel) {
+        case (.occupied, 3):
+            return "다음 산책에서는 이 칸을 지나는 대신 주변 빈 칸까지 넓혀 점령 범위를 확장해 보세요."
+        case (.occupied, _):
+            return "다음 산책에서 이 칸을 한 번 더 지나가면 더 강한 점령 단계로 끌어올리기 쉬워요."
+        case (.maintained, 0):
+            return "다음 산책에서 이 칸을 다시 지나가면 유지 단계를 넘어 점령 단계로 올릴 수 있어요."
+        case (.maintained, _):
+            return "한두 번 더 이 칸을 지나가면 점령 상태로 전환될 가능성이 높아요."
+        }
+    }
+
+    /// 현재 칸의 기여 강도를 짧게 요약합니다.
+    /// - Parameter tile: 해설할 시즌 타일 표현입니다.
+    /// - Returns: 단계와 점수 의미를 결합한 짧은 요약 문구입니다.
+    private func contributionLine(for tile: MapSeasonTilePresentation) -> String {
+        "현재 \(tile.intensityLabel) 강도예요. 채움이 더 진해질수록 이 칸의 시즌 기여가 강해집니다."
     }
 }

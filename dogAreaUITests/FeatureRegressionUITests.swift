@@ -50,7 +50,7 @@ final class FeatureRegressionUITests: XCTestCase {
 
     /// 지도 본면에서 시즌 오버레이가 점령 지도 카드와 의미 설명을 함께 노출하는지 검증합니다.
     func testFeatureRegression_MapSeasonOccupationSummarySurfacesMeaningOnCanvas() throws {
-        let app = launchAppForFeatureRegression()
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.MapForceSeasonTileVisible"])
         XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.")
         XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
 
@@ -71,6 +71,35 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertTrue(
             waitUntilExists(screenElement(identifier: "map.season.summary.relation", in: app), timeout: 2),
             "산책 반영 관계 설명이 노출되지 않았습니다."
+        )
+    }
+
+    /// 시즌 타일을 선택하면 상태 해설과 다음 행동이 포함된 상세 패널이 열리는지 검증합니다.
+    func testFeatureRegression_MapSeasonTileTapOpensDetailPanel() throws {
+        let app = launchAppForFeatureRegression(
+            extraArguments: [
+                "-UITest.MapForceSeasonTileVisible",
+                "-UITest.MapOpenSeasonTileDetail"
+            ]
+        )
+        XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.")
+        XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
+
+        let hitTarget = screenElement(identifier: "map.season.tile.hitTarget", in: app)
+        let summaryAction = screenElement(identifier: "map.season.summary.openDetail", in: app)
+        let hasTileTarget = waitUntilExists(hitTarget, timeout: 3)
+        let hasSummaryAction = waitUntilExists(summaryAction, timeout: 3)
+        XCTAssertTrue(hasTileTarget || hasSummaryAction, "시즌 타일 상세를 여는 선택 affordance가 노출되지 않았습니다.")
+
+        let detailCard = screenElement(identifier: "map.season.detail.card", in: app)
+        XCTAssertTrue(waitUntilExists(detailCard, timeout: 3), "시즌 타일 상세 패널이 열리지 않았습니다.")
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "map.season.detail.reason", in: app), timeout: 2),
+            "시즌 타일 상태 이유 설명이 노출되지 않았습니다."
+        )
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "map.season.detail.nextAction", in: app), timeout: 2),
+            "시즌 타일 다음 행동 힌트가 노출되지 않았습니다."
         )
     }
 

@@ -11,6 +11,7 @@
 		02B810B0791CFB600F8406EB /* HomeSelectedPetEmptyStateCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D14629580BEDCDCAE5B9EC3 /* HomeSelectedPetEmptyStateCardView.swift */; };
 		0ADA547D465997E8A4EFE806 /* HomeSeasonResetTransitionBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E7F38C996B1C42E27210E77 /* HomeSeasonResetTransitionBannerView.swift */; };
 		106E27D50C08D7997FD7982D /* RivalNetworkErrorInterpreter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4548C0C604B933CC43644FA /* RivalNetworkErrorInterpreter.swift */; };
+		127B2251C5595A11763BE6D4 /* MapSeasonTileDetailCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244A2DC41EA14E7143F727B2 /* MapSeasonTileDetailCardView.swift */; };
 		17BEA4EED401E70749B3A96B /* HomeQuestWidgetTabSelectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84B94FEE2D80935CA3AA5917 /* HomeQuestWidgetTabSelectorView.swift */; };
 		1A87E29B8817434BC0210F5F /* WalkControlIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B86CA6EAAA6D2939A4516B9 /* WalkControlIntents.swift */; };
 		1BCE551255C692E2B20F154E /* HomeIndoorMissionRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66C12577FC501DA46E9411D5 /* HomeIndoorMissionRowView.swift */; };
@@ -409,6 +410,7 @@
 		1D982F3BFEE53C6D1333FF67 /* DesignAuditUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DesignAuditUITests.swift; sourceTree = "<group>"; };
 		1DBF6EC9508CA4C5CC954AF8 /* HomeSeasonShieldBadgeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeSeasonShieldBadgeView.swift; sourceTree = "<group>"; };
 		21CE83B02069A8E4171B35DE /* RivalTabView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RivalTabView.swift; path = dogArea/Views/ProfileSettingView/RivalTabView.swift; sourceTree = "<group>"; };
+		244A2DC41EA14E7143F727B2 /* MapSeasonTileDetailCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MapSeasonTileDetailCardView.swift; path = dogArea/Views/MapView/MapSubViews/MapSeasonTileDetailCardView.swift; sourceTree = "<group>"; };
 		2615443270FF3222AEBDE893 /* ThumbnailImageView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ThumbnailImageView.swift; sourceTree = "<group>"; };
 		26182C87E44E1C0D9629CD03 /* HomeAnimatedSeasonGaugeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeAnimatedSeasonGaugeView.swift; sourceTree = "<group>"; };
 		29F07A82B4C3550CACA2C6ED /* GuestDataUpgradePromptSheetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GuestDataUpgradePromptSheetView.swift; sourceTree = "<group>"; };
@@ -1329,6 +1331,7 @@
 				739206D93B3E1667D2A58593 /* dogAreaWidgetExtension */,
 				07A9319CC39884A076CAEAAD /* MapSeasonTilePresentationService.swift */,
 				129A67F7268C49E59BE08698 /* MapSeasonTileSummaryCardView.swift */,
+				244A2DC41EA14E7143F727B2 /* MapSeasonTileDetailCardView.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -2114,6 +2117,7 @@
 				9B600C1F7FA22CF43EFC09C2 /* RivalTabViewModel+ModerationAndLocation.swift in Sources */,
 				220A5C5B593A98C896A1CC95 /* MapSeasonTilePresentationService.swift in Sources */,
 				4CA956518324D7B25056E8F3 /* MapSeasonTileSummaryCardView.swift in Sources */,
+				127B2251C5595A11763BE6D4 /* MapSeasonTileDetailCardView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
