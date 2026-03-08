@@ -19,6 +19,7 @@ struct HomeView: View {
     @State private var questCompletionModal: QuestCompletionPresentation? = nil
     @State private var questCompletionPop: Bool = false
     @State private var isLowPowerModeEnabled: Bool = ProcessInfo.processInfo.isLowPowerModeEnabled
+    @State private var hasInjectedWeatherGuidanceUITestPresentation: Bool = false
     @State private var seasonAnimatedProgress: Double = 0
     @State private var seasonGaugeWaveOffset: CGFloat = -120
     @State private var seasonShieldRotation: Double = 0
@@ -32,6 +33,7 @@ struct HomeView: View {
     @State private var questWidgetTab: HomeQuestWidgetTab = .daily
     @State private var homeScrollOffsetY: CGFloat = 0
     @State private var isSeasonDetailPresented: Bool = false
+    @State private var isWeatherGuidancePresented: Bool = false
     @State private var isTerritoryGoalPresented: Bool = false
     @State private var territoryGoalEntryContext: TerritoryGoalEntryContext? = nil
     @State private var questWidgetEntryContext: QuestWidgetEntryContext? = nil
@@ -314,6 +316,7 @@ struct HomeView: View {
                     if viewModel.seasonMotionSummary.weatherShieldActive {
                         startSeasonShieldRingAnimationIfNeeded()
                     }
+                    presentWeatherGuidanceIfRequestedForUITest()
                 }
                 .onDisappear {
                     isHomeVisible = false
@@ -446,6 +449,12 @@ struct HomeView: View {
                     onClose: { isSeasonDetailPresented = false }
                 )
             }
+            .sheet(isPresented: $isWeatherGuidancePresented) {
+                HomeWeatherGuidanceSheetView(
+                    presentation: viewModel.weatherGuidancePresentation,
+                    onClose: { isWeatherGuidancePresented = false }
+                )
+            }
             .appTabRootScrollLayout(extraBottomPadding: 12)
     }
 
@@ -557,6 +566,17 @@ struct HomeView: View {
         viewModel.refreshGuestDataUpgradeReport()
     }
 
+    /// UI 테스트 플래그가 활성화된 경우 홈 날씨 가이드 시트를 자동 노출합니다.
+    /// - Returns: 없음. 중복 노출은 내부 플래그로 한 번만 처리합니다.
+    private func presentWeatherGuidanceIfRequestedForUITest() {
+        guard ProcessInfo.processInfo.arguments.contains("-UITest.HomeWeatherGuidancePresented"),
+              hasInjectedWeatherGuidanceUITestPresentation == false else { return }
+        hasInjectedWeatherGuidanceUITestPresentation = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            isWeatherGuidancePresented = true
+        }
+    }
+
     private var goalTrackerCard: some View {
         // area_reference_db_ui_unit_check 호환: HomeGoalTrackerCardView가 "비교군 소스:" 라벨을 렌더링합니다.
         HomeGoalTrackerCardView(
@@ -650,7 +670,10 @@ struct HomeView: View {
     /// - Parameter presentation: 홈 카드가 직접 사용할 날씨 상세 프레젠테이션 상태입니다.
     /// - Returns: 기온/체감/습도/강수/공기질을 보여주는 상세 카드 뷰입니다.
     private func weatherDetailCard(presentation: HomeWeatherSnapshotCardPresentation) -> some View {
-        HomeWeatherSnapshotCardView(presentation: presentation)
+        HomeWeatherSnapshotCardView(
+            presentation: presentation,
+            onOpenGuidanceDetail: { isWeatherGuidancePresented = true }
+        )
     }
 
     private func seasonMotionCard(summary: SeasonMotionSummary) -> some View {

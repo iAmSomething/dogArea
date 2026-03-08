@@ -150,9 +150,18 @@ extension HomeViewModel {
     /// 최신 날씨 스냅샷과 오늘 미션 상태를 조합해 상세 카드 프레젠테이션을 갱신합니다.
     /// - Parameter now: 상세 카드의 관측 시각/보정 상태를 계산할 기준 시각입니다.
     func updateWeatherDetailPresentation(now: Date = Date()) {
+        let missionContext = makeIndoorMissionPetContext(reference: now)
         weatherDetailPresentation = weatherSnapshotPresentationService.makePresentation(
             snapshot: latestWeatherSnapshot,
             missionSummary: weatherMissionStatusSummary,
+            now: now,
+            localizedCopy: localizedCopy(ko:en:)
+        )
+        weatherGuidancePresentation = weatherWalkGuidanceService.makePresentation(
+            snapshot: latestWeatherSnapshot,
+            missionSummary: weatherMissionStatusSummary,
+            selectedPet: selectedPet,
+            missionContext: missionContext,
             now: now,
             localizedCopy: localizedCopy(ko:en:)
         )

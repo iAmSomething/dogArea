@@ -51,6 +51,7 @@
 - 체감 날씨 피드백 루프 v1: `docs/weather-feedback-loop-v1.md`
 - 날씨 리스크 모델/Provider 정책 v1: `docs/weather-risk-provider-policy-v1.md`
 - 날씨 snapshot/provider 확장 v1: `docs/weather-snapshot-provider-v1.md`
+- 홈 날씨 반려견 가이드 시트 v1: `docs/home-weather-pet-guidance-sheet-v1.md`
 - 날씨 canonical server state v1: `docs/weather-canonical-server-state-v1.md`
 - 홈 refresh 중복 제거 umbrella v1: `docs/home-refresh-dedup-lightweight-v1.md`
 - 맵 파생 계산 경량화 umbrella v1: `docs/map-derived-calculation-lightweight-v1.md`

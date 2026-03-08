@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HomeWeatherSnapshotCardView: View {
     let presentation: HomeWeatherSnapshotCardPresentation
+    let onOpenGuidanceDetail: () -> Void
 
     private let columns = [
         GridItem(.flexible(), spacing: 12),
@@ -82,6 +83,35 @@ struct HomeWeatherSnapshotCardView: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("home.weather.missionHint")
             }
+
+            Button(action: onOpenGuidanceDetail) {
+                HStack(spacing: 8) {
+                    Text(presentation.detailActionTitle)
+                        .font(.appScaledFont(for: .SemiBold, size: 13, relativeTo: .body))
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                }
+                .contentShape(Rectangle())
+                .onTapGesture(perform: onOpenGuidanceDetail)
+                .accessibilityIdentifier("home.weather.more")
+                .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
+                .padding(.horizontal, 14)
+                .frame(minHeight: 44)
+                .background(Color.appDynamicHex(light: 0xF8FAFC, dark: 0x0F172A).opacity(0.92))
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(borderColor, lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
+            .contentShape(Rectangle())
+            .accessibilityElement(children: .ignore)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityLabel(presentation.detailActionTitle)
+            .accessibilityHint("오늘 산책 가이드를 자세히 확인합니다.")
+            .accessibilityIdentifier("home.weather.more")
         }
         .padding(16)
         .background(surfaceColor)
@@ -92,6 +122,5 @@ struct HomeWeatherSnapshotCardView: View {
         )
         .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 3)
         .accessibilityIdentifier("home.weather.snapshot")
-        .accessibilityElement(children: .contain)
     }
 }

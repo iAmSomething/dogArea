@@ -131,6 +131,7 @@ struct HomeWeatherSnapshotCardPresentation: Equatable {
     let title: String
     let subtitle: String
     let statusBadgeText: String
+    let detailActionTitle: String
     let metrics: [HomeWeatherMetricPresentation]
     let observedAtText: String
     let sourceLineText: String
@@ -143,6 +144,7 @@ struct HomeWeatherSnapshotCardPresentation: Equatable {
         title: "지금 날씨 상세",
         subtitle: "기온, 체감, 습도, 강수, 공기질을 한 번에 확인하세요.",
         statusBadgeText: "준비 중",
+        detailActionTitle: "오늘 산책 가이드 더보기",
         metrics: [
             .init(
                 id: "temperature",
