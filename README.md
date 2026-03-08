@@ -92,6 +92,7 @@
 - Backend Edge auth policy v1: `docs/backend-edge-auth-policy-v1.md`
 - Backend Edge auth mode inventory v1: `docs/backend-edge-auth-mode-inventory-v1.md`
 - Backend upload-profile-image owner binding policy v1: `docs/backend-upload-profile-image-owner-binding-policy-v1.md`
+- Backend Gemini API key canonicalization v1: `docs/backend-gemini-api-key-canonical-v1.md`
 - Backend Edge secret inventory / rotation runbook v1: `docs/backend-edge-secret-inventory-rotation-runbook-v1.md`
 - Backend Edge/RPC deployment matrix & post-deploy v1: `docs/backend-edge-rpc-deployment-matrix-post-deploy-v1.md`
 - Backend legacy fallback / compat sunset plan v1: `docs/backend-legacy-fallback-compat-sunset-plan-v1.md`

@@ -135,7 +135,7 @@ const callGemini = async (
   sourceImage: Uint8Array,
   style: Style,
 ): Promise<Uint8Array> => {
-  const key = Deno.env.get("GEMINI_API_KEY") ?? Deno.env.get("GEMINI_KEY");
+  const key = Deno.env.get("GEMINI_API_KEY");
   if (!key) throw new Error("gemini key missing");
   const endpoint =
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${key}`;

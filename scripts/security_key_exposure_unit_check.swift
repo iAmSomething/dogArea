@@ -21,7 +21,6 @@ struct Check {
 let sensitiveKeys = [
     "OPENAI_API_KEY",
     "GEMINI_API_KEY",
-    "GEMINI_KEY",
     "SUPABASE_SERVICE_ROLE_KEY",
 ]
 
