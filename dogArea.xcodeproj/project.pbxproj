@@ -160,6 +160,10 @@
 		A41300010000000000000023 /* SupabasePresenceAndQuestServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41300010000000000000013 /* SupabasePresenceAndQuestServices.swift */; };
 		A41300010000000000000024 /* SupabaseWidgetAndAreaServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41300010000000000000014 /* SupabaseWidgetAndAreaServices.swift */; };
 		A41300010000000000000025 /* SupabaseAuthAndAssetServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41300010000000000000015 /* SupabaseAuthAndAssetServices.swift */; };
+		A50100010000000000000021 /* MapClusterPulseAnnotationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50100010000000000000011 /* MapClusterPulseAnnotationView.swift */; };
+		A50100010000000000000022 /* MapTrailMarkerAnnotationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50100010000000000000012 /* MapTrailMarkerAnnotationView.swift */; };
+		A50100010000000000000023 /* MapRenderBudgetProbeOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50100010000000000000013 /* MapRenderBudgetProbeOverlayView.swift */; };
+		A50100010000000000000024 /* MapClusterMotionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50100010000000000000014 /* MapClusterMotionState.swift */; };
 		DA1731762AE20A4D00EF10C8 /* WalkBackfillDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1731752AE20A4D00EF10C8 /* WalkBackfillDTO.swift */; };
 		DA354FFD2B01DF1F00E4094A /* TimeIntervalExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA354FFC2B01DF1F00E4094A /* TimeIntervalExtensions.swift */; };
 		DA3550022B01E0F900E4094A /* UnderLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3550012B01E0F900E4094A /* UnderLine.swift */; };
@@ -520,6 +524,10 @@
 		A41300010000000000000013 /* SupabasePresenceAndQuestServices.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SupabasePresenceAndQuestServices.swift; sourceTree = "<group>"; };
 		A41300010000000000000014 /* SupabaseWidgetAndAreaServices.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SupabaseWidgetAndAreaServices.swift; sourceTree = "<group>"; };
 		A41300010000000000000015 /* SupabaseAuthAndAssetServices.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SupabaseAuthAndAssetServices.swift; sourceTree = "<group>"; };
+		A50100010000000000000011 /* MapClusterPulseAnnotationView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MapClusterPulseAnnotationView.swift; sourceTree = "<group>"; };
+		A50100010000000000000012 /* MapTrailMarkerAnnotationView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MapTrailMarkerAnnotationView.swift; sourceTree = "<group>"; };
+		A50100010000000000000013 /* MapRenderBudgetProbeOverlayView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MapRenderBudgetProbeOverlayView.swift; sourceTree = "<group>"; };
+		A50100010000000000000014 /* MapClusterMotionState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MapClusterMotionState.swift; sourceTree = "<group>"; };
 		A52900010000000000000001 /* WalkListPresentationModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListPresentationModels.swift; sourceTree = "<group>"; };
 		A52900010000000000000002 /* WalkListPresentationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListPresentationService.swift; sourceTree = "<group>"; };
 		A52900010000000000000003 /* WalkListMetricTileView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListMetricTileView.swift; sourceTree = "<group>"; };
@@ -929,6 +937,7 @@
 		A41000010000000000000001 /* MapViewModelSupport */ = {
 			isa = PBXGroup;
 			children = (
+				A50100010000000000000014 /* MapClusterMotionState.swift */,
 				A41000010000000000000012 /* MapViewModel+WidgetRuntimeSupport.swift */,
 				A41000010000000000000013 /* MapViewModel+WatchConnectivitySupport.swift */,
 			);
@@ -1174,6 +1183,9 @@
 			isa = PBXGroup;
 			children = (
 				DA56FFE72AE2B9890040855B /* MapAlertSubView.swift */,
+				A50100010000000000000011 /* MapClusterPulseAnnotationView.swift */,
+				A50100010000000000000012 /* MapTrailMarkerAnnotationView.swift */,
+				A50100010000000000000013 /* MapRenderBudgetProbeOverlayView.swift */,
 				A45000010000000000000001 /* MapChromeSurfaceStyle.swift */,
 				A45000010000000000000002 /* MapTopChromeView.swift */,
 				A45000010000000000000003 /* MapFloatingControlColumnView.swift */,
@@ -1886,7 +1898,11 @@
 				DAC19F382B0B9E81002FE2E8 /* StringExtensions.swift in Sources */,
 				DA3F9BAE2AE0F2410048550C /* ViewUtility.swift in Sources */,
 				DA3F9BA42AE0F14F0048550C /* MapViewModel.swift in Sources */,
+				A50100010000000000000024 /* MapClusterMotionState.swift in Sources */,
 				DA8BB9F52B032AB000E350C4 /* Calender.swift in Sources */,
+				A50100010000000000000021 /* MapClusterPulseAnnotationView.swift in Sources */,
+				A50100010000000000000022 /* MapTrailMarkerAnnotationView.swift in Sources */,
+				A50100010000000000000023 /* MapRenderBudgetProbeOverlayView.swift in Sources */,
 				DA390A6F2AFE027C00BACF2B /* MapSubView.swift in Sources */,
 				DA390A722AFE168500BACF2B /* SimpleMapView.swift in Sources */,
 				DA3F9BA32AE0F14F0048550C /* MapView.swift in Sources */,

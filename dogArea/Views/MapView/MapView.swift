@@ -142,6 +142,11 @@ struct MapView : View{
                     .zIndex(10)
             }
         }
+        .overlay(alignment: .topLeading) {
+            if MapRenderBudgetProbe.isEnabled {
+                MapRenderBudgetProbeOverlayView()
+            }
+        }
         .appTabBarVisibility(resolvedTabBarVisibility)
     }
 
