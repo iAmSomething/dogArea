@@ -745,6 +745,28 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertTrue(waitUntilExists(guideSheet, timeout: 4), "홈 미션 도움말 시트가 재진입 경로에서 다시 열리지 않았습니다.")
     }
 
+    /// 홈 미션 카드가 자동 기록형과 직접 체크형의 차이를 카드 표면에서 즉시 구분하게 하는지 검증합니다.
+    func testFeatureRegression_HomeMissionCardDifferentiatesAutoAndManualTrackingModes() throws {
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.HomeMissionLifecycleStub"])
+        let dailyMissionCard = screenElement(identifier: "home.quest.card.daily", in: app)
+        let automaticTrackingCard = screenElement(identifier: "home.quest.tracking.auto", in: app)
+        let manualTrackingCard = screenElement(identifier: "home.quest.tracking.manual", in: app)
+        let activeMissionRow = screenElement(identifier: "home.quest.row.uitest.home.quest.active", in: app)
+
+        XCTAssertTrue(openTab(index: 0, app: app), "홈 탭 진입에 실패했습니다.")
+        XCTAssertTrue(
+            revealExistingElementByVerticalScroll(dailyMissionCard, app: app, maxSwipes: 6),
+            "홈 미션 카드를 화면에 노출하지 못했습니다."
+        )
+
+        XCTAssertTrue(waitUntilExists(automaticTrackingCard, timeout: 4), "자동 기록형 비교 카드가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(manualTrackingCard, timeout: 4), "직접 체크형 비교 카드가 노출되지 않았습니다.")
+        XCTAssertTrue(
+            revealExistingElementByVerticalScroll(activeMissionRow, app: app, maxSwipes: 3),
+            "진행 중 직접 체크 미션 행이 노출되지 않았습니다."
+        )
+    }
+
     /// 홈이 원시 날씨 지표 카드와 미션 영향 카드를 분리해 노출하는지 검증합니다.
     func testFeatureRegression_HomeWeatherDetailCardShowsRawSnapshotMetrics() throws {
         let app = launchAppForFeatureRegression(extraArguments: ["-UITest.HomeMissionLifecycleStub"])

@@ -21,6 +21,10 @@
 		A56400010000000000000003 /* HomeMissionGuideStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56400010000000000000013 /* HomeMissionGuideStateStore.swift */; };
 		A56400010000000000000004 /* HomeMissionGuideSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56400010000000000000014 /* HomeMissionGuideSheetView.swift */; };
 		A56400010000000000000005 /* HomeMissionGuideCoachCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56400010000000000000015 /* HomeMissionGuideCoachCardView.swift */; };
+		A56300010000000000000001 /* HomeMissionTrackingModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56300010000000000000011 /* HomeMissionTrackingModels.swift */; };
+		A56300010000000000000002 /* HomeMissionTrackingPresentationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56300010000000000000012 /* HomeMissionTrackingPresentationService.swift */; };
+		A56300010000000000000003 /* HomeMissionTrackingBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56300010000000000000013 /* HomeMissionTrackingBadgeView.swift */; };
+		A56300010000000000000004 /* HomeMissionTrackingModeOverviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56300010000000000000014 /* HomeMissionTrackingModeOverviewView.swift */; };
 		A56500010000000000000006 /* MapWalkActiveValueCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56500010000000000000016 /* MapWalkActiveValueCardView.swift */; };
 		A56500010000000000000007 /* MapWalkSavedOutcomeCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56500010000000000000017 /* MapWalkSavedOutcomeCardView.swift */; };
 		A56500010000000000000008 /* WalkCompletionValueFlowCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56500010000000000000018 /* WalkCompletionValueFlowCardView.swift */; };
@@ -541,6 +545,10 @@
 		A45000010000000000000003 /* MapFloatingControlColumnView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapFloatingControlColumnView.swift; sourceTree = "<group>"; };
 		A45200010000000000000011 /* SettingsEditableImageButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsEditableImageButton.swift; sourceTree = "<group>"; };
 		A45300010000000000000011 /* HomeIndoorMissionPresentationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeIndoorMissionPresentationService.swift; sourceTree = "<group>"; };
+		A56300010000000000000011 /* HomeMissionTrackingModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeMissionTrackingModels.swift; sourceTree = "<group>"; };
+		A56300010000000000000012 /* HomeMissionTrackingPresentationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeMissionTrackingPresentationService.swift; sourceTree = "<group>"; };
+		A56300010000000000000013 /* HomeMissionTrackingBadgeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeMissionTrackingBadgeView.swift; sourceTree = "<group>"; };
+		A56300010000000000000014 /* HomeMissionTrackingModeOverviewView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeMissionTrackingModeOverviewView.swift; sourceTree = "<group>"; };
 		A56400010000000000000011 /* HomeMissionGuidePresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeMissionGuidePresentation.swift; sourceTree = "<group>"; };
 		A56400010000000000000012 /* HomeMissionGuidePresentationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeMissionGuidePresentationService.swift; sourceTree = "<group>"; };
 		A56400010000000000000013 /* HomeMissionGuideStateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeMissionGuideStateStore.swift; sourceTree = "<group>"; };
@@ -827,6 +835,8 @@
 				26182C87E44E1C0D9629CD03 /* HomeAnimatedSeasonGaugeView.swift */,
 				F61462EBA7433ED6BC68778D /* HomeGuestDataUpgradeCardView.swift */,
 				66C12577FC501DA46E9411D5 /* HomeIndoorMissionRowView.swift */,
+				A56300010000000000000013 /* HomeMissionTrackingBadgeView.swift */,
+				A56300010000000000000014 /* HomeMissionTrackingModeOverviewView.swift */,
 				CCD790E9DD29E9185CE6A851 /* HomeMissionDifficultySummaryView.swift */,
 				A56400010000000000000015 /* HomeMissionGuideCoachCardView.swift */,
 				F70B19034ADC4071F655ED9E /* HomeQuestAlternativeSuggestionCardView.swift */,
@@ -917,6 +927,7 @@
 			isa = PBXGroup;
 			children = (
 				A37500010000000000000011 /* HomeMissionModels.swift */,
+				A56300010000000000000011 /* HomeMissionTrackingModels.swift */,
 				A56400010000000000000011 /* HomeMissionGuidePresentation.swift */,
 				512B7050BD43731047F5D669 /* AreaReferenceModels.swift */,
 			);
@@ -1662,6 +1673,7 @@
 				DAE147A01420000000000001 /* HomeWeeklyStatisticsService.swift */,
 				DAE147A21420000000000001 /* HomeWeatherMissionStatusBuilder.swift */,
 				A45300010000000000000011 /* HomeIndoorMissionPresentationService.swift */,
+				A56300010000000000000012 /* HomeMissionTrackingPresentationService.swift */,
 				A56400010000000000000012 /* HomeMissionGuidePresentationService.swift */,
 				A50600010000000000000011 /* HomeIndoorMissionPetContextSnapshotService.swift */,
 				A45600010000000000000011 /* HomeWeatherSnapshotPresentationService.swift */,
@@ -2120,11 +2132,13 @@
 				A47500010000000000000002 /* WeatherReplacementSummaryStore.swift in Sources */,
 				A47500010000000000000003 /* SupabaseWeatherReplacementServices.swift in Sources */,
 				A50700010000000000000003 /* AuthMailActionStateStore.swift in Sources */,
+				A56300010000000000000001 /* HomeMissionTrackingModels.swift in Sources */,
 				A56400010000000000000003 /* HomeMissionGuideStateStore.swift in Sources */,
 				A56500010000000000000004 /* WalkValueGuideStateStore.swift in Sources */,
 				DAE147A11420000000000001 /* HomeWeeklyStatisticsService.swift in Sources */,
 				DAE147A31420000000000001 /* HomeWeatherMissionStatusBuilder.swift in Sources */,
 				A45300010000000000000001 /* HomeIndoorMissionPresentationService.swift in Sources */,
+				A56300010000000000000002 /* HomeMissionTrackingPresentationService.swift in Sources */,
 				A56400010000000000000002 /* HomeMissionGuidePresentationService.swift in Sources */,
 				A50600010000000000000001 /* HomeIndoorMissionPetContextSnapshotService.swift in Sources */,
 				DAED25022AFA1D430044715A /* SplashView.swift in Sources */,
@@ -2227,6 +2241,8 @@
 				43441ACB76FB0EC0CA929CD8 /* HomeAnimatedSeasonGaugeView.swift in Sources */,
 				219A97F376AF1948198AF4DD /* HomeGuestDataUpgradeCardView.swift in Sources */,
 				1BCE551255C692E2B20F154E /* HomeIndoorMissionRowView.swift in Sources */,
+				A56300010000000000000003 /* HomeMissionTrackingBadgeView.swift in Sources */,
+				A56300010000000000000004 /* HomeMissionTrackingModeOverviewView.swift in Sources */,
 				5F1E96498F8FFB6EC57536E9 /* HomeMissionDifficultySummaryView.swift in Sources */,
 				A56400010000000000000005 /* HomeMissionGuideCoachCardView.swift in Sources */,
 				1ED977BE7E5D9002AE1B92AD /* HomeQuestAlternativeSuggestionCardView.swift in Sources */,

@@ -1241,6 +1241,11 @@ private struct HomeIndoorMissionCardContainerView: View {
             .foregroundStyle(Color.appTextDarkGray)
             .fixedSize(horizontal: false, vertical: true)
 
+        HomeMissionTrackingModeOverviewView(
+            title: presentation.trackingOverviewTitle,
+            modes: presentation.trackingModes
+        )
+
         HStack {
             Text(weatherMissionStatusSummary.appliedAtText)
                 .font(.appFont(for: .Light, size: 11))
