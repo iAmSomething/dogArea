@@ -133,6 +133,7 @@ swift scripts/auth_rate_limit_message_unit_check.swift
 swift scripts/auth_mail_resend_state_machine_unit_check.swift
 swift scripts/auth_captcha_fallback_ux_unit_check.swift
 swift scripts/auth_abuse_guard_policy_unit_check.swift
+swift scripts/auth_mail_cooldown_retryafter_ux_unit_check.swift
 swift scripts/auth_smtp_provider_checklist_unit_check.swift
 swift scripts/auth_service_mail_channel_separation_unit_check.swift
 swift scripts/auth_mail_observability_unit_check.swift
