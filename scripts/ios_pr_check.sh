@@ -136,6 +136,7 @@ swift scripts/feature_flag_refresh_throttle_unit_check.swift
 swift scripts/feature_flag_refresh_singleflight_unit_check.swift
 swift scripts/security_key_exposure_unit_check.swift
 swift scripts/map_home_viewmodel_boundary_unit_check.swift
+swift scripts/tabbar_symbol_fallback_unit_check.swift
 swift scripts/tabbar_safearea_regression_unit_check.swift
 swift scripts/root_view_supporting_type_split_unit_check.swift
 swift scripts/home_presentation_split_unit_check.swift
