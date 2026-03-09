@@ -32,11 +32,36 @@ protocol WalkListCalendarPresentationServicing {
     func shiftedMonth(from month: Date, by value: Int, calendar: Calendar) -> Date
 }
 
+protocol WalkListCalendarHolidayProviding {
+    /// 주어진 날짜가 공휴일이면 이름을 반환하고, 아니면 `nil`을 반환합니다.
+    /// - Parameters:
+    ///   - date: 판단할 날짜의 `startOfDay`입니다.
+    ///   - calendar: 날짜 경계 계산에 사용할 캘린더입니다.
+    /// - Returns: 공휴일 이름 또는 `nil`입니다.
+    func holidayName(for date: Date, calendar: Calendar) -> String?
+}
+
+struct WalkListCalendarEmptyHolidayProvider: WalkListCalendarHolidayProviding {
+    /// 공휴일 데이터가 없는 기본 런타임에서는 항상 `nil`을 반환합니다.
+    /// - Parameters:
+    ///   - date: 판단할 날짜의 `startOfDay`입니다.
+    ///   - calendar: 날짜 경계 계산에 사용할 캘린더입니다.
+    /// - Returns: 항상 `nil`입니다.
+    func holidayName(for date: Date, calendar: Calendar) -> String? {
+        nil
+    }
+}
+
 struct WalkListCalendarPresentationService: WalkListCalendarPresentationServicing {
     private let weeklyStatisticsService: HomeWeeklyStatisticsServicing
+    private let holidayProvider: WalkListCalendarHolidayProviding
 
-    init(weeklyStatisticsService: HomeWeeklyStatisticsServicing = HomeWeeklyStatisticsService()) {
+    init(
+        weeklyStatisticsService: HomeWeeklyStatisticsServicing = HomeWeeklyStatisticsService(),
+        holidayProvider: WalkListCalendarHolidayProviding = WalkListCalendarEmptyHolidayProvider()
+    ) {
         self.weeklyStatisticsService = weeklyStatisticsService
+        self.holidayProvider = holidayProvider
     }
 
     /// 현재 산책 범위와 선택 상태를 기반으로 월별 캘린더 스냅샷을 생성합니다.
@@ -55,14 +80,14 @@ struct WalkListCalendarPresentationService: WalkListCalendarPresentationServicin
         let monthStart = normalizedMonth(for: displayedMonth, calendar: calendar)
         let recordsByDayStart = makeRecordsByDayStart(records: records, calendar: calendar)
         let monthTitle = monthTitle(for: monthStart, calendar: calendar)
-        let weekdaySymbols = orderedWeekdaySymbols(calendar: calendar)
+        let weekdayHeaders = orderedWeekdayHeaders(calendar: calendar)
 
         guard records.isEmpty == false else {
             return WalkListCalendarSnapshot(
                 model: WalkListCalendarPresentationModel(
                     monthTitle: monthTitle,
                     helperMessage: "첫 산책을 저장하면 날짜에 점과 숫자가 채워져요.",
-                    weekdaySymbols: weekdaySymbols,
+                    weekdayHeaders: weekdayHeaders,
                     dayCells: [],
                     selectionSummary: nil,
                     clearSelectionTitle: nil,
@@ -93,7 +118,7 @@ struct WalkListCalendarPresentationService: WalkListCalendarPresentationServicin
             model: WalkListCalendarPresentationModel(
                 monthTitle: monthTitle,
                 helperMessage: helperMessage,
-                weekdaySymbols: weekdaySymbols,
+                weekdayHeaders: weekdayHeaders,
                 dayCells: dayCells,
                 selectionSummary: selectedDate.flatMap { selectionSummary(for: $0, recordsByDayStart: recordsByDayStart, calendar: calendar) },
                 clearSelectionTitle: selectedDate == nil ? nil : "월 전체 보기",
@@ -161,6 +186,8 @@ struct WalkListCalendarPresentationService: WalkListCalendarPresentationServicin
             guard let date = calendar.date(byAdding: .day, value: day - 1, to: monthStart) else { continue }
             let dayStart = calendar.startOfDay(for: date)
             let coveredRecords = recordsByDayStart[dayStart.timeIntervalSince1970] ?? []
+            let holidayName = holidayProvider.holidayName(for: dayStart, calendar: calendar)
+            let semanticTone = semanticTone(for: dayStart, holidayName: holidayName, calendar: calendar)
             let identifierDate = dayIdentifier(for: dayStart, calendar: calendar)
             cells.append(
                 WalkListCalendarDayCellModel(
@@ -169,11 +196,19 @@ struct WalkListCalendarPresentationService: WalkListCalendarPresentationServicin
                     dayText: "\(day)",
                     walkCount: coveredRecords.count,
                     accessibilityIdentifier: "walklist.calendar.day.\(identifierDate)",
-                    accessibilityLabel: accessibilityLabel(for: dayStart, count: coveredRecords.count, calendar: calendar),
+                    accessibilityLabel: accessibilityLabel(
+                        for: dayStart,
+                        count: coveredRecords.count,
+                        holidayName: holidayName,
+                        semanticTone: semanticTone,
+                        calendar: calendar
+                    ),
                     isInteractive: coveredRecords.isEmpty == false,
                     isCurrentMonth: true,
                     isToday: calendar.isDateInToday(dayStart),
-                    isSelected: selectedDate.map { calendar.isDate($0, inSameDayAs: dayStart) } ?? false
+                    isSelected: selectedDate.map { calendar.isDate($0, inSameDayAs: dayStart) } ?? false,
+                    semanticTone: semanticTone,
+                    holidayName: holidayName
                 )
             )
         }
@@ -268,12 +303,40 @@ struct WalkListCalendarPresentationService: WalkListCalendarPresentationServicin
     /// - Parameters:
     ///   - date: 접근성 라벨을 생성할 날짜입니다.
     ///   - count: 해당 날짜에 걸친 세션 수입니다.
+    ///   - holidayName: 준비된 공휴일 이름이 있으면 전달됩니다.
+    ///   - semanticTone: 주말/공휴일/평일 의미 체계입니다.
     ///   - calendar: 포맷 계산에 사용할 캘린더입니다.
     /// - Returns: 날짜와 기록 수를 함께 설명하는 접근성 문자열입니다.
-    private func accessibilityLabel(for date: Date, count: Int, calendar: Calendar) -> String {
+    private func accessibilityLabel(
+        for date: Date,
+        count: Int,
+        holidayName: String?,
+        semanticTone: WalkListCalendarSemanticTone,
+        calendar: Calendar
+    ) -> String {
         let title = selectionTitle(for: date, calendar: calendar)
+        let semanticDescription: String?
+        if let holidayName {
+            semanticDescription = "\(holidayName) 공휴일"
+        } else {
+            switch semanticTone {
+            case .saturday:
+                semanticDescription = "토요일"
+            case .sunday:
+                semanticDescription = "일요일"
+            case .holiday, .weekday:
+                semanticDescription = nil
+            }
+        }
+
         if count <= 0 {
+            if let semanticDescription {
+                return "\(title), \(semanticDescription), 산책 기록 없음"
+            }
             return "\(title), 산책 기록 없음"
+        }
+        if let semanticDescription {
+            return "\(title), \(semanticDescription), 산책 \(count)건"
         }
         return "\(title), 산책 \(count)건"
     }
@@ -292,15 +355,67 @@ struct WalkListCalendarPresentationService: WalkListCalendarPresentationServicin
         return formatter.string(from: date)
     }
 
-    /// 현재 캘린더 첫 요일 기준으로 weekday 심볼을 재정렬합니다.
+    /// 현재 캘린더 첫 요일 기준으로 weekday 헤더 모델을 재정렬합니다.
     /// - Parameter calendar: 요일 시작 규칙을 가진 캘린더입니다.
-    /// - Returns: 현재 첫 요일부터 시작하는 매우 짧은 요일 심볼 배열입니다.
-    private func orderedWeekdaySymbols(calendar: Calendar) -> [String] {
+    /// - Returns: 현재 첫 요일부터 시작하는 헤더 모델 배열입니다.
+    private func orderedWeekdayHeaders(calendar: Calendar) -> [WalkListCalendarWeekdayHeaderModel] {
         let symbols = calendar.veryShortStandaloneWeekdaySymbols
-        guard symbols.count == 7 else { return symbols }
-        return (0..<7).map { offset in
-            symbols[(calendar.firstWeekday - 1 + offset) % 7]
+        let longSymbols = calendar.standaloneWeekdaySymbols
+        guard symbols.count == 7, longSymbols.count == 7 else {
+            return WalkListCalendarPresentationModel.placeholder.weekdayHeaders
         }
+        return (0..<7).map { offset in
+            let weekdayIndex = ((calendar.firstWeekday - 1 + offset) % 7) + 1
+            let tone = semanticTone(forWeekdayIndex: weekdayIndex)
+            let longSymbol = longSymbols[weekdayIndex - 1]
+            let accessibilityLabel: String
+            switch tone {
+            case .saturday, .sunday:
+                accessibilityLabel = "\(longSymbol), 주말 강조"
+            case .holiday, .weekday:
+                accessibilityLabel = longSymbol
+            }
+
+            return WalkListCalendarWeekdayHeaderModel(
+                id: "walklist.calendar.weekday.\(weekdayIndex)",
+                symbol: symbols[weekdayIndex - 1],
+                tone: tone,
+                accessibilityIdentifier: "walklist.calendar.weekday.\(weekdayIndex)",
+                accessibilityLabel: accessibilityLabel
+            )
+        }
+    }
+
+    /// 요일 인덱스에 대응하는 기본 semantic tone을 반환합니다.
+    /// - Parameter weekdayIndex: Foundation `Calendar`의 `.weekday` 값입니다.
+    /// - Returns: 토요일/일요일/평일에 대응하는 tone입니다.
+    private func semanticTone(forWeekdayIndex weekdayIndex: Int) -> WalkListCalendarSemanticTone {
+        switch weekdayIndex {
+        case 1:
+            return .sunday
+        case 7:
+            return .saturday
+        default:
+            return .weekday
+        }
+    }
+
+    /// 공휴일 이름과 요일 정보를 조합해 날짜 셀이 따라야 할 semantic tone을 계산합니다.
+    /// - Parameters:
+    ///   - date: 의미 체계를 계산할 날짜입니다.
+    ///   - holidayName: 준비된 공휴일 이름입니다.
+    ///   - calendar: 요일 계산에 사용할 캘린더입니다.
+    /// - Returns: 공휴일 우선 규칙이 반영된 tone입니다.
+    private func semanticTone(
+        for date: Date,
+        holidayName: String?,
+        calendar: Calendar
+    ) -> WalkListCalendarSemanticTone {
+        if holidayName != nil {
+            return .holiday
+        }
+        let weekdayIndex = calendar.component(.weekday, from: date)
+        return semanticTone(forWeekdayIndex: weekdayIndex)
     }
 
     /// 날짜가 속한 월의 시작 시각을 계산합니다.
@@ -326,7 +441,9 @@ struct WalkListCalendarPresentationService: WalkListCalendarPresentationServicin
             isInteractive: false,
             isCurrentMonth: false,
             isToday: false,
-            isSelected: false
+            isSelected: false,
+            semanticTone: .weekday,
+            holidayName: nil
         )
     }
 }

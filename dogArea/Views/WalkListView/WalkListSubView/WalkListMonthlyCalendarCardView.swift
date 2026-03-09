@@ -81,12 +81,8 @@ struct WalkListMonthlyCalendarCardView: View {
                 .accessibilityIdentifier("walklist.calendar.empty")
             } else {
                 LazyVGrid(columns: columns, alignment: .leading, spacing: 6) {
-                    ForEach(model.weekdaySymbols, id: \.self) { symbol in
-                        Text(symbol)
-                            .font(.appScaledFont(for: .SemiBold, size: 11, relativeTo: .caption))
-                            .foregroundStyle(Color.appDynamicHex(light: 0x94A3B8, dark: 0x94A3B8))
-                            .frame(maxWidth: .infinity)
-                            .padding(.bottom, 2)
+                    ForEach(model.weekdayHeaders) { weekdayHeader in
+                        weekdayHeaderView(for: weekdayHeader)
                     }
 
                     ForEach(model.dayCells) { dayCell in
@@ -103,6 +99,38 @@ struct WalkListMonthlyCalendarCardView: View {
         .appCardSurface()
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("walklist.calendar.card")
+    }
+
+    /// 주말/공휴일 semantic tone에 맞춰 요일 헤더 색을 반환합니다.
+    /// - Parameter tone: 헤더가 따라야 할 의미 색상 tone입니다.
+    /// - Returns: 현재 디자인 시스템에 맞는 헤더 전경색입니다.
+    private func weekdayHeaderColor(for tone: WalkListCalendarSemanticTone) -> Color {
+        switch tone {
+        case .holiday, .sunday:
+            return Color.appDynamicHex(light: 0xDC2626, dark: 0xFCA5A5)
+        case .saturday:
+            return Color.appDynamicHex(light: 0x2563EB, dark: 0x93C5FD)
+        case .weekday:
+            return Color.appDynamicHex(light: 0x94A3B8, dark: 0x94A3B8)
+        }
+    }
+
+    /// 월별 캘린더 요일 헤더를 개별 접근성 요소로 승격해 semantic 색과 라벨을 함께 제공합니다.
+    /// - Parameter weekdayHeader: 렌더링할 요일 헤더 모델입니다.
+    /// - Returns: 주말/공휴일 semantic과 접근성 식별자가 반영된 헤더 뷰입니다.
+    private func weekdayHeaderView(for weekdayHeader: WalkListCalendarWeekdayHeaderModel) -> some View {
+        VStack(spacing: 0) {
+            Text(weekdayHeader.symbol)
+                .font(.appScaledFont(for: .SemiBold, size: 11, relativeTo: .caption))
+                .foregroundStyle(weekdayHeaderColor(for: weekdayHeader.tone))
+                .accessibilityHidden(true)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.bottom, 2)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .ignore)
+        .accessibilityIdentifier(weekdayHeader.accessibilityIdentifier)
+        .accessibilityLabel(weekdayHeader.accessibilityLabel)
     }
 
     /// 월 이동 버튼을 현재 제품 카드 스타일에 맞는 보조 CTA로 생성합니다.

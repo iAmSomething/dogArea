@@ -41,6 +41,7 @@ assertTrue(walkListViewModel.contains("bindTimeBoundaryRefresh()"), "walk list v
 assertTrue(walkListViewModel.contains("-UITest.WalkListCalendarPreview"), "walk list view model should support the calendar preview route")
 assertTrue(calendarModels.contains("WalkListCalendarPresentationModel"), "calendar models file should define the presentation model")
 assertTrue(calendarModels.contains("WalkListCalendarSnapshot"), "calendar models file should define the snapshot model")
+assertTrue(calendarModels.contains("weekdayHeaders"), "calendar presentation model should publish weekday header models instead of raw symbols")
 assertTrue(calendarService.contains("WalkListCalendarPresentationServicing"), "calendar service should define a protocol contract")
 assertTrue(calendarService.contains("dayStartsCovered(by: record.toPolygon()"), "calendar service should reuse day boundary aggregation logic")
 assertTrue(calendarCard.contains("walklist.calendar.card"), "calendar card should expose its accessibility identifier")

@@ -104,6 +104,7 @@
 - WalkList design refresh v1: `docs/walklist-design-refresh-v1.md`
 - WalkList metric tile density v1: `docs/walklist-metric-tile-density-v1.md`
 - WalkList month calendar hub v1: `docs/walklist-month-calendar-hub-v1.md`
+- WalkList calendar weekend/holiday semantic v1: `docs/walklist-calendar-weekend-holiday-semantic-v1.md`
 - WalkList detail design refresh v1: `docs/walklist-detail-design-refresh-v1.md`
 - Walk detail back affordance v1: `docs/walk-detail-back-affordance-v1.md`
 - Walk detail share system sheet v1: `docs/walk-detail-share-system-sheet-v1.md`
