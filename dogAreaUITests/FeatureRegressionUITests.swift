@@ -48,6 +48,42 @@ final class FeatureRegressionUITests: XCTestCase {
         )
     }
 
+    /// 지도 idle 상태의 하단 컨트롤러가 얇고 탭바에 인접한 control bar 밀도를 유지하는지 검증합니다.
+    func testFeatureRegression_MapBottomControllerStaysAnchoredAndCompactAtRest() throws {
+        let app = launchAppForFeatureRegression()
+        XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.")
+        XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
+
+        let controlBar = screenElement(identifier: "map.walk.controlBar", in: app)
+        XCTAssertTrue(waitUntilExists(controlBar, timeout: 8), "지도 idle 하단 컨트롤러가 노출되지 않았습니다.")
+
+        assertMapBottomControllerGeometry(
+            controlBar: controlBar,
+            app: app,
+            maxHeight: 124,
+            maximumGap: 36,
+            messagePrefix: "idle 하단 컨트롤러"
+        )
+    }
+
+    /// 지도 walking 상태의 하단 컨트롤러가 더 얇은 footprint budget 안에서 탭바에 인접하게 유지되는지 검증합니다.
+    func testFeatureRegression_MapBottomControllerStaysAnchoredAndCompactWhileWalking() throws {
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.MapForceWalkingState"])
+        XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.")
+        XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
+
+        let controlBar = screenElement(identifier: "map.walk.controlBar", in: app)
+        XCTAssertTrue(waitUntilExists(controlBar, timeout: 8), "지도 walking 하단 컨트롤러가 노출되지 않았습니다.")
+
+        assertMapBottomControllerGeometry(
+            controlBar: controlBar,
+            app: app,
+            maxHeight: 112,
+            maximumGap: 32,
+            messagePrefix: "walking 하단 컨트롤러"
+        )
+    }
+
     /// 지도 본면에서 시즌 오버레이가 점령 지도 카드와 의미 설명을 함께 노출하는지 검증합니다.
     func testFeatureRegression_MapSeasonOccupationSummarySurfacesMeaningOnCanvas() throws {
         let app = launchAppForFeatureRegression(extraArguments: ["-UITest.MapForceSeasonTileVisible"])
@@ -1532,6 +1568,46 @@ final class FeatureRegressionUITests: XCTestCase {
         }
 
         return primaryAction
+    }
+
+    /// 하단 컨트롤러가 탭바 위에 겹치지 않으면서 과도하게 떠 있지도 않은지 공통 geometry 계약을 검증합니다.
+    /// - Parameters:
+    ///   - controlBar: 검증할 하단 컨트롤러 요소입니다.
+    ///   - app: 테스트 대상 앱 인스턴스입니다.
+    ///   - maxHeight: 허용할 최대 컨트롤러 높이입니다.
+    ///   - maximumGap: 탭바와 컨트롤러 사이에 허용할 최대 간격입니다.
+    ///   - messagePrefix: 실패 메시지에 포함할 컨텍스트 접두사입니다.
+    private func assertMapBottomControllerGeometry(
+        controlBar: XCUIElement,
+        app: XCUIApplication,
+        maxHeight: CGFloat,
+        maximumGap: CGFloat,
+        messagePrefix: String
+    ) {
+        let activeTabBarButton = app.buttons["tab.2"]
+        XCTAssertTrue(waitUntilExists(activeTabBarButton, timeout: 2), "\(messagePrefix) 검증 중 탭바 버튼을 찾지 못했습니다.")
+
+        let gapToTabBar = activeTabBarButton.frame.minY - controlBar.frame.maxY
+        XCTAssertGreaterThanOrEqual(
+            controlBar.frame.height,
+            72,
+            "\(messagePrefix)의 높이가 지나치게 작아 정보 카드와 CTA가 유지되지 못합니다."
+        )
+        XCTAssertLessThanOrEqual(
+            controlBar.frame.height,
+            maxHeight,
+            "\(messagePrefix)의 세로 두께가 budget을 초과했습니다."
+        )
+        XCTAssertGreaterThanOrEqual(
+            gapToTabBar,
+            4,
+            "\(messagePrefix)가 탭바와 겹치면 안 됩니다."
+        )
+        XCTAssertLessThanOrEqual(
+            gapToTabBar,
+            maximumGap,
+            "\(messagePrefix)가 탭바에서 너무 멀리 떠 있습니다."
+        )
     }
 
     /// 접근성 타입과 무관하게 화면 식별자에 대응하는 첫 번째 요소를 조회합니다.

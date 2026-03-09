@@ -1,17 +1,22 @@
 import SwiftUI
 
 enum MapBottomControlOverlayMetrics {
-    static let floatingControlsBottomSpacingWhenPrimaryVisible: CGFloat = 44
-    static let floatingControlsBottomSpacingWhenPrimaryHidden: CGFloat = 28
-    static let selectedTrayBottomSpacingWhenPrimaryVisible: CGFloat = 156
+    static let primaryActionLiftWhenVisible: CGFloat = 70
+    static let floatingControlsBottomSpacingWhenPrimaryVisible: CGFloat = 18
+    static let floatingControlsBottomSpacingWhenPrimaryHidden: CGFloat = 24
+    static let selectedTrayBottomSpacingWhenPrimaryVisible: CGFloat = 104
     static let selectedTrayBottomSpacingWhenPrimaryHidden: CGFloat = 20
 
     /// 하단 주행동 surface의 기본 바닥 여백을 계산합니다.
     /// - Parameter reservedHeight: 전역 탭 스캐폴드가 예약한 하단 높이입니다.
     /// - Returns: 탭바와 겹치지 않는 주행동 surface의 하단 여백입니다.
     static func primaryActionBottomPadding(reservedHeight: CGFloat) -> CGFloat {
+        let compactAdditionalLift = max(
+            primaryActionLiftWhenVisible - AppTabLayoutMetrics.floatingOverlayLift,
+            0
+        )
         max(
-            reservedHeight - AppTabLayoutMetrics.floatingOverlayLift,
+            reservedHeight - AppTabLayoutMetrics.floatingOverlayLift - compactAdditionalLift,
             AppTabLayoutMetrics.minimumBottomPadding
         )
     }

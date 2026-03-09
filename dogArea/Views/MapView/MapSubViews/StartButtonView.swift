@@ -8,6 +8,33 @@
 import Foundation
 import SwiftUI
 
+private enum MapWalkControlBarMetrics {
+    static let idleFootprintBudget: CGFloat = 124
+    static let walkingFootprintBudget: CGFloat = 112
+    static let surfaceMaxWidth: CGFloat = 404
+    static let surfaceHorizontalPadding: CGFloat = 10
+    static let idleSurfaceVerticalPadding: CGFloat = 10
+    static let walkingSurfaceVerticalPadding: CGFloat = 8
+    static let interItemSpacing: CGFloat = 8
+    static let surfaceCornerRadius: CGFloat = 18
+    static let primaryActionSize: CGFloat = 74
+}
+
+private struct MapWalkingElapsedTimeValueText: View {
+    let viewModel: MapViewModel
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            Text(viewModel.displayedWalkElapsedTime(at: context.date).simpleWalkingTimeInterval)
+                .font(.appScaledFont(for: .SemiBold, size: 11, relativeTo: .caption))
+                .foregroundStyle(MapChromePalette.primaryText)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .monospacedDigit()
+        }
+    }
+}
+
 struct StartButtonView: View {
     @ObservedObject var viewModel: MapViewModel
     @ObservedObject var myAlert: CustomAlertViewModel
@@ -35,15 +62,12 @@ struct StartButtonView: View {
     }
 
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 6) {
             if !viewModel.isWalking && viewModel.availablePets.count > 1 {
                 petSelectionHint
             }
-            if viewModel.isWalking {
-                MapWalkActiveValueCardView(presentation: activeValuePresentation)
-            }
 
-            HStack(spacing: 12) {
+            HStack(spacing: MapWalkControlBarMetrics.interItemSpacing) {
                 if viewModel.isWalking {
                     walkMetricCard(
                         title: "영역 넓이",
@@ -61,25 +85,43 @@ struct StartButtonView: View {
                 primaryActionButton
 
                 if viewModel.isWalking {
-                    walkElapsedTimeCard
+                    MapWalkActiveValueCardView(
+                        presentation: activeValuePresentation,
+                        durationValueOverride: AnyView(MapWalkingElapsedTimeValueText(viewModel: viewModel))
+                    )
                 } else {
                     idleHintCard
                 }
             }
-            .padding(12)
-            .frame(maxWidth: 420)
-            .mapChromeSurface(emphasized: viewModel.isWalking)
+            .padding(.horizontal, MapWalkControlBarMetrics.surfaceHorizontalPadding)
+            .padding(
+                .vertical,
+                viewModel.isWalking
+                    ? MapWalkControlBarMetrics.walkingSurfaceVerticalPadding
+                    : MapWalkControlBarMetrics.idleSurfaceVerticalPadding
+            )
+            .frame(maxWidth: MapWalkControlBarMetrics.surfaceMaxWidth)
+            .background(viewModel.isWalking ? MapChromePalette.elevatedSurfaceBackground : MapChromePalette.surfaceBackground)
+            .overlay(
+                RoundedRectangle(cornerRadius: MapWalkControlBarMetrics.surfaceCornerRadius, style: .continuous)
+                    .stroke(MapChromePalette.surfaceBorder, lineWidth: 1)
+            )
+            .clipShape(
+                RoundedRectangle(cornerRadius: MapWalkControlBarMetrics.surfaceCornerRadius, style: .continuous)
+            )
+            .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 4)
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("map.walk.controlBar")
         }
         .padding(.horizontal, MapChromeLayoutMetrics.horizontalPadding)
-        .padding(.bottom, 4)
     }
 
     private var petSelectionHint: some View {
         HStack(spacing: 8) {
             Image(systemName: "pawprint.fill")
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(size: 10, weight: .semibold))
             Text("대상: \(viewModel.selectedPetName) · 탭해서 변경")
-                .font(.appFont(for: .SemiBold, size: 11))
+                .font(.appFont(for: .SemiBold, size: 10))
                 .lineLimit(1)
         }
         .foregroundStyle(MapChromePalette.secondaryText)
@@ -94,16 +136,16 @@ struct StartButtonView: View {
     private var idleContextCard: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(walkStartPresentation.selectedPetTitle)
-                .font(.appFont(for: .SemiBold, size: 14))
+                .font(.appFont(for: .SemiBold, size: 13))
                 .foregroundStyle(MapChromePalette.primaryText)
                 .lineLimit(1)
             Text(walkStartPresentation.selectedPetMessage)
-                .font(.appFont(for: .Light, size: 11))
+                .font(.appFont(for: .Light, size: 10))
                 .foregroundStyle(MapChromePalette.secondaryText)
-                .fixedSize(horizontal: false, vertical: true)
+                .lineLimit(2)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
+        .padding(10)
         .mapChromePill(.neutral)
     }
 
@@ -114,41 +156,26 @@ struct StartButtonView: View {
         )
     }
 
-    private var walkElapsedTimeCard: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(viewModel.currentWalkingPetName)
-                .font(.appFont(for: .SemiBold, size: 12))
-                .foregroundStyle(MapChromePalette.secondaryText)
-                .lineLimit(1)
-            MapWalkingElapsedTimeValueText(viewModel: viewModel)
-            Text(walkStartPresentation.walkingStatusText)
-                .font(.appFont(for: .Light, size: 11))
-                .foregroundStyle(MapChromePalette.secondaryText)
-                .lineLimit(2)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
-        .mapChromePill(.neutral)
-    }
-
     private var primaryActionButton: some View {
         Button(action: handleStartStopTapped) {
             VStack(spacing: 5) {
                 Image(systemName: viewModel.isWalking ? "stop.fill" : "play.fill")
-                    .font(.system(size: 24, weight: .bold))
+                    .font(.system(size: 22, weight: .bold))
                 Text(viewModel.isWalking ? "종료" : "시작")
-                    .font(.appFont(for: .SemiBold, size: 12))
+                    .font(.appFont(for: .SemiBold, size: 11))
             }
             .foregroundStyle(Color.white)
-            .frame(width: 88, height: 88)
+            .frame(
+                width: MapWalkControlBarMetrics.primaryActionSize,
+                height: MapWalkControlBarMetrics.primaryActionSize
+            )
             .background(viewModel.isWalking ? Color.appRed : Color.appInk)
             .overlay(
                 Circle()
                     .stroke(MapChromePalette.surfaceBorder.opacity(0.9), lineWidth: 1)
             )
             .clipShape(Circle())
-            .shadow(color: Color.black.opacity(0.18), radius: 18, x: 0, y: 10)
+            .shadow(color: Color.black.opacity(0.14), radius: 12, x: 0, y: 6)
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("map.walk.primaryAction")
@@ -173,22 +200,21 @@ struct StartButtonView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
-                .font(.appFont(for: .SemiBold, size: 12))
+                .font(.appFont(for: .SemiBold, size: 11))
                 .foregroundStyle(MapChromePalette.secondaryText)
                 .lineLimit(1)
             Text(value)
-                .font(.appFont(for: .SemiBold, size: 16))
+                .font(.appFont(for: .SemiBold, size: 15))
                 .foregroundStyle(MapChromePalette.primaryText)
                 .lineLimit(2)
                 .minimumScaleFactor(0.8)
             Text(subtitle)
-                .font(.appFont(for: .Light, size: 11))
+                .font(.appFont(for: .Light, size: 10))
                 .foregroundStyle(MapChromePalette.secondaryText)
                 .lineLimit(2)
-                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
+        .padding(10)
         .mapChromePill(emphasized ? .accent : .neutral)
         .contentShape(RoundedRectangle(cornerRadius: MapChromeLayoutMetrics.secondaryCornerRadius, style: .continuous))
         .onTapGesture {
@@ -243,20 +269,6 @@ struct StartButtonView: View {
                     }
                 )
             )
-        }
-    }
-}
-
-private struct MapWalkingElapsedTimeValueText: View {
-    @ObservedObject var viewModel: MapViewModel
-
-    var body: some View {
-        TimelineView(.periodic(from: .now, by: 1.0)) { context in
-            Text(viewModel.displayedWalkElapsedTime(at: context.date).simpleWalkingTimeInterval)
-                .font(.appFont(for: .SemiBold, size: 16))
-                .foregroundStyle(MapChromePalette.primaryText)
-                .lineLimit(2)
-                .minimumScaleFactor(0.8)
         }
     }
 }
