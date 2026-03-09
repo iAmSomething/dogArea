@@ -283,6 +283,11 @@ protocol WalkWidgetActionRequestStoring {
     /// 현재 대기 중인 위젯 액션 요청을 읽고 즉시 제거합니다.
     /// - Returns: 대기 요청이 있으면 반환하고, 없으면 `nil`을 반환합니다.
     func consumePending() -> WalkWidgetActionRequest?
+
+    /// 지정한 액션 식별자와 일치하는 대기 요청을 제거합니다.
+    /// - Parameter actionId: 이미 딥링크로 소비한 위젯 액션 식별자입니다.
+    /// - Returns: 일치하는 요청을 실제로 제거했으면 `true`, 아니면 `false`입니다.
+    func discardPending(matching actionId: String) -> Bool
 }
 
 final class DefaultWalkWidgetActionRequestStore: WalkWidgetActionRequestStoring {
@@ -313,6 +318,22 @@ final class DefaultWalkWidgetActionRequestStore: WalkWidgetActionRequestStoring 
         }
         storage.removeObject(forKey: WalkWidgetBridgeContract.actionRequestStorageKey)
         return try? decoder.decode(WalkWidgetActionRequest.self, from: data)
+    }
+
+    /// 지정한 액션 식별자와 일치하는 대기 요청을 제거합니다.
+    /// - Parameter actionId: 이미 딥링크로 소비한 위젯 액션 식별자입니다.
+    /// - Returns: 일치하는 요청을 실제로 제거했으면 `true`, 아니면 `false`입니다.
+    func discardPending(matching actionId: String) -> Bool {
+        let normalized = actionId.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard normalized.isEmpty == false,
+              let data = storage.data(forKey: WalkWidgetBridgeContract.actionRequestStorageKey),
+              let request = try? decoder.decode(WalkWidgetActionRequest.self, from: data),
+              request.actionId.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == normalized
+        else {
+            return false
+        }
+        storage.removeObject(forKey: WalkWidgetBridgeContract.actionRequestStorageKey)
+        return true
     }
 
     /// App Group 저장소를 우선 사용하고, 실패 시 표준 저장소를 반환합니다.
