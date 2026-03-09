@@ -1,5 +1,10 @@
 import SwiftUI
 
+private enum RivalRootLayoutMetrics {
+    static let rootTopSafeAreaPadding: CGFloat = 18
+    static let contentTopPadding: CGFloat = 6
+}
+
 struct RivalTabView: View {
     @EnvironmentObject private var authFlow: AuthFlowCoordinator
     @StateObject private var viewModel = RivalTabViewModel()
@@ -21,10 +26,17 @@ struct RivalTabView: View {
         self.onOpenSettings = onOpenSettings
     }
 
+    private var headerSubtitle: String {
+        if ProcessInfo.processInfo.arguments.contains("-UITest.RivalHeaderLongSubtitle") {
+            return "근처 산책 열기를 익명으로 확인하고, 위치 권한과 공유 상태를 한눈에 살펴본 뒤 안전하게 시작해보세요"
+        }
+        return "근처 산책 열기를 익명으로 확인해요"
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 12) {
-                TitleTextView(title: "라이벌", subTitle: "근처 산책 열기를 익명으로 확인해요")
+                rivalHeaderSection
                 statusBadgeRow
                 privacyCard
                 hotspotCard
@@ -32,9 +44,12 @@ struct RivalTabView: View {
                 safetyInfoCard
                 footerButtons
             }
-            .padding(.top, 8)
+            .padding(.top, RivalRootLayoutMetrics.contentTopPadding)
         }
-        .appTabRootScrollLayout(extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding)
+        .appTabRootScrollLayout(
+            extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding,
+            topSafeAreaPadding: RivalRootLayoutMetrics.rootTopSafeAreaPadding
+        )
         .accessibilityIdentifier("screen.rival.content")
         .onAppear {
             viewModel.start()
@@ -91,6 +106,16 @@ struct RivalTabView: View {
         }
     }
 
+    private var rivalHeaderSection: some View {
+        TitleTextView(
+            title: "라이벌",
+            subTitle: headerSubtitle,
+            accessibilityIdentifierPrefix: "rival.header"
+        )
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("rival.header.section")
+    }
+
     private var statusBadgeRow: some View {
         HStack(spacing: 8) {
             rivalBadge(
@@ -104,6 +129,8 @@ struct RivalTabView: View {
             Spacer()
         }
         .padding(.horizontal, 16)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("rival.header.badges")
     }
 
     private var privacyCard: some View {

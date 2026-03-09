@@ -39,6 +39,7 @@ for token in [
     "FR-SET-001",
     "FR-PROFILE-001",
     "FR-RIVAL-001",
+    "FR-RIVAL-003",
     "FR-WIDGET-001",
     "QA-MULTIPET-001",
     "scripts/run_feature_regression_ui_tests.sh",
@@ -71,6 +72,7 @@ for testName in [
     "testFeatureRegression_SettingsAuthEntryPoints",
     "testFeatureRegression_SettingsImageTapAffordanceOpensProfileEdit",
     "testFeatureRegression_MemberProfileEditPersistsUpdatedPetName",
+    "testFeatureRegression_RivalHeaderStaysBelowStatusBarWithLongSubtitle",
     "testFeatureRegression_RivalAuthRevalidationFlow",
     "testFeatureRegression_WidgetRouteOpensRivalTab"
 ] {
@@ -107,6 +109,10 @@ assertTrue(
 assertTrue(
     featureRegressionScript.contains("testFeatureRegression_HomeMissionLifecycleSeparatesCompletedMissionState"),
     "run_feature_regression_ui_tests.sh should run the home mission lifecycle regression"
+)
+assertTrue(
+    featureRegressionScript.contains("testFeatureRegression_RivalHeaderStaysBelowStatusBarWithLongSubtitle"),
+    "run_feature_regression_ui_tests.sh should run the rival header safe area regression"
 )
 assertTrue(
     featureRegressionScript.contains("testFeatureRegression_SettingsImageTapAffordanceOpensProfileEdit"),

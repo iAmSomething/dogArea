@@ -474,6 +474,45 @@ final class FeatureRegressionUITests: XCTestCase {
         )
     }
 
+    /// 긴 부제와 큰 글자 크기에서도 라이벌 헤더와 첫 배지 행이 status bar 아래에 안정적으로 배치되는지 검증합니다.
+    func testFeatureRegression_RivalHeaderStaysBelowStatusBarWithLongSubtitle() throws {
+        let app = launchAppForFeatureRegression(
+            extraArguments: [
+                "-UITest.RivalHeaderLongSubtitle",
+                "-UIPreferredContentSizeCategoryName",
+                "UICTContentSizeCategoryAccessibilityXL"
+            ]
+        )
+        XCTAssertTrue(openTab(index: 3, app: app), "라이벌 탭 진입에 실패했습니다.")
+
+        let header = screenElement(identifier: "rival.header.section", in: app)
+        let title = screenElement(identifier: "rival.header.title", in: app)
+        let subtitle = screenElement(identifier: "rival.header.subtitle", in: app)
+        let badges = screenElement(identifier: "rival.header.badges", in: app)
+
+        XCTAssertTrue(waitUntilExists(header, timeout: 8), "라이벌 헤더가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(title, timeout: 2), "라이벌 헤더 타이틀이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(subtitle, timeout: 2), "라이벌 헤더 서브타이틀이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(badges, timeout: 2), "라이벌 헤더 첫 배지 행이 노출되지 않았습니다.")
+
+        let minimumSafeHeaderOffset: CGFloat = 52
+        XCTAssertGreaterThanOrEqual(
+            title.frame.minY,
+            minimumSafeHeaderOffset,
+            "긴 부제와 큰 글자 크기에서도 라이벌 헤더 타이틀이 status bar 아래에 있어야 합니다."
+        )
+        XCTAssertGreaterThan(
+            subtitle.frame.maxY,
+            title.frame.maxY,
+            "라이벌 헤더 서브타이틀은 타이틀 아래에 안정적으로 배치되어야 합니다."
+        )
+        XCTAssertGreaterThanOrEqual(
+            badges.frame.minY,
+            subtitle.frame.maxY + 4,
+            "라이벌 첫 배지 행은 헤더 부제 아래에 안전 간격을 두고 배치되어야 합니다."
+        )
+    }
+
     /// 산책 목록 탭을 선택해도 선택 아이콘이 유효한 SF Symbol로 유지되는지 검증합니다.
     func testFeatureRegression_WalkListTabSelectedIconRemainsVisibleInBothStyles() throws {
         try assertWalkListTabSelectedIconRemainsVisible(style: .light)
