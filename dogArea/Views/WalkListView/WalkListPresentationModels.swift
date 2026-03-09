@@ -23,15 +23,15 @@ struct WalkListOverviewModel {
 
     static let placeholder = WalkListOverviewModel(
         title: "산책 기록",
-        subtitle: "산책이 기록으로 쌓이고 다음 행동을 정하는 허브예요.",
+        subtitle: "산책 기록을 빠르게 훑고 다시 찾는 화면이에요.",
         primaryLoopBadge: "기본 행동",
-        primaryLoopTitle: "산책이 기록의 시작점이에요",
-        primaryLoopMessage: "한 번 저장한 산책은 경로, 영역, 시간 기록이 되어 다시 보는 기준이 됩니다.",
-        primaryLoopSecondaryFlowText: "실내 미션은 산책이 어려운 날의 보조 흐름입니다.",
-        modeBadge: "전체 기록 기준",
-        contextTitle: "최근 산책 기록을 한곳에 모았어요",
-        contextMessage: "반려견을 선택하면 해당 기준으로 기록을 바로 좁혀서 볼 수 있어요.",
-        helperMessage: "기록이 쌓이면 이번 주와 이전 기록이 자동으로 나뉘어 표시됩니다.",
+        primaryLoopTitle: "산책이 기록을 만듭니다",
+        primaryLoopMessage: "저장한 산책이 경로, 영역, 시간 기록으로 남습니다.",
+        primaryLoopSecondaryFlowText: "실내 미션은 보조 흐름입니다.",
+        modeBadge: "전체 기록",
+        contextTitle: "기록 기준을 바로 바꿀 수 있어요",
+        contextMessage: "반려견을 고르면 같은 기준으로 목록과 달력이 함께 바뀝니다.",
+        helperMessage: "기록이 없으면 전체 기록으로 바로 넓혀볼 수 있어요.",
         restoreActionTitle: nil,
         metrics: [
             WalkListOverviewMetric(id: "total", title: "총 기록", value: "0건", detail: "아직 기록이 없어요"),

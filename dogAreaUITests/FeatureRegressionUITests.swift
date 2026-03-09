@@ -429,6 +429,34 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts["어느 반려견 기록인지"].exists, "장문 설명이 산책 기록 카드 타일에 다시 나타나면 안 됩니다.")
     }
 
+    /// 산책 기록 상단 허브 카드가 onboarding 톤 대신 compact한 정보 허브로 정리되는지 검증합니다.
+    func testFeatureRegression_WalkListHeaderCardsStayCompactWithoutVerboseOnboardingCopy() throws {
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.WalkListCalendarPreview"])
+        XCTAssertTrue(openTab(index: 1, app: app), "산책 목록 탭 진입에 실패했습니다.")
+
+        let primaryLoopCard = screenElement(identifier: "walklist.primaryLoop.card", in: app)
+        let contextCard = screenElement(identifier: "walklist.context", in: app)
+        let summaryCard = screenElement(identifier: "walklist.summary", in: app)
+
+        XCTAssertTrue(waitUntilExists(primaryLoopCard, timeout: 8), "compact 기본 행동 카드가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(contextCard, timeout: 3), "compact 기준 카드가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(summaryCard, timeout: 3), "최근 요약 카드가 함께 노출되어야 합니다.")
+
+        XCTAssertTrue(app.staticTexts["산책이 기록을 만듭니다"].exists, "compact 기본 행동 제목이 유지되어야 합니다.")
+        XCTAssertFalse(
+            app.staticTexts["저장한 산책은 경로, 영역, 시간, 포인트 기록으로 남고 홈 목표와 시즌 흐름을 다시 읽는 기준이 됩니다."].exists,
+            "이전의 긴 onboarding 문구가 상단 허브에 다시 나타나면 안 됩니다."
+        )
+        XCTAssertFalse(
+            app.staticTexts["한 번의 산책이 경로, 영역, 시간, 포인트 기록으로 쌓이고 이후 목표와 미션, 시즌 해석의 기준이 됩니다."].exists,
+            "선택 반려견 기준 카드에 장문 설명이 다시 나타나면 안 됩니다."
+        )
+        XCTAssertFalse(
+            app.staticTexts["날짜, 시간, 영역, 포인트, 반려견 기준으로 세션 성격을 한눈에 파악할 수 있게 구성했습니다."].exists,
+            "도움말 장문 설명은 compact 허브에서 제거되어야 합니다."
+        )
+    }
+
     /// 산책 상세 화면이 요약, 지도, 타임라인, 메타, CTA 위계를 분리해 노출하는지 검증합니다.
     func testFeatureRegression_WalkListDetailClarifiesSummaryAndActionHierarchy() throws {
         let app = launchAppForFeatureRegression(extraArguments: ["-UITest.WalkDetailPreviewRoute"])
