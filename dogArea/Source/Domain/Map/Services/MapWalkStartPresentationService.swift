@@ -23,7 +23,11 @@ struct MapWalkStartPresentationService: MapWalkStartPresenting {
                 ? "산책을 시작하면 \(selectedPetName) 기준으로 경로, 영역, 시간이 기록됩니다."
                 : "산책 기록을 어느 반려견과 연결할지 먼저 선택해주세요.",
             meaningTitle: "이 산책이 바로 기록돼요",
-            meaningMessage: "경로, 영역, 시간이 저장되고 홈 목표와 기록으로 이어집니다.",
+            meaningSummary: "경로·영역·시간이 함께 저장돼요.",
+            meaningDetail: "저장된 산책은 홈 목표, 산책 기록, 시즌 해석으로 이어집니다.",
+            disclosureTitle: "기록 내용",
+            disclosureCloseTitle: "접기",
+            guideTitle: "설명 보기",
             walkingStatusText: "경로·영역 기록 중",
             endAlertMessage: "저장 후 종료하면 이번 경로와 영역이 산책 기록으로 남고, 홈 목표와 시즌 진행에 이어집니다. 계속 걷기를 누르면 산책을 이어갈 수 있어요."
         )

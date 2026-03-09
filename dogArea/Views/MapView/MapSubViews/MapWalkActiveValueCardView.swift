@@ -15,10 +15,70 @@ private struct MapWalkingElapsedTimeValueText: View {
     }
 }
 
+struct MapWalkActiveValueDetailCardView: View {
+    let presentation: MapWalkActiveValuePresentation
+    let onOpenGuide: () -> Void
+    let onClose: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(presentation.title)
+                        .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .headline))
+                        .foregroundStyle(MapChromePalette.primaryText)
+                        .lineLimit(2)
+                    Text(presentation.summary)
+                        .font(.appScaledFont(for: .Regular, size: 10, relativeTo: .caption))
+                        .foregroundStyle(MapChromePalette.secondaryText)
+                        .lineLimit(3)
+                }
+                Spacer(minLength: 8)
+                Button(action: onClose) {
+                    Text("닫기")
+                        .font(.appScaledFont(for: .SemiBold, size: 10, relativeTo: .caption))
+                        .foregroundStyle(MapChromePalette.primaryText)
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("map.walk.activeValue.collapse")
+            }
+
+            Text(presentation.footer)
+                .font(.appScaledFont(for: .Regular, size: 10, relativeTo: .caption))
+                .foregroundStyle(MapChromePalette.secondaryText)
+                .lineLimit(3)
+
+            Button(action: onOpenGuide) {
+                HStack(spacing: 4) {
+                    Text("전체 설명")
+                        .font(.appScaledFont(for: .SemiBold, size: 11, relativeTo: .caption))
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .semibold))
+                }
+                .foregroundStyle(MapChromePalette.primaryText)
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("map.walk.activeValue.openGuide")
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(MapChromePalette.surfaceBackground)
+        .overlay(
+            RoundedRectangle(cornerRadius: MapChromeLayoutMetrics.secondaryCornerRadius, style: .continuous)
+                .stroke(MapChromePalette.surfaceBorder, lineWidth: 0.9)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: MapChromeLayoutMetrics.secondaryCornerRadius, style: .continuous))
+        .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 5)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("map.walk.activeValue.detail.card")
+    }
+}
+
 struct MapWalkActiveValueCardView: View {
     let presentation: MapWalkTopHUDPresentation
     let viewModel: MapViewModel
-    let onOpenGuide: () -> Void
+    let onPrimaryDisclosure: () -> Void
 
     var body: some View {
         ViewThatFits(in: .horizontal) {
@@ -36,18 +96,17 @@ struct MapWalkActiveValueCardView: View {
         .clipShape(RoundedRectangle(cornerRadius: MapChromeLayoutMetrics.secondaryCornerRadius, style: .continuous))
         .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 5)
         .contentShape(RoundedRectangle(cornerRadius: MapChromeLayoutMetrics.secondaryCornerRadius, style: .continuous))
-        .onTapGesture(perform: onOpenGuide)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("map.walk.activeValue.card")
-        .accessibilityHint("탭하면 산책 기록 설명을 엽니다.")
+        .accessibilityHint("산책 기록 상태를 읽고 자세히 보기 동작을 선택할 수 있습니다.")
     }
 
     private var singleLineBody: some View {
         HStack(spacing: 8) {
             statusBadge
             metricRow
-            if let guideAffordanceTitle = presentation.guideAffordanceTitle {
-                guideAffordanceButton(title: guideAffordanceTitle)
+            if let disclosureTitle = presentation.disclosureTitle {
+                disclosureButton(title: disclosureTitle)
             }
         }
     }
@@ -57,8 +116,8 @@ struct MapWalkActiveValueCardView: View {
             HStack(spacing: 8) {
                 statusBadge
                 Spacer(minLength: 8)
-                if let guideAffordanceTitle = presentation.guideAffordanceTitle {
-                    guideAffordanceButton(title: guideAffordanceTitle)
+                if let disclosureTitle = presentation.disclosureTitle {
+                    disclosureButton(title: disclosureTitle)
                 }
             }
 
@@ -144,13 +203,13 @@ struct MapWalkActiveValueCardView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    /// 산책 가치 가이드 재진입 affordance를 렌더링합니다.
+    /// 산책 중 disclosure affordance를 렌더링합니다.
     /// - Parameter title: 버튼에 노출할 문구입니다.
-    /// - Returns: slim HUD 상단에 배치할 가이드 affordance 버튼입니다.
-    private func guideAffordanceButton(title: String) -> some View {
-        Button(action: onOpenGuide) {
+    /// - Returns: slim HUD 상단에 배치할 disclosure 버튼입니다.
+    private func disclosureButton(title: String) -> some View {
+        Button(action: onPrimaryDisclosure) {
             HStack(spacing: 4) {
-                Image(systemName: "questionmark.circle")
+                Image(systemName: presentation.disclosureMode == .expandInline ? "chevron.down.circle" : "questionmark.circle")
                     .font(.system(size: 10, weight: .semibold))
                 Text(title)
                     .font(.appScaledFont(for: .SemiBold, size: 10, relativeTo: .caption))
@@ -158,6 +217,10 @@ struct MapWalkActiveValueCardView: View {
             .foregroundStyle(MapChromePalette.primaryText)
         }
         .buttonStyle(.plain)
-        .accessibilityIdentifier("map.walk.activeValue.openGuide")
+        .accessibilityIdentifier(
+            presentation.disclosureMode == .expandInline
+                ? "map.walk.activeValue.expand"
+                : "map.walk.activeValue.openGuide"
+        )
     }
 }

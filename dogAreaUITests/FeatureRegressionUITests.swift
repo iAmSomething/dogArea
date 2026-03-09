@@ -312,6 +312,56 @@ final class FeatureRegressionUITests: XCTestCase {
         )
     }
 
+    /// 지도 시작 전 의미 카드는 기본 축약 상태로 노출되고, 명시적 disclosure 후에만 상세 본문을 펼치는지 검증합니다.
+    func testFeatureRegression_MapStartMeaningDisclosureExpandsOnlyWhenRequested() throws {
+        let app = launchAppForFeatureRegression()
+
+        XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.")
+        XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
+
+        let card = screenElement(identifier: "map.walk.startMeaning.card", in: app)
+        let expandButton = app.buttons["map.walk.startMeaning.expand"]
+        let detail = screenElement(identifier: "map.walk.startMeaning.detail", in: app)
+
+        XCTAssertTrue(waitUntilExists(card, timeout: 6), "지도 시작 의미 카드가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(expandButton, timeout: 2), "시작 의미 disclosure 버튼이 보이지 않습니다.")
+        XCTAssertFalse(detail.exists, "기본 상태에서는 시작 의미 상세 본문이 열려 있으면 안 됩니다.")
+
+        expandButton.tap()
+
+        let collapseButton = app.buttons["map.walk.startMeaning.collapse"]
+        XCTAssertTrue(waitUntilExists(detail, timeout: 2), "명시적 disclosure 후 시작 의미 상세 본문이 열리지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(collapseButton, timeout: 2), "확장 상태에서 접기 버튼이 보여야 합니다.")
+
+        collapseButton.tap()
+        XCTAssertTrue(waitUntilGone(detail, timeout: 2), "접기 후 시작 의미 상세 본문이 닫히지 않았습니다.")
+    }
+
+    /// 산책 중 slim HUD는 기본 축약 상태를 유지하고, 명시적 disclosure 후에만 상세 helper를 펼치는지 검증합니다.
+    func testFeatureRegression_MapWalkingHUDDisclosureExpandsOnlyWhenRequested() throws {
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.MapForceWalkingState"])
+
+        XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.")
+        XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
+
+        let topHUD = screenElement(identifier: "map.walk.activeValue.card", in: app)
+        let expandButton = app.buttons["map.walk.activeValue.expand"]
+        let detail = screenElement(identifier: "map.walk.activeValue.detail.card", in: app)
+
+        XCTAssertTrue(waitUntilExists(topHUD, timeout: 6), "산책 중 slim HUD가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(expandButton, timeout: 2), "산책 중 disclosure 버튼이 보여야 합니다.")
+        XCTAssertFalse(detail.exists, "기본 상태에서는 산책 중 상세 helper가 열려 있으면 안 됩니다.")
+
+        expandButton.tap()
+
+        let collapseButton = app.buttons["map.walk.activeValue.collapse"]
+        XCTAssertTrue(waitUntilExists(detail, timeout: 2), "명시적 disclosure 후 산책 중 상세 helper가 열리지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(collapseButton, timeout: 2), "확장 상태에서 닫기 버튼이 보여야 합니다.")
+
+        collapseButton.tap()
+        XCTAssertTrue(waitUntilGone(detail, timeout: 2), "닫기 후 산책 중 상세 helper가 사라지지 않았습니다.")
+    }
+
     /// 산책 중 지도 루트가 250ms ticker에 의해 반복 재평가되지 않는지 render probe로 검증합니다.
     func testFeatureRegression_MapWalkingRuntimeKeepsRootRenderCountBelowThreshold() throws {
         let app = launchAppForFeatureRegression(

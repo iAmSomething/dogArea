@@ -24,6 +24,7 @@ struct MapView : View{
     @State private var selectedPolygonData: WalkDataModel? = nil
     @State private var seasonGuideSheetPresentation: SeasonGuidePresentation? = nil
     @State private var walkValueGuideSheetPresentation: WalkValueGuidePresentation? = nil
+    @State private var isWalkingHUDDetailPresented: Bool = false
     @State private var recoveryIssue: RecoveryIssue? = nil
     @State private var activeBanner: MapTopBannerCandidate? = nil
     @State private var bannerSuppressedUntil: [MapTopBannerKind: Date] = [:]
@@ -32,6 +33,7 @@ struct MapView : View{
     @State private var addPointUndoDismissTask: Task<Void, Never>? = nil
     @State private var lastCameraEventProcessedAt: Date = .distantPast
     private let walkTopHUDPresentationService: MapWalkTopHUDPresenting = MapWalkTopHUDPresentationService()
+    private let walkValueFlowPresentationService: MapWalkValueFlowPresenting = MapWalkValueFlowPresentationService()
 
     /// 지도 화면에 사용할 상태 객체를 주입해 탭 전환 후에도 카메라/산책 상태를 유지합니다.
     /// - Parameter viewModel: 지도 상태를 보유하는 `MapViewModel`입니다.
@@ -66,6 +68,16 @@ struct MapView : View{
         })
         composed = AnyView(composed.onChange(of: viewModel.walkValueGuidePresentation) { _, newValue in
             walkValueGuideSheetPresentation = newValue
+        })
+        composed = AnyView(composed.onChange(of: viewModel.isWalking) { _, isWalking in
+            if isWalking == false {
+                isWalkingHUDDetailPresented = false
+            }
+        })
+        composed = AnyView(composed.onChange(of: hasCompetingTopChrome) { _, hasCompeting in
+            if hasCompeting {
+                isWalkingHUDDetailPresented = false
+            }
         })
         composed = AnyView(composed.onChange(of: viewModel.runtimeGuardStatusText) { _, newValue in
             guard newValue.isEmpty == false else { return }
@@ -231,6 +243,7 @@ struct MapView : View{
                         }
                         : nil,
                     walkingHUDContent: walkingHUDContent,
+                    walkingHUDDetailContent: walkingHUDDetailContent,
                     bannerContent: activeBanner.map { AnyView(topBannerView(for: $0)) },
                     statusContent: statusOverlayContent,
                     onOpenSettings: {
@@ -334,7 +347,20 @@ struct MapView : View{
             MapWalkActiveValueCardView(
                 presentation: presentation,
                 viewModel: viewModel,
-                onOpenGuide: viewModel.presentWalkValueGuideFromMapHelp
+                onPrimaryDisclosure: handleWalkingHUDPrimaryDisclosure
+            )
+        )
+    }
+
+    private var walkingHUDDetailContent: AnyView? {
+        guard isWalkingHUDDetailPresented, let presentation = walkingHUDDetailPresentation else {
+            return nil
+        }
+        return AnyView(
+            MapWalkActiveValueDetailCardView(
+                presentation: presentation,
+                onOpenGuide: presentWalkValueGuideFromDisclosure,
+                onClose: collapseWalkingHUDDetail
             )
         )
     }
@@ -351,10 +377,44 @@ struct MapView : View{
         )
     }
 
+    private var walkingHUDDetailPresentation: MapWalkActiveValuePresentation? {
+        guard viewModel.isWalking, hasCompetingTopChrome == false else {
+            return nil
+        }
+        return walkValueFlowPresentationService.makeActiveValuePresentation(
+            petName: viewModel.currentWalkingPetName,
+            routePointCount: viewModel.polygon.locations.count,
+            durationText: viewModel.displayedWalkElapsedTime().simpleWalkingTimeInterval,
+            areaText: viewModel.calculatedAreaString(isPyong: false)
+        )
+    }
+
     private var hasCompetingTopChrome: Bool {
         activeBanner != nil
             || statusOverlayContent != nil
             || viewModel.isSeasonTileMapVisible
+    }
+
+    /// 산책 중 slim HUD의 disclosure 동작을 현재 overlay 경쟁 상태에 맞게 처리합니다.
+    private func handleWalkingHUDPrimaryDisclosure() {
+        guard let presentation = walkingHUDPresentation else { return }
+        switch presentation.disclosureMode {
+        case .expandInline:
+            isWalkingHUDDetailPresented.toggle()
+        case .openGuideSheet:
+            presentWalkValueGuideFromDisclosure()
+        }
+    }
+
+    /// 산책 가치 가이드를 열기 전에 inline disclosure를 정리합니다.
+    private func presentWalkValueGuideFromDisclosure() {
+        isWalkingHUDDetailPresented = false
+        viewModel.presentWalkValueGuideFromMapHelp()
+    }
+
+    /// 현재 열린 산책 중 inline disclosure를 닫습니다.
+    private func collapseWalkingHUDDetail() {
+        isWalkingHUDDetailPresented = false
     }
 
     /// 지도 카메라 이벤트를 반영해 UI 상태와 클러스터 계산을 갱신합니다.
