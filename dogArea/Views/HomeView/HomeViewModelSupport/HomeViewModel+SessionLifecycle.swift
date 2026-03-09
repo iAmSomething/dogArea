@@ -67,6 +67,15 @@ private enum HomeRefreshTrigger: String {
             return false
         }
     }
+
+    var shouldRescheduleQuestReminder: Bool {
+        switch self {
+        case .initialLoad, .visibleReentry, .manualRefresh, .appResume, .timeBoundaryChange:
+            return true
+        case .petSelection:
+            return false
+        }
+    }
 }
 
 extension HomeViewModel {
@@ -138,6 +147,7 @@ extension HomeViewModel {
         }
 
         refreshIndoorMissions(now: now)
+        scheduleQuestReminderResyncIfNeeded(trigger: trigger, now: now)
     }
 
     /// 공용 날씨 스냅샷 저장소에서 최신 값을 읽어 홈 상태에 반영합니다.
@@ -483,23 +493,40 @@ extension HomeViewModel {
     }
 
     /// 앱 진입 시 저장된 퀘스트 리마인드 설정을 로컬 알림 스케줄과 동기화합니다.
-    func syncQuestReminderOnLaunch() async {
+    func syncQuestReminderOnLaunch(now: Date = Date()) async {
+        await syncQuestReminderForCurrentState(now: now, allowAuthorizationPrompt: false)
+    }
+
+    /// 현재 저장된 산책 기록과 리마인드 설정을 바탕으로 다음 1회 알림 일정을 다시 계산합니다.
+    /// - Parameters:
+    ///   - now: 오늘 여부와 다음 예약 시각을 판단할 기준 시각입니다.
+    ///   - allowAuthorizationPrompt: 권한 미결정 시 시스템 권한 팝업을 허용할지 여부입니다.
+    func syncQuestReminderForCurrentState(
+        now: Date = Date(),
+        allowAuthorizationPrompt: Bool
+    ) async {
         await applyQuestReminderPreference(
             enabled: questReminderEnabled,
-            allowAuthorizationPrompt: false
+            allowAuthorizationPrompt: allowAuthorizationPrompt,
+            reference: now
         )
     }
 
     /// 퀘스트 리마인드 설정 변경을 로컬 알림 스케줄에 적용하고 상태 메시지를 갱신합니다.
+    /// - Parameters:
+    ///   - enabled: 사용자가 저장한 리마인드 토글 상태입니다.
+    ///   - allowAuthorizationPrompt: 권한 미결정 시 시스템 권한 팝업을 허용할지 여부입니다.
+    ///   - reference: 오늘 저장 완료 여부와 다음 알림 시각을 판정할 기준 시각입니다.
     func applyQuestReminderPreference(
         enabled: Bool,
-        allowAuthorizationPrompt: Bool
+        allowAuthorizationPrompt: Bool,
+        reference: Date = Date()
     ) async {
+        let schedulingContext = makeQuestReminderSchedulingContext(reference: reference)
         let result = await questReminderScheduler.applyDailyReminder(
             enabled: enabled,
             allowAuthorizationPrompt: allowAuthorizationPrompt,
-            hour: HomeQuestReminderConstants.hour,
-            minute: HomeQuestReminderConstants.minute
+            context: schedulingContext
         )
 
         await MainActor.run {
@@ -519,6 +546,53 @@ extension HomeViewModel {
             case .requiresPermission:
                 break
             }
+        }
+    }
+
+    /// 현재 refresh 트리거가 리마인드 재평가를 요구하면 기존 작업을 취소하고 다시 예약합니다.
+    /// - Parameters:
+    ///   - trigger: 이번 홈 갱신을 유발한 트리거입니다.
+    ///   - now: 오늘 저장 여부와 다음 예약 시각 계산에 사용할 기준 시각입니다.
+    private func scheduleQuestReminderResyncIfNeeded(trigger: HomeRefreshTrigger, now: Date = Date()) {
+        guard trigger.shouldRescheduleQuestReminder else { return }
+        questReminderSyncTask?.cancel()
+        questReminderSyncTask = Task { [weak self] in
+            await self?.syncQuestReminderForCurrentState(now: now, allowAuthorizationPrompt: false)
+        }
+    }
+
+    /// 현재 로컬 저장 산책 기록을 기준으로 퀘스트 리마인드 계산 입력을 생성합니다.
+    /// - Parameter reference: 오늘 경계와 다음 알림 시각 계산에 사용할 기준 시각입니다.
+    /// - Returns: 저장 산책 여부와 현지 캘린더가 반영된 리마인드 스케줄 컨텍스트입니다.
+    func makeQuestReminderSchedulingContext(reference: Date = Date()) -> QuestReminderSchedulingContext {
+        let calendar = currentCalendar()
+        let savedPolygons = walkRepository.fetchPolygons()
+        return QuestReminderSchedulingContext(
+            now: reference,
+            calendar: calendar,
+            reminderHour: HomeQuestReminderConstants.hour,
+            reminderMinute: HomeQuestReminderConstants.minute,
+            hasSavedWalkOnCurrentDay: hasSavedWalkOnCurrentDay(
+                reference: reference,
+                polygons: savedPolygons,
+                calendar: calendar
+            )
+        )
+    }
+
+    /// 저장된 산책 기록 중 현재 로컬 날짜에 속하는 완료 기록이 있는지 판정합니다.
+    /// - Parameters:
+    ///   - reference: 오늘 경계를 판정할 기준 시각입니다.
+    ///   - polygons: 로컬에 저장된 완료 산책 기록 목록입니다.
+    ///   - calendar: 현지 시간대가 반영된 캘린더입니다.
+    /// - Returns: 오늘 저장된 산책 기록이 하나라도 있으면 `true`입니다.
+    func hasSavedWalkOnCurrentDay(
+        reference: Date,
+        polygons: [Polygon],
+        calendar: Calendar
+    ) -> Bool {
+        polygons.contains { polygon in
+            calendar.isDate(Date(timeIntervalSince1970: polygon.createdAt), inSameDayAs: reference)
         }
     }
 

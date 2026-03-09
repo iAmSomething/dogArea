@@ -45,6 +45,7 @@ swift scripts/map_quest_hud_minimum_info_unit_check.swift
 swift scripts/map_quest_overlay_priority_unit_check.swift
 swift scripts/quest_stage2_engine_unit_check.swift
 swift scripts/season_motion_pack_unit_check.swift
+swift scripts/home_quest_reminder_same_day_suppression_unit_check.swift
 swift scripts/release_regression_checklist_unit_check.swift
 swift scripts/epic_21_closure_evidence_unit_check.swift
 swift scripts/epic_123_closure_evidence_unit_check.swift

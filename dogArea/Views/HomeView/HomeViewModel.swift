@@ -78,6 +78,7 @@ final class HomeViewModel: ObservableObject {
     var areaReferenceTask: Task<Void, Never>? = nil
     var weatherReplacementSummaryTask: Task<Void, Never>? = nil
     var seasonCanonicalSummaryTask: Task<Void, Never>? = nil
+    var questReminderSyncTask: Task<Void, Never>? = nil
     var hasSkippedInitialActiveSceneRefresh: Bool = false
     var indoorMissionPetContextPolygonFingerprint: HomeIndoorMissionPetContextPolygonFingerprint? = nil
     var indoorMissionPetContextAggregationSnapshot: HomeIndoorMissionPetContextAggregationSnapshot? = nil
@@ -181,14 +182,12 @@ final class HomeViewModel: ObservableObject {
         reloadUserInfo()
         reloadSeasonCatchupBuffStatus()
         performInitialRefresh()
-        Task { [weak self] in
-            await self?.syncQuestReminderOnLaunch()
-        }
     }
 
     deinit {
         areaReferenceTask?.cancel()
         weatherReplacementSummaryTask?.cancel()
         seasonCanonicalSummaryTask?.cancel()
+        questReminderSyncTask?.cancel()
     }
 }

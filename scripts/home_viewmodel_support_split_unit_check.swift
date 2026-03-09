@@ -28,7 +28,7 @@ assertTrue(mainFile.contains("let areaReferenceRepository: AreaReferenceReposito
 assertTrue(mainFile.contains("deinit {"), "HomeViewModel main file should keep lifecycle cleanup")
 
 assertTrue(sessionLifecycle.contains("extension HomeViewModel"), "session lifecycle support should extend HomeViewModel")
-assertTrue(sessionLifecycle.contains("func syncQuestReminderOnLaunch() async"), "session lifecycle support should own quest reminder launch sync")
+assertTrue(sessionLifecycle.contains("func syncQuestReminderOnLaunch(now: Date = Date()) async"), "session lifecycle support should own quest reminder launch sync")
 assertTrue(areaProgress.contains("func combinedAreas() -> [AreaMeter]"), "area progress support should own combined area helpers")
 assertTrue(areaProgress.contains("func makeDayBoundarySplitContribution(reference: Date) -> DayBoundarySplitContribution?"), "area progress support should own boundary contribution logic")
 assertTrue(indoorMissionFlow.contains("func makeIndoorMissionPetContext(reference: Date) -> IndoorMissionPetContext"), "indoor mission support should own pet mission context")
