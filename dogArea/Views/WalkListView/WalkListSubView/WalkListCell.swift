@@ -12,13 +12,14 @@ struct WalkListCell: View {
     let petName: String?
 
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
-            VStack(alignment: .leading, spacing: 12) {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .top, spacing: 10) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(dateText)
-                            .font(.appScaledFont(for: .SemiBold, size: 18, relativeTo: .headline))
+                            .font(.appScaledFont(for: .SemiBold, size: 17, relativeTo: .headline))
                             .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
+                            .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
                         Text(timeText)
                             .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .caption))
@@ -32,14 +33,14 @@ struct WalkListCell: View {
                         .lineLimit(1)
                 }
 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 3) {
                     Text(areaHeadline)
-                        .font(.appScaledFont(for: .SemiBold, size: 20, relativeTo: .title3))
+                        .font(.appScaledFont(for: .SemiBold, size: 18, relativeTo: .title3))
                         .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
                         .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                        .minimumScaleFactor(0.72)
                     Text(sessionSummary)
-                        .font(.appScaledFont(for: .Regular, size: 13, relativeTo: .body))
+                        .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .body))
                         .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -53,39 +54,43 @@ struct WalkListCell: View {
                     spacing: 8
                 ) {
                     WalkListMetricTileView(
-                        title: "산책 시간",
-                        value: walkData.walkDuration.simpleWalkingTimeInterval,
-                        detail: "짧은 산책인지 바로 판단"
+                        title: "시간",
+                        value: walkDurationText,
+                        detail: nil,
+                        accessibilityIdentifier: metricAccessibilityIdentifier("duration")
                     )
                     WalkListMetricTileView(
-                        title: "영역 넓이",
-                        value: walkData.walkArea.calculatedAreaString,
-                        detail: "얼마나 넓게 확보했는지"
+                        title: "넓이",
+                        value: walkAreaText,
+                        detail: nil,
+                        accessibilityIdentifier: metricAccessibilityIdentifier("area")
                     )
                     WalkListMetricTileView(
-                        title: "포인트 수",
-                        value: "\(walkData.locations.count)개",
-                        detail: "경로/마커 밀도"
+                        title: "포인트",
+                        value: walkPointCountText,
+                        detail: nil,
+                        accessibilityIdentifier: metricAccessibilityIdentifier("points")
                     )
                     WalkListMetricTileView(
                         title: "반려견",
                         value: petBadgeText,
-                        detail: "어느 반려견 기록인지"
+                        detail: nil,
+                        accessibilityIdentifier: metricAccessibilityIdentifier("pet")
                     )
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            ThumbnailImageView(image: walkData.image, size: 92, cornerRadius: 18)
+            ThumbnailImageView(image: walkData.image, size: 84, cornerRadius: 16)
         }
-        .padding(16)
+        .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .appCardSurface()
         .overlay(alignment: .topTrailing) {
             Image(systemName: "chevron.right")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(Color.appDynamicHex(light: 0x94A3B8, dark: 0x64748B))
-                .padding(16)
+                .padding(14)
         }
     }
 
@@ -112,6 +117,22 @@ struct WalkListCell: View {
     }
 
     private var sessionSummary: String {
-        "산책 \(walkData.walkDuration.simpleWalkingTimeInterval) · 포인트 \(walkData.locations.count)개"
+        "\(timeText) · \(walkPointCountText)"
+    }
+
+    private var walkDurationText: String {
+        walkData.walkDuration.simpleWalkingTimeInterval
+    }
+
+    private var walkAreaText: String {
+        walkData.walkArea.calculatedAreaString
+    }
+
+    private var walkPointCountText: String {
+        "\(walkData.locations.count)개"
+    }
+
+    private func metricAccessibilityIdentifier(_ suffix: String) -> String {
+        "walklist.cell.\(walkData.id.uuidString.lowercased()).metric.\(suffix)"
     }
 }

@@ -389,6 +389,20 @@ final class FeatureRegressionUITests: XCTestCase {
         )
     }
 
+    /// 산책 기록 카드 메트릭 타일이 장문 설명 없이 compact 상태를 유지하는지 검증합니다.
+    func testFeatureRegression_WalkListMetricTilesStayCompactWithoutVerboseCopy() throws {
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.WalkListCalendarPreview"])
+        XCTAssertTrue(openTab(index: 1, app: app), "산책 목록 탭 진입에 실패했습니다.")
+
+        let calendarCard = screenElement(identifier: "walklist.calendar.card", in: app)
+        XCTAssertTrue(waitUntilExists(calendarCard, timeout: 8), "산책 목록 월별 캘린더 카드가 렌더링되지 않았습니다.")
+
+        XCTAssertFalse(app.staticTexts["짧은 산책인지 바로 판단"].exists, "장문 설명이 산책 기록 카드 타일에 다시 나타나면 안 됩니다.")
+        XCTAssertFalse(app.staticTexts["얼마나 넓게 확보했는지"].exists, "장문 설명이 산책 기록 카드 타일에 다시 나타나면 안 됩니다.")
+        XCTAssertFalse(app.staticTexts["경로/마커 밀도"].exists, "장문 설명이 산책 기록 카드 타일에 다시 나타나면 안 됩니다.")
+        XCTAssertFalse(app.staticTexts["어느 반려견 기록인지"].exists, "장문 설명이 산책 기록 카드 타일에 다시 나타나면 안 됩니다.")
+    }
+
     /// 산책 상세 화면이 요약, 지도, 타임라인, 메타, CTA 위계를 분리해 노출하는지 검증합니다.
     func testFeatureRegression_WalkListDetailClarifiesSummaryAndActionHierarchy() throws {
         let app = launchAppForFeatureRegression(extraArguments: ["-UITest.WalkDetailPreviewRoute"])
