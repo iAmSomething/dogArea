@@ -169,8 +169,13 @@ extension MapViewModel {
             actionStateOverride: actionStateOverride,
             now: now
         )
+        let startedAtTimestamp = resolveWalkWidgetStartedAt(
+            currentSnapshot: currentSnapshot,
+            now: now
+        )
         let snapshot = WalkWidgetSnapshot(
             isWalking: isWalking,
+            startedAt: startedAtTimestamp,
             elapsedSeconds: Int(max(0, time.rounded(.down))),
             petName: petContext.petName,
             petContext: petContext,
@@ -181,6 +186,27 @@ extension MapViewModel {
         )
         widgetSnapshotStore.save(snapshot)
         lastWidgetSnapshotSyncAt = now
+    }
+
+    /// 현재 앱 세션과 기존 저장본을 기준으로 위젯 타이머 기준 시각을 계산합니다.
+    /// - Parameters:
+    ///   - currentSnapshot: 기존 공유 저장소에 남아 있는 위젯 스냅샷입니다.
+    ///   - now: 이번 스냅샷 저장 기준 시각입니다.
+    /// - Returns: 위젯에서 timer-style 렌더링에 사용할 시작 시각입니다.
+    private func resolveWalkWidgetStartedAt(
+        currentSnapshot: WalkWidgetSnapshot,
+        now: Date
+    ) -> TimeInterval {
+        if isWalking {
+            return startTime.timeIntervalSince1970
+        }
+
+        if currentSnapshot.startedAt > 0 {
+            return currentSnapshot.startedAt
+        }
+
+        let inferredStartedAt = now.timeIntervalSince1970 - Double(Int(max(0, time.rounded(.down))))
+        return max(0, inferredStartedAt)
     }
 
     /// 앱 세션을 정본으로 위젯 액션 상태를 다시 계산합니다.

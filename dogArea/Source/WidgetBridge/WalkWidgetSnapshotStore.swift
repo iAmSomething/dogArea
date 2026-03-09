@@ -213,6 +213,7 @@ struct WalkWidgetActionState: Codable, Equatable {
 
 struct WalkWidgetSnapshot: Codable, Equatable {
     let isWalking: Bool
+    let startedAt: TimeInterval
     let elapsedSeconds: Int
     let petName: String
     let petContext: WalkWidgetPetContext?
@@ -220,6 +221,18 @@ struct WalkWidgetSnapshot: Codable, Equatable {
     let statusMessage: String?
     let actionState: WalkWidgetActionState?
     let updatedAt: TimeInterval
+
+    enum CodingKeys: String, CodingKey {
+        case isWalking
+        case startedAt
+        case elapsedSeconds
+        case petName
+        case petContext
+        case status
+        case statusMessage
+        case actionState
+        case updatedAt
+    }
 
     var normalizedPetContext: WalkWidgetPetContext {
         petContext ?? .legacyFallback(petName: petName, isWalking: isWalking)
@@ -230,24 +243,79 @@ struct WalkWidgetSnapshot: Codable, Equatable {
         return actionState.isExpired ? nil : actionState
     }
 
+    var timerReferenceDate: Date {
+        let inferredStartedAt = max(0, updatedAt - Double(max(0, elapsedSeconds)))
+        let referenceTimestamp = startedAt > 0 ? startedAt : inferredStartedAt
+        return Date(timeIntervalSince1970: referenceTimestamp)
+    }
+
+    var elapsedReloadMinuteBucket: Int {
+        max(0, elapsedSeconds / 60)
+    }
+
+    var updatedAtReloadMinuteBucket: Int {
+        max(0, Int(updatedAt / 60.0))
+    }
+
     var timelineReloadSignature: String {
-        [
+        let petContext = normalizedPetContext
+        let actionState = normalizedActionState
+        let startedAtSignature = String(Int(startedAt.rounded(.down)))
+        let components = [
             String(isWalking),
-            normalizedPetContext.petName,
-            normalizedPetContext.source.rawValue,
-            normalizedPetContext.startPolicy.rawValue,
-            normalizedPetContext.fallbackReason ?? "",
+            startedAtSignature,
+            String(elapsedReloadMinuteBucket),
+            String(updatedAtReloadMinuteBucket),
+            petContext.petName,
+            petContext.source.rawValue,
+            petContext.startPolicy.rawValue,
+            petContext.fallbackReason ?? "",
             status.rawValue,
             statusMessage ?? "",
-            normalizedActionState?.kind.rawValue ?? "",
-            normalizedActionState?.phase.rawValue ?? "",
-            normalizedActionState?.followUp.rawValue ?? "",
-            normalizedActionState?.message ?? ""
-        ].joined(separator: "|")
+            actionState?.kind.rawValue ?? "",
+            actionState?.phase.rawValue ?? "",
+            actionState?.followUp.rawValue ?? "",
+            actionState?.message ?? ""
+        ]
+        return components.joined(separator: "|")
+    }
+
+    /// 산책 위젯 스냅샷을 명시적인 타이머 기준 시각과 함께 생성합니다.
+    /// - Parameters:
+    ///   - isWalking: 현재 산책 진행 여부입니다.
+    ///   - startedAt: timer-style 렌더링 기준이 되는 산책 시작 시각입니다.
+    ///   - elapsedSeconds: 현재까지 누적된 경과 시간(초)입니다.
+    ///   - petName: 위젯에 표시할 반려견 이름입니다.
+    ///   - petContext: 선택 반려견 문맥 정보입니다.
+    ///   - status: 위젯 상태 배지용 canonical 상태입니다.
+    ///   - statusMessage: 상태 보조 문구입니다.
+    ///   - actionState: 위젯 액션 오버레이 상태입니다.
+    ///   - updatedAt: 마지막 갱신 시각입니다.
+    init(
+        isWalking: Bool,
+        startedAt: TimeInterval,
+        elapsedSeconds: Int,
+        petName: String,
+        petContext: WalkWidgetPetContext?,
+        status: WalkWidgetSnapshotStatus,
+        statusMessage: String?,
+        actionState: WalkWidgetActionState?,
+        updatedAt: TimeInterval
+    ) {
+        self.isWalking = isWalking
+        self.startedAt = startedAt
+        self.elapsedSeconds = elapsedSeconds
+        self.petName = petName
+        self.petContext = petContext
+        self.status = status
+        self.statusMessage = statusMessage
+        self.actionState = actionState
+        self.updatedAt = updatedAt
     }
 
     static let initial = WalkWidgetSnapshot(
         isWalking: false,
+        startedAt: 0,
         elapsedSeconds: 0,
         petName: "반려견",
         petContext: .init(
@@ -262,6 +330,23 @@ struct WalkWidgetSnapshot: Codable, Equatable {
         actionState: nil,
         updatedAt: Date().timeIntervalSince1970
     )
+
+    /// 레거시 저장본까지 호환하도록 산책 위젯 스냅샷을 디코딩합니다.
+    /// - Parameter decoder: 공유 저장소의 직렬화 데이터를 해석할 디코더입니다.
+    /// - Throws: 지원하지 않는 형식일 때 디코딩 오류를 그대로 전달합니다.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.isWalking = try container.decode(Bool.self, forKey: .isWalking)
+        self.elapsedSeconds = try container.decode(Int.self, forKey: .elapsedSeconds)
+        self.petName = try container.decode(String.self, forKey: .petName)
+        self.petContext = try container.decodeIfPresent(WalkWidgetPetContext.self, forKey: .petContext)
+        self.status = try container.decode(WalkWidgetSnapshotStatus.self, forKey: .status)
+        self.statusMessage = try container.decodeIfPresent(String.self, forKey: .statusMessage)
+        self.actionState = try container.decodeIfPresent(WalkWidgetActionState.self, forKey: .actionState)
+        self.updatedAt = try container.decode(TimeInterval.self, forKey: .updatedAt)
+        let inferredStartedAt = max(0, updatedAt - Double(max(0, elapsedSeconds)))
+        self.startedAt = try container.decodeIfPresent(TimeInterval.self, forKey: .startedAt) ?? inferredStartedAt
+    }
 }
 
 enum TerritoryWidgetSnapshotStatus: String, Codable {
@@ -723,6 +808,7 @@ final class DefaultWalkWidgetSnapshotStore: WalkWidgetSnapshotStoring {
         }
         return WalkWidgetSnapshot(
             isWalking: decoded.isWalking,
+            startedAt: decoded.startedAt,
             elapsedSeconds: decoded.elapsedSeconds,
             petName: decoded.petName,
             petContext: decoded.petContext ?? decoded.normalizedPetContext,
@@ -739,6 +825,7 @@ final class DefaultWalkWidgetSnapshotStore: WalkWidgetSnapshotStoring {
         let previous = load()
         let normalizedSnapshot = WalkWidgetSnapshot(
             isWalking: snapshot.isWalking,
+            startedAt: snapshot.startedAt,
             elapsedSeconds: snapshot.elapsedSeconds,
             petName: snapshot.petName,
             petContext: snapshot.normalizedPetContext,
