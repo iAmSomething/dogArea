@@ -7,6 +7,11 @@
 
 import SwiftUI
 
+private enum HomeRootLayoutMetrics {
+    static let rootTopSafeAreaPadding: CGFloat = 18
+    static let contentTopPadding: CGFloat = 12
+}
+
 struct HomeView: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @Environment(\.scenePhase) private var scenePhase
@@ -65,8 +70,19 @@ struct HomeView: View {
 
     /// 홈 상단 인사말에 노출할 사용자 이름을 계산합니다.
     private var displayUserName: String {
+        if ProcessInfo.processInfo.arguments.contains("-UITest.HomeHeaderLongName") {
+            return "반가운산책메이트김태훈과함께걷는긴이름사용자"
+        }
         let fallback = viewModel.selectedPetName
         return viewModel.userInfo?.name.nilIfBlank ?? fallback
+    }
+
+    /// 홈 헤더의 반려견 인사말에 사용할 이름을 계산합니다.
+    private var headerSelectedPetName: String {
+        if ProcessInfo.processInfo.arguments.contains("-UITest.HomeHeaderLongName") {
+            return "아주아주긴이름을가진반려견친구"
+        }
+        return viewModel.selectedPetName
     }
 
     /// 시즌 점수 기반 레벨 배지를 계산합니다.
@@ -205,7 +221,7 @@ struct HomeView: View {
             recentConqueredCard
         }
         .padding(.horizontal, 16)
-        .padding(.top, 20)
+        .padding(.top, HomeRootLayoutMetrics.contentTopPadding)
     }
 
     /// 게스트 데이터 이관 리포트 카드를 필요할 때만 렌더링합니다.
@@ -504,7 +520,10 @@ struct HomeView: View {
                     onClose: { homeMissionGuidePresentation = nil }
                 )
             }
-            .appTabRootScrollLayout(extraBottomPadding: 12)
+            .appTabRootScrollLayout(
+                extraBottomPadding: 12,
+                topSafeAreaPadding: HomeRootLayoutMetrics.rootTopSafeAreaPadding
+            )
     }
 
     /// 홈 대시보드 상단 인사말과 레벨 배지를 렌더링합니다.
@@ -512,7 +531,7 @@ struct HomeView: View {
         HomeHeaderSectionView(
             displayUserName: displayUserName,
             levelBadgeText: levelBadgeText,
-            selectedPetName: viewModel.selectedPetName
+            selectedPetName: headerSelectedPetName
         )
     }
 

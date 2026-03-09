@@ -13,6 +13,8 @@ struct HomeHeaderSectionView: View {
                     .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
                     .lineLimit(2)
                     .minimumScaleFactor(0.8)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("home.header.title")
                 Spacer(minLength: 0)
                 Text(levelBadgeText)
                     .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
@@ -23,14 +25,20 @@ struct HomeHeaderSectionView: View {
                         Capsule()
                             .fill(Color.appDynamicHex(light: 0xFFFBEB, dark: 0x334155))
                     )
+                    .accessibilityIdentifier("home.header.levelBadge")
             }
             Text("오늘도 \(selectedPetName)와 즐거운 산책 되세요.")
                 .font(.appScaledFont(for: .Regular, size: 16, relativeTo: .subheadline))
                 .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
+                .lineLimit(3)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityIdentifier("home.header.subtitle")
             Rectangle()
                 .fill(Color.appDynamicHex(light: 0xCBD5E1, dark: 0x334155))
                 .frame(height: 1)
                 .padding(.top, 6)
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("home.header.section")
     }
 }

@@ -59,6 +59,7 @@
 - 산책 가치 설명/저장 후 연결 흐름 v1: `docs/walk-value-flow-onboarding-v1.md`
 - 홈 미션 정의/등장 이유/완료 방식 도움말 레이어 v1: `docs/home-quest-help-layer-v1.md`
 - 홈 미션 자동 기록/직접 체크 구분 가이드 v1: `docs/home-quest-tracking-mode-guideline-v1.md`
+- 홈 상단 safe area 계약 v1: `docs/home-top-safearea-contract-v1.md`
 - 홈 refresh 중복 제거 umbrella v1: `docs/home-refresh-dedup-lightweight-v1.md`
 - 맵 파생 계산 경량화 umbrella v1: `docs/map-derived-calculation-lightweight-v1.md`
 - 맵 시작 설명 카드 compact v1: `docs/map-start-meaning-card-compact-v1.md`
