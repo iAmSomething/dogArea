@@ -22,14 +22,8 @@ struct MapWalkStartPresentationService: MapWalkStartPresenting {
             selectedPetMessage: hasSelectedPet
                 ? "산책을 시작하면 \(selectedPetName) 기준으로 경로, 영역, 시간이 기록됩니다."
                 : "산책 기록을 어느 반려견과 연결할지 먼저 선택해주세요.",
-            meaningTitle: "산책이 바로 기록이 됩니다",
-            meaningMessage: "저장된 산책은 기록 목록, 영역 목표, 시즌 진행, 오늘 행동 해석으로 이어집니다.",
-            pillars: [
-                .init(id: "route", title: "경로·영역 기록"),
-                .init(id: "history", title: "시간·기록 누적"),
-                .init(id: "systems", title: "목표·미션 연결")
-            ],
-            secondaryFlowText: "실내 미션은 악천후나 예외 상황에서만 열리는 보조 흐름입니다.",
+            meaningTitle: "이 산책이 바로 기록돼요",
+            meaningMessage: "경로, 영역, 시간이 저장되고 홈 목표와 기록으로 이어집니다.",
             walkingStatusText: "경로·영역 기록 중",
             endAlertMessage: "저장 후 종료하면 이번 경로와 영역이 산책 기록으로 남고, 홈 목표와 시즌 진행에 이어집니다. 계속 걷기를 누르면 산책을 이어갈 수 있어요."
         )

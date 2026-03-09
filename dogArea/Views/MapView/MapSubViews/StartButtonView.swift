@@ -39,12 +39,6 @@ struct StartButtonView: View {
             if !viewModel.isWalking && viewModel.availablePets.count > 1 {
                 petSelectionHint
             }
-            if !viewModel.isWalking {
-                MapWalkStartMeaningCardView(
-                    presentation: walkStartPresentation,
-                    onOpenGuide: viewModel.presentWalkValueGuideFromMapHelp
-                )
-            }
             if viewModel.isWalking {
                 MapWalkActiveValueCardView(presentation: activeValuePresentation)
             }
@@ -114,18 +108,10 @@ struct StartButtonView: View {
     }
 
     private var idleHintCard: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(walkStartPresentation.meaningTitle)
-                .font(.appFont(for: .SemiBold, size: 14))
-                .foregroundStyle(MapChromePalette.primaryText)
-            Text(walkStartPresentation.meaningMessage)
-                .font(.appFont(for: .Light, size: 11))
-                .foregroundStyle(MapChromePalette.secondaryText)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
-        .mapChromePill(.accent)
+        MapWalkStartMeaningCardView(
+            presentation: walkStartPresentation,
+            onOpenGuide: viewModel.presentWalkValueGuideFromMapHelp
+        )
     }
 
     private var walkElapsedTimeCard: some View {

@@ -61,6 +61,7 @@
 - 홈 미션 자동 기록/직접 체크 구분 가이드 v1: `docs/home-quest-tracking-mode-guideline-v1.md`
 - 홈 refresh 중복 제거 umbrella v1: `docs/home-refresh-dedup-lightweight-v1.md`
 - 맵 파생 계산 경량화 umbrella v1: `docs/map-derived-calculation-lightweight-v1.md`
+- 맵 시작 설명 카드 compact v1: `docs/map-start-meaning-card-compact-v1.md`
 - 맵 시즌 점령 지도 시각화 v1: `docs/map-season-tile-occupation-visualization-v1.md`
 - 맵 시즌 타일 상세 패널 v1: `docs/map-season-tile-detail-panel-v1.md`
 - 맵 heatmap trigger gating v1: `docs/map-heatmap-trigger-gating-v1.md`

@@ -42,7 +42,7 @@ assertTrue(homeCard.contains("home.walkPrimaryLoop.card"), "home walk primary lo
 assertTrue(homeService.contains("protocol HomeWalkPrimaryLoopPresenting"), "home walk primary loop should be protocol-first")
 assertTrue(missionService.contains("실내 미션은 악천후나 예외 상황에서만 보조로 열립니다"), "indoor mission copy should explicitly position itself as secondary")
 assertTrue(missionStatusBuilder.contains("실내 미션 전환 요약"), "weather mission summary should be reframed as indoor mission shift summary")
-assertTrue(startButtonView.contains("MapWalkStartMeaningCardView"), "map start CTA should be preceded by a meaning card")
+assertTrue(startButtonView.contains("MapWalkStartMeaningCardView"), "map start deck should include a compact meaning helper card")
 assertTrue(mapMeaningCard.contains("map.walk.startMeaning.card"), "map meaning card should expose an accessibility identifier")
 assertTrue(mapMeaningService.contains("protocol MapWalkStartPresenting"), "map walk start meaning should be protocol-first")
 assertTrue(walkListHeader.contains("WalkListPrimaryLoopSummaryCardView"), "walk list header should render a primary loop summary card")
@@ -52,7 +52,7 @@ assertTrue(walkListDetailHero.contains("walklist.detail.loopSummary"), "walk lis
 assertTrue(featureTests.contains("testFeatureRegression_HomeAndMapPrioritizeWalkingAsPrimaryLoop"), "feature regression tests should cover home and map primary loop hierarchy")
 assertTrue(featureScript.contains("testFeatureRegression_HomeAndMapPrioritizeWalkingAsPrimaryLoop"), "feature regression script should run the home/map primary loop regression")
 assertTrue(uiMatrix.contains("FR-HOME-002"), "ui regression matrix should include the home/map primary loop regression")
-assertTrue(doc.contains("산책이 이 앱의 시작점"), "issue doc should record the home primary loop surface")
+assertTrue(doc.contains("compact 산책 의미 helper 카드"), "issue doc should record the compact map helper hierarchy")
 assertTrue(readme.contains("docs/walk-primary-loop-information-hierarchy-v1.md"), "README should index the walk primary loop hierarchy doc")
 assertTrue(prCheck.contains("swift scripts/walk_primary_loop_information_hierarchy_unit_check.swift"), "ios_pr_check should include the primary loop hierarchy unit check")
 
