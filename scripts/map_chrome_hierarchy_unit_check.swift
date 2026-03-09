@@ -27,7 +27,8 @@ assertTrue(!mapView.contains("Text(\"내 위치 보기\")"), "MapView should rem
 assertTrue(topChromeView.contains("map.openSettings"), "top chrome should preserve map settings accessibility identifier")
 assertTrue(floatingControlView.contains("map.recenter"), "floating controls should expose recenter accessibility identifier")
 assertTrue(floatingControlView.contains("map.addPoint"), "floating controls should expose add-point accessibility identifier")
-assertTrue(startButtonView.contains("mapChromeSurface(emphasized: viewModel.isWalking)"), "StartButtonView should render inside shared chrome surface")
+assertTrue(startButtonView.contains("map.walk.controlBar"), "StartButtonView should expose a dedicated control bar accessibility identifier")
+assertTrue(startButtonView.contains("MapChromePalette.elevatedSurfaceBackground"), "StartButtonView should still use shared map chrome palette values")
 assertTrue(startButtonView.contains("map.walk.primaryAction"), "StartButtonView should preserve map primary action accessibility identifier")
 assertTrue(styleView.contains("MapChromeIconButton"), "shared map chrome style should provide icon button component")
 

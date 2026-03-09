@@ -30,6 +30,8 @@ for token in [
     "FR-MAP-001",
     "FR-MAP-002",
     "FR-MAP-003",
+    "FR-MAP-006",
+    "FR-MAP-007",
     "FR-WALK-001",
     "FR-WALK-002",
     "FR-WALK-002A",
@@ -68,6 +70,8 @@ assertTrue(
 for testName in [
     "testFeatureRegression_MapPrimaryActionIsNotObscuredByTabBar",
     "testFeatureRegression_MapAddPointControlRemainsHittableWhileWalking",
+    "testFeatureRegression_MapBottomControllerStaysAnchoredAndCompactAtRest",
+    "testFeatureRegression_MapBottomControllerStaysAnchoredAndCompactWhileWalking",
     "testFeatureRegression_MapStopAlertPresentsClearActionHierarchy",
     "testFeatureRegression_WalkListPrimaryContentIsNotObscuredByTabBar",
     "testFeatureRegression_WalkListHeaderSurfacesOverviewAndContextCards",
@@ -122,6 +126,14 @@ assertTrue(
 assertTrue(
     featureRegressionScript.contains("testFeatureRegression_MapAddPointControlRemainsHittableWhileWalking"),
     "run_feature_regression_ui_tests.sh should run the walking add-point regression"
+)
+assertTrue(
+    featureRegressionScript.contains("testFeatureRegression_MapBottomControllerStaysAnchoredAndCompactAtRest"),
+    "run_feature_regression_ui_tests.sh should run the idle bottom controller density regression"
+)
+assertTrue(
+    featureRegressionScript.contains("testFeatureRegression_MapBottomControllerStaysAnchoredAndCompactWhileWalking"),
+    "run_feature_regression_ui_tests.sh should run the walking bottom controller density regression"
 )
 assertTrue(
     featureRegressionScript.contains("testFeatureRegression_MapStopAlertPresentsClearActionHierarchy"),
