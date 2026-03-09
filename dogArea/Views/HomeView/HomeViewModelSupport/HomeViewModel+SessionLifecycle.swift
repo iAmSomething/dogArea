@@ -192,6 +192,7 @@ extension HomeViewModel {
         userInfo = userSessionStore.currentUserInfo()
         selectedPet = userSessionStore.selectedPet(from: userInfo)
         selectedPetId = selectedPet?.petId ?? ""
+        latestSeasonCanonicalSummary = seasonCanonicalSummaryStore.loadSummary(for: userInfo?.id)
     }
 
     func selectPet(_ petId: String) {
@@ -262,12 +263,121 @@ extension HomeViewModel {
     }
 
     func seasonRewardStatus(for weekKey: String) -> SeasonRewardClaimStatus {
-        seasonMotionStore.rewardClaimStatus(for: weekKey)
+        switch AppFeatureGate.currentSession() {
+        case .guest:
+            return seasonMotionStore.rewardClaimStatus(for: weekKey)
+        case .member:
+            let canonicalStatus = seasonRewardStatusFromCanonical(for: weekKey)
+            if canonicalStatus != .unavailable {
+                return canonicalStatus
+            }
+            return seasonMotionStore.rewardClaimStatus(for: weekKey)
+        }
     }
 
     func retrySeasonRewardClaim(for weekKey: String, cloudSyncAllowed: Bool) {
-        let claimResult = seasonMotionStore.claimReward(for: weekKey, cloudSyncAllowed: cloudSyncAllowed)
-        indoorMissionStatusMessage = claimResult.message
+        guard cloudSyncAllowed else {
+            let claimResult = seasonMotionStore.claimReward(for: weekKey, cloudSyncAllowed: false)
+            indoorMissionStatusMessage = claimResult.message
+            metricTracker.track(
+                .seasonRewardClaimFailed,
+                userKey: userInfo?.id,
+                payload: [
+                    "weekKey": weekKey,
+                    "reason": "cloud_sync_disabled"
+                ]
+            )
+            return
+        }
+
+        guard let userId = userInfo?.id, userId.isEmpty == false else {
+            indoorMissionStatusMessage = "시즌 보상을 확인하려면 다시 로그인해주세요."
+            metricTracker.track(
+                .seasonRewardClaimFailed,
+                payload: [
+                    "weekKey": weekKey,
+                    "reason": "missing_user"
+                ]
+            )
+            return
+        }
+
+        let summary = latestSeasonCanonicalSummary ?? seasonCanonicalSummaryStore.loadSummary(for: userId)
+        guard let completedSeason = summary?.latestCompletedSeason,
+              completedSeason.weekKey == weekKey else {
+            indoorMissionStatusMessage = "보상 상태를 서버에서 다시 확인 중이에요. 잠시 후 다시 시도해주세요."
+            refreshSeasonCanonicalSummaryIfNeeded(now: Date())
+            metricTracker.track(
+                .seasonRewardClaimFailed,
+                userKey: userId,
+                payload: [
+                    "weekKey": weekKey,
+                    "reason": "missing_canonical_summary"
+                ]
+            )
+            return
+        }
+
+        let requestId = "season-claim-\(weekKey.lowercased())-\(UUID().uuidString.lowercased())"
+        indoorMissionStatusMessage = "시즌 보상을 서버에서 확인 중이에요."
+
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let claimResult = try await seasonCanonicalSummaryService.claimReward(
+                    seasonId: completedSeason.seasonId,
+                    weekKey: weekKey,
+                    requestId: requestId,
+                    now: Date()
+                )
+                seasonCanonicalSummaryStore.applyClaimResult(claimResult, for: userId)
+                let refreshedSummary = try? await seasonCanonicalSummaryService.fetchSummary(now: Date())
+
+                await MainActor.run {
+                    if let refreshedSummary {
+                        self.seasonCanonicalSummaryStore.save(refreshedSummary)
+                        self.latestSeasonCanonicalSummary = refreshedSummary
+                        let localRefresh = self.seasonMotionStore.refresh(
+                            now: Date(),
+                            riskLevel: self.indoorMissionBoard.riskLevel
+                        )
+                        self.applyServerSeasonSummary(refreshedSummary, localRefresh: localRefresh, now: Date())
+                    } else {
+                        self.latestSeasonCanonicalSummary = self.seasonCanonicalSummaryStore.loadSummary(for: userId)
+                    }
+
+                    let status = self.resolvedSeasonRewardStatus(rawValue: claimResult.claimStatusRawValue)
+                    self.indoorMissionStatusMessage = status == .claimed
+                        ? "시즌 보상 수령 완료"
+                        : "보상 상태를 다시 확인해주세요."
+                    self.metricTracker.track(
+                        status == .claimed ? .seasonRewardClaimSucceeded : .seasonRewardClaimFailed,
+                        userKey: userId,
+                        payload: [
+                            "weekKey": weekKey,
+                            "requestId": claimResult.requestId,
+                            "alreadyClaimed": claimResult.alreadyClaimed ? "true" : "false",
+                            "status": claimResult.claimStatusRawValue
+                        ]
+                    )
+                }
+            } catch {
+                await MainActor.run {
+                    self.indoorMissionStatusMessage = "보상 수령 실패: 잠시 후 다시 시도해주세요."
+                    self.metricTracker.track(
+                        .seasonRewardClaimFailed,
+                        userKey: userId,
+                        payload: [
+                            "weekKey": weekKey,
+                            "reason": error.localizedDescription
+                        ]
+                    )
+                    #if DEBUG
+                    print("[SeasonCanonical] reward claim failed: \(error.localizedDescription)")
+                    #endif
+                }
+            }
+        }
     }
 
     func bindSeasonCatchupBuffStatusNotifications() {

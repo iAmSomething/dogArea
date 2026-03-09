@@ -52,6 +52,33 @@ export type WeatherReplacementSummaryDTO = {
   refreshed_at: string;
 };
 
+export type SeasonCanonicalSummaryDTO = {
+  current_season_id: string | null;
+  current_season_key: string | null;
+  current_week_key: string | null;
+  current_status: string | null;
+  current_score: number | null;
+  current_target_score: number | null;
+  current_progress: number | null;
+  current_rank_tier: string | null;
+  current_today_score_delta: number | null;
+  current_contribution_count: number | null;
+  current_weather_shield_apply_count: number | null;
+  current_score_updated_at: string | null;
+  current_last_contribution_at: string | null;
+  latest_completed_season_id: string | null;
+  latest_completed_week_key: string | null;
+  latest_completed_rank_tier: string | null;
+  latest_completed_total_score: number | null;
+  latest_completed_contribution_count: number | null;
+  latest_completed_weather_shield_apply_count: number | null;
+  latest_completed_reward_code: string | null;
+  latest_completed_reward_status: string | null;
+  latest_completed_reward_claimed_at: string | null;
+  latest_completed_completed_at: string | null;
+  refreshed_at: string | null;
+};
+
 export type SeasonPipelineSummaryDTO = {
   season_id: string;
   season_key: string;

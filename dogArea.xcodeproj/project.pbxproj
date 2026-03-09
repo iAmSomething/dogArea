@@ -213,6 +213,10 @@
 		A56800010000000000000022 /* SeasonGuidePresentationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56800010000000000000012 /* SeasonGuidePresentationService.swift */; };
 		A56800010000000000000023 /* SeasonGuideStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56800010000000000000013 /* SeasonGuideStateStore.swift */; };
 		A56800010000000000000024 /* SeasonGuideSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56800010000000000000014 /* SeasonGuideSheetView.swift */; };
+		A47300010000000000000021 /* SeasonCanonicalSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = A47300010000000000000011 /* SeasonCanonicalSummary.swift */; };
+		A47300010000000000000022 /* SeasonCanonicalSummaryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A47300010000000000000012 /* SeasonCanonicalSummaryStore.swift */; };
+		A47300010000000000000023 /* SupabaseSeasonServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = A47300010000000000000013 /* SupabaseSeasonServices.swift */; };
+		A47300010000000000000024 /* HomeViewModel+SeasonCanonical.swift in Sources */ = {isa = PBXBuildFile; fileRef = A47300010000000000000014 /* HomeViewModel+SeasonCanonical.swift */; };
 		A83350BB79B3CBB09B4C4963 /* RivalTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21CE83B02069A8E4171B35DE /* RivalTabView.swift */; };
 		A8E4AC91644EC2FE314DDC07 /* HomeWalkPrimaryLoopPresentationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C1D8D928E86A27596CB933 /* HomeWalkPrimaryLoopPresentationModels.swift */; };
 		A9F5F361DE66BF266C36FED0 /* PositionMarkerViewWithSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92C5F96B5D23BD6D36935CA0 /* PositionMarkerViewWithSelection.swift */; };
@@ -639,6 +643,10 @@
 		A56800010000000000000012 /* SeasonGuidePresentationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogArea/Source/Domain/Season/Services/SeasonGuidePresentationService.swift; sourceTree = SOURCE_ROOT; };
 		A56800010000000000000013 /* SeasonGuideStateStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogArea/Source/UserDefaultsSupport/SeasonGuideStateStore.swift; sourceTree = SOURCE_ROOT; };
 		A56800010000000000000014 /* SeasonGuideSheetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogArea/Views/GlobalViews/SeasonGuide/SeasonGuideSheetView.swift; sourceTree = SOURCE_ROOT; };
+		A47300010000000000000011 /* SeasonCanonicalSummary.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogArea/Source/Domain/Season/Models/SeasonCanonicalSummary.swift; sourceTree = SOURCE_ROOT; };
+		A47300010000000000000012 /* SeasonCanonicalSummaryStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogArea/Source/Domain/Season/Stores/SeasonCanonicalSummaryStore.swift; sourceTree = SOURCE_ROOT; };
+		A47300010000000000000013 /* SupabaseSeasonServices.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = dogArea/Source/Infrastructure/Supabase/Services/SupabaseSeasonServices.swift; sourceTree = SOURCE_ROOT; };
+		A47300010000000000000014 /* HomeViewModel+SeasonCanonical.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "HomeViewModel+SeasonCanonical.swift"; sourceTree = "<group>"; };
 		A775802DB2A590A7C7DA0978 /* WalkDetailViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WalkDetailViewModel.swift; path = dogArea/Views/MapView/WalkDetailViewModel.swift; sourceTree = "<group>"; };
 		B3C5EBC2B900522B927AC9AD /* TerritoryGoalOverviewCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TerritoryGoalOverviewCardView.swift; sourceTree = "<group>"; };
 		B76E1FA7BD23351B788C716B /* AreaDetailViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AreaDetailViewModel.swift; sourceTree = "<group>"; };
@@ -842,6 +850,7 @@
 				2BD9767C8CA8497962E480D3 /* HomeViewModel+SessionLifecycle.swift */,
 				BAE640538C59819A309529D3 /* HomeViewModel+AreaProgress.swift */,
 				0922EB392D5A2CF01060C9E6 /* HomeViewModel+IndoorMissionFlow.swift */,
+				A47300010000000000000014 /* HomeViewModel+SeasonCanonical.swift */,
 				20C1D8D928E86A27596CB933 /* HomeWalkPrimaryLoopPresentationModels.swift */,
 			);
 			name = HomeViewModelSupport;
@@ -1078,6 +1087,7 @@
 				A41300010000000000000013 /* SupabasePresenceAndQuestServices.swift */,
 				A41300010000000000000014 /* SupabaseWidgetAndAreaServices.swift */,
 				A41300010000000000000015 /* SupabaseAuthAndAssetServices.swift */,
+				A47300010000000000000013 /* SupabaseSeasonServices.swift */,
 				A47500010000000000000013 /* SupabaseWeatherReplacementServices.swift */,
 				A50700010000000000000014 /* SupabaseAuthMailActionService.swift */,
 			);
@@ -1190,6 +1200,7 @@
 			children = (
 				A56800010000000000000002 /* Models */,
 				A56800010000000000000003 /* Services */,
+				A47300010000000000000001 /* Stores */,
 			);
 			path = Season;
 			sourceTree = "<group>";
@@ -1198,6 +1209,7 @@
 			isa = PBXGroup;
 			children = (
 				A56800010000000000000011 /* SeasonGuidePresentation.swift */,
+				A47300010000000000000011 /* SeasonCanonicalSummary.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -1208,6 +1220,14 @@
 				A56800010000000000000012 /* SeasonGuidePresentationService.swift */,
 			);
 			path = Services;
+			sourceTree = "<group>";
+		};
+		A47300010000000000000001 /* Stores */ = {
+			isa = PBXGroup;
+			children = (
+				A47300010000000000000012 /* SeasonCanonicalSummaryStore.swift */,
+			);
+			path = Stores;
 			sourceTree = "<group>";
 		};
 		A56800010000000000000004 /* SeasonGuide */ = {
@@ -2326,9 +2346,12 @@
 				A56800010000000000000021 /* SeasonGuidePresentation.swift in Sources */,
 				A56800010000000000000022 /* SeasonGuidePresentationService.swift in Sources */,
 				A56800010000000000000023 /* SeasonGuideStateStore.swift in Sources */,
+				A47300010000000000000021 /* SeasonCanonicalSummary.swift in Sources */,
+				A47300010000000000000022 /* SeasonCanonicalSummaryStore.swift in Sources */,
 				882A85330E905DC115EDE641 /* HomePresentationStateModels.swift in Sources */,
 				A45800010000000000000002 /* HomeWeatherGuidancePresentationModels.swift in Sources */,
 				62EF10563076E17A0B11C076 /* SeasonProfileSummary.swift in Sources */,
+				A47300010000000000000023 /* SupabaseSeasonServices.swift in Sources */,
 				EE6DAD319CDE2C3D7366547A /* SettingsSeasonProfileSummaryService.swift in Sources */,
 				D6C7AC45E842356138A50D6F /* SettingViewModel+ProfileEditing.swift in Sources */,
 				771A99CFD333C282650284FA /* SettingViewModel+PetManagement.swift in Sources */,
@@ -2337,6 +2360,7 @@
 				9315EFC2423955870AFCC18F /* HomeViewModel+SessionLifecycle.swift in Sources */,
 				B8774AA566F72FF9E7151938 /* HomeViewModel+AreaProgress.swift in Sources */,
 				C2A4309E392F82F548955737 /* HomeViewModel+IndoorMissionFlow.swift in Sources */,
+				A47300010000000000000024 /* HomeViewModel+SeasonCanonical.swift in Sources */,
 				A45800010000000000000003 /* HomeWeatherGuidanceSheetView.swift in Sources */,
 				A45800010000000000000004 /* HomeWeatherGuidancePrimaryActionCardView.swift in Sources */,
 				A45800010000000000000005 /* HomeWeatherGuidanceDecisionFactorsCardView.swift in Sources */,

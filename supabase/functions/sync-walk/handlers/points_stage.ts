@@ -82,6 +82,7 @@ export async function handlePointsStage(
     point_count: parsedRows.rows.length,
     idempotency_key: context.idempotencyKey,
     season_score_summary: postProcessing.seasonScoreSummary,
+    season_canonical_summary: postProcessing.seasonCanonicalSummary,
     season_pipeline_summary: postProcessing.seasonPipelineSummary,
     weather_replacement_summary: postProcessing.weatherReplacementSummary,
     quest_progress_summary: postProcessing.questProgressSummary,
