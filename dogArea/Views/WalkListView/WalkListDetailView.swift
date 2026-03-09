@@ -99,8 +99,8 @@ struct WalkListDetailView: View {
                 handleSharePresentationResult(result)
             }
         )
-        .navigationBarBackButtonHidden()
-        .safeAreaPadding(.top, 12)
+        .navigationTitle("산책 기록")
+        .navigationBarTitleDisplayMode(.inline)
         .appTabBarVisibility(.hidden)
         .accessibilityIdentifier("screen.walkListDetail.content")
         .onAppear {
