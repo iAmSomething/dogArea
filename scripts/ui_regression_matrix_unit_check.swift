@@ -33,6 +33,7 @@ for token in [
     "FR-WALK-001",
     "FR-WALK-002",
     "FR-WALK-002A",
+    "FR-WALK-002B",
     "FR-WALK-003",
     "FR-WALK-003A",
     "FR-GOAL-001",

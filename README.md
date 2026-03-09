@@ -102,6 +102,7 @@
 - Widget summary RPC 공통 응답 모델 v1: `docs/widget-summary-rpc-common-response-model-v1.md`
 - TabBar SF Symbol fallback policy v1: `docs/tabbar-sf-symbol-fallback-policy-v1.md`
 - WalkList design refresh v1: `docs/walklist-design-refresh-v1.md`
+- WalkList hub density compact v1: `docs/walklist-hub-density-compact-v1.md`
 - WalkList metric tile density v1: `docs/walklist-metric-tile-density-v1.md`
 - WalkList month calendar hub v1: `docs/walklist-month-calendar-hub-v1.md`
 - WalkList calendar weekend/holiday semantic v1: `docs/walklist-calendar-weekend-holiday-semantic-v1.md`
