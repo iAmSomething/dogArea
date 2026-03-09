@@ -9,20 +9,27 @@ enum QuestReminderApplyResult: Equatable {
     case requiresPermission
 }
 
+/// 퀘스트 리마인드의 다음 1회 알림 시각을 계산할 때 필요한 입력 컨텍스트입니다.
+struct QuestReminderSchedulingContext {
+    let now: Date
+    let calendar: Calendar
+    let reminderHour: Int
+    let reminderMinute: Int
+    let hasSavedWalkOnCurrentDay: Bool
+}
+
 /// 퀘스트 리마인드 스케줄링 인터페이스입니다.
 protocol QuestReminderScheduling {
     /// 하루 1회 퀘스트 리마인드 스케줄을 적용합니다.
     /// - Parameters:
     ///   - enabled: 리마인드 활성화 여부입니다.
     ///   - allowAuthorizationPrompt: 권한 미결정 시 시스템 권한 팝업을 표시할지 여부입니다.
-    ///   - hour: 반복 알림 시각(시)입니다.
-    ///   - minute: 반복 알림 시각(분)입니다.
+    ///   - context: 다음 1회 알림 시각을 계산할 컨텍스트입니다.
     /// - Returns: 리마인드 적용 결과 상태입니다.
     func applyDailyReminder(
         enabled: Bool,
         allowAuthorizationPrompt: Bool,
-        hour: Int,
-        minute: Int
+        context: QuestReminderSchedulingContext
     ) async -> QuestReminderApplyResult
 }
 
@@ -58,14 +65,12 @@ final class LocalQuestReminderScheduler: QuestReminderScheduling {
     /// - Parameters:
     ///   - enabled: 리마인드 활성화 여부입니다.
     ///   - allowAuthorizationPrompt: 권한 미결정 시 시스템 권한 팝업을 표시할지 여부입니다.
-    ///   - hour: 반복 알림 시각(시)입니다.
-    ///   - minute: 반복 알림 시각(분)입니다.
+    ///   - context: 다음 1회 알림 시각을 계산할 컨텍스트입니다.
     /// - Returns: 리마인드 적용 결과 상태입니다.
     func applyDailyReminder(
         enabled: Bool,
         allowAuthorizationPrompt: Bool,
-        hour: Int,
-        minute: Int
+        context: QuestReminderSchedulingContext
     ) async -> QuestReminderApplyResult {
         guard enabled else {
             center.removePendingNotificationRequests(withIdentifiers: [requestId])
@@ -86,24 +91,57 @@ final class LocalQuestReminderScheduler: QuestReminderScheduling {
         }
 
         center.removePendingNotificationRequests(withIdentifiers: [requestId])
+        center.removeDeliveredNotifications(withIdentifiers: [requestId])
 
-        let content = UNMutableNotificationContent()
-        content.title = "오늘 산책 퀘스트 확인할 시간이에요"
-        content.body = "홈에서 오늘 미션을 확인하고, 짧게 기록해 진행도를 올려보세요."
-        content.sound = .default
-
-        var dateComponents = DateComponents()
-        dateComponents.hour = hour
-        dateComponents.minute = minute
-
-        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
-        let request = UNNotificationRequest(identifier: requestId, content: content, trigger: trigger)
+        let nextReminderDate = makeNextReminderDate(from: context)
+        let request = makeNotificationRequest(for: nextReminderDate, calendar: context.calendar)
 
         return await withCheckedContinuation { continuation in
             center.add(request) { error in
                 continuation.resume(returning: error == nil ? .enabled : .permissionDenied)
             }
         }
+    }
+
+    /// 현재 컨텍스트를 기준으로 다음 1회 리마인드 알림 시각을 계산합니다.
+    /// - Parameter context: 저장된 산책 여부와 현지 시간대 정보가 반영된 계산 입력입니다.
+    /// - Returns: 다음으로 예약해야 할 알림 시각입니다.
+    private func makeNextReminderDate(from context: QuestReminderSchedulingContext) -> Date {
+        let todayReminderDate = makeReminderDate(dayOffset: 0, context: context)
+        guard context.hasSavedWalkOnCurrentDay == false, context.now < todayReminderDate else {
+            return makeReminderDate(dayOffset: 1, context: context)
+        }
+        return todayReminderDate
+    }
+
+    /// 기준 날짜에서 지정한 일수만큼 이동한 알림 시각을 생성합니다.
+    /// - Parameters:
+    ///   - dayOffset: 오늘 기준으로 더할 날짜 오프셋입니다.
+    ///   - context: 시간대와 목표 시각이 담긴 리마인드 계산 컨텍스트입니다.
+    /// - Returns: 해당 일자의 목표 시각이 반영된 날짜입니다.
+    private func makeReminderDate(dayOffset: Int, context: QuestReminderSchedulingContext) -> Date {
+        let targetDate = context.calendar.date(byAdding: .day, value: dayOffset, to: context.now) ?? context.now
+        var dateComponents = context.calendar.dateComponents([.year, .month, .day], from: targetDate)
+        dateComponents.hour = context.reminderHour
+        dateComponents.minute = context.reminderMinute
+        dateComponents.second = 0
+        return context.calendar.date(from: dateComponents) ?? targetDate
+    }
+
+    /// 지정한 시각에 맞는 1회성 로컬 알림 요청을 생성합니다.
+    /// - Parameters:
+    ///   - date: 실제 알림이 울려야 하는 시각입니다.
+    ///   - calendar: 날짜 컴포넌트 추출에 사용할 현지 캘린더입니다.
+    /// - Returns: 시스템 알림 센터에 등록할 1회성 요청입니다.
+    private func makeNotificationRequest(for date: Date, calendar: Calendar) -> UNNotificationRequest {
+        let content = UNMutableNotificationContent()
+        content.title = "오늘 산책 퀘스트 확인할 시간이에요"
+        content.body = "홈에서 오늘 미션을 확인하고, 짧게 기록해 진행도를 올려보세요."
+        content.sound = .default
+
+        let dateComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: false)
+        return UNNotificationRequest(identifier: requestId, content: content, trigger: trigger)
     }
 
     /// 알림 권한 상태를 확인하고 필요 시 사용자 권한 요청을 실행합니다.

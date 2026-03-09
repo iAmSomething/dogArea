@@ -33,11 +33,11 @@ let homeViewModel = loadMany([
 let spec = load("docs/quest-stage3-ux-reminder-v1.md")
 let report = load("docs/cycle-170-quest-stage3-ux-reminder-report-2026-03-01.md")
 
-assertTrue(homeView.contains("QuestWidgetTab"), "HomeView should define daily/weekly quest widget tabs")
-assertTrue(homeView.contains("questWidgetTabSelector"), "HomeView should render quest tab selector")
-assertTrue(homeView.contains("questReminderToggleRow"), "HomeView should render quest reminder toggle row")
-assertTrue(homeView.contains("weeklyQuestSummary"), "HomeView should render weekly quest summary view")
-assertTrue(homeView.contains("questAlternativeSuggestionCard"), "HomeView should render alternative action suggestion card")
+assertTrue(homeView.contains("HomeQuestWidgetTab"), "HomeView should define daily/weekly quest widget tabs")
+assertTrue(homeView.contains("HomeQuestWidgetTabSelectorView"), "HomeView should render quest tab selector")
+assertTrue(homeView.contains("HomeQuestReminderToggleRowView"), "HomeView should render quest reminder toggle row")
+assertTrue(homeView.contains("HomeMissionSectionView"), "HomeView should render the quest/mission summary section")
+assertTrue(homeView.contains("HomeQuestAlternativeSuggestionCardView"), "HomeView should render alternative action suggestion card")
 
 assertTrue(homeViewModel.contains("setQuestReminderEnabled"), "HomeViewModel should expose reminder preference toggle")
 assertTrue(homeViewModel.contains("LocalQuestReminderScheduler"), "HomeViewModel should include local reminder scheduler")

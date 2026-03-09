@@ -84,6 +84,7 @@
 - 퀘스트 Stage2 진행/클레임 백엔드 엔진 v1: `docs/quest-stage2-progress-claim-engine-v1.md`
 - 퀘스트 실패 완충(자동 연장 슬롯) v1: `docs/quest-failure-buffer-v1.md`
 - 퀘스트 Stage3 UX/리마인드 v1: `docs/quest-stage3-ux-reminder-v1.md`
+- 홈 퀘스트 리마인드 당일 산책 억제 v1: `docs/home-quest-reminder-same-day-suppression-v1.md`
 - 반려견 맞춤 난이도/쉬운 날 모드 v1: `docs/pet-adaptive-quest-difficulty-v1.md`
 - Feature Flag/롤아웃 모니터링 명세 v1: `docs/feature-flag-rollout-monitoring-v1.md`
 - ViewModel 현대화 리팩토링 명세 v1: `docs/viewmodel-modernization-v1.md`
