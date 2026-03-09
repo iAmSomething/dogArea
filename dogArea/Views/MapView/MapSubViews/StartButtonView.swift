@@ -20,21 +20,6 @@ private enum MapWalkControlBarMetrics {
     static let primaryActionSize: CGFloat = 74
 }
 
-private struct MapWalkingElapsedTimeValueText: View {
-    let viewModel: MapViewModel
-
-    var body: some View {
-        TimelineView(.periodic(from: .now, by: 1)) { context in
-            Text(viewModel.displayedWalkElapsedTime(at: context.date).simpleWalkingTimeInterval)
-                .font(.appScaledFont(for: .SemiBold, size: 11, relativeTo: .caption))
-                .foregroundStyle(MapChromePalette.primaryText)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-                .monospacedDigit()
-        }
-    }
-}
-
 struct StartButtonView: View {
     @ObservedObject var viewModel: MapViewModel
     @ObservedObject var myAlert: CustomAlertViewModel
@@ -43,21 +28,11 @@ struct StartButtonView: View {
     @Binding var endWalkingViewPresented: Bool
     @State private var isMeter: Bool = true
     private let walkStartPresentationService: MapWalkStartPresenting = MapWalkStartPresentationService()
-    private let walkValueFlowPresentationService: MapWalkValueFlowPresenting = MapWalkValueFlowPresentationService()
 
     private var walkStartPresentation: MapWalkStartPresentation {
         walkStartPresentationService.makePresentation(
             hasSelectedPet: viewModel.hasSelectedPet,
             selectedPetName: viewModel.selectedPetName
-        )
-    }
-
-    private var activeValuePresentation: MapWalkActiveValuePresentation {
-        walkValueFlowPresentationService.makeActiveValuePresentation(
-            petName: viewModel.currentWalkingPetName,
-            routePointCount: viewModel.polygon.locations.count,
-            durationText: viewModel.displayedWalkElapsedTime(at: Date()).simpleWalkingTimeInterval,
-            areaText: viewModel.calculatedAreaString(isPyong: !isMeter)
         )
     }
 
@@ -85,10 +60,7 @@ struct StartButtonView: View {
                 primaryActionButton
 
                 if viewModel.isWalking {
-                    MapWalkActiveValueCardView(
-                        presentation: activeValuePresentation,
-                        durationValueOverride: AnyView(MapWalkingElapsedTimeValueText(viewModel: viewModel))
-                    )
+                    walkingControlContextCard
                 } else {
                     idleHintCard
                 }
@@ -154,6 +126,23 @@ struct StartButtonView: View {
             presentation: walkStartPresentation,
             onOpenGuide: viewModel.presentWalkValueGuideFromMapHelp
         )
+    }
+
+    private var walkingControlContextCard: some View {
+        walkMetricCard(
+            title: "포인트 기록",
+            value: viewModel.isAutoPointRecordMode ? "자동" : "수동",
+            subtitle: walkingControlContextSubtitle,
+            emphasized: false,
+            tapAction: nil
+        )
+    }
+
+    private var walkingControlContextSubtitle: String {
+        if viewModel.isAddPointLongPressModeEnabled {
+            return "길게 눌러 추가"
+        }
+        return viewModel.isAutoPointRecordMode ? "이동 중 자동 반영" : "버튼으로 직접 추가"
     }
 
     private var primaryActionButton: some View {

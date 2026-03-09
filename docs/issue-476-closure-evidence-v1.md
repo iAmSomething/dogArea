@@ -10,7 +10,7 @@
   - `docs/map-walking-invalidation-reduction-v1.md`
 - 핵심 구현 파일:
   - `dogArea/Views/MapView/MapSubViews/MapSubView.swift`
-  - `dogArea/Views/MapView/MapSubViews/StartButtonView.swift`
+  - `dogArea/Views/MapView/MapSubViews/MapWalkActiveValueCardView.swift`
   - `dogArea/Views/MapView/MapView.swift`
   - `dogArea/Views/MapView/MapViewModel.swift`
   - `dogArea/Views/MapView/MapSubViews/MapRenderBudgetProbeOverlayView.swift`

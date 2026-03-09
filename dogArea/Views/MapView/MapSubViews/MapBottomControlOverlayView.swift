@@ -15,7 +15,7 @@ enum MapBottomControlOverlayMetrics {
             primaryActionLiftWhenVisible - AppTabLayoutMetrics.floatingOverlayLift,
             0
         )
-        max(
+        return max(
             reservedHeight - AppTabLayoutMetrics.floatingOverlayLift - compactAdditionalLift,
             AppTabLayoutMetrics.minimumBottomPadding
         )

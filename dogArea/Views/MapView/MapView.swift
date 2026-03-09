@@ -31,6 +31,7 @@ struct MapView : View{
     @State private var pendingUndoPointID: UUID? = nil
     @State private var addPointUndoDismissTask: Task<Void, Never>? = nil
     @State private var lastCameraEventProcessedAt: Date = .distantPast
+    private let walkTopHUDPresentationService: MapWalkTopHUDPresenting = MapWalkTopHUDPresentationService()
 
     /// 지도 화면에 사용할 상태 객체를 주입해 탭 전환 후에도 카메라/산책 상태를 유지합니다.
     /// - Parameter viewModel: 지도 상태를 보유하는 `MapViewModel`입니다.
@@ -229,6 +230,7 @@ struct MapView : View{
                             )
                         }
                         : nil,
+                    walkingHUDContent: walkingHUDContent,
                     bannerContent: activeBanner.map { AnyView(topBannerView(for: $0)) },
                     statusContent: statusOverlayContent,
                     onOpenSettings: {
@@ -322,6 +324,37 @@ struct MapView : View{
             return nil
         }
         return AnyView(statusOverlayView)
+    }
+
+    private var walkingHUDContent: AnyView? {
+        guard let presentation = walkingHUDPresentation else {
+            return nil
+        }
+        return AnyView(
+            MapWalkActiveValueCardView(
+                presentation: presentation,
+                viewModel: viewModel,
+                onOpenGuide: viewModel.presentWalkValueGuideFromMapHelp
+            )
+        )
+    }
+
+    private var walkingHUDPresentation: MapWalkTopHUDPresentation? {
+        guard viewModel.isWalking else {
+            return nil
+        }
+        return walkTopHUDPresentationService.makePresentation(
+            petName: viewModel.currentWalkingPetName,
+            routePointCount: viewModel.polygon.locations.count,
+            areaText: viewModel.calculatedAreaString(isPyong: false),
+            hasCompetingTopChrome: hasCompetingTopChrome
+        )
+    }
+
+    private var hasCompetingTopChrome: Bool {
+        activeBanner != nil
+            || statusOverlayContent != nil
+            || viewModel.isSeasonTileMapVisible
     }
 
     /// 지도 카메라 이벤트를 반영해 UI 상태와 클러스터 계산을 갱신합니다.

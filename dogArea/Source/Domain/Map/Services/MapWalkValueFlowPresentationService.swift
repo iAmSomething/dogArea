@@ -1,5 +1,21 @@
 import Foundation
 
+protocol MapWalkTopHUDPresenting {
+    /// safe area 아래 slim HUD에서 사용할 산책 상태 프레젠테이션을 생성합니다.
+    /// - Parameters:
+    ///   - petName: 현재 산책 중인 반려견 이름입니다.
+    ///   - routePointCount: 현재까지 기록한 포인트 수입니다.
+    ///   - areaText: 현재까지 누적된 영역 문자열입니다.
+    ///   - hasCompetingTopChrome: 배너/상세 카드 등 상단 chrome 경쟁 요소 존재 여부입니다.
+    /// - Returns: 상단 slim HUD 렌더링에 사용할 프레젠테이션입니다.
+    func makePresentation(
+        petName: String,
+        routePointCount: Int,
+        areaText: String,
+        hasCompetingTopChrome: Bool
+    ) -> MapWalkTopHUDPresentation
+}
+
 protocol MapWalkValueFlowPresenting {
     /// 산책 진행 중 helper 카드 프레젠테이션을 생성합니다.
     /// - Parameters:
@@ -40,6 +56,35 @@ protocol MapWalkValueFlowPresenting {
         areaText: String,
         pointCount: Int
     ) -> WalkCompletionValuePresentation
+}
+
+struct MapWalkTopHUDPresentationService: MapWalkTopHUDPresenting {
+    /// safe area 아래 slim HUD에서 사용할 산책 상태 프레젠테이션을 생성합니다.
+    /// - Parameters:
+    ///   - petName: 현재 산책 중인 반려견 이름입니다.
+    ///   - routePointCount: 현재까지 기록한 포인트 수입니다.
+    ///   - areaText: 현재까지 누적된 영역 문자열입니다.
+    ///   - hasCompetingTopChrome: 배너/상세 카드 등 상단 chrome 경쟁 요소 존재 여부입니다.
+    /// - Returns: 상단 slim HUD 렌더링에 사용할 프레젠테이션입니다.
+    func makePresentation(
+        petName: String,
+        routePointCount: Int,
+        areaText: String,
+        hasCompetingTopChrome: Bool
+    ) -> MapWalkTopHUDPresentation {
+        let resolvedPetName = petName.isEmpty ? "현재 반려견" : petName
+        return MapWalkTopHUDPresentation(
+            title: "\(resolvedPetName)와 산책 중",
+            statusText: hasCompetingTopChrome ? "기록 상태" : "경로·영역·포인트를 계속 누적하고 있어요",
+            metrics: [
+                .init(id: "duration", title: "시간", value: "0분"),
+                .init(id: "area", title: "영역", value: areaText),
+                .init(id: "points", title: "포인트", value: "\(routePointCount)개")
+            ],
+            displayMode: hasCompetingTopChrome ? .compact : .regular,
+            guideAffordanceTitle: hasCompetingTopChrome ? nil : "설명 보기"
+        )
+    }
 }
 
 struct MapWalkValueFlowPresentationService: MapWalkValueFlowPresenting {

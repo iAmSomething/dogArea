@@ -7,6 +7,7 @@ struct MapTopChromeView: View {
     let seasonTileSummaryText: String?
     let seasonTileSummaryContent: AnyView?
     let seasonTileDetailContent: AnyView?
+    let walkingHUDContent: AnyView?
     let bannerContent: AnyView?
     let statusContent: AnyView?
     let onOpenSettings: () -> Void
@@ -31,6 +32,10 @@ struct MapTopChromeView: View {
                     emphasized: false,
                     action: onOpenSettings
                 )
+            }
+
+            if let walkingHUDContent {
+                walkingHUDContent
             }
 
             if let seasonTileSummaryContent {

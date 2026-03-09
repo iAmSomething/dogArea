@@ -84,6 +84,26 @@ final class FeatureRegressionUITests: XCTestCase {
         )
     }
 
+    /// 산책 중 slim HUD가 safe area 아래 top chrome에 고정되고 하단 control bar와 분리되는지 검증합니다.
+    func testFeatureRegression_MapWalkingTopHUDStaysBelowSafeAreaAndAboveBottomControls() throws {
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.MapForceWalkingState"])
+        XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.")
+        XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
+
+        let topHUD = screenElement(identifier: "map.walk.activeValue.card", in: app)
+        let controlBar = screenElement(identifier: "map.walk.controlBar", in: app)
+
+        XCTAssertTrue(waitUntilExists(topHUD, timeout: 8), "산책 중 상단 slim HUD가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(controlBar, timeout: 4), "산책 중 하단 control bar가 노출되지 않았습니다.")
+        XCTAssertTrue(topHUD.isHittable, "상단 slim HUD는 탭 가능한 상태여야 합니다.")
+        XCTAssertGreaterThanOrEqual(topHUD.frame.minY, 52, "상단 slim HUD는 status bar 아래에서 시작해야 합니다.")
+        XCTAssertLessThan(
+            topHUD.frame.maxY + 24,
+            controlBar.frame.minY,
+            "상단 slim HUD와 하단 control bar는 충분히 분리되어야 합니다."
+        )
+    }
+
     /// 지도 본면에서 시즌 오버레이가 점령 지도 카드와 의미 설명을 함께 노출하는지 검증합니다.
     func testFeatureRegression_MapSeasonOccupationSummarySurfacesMeaningOnCanvas() throws {
         let app = launchAppForFeatureRegression(extraArguments: ["-UITest.MapForceSeasonTileVisible"])

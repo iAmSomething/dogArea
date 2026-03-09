@@ -1,5 +1,24 @@
 import Foundation
 
+enum MapWalkTopHUDDisplayMode: Equatable {
+    case regular
+    case compact
+}
+
+struct MapWalkTopHUDMetricPresentation: Identifiable, Equatable {
+    let id: String
+    let title: String
+    let value: String
+}
+
+struct MapWalkTopHUDPresentation: Equatable {
+    let title: String
+    let statusText: String
+    let metrics: [MapWalkTopHUDMetricPresentation]
+    let displayMode: MapWalkTopHUDDisplayMode
+    let guideAffordanceTitle: String?
+}
+
 struct MapWalkActiveValueMetricPresentation: Identifiable, Equatable {
     let id: String
     let title: String
