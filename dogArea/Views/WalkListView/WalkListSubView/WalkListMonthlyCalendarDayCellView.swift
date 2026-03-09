@@ -91,12 +91,20 @@ struct WalkListMonthlyCalendarDayCellView: View {
     }
 
     private var dayTextColor: Color {
-        if model.isSelected {
-            return Color.appDynamicHex(light: 0x92400E, dark: 0xFEF3C7)
+        switch model.semanticTone {
+        case .holiday, .sunday:
+            return model.isInteractive
+                ? Color.appDynamicHex(light: 0xDC2626, dark: 0xFCA5A5)
+                : Color.appDynamicHex(light: 0xF87171, dark: 0x991B1B)
+        case .saturday:
+            return model.isInteractive
+                ? Color.appDynamicHex(light: 0x2563EB, dark: 0x93C5FD)
+                : Color.appDynamicHex(light: 0x60A5FA, dark: 0x1D4ED8)
+        case .weekday:
+            if model.isInteractive {
+                return Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC)
+            }
+            return Color.appDynamicHex(light: 0x94A3B8, dark: 0x64748B)
         }
-        if model.isInteractive {
-            return Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC)
-        }
-        return Color.appDynamicHex(light: 0x94A3B8, dark: 0x64748B)
     }
 }

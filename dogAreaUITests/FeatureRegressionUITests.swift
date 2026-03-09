@@ -389,6 +389,32 @@ final class FeatureRegressionUITests: XCTestCase {
         )
     }
 
+    /// 월별 캘린더가 weekday header와 날짜 셀 모두에서 같은 주말 semantic을 유지하는지 검증합니다.
+    func testFeatureRegression_WalkListCalendarWeekendSemanticLabelsStayConsistent() throws {
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.WalkListCalendarPreview"])
+        XCTAssertTrue(openTab(index: 1, app: app), "산책 목록 탭 진입에 실패했습니다.")
+
+        let calendarCard = screenElement(identifier: "walklist.calendar.card", in: app)
+        let sundayHeaderSymbol = calendarCard.staticTexts["일"]
+        let saturdayHeaderSymbol = calendarCard.staticTexts["토"]
+        let sundayCell = app.buttons["walklist.calendar.day.2026-03-08"]
+        let saturdayCell = app.buttons["walklist.calendar.day.2026-03-07"]
+
+        XCTAssertTrue(
+            revealElementByVerticalScroll(calendarCard, app: app, maxSwipes: 4),
+            "주말 semantic을 검증할 월별 캘린더 카드가 노출되지 않았습니다."
+        )
+        XCTAssertTrue(waitUntilExists(sundayHeaderSymbol, timeout: 3), "일요일 weekday header 심볼을 찾지 못했습니다.")
+        XCTAssertTrue(waitUntilExists(saturdayHeaderSymbol, timeout: 3), "토요일 weekday header 심볼을 찾지 못했습니다.")
+        XCTAssertTrue(waitUntilExists(sundayCell, timeout: 3), "일요일 날짜 셀을 찾지 못했습니다.")
+        XCTAssertTrue(waitUntilExists(saturdayCell, timeout: 3), "토요일 날짜 셀을 찾지 못했습니다.")
+
+        XCTAssertEqual(sundayHeaderSymbol.label, "일", "일요일 weekday header 심볼이 유지되어야 합니다.")
+        XCTAssertEqual(saturdayHeaderSymbol.label, "토", "토요일 weekday header 심볼이 유지되어야 합니다.")
+        XCTAssertTrue(sundayCell.label.contains("일요일"), "일요일 날짜 셀 접근성 라벨이 일요일 의미를 유지해야 합니다.")
+        XCTAssertTrue(saturdayCell.label.contains("토요일"), "토요일 날짜 셀 접근성 라벨이 토요일 의미를 유지해야 합니다.")
+    }
+
     /// 산책 기록 카드 메트릭 타일이 장문 설명 없이 compact 상태를 유지하는지 검증합니다.
     func testFeatureRegression_WalkListMetricTilesStayCompactWithoutVerboseCopy() throws {
         let app = launchAppForFeatureRegression(extraArguments: ["-UITest.WalkListCalendarPreview"])

@@ -141,6 +141,7 @@ swift scripts/pet_adaptive_quest_unit_check.swift
 swift scripts/pet_context_badge_empty_state_unit_check.swift
 swift scripts/walklist_design_refresh_unit_check.swift
 swift scripts/walklist_month_calendar_hub_unit_check.swift
+swift scripts/walklist_calendar_weekend_holiday_semantic_unit_check.swift
 swift scripts/walklist_detail_design_refresh_unit_check.swift
 swift scripts/walk_detail_back_affordance_unit_check.swift
 swift scripts/walk_share_flow_unit_check.swift
