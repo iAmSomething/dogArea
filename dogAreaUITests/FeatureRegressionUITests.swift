@@ -419,6 +419,29 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertTrue(waitUntilHittable(dismissAction, timeout: 2), "확인 dismiss CTA가 탭 가능한 상태가 아닙니다.")
     }
 
+    /// 산책 상세 화면이 상단 기본 back affordance를 복구해 자연스럽게 목록으로 돌아갈 수 있는지 검증합니다.
+    func testFeatureRegression_WalkListDetailRestoresTopBackAffordance() throws {
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.WalkDetailPreviewRoute"])
+        XCTAssertTrue(openTab(index: 1, app: app), "산책 목록 탭 진입에 실패했습니다.")
+
+        let detailScreen = screenElement(identifier: "screen.walkListDetail.content", in: app)
+        XCTAssertTrue(waitUntilExists(detailScreen, timeout: 8), "산책 상세 화면 preview route 진입에 실패했습니다.")
+
+        let backButton = app.navigationBars.buttons.element(boundBy: 0)
+        XCTAssertTrue(waitUntilExists(backButton, timeout: 3), "산책 상세 상단 back affordance가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilHittable(backButton, timeout: 2), "산책 상세 상단 back affordance가 탭 가능한 상태가 아닙니다.")
+        XCTAssertTrue(waitUntilExists(app.buttons["walklist.detail.action.dismiss"], timeout: 2), "하단 확인 버튼은 보조 dismiss CTA로 유지되어야 합니다.")
+
+        backButton.tap()
+
+        XCTAssertTrue(waitUntilGone(detailScreen, timeout: 3), "상단 back affordance 탭 후 산책 상세 화면이 닫히지 않았습니다.")
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "screen.walkList.content", in: app), timeout: 3),
+            "상단 back affordance 탭 후 산책 기록 화면으로 복귀하지 않았습니다."
+        )
+        XCTAssertTrue(waitUntilExists(app.buttons["tab.1"], timeout: 2), "상세 복귀 후 하단 탭바가 다시 보여야 합니다.")
+    }
+
     /// 산책 상세 공유 CTA가 빈 호스트가 아닌 실제 시스템 share presenter 경로를 여는지 검증합니다.
     func testFeatureRegression_WalkListShareActionPresentsSystemSharePresenter() throws {
         let app = launchAppForFeatureRegression(extraArguments: ["-UITest.WalkDetailPreviewRoute"])

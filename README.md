@@ -104,6 +104,7 @@
 - WalkList design refresh v1: `docs/walklist-design-refresh-v1.md`
 - WalkList month calendar hub v1: `docs/walklist-month-calendar-hub-v1.md`
 - WalkList detail design refresh v1: `docs/walklist-detail-design-refresh-v1.md`
+- Walk detail back affordance v1: `docs/walk-detail-back-affordance-v1.md`
 - Walk detail share system sheet v1: `docs/walk-detail-share-system-sheet-v1.md`
 - Walk record tab label v1: `docs/walk-record-tab-label-v1.md`
 - UX copy guideline v1: `docs/ux-copy-guideline-v1.md`
