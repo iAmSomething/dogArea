@@ -478,6 +478,7 @@ struct MapView : View{
             showsPrimaryAction: true,
             primaryAction: AnyView(mapPrimaryActionOverlay),
             floatingControls: AnyView(mapFloatingControlOverlay),
+            floatingControlLayoutContext: mapFloatingControlLayoutContext,
             selectedPolygonTray: selectedPolygonTrayView
         )
     }
@@ -510,6 +511,15 @@ struct MapView : View{
             onAddPointLongPressEnded: {
                 handleAddPointRequest()
             }
+        )
+    }
+
+    private var mapFloatingControlLayoutContext: MapFloatingControlLayoutContext {
+        MapFloatingControlLayoutContext(
+            showsRecenterButton: isCameraSeeingSomewhere && viewModel.location != nil,
+            showsAddPointButton: viewModel.isWalking,
+            showsAutoRecordBadge: viewModel.isWalking && viewModel.isAutoPointRecordMode,
+            showsLongPressBadge: viewModel.isWalking && viewModel.isAddPointLongPressModeEnabled
         )
     }
 

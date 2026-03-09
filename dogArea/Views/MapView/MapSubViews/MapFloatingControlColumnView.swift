@@ -29,15 +29,19 @@ struct MapFloatingControlColumnView: View {
                             .font(.appFont(for: .SemiBold, size: 11))
                             .foregroundStyle(MapChromePalette.primaryText)
                             .mapChromePill(.success)
+                            .accessibilityIdentifier("map.addPoint.badge.autoRecord")
                     }
                     if isAddPointLongPressModeEnabled {
                         Text("길게 0.4s")
                             .font(.appFont(for: .SemiBold, size: 11))
                             .foregroundStyle(MapChromePalette.secondaryText)
                             .mapChromePill(.neutral)
+                            .accessibilityIdentifier("map.addPoint.badge.longPress")
                     }
                     addPointButton
                 }
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("map.addPoint.stack")
             }
         }
     }

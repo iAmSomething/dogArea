@@ -1,9 +1,26 @@
 import SwiftUI
 
+struct MapFloatingControlLayoutContext {
+    let showsRecenterButton: Bool
+    let showsAddPointButton: Bool
+    let showsAutoRecordBadge: Bool
+    let showsLongPressBadge: Bool
+
+    var requiresWalkingDeckSeparation: Bool {
+        showsAddPointButton
+    }
+
+    var reservesSupportBadgeBuffer: Bool {
+        showsAutoRecordBadge || showsLongPressBadge
+    }
+}
+
 enum MapBottomControlOverlayMetrics {
     static let primaryActionLiftWhenVisible: CGFloat = 70
     static let floatingControlsBottomSpacingWhenPrimaryVisible: CGFloat = 18
     static let floatingControlsBottomSpacingWhenPrimaryHidden: CGFloat = 24
+    static let floatingControlsWalkingDeckClearance: CGFloat = 14
+    static let floatingControlsSupportBadgeBuffer: CGFloat = 10
     static let selectedTrayBottomSpacingWhenPrimaryVisible: CGFloat = 104
     static let selectedTrayBottomSpacingWhenPrimaryHidden: CGFloat = 20
 
@@ -28,12 +45,23 @@ enum MapBottomControlOverlayMetrics {
     /// - Returns: 우측 플로팅 버튼군에 적용할 최종 하단 여백입니다.
     static func floatingControlsBottomPadding(
         reservedHeight: CGFloat,
-        showsPrimaryAction: Bool
+        showsPrimaryAction: Bool,
+        layoutContext: MapFloatingControlLayoutContext
     ) -> CGFloat {
         let basePadding = primaryActionBottomPadding(reservedHeight: reservedHeight)
-        let additionalSpacing = showsPrimaryAction
-            ? floatingControlsBottomSpacingWhenPrimaryVisible
-            : floatingControlsBottomSpacingWhenPrimaryHidden
+        let additionalSpacing: CGFloat
+
+        if showsPrimaryAction == false {
+            additionalSpacing = floatingControlsBottomSpacingWhenPrimaryHidden
+        } else if layoutContext.requiresWalkingDeckSeparation {
+            let deckClearance = MapWalkControlBarMetrics.walkingFootprintBudget
+                + floatingControlsWalkingDeckClearance
+                + (layoutContext.reservesSupportBadgeBuffer ? floatingControlsSupportBadgeBuffer : 0)
+            additionalSpacing = max(deckClearance, floatingControlsBottomSpacingWhenPrimaryVisible)
+        } else {
+            additionalSpacing = floatingControlsBottomSpacingWhenPrimaryVisible
+        }
+
         return basePadding + additionalSpacing
     }
 
@@ -60,6 +88,7 @@ struct MapBottomControlOverlayView: View {
     let showsPrimaryAction: Bool
     let primaryAction: AnyView
     let floatingControls: AnyView?
+    let floatingControlLayoutContext: MapFloatingControlLayoutContext
     let selectedPolygonTray: AnyView?
 
     var body: some View {
@@ -94,7 +123,8 @@ struct MapBottomControlOverlayView: View {
                         .bottom,
                         MapBottomControlOverlayMetrics.floatingControlsBottomPadding(
                             reservedHeight: reservedHeight,
-                            showsPrimaryAction: showsPrimaryAction
+                            showsPrimaryAction: showsPrimaryAction,
+                            layoutContext: floatingControlLayoutContext
                         )
                     )
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
