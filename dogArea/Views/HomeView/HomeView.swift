@@ -8,7 +8,6 @@
 import SwiftUI
 
 private enum HomeRootLayoutMetrics {
-    static let rootTopSafeAreaPadding: CGFloat = 18
     static let contentTopPadding: CGFloat = 12
 }
 
@@ -520,10 +519,7 @@ struct HomeView: View {
                     onClose: { homeMissionGuidePresentation = nil }
                 )
             }
-            .appTabRootScrollLayout(
-                extraBottomPadding: 12,
-                topSafeAreaPadding: HomeRootLayoutMetrics.rootTopSafeAreaPadding
-            )
+            .appTabRootScrollLayout(extraBottomPadding: 12)
     }
 
     /// 홈 대시보드 상단 인사말과 레벨 배지를 렌더링합니다.

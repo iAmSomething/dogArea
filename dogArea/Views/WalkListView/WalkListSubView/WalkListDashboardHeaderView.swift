@@ -12,17 +12,28 @@ struct WalkListDashboardHeaderView: View {
     let onSelectCalendarDate: (Date) -> Void
     let onClearCalendarSelection: () -> Void
 
+    private var headerTitle: String {
+        if ProcessInfo.processInfo.arguments.contains("-UITest.WalkListHeaderLongSubtitle") {
+            return "산책 기록과 월별 흐름"
+        }
+        return overview.title
+    }
+
+    private var headerSubtitle: String {
+        if ProcessInfo.processInfo.arguments.contains("-UITest.WalkListHeaderLongSubtitle") {
+            return "선택한 반려견 기준 기록, 달력 문맥, 최근 요약을 한 번에 훑고 바로 원하는 날짜 기록으로 이동해보세요"
+        }
+        return overview.subtitle
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(overview.title)
-                    .font(.appScaledFont(for: .SemiBold, size: 34, relativeTo: .largeTitle))
-                    .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
-                Text(overview.subtitle)
-                    .font(.appScaledFont(for: .Regular, size: 14, relativeTo: .subheadline))
-                    .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
-            }
-            .padding(.horizontal, 2)
+            TitleTextView(
+                title: headerTitle,
+                subTitle: headerSubtitle,
+                accessibilityIdentifierPrefix: "walklist.header"
+            )
+            .accessibilityElement(children: .contain)
 
             WalkListPrimaryLoopSummaryCardView(
                 badgeText: overview.primaryLoopBadge,

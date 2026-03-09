@@ -9,7 +9,7 @@
 
 ### 공통 scaffold 책임
 - 탭 루트 화면의 상단 safe area 예약은 `AppTabScaffold.appTabRootScrollLayout`이 맡는다.
-- 라이벌 탭은 공통 top safe area 위에 라이벌 헤더 밀도를 반영한 `topSafeAreaPadding`만 전달한다.
+- 라이벌 탭은 비지도 탭 공통 계약 `AppTabLayoutMetrics.nonMapRootTopSafeAreaPadding`을 그대로 따른다.
 - status bar 충돌 방지는 루트 scroll layout 단계에서 해결한다.
 
 ### 라이벌 헤더 책임
@@ -24,14 +24,11 @@
 - 다른 `TitleTextView` 기반 화면도 같은 줄바꿈 계약을 공유한다.
 
 ## 구현 계약
-- `RivalTabView`는 `RivalRootLayoutMetrics`로 루트 safe area padding과 콘텐츠 간격을 분리한다.
+- `RivalTabView`는 `RivalRootLayoutMetrics`로 콘텐츠 간격만 관리한다.
 - 라이벌 루트 scroll layout은 아래 형태를 유지한다.
 
 ```swift
-.appTabRootScrollLayout(
-    extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding,
-    topSafeAreaPadding: RivalRootLayoutMetrics.rootTopSafeAreaPadding
-)
+.appTabRootScrollLayout(extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding)
 ```
 
 - 헤더 텍스트는 다음을 유지한다.
@@ -42,7 +39,7 @@
 ## 금지 사항
 - 라이벌 화면 최상단에 큰 상수 `padding(.top)` 하나만 더하는 방식
 - 헤더 폰트를 강제로 줄여서 겹침을 숨기는 방식
-- 라이벌 이슈를 해결한다는 명분으로 모든 탭 루트를 한 번에 재조정하는 방식
+- 공통 scaffold 기본값 대신 라이벌 전용 root top inset override를 다시 넣는 방식
 
 ## 회귀 검증
 - 기능 회귀:

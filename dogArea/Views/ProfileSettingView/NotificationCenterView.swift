@@ -461,15 +461,15 @@ struct NotificationCenterView: View {
     ///   - subtitle: 메인 타이틀 하단에 표시할 보조 설명 텍스트입니다.
     /// - Returns: 설정 화면 톤에 맞춘 헤더 뷰입니다.
     func settingsHeader(title: String, subtitle: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.appScaledFont(for: .SemiBold, size: 34, relativeTo: .largeTitle))
-                .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
-            Text(subtitle)
-                .font(.appScaledFont(for: .Regular, size: 14, relativeTo: .subheadline))
-                .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
-        }
-        .padding(.horizontal, 2)
+        TitleTextView(
+            title: title,
+            subTitle: ProcessInfo.processInfo.arguments.contains("-UITest.SettingsHeaderLongSubtitle")
+                ? "프로필, 실제 설정, 법적 문서와 지원 정보를 한 곳에서 정리하고 계정 상태까지 차분하게 확인해보세요"
+                : subtitle,
+            accessibilityIdentifierPrefix: "settings.header"
+        )
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("settings.header.section")
     }
 
     /// 시즌 진행 정보를 요약 카드 형태로 렌더링합니다.

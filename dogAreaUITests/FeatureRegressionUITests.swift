@@ -513,6 +513,55 @@ final class FeatureRegressionUITests: XCTestCase {
         )
     }
 
+    /// 비지도 탭 루트 헤더가 긴 문구와 큰 글자 크기에서도 status bar 아래에 유지되는지 검증합니다.
+    func testFeatureRegression_NonMapTabRootHeadersStayBelowStatusBar() throws {
+        let app = launchAppForFeatureRegression(
+            extraArguments: [
+                "-UITest.HomeHeaderLongName",
+                "-UITest.WalkListHeaderLongSubtitle",
+                "-UITest.RivalHeaderLongSubtitle",
+                "-UITest.SettingsHeaderLongSubtitle",
+                "-UIPreferredContentSizeCategoryName",
+                "UICTContentSizeCategoryAccessibilityXL"
+            ]
+        )
+
+        XCTAssertTrue(openTab(index: 0, app: app), "홈 탭 진입에 실패했습니다.")
+        let homeTitle = screenElement(identifier: "home.header.title", in: app)
+        let homeSubtitle = screenElement(identifier: "home.header.subtitle", in: app)
+        XCTAssertTrue(waitUntilExists(homeTitle, timeout: 8), "홈 헤더 타이틀이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(homeSubtitle, timeout: 2), "홈 헤더 서브타이틀이 노출되지 않았습니다.")
+        XCTAssertGreaterThanOrEqual(homeTitle.frame.minY, 52, "홈 헤더 타이틀이 status bar 아래에서 시작해야 합니다.")
+        XCTAssertGreaterThan(homeSubtitle.frame.maxY, homeTitle.frame.maxY, "홈 헤더 부제가 타이틀 아래에 배치되어야 합니다.")
+
+        XCTAssertTrue(openTab(index: 1, app: app), "산책 기록 탭 진입에 실패했습니다.")
+        let walkListTitle = screenElement(identifier: "walklist.header.title", in: app)
+        let walkListSubtitle = screenElement(identifier: "walklist.header.subtitle", in: app)
+        XCTAssertTrue(waitUntilExists(walkListTitle, timeout: 8), "산책 기록 헤더 타이틀이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(walkListSubtitle, timeout: 2), "산책 기록 헤더 서브타이틀이 노출되지 않았습니다.")
+        XCTAssertGreaterThanOrEqual(walkListTitle.frame.minY, 52, "산책 기록 헤더 타이틀이 status bar 아래에서 시작해야 합니다.")
+        XCTAssertGreaterThan(walkListSubtitle.frame.maxY, walkListTitle.frame.maxY, "산책 기록 헤더 부제가 타이틀 아래에 배치되어야 합니다.")
+
+        XCTAssertTrue(openTab(index: 3, app: app), "라이벌 탭 진입에 실패했습니다.")
+        let rivalTitle = screenElement(identifier: "rival.header.title", in: app)
+        let rivalSubtitle = screenElement(identifier: "rival.header.subtitle", in: app)
+        let rivalBadges = screenElement(identifier: "rival.header.badges", in: app)
+        XCTAssertTrue(waitUntilExists(rivalTitle, timeout: 8), "라이벌 헤더 타이틀이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(rivalSubtitle, timeout: 2), "라이벌 헤더 서브타이틀이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(rivalBadges, timeout: 2), "라이벌 헤더 배지 행이 노출되지 않았습니다.")
+        XCTAssertGreaterThanOrEqual(rivalTitle.frame.minY, 52, "라이벌 헤더 타이틀이 status bar 아래에서 시작해야 합니다.")
+        XCTAssertGreaterThan(rivalSubtitle.frame.maxY, rivalTitle.frame.maxY, "라이벌 헤더 부제가 타이틀 아래에 배치되어야 합니다.")
+        XCTAssertGreaterThanOrEqual(rivalBadges.frame.minY, rivalSubtitle.frame.maxY + 4, "라이벌 배지 행이 부제 아래에서 시작해야 합니다.")
+
+        XCTAssertTrue(openTab(index: 4, app: app), "설정 탭 진입에 실패했습니다.")
+        let settingsTitle = screenElement(identifier: "settings.header.title", in: app)
+        let settingsSubtitle = screenElement(identifier: "settings.header.subtitle", in: app)
+        XCTAssertTrue(waitUntilExists(settingsTitle, timeout: 8), "설정 헤더 타이틀이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(settingsSubtitle, timeout: 2), "설정 헤더 서브타이틀이 노출되지 않았습니다.")
+        XCTAssertGreaterThanOrEqual(settingsTitle.frame.minY, 52, "설정 헤더 타이틀이 status bar 아래에서 시작해야 합니다.")
+        XCTAssertGreaterThan(settingsSubtitle.frame.maxY, settingsTitle.frame.maxY, "설정 헤더 부제가 타이틀 아래에 배치되어야 합니다.")
+    }
+
     /// 산책 목록 탭을 선택해도 선택 아이콘이 유효한 SF Symbol로 유지되는지 검증합니다.
     func testFeatureRegression_WalkListTabSelectedIconRemainsVisibleInBothStyles() throws {
         try assertWalkListTabSelectedIconRemainsVisible(style: .light)
