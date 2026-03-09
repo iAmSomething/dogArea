@@ -677,6 +677,46 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertGreaterThan(settingsSubtitle.frame.maxY, settingsTitle.frame.maxY, "설정 헤더 부제가 타이틀 아래에 배치되어야 합니다.")
     }
 
+    /// 산책 기록의 sticky section header가 상단에 고정될 때도 status bar 아래에 유지되는지 검증합니다.
+    func testFeatureRegression_WalkListStickySectionHeaderStaysBelowStatusBar() throws {
+        let app = launchAppForFeatureRegression(
+            extraArguments: [
+                "-UITest.WalkListCalendarPreview",
+                "-UITest.WalkListHeaderLongSubtitle",
+                "-UIPreferredContentSizeCategoryName",
+                "UICTContentSizeCategoryAccessibilityXL"
+            ]
+        )
+
+        XCTAssertTrue(openTab(index: 1, app: app), "산책 기록 탭 진입에 실패했습니다.")
+
+        let sectionHeader = screenElement(identifier: "walklist.section.thisWeek", in: app)
+        XCTAssertTrue(
+            revealExistingElementByVerticalScroll(sectionHeader, app: app, maxSwipes: 6),
+            "산책 기록 섹션 헤더를 찾지 못했습니다."
+        )
+
+        for _ in 0..<8 {
+            if sectionHeader.frame.minY <= 96 {
+                break
+            }
+            app.swipeUp()
+            usleep(260_000)
+        }
+
+        XCTAssertTrue(sectionHeader.exists, "sticky section header가 접근성 트리에서 사라지면 안 됩니다.")
+        XCTAssertLessThanOrEqual(
+            sectionHeader.frame.minY,
+            96,
+            "섹션 헤더가 sticky 상태로 상단에 고정되어야 합니다."
+        )
+        XCTAssertGreaterThanOrEqual(
+            sectionHeader.frame.minY,
+            52,
+            "sticky section header가 status bar 아래에 유지되어야 합니다."
+        )
+    }
+
     /// 산책 목록 탭을 선택해도 선택 아이콘이 유효한 SF Symbol로 유지되는지 검증합니다.
     func testFeatureRegression_WalkListTabSelectedIconRemainsVisibleInBothStyles() throws {
         try assertWalkListTabSelectedIconRemainsVisible(style: .light)

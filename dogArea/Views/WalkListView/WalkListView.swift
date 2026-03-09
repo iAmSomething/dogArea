@@ -8,6 +8,10 @@
 import SwiftUI
 import CoreLocation
 
+private enum WalkListRootLayoutMetrics {
+    static let contentTopPadding: CGFloat = 10
+}
+
 struct WalkListView: View {
     @StateObject private var viewModel = WalkListViewModel()
     @EnvironmentObject var authFlow: AuthFlowCoordinator
@@ -76,7 +80,7 @@ struct WalkListView: View {
                     }
                 }
             }
-            .padding(.top, 24)
+            .padding(.top, WalkListRootLayoutMetrics.contentTopPadding)
             .padding(.bottom, 12)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)

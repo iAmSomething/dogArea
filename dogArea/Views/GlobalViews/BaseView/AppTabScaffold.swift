@@ -74,7 +74,12 @@ private struct AppTabRootScrollLayoutModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .scrollIndicators(showsIndicators ? .visible : .hidden)
-            .safeAreaPadding(.top, topSafeAreaPadding)
+            .safeAreaInset(edge: .top, spacing: 0) {
+                Color.clear
+                    .frame(height: topSafeAreaPadding)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
             .background(Color.appTabScaffoldBackground)
             .appTabBarContentPadding(extra: extraBottomPadding)
     }

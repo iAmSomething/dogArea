@@ -61,6 +61,7 @@
 - 홈 미션 자동 기록/직접 체크 구분 가이드 v1: `docs/home-quest-tracking-mode-guideline-v1.md`
 - 홈 상단 safe area 계약 v1: `docs/home-top-safearea-contract-v1.md`
 - 비지도 탭 루트 top inset 계약 v1: `docs/non-map-tab-root-top-inset-contract-v1.md`
+- 산책 기록 상단 safe area 계약 v1: `docs/walklist-top-safearea-contract-v1.md`
 - 라이벌 상단 safe area 계약 v1: `docs/rival-top-safearea-contract-v1.md`
 - 홈 refresh 중복 제거 umbrella v1: `docs/home-refresh-dedup-lightweight-v1.md`
 - 맵 파생 계산 경량화 umbrella v1: `docs/map-derived-calculation-lightweight-v1.md`

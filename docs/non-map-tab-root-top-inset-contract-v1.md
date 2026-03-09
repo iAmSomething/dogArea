@@ -7,6 +7,8 @@
 
 ## 계약
 - `appTabRootScrollLayout`을 사용하는 루트 화면의 기본 상단 inset은 `AppTabLayoutMetrics.nonMapRootTopSafeAreaPadding = 18`을 따른다.
+- 공통 상단 예약은 `safeAreaPadding(.top)`이 아니라 `safeAreaInset(edge: .top)`으로 확보한다.
+- `LazyVStack(... pinnedViews: [.sectionHeaders])`를 쓰는 화면도 같은 상단 예약 공간을 따라야 한다.
 - 비지도 탭 루트의 추가 조정은 기본적으로 `contentTopPadding` 같은 내부 콘텐츠 간격에서만 처리한다.
 - 화면별로 `topSafeAreaPadding` override를 다시 넣는 것은 예외 사유가 명확할 때만 허용한다.
 - `홈`, `산책 기록`, `라이벌`, `설정`은 모두 같은 기본 contract를 사용한다.
@@ -26,6 +28,7 @@
 
 ## 금지 사항
 - 비지도 탭 화면마다 임시 top padding 수치를 따로 넣어 버그를 덮는 것
+- 공통 루트 상단 예약을 `safeAreaPadding(.top)`으로 되돌려 sticky section header 충돌을 다시 만드는 것
 - 지도 탭까지 동일한 root top inset을 강제하는 것
 - 헤더 래핑 문제를 루트 safe area 값으로 해결하려는 것
 
