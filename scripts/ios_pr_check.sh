@@ -142,6 +142,8 @@ swift scripts/pet_context_badge_empty_state_unit_check.swift
 swift scripts/walklist_design_refresh_unit_check.swift
 swift scripts/walklist_month_calendar_hub_unit_check.swift
 swift scripts/walklist_detail_design_refresh_unit_check.swift
+swift scripts/walk_share_flow_unit_check.swift
+swift scripts/walk_detail_share_system_sheet_unit_check.swift
 swift scripts/area_reference_db_ui_unit_check.swift
 swift scripts/walk_repository_contract_unit_check.swift
 swift scripts/walk_repository_backfill_unit_check.swift

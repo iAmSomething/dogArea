@@ -419,6 +419,30 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertTrue(waitUntilHittable(dismissAction, timeout: 2), "확인 dismiss CTA가 탭 가능한 상태가 아닙니다.")
     }
 
+    /// 산책 상세 공유 CTA가 빈 호스트가 아닌 실제 시스템 share presenter 경로를 여는지 검증합니다.
+    func testFeatureRegression_WalkListShareActionPresentsSystemSharePresenter() throws {
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.WalkDetailPreviewRoute"])
+        XCTAssertTrue(openTab(index: 1, app: app), "산책 목록 탭 진입에 실패했습니다.")
+
+        let detailScreen = screenElement(identifier: "screen.walkListDetail.content", in: app)
+        XCTAssertTrue(waitUntilExists(detailScreen, timeout: 8), "산책 상세 화면 preview route 진입에 실패했습니다.")
+
+        let shareAction = app.buttons["walklist.detail.action.share"]
+        XCTAssertTrue(
+            revealElementByVerticalScroll(shareAction, app: app, maxSwipes: 4),
+            "공유 CTA가 화면에 노출되지 않았습니다."
+        )
+        XCTAssertTrue(waitUntilHittable(shareAction, timeout: 2), "공유 CTA가 탭 가능한 상태가 아닙니다.")
+
+        shareAction.tap()
+
+        let presenterMarker = screenElement(identifier: "walklist.detail.share.presenter.active", in: app)
+        XCTAssertTrue(
+            waitUntilExists(presenterMarker, timeout: 4),
+            "공유 CTA 탭 후 시스템 공유 presenter가 활성화되어야 합니다."
+        )
+    }
+
     /// 홈과 지도 첫 화면에서 산책이 기본 루프로 읽히고 실내 미션이 보조 흐름으로 내려가는지 검증합니다.
     func testFeatureRegression_HomeAndMapPrioritizeWalkingAsPrimaryLoop() throws {
         let app = launchAppForFeatureRegression()

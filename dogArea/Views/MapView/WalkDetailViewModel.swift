@@ -114,14 +114,27 @@ final class WalkDetailViewModel: ObservableObject {
     /// - Parameter mapCapturedImage: 지도 스냅샷으로 캡처된 이미지입니다.
     func prepareShareSheet(mapCapturedImage: UIImage?) {
         shareItems = makeShareItems(mapCapturedImage: mapCapturedImage)
-        showShareSheet = shareItems.isEmpty == false
+        guard shareItems.isEmpty == false else {
+            toastMessage = "공유할 내용을 준비하지 못했습니다. 다시 시도해주세요."
+            showShareSheet = false
+            return
+        }
+        showShareSheet = true
     }
 
-    /// 공유 완료 콜백 결과를 처리합니다.
-    /// - Parameter completed: 공유 완료 여부입니다.
-    func handleShareCompletion(completed: Bool) {
-        guard completed else { return }
-        toastMessage = "공유를 완료했습니다"
+    /// 시스템 공유 presenter 결과를 사용자 피드백 메시지로 변환합니다.
+    /// - Parameter result: 시스템 공유 presenter 종료 결과입니다.
+    func handleSharePresentationResult(_ result: ActivitySharePresentationResult) {
+        switch result {
+        case .presented:
+            break
+        case .completed:
+            toastMessage = "공유를 완료했습니다"
+        case .cancelled:
+            toastMessage = "공유를 취소했습니다"
+        case .failed:
+            toastMessage = "공유 시트를 열지 못했습니다. 다시 시도해주세요."
+        }
     }
 
     /// 현재 산책 카드를 사진 앱에 저장합니다.

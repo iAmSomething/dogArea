@@ -100,17 +100,161 @@ extension UIImage {
     }
 }
 
-struct ActivityShareSheet: UIViewControllerRepresentable {
-    let items: [Any]
-    var completion: UIActivityViewController.CompletionWithItemsHandler?
+enum ActivitySharePresentationResult: Equatable {
+    case presented
+    case completed
+    case cancelled
+    case failed(reason: String)
+}
 
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
-        controller.completionWithItemsHandler = completion
-        return controller
+private enum ActivitySharePresentationError: LocalizedError {
+    case emptyItems
+    case hostUnavailable
+    case hostBusy
+
+    var errorDescription: String? {
+        switch self {
+        case .emptyItems:
+            return "공유할 항목이 비어 있습니다."
+        case .hostUnavailable:
+            return "공유 시트를 표시할 화면을 찾지 못했습니다."
+        case .hostBusy:
+            return "이미 다른 모달이 표시 중입니다."
+        }
+    }
+}
+
+final class ActivityShareHostViewController: UIViewController {
+    /// 시스템 공유 시트를 띄우기 위한 최소 호스트 뷰를 생성합니다.
+    /// - Returns: 투명하고 숨김 처리된 루트 뷰입니다.
+    override func loadView() {
+        let view = UIView(frame: .zero)
+        view.backgroundColor = .clear
+        view.isHidden = true
+        self.view = view
+    }
+}
+
+struct ActivityShareSheet: UIViewControllerRepresentable {
+    @Binding var isPresented: Bool
+    let items: [Any]
+    var onEvent: (ActivitySharePresentationResult) -> Void = { _ in }
+
+    /// SwiftUI 바인딩과 결과 콜백을 보관할 코디네이터를 생성합니다.
+    /// - Returns: 공유 시트 수명주기를 관리하는 코디네이터입니다.
+    func makeCoordinator() -> Coordinator {
+        Coordinator(isPresented: $isPresented, onEvent: onEvent)
     }
 
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+    /// 시스템 공유 시트를 직접 표시할 UIKit 호스트 컨트롤러를 생성합니다.
+    /// - Parameter context: SwiftUI representable 생성 컨텍스트입니다.
+    /// - Returns: 공유 presenter의 기준점이 되는 호스트 컨트롤러입니다.
+    func makeUIViewController(context: Context) -> ActivityShareHostViewController {
+        ActivityShareHostViewController()
+    }
+
+    /// SwiftUI 상태 변경에 맞춰 공유 시트 presenter를 열거나 정리합니다.
+    /// - Parameters:
+    ///   - uiViewController: 공유 시트를 표시할 현재 호스트 컨트롤러입니다.
+    ///   - context: representable 업데이트 컨텍스트입니다.
+    func updateUIViewController(_ uiViewController: ActivityShareHostViewController, context: Context) {
+        context.coordinator.isPresented = $isPresented
+        context.coordinator.onEvent = onEvent
+        if isPresented == false {
+            context.coordinator.resetIfIdle()
+            return
+        }
+        context.coordinator.presentIfNeeded(from: uiViewController, items: items)
+    }
+
+    final class Coordinator {
+        var isPresented: Binding<Bool>
+        var onEvent: (ActivitySharePresentationResult) -> Void
+        private var isPresentingController = false
+
+        /// 공유 presenter 코디네이터를 초기화합니다.
+        /// - Parameters:
+        ///   - isPresented: SwiftUI 공유 시트 표시 상태 바인딩입니다.
+        ///   - onEvent: presenter 결과를 상위 뷰에 전달하는 콜백입니다.
+        init(
+            isPresented: Binding<Bool>,
+            onEvent: @escaping (ActivitySharePresentationResult) -> Void
+        ) {
+            self.isPresented = isPresented
+            self.onEvent = onEvent
+        }
+
+        /// 공유 시트가 아직 열리지 않은 경우에만 시스템 share presenter를 표시합니다.
+        /// - Parameters:
+        ///   - host: `UIActivityViewController`를 표시할 호스트 컨트롤러입니다.
+        ///   - items: 공유 시트에 전달할 activity item 배열입니다.
+        func presentIfNeeded(from host: UIViewController, items: [Any]) {
+            guard isPresentingController == false else { return }
+            guard items.isEmpty == false else {
+                finish(with: .failed(reason: ActivitySharePresentationError.emptyItems.localizedDescription))
+                return
+            }
+            attemptPresentation(from: host, items: items, attempt: 0)
+        }
+
+        /// 시스템 공유 시트를 실제 호스트 컨트롤러 위에 직접 표시합니다.
+        /// - Parameters:
+        ///   - host: share presenter를 올릴 현재 화면 컨트롤러입니다.
+        ///   - items: 공유할 activity item 배열입니다.
+        ///   - attempt: 호스트가 window에 연결되길 기다리는 재시도 횟수입니다.
+        private func attemptPresentation(from host: UIViewController?, items: [Any], attempt: Int) {
+            guard let host else {
+                finish(with: .failed(reason: ActivitySharePresentationError.hostUnavailable.localizedDescription))
+                return
+            }
+            guard host.viewIfLoaded?.window != nil else {
+                guard attempt < 3 else {
+                    finish(with: .failed(reason: ActivitySharePresentationError.hostUnavailable.localizedDescription))
+                    return
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { [weak self, weak host] in
+                    self?.attemptPresentation(from: host, items: items, attempt: attempt + 1)
+                }
+                return
+            }
+            guard host.presentedViewController == nil else {
+                finish(with: .failed(reason: ActivitySharePresentationError.hostBusy.localizedDescription))
+                return
+            }
+
+            let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
+            controller.popoverPresentationController?.sourceView = host.view
+            controller.popoverPresentationController?.sourceRect = host.view.bounds
+            controller.completionWithItemsHandler = { [weak self] _, completed, _, error in
+                DispatchQueue.main.async {
+                    if let error {
+                        self?.finish(with: .failed(reason: error.localizedDescription))
+                    } else if completed {
+                        self?.finish(with: .completed)
+                    } else {
+                        self?.finish(with: .cancelled)
+                    }
+                }
+            }
+
+            isPresentingController = true
+            onEvent(.presented)
+            host.present(controller, animated: true)
+        }
+
+        /// 공유 플로우 종료 이벤트를 상태 바인딩과 사용자 피드백 이벤트로 정리합니다.
+        /// - Parameter result: presenter 종료 결과입니다.
+        private func finish(with result: ActivitySharePresentationResult) {
+            isPresentingController = false
+            isPresented.wrappedValue = false
+            onEvent(result)
+        }
+
+        /// 현재 presenter가 열려 있지 않은 경우 내부 상태를 초기화합니다.
+        func resetIfIdle() {
+            guard isPresentingController == false else { return }
+        }
+    }
 }
 
 enum WalkShareSummaryBuilder {

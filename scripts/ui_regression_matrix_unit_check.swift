@@ -34,6 +34,7 @@ for token in [
     "FR-WALK-002",
     "FR-WALK-002A",
     "FR-WALK-003",
+    "FR-WALK-003A",
     "FR-GOAL-001",
     "FR-HOME-QUEST-001",
     "FR-AUTH-001",
@@ -70,6 +71,7 @@ for testName in [
     "testFeatureRegression_WalkListHeaderSurfacesOverviewAndContextCards",
     "testFeatureRegression_WalkListTabSelectedIconRemainsVisibleInBothStyles",
     "testFeatureRegression_WalkListDetailClarifiesSummaryAndActionHierarchy",
+    "testFeatureRegression_WalkListShareActionPresentsSystemSharePresenter",
     "testFeatureRegression_TerritoryGoalNavigationHidesAndRestoresTabBar",
     "testFeatureRegression_HomeMissionLifecycleSeparatesCompletedMissionState",
     "testFeatureRegression_SettingsAuthEntryPoints",
@@ -105,6 +107,10 @@ assertTrue(
 assertTrue(
     featureRegressionScript.contains("testFeatureRegression_WalkListDetailClarifiesSummaryAndActionHierarchy"),
     "run_feature_regression_ui_tests.sh should run the walk list detail hierarchy regression"
+)
+assertTrue(
+    featureRegressionScript.contains("testFeatureRegression_WalkListShareActionPresentsSystemSharePresenter"),
+    "run_feature_regression_ui_tests.sh should run the walk list share presenter regression"
 )
 assertTrue(
     featureRegressionScript.contains("testFeatureRegression_MapAddPointControlRemainsHittableWhileWalking"),
