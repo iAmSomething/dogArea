@@ -59,9 +59,9 @@ struct WalkListDashboardHeaderView: View {
                         WalkListMetricTileView(
                             title: metric.title,
                             value: metric.value,
-                            detail: metric.detail
+                            detail: metric.detail,
+                            accessibilityIdentifier: "walklist.summary.\(metric.id)"
                         )
-                        .accessibilityIdentifier("walklist.summary.\(metric.id)")
                     }
                 }
             }
