@@ -31,6 +31,7 @@ struct RootView: View {
     @StateObject private var mapViewModelStore = MapViewModelStore()
     private let widgetActionStore: WalkWidgetActionRequestStoring = DefaultWalkWidgetActionRequestStore.shared
     private let walkWidgetSnapshotStore: WalkWidgetSnapshotStoring = DefaultWalkWidgetSnapshotStore.shared
+    private let metricTracker = AppMetricTracker.shared
     private let territoryWidgetSnapshotSyncService: TerritoryWidgetSnapshotSyncing = DefaultTerritoryWidgetSnapshotSyncService()
     private let hotspotWidgetSnapshotSyncService: HotspotWidgetSnapshotSyncing = DefaultHotspotWidgetSnapshotSyncService()
     private let questRivalWidgetSnapshotSyncService: QuestRivalWidgetSnapshotSyncing = DefaultQuestRivalWidgetSnapshotSyncService()
@@ -175,12 +176,14 @@ struct RootView: View {
                 dispatchUITestTerritoryWidgetRouteIfNeeded()
                 dispatchUITestHotspotWidgetRouteIfNeeded()
                 consumePendingWidgetActionIfNeeded()
+                reconcileWalkWidgetActionSurfacesIfPossible()
                 syncTerritoryWidgetSnapshot(force: true)
                 syncHotspotWidgetSnapshot(force: true)
                 syncQuestRivalWidgetSnapshot(force: true)
             }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
                 consumePendingWidgetActionIfNeeded()
+                reconcileWalkWidgetActionSurfacesIfPossible()
                 syncTerritoryWidgetSnapshot(force: false)
                 syncHotspotWidgetSnapshot(force: false)
                 syncQuestRivalWidgetSnapshot(force: false)
@@ -206,6 +209,7 @@ struct RootView: View {
                 }
                 dispatchPendingWalkWidgetActionIfNeeded()
                 dispatchDeferredTerritoryWidgetRouteIfNeeded()
+                reconcileWalkWidgetActionSurfacesIfPossible()
             }
 
     }
@@ -275,6 +279,15 @@ struct RootView: View {
             #if DEBUG
             print("[WidgetAction] parsed deep link kind=\(route.kind.rawValue) actionId=\(route.actionId) source=\(route.source)")
             #endif
+            if widgetActionStore.discardPending(matching: route.actionId) {
+                metricTracker.track(
+                    .widgetActionPendingDiscarded,
+                    payload: [
+                        "action": route.kind.rawValue,
+                        "source": route.source
+                    ]
+                )
+            }
             dispatchWidgetAction(route)
             return
         }
@@ -304,6 +317,11 @@ struct RootView: View {
         print("[WidgetAction] consumed pending request kind=\(request.kind.rawValue) actionId=\(request.actionId) source=\(request.source)")
         #endif
         dispatchWidgetAction(request.asRoute())
+    }
+
+    /// 준비된 지도 ViewModel이 있으면 위젯 산책 표면을 canonical 앱 상태로 다시 맞춥니다.
+    private func reconcileWalkWidgetActionSurfacesIfPossible() {
+        mapViewModelStore.mapViewModel?.reconcileWalkWidgetActionSurfacesOnAppActive()
     }
 
     /// UI 테스트 런타임에서 지정한 위젯 라우트를 한 번만 앱 내부 액션으로 전달합니다.

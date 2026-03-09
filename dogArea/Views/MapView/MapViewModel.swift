@@ -554,6 +554,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private let areaCalculationService: MapAreaCalculationServicing
     private let walkPointSnapshotService: MapWalkPointSnapshotServicing
     private let clusterAnnotationService: MapClusterAnnotationServicing
+    let walkWidgetActionConvergenceService: WalkWidgetActionConverging
     let widgetSnapshotStore: WalkWidgetSnapshotStoring
     let liveActivityService: WalkLiveActivityServicing
     private let eventCenter: AppEventCenterProtocol
@@ -674,6 +675,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         walkPointSnapshotService: MapWalkPointSnapshotServicing = MapWalkPointSnapshotService(),
         clusterAnnotationService: MapClusterAnnotationServicing = MapClusterAnnotationService(),
         hotspotClusterRenderingService: MapHotspotClusterRenderingServicing? = nil,
+        walkWidgetActionConvergenceService: WalkWidgetActionConverging = WalkWidgetActionConvergenceService(),
         widgetSnapshotStore: WalkWidgetSnapshotStoring = DefaultWalkWidgetSnapshotStore.shared,
         liveActivityService: WalkLiveActivityServicing = WalkLiveActivityService(),
         eventCenter: AppEventCenterProtocol = DefaultAppEventCenter.shared
@@ -697,6 +699,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         self.clusterAnnotationService = clusterAnnotationService
         self.hotspotClusterRenderingService = hotspotClusterRenderingService
             ?? MapHotspotClusterRenderingService(clusterAnnotationService: clusterAnnotationService)
+        self.walkWidgetActionConvergenceService = walkWidgetActionConvergenceService
         self.widgetSnapshotStore = widgetSnapshotStore
         self.liveActivityService = liveActivityService
         self.eventCenter = eventCenter

@@ -186,6 +186,7 @@
 		A50300010000000000000002 /* MapHeatmapAggregationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50300010000000000000012 /* MapHeatmapAggregationService.swift */; };
 		A50400010000000000000001 /* MapHotspotClusterSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50400010000000000000011 /* MapHotspotClusterSnapshot.swift */; };
 		A50400010000000000000002 /* MapHotspotClusterRenderingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50400010000000000000012 /* MapHotspotClusterRenderingService.swift */; };
+		A61700010000000000000001 /* WalkWidgetActionConvergenceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A61700010000000000000011 /* WalkWidgetActionConvergenceService.swift */; };
 		A50600010000000000000001 /* HomeIndoorMissionPetContextSnapshotService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50600010000000000000011 /* HomeIndoorMissionPetContextSnapshotService.swift */; };
 		A50700010000000000000001 /* AuthMailActionModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50700010000000000000011 /* AuthMailActionModels.swift */; };
 		A50700010000000000000002 /* AuthMailActionStateMachine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50700010000000000000012 /* AuthMailActionStateMachine.swift */; };
@@ -609,6 +610,7 @@
 		A50300010000000000000012 /* MapHeatmapAggregationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapHeatmapAggregationService.swift; sourceTree = "<group>"; };
 		A50400010000000000000011 /* MapHotspotClusterSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapHotspotClusterSnapshot.swift; sourceTree = "<group>"; };
 		A50400010000000000000012 /* MapHotspotClusterRenderingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapHotspotClusterRenderingService.swift; sourceTree = "<group>"; };
+		A61700010000000000000011 /* WalkWidgetActionConvergenceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkWidgetActionConvergenceService.swift; sourceTree = "<group>"; };
 		A50600010000000000000011 /* HomeIndoorMissionPetContextSnapshotService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeIndoorMissionPetContextSnapshotService.swift; sourceTree = "<group>"; };
 		A50700010000000000000011 /* AuthMailActionModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthMailActionModels.swift; sourceTree = "<group>"; };
 		A50700010000000000000012 /* AuthMailActionStateMachine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthMailActionStateMachine.swift; sourceTree = "<group>"; };
@@ -1790,6 +1792,7 @@
 				DAE147B01420000000000001 /* MapClusterAnnotationService.swift */,
 				A50400010000000000000012 /* MapHotspotClusterRenderingService.swift */,
 				A50200010000000000000012 /* MapWalkPointSnapshotService.swift */,
+				A61700010000000000000011 /* WalkWidgetActionConvergenceService.swift */,
 				BB7213218B73F5E29A0DF33C /* MapWalkStartPresentationService.swift */,
 				A56500010000000000000012 /* WalkValueGuidePresentationService.swift */,
 				A56500010000000000000013 /* MapWalkValueFlowPresentationService.swift */,
@@ -2187,6 +2190,7 @@
 				A50300010000000000000002 /* MapHeatmapAggregationService.swift in Sources */,
 				A50400010000000000000002 /* MapHotspotClusterRenderingService.swift in Sources */,
 				A50200010000000000000002 /* MapWalkPointSnapshotService.swift in Sources */,
+				A61700010000000000000001 /* WalkWidgetActionConvergenceService.swift in Sources */,
 				A56500010000000000000002 /* WalkValueGuidePresentationService.swift in Sources */,
 				A56500010000000000000003 /* MapWalkValueFlowPresentationService.swift in Sources */,
 				DAE147B11420000000000001 /* MapClusterAnnotationService.swift in Sources */,

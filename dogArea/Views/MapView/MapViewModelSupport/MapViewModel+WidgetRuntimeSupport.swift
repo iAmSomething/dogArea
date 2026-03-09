@@ -161,18 +161,102 @@ extension MapViewModel {
 
         let currentSnapshot = widgetSnapshotStore.load()
         let petContext = currentWalkWidgetPetContext()
+        let resolvedStatus = statusOverride ?? (isLocationPermissionDenied ? .locationDenied : .ready)
+        let resolvedActionState = resolveWalkWidgetActionState(
+            currentSnapshot: currentSnapshot,
+            status: resolvedStatus,
+            statusMessage: messageOverride,
+            actionStateOverride: actionStateOverride,
+            now: now
+        )
         let snapshot = WalkWidgetSnapshot(
             isWalking: isWalking,
             elapsedSeconds: Int(max(0, time.rounded(.down))),
             petName: petContext.petName,
             petContext: petContext,
-            status: statusOverride ?? (isLocationPermissionDenied ? .locationDenied : .ready),
+            status: resolvedStatus,
             statusMessage: messageOverride,
-            actionState: actionStateOverride ?? currentSnapshot.normalizedActionState,
+            actionState: resolvedActionState,
             updatedAt: now.timeIntervalSince1970
         )
         widgetSnapshotStore.save(snapshot)
         lastWidgetSnapshotSyncAt = now
+    }
+
+    /// 앱 세션을 정본으로 위젯 액션 상태를 다시 계산합니다.
+    /// - Parameters:
+    ///   - currentSnapshot: 현재 공유 저장소에 남아 있는 위젯 스냅샷입니다.
+    ///   - status: 이번 저장에 반영할 canonical 위젯 상태입니다.
+    ///   - statusMessage: canonical 상태에 연결된 보조 메시지입니다.
+    ///   - actionStateOverride: 호출자가 강제로 지정한 액션 상태입니다.
+    ///   - now: 수렴 판단 기준 시각입니다.
+    /// - Returns: 이번 저장에 반영할 최종 액션 상태입니다.
+    private func resolveWalkWidgetActionState(
+        currentSnapshot: WalkWidgetSnapshot,
+        status: WalkWidgetSnapshotStatus,
+        statusMessage: String?,
+        actionStateOverride: WalkWidgetActionState?,
+        now: Date
+    ) -> WalkWidgetActionState? {
+        guard actionStateOverride == nil else {
+            return actionStateOverride
+        }
+
+        let previous = currentSnapshot.normalizedActionState
+        let resolved = walkWidgetActionConvergenceService.resolve(
+            current: previous,
+            isWalking: isWalking,
+            status: status,
+            statusMessage: statusMessage,
+            now: now
+        )
+        trackWalkWidgetActionConvergenceIfNeeded(from: previous, to: resolved)
+        return resolved
+    }
+
+    /// 위젯 액션 상태가 canonical 세션 기준으로 수렴되거나 escalated 되었을 때 metric을 기록합니다.
+    /// - Parameters:
+    ///   - previous: 이전에 저장된 액션 상태입니다.
+    ///   - current: 이번 저장에서 계산된 액션 상태입니다.
+    private func trackWalkWidgetActionConvergenceIfNeeded(
+        from previous: WalkWidgetActionState?,
+        to current: WalkWidgetActionState?
+    ) {
+        guard previous != current,
+              let previous,
+              let current
+        else {
+            return
+        }
+
+        let payload = [
+            "action": current.kind.rawValue,
+            "fromPhase": previous.phase.rawValue,
+            "toPhase": current.phase.rawValue
+        ]
+
+        switch (previous.phase, current.phase) {
+        case (.pending, .succeeded), (.requiresAppOpen, .succeeded):
+            metricTracker.track(
+                .widgetActionConverged,
+                userKey: currentMetricUserId(),
+                payload: payload
+            )
+        case (.pending, .requiresAppOpen), (.pending, .failed), (.requiresAppOpen, .failed):
+            metricTracker.track(
+                .widgetActionEscalated,
+                userKey: currentMetricUserId(),
+                payload: payload
+            )
+        default:
+            break
+        }
+    }
+
+    /// 앱 활성화 시점에 위젯 스냅샷과 Live Activity를 canonical 산책 상태로 재동기화합니다.
+    func reconcileWalkWidgetActionSurfacesOnAppActive() {
+        syncWalkWidgetSnapshot(force: true)
+        syncWalkLiveActivity(force: true)
     }
 
     /// 선택 반려견/활성 반려견 목록을 현재 세션 상태와 다시 동기화합니다.
