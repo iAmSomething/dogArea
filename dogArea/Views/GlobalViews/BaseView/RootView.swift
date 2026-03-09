@@ -481,6 +481,7 @@ struct RootView: View {
         walkWidgetSnapshotStore.save(
             WalkWidgetSnapshot(
                 isWalking: current.isWalking,
+                startedAt: current.startedAt,
                 elapsedSeconds: current.elapsedSeconds,
                 petName: current.petName,
                 petContext: current.petContext ?? current.normalizedPetContext,

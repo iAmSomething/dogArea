@@ -204,6 +204,7 @@ private func preparePendingRoute(kind: WalkWidgetActionKind, contextId: String?)
         store.save(
             .init(
                 isWalking: current.isWalking,
+                startedAt: current.startedAt,
                 elapsedSeconds: current.elapsedSeconds,
                 petName: current.petName,
                 petContext: current.petContext ?? current.normalizedPetContext,

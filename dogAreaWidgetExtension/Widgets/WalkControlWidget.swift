@@ -6,6 +6,26 @@ struct WalkControlTimelineEntry: TimelineEntry {
     let snapshot: WalkWidgetSnapshot
 }
 
+private enum WalkControlElapsedDisplayMode {
+    case liveTimer(referenceDate: Date)
+    case frozen(text: String)
+}
+
+private struct WalkControlElapsedTextView: View {
+    let displayMode: WalkControlElapsedDisplayMode
+
+    var body: some View {
+        switch displayMode {
+        case .liveTimer(let referenceDate):
+            Text(referenceDate, style: .timer)
+                .monospacedDigit()
+        case .frozen(let text):
+            Text(text)
+                .monospacedDigit()
+        }
+    }
+}
+
 struct WalkControlTimelineProvider: TimelineProvider {
     private let snapshotStore: WalkWidgetSnapshotStoring
 
@@ -36,9 +56,28 @@ struct WalkControlTimelineProvider: TimelineProvider {
     ///   - completion: 타임라인 생성 결과를 전달하는 콜백입니다.
     func getTimeline(in context: Context, completion: @escaping (Timeline<WalkControlTimelineEntry>) -> Void) {
         let now = Date()
-        let entry = WalkControlTimelineEntry(date: now, snapshot: snapshotStore.load())
-        let next = now.addingTimeInterval(15 * 60)
+        let snapshot = snapshotStore.load()
+        let entry = WalkControlTimelineEntry(date: now, snapshot: snapshot)
+        let next = nextRefreshDate(for: snapshot, from: now)
         completion(Timeline(entries: [entry], policy: .after(next)))
+    }
+
+    /// 현재 위젯 스냅샷 상태에 맞는 다음 타임라인 갱신 시각을 계산합니다.
+    /// - Parameters:
+    ///   - snapshot: 위젯에 렌더링할 현재 산책 스냅샷입니다.
+    ///   - now: 타임라인 계산 기준 시각입니다.
+    /// - Returns: 시스템에 요청할 다음 타임라인 갱신 시각입니다.
+    private func nextRefreshDate(for snapshot: WalkWidgetSnapshot, from now: Date) -> Date {
+        if snapshot.isWalking {
+            return now.addingTimeInterval(60)
+        }
+        if snapshot.normalizedActionState?.phase == .pending {
+            return now.addingTimeInterval(30)
+        }
+        if snapshot.normalizedActionState?.phase == .requiresAppOpen {
+            return now.addingTimeInterval(120)
+        }
+        return now.addingTimeInterval(15 * 60)
     }
 }
 
@@ -74,7 +113,7 @@ struct WalkControlWidgetEntryView: View {
             HStack(spacing: 6) {
                 Image(systemName: "clock")
                     .foregroundStyle(.secondary)
-                Text(WidgetFormatting.formattedElapsed(entry.snapshot.elapsedSeconds))
+                WalkControlElapsedTextView(displayMode: elapsedDisplayMode)
                     .font(.system(.body, design: .rounded).monospacedDigit())
             }
 
@@ -103,6 +142,13 @@ struct WalkControlWidgetEntryView: View {
 
     private var effectiveStatusMessage: String? {
         activeActionState?.message ?? entry.snapshot.statusMessage
+    }
+
+    private var elapsedDisplayMode: WalkControlElapsedDisplayMode {
+        if entry.snapshot.isWalking {
+            return .liveTimer(referenceDate: entry.snapshot.timerReferenceDate)
+        }
+        return .frozen(text: WidgetFormatting.formattedElapsed(entry.snapshot.elapsedSeconds))
     }
 
     private var preferredActionKind: WalkWidgetActionKind {
@@ -249,6 +295,7 @@ struct WalkControlWidget: Widget {
         date: Date(),
         snapshot: .init(
             isWalking: true,
+            startedAt: Date().addingTimeInterval(-824).timeIntervalSince1970,
             elapsedSeconds: 824,
             petName: "나무",
             petContext: .init(
