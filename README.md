@@ -30,6 +30,7 @@
 - Walk widget action convergence v1: `docs/walk-widget-action-convergence-v1.md`
 - Walk Live Activity copy/timer policy v1: `docs/walk-live-activity-copy-timer-v1.md`
 - Walk Control Widget timer refresh v1: `docs/walk-control-widget-timer-refresh-v1.md`
+- Walk Control Widget family layout v1: `docs/walk-control-widget-family-layout-v1.md`
 - Walk Live Activity priority v1: `docs/walk-live-activity-priority-v1.md`
 - Watch action feedback UX v1: `docs/watch-action-feedback-ux-v1.md`
 - Watch selected pet context UX v1: `docs/watch-selected-pet-context-ux-v1.md`
