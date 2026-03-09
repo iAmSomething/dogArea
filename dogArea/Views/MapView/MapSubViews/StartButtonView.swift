@@ -8,7 +8,7 @@
 import Foundation
 import SwiftUI
 
-private enum MapWalkControlBarMetrics {
+enum MapWalkControlBarMetrics {
     static let idleFootprintBudget: CGFloat = 124
     static let walkingFootprintBudget: CGFloat = 112
     static let surfaceMaxWidth: CGFloat = 404

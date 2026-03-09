@@ -29,6 +29,7 @@ for token in [
     "DA-HOME-001",
     "FR-MAP-001",
     "FR-MAP-002",
+    "FR-MAP-002A",
     "FR-MAP-003",
     "FR-MAP-006",
     "FR-MAP-007",
@@ -71,6 +72,7 @@ assertTrue(
 for testName in [
     "testFeatureRegression_MapPrimaryActionIsNotObscuredByTabBar",
     "testFeatureRegression_MapAddPointControlRemainsHittableWhileWalking",
+    "testFeatureRegression_MapAddPointSupportStackClearsWalkingDeckFootprint",
     "testFeatureRegression_MapBottomControllerStaysAnchoredAndCompactAtRest",
     "testFeatureRegression_MapBottomControllerStaysAnchoredAndCompactWhileWalking",
     "testFeatureRegression_MapWalkingTopHUDStaysBelowSafeAreaAndAboveBottomControls",
@@ -128,6 +130,10 @@ assertTrue(
 assertTrue(
     featureRegressionScript.contains("testFeatureRegression_MapAddPointControlRemainsHittableWhileWalking"),
     "run_feature_regression_ui_tests.sh should run the walking add-point regression"
+)
+assertTrue(
+    featureRegressionScript.contains("testFeatureRegression_MapAddPointSupportStackClearsWalkingDeckFootprint"),
+    "run_feature_regression_ui_tests.sh should run the walking add-point overlap regression"
 )
 assertTrue(
     featureRegressionScript.contains("testFeatureRegression_MapBottomControllerStaysAnchoredAndCompactAtRest"),

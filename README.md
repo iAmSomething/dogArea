@@ -70,6 +70,7 @@
 - 홈 refresh 중복 제거 umbrella v1: `docs/home-refresh-dedup-lightweight-v1.md`
 - 맵 파생 계산 경량화 umbrella v1: `docs/map-derived-calculation-lightweight-v1.md`
 - 맵 하단 컨트롤러 anchored density v1: `docs/map-bottom-controller-anchored-density-v1.md`
+- 맵 add-point / walking deck 분리 계약 v1: `docs/map-add-point-walking-deck-separation-v1.md`
 - 맵 상단 slim HUD safe area 계약 v1: `docs/map-top-slim-hud-safearea-v1.md`
 - 맵 HUD disclosure 정책 v1: `docs/map-hud-disclosure-policy-v1.md`
 - 맵 시작 설명 카드 compact v1: `docs/map-start-meaning-card-compact-v1.md`

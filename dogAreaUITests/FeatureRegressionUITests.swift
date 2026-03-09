@@ -48,6 +48,25 @@ final class FeatureRegressionUITests: XCTestCase {
         )
     }
 
+    /// 산책 중 영역 추가 스택이 하단 walking control bar footprint를 침범하지 않는지 검증합니다.
+    func testFeatureRegression_MapAddPointSupportStackClearsWalkingDeckFootprint() throws {
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.MapForceWalkingState"])
+
+        XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.")
+        XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
+
+        let addPointStack = screenElement(identifier: "map.addPoint.stack", in: app)
+        let controlBar = screenElement(identifier: "map.walk.controlBar", in: app)
+
+        XCTAssertTrue(waitUntilExists(addPointStack, timeout: 8), "산책 중 영역 추가 보조 스택이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(controlBar, timeout: 4), "산책 중 control bar가 노출되지 않았습니다.")
+        XCTAssertLessThan(
+            addPointStack.frame.maxY + 12,
+            controlBar.frame.minY,
+            "영역 추가 스택은 하단 walking control bar footprint와 겹치면 안 됩니다."
+        )
+    }
+
     /// 지도 idle 상태의 하단 컨트롤러가 얇고 탭바에 인접한 control bar 밀도를 유지하는지 검증합니다.
     func testFeatureRegression_MapBottomControllerStaysAnchoredAndCompactAtRest() throws {
         let app = launchAppForFeatureRegression()
