@@ -7,6 +7,7 @@ struct WalkListDetailView: View {
     @State var model: WalkDataModel
     @State private var isMeter: Bool = true
     @State private var showSaveMessage: String? = nil
+    @State private var isSystemSharePresented = false
     @State private var shareItems: [Any] = []
     @State private var showShareSheet = false
     @State private var selectedLoc: UUID? = nil
@@ -54,8 +55,11 @@ struct WalkListDetailView: View {
 
                 WalkListDetailActionSectionView(
                     onShare: {
+                        isSystemSharePresented = false
                         shareItems = prepareShareItems()
-                        if shareItems.isEmpty == false {
+                        if shareItems.isEmpty {
+                            showToast("공유할 내용을 준비하지 못했어요. 다시 시도해주세요.")
+                        } else {
                             showShareSheet = true
                         }
                     },
@@ -82,14 +86,19 @@ struct WalkListDetailView: View {
                     .transition(.opacity)
             }
         }
-        .animation(.easeInOut(duration: 0.2), value: showSaveMessage)
-        .sheet(isPresented: $showShareSheet) {
-            ActivityShareSheet(items: shareItems) { _, completed, _, _ in
-                if completed {
-                    showToast("공유를 완료했어요!")
-                }
+        .overlay(alignment: .topLeading) {
+            if isSystemSharePresented {
+                Color.clear
+                    .frame(width: 1, height: 1)
+                    .accessibilityIdentifier("walklist.detail.share.presenter.active")
             }
         }
+        .animation(.easeInOut(duration: 0.2), value: showSaveMessage)
+        .background(
+            ActivityShareSheet(isPresented: $showShareSheet, items: shareItems) { result in
+                handleSharePresentationResult(result)
+            }
+        )
         .navigationBarBackButtonHidden()
         .safeAreaPadding(.top, 12)
         .appTabBarVisibility(.hidden)
@@ -109,6 +118,24 @@ struct WalkListDetailView: View {
         showSaveMessage = message
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             showSaveMessage = nil
+        }
+    }
+
+    /// 시스템 공유 시트 presenter가 보고한 이벤트를 상세 화면의 피드백으로 변환합니다.
+    /// - Parameter result: 시스템 공유 presenter 결과입니다.
+    private func handleSharePresentationResult(_ result: ActivitySharePresentationResult) {
+        switch result {
+        case .presented:
+            isSystemSharePresented = true
+        case .completed:
+            isSystemSharePresented = false
+            showToast("공유를 완료했어요!")
+        case .cancelled:
+            isSystemSharePresented = false
+            showToast("공유를 취소했어요.")
+        case .failed:
+            isSystemSharePresented = false
+            showToast("공유 시트를 열지 못했어요. 다시 시도해주세요.")
         }
     }
 

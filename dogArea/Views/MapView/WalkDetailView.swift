@@ -130,11 +130,11 @@ struct WalkDetailView: View {
                 }
             }.animation(.easeInOut(duration: 0.2), value: detailViewModel.toastMessage)
         )
-        .sheet(isPresented: $detailViewModel.showShareSheet) {
-            ActivityShareSheet(items: shareItems) { _, completed, _, _ in
-                detailViewModel.handleShareCompletion(completed: completed)
+        .background(
+            ActivityShareSheet(isPresented: $detailViewModel.showShareSheet, items: shareItems) { result in
+                detailViewModel.handleSharePresentationResult(result)
             }
-        }
+        )
         .fullScreenCover(isPresented: $detailViewModel.showCameraPicker) {
             ImagePicker(image: $detailViewModel.capturedWalkPhoto, type: .camera)
         }
