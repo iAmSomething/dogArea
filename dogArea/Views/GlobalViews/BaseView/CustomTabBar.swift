@@ -16,7 +16,7 @@ struct CustomTabBar: View {
 
     private let sideItems: [TabVisualItem] = [
         .init(id: 0, title: "홈", defaultSymbolName: "house", selectedSymbolName: "house.fill"),
-        .init(id: 1, title: "산책 목록", defaultSymbolName: "list.bullet", selectedSymbolName: "list.bullet.circle.fill"),
+        .init(id: 1, title: "산책 기록", defaultSymbolName: "list.bullet", selectedSymbolName: "list.bullet.circle.fill"),
         .init(id: 3, title: "라이벌", defaultSymbolName: "person.2", selectedSymbolName: "person.2.fill"),
         .init(id: 4, title: "설정", defaultSymbolName: "gearshape", selectedSymbolName: "gearshape.fill")
     ]

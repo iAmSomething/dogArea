@@ -39,6 +39,10 @@ assertTrue(
     "Walk list tab should provide an explicit selected SF Symbol"
 )
 assertTrue(
+    tabBar.contains("title: \"산책 기록\""),
+    "Walk record tab should use the user-facing 산책 기록 label"
+)
+assertTrue(
     tabBar.contains("resolvedSymbolName(isSelected: isSelected)"),
     "CustomTabBar should resolve tab symbols through an explicit resolver"
 )
@@ -61,6 +65,10 @@ assertTrue(
 assertTrue(
     policy.contains("자동 생성하지 않습니다"),
     "Policy doc should forbid automatic selected symbol composition"
+)
+assertTrue(
+    policy.contains("산책 기록: `list.bullet` -> `list.bullet.circle.fill`"),
+    "Policy doc should document the walk record tab terminology"
 )
 assertTrue(
     policy.contains(".fill") && policy.contains("문자열 결합은 금지합니다."),

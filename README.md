@@ -104,6 +104,7 @@
 - WalkList design refresh v1: `docs/walklist-design-refresh-v1.md`
 - WalkList month calendar hub v1: `docs/walklist-month-calendar-hub-v1.md`
 - WalkList detail design refresh v1: `docs/walklist-detail-design-refresh-v1.md`
+- Walk record tab label v1: `docs/walk-record-tab-label-v1.md`
 - UX copy guideline v1: `docs/ux-copy-guideline-v1.md`
 - Auth mail resend state machine v1: `docs/auth-mail-resend-state-machine-v1.md`
 - Auth CAPTCHA insertion & fallback UX v1: `docs/auth-captcha-insertion-fallback-ux-v1.md`
@@ -235,7 +236,7 @@
 
 -  막 산책을 마치고 다음 목표를 넘어섰을 때 Event를 추가하고 싶습니다.
 
-### 산책 목록
+### 산책 기록
 
 1. 메인 뷰
    1. <img src="https://p.ipic.vip/md9o07.png" alt="IMG_0360"  width="200" height="432" /><img src="https://p.ipic.vip/3ttd2o.png" alt="IMG_0361"  width="200" height="432" />
