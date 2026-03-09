@@ -27,6 +27,7 @@ struct StartButtonView: View {
     @Binding var isModalPresented: Bool
     @Binding var endWalkingViewPresented: Bool
     @State private var isMeter: Bool = true
+    @State private var isMeaningExpanded: Bool = false
     private let walkStartPresentationService: MapWalkStartPresenting = MapWalkStartPresentationService()
 
     private var walkStartPresentation: MapWalkStartPresentation {
@@ -86,6 +87,11 @@ struct StartButtonView: View {
             .accessibilityIdentifier("map.walk.controlBar")
         }
         .padding(.horizontal, MapChromeLayoutMetrics.horizontalPadding)
+        .onChange(of: viewModel.isWalking) { _, isWalking in
+            if isWalking {
+                isMeaningExpanded = false
+            }
+        }
     }
 
     private var petSelectionHint: some View {
@@ -124,6 +130,8 @@ struct StartButtonView: View {
     private var idleHintCard: some View {
         MapWalkStartMeaningCardView(
             presentation: walkStartPresentation,
+            isExpanded: isMeaningExpanded,
+            onToggleExpanded: toggleMeaningDisclosure,
             onOpenGuide: viewModel.presentWalkValueGuideFromMapHelp
         )
     }
@@ -259,5 +267,10 @@ struct StartButtonView: View {
                 )
             )
         }
+    }
+
+    /// 시작 전 의미 설명 disclosure 상태를 토글합니다.
+    private func toggleMeaningDisclosure() {
+        isMeaningExpanded.toggle()
     }
 }

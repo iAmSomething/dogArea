@@ -5,6 +5,11 @@ enum MapWalkTopHUDDisplayMode: Equatable {
     case compact
 }
 
+enum MapWalkTopHUDDisclosureMode: Equatable {
+    case expandInline
+    case openGuideSheet
+}
+
 struct MapWalkTopHUDMetricPresentation: Identifiable, Equatable {
     let id: String
     let title: String
@@ -16,7 +21,8 @@ struct MapWalkTopHUDPresentation: Equatable {
     let statusText: String
     let metrics: [MapWalkTopHUDMetricPresentation]
     let displayMode: MapWalkTopHUDDisplayMode
-    let guideAffordanceTitle: String?
+    let disclosureTitle: String?
+    let disclosureMode: MapWalkTopHUDDisclosureMode
 }
 
 struct MapWalkActiveValueMetricPresentation: Identifiable, Equatable {
