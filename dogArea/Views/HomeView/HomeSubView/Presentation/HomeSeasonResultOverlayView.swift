@@ -63,7 +63,7 @@ struct HomeSeasonResultOverlayView: View {
                 .padding(.vertical, 8)
                 .background(Color.appYellowPale.opacity(0.45))
                 .cornerRadius(8)
-                if rewardStatus != .claimed {
+                if rewardStatus == .pending || rewardStatus == .failed {
                     HStack {
                         Spacer()
                         Button(rewardStatus == .failed ? "재수령" : "수령 처리") {
@@ -104,6 +104,8 @@ struct HomeSeasonResultOverlayView: View {
             return "수령 완료"
         case .failed:
             return "실패"
+        case .unavailable:
+            return "서버 확인 필요"
         }
     }
 
@@ -118,6 +120,8 @@ struct HomeSeasonResultOverlayView: View {
             return Color.appGreen
         case .failed:
             return Color.appRed
+        case .unavailable:
+            return Color.appTextDarkGray
         }
     }
 

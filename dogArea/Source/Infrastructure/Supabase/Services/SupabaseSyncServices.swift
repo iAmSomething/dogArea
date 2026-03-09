@@ -21,11 +21,67 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
 
     private struct SyncStageResponseDTO: Decodable {
         let seasonScoreSummary: SeasonScoreSummaryDTO?
+        let seasonCanonicalSummary: SeasonCanonicalSummaryDTO?
         let weatherReplacementSummary: WeatherReplacementSummaryDTO?
 
         enum CodingKeys: String, CodingKey {
             case seasonScoreSummary = "season_score_summary"
+            case seasonCanonicalSummary = "season_canonical_summary"
             case weatherReplacementSummary = "weather_replacement_summary"
+        }
+    }
+
+    private struct SeasonCanonicalSummaryDTO: Decodable {
+        let currentSeasonId: String?
+        let currentSeasonKey: String?
+        let currentWeekKey: String?
+        let currentStatus: String?
+        let currentScore: Double?
+        let currentTargetScore: Double?
+        let currentProgress: Double?
+        let currentRankTier: String?
+        let currentTodayScoreDelta: Int?
+        let currentContributionCount: Int?
+        let currentWeatherShieldApplyCount: Int?
+        let currentScoreUpdatedAt: String?
+        let currentLastContributionAt: String?
+        let latestCompletedSeasonId: String?
+        let latestCompletedWeekKey: String?
+        let latestCompletedRankTier: String?
+        let latestCompletedTotalScore: Int?
+        let latestCompletedContributionCount: Int?
+        let latestCompletedWeatherShieldApplyCount: Int?
+        let latestCompletedRewardCode: String?
+        let latestCompletedRewardStatus: String?
+        let latestCompletedRewardClaimedAt: String?
+        let latestCompletedCompletedAt: String?
+        let refreshedAt: String?
+
+        enum CodingKeys: String, CodingKey {
+            case currentSeasonId = "current_season_id"
+            case currentSeasonKey = "current_season_key"
+            case currentWeekKey = "current_week_key"
+            case currentStatus = "current_status"
+            case currentScore = "current_score"
+            case currentTargetScore = "current_target_score"
+            case currentProgress = "current_progress"
+            case currentRankTier = "current_rank_tier"
+            case currentTodayScoreDelta = "current_today_score_delta"
+            case currentContributionCount = "current_contribution_count"
+            case currentWeatherShieldApplyCount = "current_weather_shield_apply_count"
+            case currentScoreUpdatedAt = "current_score_updated_at"
+            case currentLastContributionAt = "current_last_contribution_at"
+            case latestCompletedSeasonId = "latest_completed_season_id"
+            case latestCompletedWeekKey = "latest_completed_week_key"
+            case latestCompletedRankTier = "latest_completed_rank_tier"
+            case latestCompletedTotalScore = "latest_completed_total_score"
+            case latestCompletedContributionCount = "latest_completed_contribution_count"
+            case latestCompletedWeatherShieldApplyCount = "latest_completed_weather_shield_apply_count"
+            case latestCompletedRewardCode = "latest_completed_reward_code"
+            case latestCompletedRewardStatus = "latest_completed_reward_status"
+            case latestCompletedRewardClaimedAt = "latest_completed_reward_claimed_at"
+            case latestCompletedCompletedAt = "latest_completed_completed_at"
+            case refreshedAt = "refreshed_at"
         }
     }
 
@@ -326,9 +382,10 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
 
     private func persistSeasonCatchupBuffSnapshotIfNeeded(item: SyncOutboxItem, data: Data) {
         guard item.stage == .points else { return }
-        guard let decoded = try? JSONDecoder().decode(SyncStageResponseDTO.self, from: data),
-              let season = decoded.seasonScoreSummary else {
-            persistWeatherReplacementSummaryIfNeeded(item: item, response: try? JSONDecoder().decode(SyncStageResponseDTO.self, from: data))
+        let decoded = try? JSONDecoder().decode(SyncStageResponseDTO.self, from: data)
+        guard let season = decoded?.seasonScoreSummary else {
+            persistSeasonCanonicalSummaryIfNeeded(item: item, response: decoded)
+            persistWeatherReplacementSummaryIfNeeded(item: item, response: decoded)
             return
         }
 
@@ -347,7 +404,64 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
             syncedAt: Date().timeIntervalSince1970
         )
         UserdefaultSetting.shared.updateSeasonCatchupBuffSnapshot(snapshot)
+        persistSeasonCanonicalSummaryIfNeeded(item: item, response: decoded)
         persistWeatherReplacementSummaryIfNeeded(item: item, response: decoded)
+    }
+
+    /// `sync-walk` points stage 응답에 포함된 시즌 canonical summary를 member cache로 저장합니다.
+    /// - Parameters:
+    ///   - item: 처리 중인 sync outbox 항목입니다.
+    ///   - response: 디코딩된 sync points stage 응답입니다.
+    private func persistSeasonCanonicalSummaryIfNeeded(
+        item: SyncOutboxItem,
+        response: SyncStageResponseDTO?
+    ) {
+        guard item.stage == .points,
+              let summary = response?.seasonCanonicalSummary else {
+            return
+        }
+        guard case .member(let userId) = AppFeatureGate.currentSession() else {
+            return
+        }
+
+        let latestCompletedSeason: SeasonCanonicalCompletedSnapshot?
+        if let seasonId = normalizedSeasonIdentifier(summary.latestCompletedSeasonId),
+           let weekKey = normalizedWeekKey(summary.latestCompletedWeekKey) {
+            latestCompletedSeason = SeasonCanonicalCompletedSnapshot(
+                seasonId: seasonId,
+                weekKey: weekKey,
+                rankTier: resolvedSeasonRankTier(summary.latestCompletedRankTier),
+                totalScore: max(0, summary.latestCompletedTotalScore ?? 0),
+                contributionCount: max(0, summary.latestCompletedContributionCount ?? 0),
+                weatherShieldApplyCount: max(0, summary.latestCompletedWeatherShieldApplyCount ?? 0),
+                rewardCode: summary.latestCompletedRewardCode,
+                rewardStatusRawValue: summary.latestCompletedRewardStatus ?? "unavailable",
+                rewardClaimedAt: SupabaseISO8601.parseEpoch(summary.latestCompletedRewardClaimedAt),
+                completedAt: SupabaseISO8601.parseEpoch(summary.latestCompletedCompletedAt)
+            )
+        } else {
+            latestCompletedSeason = nil
+        }
+
+        let snapshot = SeasonCanonicalSummarySnapshot(
+            ownerUserId: userId,
+            seasonId: normalizedSeasonIdentifier(summary.currentSeasonId),
+            seasonKey: summary.currentSeasonKey,
+            weekKey: normalizedWeekKey(summary.currentWeekKey) ?? "",
+            seasonCompletionStateRawValue: summary.currentStatus ?? "inactive",
+            score: max(0, summary.currentScore ?? 0),
+            targetScore: max(1, summary.currentTargetScore ?? 520),
+            progress: min(1.0, max(0.0, summary.currentProgress ?? 0)),
+            rankTier: resolvedSeasonRankTier(summary.currentRankTier),
+            todayScoreDelta: max(0, summary.currentTodayScoreDelta ?? 0),
+            contributionCount: max(0, summary.currentContributionCount ?? 0),
+            weatherShieldApplyCount: max(0, summary.currentWeatherShieldApplyCount ?? 0),
+            scoreUpdatedAt: SupabaseISO8601.parseEpoch(summary.currentScoreUpdatedAt),
+            lastContributionAt: SupabaseISO8601.parseEpoch(summary.currentLastContributionAt),
+            refreshedAt: SupabaseISO8601.parseEpoch(summary.refreshedAt) ?? Date().timeIntervalSince1970,
+            latestCompletedSeason: latestCompletedSeason
+        )
+        SeasonCanonicalSummaryStore.shared.save(snapshot)
     }
 
     /// `sync-walk` points stage 응답에 포함된 날씨 canonical summary를 로컬 cache로 저장합니다.
@@ -390,6 +504,44 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
             refreshedAt: SupabaseISO8601.parseEpoch(summary.refreshedAt) ?? Date().timeIntervalSince1970
         )
         WeatherReplacementSummaryStore.shared.save(snapshot)
+    }
+
+    /// 서버가 반환한 시즌 랭크 문자열을 앱 공용 시즌 랭크로 정규화합니다.
+    /// - Parameter rawValue: 서버 응답의 시즌 랭크 문자열입니다.
+    /// - Returns: 앱에서 사용할 시즌 랭크 값입니다.
+    private func resolvedSeasonRankTier(_ rawValue: String?) -> SeasonRankTier {
+        switch rawValue?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+        case SeasonRankTier.bronze.rawValue:
+            return .bronze
+        case SeasonRankTier.silver.rawValue:
+            return .silver
+        case SeasonRankTier.gold.rawValue:
+            return .gold
+        case SeasonRankTier.platinum.rawValue:
+            return .platinum
+        default:
+            return .rookie
+        }
+    }
+
+    /// 시즌/주차 식별자를 캐시 키와 비교하기 쉬운 canonical 문자열로 정규화합니다.
+    /// - Parameter value: 정규화할 원시 식별자 문자열입니다.
+    /// - Returns: 비어 있지 않은 정규화 식별자이며, 없으면 `nil`입니다.
+    private func normalizedSeasonIdentifier(_ value: String?) -> String? {
+        guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), value.isEmpty == false else {
+            return nil
+        }
+        return value.lowercased()
+    }
+
+    /// 서버가 내려준 시즌 주차 키를 비어 있지 않은 canonical 문자열로 정규화합니다.
+    /// - Parameter value: 서버 응답의 원시 주차 키입니다.
+    /// - Returns: 비어 있지 않은 주차 키이며, 없으면 `nil`입니다.
+    private func normalizedWeekKey(_ value: String?) -> String? {
+        guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), value.isEmpty == false else {
+            return nil
+        }
+        return value
     }
 }
 

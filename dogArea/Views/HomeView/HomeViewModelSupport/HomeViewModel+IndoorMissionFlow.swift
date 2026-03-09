@@ -5,6 +5,16 @@ extension HomeViewModel {
         static let maxCacheAge: TimeInterval = 30 * 60
     }
 
+    /// 현재 홈에 표시할 시즌 요약을 로컬 fallback 기준으로 먼저 갱신합니다.
+    /// - Parameter now: 시즌 남은 시간과 fallback 요약을 계산할 기준 시각입니다.
+    func refreshSeasonMotion(now: Date) {
+        let localRefresh = seasonMotionStore.refresh(
+            now: now,
+            riskLevel: indoorMissionBoard.riskLevel
+        )
+        applyLocalSeasonRefresh(localRefresh, now: now)
+    }
+
     /// 실패/만료 상황에서 사용자가 다음으로 시도할 행동을 안내하는 문구를 생성합니다.
     func makeQuestAlternativeActionSuggestion(for board: IndoorMissionBoard) -> String? {
         switch board.extensionState {
@@ -44,15 +54,16 @@ extension HomeViewModel {
             serverSummary: cachedServerSummary
         )
 
+        syncSeasonScoreWithWalkSessions(now: now)
+        refreshSeasonMotion(now: now)
+
         if shouldFetchServerSummary {
             refreshWeatherCanonicalSummaryIfNeeded(
                 baseWeatherStatus: baseWeatherStatus,
                 now: now
             )
+            refreshSeasonCanonicalSummaryIfNeeded(now: now)
         }
-
-        syncSeasonScoreWithWalkSessions(now: now)
-        refreshSeasonMotion(now: now)
     }
 
     /// 홈 실내 미션/날씨 카드가 사용할 파생 상태를 계산해 published 상태에 반영합니다.
@@ -249,6 +260,7 @@ extension HomeViewModel {
                 streakEligible: mission.streakEligible,
                 riskLevel: indoorMissionBoard.riskLevel
             )
+            markSeasonCanonicalOptimisticWindow(now: Date())
             if seasonUpdate.shieldApplied {
                 indoorMissionStore.recordWeatherShieldUsage()
             }
@@ -574,6 +586,7 @@ extension HomeViewModel {
             return
         }
 
+        markSeasonCanonicalOptimisticWindow(now: now)
         seasonMotionSummary = update.summary
         if let completedSeason = update.completedSeason {
             seasonResultPresentation = completedSeason
@@ -585,27 +598,6 @@ extension HomeViewModel {
                 type: update.rankUp ? .rankUp : .scoreIncreased,
                 scoreDelta: update.scoreDelta,
                 rankTier: update.summary.rankTier,
-                shieldApplied: false
-            )
-        }
-    }
-
-    func refreshSeasonMotion(now: Date) {
-        let refresh = seasonMotionStore.refresh(
-            now: now,
-            riskLevel: indoorMissionBoard.riskLevel
-        )
-        seasonMotionSummary = refresh.summary
-        seasonRemainingTimeText = seasonMotionStore.remainingTimeText(now: now)
-        lastSeasonResultPresentation = seasonMotionStore.loadLastCompletedSeason()
-        if let completedSeason = refresh.completedSeason {
-            seasonResultPresentation = completedSeason
-            lastSeasonResultPresentation = completedSeason
-            seasonResetTransitionToken = UUID()
-            seasonMotionEvent = SeasonMotionEvent(
-                type: .seasonReset,
-                scoreDelta: 0,
-                rankTier: refresh.summary.rankTier,
                 shieldApplied: false
             )
         }

@@ -81,6 +81,7 @@ enum SeasonRewardClaimStatus: String, Codable, Equatable {
     case pending
     case claimed
     case failed
+    case unavailable
 }
 
 struct WeatherMissionStatusSummary: Equatable {

@@ -18,6 +18,7 @@ swift scripts/auth_mail_cooldown_retryafter_ux_unit_check.swift
 swift scripts/auth_smtp_provider_checklist_unit_check.swift
 swift scripts/auth_service_mail_channel_separation_unit_check.swift
 swift scripts/auth_mail_observability_unit_check.swift
+swift scripts/season_canonical_server_state_unit_check.swift
 swift scripts/weather_canonical_server_state_unit_check.swift
 swift scripts/epic_21_closure_evidence_unit_check.swift
 swift scripts/epic_123_closure_evidence_unit_check.swift

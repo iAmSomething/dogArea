@@ -1,6 +1,7 @@
 import { asRecord, asString, logSyncWalkStageFailure, toNumber, toUUIDOrNull } from "../support/core.ts";
 import type {
   QuestProgressSummaryDTO,
+  SeasonCanonicalSummaryDTO,
   SeasonPipelineSummaryDTO,
   SeasonScoreSummaryDTO,
   SyncWalkPointRow,
@@ -16,6 +17,7 @@ type PointsPostProcessingContext = SyncWalkStageRequestContext & {
 
 type PointsPostProcessingResult = {
   seasonScoreSummary: SeasonScoreSummaryDTO | null;
+  seasonCanonicalSummary: SeasonCanonicalSummaryDTO | null;
   seasonPipelineSummary: SeasonPipelineSummaryDTO | null;
   weatherReplacementSummary: WeatherReplacementSummaryDTO | null;
   questProgressSummary: QuestProgressSummaryDTO[];
@@ -59,6 +61,27 @@ async function loadSeasonPipelineSummary(
   }
 
   return Array.isArray(data) && data.length > 0 ? data[0] as SeasonPipelineSummaryDTO : null;
+}
+
+async function loadSeasonCanonicalSummary(
+  context: PointsPostProcessingContext,
+  nowISO: string,
+): Promise<SeasonCanonicalSummaryDTO | null> {
+  const { data, error } = await context.userClient.rpc(
+    "rpc_get_owner_season_summary",
+    {
+      payload: {
+        in_now_ts: nowISO,
+      },
+    },
+  );
+
+  if (error) {
+    logSyncWalkStageFailure(context.requestId, "points", "season_canonical_summary", error.message);
+    return null;
+  }
+
+  return Array.isArray(data) && data.length > 0 ? data[0] as SeasonCanonicalSummaryDTO : null;
 }
 
 async function loadWeatherReplacementSummary(
@@ -169,8 +192,15 @@ export async function runPointsStagePostProcessing(
   context: PointsPostProcessingContext,
 ): Promise<PointsPostProcessingResult> {
   const nowISO = new Date().toISOString();
-  const [seasonScoreSummary, seasonPipelineSummary, weatherReplacementSummary, questProgressSummary] = await Promise.all([
+  const [
+    seasonScoreSummary,
+    seasonCanonicalSummary,
+    seasonPipelineSummary,
+    weatherReplacementSummary,
+    questProgressSummary,
+  ] = await Promise.all([
     loadSeasonScoreSummary(context, nowISO),
+    loadSeasonCanonicalSummary(context, nowISO),
     loadSeasonPipelineSummary(context, nowISO),
     loadWeatherReplacementSummary(context, nowISO),
     loadQuestProgressSummary(context, nowISO),
@@ -178,6 +208,7 @@ export async function runPointsStagePostProcessing(
 
   return {
     seasonScoreSummary,
+    seasonCanonicalSummary,
     seasonPipelineSummary,
     weatherReplacementSummary,
     questProgressSummary,
