@@ -1219,16 +1219,17 @@ final class FeatureRegressionUITests: XCTestCase {
         let app = launchAppForFeatureRegression(style: style)
         let walkListTab = app.buttons["tab.1"]
 
-        XCTAssertTrue(waitUntilExists(walkListTab, timeout: 12), "산책 목록 탭 버튼(tab.1)을 찾지 못했습니다.")
-        XCTAssertTrue(openTab(index: 1, app: app), "산책 목록 탭 진입에 실패했습니다.")
+        XCTAssertTrue(waitUntilExists(walkListTab, timeout: 12), "산책 기록 탭 버튼(tab.1)을 찾지 못했습니다.")
+        XCTAssertTrue(openTab(index: 1, app: app), "산책 기록 탭 진입에 실패했습니다.")
+        XCTAssertTrue(walkListTab.label.contains("산책 기록"), "탭 버튼이 사용자 표면에서 산책 기록으로 읽혀야 합니다.")
 
         let resolvedValue = walkListTab.value as? String
         XCTAssertEqual(
             resolvedValue,
             "selected:list.bullet.circle.fill",
-            "산책 목록 탭 선택 상태에서 유효한 selected SF Symbol이 유지되어야 합니다."
+            "산책 기록 탭 선택 상태에서 유효한 selected SF Symbol이 유지되어야 합니다."
         )
-        XCTAssertTrue(walkListTab.isHittable, "산책 목록 탭 버튼이 선택 후에도 정상 hit-test 상태를 유지해야 합니다.")
+        XCTAssertTrue(walkListTab.isHittable, "산책 기록 탭 버튼이 선택 후에도 정상 hit-test 상태를 유지해야 합니다.")
     }
 
     /// 이메일/비밀번호를 입력해 로그인 버튼을 누르고 화면 복귀를 기다립니다.
@@ -1763,7 +1764,7 @@ final class FeatureRegressionUITests: XCTestCase {
     /// 네비게이션 스택이 존재하면 뒤로 이동을 시도합니다.
     /// - Parameter app: 테스트 대상 앱 인스턴스입니다.
     private func navigateBackIfPossible(_ app: XCUIApplication) {
-        let candidates = ["뒤로", "Back", "산책 목록", "홈"]
+        let candidates = ["뒤로", "Back", "산책 기록", "산책 목록", "홈"]
         for title in candidates {
             let backButton = app.navigationBars.buttons[title]
             if backButton.exists {

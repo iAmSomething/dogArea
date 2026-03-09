@@ -240,7 +240,7 @@ struct MapSettingView: View {
 
     private var polygonHistorySection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("산책 목록")
+            Text("산책 기록")
                 .font(.appFont(for: .SemiBold, size: 16))
             if viewModel.polygonList.isEmpty {
                 Text("저장된 산책 기록이 없어요.")

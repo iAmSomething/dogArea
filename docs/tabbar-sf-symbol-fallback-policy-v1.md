@@ -19,7 +19,7 @@ SF Symbol은 base 이름에 대응하는 fill variant가 항상 존재하지 않
 ## 현재 적용
 
 - 홈: `house` -> `house.fill`
-- 산책 목록: `list.bullet` -> `list.bullet.circle.fill`
+- 산책 기록: `list.bullet` -> `list.bullet.circle.fill`
 - 라이벌: `person.2` -> `person.2.fill`
 - 설정: `gearshape` -> `gearshape.fill`
 - 지도 중앙 버튼: 기존 별도 로직 유지

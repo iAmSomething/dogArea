@@ -655,7 +655,7 @@ final class DesignAuditUITests: XCTestCase {
 
     /// 네비게이션 스택이 존재하면 뒤로 이동을 시도합니다.
     private func navigateBackIfPossible(_ app: XCUIApplication) {
-        let candidates = ["뒤로", "Back", "산책 목록", "홈"]
+        let candidates = ["뒤로", "Back", "산책 기록", "산책 목록", "홈"]
         for title in candidates {
             let backButton = app.navigationBars.buttons[title]
             if backButton.exists {
