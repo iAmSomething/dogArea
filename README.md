@@ -28,6 +28,7 @@
 - Watch Smart Stack glance plan v1: `docs/watch-smart-stack-glance-plan-v1.md`
 - Walk widget action state model v1: `docs/walk-widget-action-state-model-v1.md`
 - Walk widget action convergence v1: `docs/walk-widget-action-convergence-v1.md`
+- Walk Live Activity copy/timer policy v1: `docs/walk-live-activity-copy-timer-v1.md`
 - Walk Live Activity priority v1: `docs/walk-live-activity-priority-v1.md`
 - Watch action feedback UX v1: `docs/watch-action-feedback-ux-v1.md`
 - Watch selected pet context UX v1: `docs/watch-selected-pet-context-ux-v1.md`

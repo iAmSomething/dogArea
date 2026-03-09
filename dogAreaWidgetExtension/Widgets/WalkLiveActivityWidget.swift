@@ -6,11 +6,11 @@ import ActivityKit
 
 #if canImport(ActivityKit)
 @available(iOSApplicationExtension 16.1, *)
-private struct WalkLiveActivityMetricTileView: View {
+private struct WalkLiveActivityMetricTileView<Content: View>: View {
     let title: String
-    let value: String
     let systemImage: String
     var tint: Color = .orange
+    @ViewBuilder let content: () -> Content
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -18,7 +18,7 @@ private struct WalkLiveActivityMetricTileView: View {
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
-            Text(value)
+            content()
                 .font(.system(.headline, design: .rounded).weight(.bold))
                 .monospacedDigit()
                 .foregroundStyle(tint)
@@ -34,20 +34,41 @@ private struct WalkLiveActivityMetricTileView: View {
 }
 
 @available(iOSApplicationExtension 16.1, *)
+private enum WalkLiveActivityElapsedDisplayMode {
+    case liveTimer(referenceDate: Date)
+    case frozen(fullText: String, compactText: String)
+}
+
+@available(iOSApplicationExtension 16.1, *)
 private struct WalkLiveActivityPresentation {
     let petName: String
-    let elapsedText: String
-    let compactElapsedText: String
+    let elapsedDisplayMode: WalkLiveActivityElapsedDisplayMode
     let areaText: String
     let compactAreaText: String
     let pointsText: String
     let progressHeadline: String
     let progressDetail: String
     let safetyTitle: String
-    let safetyDetail: String
     let safetyTint: Color
     let compactTrailingText: String
     let minimalSymbolName: String
+}
+
+@available(iOSApplicationExtension 16.1, *)
+private struct WalkLiveActivityElapsedTextView: View {
+    let presentation: WalkLiveActivityPresentation
+    var compact: Bool = false
+
+    var body: some View {
+        switch presentation.elapsedDisplayMode {
+        case let .liveTimer(referenceDate):
+            Text(referenceDate, style: .timer)
+                .minimumScaleFactor(compact ? 0.72 : 0.8)
+        case let .frozen(fullText, compactText):
+            Text(compact ? compactText : fullText)
+                .minimumScaleFactor(compact ? 0.72 : 0.8)
+        }
+    }
 }
 
 @available(iOSApplicationExtension 16.1, *)
@@ -56,66 +77,132 @@ private enum WalkLiveActivityPresentationGuide {
     /// - Parameter state: ActivityKit이 전달한 현재 산책 상태입니다.
     /// - Returns: 시간, 영역, 안전 상태 우선순위가 반영된 프레젠테이션 값입니다.
     static func make(from state: WalkLiveActivityAttributes.ContentState) -> WalkLiveActivityPresentation {
-        let safety = safetyPresentation(
+        let safety = safetyPresentation(stage: state.autoEndStage)
+        let summary = progressPresentation(
             stage: state.autoEndStage,
-            message: state.statusMessage
+            pointCount: state.pointCount,
+            capturedAreaM2: state.capturedAreaM2,
+            statusMessage: state.statusMessage
         )
         let compactAreaText = WidgetFormatting.formattedCompactArea(state.capturedAreaM2)
-        let progressHeadline: String
-        let progressDetail: String
-
-        if state.capturedAreaM2 >= 1 {
-            progressHeadline = "현재 확보 영역 \(WidgetFormatting.formattedArea(state.capturedAreaM2))"
-            progressDetail = "지금까지 포인트 \(state.pointCount)개를 기록하며 영역을 넓히고 있어요."
-        } else if state.pointCount > 0 {
-            progressHeadline = "첫 영역 기록을 쌓는 중이에요"
-            progressDetail = "포인트 \(state.pointCount)개가 기록됐고, 다음 마크가 쌓이면 영역 증가량이 바로 보입니다."
-        } else {
-            progressHeadline = "첫 포인트를 기다리고 있어요"
-            progressDetail = "산책을 계속 이어가면 경과 시간 다음으로 영역 증가량을 우선 보여드릴게요."
-        }
 
         return .init(
             petName: state.petName,
-            elapsedText: WidgetFormatting.formattedElapsed(state.elapsedSeconds),
-            compactElapsedText: WidgetFormatting.formattedElapsedCompact(state.elapsedSeconds),
+            elapsedDisplayMode: elapsedDisplayMode(for: state),
             areaText: WidgetFormatting.formattedArea(state.capturedAreaM2),
             compactAreaText: compactAreaText,
             pointsText: "포인트 \(state.pointCount)",
-            progressHeadline: progressHeadline,
-            progressDetail: progressDetail,
+            progressHeadline: summary.headline,
+            progressDetail: summary.detail,
             safetyTitle: safety.title,
-            safetyDetail: safety.detail,
             safetyTint: safety.tint,
             compactTrailingText: compactTrailingText(for: state, compactAreaText: compactAreaText),
             minimalSymbolName: minimalSymbolName(for: state.autoEndStage),
         )
     }
 
-    /// 자동 종료 단계와 상태 메시지를 compact/expanded 공통 안전 메시지로 정규화합니다.
-    /// - Parameters:
-    ///   - stage: 자동 종료 단계 값입니다.
-    ///   - message: ViewModel이 전달한 현재 상태 메시지입니다.
-    /// - Returns: 단계별 제목, 세부 문구, 강조 색을 포함한 안전 프레젠테이션 값입니다.
-    private static func safetyPresentation(
-        stage: WalkLiveActivityAutoEndStage,
-        message: String?
-    ) -> (title: String, detail: String, tint: Color) {
-        let trimmedMessage = message?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let normalizedMessage = trimmedMessage?.isEmpty == false ? trimmedMessage : nil
+    /// Live Activity의 경과 시간을 self-updating timer 또는 고정 문자열 중 하나로 정규화합니다.
+    /// - Parameter state: ActivityKit이 전달한 현재 산책 상태입니다.
+    /// - Returns: 진행 중 단계면 self-updating timer 기준 시각을, 종료 단계면 고정 시간을 반환합니다.
+    private static func elapsedDisplayMode(
+        for state: WalkLiveActivityAttributes.ContentState
+    ) -> WalkLiveActivityElapsedDisplayMode {
+        if state.autoEndStage == .ended {
+            return .frozen(
+                fullText: WidgetFormatting.formattedElapsed(state.elapsedSeconds),
+                compactText: WidgetFormatting.formattedElapsedCompact(state.elapsedSeconds)
+            )
+        }
 
+        let referenceTimestamp = max(0, state.updatedAt - Double(state.elapsedSeconds))
+        return .liveTimer(referenceDate: Date(timeIntervalSince1970: referenceTimestamp))
+    }
+
+    /// 자동 종료 단계에 맞는 badge 제목과 강조 색을 계산합니다.
+    /// - Parameter stage: 현재 산책 자동 종료 단계입니다.
+    /// - Returns: 공통 badge 제목과 강조 색입니다.
+    private static func safetyPresentation(
+        stage: WalkLiveActivityAutoEndStage
+    ) -> (title: String, tint: Color) {
         switch stage {
         case .active:
-            return ("정상 기록 중", normalizedMessage ?? "자동 종료 위험 없이 현재 산책 가치가 정상적으로 쌓이고 있어요.", .green)
+            return ("정상 기록 중", .green)
         case .restCandidate:
-            return ("휴식 감지", normalizedMessage ?? "5분 무이동 상태예요. 다시 움직이면 휴식 단계가 바로 해제됩니다.", .yellow)
+            return ("휴식 감지", .yellow)
         case .warning:
-            return ("자동 종료 경고", normalizedMessage ?? "12분 무이동 상태예요. 3분 뒤 자동 종료될 수 있습니다.", .orange)
+            return ("자동 종료 경고", .orange)
         case .autoEnding:
-            return ("자동 종료 단계", normalizedMessage ?? "15분 무이동 단계예요. 앱을 열어 종료/복구 상태를 확인해 주세요.", .red)
+            return ("자동 종료 단계", .red)
         case .ended:
-            return ("산책 종료", normalizedMessage ?? "현재 세션은 종료 상태입니다.", .secondary)
+            return ("산책 종료", .secondary)
         }
+    }
+
+    /// 단계와 진행 수치를 함께 고려해 사용자에게 보여줄 headline/detail 쌍을 생성합니다.
+    /// - Parameters:
+    ///   - stage: 현재 산책 자동 종료 단계입니다.
+    ///   - pointCount: 지금까지 기록된 포인트 수입니다.
+    ///   - capturedAreaM2: 현재까지 확보된 영역입니다.
+    ///   - statusMessage: 앱 런타임이 전달한 보조 상태 메시지입니다.
+    /// - Returns: 잠금화면과 Dynamic Island가 함께 공유할 headline/detail 쌍입니다.
+    private static func progressPresentation(
+        stage: WalkLiveActivityAutoEndStage,
+        pointCount: Int,
+        capturedAreaM2: Double,
+        statusMessage: String?
+    ) -> (headline: String, detail: String) {
+        let normalizedMessage = normalizedMessage(from: statusMessage)
+
+        switch stage {
+        case .ended:
+            return (
+                "산책이 종료되었어요",
+                normalizedMessage ?? "앱에서 저장 결과와 산책 기록을 확인해 주세요."
+            )
+        case .autoEnding:
+            return (
+                "자동 종료 정리 중이에요",
+                normalizedMessage ?? "움직임이 오래 없어 종료 단계에 들어갔어요. 앱에서 현재 세션을 확인해 주세요."
+            )
+        case .warning:
+            return (
+                "곧 자동 종료될 수 있어요",
+                normalizedMessage ?? "움직임이 없으면 자동 종료 단계로 넘어가요. 다시 걸으면 바로 정상 기록으로 돌아갑니다."
+            )
+        case .restCandidate:
+            return (
+                "잠시 쉬는 중인지 확인하고 있어요",
+                normalizedMessage ?? "다시 움직이면 정상 기록 중 상태로 바로 복귀합니다."
+            )
+        case .active:
+            if capturedAreaM2 >= 1 {
+                return (
+                    "현재 확보 영역 \(WidgetFormatting.formattedArea(capturedAreaM2))",
+                    "지금까지 포인트 \(pointCount)개를 기록하며 영역을 넓히고 있어요."
+                )
+            }
+            if pointCount > 0 {
+                return (
+                    "첫 영역 기록을 쌓는 중이에요",
+                    "포인트 \(pointCount)개가 기록됐고, 다음 마크가 쌓이면 영역 증가량이 바로 보입니다."
+                )
+            }
+            return (
+                "첫 포인트를 기다리고 있어요",
+                "산책을 계속 이어가면 첫 기록이 생기는 즉시 영역 변화가 함께 보입니다."
+            )
+        }
+    }
+
+    /// 상태 메시지 문자열에서 사용자에게 노출 가능한 값을 추출합니다.
+    /// - Parameter message: 런타임이 전달한 원본 상태 메시지입니다.
+    /// - Returns: 공백만 남는 경우 `nil`, 아니면 trim된 메시지입니다.
+    private static func normalizedMessage(from message: String?) -> String? {
+        let trimmedMessage = message?.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let trimmedMessage, trimmedMessage.isEmpty == false {
+            return trimmedMessage
+        }
+        return nil
     }
 
     /// compact trailing 영역에 노출할 우선 값을 계산합니다.
@@ -131,7 +218,7 @@ private enum WalkLiveActivityPresentationGuide {
         case .warning:
             return "주의"
         case .autoEnding:
-            return "종료"
+            return "확인"
         case .ended:
             return "완료"
         case .active, .restCandidate:
@@ -206,16 +293,18 @@ private struct WalkLiveActivityView: View {
             HStack(spacing: 10) {
                 WalkLiveActivityMetricTileView(
                     title: "경과 시간",
-                    value: presentation.elapsedText,
                     systemImage: "clock",
                     tint: .blue
-                )
+                ) {
+                    WalkLiveActivityElapsedTextView(presentation: presentation)
+                }
                 WalkLiveActivityMetricTileView(
                     title: "현재 확보",
-                    value: presentation.areaText,
                     systemImage: "square.stack.3d.up.fill",
                     tint: .green
-                )
+                ) {
+                    Text(presentation.areaText)
+                }
             }
 
             HStack(alignment: .top, spacing: 10) {
@@ -223,7 +312,7 @@ private struct WalkLiveActivityView: View {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
-                Text(presentation.safetyDetail)
+                Text(presentation.progressDetail)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
@@ -271,18 +360,20 @@ struct WalkLiveActivityWidget: Widget {
                 DynamicIslandExpandedRegion(.leading) {
                     WalkLiveActivityMetricTileView(
                         title: "시간",
-                        value: presentation.compactElapsedText,
                         systemImage: "clock",
                         tint: .blue
-                    )
+                    ) {
+                        WalkLiveActivityElapsedTextView(presentation: presentation, compact: true)
+                    }
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     WalkLiveActivityMetricTileView(
                         title: "영역",
-                        value: presentation.compactAreaText,
                         systemImage: "square.stack.3d.up.fill",
                         tint: .green
-                    )
+                    ) {
+                        Text(presentation.compactAreaText)
+                    }
                 }
                 DynamicIslandExpandedRegion(.center) {
                     VStack(spacing: 4) {
@@ -302,7 +393,7 @@ struct WalkLiveActivityWidget: Widget {
                             title: presentation.safetyTitle,
                             color: presentation.safetyTint.opacity(0.18)
                         )
-                        Text(presentation.safetyDetail)
+                        Text(presentation.progressDetail)
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                             .lineLimit(2)
@@ -310,7 +401,7 @@ struct WalkLiveActivityWidget: Widget {
                     }
                 }
             } compactLeading: {
-                Text(presentation.compactElapsedText)
+                WalkLiveActivityElapsedTextView(presentation: presentation, compact: true)
                     .font(.caption2.weight(.semibold))
                     .monospacedDigit()
             } compactTrailing: {
