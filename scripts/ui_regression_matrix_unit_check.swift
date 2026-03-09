@@ -34,6 +34,7 @@ for token in [
     "FR-WALK-002",
     "FR-WALK-002A",
     "FR-WALK-002B",
+    "FR-WALK-002C",
     "FR-WALK-003",
     "FR-WALK-003A",
     "FR-GOAL-001",
@@ -70,6 +71,7 @@ for testName in [
     "testFeatureRegression_MapStopAlertPresentsClearActionHierarchy",
     "testFeatureRegression_WalkListPrimaryContentIsNotObscuredByTabBar",
     "testFeatureRegression_WalkListHeaderSurfacesOverviewAndContextCards",
+    "testFeatureRegression_WalkListStickySectionHeaderStaysBelowStatusBar",
     "testFeatureRegression_WalkListTabSelectedIconRemainsVisibleInBothStyles",
     "testFeatureRegression_WalkListDetailClarifiesSummaryAndActionHierarchy",
     "testFeatureRegression_WalkListShareActionPresentsSystemSharePresenter",
@@ -100,6 +102,10 @@ assertTrue(
 assertTrue(
     featureRegressionScript.contains("testFeatureRegression_WalkListHeaderSurfacesOverviewAndContextCards"),
     "run_feature_regression_ui_tests.sh should run the walk list header hub regression"
+)
+assertTrue(
+    featureRegressionScript.contains("testFeatureRegression_WalkListStickySectionHeaderStaysBelowStatusBar"),
+    "run_feature_regression_ui_tests.sh should run the walk list sticky section header regression"
 )
 assertTrue(
     featureRegressionScript.contains("testFeatureRegression_WalkListTabSelectedIconRemainsVisibleInBothStyles"),

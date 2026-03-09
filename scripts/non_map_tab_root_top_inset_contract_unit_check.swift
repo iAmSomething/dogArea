@@ -37,6 +37,8 @@ assertTrue(scaffold.contains("nonMapRootTopSafeAreaPadding: CGFloat = 18"), "App
 assertTrue(scaffold.contains("mapOverlayTopExtraSpacing: CGFloat = 8"), "AppTabScaffold should keep a separate map overlay top spacing")
 assertTrue(scaffold.contains("extra: CGFloat = mapOverlayTopExtraSpacing"), "topOverlaySpacing should default to the map overlay spacing")
 assertTrue(scaffold.contains("topSafeAreaPadding: CGFloat = AppTabLayoutMetrics.nonMapRootTopSafeAreaPadding"), "appTabRootScrollLayout should default to the non-map root top inset")
+assertTrue(scaffold.contains(".safeAreaInset(edge: .top, spacing: 0)"), "AppTabScaffold should reserve non-map top inset with safeAreaInset")
+assertTrue(!scaffold.contains(".safeAreaPadding(.top, topSafeAreaPadding)"), "AppTabScaffold should not use safeAreaPadding for non-map root top inset")
 
 assertTrue(home.contains(".appTabRootScrollLayout(extraBottomPadding: 12)"), "Home should use the shared non-map root top inset contract")
 assertTrue(!home.contains("topSafeAreaPadding: HomeRootLayoutMetrics.rootTopSafeAreaPadding"), "Home should not override the root top inset directly")
@@ -54,6 +56,8 @@ assertTrue(settings.contains("-UITest.SettingsHeaderLongSubtitle"), "Settings he
 
 assertTrue(mapTopChrome.contains("topOverlaySpacing(safeAreaTopInset: safeAreaTopInset, extra: 10)"), "Map should remain on the separate overlay spacing contract")
 assertTrue(doc.contains("지도 탭은 `appTabRootScrollLayout` 공통 inset을 사용하지 않는다."), "Contract doc should declare the map exception")
+assertTrue(doc.contains("safeAreaInset(edge: .top)"), "Contract doc should describe safeAreaInset as the shared root reservation mechanism")
+assertTrue(doc.contains("pinnedViews: [.sectionHeaders]"), "Contract doc should describe pinned section header compatibility")
 assertTrue(doc.contains("#628`" ) || doc.contains("#628"), "Contract doc should link the related home issue")
 assertTrue(doc.contains("#622`" ) || doc.contains("#622"), "Contract doc should link the related walk list issue")
 assertTrue(doc.contains("#629`" ) || doc.contains("#629"), "Contract doc should link the related rival issue")
