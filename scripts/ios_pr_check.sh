@@ -28,6 +28,7 @@ swift scripts/swift_stability_unit_check.swift
 swift scripts/userdefault_store_split_unit_check.swift
 swift scripts/userdefault_setting_second_split_unit_check.swift
 swift scripts/map_motion_pack_unit_check.swift
+swift scripts/map_start_meaning_card_compact_unit_check.swift
 swift scripts/map_walking_invalidation_reduction_unit_check.swift
 swift scripts/map_motion_ticker_layer_split_unit_check.swift
 swift scripts/map_derived_calculation_lightweight_unit_check.swift

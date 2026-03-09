@@ -5,40 +5,32 @@ struct MapWalkStartMeaningCardView: View {
     let onOpenGuide: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(presentation.meaningTitle)
-                .font(.appScaledFont(for: .SemiBold, size: 15, relativeTo: .headline))
+                .font(.appScaledFont(for: .SemiBold, size: 13, relativeTo: .headline))
                 .foregroundStyle(MapChromePalette.primaryText)
+                .lineLimit(2)
             Text(presentation.meaningMessage)
-                .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .caption))
+                .font(.appScaledFont(for: .Regular, size: 10, relativeTo: .caption))
                 .foregroundStyle(MapChromePalette.secondaryText)
+                .lineLimit(3)
                 .fixedSize(horizontal: false, vertical: true)
 
-            HStack(spacing: 8) {
-                ForEach(presentation.pillars) { pillar in
-                    Text(pillar.title)
-                        .font(.appScaledFont(for: .SemiBold, size: 11, relativeTo: .caption2))
-                        .foregroundStyle(MapChromePalette.primaryText)
-                        .mapChromePill(.accent)
+            Button(action: onOpenGuide) {
+                HStack(spacing: 4) {
+                    Text("설명 보기")
+                        .font(.appScaledFont(for: .SemiBold, size: 11, relativeTo: .caption))
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .semibold))
                 }
-            }
-
-            Text(presentation.secondaryFlowText)
-                .font(.appScaledFont(for: .Regular, size: 11, relativeTo: .caption2))
-                .foregroundStyle(MapChromePalette.secondaryText)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Button("설명 보기", action: onOpenGuide)
-                .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
                 .foregroundStyle(MapChromePalette.primaryText)
-                .frame(minHeight: 44)
-                .padding(.horizontal, 12)
-                .mapChromePill(.neutral)
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            }
                 .accessibilityIdentifier("map.walk.guide.reopen")
         }
         .padding(12)
-        .frame(maxWidth: 420, alignment: .leading)
-        .mapChromeSurface()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .mapChromePill(.accent)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("map.walk.startMeaning.card")
     }
