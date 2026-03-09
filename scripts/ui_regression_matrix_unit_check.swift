@@ -32,6 +32,7 @@ for token in [
     "FR-MAP-003",
     "FR-MAP-006",
     "FR-MAP-007",
+    "FR-MAP-008",
     "FR-WALK-001",
     "FR-WALK-002",
     "FR-WALK-002A",
@@ -72,6 +73,7 @@ for testName in [
     "testFeatureRegression_MapAddPointControlRemainsHittableWhileWalking",
     "testFeatureRegression_MapBottomControllerStaysAnchoredAndCompactAtRest",
     "testFeatureRegression_MapBottomControllerStaysAnchoredAndCompactWhileWalking",
+    "testFeatureRegression_MapWalkingTopHUDStaysBelowSafeAreaAndAboveBottomControls",
     "testFeatureRegression_MapStopAlertPresentsClearActionHierarchy",
     "testFeatureRegression_WalkListPrimaryContentIsNotObscuredByTabBar",
     "testFeatureRegression_WalkListHeaderSurfacesOverviewAndContextCards",
@@ -134,6 +136,10 @@ assertTrue(
 assertTrue(
     featureRegressionScript.contains("testFeatureRegression_MapBottomControllerStaysAnchoredAndCompactWhileWalking"),
     "run_feature_regression_ui_tests.sh should run the walking bottom controller density regression"
+)
+assertTrue(
+    featureRegressionScript.contains("testFeatureRegression_MapWalkingTopHUDStaysBelowSafeAreaAndAboveBottomControls"),
+    "run_feature_regression_ui_tests.sh should run the top slim HUD safe area regression"
 )
 assertTrue(
     featureRegressionScript.contains("testFeatureRegression_MapStopAlertPresentsClearActionHierarchy"),

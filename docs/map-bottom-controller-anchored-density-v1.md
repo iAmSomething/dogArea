@@ -9,7 +9,7 @@
 - idle 컨트롤 바 surface 높이 budget: `<= 124pt`
 - walking 컨트롤 바 surface 높이 budget: `<= 112pt`
 - 컨트롤 바와 탭바 상단 사이 gap: `4pt ... 36pt`
-- walking 상태는 idle보다 더 얇아야 하며, 진행 설명은 별도 full-width 카드가 아니라 deck 내부 compact card로 축약한다.
+- walking 상태는 idle보다 더 얇아야 하며, 진행 설명/핵심 상태는 하단 deck가 아니라 safe area 아래 slim HUD로 분리한다.
 - 시작/종료/add-point 동작 로직은 유지한다.
 
 ## 구조 결정
@@ -17,9 +17,10 @@
 - `StartButtonView`는 단일 anchored surface 안에서
   - 좌측 context card
   - 중앙 primary CTA
-  - 우측 compact helper card
+  - 우측 compact control context card
   구조를 유지한다.
-- 산책 중 full-width `MapWalkActiveValueCardView`는 제거하고, 같은 식별자를 유지한 compact card로 우측 영역에 편입한다.
+- 산책 중 핵심 상태는 `MapTopChromeView` 아래 slim HUD(`map.walk.activeValue.card`)로 올린다.
+- 하단 우측 카드는 `포인트 기록 / 자동·수동 / 길게 눌러 추가` 같은 조작 문맥만 남긴다.
 - idle 의미 설명은 `설명 보기` affordance를 남기되 inline card로 유지한다.
 
 ## 시각 방향

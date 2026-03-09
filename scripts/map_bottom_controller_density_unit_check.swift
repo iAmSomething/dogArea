@@ -20,6 +20,7 @@ func load(_ relativePath: String) -> String {
 
 let startButtonView = load("dogArea/Views/MapView/MapSubViews/StartButtonView.swift")
 let bottomOverlay = load("dogArea/Views/MapView/MapSubViews/MapBottomControlOverlayView.swift")
+let topChromeView = load("dogArea/Views/MapView/MapSubViews/MapTopChromeView.swift")
 let featureTests = load("dogAreaUITests/FeatureRegressionUITests.swift")
 let featureScript = load("scripts/run_feature_regression_ui_tests.sh")
 let uiMatrix = load("docs/ui-regression-matrix-v1.md")
@@ -31,7 +32,9 @@ assertTrue(startButtonView.contains("MapWalkControlBarMetrics"), "start button s
 assertTrue(startButtonView.contains("idleFootprintBudget"), "start button should define the idle footprint budget")
 assertTrue(startButtonView.contains("walkingFootprintBudget"), "start button should define the walking footprint budget")
 assertTrue(startButtonView.contains("map.walk.controlBar"), "start button should expose a dedicated control bar accessibility identifier")
-assertTrue(startButtonView.contains("MapWalkActiveValueCardView"), "walking layout should keep the active value helper inside the control bar")
+assertTrue(startButtonView.contains("walkingControlContextCard"), "walking layout should keep a dedicated control context card inside the control bar")
+assertTrue(startButtonView.contains("MapWalkActiveValueCardView") == false, "walking layout should no longer render the top HUD helper inside the control bar")
+assertTrue(topChromeView.contains("walkingHUDContent"), "top chrome should host the walking slim HUD above the map canvas")
 assertTrue(bottomOverlay.contains("primaryActionLiftWhenVisible"), "bottom overlay should define a dedicated primary action lift")
 assertTrue(bottomOverlay.contains("floatingControlsBottomSpacingWhenPrimaryVisible: CGFloat = 18"), "bottom overlay should tighten floating control spacing while primary action is visible")
 assertTrue(bottomOverlay.contains("selectedTrayBottomSpacingWhenPrimaryVisible: CGFloat = 104"), "bottom overlay should tighten selected tray spacing while primary action is visible")
