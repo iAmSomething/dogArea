@@ -442,6 +442,38 @@ final class FeatureRegressionUITests: XCTestCase {
         )
     }
 
+    /// 긴 이름과 큰 글자 크기에서도 홈 헤더가 status bar 아래에 안정적으로 배치되는지 검증합니다.
+    func testFeatureRegression_HomeHeaderStaysBelowStatusBarWithLongNames() throws {
+        let app = launchAppForFeatureRegression(
+            extraArguments: [
+                "-UITest.HomeHeaderLongName",
+                "-UIPreferredContentSizeCategoryName",
+                "UICTContentSizeCategoryAccessibilityXL"
+            ]
+        )
+        XCTAssertTrue(openTab(index: 0, app: app), "홈 탭 진입에 실패했습니다.")
+
+        let header = screenElement(identifier: "home.header.section", in: app)
+        let title = screenElement(identifier: "home.header.title", in: app)
+        let subtitle = screenElement(identifier: "home.header.subtitle", in: app)
+
+        XCTAssertTrue(waitUntilExists(header, timeout: 8), "홈 헤더가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(title, timeout: 2), "홈 헤더 타이틀이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(subtitle, timeout: 2), "홈 헤더 서브타이틀이 노출되지 않았습니다.")
+
+        let minimumSafeHeaderOffset: CGFloat = 52
+        XCTAssertGreaterThanOrEqual(
+            title.frame.minY,
+            minimumSafeHeaderOffset,
+            "긴 이름과 큰 글자 크기에서도 홈 헤더 타이틀이 status bar 아래에 있어야 합니다."
+        )
+        XCTAssertGreaterThan(
+            subtitle.frame.maxY,
+            title.frame.maxY,
+            "홈 헤더 서브타이틀은 타이틀 아래에 안정적으로 배치되어야 합니다."
+        )
+    }
+
     /// 산책 목록 탭을 선택해도 선택 아이콘이 유효한 SF Symbol로 유지되는지 검증합니다.
     func testFeatureRegression_WalkListTabSelectedIconRemainsVisibleInBothStyles() throws {
         try assertWalkListTabSelectedIconRemainsVisible(style: .light)
