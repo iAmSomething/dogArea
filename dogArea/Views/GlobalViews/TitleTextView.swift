@@ -8,28 +8,36 @@
 import SwiftUI
 
 struct TitleTextView: View {
-    @State var title: String
-    @State var type: titleType = .LargeTitle
-    @State var subTitle: String?
+    var title: String
+    var type: titleType = .LargeTitle
+    var subTitle: String?
+    var accessibilityIdentifierPrefix: String? = nil
+
     var body: some View {
-        HStack(alignment: .bottom, spacing: 12) {
+        HStack(alignment: .top, spacing: 12) {
             Capsule()
                 .fill(Color.appYellow)
                 .frame(width: type == .LargeTitle ? 6 : 4, height: type == .LargeTitle ? 42 : 28)
+                .padding(.top, type == .LargeTitle ? 4 : 2)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(titleFont)
                     .foregroundStyle(Color.appInk)
-                    .lineLimit(1)
+                    .lineLimit(type == .LargeTitle ? 2 : 2)
+                    .minimumScaleFactor(type == .LargeTitle ? 0.82 : 0.9)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier(accessibilityIdentifierPrefix.map { "\($0).title" } ?? "")
                 if let subTitle, subTitle.isEmpty == false {
                     Text(subTitle)
                         .font(subTitleFont)
                         .foregroundStyle(Color.appTextDarkGray)
-                        .lineLimit(2)
+                        .lineLimit(type == .LargeTitle ? 3 : 2)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier(accessibilityIdentifierPrefix.map { "\($0).subtitle" } ?? "")
                 }
             }
-            Spacer()
+            Spacer(minLength: 0)
         }
         .padding(.horizontal, 16)
         .padding(.top, 8)
@@ -39,22 +47,22 @@ struct TitleTextView: View {
     private var titleFont: Font {
         switch type {
         case .LargeTitle:
-            return .appFont(for: .Black, size: 47) ?? .system(size: 42, weight: .black)
+            return .appScaledFont(for: .Black, size: 47, relativeTo: .largeTitle)
         case .MediumTitle:
-            return .appFont(for: .ExtraBold, size: 30) ?? .system(size: 28, weight: .bold)
+            return .appScaledFont(for: .ExtraBold, size: 30, relativeTo: .title2)
         case .SmallTitle:
-            return .appFont(for: .SemiBold, size: 22) ?? .system(size: 21, weight: .semibold)
+            return .appScaledFont(for: .SemiBold, size: 22, relativeTo: .headline)
         }
     }
 
     private var subTitleFont: Font {
         switch type {
         case .LargeTitle:
-            return .appFont(for: .Regular, size: 14) ?? .system(size: 14, weight: .regular)
+            return .appScaledFont(for: .Regular, size: 14, relativeTo: .body)
         case .MediumTitle:
-            return .appFont(for: .Regular, size: 12) ?? .system(size: 12, weight: .regular)
+            return .appScaledFont(for: .Regular, size: 12, relativeTo: .body)
         case .SmallTitle:
-            return .appFont(for: .Light, size: 11) ?? .system(size: 11, weight: .light)
+            return .appScaledFont(for: .Light, size: 11, relativeTo: .caption)
         }
     }
 

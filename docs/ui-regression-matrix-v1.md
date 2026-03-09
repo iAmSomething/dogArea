@@ -34,6 +34,7 @@
 | `FR-PROFILE-001` | `docs/profile-edit-flow-v1.md` | 회원 상태 프로필 편집 저장 | `FeatureRegressionUITests/testFeatureRegression_MemberProfileEditPersistsUpdatedPetName` | 프로필 편집 저장 후 재진입 시 값 유지 확인 |
 | `FR-RIVAL-001` | `docs/rival-tab-ui-design-spec-v1.md`, `docs/nearby-anonymous-hotspot-v1.md` | 로그아웃 후 재로그인, 익명 공유 시작 | `FeatureRegressionUITests/testFeatureRegression_RivalAuthRevalidationFlow` | 세션 재검증 후 공유 시작 가능 여부 확인 |
 | `FR-RIVAL-002` | `docs/rival-tab-ui-design-spec-v1.md` | 라이벌 푸터 버튼 라우팅 | `FeatureRegressionUITests/testFeatureRegression_RivalFooterButtonsRouteToMapAndSettings` | 지도/설정으로의 전환 및 복귀 확인 |
+| `FR-RIVAL-003` | `docs/rival-top-safearea-contract-v1.md`, `#629` | 긴 부제/큰 글자 크기에서도 라이벌 헤더와 첫 배지 행이 status bar 아래에 유지되는지 | `FeatureRegressionUITests/testFeatureRegression_RivalHeaderStaysBelowStatusBarWithLongSubtitle` | 작은 화면과 접근성 글자 크기에서 라이벌 제목/부제/배지 행이 safe area 아래로 안정적으로 감싸지는지 확인 |
 | `FR-WIDGET-001` | `docs/hotspot-widget-privacy-mapping-v1.md` | 위젯 기본 딥링크 라우트 | `FeatureRegressionUITests/testFeatureRegression_WidgetRouteOpensRivalTab` | 위젯 탭 후 라이벌 탭 진입과 첫 상태 표시 확인 |
 | `QA-MULTIPET-001` | `docs/multi-dog-selection-ux-v1.md`, `docs/multi-pet-session-nm-v2.md` | 다견 선택/활성 상태 전환 | `swift scripts/multi_dog_selection_ux_unit_check.swift`, `swift scripts/settings_pet_management_unit_check.swift` | 선택 반려견 변경 후 홈/목록/설정 반영 확인 |
 
