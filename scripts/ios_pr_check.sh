@@ -207,6 +207,7 @@ swift scripts/home_weather_status_card_restore_unit_check.swift
 swift scripts/home_weather_detail_card_unit_check.swift
 swift scripts/home_weather_pet_guidance_unit_check.swift
 swift scripts/home_top_safearea_contract_unit_check.swift
+swift scripts/non_map_tab_root_top_inset_contract_unit_check.swift
 swift scripts/rival_top_safearea_contract_unit_check.swift
 swift scripts/home_area_milestone_feedback_unit_check.swift
 swift scripts/home_goal_tracker_ui_unit_check.swift

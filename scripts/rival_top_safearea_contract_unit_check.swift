@@ -33,25 +33,24 @@ assertTrue(
     "AppTabScaffold should keep the shared root scroll layout contract"
 )
 assertTrue(
-    scaffold.contains("topSafeAreaPadding"),
-    "AppTabScaffold should expose topSafeAreaPadding for root screens"
+    scaffold.contains("nonMapRootTopSafeAreaPadding"),
+    "AppTabScaffold should expose the shared non-map root top inset"
 )
 assertTrue(
     rivalView.contains("private enum RivalRootLayoutMetrics"),
-    "RivalTabView should centralize root safe area metrics"
-)
-assertTrue(
-    rivalView.contains("static let rootTopSafeAreaPadding"),
-    "RivalTabView should separate root safe area padding from content spacing"
+    "RivalTabView should centralize rival-specific layout metrics"
 )
 assertTrue(
     rivalView.contains("static let contentTopPadding"),
-    "RivalTabView should keep content spacing independent from safe area padding"
+    "RivalTabView should keep content spacing independent from the root safe area contract"
 )
 assertTrue(
-    rivalView.contains(".appTabRootScrollLayout(") &&
-    rivalView.contains("topSafeAreaPadding: RivalRootLayoutMetrics.rootTopSafeAreaPadding"),
-    "RivalTabView should use shared root scroll layout with an explicit top safe area contract"
+    rivalView.contains(".appTabRootScrollLayout(extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding)"),
+    "RivalTabView should use the shared non-map root scroll layout contract"
+)
+assertTrue(
+    !rivalView.contains("topSafeAreaPadding: RivalRootLayoutMetrics.rootTopSafeAreaPadding"),
+    "RivalTabView should not override the root top inset directly"
 )
 assertTrue(
     rivalView.contains(".padding(.top, RivalRootLayoutMetrics.contentTopPadding)"),
@@ -90,8 +89,11 @@ assertTrue(
     "UI regression matrix should register the rival header safe area case"
 )
 assertTrue(
-    doc.contains("공통 scaffold 책임") && doc.contains("라이벌 헤더 책임") && doc.contains("공통 TitleTextView 책임"),
-    "Rival safe area contract doc should document scaffold, rival header, and shared title responsibilities"
+    doc.contains("공통 scaffold 책임") &&
+    doc.contains("라이벌 헤더 책임") &&
+    doc.contains("공통 TitleTextView 책임") &&
+    doc.contains("AppTabLayoutMetrics.nonMapRootTopSafeAreaPadding"),
+    "Rival safe area contract doc should document scaffold, rival header, shared title responsibilities, and the shared non-map contract"
 )
 assertTrue(
     readme.contains("docs/rival-top-safearea-contract-v1.md"),

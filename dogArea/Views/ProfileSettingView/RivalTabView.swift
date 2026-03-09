@@ -1,7 +1,6 @@
 import SwiftUI
 
 private enum RivalRootLayoutMetrics {
-    static let rootTopSafeAreaPadding: CGFloat = 18
     static let contentTopPadding: CGFloat = 6
 }
 
@@ -46,10 +45,7 @@ struct RivalTabView: View {
             }
             .padding(.top, RivalRootLayoutMetrics.contentTopPadding)
         }
-        .appTabRootScrollLayout(
-            extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding,
-            topSafeAreaPadding: RivalRootLayoutMetrics.rootTopSafeAreaPadding
-        )
+        .appTabRootScrollLayout(extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding)
         .accessibilityIdentifier("screen.rival.content")
         .onAppear {
             viewModel.start()

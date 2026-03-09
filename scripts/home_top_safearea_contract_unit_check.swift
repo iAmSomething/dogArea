@@ -33,25 +33,24 @@ assertTrue(
     "AppTabScaffold should keep the shared root scroll layout contract"
 )
 assertTrue(
-    scaffold.contains("topSafeAreaPadding"),
-    "AppTabScaffold should expose topSafeAreaPadding for root screens"
+    scaffold.contains("nonMapRootTopSafeAreaPadding"),
+    "AppTabScaffold should expose the shared non-map root top inset"
 )
 assertTrue(
     homeView.contains("private enum HomeRootLayoutMetrics"),
-    "HomeView should centralize root safe area metrics"
-)
-assertTrue(
-    homeView.contains("static let rootTopSafeAreaPadding"),
-    "HomeView should separate root safe area padding from content spacing"
+    "HomeView should centralize home-specific layout metrics"
 )
 assertTrue(
     homeView.contains("static let contentTopPadding"),
-    "HomeView should keep content spacing independent from safe area padding"
+    "HomeView should keep content spacing independent from the root safe area contract"
 )
 assertTrue(
-    homeView.contains(".appTabRootScrollLayout(") &&
-    homeView.contains("topSafeAreaPadding: HomeRootLayoutMetrics.rootTopSafeAreaPadding"),
-    "HomeView should use shared root scroll layout with an explicit top safe area contract"
+    homeView.contains(".appTabRootScrollLayout(extraBottomPadding: 12)"),
+    "HomeView should use the shared non-map root scroll layout contract"
+)
+assertTrue(
+    !homeView.contains("topSafeAreaPadding: HomeRootLayoutMetrics.rootTopSafeAreaPadding"),
+    "HomeView should not override the root top inset directly"
 )
 assertTrue(
     homeView.contains(".padding(.top, HomeRootLayoutMetrics.contentTopPadding)"),
@@ -82,8 +81,10 @@ assertTrue(
     "UI regression matrix should register the home header safe area case"
 )
 assertTrue(
-    doc.contains("공통 scaffold 책임") && doc.contains("홈 헤더 책임"),
-    "Home safe area contract doc should document scaffold and header ownership separately"
+    doc.contains("공통 scaffold 책임") &&
+    doc.contains("홈 헤더 책임") &&
+    doc.contains("AppTabLayoutMetrics.nonMapRootTopSafeAreaPadding"),
+    "Home safe area contract doc should document scaffold/header ownership and the shared non-map contract"
 )
 assertTrue(
     readme.contains("docs/home-top-safearea-contract-v1.md"),

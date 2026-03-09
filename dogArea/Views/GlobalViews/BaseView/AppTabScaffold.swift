@@ -7,7 +7,8 @@ enum AppTabBarVisibility: Equatable {
 
 enum AppTabLayoutMetrics {
     static let defaultTabBarReservedHeight: CGFloat = 124
-    static let topSafeAreaPadding: CGFloat = 8
+    static let nonMapRootTopSafeAreaPadding: CGFloat = 18
+    static let mapOverlayTopExtraSpacing: CGFloat = 8
     static let minimumBottomPadding: CGFloat = 12
     static let defaultScrollExtraBottomPadding: CGFloat = 12
     static let comfortableScrollExtraBottomPadding: CGFloat = 20
@@ -20,7 +21,7 @@ enum AppTabLayoutMetrics {
     /// - Returns: 상단 오버레이에 적용할 최종 spacing 값입니다.
     static func topOverlaySpacing(
         safeAreaTopInset: CGFloat,
-        extra: CGFloat = topSafeAreaPadding
+        extra: CGFloat = mapOverlayTopExtraSpacing
     ) -> CGFloat {
         max(safeAreaTopInset, 0) + extra
     }
@@ -168,7 +169,7 @@ extension View {
     /// - Returns: 전역 탭 스크롤 레이아웃이 적용된 뷰입니다.
     func appTabRootScrollLayout(
         extraBottomPadding: CGFloat = AppTabLayoutMetrics.defaultScrollExtraBottomPadding,
-        topSafeAreaPadding: CGFloat = AppTabLayoutMetrics.topSafeAreaPadding,
+        topSafeAreaPadding: CGFloat = AppTabLayoutMetrics.nonMapRootTopSafeAreaPadding,
         showsIndicators: Bool = false
     ) -> some View {
         modifier(

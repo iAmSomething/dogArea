@@ -9,7 +9,7 @@
 
 ### 공통 scaffold 책임
 - 탭 루트 화면의 상단 safe area 예약은 `AppTabScaffold.appTabRootScrollLayout`이 맡는다.
-- 홈은 공통 top safe area 위에 홈 고유 헤더 밀도를 반영한 `topSafeAreaPadding`만 전달한다.
+- 홈은 비지도 탭 공통 계약 `AppTabLayoutMetrics.nonMapRootTopSafeAreaPadding`을 그대로 따른다.
 - status bar 충돌 방지는 루트 scroll layout 단계에서 해결한다.
 
 ### 홈 헤더 책임
@@ -18,15 +18,12 @@
 - 제목/부제/배지는 접근성 식별자를 제공해 회귀 테스트가 실제 프레임을 검증할 수 있어야 한다.
 
 ## 구현 계약
-- `HomeView`는 `HomeRootLayoutMetrics`로 루트 safe area padding과 콘텐츠 간격을 분리한다.
+- `HomeView`는 `HomeRootLayoutMetrics`로 콘텐츠 간격만 관리한다.
 - `homeDashboardContent`의 상단 간격은 콘텐츠 리듬 용도만 담당한다.
-- 홈 루트 scroll layout은 아래 형태를 유지한다.
+- 홈 루트 scroll layout은 공통 non-map 계약을 그대로 사용한다.
 
 ```swift
-.appTabRootScrollLayout(
-    extraBottomPadding: 12,
-    topSafeAreaPadding: HomeRootLayoutMetrics.rootTopSafeAreaPadding
-)
+.appTabRootScrollLayout(extraBottomPadding: 12)
 ```
 
 - 헤더 텍스트는 다음을 유지한다.
@@ -36,7 +33,7 @@
 ## 금지 사항
 - 홈 화면 최상단에 큰 상수 `padding(.top)` 하나만 더하는 방식
 - 헤더 폰트를 임의 축소해서 겹침을 숨기는 방식
-- 다른 탭까지 한 번에 건드리는 광범위 수정
+- 공통 scaffold 기본값 대신 홈 전용 root top inset override를 다시 넣는 방식
 
 ## 회귀 검증
 - 기능 회귀:
