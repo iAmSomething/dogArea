@@ -83,6 +83,7 @@
 9. bounce/reject/deferred가 있으면 provider event 캡처를 남긴다.
 10. rollback readiness와 secret rotation 담당자를 기록한다.
 11. `docs/auth-smtp-rollout-evidence-template-v1.md` 형식으로 issue 또는 PR 코멘트에 남긴다.
+12. 코멘트로 올리기 전 `bash scripts/validate_manual_evidence_pack.sh auth-smtp <filled-markdown>` 으로 완결성을 검사한다.
 
 ## 실수신 시나리오 규칙
 ### Signup confirmation
