@@ -40,6 +40,9 @@
 - `auth.member_login`
 - `sync-profile.snapshot.member`
 - `sync-walk.session.member`
+- `sync-walk.session.invalid_payload.missing_pet`
+- `sync-walk.session.invalid_payload.invalid_pet`
+- `sync-walk.session.invalid_payload.reverse_time`
 - `sync-walk.summary.member`
 - `rival-league.leaderboard.member`
 - `widget-territory.summary.member`
@@ -79,6 +82,7 @@
 - `feature-control`, `nearby-presence`는 anon/app authorization 정책을 함께 확인합니다.
 - `sync-walk` smoke는 고정 session id upsert를 사용해 데이터를 무한 증가시키지 않습니다.
 - `sync-walk` smoke는 profile snapshot에서 실제 `pet_id`를 읽어 현재 스키마 제약을 맞춥니다.
+- `sync-walk` smoke는 영구 오류 payload(`pet_id` 누락/무효, 시간 역전)가 `422`로 분류되는지도 함께 검증합니다.
 - `sync-profile`, `quest-engine`, `rival-league`는 읽기 또는 제한된 contract 호출 위주로 구성합니다.
 - widget summary smoke는 read-only RPC만 호출합니다.
 - 실 smoke는 secrets가 필요한 만큼 로컬/CI에서 opt-in으로만 실행합니다.

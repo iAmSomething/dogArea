@@ -44,6 +44,7 @@ swift scripts/backend_scheduler_ops_unit_check.swift
 swift scripts/backend_geo_fixture_lifecycle_unit_check.swift
 swift scripts/widget_summary_rpc_response_model_unit_check.swift
 swift scripts/sync_walk_stage_handler_split_unit_check.swift
+swift scripts/sync_walk_session_error_policy_unit_check.swift
 swift scripts/nearby_presence_handler_split_unit_check.swift
 swift scripts/live_presence_rpc_owner_ambiguity_fix_unit_check.swift
 

@@ -133,10 +133,41 @@ final class SyncOutboxStore {
                     $0.status = .permanentFailed
                     $0.lastErrorCode = code
                 }
-                return summary()
+                if code == .schemaMismatch {
+                    markPendingStagesPermanent(
+                        walkSessionId: next.walkSessionId,
+                        excludingItemId: next.id,
+                        code: code
+                    )
+                }
+                continue
             }
         }
         return summary()
+    }
+
+    private func markPendingStagesPermanent(
+        walkSessionId: String,
+        excludingItemId: String,
+        code: SyncOutboxErrorCode
+    ) {
+        for index in items.indices {
+            guard items[index].walkSessionId == walkSessionId else { continue }
+            guard items[index].id != excludingItemId else { continue }
+            guard Self.isPendingStatus(items[index].status) else { continue }
+            items[index].status = .permanentFailed
+            items[index].lastErrorCode = code
+            items[index].updatedAt = Date().timeIntervalSince1970
+        }
+    }
+
+    private static func isPendingStatus(_ status: SyncOutboxStatus) -> Bool {
+        switch status {
+        case .queued, .retrying, .processing:
+            return true
+        case .permanentFailed, .completed:
+            return false
+        }
     }
 
     private func nextDispatchableItem(now: TimeInterval) -> SyncOutboxItem? {
@@ -213,11 +244,13 @@ assertTrue(summaryB.lastErrorCode == .offline, "retryable failure code must be r
 
 let queueC = SyncOutboxStore()
 queueC.enqueueWalkStages(walkSessionId: session, hasImage: true)
-let transportC = RecordingTransport(scripted: [.permanent(.schemaMismatch)])
+let secondSession = UUID(uuidString: "22222222-2222-2222-2222-222222222222")!
+queueC.enqueueWalkStages(walkSessionId: secondSession, hasImage: false)
+let transportC = RecordingTransport(scripted: [.permanent(.schemaMismatch), .success, .success, .success])
 let summaryC = await queueC.flush(using: transportC)
-assertTrue(transportC.sentStages == [.session], "permanent failure should stop immediately at failed stage")
-assertTrue(summaryC.pendingCount == 2, "remaining stages should stay pending after permanent failure")
-assertTrue(summaryC.permanentFailureCount == 1, "permanent failure count must increment")
+assertTrue(transportC.sentStages == [.session, .session, .points, .meta], "permanent session failure should quarantine same-session stages and continue with next session")
+assertTrue(summaryC.pendingCount == 0, "queue should drain once permanent session is isolated and later stages succeed")
+assertTrue(summaryC.permanentFailureCount == 3, "failed session and its remaining stages should all be permanent")
 assertTrue(summaryC.lastErrorCode == .schemaMismatch, "permanent failure code must be retained")
 
 print("PASS: walk sync consistency outbox unit checks")
