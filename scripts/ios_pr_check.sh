@@ -95,6 +95,7 @@ swift scripts/backend_scheduler_ops_unit_check.swift
 swift scripts/backend_geo_fixture_lifecycle_unit_check.swift
 swift scripts/widget_summary_rpc_response_model_unit_check.swift
 swift scripts/widget_lock_screen_accessory_plan_unit_check.swift
+swift scripts/widget_action_regression_pack_unit_check.swift
 swift scripts/watch_smart_stack_glance_plan_unit_check.swift
 swift scripts/watch_main_scroll_overflow_unit_check.swift
 swift scripts/watch_app_icon_asset_unit_check.swift

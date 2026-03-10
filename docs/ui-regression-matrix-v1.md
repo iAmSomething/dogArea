@@ -8,6 +8,7 @@
 ## 실행 경로
 - 디자인 감사 캡처: `bash scripts/run_design_audit_ui_tests.sh`
 - 기능 회귀 UI: `bash scripts/run_feature_regression_ui_tests.sh`
+- 위젯 액션 기능 회귀 UI: `bash scripts/run_widget_action_regression_ui_tests.sh`
 - 문서/테스트 정합성 체크: `swift scripts/ui_regression_matrix_unit_check.swift`
 
 ## 문서-화면-테스트 매핑
@@ -51,6 +52,10 @@
 | `FR-RIVAL-002` | `docs/rival-tab-ui-design-spec-v1.md` | 라이벌 푸터 버튼 라우팅 | `FeatureRegressionUITests/testFeatureRegression_RivalFooterButtonsRouteToMapAndSettings` | 지도/설정으로의 전환 및 복귀 확인 |
 | `FR-RIVAL-003` | `docs/rival-top-safearea-contract-v1.md`, `#629` | 긴 부제/큰 글자 크기에서도 라이벌 헤더와 첫 배지 행이 status bar 아래에 유지되는지 | `FeatureRegressionUITests/testFeatureRegression_RivalHeaderStaysBelowStatusBarWithLongSubtitle` | 작은 화면과 접근성 글자 크기에서 라이벌 제목/부제/배지 행이 safe area 아래로 안정적으로 감싸지는지 확인 |
 | `FR-WIDGET-001` | `docs/hotspot-widget-privacy-mapping-v1.md` | 위젯 기본 딥링크 라우트 | `FeatureRegressionUITests/testFeatureRegression_WidgetRouteOpensRivalTab` | 위젯 탭 후 라이벌 탭 진입과 첫 상태 표시 확인 |
+| `FR-WIDGET-002` | `docs/hotspot-widget-radius-preset-v1.md`, `docs/widget-action-real-device-validation-matrix-v1.md` | 핫스팟 위젯 preset 라우트 | `FeatureRegressionUITests/testFeatureRegression_HotspotWidgetRouteOpensRivalWithMatchingRadiusPreset` | 실기기에서 3km preset이 cold start / foreground 모두에서 동일하게 유지되는지 확인 |
+| `FR-WIDGET-003` | `docs/quest-rival-widget-next-action-recovery-v1.md`, `docs/widget-action-real-device-validation-matrix-v1.md` | 퀘스트 위젯 상세 CTA 라우트 | `FeatureRegressionUITests/testFeatureRegression_QuestWidgetRouteOpensQuestMissionBoard` | background 상태에서도 홈 퀘스트 카드 위치와 상세 배너가 같이 복구되는지 확인 |
+| `FR-WIDGET-004` | `docs/quest-rival-widget-next-action-recovery-v1.md`, `docs/widget-action-real-device-validation-matrix-v1.md` | 퀘스트 위젯 recovery CTA 라우트 | `FeatureRegressionUITests/testFeatureRegression_QuestWidgetRecoveryRouteOpensQuestMissionBoard` | foreground 상태에서도 recovery 배너와 미션 카드 위치가 같이 노출되는지 확인 |
+| `FR-WIDGET-005` | `docs/territory-widget-goal-deeplink-v1.md`, `docs/widget-action-real-device-validation-matrix-v1.md` | 영역 위젯 목표 상세 딥링크 | `FeatureRegressionUITests/testFeatureRegression_TerritoryWidgetRouteOpensGoalDetail` | 실기기에서 cold start 진입 시 목표 상세 직접 진입과 탭바 숨김이 유지되는지 확인 |
 | `QA-MULTIPET-001` | `docs/multi-dog-selection-ux-v1.md`, `docs/multi-pet-session-nm-v2.md` | 다견 선택/활성 상태 전환 | `swift scripts/multi_dog_selection_ux_unit_check.swift`, `swift scripts/settings_pet_management_unit_check.swift` | 선택 반려견 변경 후 홈/목록/설정 반영 확인 |
 
 ## 수동 QA 체크리스트
@@ -60,6 +65,7 @@
 - `QA-GOAL-01`: 홈 카드와 목표 상세 화면이 정보 구조상 중복되지 않고, 상세 화면에서 더 많은 문맥을 제공한다.
 - `QA-RIVAL-01`: 라이벌 탭에서 권한/동의/공유 ON/OFF 상태가 토스트와 배지에 일관되게 반영된다.
 - `QA-WIDGET-01`: 위젯 경로는 앱이 이미 살아있는 상태와 cold start 상태 모두에서 동일한 탭으로 도착한다.
+- `QA-WIDGET-02`: 실기기 검증 결과는 `docs/widget-action-real-device-validation-matrix-v1.md`에 남기고, `cold start / background / foreground / auth state / action` 축을 모두 채운다.
 
 ## 운영 규칙
 - 디자인 스크린샷 감사와 기능 회귀는 같은 파일/같은 스크립트에서 실행하지 않는다.
