@@ -102,6 +102,7 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
     private var nextManualSyncAllowedAt: TimeInterval?
     private var manualSyncResponseWorkItem: DispatchWorkItem?
     private var manualSyncCooldownRefreshWorkItem: DispatchWorkItem?
+    private var lastAddPointTapHapticAt: TimeInterval = 0
 
     init(
         hapticService: WatchActionHapticServicing = DefaultWatchActionHapticService(),
@@ -232,7 +233,8 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
             presentBanner(
                 title: "중복 입력 억제",
                 detail: "같은 요청을 처리 중이라 잠시만 기다려 주세요.",
-                tone: .warning
+                tone: .warning,
+                actionEvent: action == .addPoint ? .addPointDuplicateSuppressed : nil
             )
             return
         }
@@ -245,6 +247,7 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
             )
             return
         }
+        playInputAcknowledgementIfNeeded(for: action)
         sendAction(action)
     }
 
@@ -368,7 +371,8 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
             presentBanner(
                 title: action.queuedTitle,
                 detail: "현재 오프라인이라 큐에 저장했고, 연결되면 자동 전송합니다.",
-                tone: .warning
+                tone: .warning,
+                actionEvent: action == .addPoint ? .addPointQueued : nil
             )
         }
         flushPendingActions()
@@ -389,7 +393,8 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
                     self?.presentBanner(
                         title: fallbackType.queuedTitle,
                         detail: "즉시 전송에는 실패했지만 큐에는 안전하게 보관했습니다.",
-                        tone: .warning
+                        tone: .warning,
+                        actionEvent: fallbackType == .addPoint ? .addPointQueued : nil
                     )
                 }
             }
@@ -674,14 +679,16 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
                     detail: replyMessage?.isEmpty == false
                         ? replyMessage!
                         : "\(actionType.baseTitle) 요청을 아이폰으로 전달했어요.",
-                    tone: .success
+                    tone: .success,
+                    actionEvent: actionType == .addPoint ? .addPointAcknowledged : nil
                 )
             case "duplicate":
                 self.transition(actionType, to: .duplicateSuppressed, resetAfter: 1.2)
                 self.presentBanner(
                     title: "중복 입력 억제",
                     detail: "같은 요청이 이미 처리되어 추가 전송을 막았어요.",
-                    tone: .warning
+                    tone: .warning,
+                    actionEvent: actionType == .addPoint ? .addPointDuplicateSuppressed : nil
                 )
             default:
                 self.transition(actionType, to: .failed, resetAfter: 1.8)
@@ -690,7 +697,8 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
                     detail: replyMessage?.isEmpty == false
                         ? replyMessage!
                         : "\(actionType.baseTitle) 요청을 처리하지 못했어요. 다시 시도해 주세요.",
-                    tone: .failure
+                    tone: .failure,
+                    actionEvent: actionType == .addPoint ? .addPointFailed : nil
                 )
             }
         }
@@ -736,19 +744,35 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + resetAfter, execute: workItem)
     }
 
+    /// `addPoint` 탭 직후 입력 접수용 촉각을 과도하지 않게 한 번만 재생합니다.
+    /// - Parameter action: 사용자가 방금 탭한 워치 액션 종류입니다.
+    private func playInputAcknowledgementIfNeeded(for action: WatchActionType) {
+        guard action == .addPoint else { return }
+        let now = Date().timeIntervalSince1970
+        guard now - lastAddPointTapHapticAt >= action.inputAcknowledgementHapticThrottleInterval else { return }
+        lastAddPointTapHapticAt = now
+        hapticService.playActionEvent(.addPointTapAccepted)
+    }
+
     /// 사용자에게 보여줄 상단 피드백 배너를 갱신하고 필요하면 햅틱을 재생합니다.
     /// - Parameters:
     ///   - title: 배너 타이틀입니다.
     ///   - detail: 배너 세부 설명입니다.
     ///   - tone: 배너 강조 톤입니다.
     ///   - playsHaptic: `true`이면 tone에 맞는 햅틱을 재생합니다.
+    ///   - actionEvent: 일반 톤 햅틱 대신 사용할 액션 전용 햅틱 이벤트입니다.
     private func presentBanner(
         title: String,
         detail: String,
         tone: WatchActionFeedbackTone,
-        playsHaptic: Bool = true
+        playsHaptic: Bool = true,
+        actionEvent: WatchActionHapticEvent? = nil
     ) {
         feedbackBanner = WatchActionFeedbackBanner(title: title, detail: detail, tone: tone)
+        if let actionEvent {
+            hapticService.playActionEvent(actionEvent)
+            return
+        }
         if playsHaptic {
             hapticService.playFeedback(for: tone)
         }
@@ -769,7 +793,8 @@ final class ContentsViewModel: NSObject, ObservableObject, WCSessionDelegate {
         presentBanner(
             title: "반영 완료",
             detail: detail,
-            tone: .success
+            tone: .success,
+            actionEvent: actionType == .addPoint ? .addPointCompleted : nil
         )
     }
 

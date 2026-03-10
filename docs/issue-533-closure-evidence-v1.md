@@ -6,6 +6,7 @@
 
 ## 구현 근거
 - 구현 PR: `#558`
+- 후속 구조 정리: control surface / information surface 분리 반영
 - 핵심 문서:
   - `docs/watch-main-scroll-overflow-ux-v1.md`
 - 핵심 구현 파일:
@@ -16,13 +17,13 @@
 
 ## DoD 판정
 ### 1. watch 메인 화면에서 overflow된 콘텐츠가 스크롤 가능하다
-- 메인 화면이 `정보 스크롤 영역`과 `하단 CTA 도크`로 분리됐다.
-- 상태/배너/반려견 문맥/큐 상태는 `ScrollView` 안에서 스크롤되도록 정리됐다.
+- 현재 구조는 `control surface`와 `information surface`로 분리됐다.
+- 상태/배너/반려견 문맥/큐 상태는 `information surface`의 `ScrollView` 안에서 스크롤되도록 정리됐다.
 - 판정: `PASS`
 
 ### 2. active walk와 idle 두 상태에서 모든 텍스트와 버튼 접근이 가능하다
-- `WatchMainStatusSummaryView`가 상태 요약을 담당하고, `WatchPrimaryActionDockView`가 핵심 액션을 하단 도크로 고정한다.
-- 작은 화면에서도 `산책 시작`, `영역 표시하기`, `산책 종료`가 화면 높이에 밀려 사라지지 않도록 `safeAreaInset(edge: .bottom)` 구조가 적용됐다.
+- `control surface`는 조작 전용이고, `WatchPrimaryActionDockView`는 이 페이지에서만 `safeAreaInset(edge: .bottom)`로 고정된다.
+- 작은 화면에서도 `산책 시작`, `영역 표시하기`, `산책 종료`가 정보 카드와 경쟁하지 않고 접근 가능하다.
 - 판정: `PASS`
 
 ### 3. 작은 화면과 Dynamic Type 환경에서도 CTA가 잘리지 않는다

@@ -6,6 +6,7 @@
 
 ## 구현 근거
 - 구현 PR: `#548`
+- 후속 고도화: addPoint 즉시 햅틱/상태별 촉각 분기 반영
 - 핵심 문서:
   - `docs/watch-action-feedback-ux-v1.md`
 - 핵심 구현 파일:
@@ -29,6 +30,7 @@
 ### 3. 햅틱이 성공/실패/경고를 구분하되 과도하지 않게 정리됨
 - `WatchActionFeedbackTone`이 `success`, `warning`, `failure`, `processing`을 분리한다.
 - UX 문서에서 성공/경고/실패/processing 무햅틱 규칙을 고정했다.
+- 현재 구현은 `addPoint`에 한해 `입력 접수 -> 큐 저장 -> 전달 완료 -> 반영 완료 -> 실패`를 별도 촉각 이벤트로 더 세분화한다.
 - 판정: `PASS`
 
 ### 4. 산책 종료에 오조작 방지용 확인 단계가 있음
