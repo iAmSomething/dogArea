@@ -133,6 +133,8 @@
 - Auth abuse guard policy v1: `docs/auth-abuse-guard-policy-v1.md`
 - Auth mail cooldown / Retry-After UX v1: `docs/auth-mail-cooldown-retry-after-ux-v1.md`
 - Auth SMTP provider / DNS / secret checklist v1: `docs/auth-smtp-provider-selection-dns-secret-checklist-v1.md`
+- Auth SMTP rollout evidence runbook v1: `docs/auth-smtp-rollout-evidence-runbook-v1.md`
+- Auth SMTP rollout evidence template v1: `docs/auth-smtp-rollout-evidence-template-v1.md`
 - Auth service / 운영 mail 채널 분리 정책 v1: `docs/auth-service-mail-channel-separation-policy-v1.md`
 - Auth mail observability / metric / alert / request key v1: `docs/auth-mail-observability-metric-alert-request-key-v1.md`
 - Backend Edge auth policy v1: `docs/backend-edge-auth-policy-v1.md`

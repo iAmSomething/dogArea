@@ -180,6 +180,7 @@ swift scripts/auth_captcha_fallback_ux_unit_check.swift
 swift scripts/auth_abuse_guard_policy_unit_check.swift
 swift scripts/auth_mail_cooldown_retryafter_ux_unit_check.swift
 swift scripts/auth_smtp_provider_checklist_unit_check.swift
+swift scripts/auth_smtp_rollout_evidence_unit_check.swift
 swift scripts/auth_service_mail_channel_separation_unit_check.swift
 swift scripts/auth_mail_observability_unit_check.swift
 swift scripts/signin_metal_overlay_guard_unit_check.swift

@@ -14,6 +14,12 @@ DogArea는 당분간 이메일 인증 의존도가 높습니다.
 - Supabase custom SMTP 입력값 체크리스트
 - secret 보관/회전 가드레일
 - rollout 직전 확인 순서
+- rollout 이후 운영 증적 남기는 형식
+
+## 연계 문서
+
+- rollout evidence runbook: `docs/auth-smtp-rollout-evidence-runbook-v1.md`
+- copy-ready evidence template: `docs/auth-smtp-rollout-evidence-template-v1.md`
 
 ## 평가 원칙
 
