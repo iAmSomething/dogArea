@@ -34,6 +34,7 @@ for token in [
     "FR-MAP-006",
     "FR-MAP-007",
     "FR-MAP-008",
+    "FR-HOME-002A",
     "FR-WALK-001",
     "FR-WALK-002",
     "FR-WALK-002A",
@@ -76,6 +77,7 @@ for testName in [
     "testFeatureRegression_MapBottomControllerStaysAnchoredAndCompactAtRest",
     "testFeatureRegression_MapBottomControllerStaysAnchoredAndCompactWhileWalking",
     "testFeatureRegression_MapWalkingTopHUDStaysBelowSafeAreaAndAboveBottomControls",
+    "testFeatureRegression_HomeWalkPrimaryLoopCardStaysCompactAndOpensGuideOnDemand",
     "testFeatureRegression_MapStopAlertPresentsClearActionHierarchy",
     "testFeatureRegression_WalkListPrimaryContentIsNotObscuredByTabBar",
     "testFeatureRegression_WalkListHeaderSurfacesOverviewAndContextCards",
@@ -154,6 +156,10 @@ assertTrue(
 assertTrue(
     featureRegressionScript.contains("testFeatureRegression_HomeMissionLifecycleSeparatesCompletedMissionState"),
     "run_feature_regression_ui_tests.sh should run the home mission lifecycle regression"
+)
+assertTrue(
+    featureRegressionScript.contains("testFeatureRegression_HomeWalkPrimaryLoopCardStaysCompactAndOpensGuideOnDemand"),
+    "run_feature_regression_ui_tests.sh should run the compact home walk primary loop disclosure regression"
 )
 assertTrue(
     featureRegressionScript.contains("testFeatureRegression_NonMapTabRootHeadersStayBelowStatusBar"),

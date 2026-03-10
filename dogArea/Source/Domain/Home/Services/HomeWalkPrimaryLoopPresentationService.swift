@@ -42,13 +42,13 @@ struct HomeWalkPrimaryLoopPresentationService: HomeWalkPrimaryLoopPresenting {
         let summaryText: String
         if walkRecordCount > 0 {
             summaryText = localizedCopy(
-                "\(selectedPetName)와 남긴 산책 \(walkRecordCount)건이 경로, 영역, 시간 기록으로 쌓이고 있어요. 이 기록이 홈 목표와 시즌, 오늘 행동 해석의 기준이 됩니다.",
-                "Your \(walkRecordCount) walks with \(selectedPetName) are accumulating as route, area, and time records. Those records anchor goals, seasons, and daily activity context."
+                "\(selectedPetName)와 남긴 산책 \(walkRecordCount)건이 오늘 상태와 목표 해석의 기준이 됩니다.",
+                "Your \(walkRecordCount) walks with \(selectedPetName) anchor today's status and goal interpretation."
             )
         } else {
             summaryText = localizedCopy(
-                "첫 산책을 시작하면 \(selectedPetName) 기준으로 경로, 영역, 시간 기록이 쌓이고 이후 목표와 시즌, 오늘 행동 해석이 그 기록을 따라 이어집니다.",
-                "Once you start the first walk for \(selectedPetName), route, area, and time records begin to accumulate and drive goals, seasons, and daily activity context."
+                "첫 산책을 시작하면 \(selectedPetName) 기준 기록이 쌓이고 이후 목표와 시즌 해석이 그 기록을 따라 이어집니다.",
+                "Once you start the first walk for \(selectedPetName), records begin to accumulate and drive goals and seasonal interpretation."
             )
         }
 
@@ -110,7 +110,11 @@ struct HomeWalkPrimaryLoopPresentationService: HomeWalkPrimaryLoopPresenting {
                 "Indoor missions are a supporting path that opens only for bad weather or exception days."
             )
 
-        let accessibilityText = ([summaryText] + pillars.map { "\($0.title). \($0.body)" } + [secondaryFlowText]).joined(separator: " ")
+        let accessibilityText = (
+            [localizedCopy("산책 기본 루프", "Walk primary loop"), summaryText] +
+            metrics.map { "\($0.title) \($0.value)" } +
+            [secondaryFlowText, localizedCopy("설명 보기에서 자세한 가이드를 열 수 있어요.", "Open the guide for more details.")]
+        ).joined(separator: " ")
 
         return HomeWalkPrimaryLoopPresentation(
             badgeText: localizedCopy("기본 행동", "Primary Loop"),
