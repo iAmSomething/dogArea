@@ -11,6 +11,8 @@
 ## 자동 회귀 진입점
 - 전용 위젯 액션 UI 러너: `bash scripts/run_widget_action_regression_ui_tests.sh`
 - 정적 게이트: `swift scripts/widget_action_regression_pack_unit_check.swift`
+- 실기기 증적 런북: `docs/widget-action-real-device-evidence-runbook-v1.md`
+- 복붙용 증적 템플릿: `docs/widget-action-real-device-evidence-template-v1.md`
 
 ## 축 정의
 
