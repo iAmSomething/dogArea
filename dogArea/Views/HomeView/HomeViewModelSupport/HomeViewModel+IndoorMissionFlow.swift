@@ -5,6 +5,10 @@ extension HomeViewModel {
         static let maxCacheAge: TimeInterval = 30 * 60
     }
 
+    private enum IndoorMissionCanonicalSummaryConstants {
+        static let maxCacheAge: TimeInterval = 30 * 60
+    }
+
     /// 현재 홈에 표시할 시즌 요약을 로컬 fallback 기준으로 먼저 갱신합니다.
     /// - Parameter now: 시즌 남은 시간과 fallback 요약을 계산할 기준 시각입니다.
     func refreshSeasonMotion(now: Date) {
@@ -42,16 +46,29 @@ extension HomeViewModel {
         }
         refreshWeatherSnapshot(now: now)
         let baseWeatherStatus = indoorMissionStore.baseWeatherStatus(now: now)
+        let missionContext = makeIndoorMissionPetContext(reference: now)
+        let indoorMissionDayKey = indoorMissionStore.dayStampForPreview(now: now)
+        let cachedIndoorMissionSummary = indoorMissionCanonicalSummaryStore.loadFreshSummary(
+            maxAge: IndoorMissionCanonicalSummaryConstants.maxCacheAge,
+            for: userInfo?.id,
+            dayKey: indoorMissionDayKey,
+            petContextId: missionContext.petId
+        ) ?? indoorMissionCanonicalSummaryStore.loadSummary(
+            for: userInfo?.id,
+            dayKey: indoorMissionDayKey,
+            petContextId: missionContext.petId
+        )
+        latestIndoorMissionCanonicalSummary = cachedIndoorMissionSummary
         let cachedServerSummary = weatherReplacementSummaryStore.loadFreshSummary(
             maxAge: WeatherCanonicalSummaryConstants.maxCacheAge,
             for: userInfo?.id
         )
-        let missionContext = makeIndoorMissionPetContext(reference: now)
         applyIndoorWeatherPresentation(
             now: now,
             missionContext: missionContext,
             baseWeatherStatus: baseWeatherStatus,
-            serverSummary: cachedServerSummary
+            serverSummary: cachedServerSummary,
+            indoorMissionSummary: cachedIndoorMissionSummary
         )
 
         syncSeasonScoreWithWalkSessions(now: now)
@@ -59,6 +76,11 @@ extension HomeViewModel {
 
         if shouldFetchServerSummary {
             refreshWeatherCanonicalSummaryIfNeeded(
+                baseWeatherStatus: baseWeatherStatus,
+                now: now
+            )
+            refreshIndoorMissionCanonicalSummaryIfNeeded(
+                missionContext: missionContext,
                 baseWeatherStatus: baseWeatherStatus,
                 now: now
             )
@@ -72,23 +94,29 @@ extension HomeViewModel {
     ///   - missionContext: 선택 반려견 기반 실내 미션 컨텍스트입니다.
     ///   - baseWeatherStatus: 로컬 snapshot 기반 기본 위험도 상태입니다.
     ///   - serverSummary: 서버 canonical summary입니다. 없으면 로컬 fallback을 사용합니다.
+    ///   - indoorMissionSummary: 서버가 확정한 실내 미션 보드 canonical summary입니다. 없으면 로컬 fallback 보드를 사용합니다.
     func applyIndoorWeatherPresentation(
         now: Date,
         missionContext: IndoorMissionPetContext,
         baseWeatherStatus: IndoorWeatherStatus,
-        serverSummary: WeatherReplacementSummarySnapshot?
+        serverSummary: WeatherReplacementSummarySnapshot?,
+        indoorMissionSummary: IndoorMissionCanonicalSummarySnapshot?
     ) {
         let weatherStatus = indoorMissionStore.weatherStatus(
             now: now,
             serverSummary: serverSummary,
             baseWeatherStatus: baseWeatherStatus
         )
-        indoorMissionBoard = indoorMissionStore.buildBoard(
-            now: now,
-            context: missionContext,
-            weatherStatus: weatherStatus,
-            serverSummary: serverSummary
-        )
+        if let indoorMissionSummary {
+            indoorMissionBoard = indoorMissionStore.buildBoard(from: indoorMissionSummary)
+        } else {
+            indoorMissionBoard = indoorMissionStore.buildBoard(
+                now: now,
+                context: missionContext,
+                weatherStatus: weatherStatus,
+                serverSummary: serverSummary
+            )
+        }
         questAlternativeActionSuggestion = makeQuestAlternativeActionSuggestion(for: indoorMissionBoard)
         weatherFeedbackRemainingCount = indoorMissionStore.weatherFeedbackRemainingCount(
             now: now,
@@ -183,6 +211,51 @@ extension HomeViewModel {
 
     }
 
+    /// member 세션에서 현재 홈 컨텍스트에 대응하는 서버 canonical 실내 미션 summary를 동기화합니다.
+    /// - Parameters:
+    ///   - missionContext: 선택 반려견 기준 실내 미션 컨텍스트입니다.
+    ///   - baseWeatherStatus: 조회 시점의 기본 위험도 상태입니다.
+    ///   - now: 서버 summary를 계산할 기준 시각입니다.
+    func refreshIndoorMissionCanonicalSummaryIfNeeded(
+        missionContext: IndoorMissionPetContext,
+        baseWeatherStatus: IndoorWeatherStatus,
+        now: Date
+    ) {
+        guard AppFeatureGate.isAllowed(.cloudSync, session: AppFeatureGate.currentSession()) else {
+            latestIndoorMissionCanonicalSummary = nil
+            indoorMissionCanonicalSummaryTask?.cancel()
+            return
+        }
+        guard let userId = userInfo?.id, userId.isEmpty == false else {
+            latestIndoorMissionCanonicalSummary = nil
+            indoorMissionCanonicalSummaryTask?.cancel()
+            return
+        }
+
+        indoorMissionCanonicalSummaryTask?.cancel()
+        indoorMissionCanonicalSummaryTask = Task { [weak self] in
+            guard let self else { return }
+            do {
+                let summary = try await indoorMissionCanonicalSummaryService.fetchSummary(
+                    context: missionContext,
+                    baseRiskLevel: baseWeatherStatus.baseRisk,
+                    now: now
+                )
+                indoorMissionCanonicalSummaryStore.save(summary)
+                guard Task.isCancelled == false else { return }
+                await MainActor.run {
+                    guard self.userInfo?.id == userId else { return }
+                    self.latestIndoorMissionCanonicalSummary = summary
+                    self.refreshIndoorMissions(now: now, shouldFetchServerSummary: false)
+                }
+            } catch {
+                #if DEBUG
+                print("[IndoorMissionCanonical] summary fetch failed: \(error.localizedDescription)")
+                #endif
+            }
+        }
+    }
+
     /// 현재 홈 상태에 적용할 서버 canonical summary를 비동기로 재조회합니다.
     /// - Parameters:
     ///   - baseWeatherStatus: 조회 시점의 기본 위험도 상태입니다.
@@ -217,6 +290,120 @@ extension HomeViewModel {
 
     func recordIndoorMissionAction(_ missionId: String) {
         guard var mission = indoorMissionBoard.missions.first(where: { $0.id == missionId }) else { return }
+        let now = Date()
+        let baseWeatherStatus = indoorMissionStore.baseWeatherStatus(now: now)
+        let missionContext = makeIndoorMissionPetContext(reference: now)
+
+        if AppFeatureGate.isAllowed(.cloudSync, session: AppFeatureGate.currentSession()) {
+            guard let canonicalMissionInstanceId = mission.canonicalMissionInstanceId else {
+                indoorMissionStatusMessage = "서버 미션 정보를 다시 불러오는 중이에요."
+                refreshIndoorMissionCanonicalSummaryIfNeeded(
+                    missionContext: missionContext,
+                    baseWeatherStatus: baseWeatherStatus,
+                    now: now
+                )
+                return
+            }
+
+            let nextActionCount = mission.progress.actionCount + 1
+            mission = .init(
+                id: mission.id,
+                category: mission.category,
+                title: mission.title,
+                description: mission.description,
+                minimumActionCount: mission.minimumActionCount,
+                rewardPoint: mission.rewardPoint,
+                streakEligible: mission.streakEligible,
+                trackingMissionId: mission.trackingMissionId,
+                dayKey: mission.dayKey,
+                isExtension: mission.isExtension,
+                extensionSourceDayKey: mission.extensionSourceDayKey,
+                extensionRewardScale: mission.extensionRewardScale,
+                progress: .init(
+                    actionCount: nextActionCount,
+                    minimumActionCount: mission.minimumActionCount,
+                    isCompleted: mission.progress.isCompleted
+                ),
+                canonicalMissionInstanceId: mission.canonicalMissionInstanceId,
+                claimable: nextActionCount >= mission.minimumActionCount,
+                rewardEligible: nextActionCount >= mission.minimumActionCount,
+                source: mission.source
+            )
+            indoorMissionBoard = indoorMissionBoard.updated(mission)
+            updateIndoorMissionPresentation()
+            questMotionEvent = QuestMotionEvent(
+                missionId: mission.id,
+                missionTitle: mission.title,
+                type: .progress,
+                progress: mission.progress.progressRatio
+            )
+            metricTracker.track(
+                .indoorMissionActionLogged,
+                userKey: userInfo?.id,
+                payload: [
+                    "missionId": mission.trackingMissionId,
+                    "actionCount": "\(mission.progress.actionCount)",
+                    "isExtension": mission.isExtension ? "true" : "false",
+                    "mode": "server_canonical"
+                ]
+            )
+
+            let requestId = "indoor-action-\(canonicalMissionInstanceId)-\(UUID().uuidString.lowercased())"
+            Task { [weak self] in
+                guard let self else { return }
+                do {
+                    let result = try await indoorMissionCanonicalSummaryService.recordAction(
+                        missionInstanceId: canonicalMissionInstanceId,
+                        requestId: requestId,
+                        now: now
+                    )
+                    await MainActor.run {
+                        if var currentMission = self.indoorMissionBoard.missions.first(where: { $0.id == mission.id }) {
+                            currentMission = .init(
+                                id: currentMission.id,
+                                category: currentMission.category,
+                                title: currentMission.title,
+                                description: currentMission.description,
+                                minimumActionCount: currentMission.minimumActionCount,
+                                rewardPoint: currentMission.rewardPoint,
+                                streakEligible: currentMission.streakEligible,
+                                trackingMissionId: currentMission.trackingMissionId,
+                                dayKey: currentMission.dayKey,
+                                isExtension: currentMission.isExtension,
+                                extensionSourceDayKey: currentMission.extensionSourceDayKey,
+                                extensionRewardScale: currentMission.extensionRewardScale,
+                                progress: .init(
+                                    actionCount: result.actionCount,
+                                    minimumActionCount: result.minimumActionCount,
+                                    isCompleted: currentMission.progress.isCompleted
+                                ),
+                                canonicalMissionInstanceId: currentMission.canonicalMissionInstanceId,
+                                claimable: result.claimable,
+                                rewardEligible: result.claimable,
+                                source: currentMission.source
+                            )
+                            self.indoorMissionBoard = self.indoorMissionBoard.updated(currentMission)
+                            self.updateIndoorMissionPresentation()
+                        }
+                        self.refreshIndoorMissionCanonicalSummaryIfNeeded(
+                            missionContext: missionContext,
+                            baseWeatherStatus: baseWeatherStatus,
+                            now: now
+                        )
+                    }
+                } catch {
+                    await MainActor.run {
+                        self.indoorMissionStatusMessage = "연결을 확인한 뒤 다시 시도해주세요."
+                        self.refreshIndoorMissions(now: now, shouldFetchServerSummary: false)
+                    }
+                    #if DEBUG
+                    print("[IndoorMissionCanonical] action submit failed: \(error.localizedDescription)")
+                    #endif
+                }
+            }
+            return
+        }
+
         indoorMissionStore.incrementActionCount(
             missionId: mission.trackingMissionId,
             dayKey: mission.dayKey
@@ -236,13 +423,171 @@ extension HomeViewModel {
             payload: [
                 "missionId": mission.trackingMissionId,
                 "actionCount": "\(mission.progress.actionCount)",
-                "isExtension": mission.isExtension ? "true" : "false"
+                "isExtension": mission.isExtension ? "true" : "false",
+                "mode": "guest_fallback"
             ]
         )
     }
 
     func finalizeIndoorMission(_ missionId: String) {
         guard var mission = indoorMissionBoard.missions.first(where: { $0.id == missionId }) else { return }
+        let now = Date()
+        let baseWeatherStatus = indoorMissionStore.baseWeatherStatus(now: now)
+        let missionContext = makeIndoorMissionPetContext(reference: now)
+
+        if AppFeatureGate.isAllowed(.cloudSync, session: AppFeatureGate.currentSession()) {
+            guard let canonicalMissionInstanceId = mission.canonicalMissionInstanceId else {
+                indoorMissionStatusMessage = "보드 상태를 서버에서 다시 불러오는 중이에요."
+                refreshIndoorMissionCanonicalSummaryIfNeeded(
+                    missionContext: missionContext,
+                    baseWeatherStatus: baseWeatherStatus,
+                    now: now
+                )
+                return
+            }
+
+            indoorMissionStatusMessage = "보상 상태를 서버에서 확인 중이에요."
+            let requestId = "indoor-claim-\(canonicalMissionInstanceId)-\(UUID().uuidString.lowercased())"
+            Task { [weak self] in
+                guard let self else { return }
+                do {
+                    let claimResult = try await indoorMissionCanonicalSummaryService.claimReward(
+                        missionInstanceId: canonicalMissionInstanceId,
+                        dayKey: indoorMissionBoard.dayKey,
+                        petContextId: missionContext.petId,
+                        requestId: requestId,
+                        now: now
+                    )
+                    let refreshedSummary = try? await indoorMissionCanonicalSummaryService.fetchSummary(
+                        context: missionContext,
+                        baseRiskLevel: baseWeatherStatus.baseRisk,
+                        now: now
+                    )
+
+                    await MainActor.run {
+                        if let refreshedSummary {
+                            self.indoorMissionCanonicalSummaryStore.save(refreshedSummary)
+                            self.latestIndoorMissionCanonicalSummary = refreshedSummary
+                        }
+
+                        switch claimResult.claimStatusRawValue {
+                        case "claimed":
+                            if claimResult.alreadyClaimed == false {
+                                self.questAlternativeActionSuggestion = nil
+                                let seasonUpdate = self.seasonMotionStore.recordMissionCompletion(
+                                    rewardPoint: claimResult.rewardPoints,
+                                    streakEligible: mission.streakEligible,
+                                    riskLevel: self.indoorMissionBoard.riskLevel
+                                )
+                                self.markSeasonCanonicalOptimisticWindow(now: now)
+                                if seasonUpdate.shieldApplied {
+                                    self.indoorMissionStore.recordWeatherShieldUsage()
+                                }
+                                self.seasonMotionSummary = seasonUpdate.summary
+                                if let completedSeason = seasonUpdate.completedSeason {
+                                    self.seasonResultPresentation = completedSeason
+                                    self.seasonResetTransitionToken = UUID()
+                                }
+                                if seasonUpdate.scoreDelta > 0 || seasonUpdate.rankUp || seasonUpdate.shieldApplied {
+                                    self.seasonMotionEvent = SeasonMotionEvent(
+                                        type: seasonUpdate.rankUp ? .rankUp : .scoreIncreased,
+                                        scoreDelta: seasonUpdate.scoreDelta,
+                                        rankTier: seasonUpdate.summary.rankTier,
+                                        shieldApplied: seasonUpdate.shieldApplied
+                                    )
+                                } else if seasonUpdate.completedSeason != nil {
+                                    self.seasonMotionEvent = SeasonMotionEvent(
+                                        type: .seasonReset,
+                                        scoreDelta: 0,
+                                        rankTier: seasonUpdate.summary.rankTier,
+                                        shieldApplied: false
+                                    )
+                                }
+                                self.questMotionEvent = QuestMotionEvent(
+                                    missionId: mission.id,
+                                    missionTitle: mission.title,
+                                    type: .completed,
+                                    progress: 1.0
+                                )
+                                self.questCompletionPresentation = QuestCompletionPresentation(
+                                    missionId: mission.id,
+                                    missionTitle: mission.title,
+                                    rewardPoint: claimResult.rewardPoints
+                                )
+                                if mission.isExtension {
+                                    self.indoorMissionStatusMessage = "\(mission.title) 연장 미션 완료! 감액 보상 \(claimResult.rewardPoints)pt"
+                                    self.metricTracker.track(
+                                        .indoorMissionExtensionConsumed,
+                                        userKey: self.userInfo?.id,
+                                        payload: [
+                                            "missionId": mission.trackingMissionId,
+                                            "reward": "\(claimResult.rewardPoints)",
+                                            "rewardScale": String(format: "%.2f", mission.extensionRewardScale)
+                                        ]
+                                    )
+                                } else {
+                                    self.indoorMissionStatusMessage = "\(mission.title) 완료! 보상 \(claimResult.rewardPoints)pt"
+                                }
+                            } else {
+                                self.indoorMissionStatusMessage = "이미 서버에서 완료 처리된 미션입니다."
+                                self.questMotionEvent = QuestMotionEvent(
+                                    missionId: mission.id,
+                                    missionTitle: mission.title,
+                                    type: .alreadyCompleted,
+                                    progress: 1.0
+                                )
+                            }
+                            self.metricTracker.track(
+                                .indoorMissionCompleted,
+                                userKey: self.userInfo?.id,
+                                payload: [
+                                    "missionId": mission.trackingMissionId,
+                                    "reward": "\(claimResult.rewardPoints)",
+                                    "risk": self.indoorMissionBoard.riskLevel.rawValue,
+                                    "isExtension": mission.isExtension ? "true" : "false",
+                                    "alreadyClaimed": claimResult.alreadyClaimed ? "true" : "false",
+                                    "mode": "server_canonical"
+                                ]
+                            )
+                            self.refreshSeasonCanonicalSummaryIfNeeded(now: now)
+                        case "rejected":
+                            self.indoorMissionStatusMessage = "완료 기준을 채운 뒤 다시 시도해주세요."
+                            self.questAlternativeActionSuggestion = "행동 +1을 더 기록하거나 실제 루틴 완료 후 다시 보상 받기를 눌러보세요."
+                            self.questMotionEvent = QuestMotionEvent(
+                                missionId: mission.id,
+                                missionTitle: mission.title,
+                                type: .failed,
+                                progress: mission.progress.progressRatio
+                            )
+                            self.metricTracker.track(
+                                .indoorMissionCompletionRejected,
+                                userKey: self.userInfo?.id,
+                                payload: [
+                                    "missionId": mission.trackingMissionId,
+                                    "required": "\(mission.minimumActionCount)",
+                                    "isExtension": mission.isExtension ? "true" : "false",
+                                    "mode": "server_canonical"
+                                ]
+                            )
+                        default:
+                            self.indoorMissionStatusMessage = "보상 상태를 다시 확인해주세요."
+                        }
+
+                        self.refreshIndoorMissions(now: now, shouldFetchServerSummary: false)
+                    }
+                } catch {
+                    await MainActor.run {
+                        self.indoorMissionStatusMessage = "보상 수령에 실패했어요. 잠시 후 다시 시도해주세요."
+                        self.refreshIndoorMissions(now: now, shouldFetchServerSummary: false)
+                    }
+                    #if DEBUG
+                    print("[IndoorMissionCanonical] claim failed: \(error.localizedDescription)")
+                    #endif
+                }
+            }
+            return
+        }
+
         let result = indoorMissionStore.confirmCompletion(
             missionId: mission.trackingMissionId,
             dayKey: mission.dayKey,
@@ -317,7 +662,8 @@ extension HomeViewModel {
                     "missionId": mission.trackingMissionId,
                     "reward": "\(mission.rewardPoint)",
                     "risk": indoorMissionBoard.riskLevel.rawValue,
-                    "isExtension": mission.isExtension ? "true" : "false"
+                    "isExtension": mission.isExtension ? "true" : "false",
+                    "mode": "guest_fallback"
                 ]
             )
             refreshIndoorMissions()
@@ -337,7 +683,8 @@ extension HomeViewModel {
                     "missionId": mission.trackingMissionId,
                     "actionCount": "\(actionCount)",
                     "required": "\(required)",
-                    "isExtension": mission.isExtension ? "true" : "false"
+                    "isExtension": mission.isExtension ? "true" : "false",
+                    "mode": "guest_fallback"
                 ]
             )
         case .alreadyCompleted:
@@ -470,6 +817,73 @@ extension HomeViewModel {
             return
         }
 
+        if AppFeatureGate.isAllowed(.cloudSync, session: AppFeatureGate.currentSession()) {
+            let missionContext = makeIndoorMissionPetContext(reference: now)
+            let baseWeatherStatus = indoorMissionStore.baseWeatherStatus(now: now)
+            Task { [weak self] in
+                guard let self else { return }
+                do {
+                    let result = try await indoorMissionCanonicalSummaryService.activateEasyDay(
+                        context: missionContext,
+                        baseRiskLevel: baseWeatherStatus.baseRisk,
+                        now: now
+                    )
+                    await MainActor.run {
+                        switch result.outcomeRawValue {
+                        case "activated":
+                            self.indoorMissionStatusMessage = "쉬운 날 모드를 적용했어요. 오늘 보상은 20% 감액돼요."
+                            self.metricTracker.track(
+                                .indoorMissionEasyDayActivated,
+                                userKey: self.userInfo?.id,
+                                payload: [
+                                    "petId": difficulty.petId ?? "",
+                                    "dayKey": self.indoorMissionBoard.dayKey,
+                                    "rewardScale": "0.80",
+                                    "mode": "server_canonical"
+                                ]
+                            )
+                        case "already_used":
+                            self.indoorMissionStatusMessage = "쉬운 날 모드는 하루에 한 번만 사용할 수 있어요."
+                            self.metricTracker.track(
+                                .indoorMissionEasyDayRejected,
+                                userKey: self.userInfo?.id,
+                                payload: [
+                                    "petId": difficulty.petId ?? "",
+                                    "reason": "daily_limit",
+                                    "mode": "server_canonical"
+                                ]
+                            )
+                        case "missing_pet":
+                            self.indoorMissionStatusMessage = "선택 반려견을 먼저 지정한 뒤 다시 시도해주세요."
+                            self.metricTracker.track(
+                                .indoorMissionEasyDayRejected,
+                                userKey: self.userInfo?.id,
+                                payload: [
+                                    "reason": "missing_pet",
+                                    "mode": "server_canonical"
+                                ]
+                            )
+                        default:
+                            self.indoorMissionStatusMessage = "쉬운 날 모드를 다시 확인해주세요."
+                        }
+                        self.refreshIndoorMissionCanonicalSummaryIfNeeded(
+                            missionContext: missionContext,
+                            baseWeatherStatus: baseWeatherStatus,
+                            now: now
+                        )
+                    }
+                } catch {
+                    await MainActor.run {
+                        self.indoorMissionStatusMessage = "연결을 확인한 뒤 다시 시도해주세요."
+                    }
+                    #if DEBUG
+                    print("[IndoorMissionCanonical] easy day failed: \(error.localizedDescription)")
+                    #endif
+                }
+            }
+            return
+        }
+
         let outcome = indoorMissionStore.activateEasyDayMode(
             petId: difficulty.petId,
             now: now
@@ -483,7 +897,8 @@ extension HomeViewModel {
                 payload: [
                     "petId": difficulty.petId ?? "",
                     "dayKey": indoorMissionBoard.dayKey,
-                    "rewardScale": "0.80"
+                    "rewardScale": "0.80",
+                    "mode": "guest_fallback"
                 ]
             )
             refreshIndoorMissions(now: now)
@@ -494,7 +909,8 @@ extension HomeViewModel {
                 userKey: userInfo?.id,
                 payload: [
                     "petId": difficulty.petId ?? "",
-                    "reason": "daily_limit"
+                    "reason": "daily_limit",
+                    "mode": "guest_fallback"
                 ]
             )
         case .missingPet:
@@ -503,7 +919,8 @@ extension HomeViewModel {
                 .indoorMissionEasyDayRejected,
                 userKey: userInfo?.id,
                 payload: [
-                    "reason": "missing_pet"
+                    "reason": "missing_pet",
+                    "mode": "guest_fallback"
                 ]
             )
         }

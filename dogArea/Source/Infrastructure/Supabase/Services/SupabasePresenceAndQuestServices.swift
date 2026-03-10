@@ -759,3 +759,485 @@ struct QuestRivalWidgetSummaryService: QuestRivalWidgetSummaryServiceProtocol {
         return RivalFallbackSummary(rank: nil, league: "onboarding")
     }
 }
+
+struct SupabaseIndoorMissionCanonicalSummaryService: IndoorMissionCanonicalSummaryServicing {
+    private struct SummaryHistoryRowDTO: Decodable {
+        let dayKey: String?
+        let petId: String?
+        let petName: String?
+        let multiplier: Double?
+        let ageBand: String?
+        let activityLevel: String?
+        let walkFrequency: String?
+        let easyDayApplied: Bool?
+
+        enum CodingKeys: String, CodingKey {
+            case dayKey
+            case petId
+            case petName
+            case multiplier
+            case ageBand
+            case activityLevel
+            case walkFrequency
+            case easyDayApplied
+        }
+    }
+
+    private struct SummaryMissionRowDTO: Decodable {
+        let missionInstanceId: String?
+        let templateId: String?
+        let category: String?
+        let title: String?
+        let description: String?
+        let minimumActionCount: Int?
+        let rewardPoint: Int?
+        let streakEligible: Bool?
+        let trackingDayKey: String?
+        let isExtension: Bool?
+        let extensionSourceDayKey: String?
+        let extensionRewardScale: Double?
+        let actionCount: Int?
+        let claimable: Bool?
+        let rewardEligible: Bool?
+        let claimedAt: String?
+        let status: String?
+
+        enum CodingKeys: String, CodingKey {
+            case missionInstanceId
+            case templateId
+            case category
+            case title
+            case description
+            case minimumActionCount
+            case rewardPoint
+            case streakEligible
+            case trackingDayKey
+            case isExtension
+            case extensionSourceDayKey
+            case extensionRewardScale
+            case actionCount
+            case claimable
+            case rewardEligible
+            case claimedAt
+            case status
+        }
+    }
+
+    private struct SummaryRowDTO: Decodable {
+        let ownerUserId: String?
+        let petContextId: String?
+        let dayKey: String?
+        let baseRiskLevel: String?
+        let effectiveRiskLevel: String?
+        let extensionState: String?
+        let extensionMessage: String?
+        let petName: String?
+        let ageBand: String?
+        let activityLevel: String?
+        let walkFrequency: String?
+        let appliedMultiplier: Double?
+        let adjustmentDescription: String?
+        let adjustmentReasons: [String]?
+        let easyDayState: String?
+        let easyDayMessage: String?
+        let history: [SummaryHistoryRowDTO]?
+        let missions: [SummaryMissionRowDTO]?
+        let refreshedAt: String?
+
+        enum CodingKeys: String, CodingKey {
+            case ownerUserId = "owner_user_id"
+            case petContextId = "pet_context_id"
+            case dayKey = "day_key"
+            case baseRiskLevel = "base_risk_level"
+            case effectiveRiskLevel = "effective_risk_level"
+            case extensionState = "extension_state"
+            case extensionMessage = "extension_message"
+            case petName = "pet_name"
+            case ageBand = "age_band"
+            case activityLevel = "activity_level"
+            case walkFrequency = "walk_frequency"
+            case appliedMultiplier = "applied_multiplier"
+            case adjustmentDescription = "adjustment_description"
+            case adjustmentReasons = "adjustment_reasons"
+            case easyDayState = "easy_day_state"
+            case easyDayMessage = "easy_day_message"
+            case history
+            case missions
+            case refreshedAt = "refreshed_at"
+        }
+    }
+
+    private struct ActionRowDTO: Decodable {
+        let missionInstanceId: String?
+        let templateId: String?
+        let eventId: String?
+        let idempotent: Bool?
+        let actionCount: Int?
+        let minimumActionCount: Int?
+        let claimable: Bool?
+        let status: String?
+        let refreshedAt: String?
+
+        enum CodingKeys: String, CodingKey {
+            case missionInstanceId = "mission_instance_id"
+            case templateId = "template_id"
+            case eventId = "event_id"
+            case idempotent
+            case actionCount = "action_count"
+            case minimumActionCount = "minimum_action_count"
+            case claimable
+            case status
+            case refreshedAt = "refreshed_at"
+        }
+    }
+
+    private struct ClaimRowDTO: Decodable {
+        let missionInstanceId: String?
+        let templateId: String?
+        let claimStatus: String?
+        let alreadyClaimed: Bool?
+        let rewardPoints: Int?
+        let claimedAt: String?
+        let refreshedAt: String?
+
+        enum CodingKeys: String, CodingKey {
+            case missionInstanceId = "mission_instance_id"
+            case templateId = "template_id"
+            case claimStatus = "claim_status"
+            case alreadyClaimed = "already_claimed"
+            case rewardPoints = "reward_points"
+            case claimedAt = "claimed_at"
+            case refreshedAt = "refreshed_at"
+        }
+    }
+
+    private struct EasyDayRowDTO: Decodable {
+        let outcome: String?
+        let petContextId: String?
+        let alreadyApplied: Bool?
+        let refreshedAt: String?
+
+        enum CodingKeys: String, CodingKey {
+            case outcome
+            case petContextId = "pet_context_id"
+            case alreadyApplied = "already_applied"
+            case refreshedAt = "refreshed_at"
+        }
+    }
+
+    private let client: SupabaseHTTPClient
+
+    /// Supabase RPC 기반 실내 미션 canonical summary 서비스를 생성합니다.
+    /// - Parameter client: RPC 호출에 사용할 HTTP 클라이언트입니다.
+    init(client: SupabaseHTTPClient = .live) {
+        self.client = client
+    }
+
+    /// 현재 선택 반려견/날씨 기준의 서버 canonical 실내 미션 summary를 조회합니다.
+    /// - Parameters:
+    ///   - context: 선택 반려견 기준 실내 미션 컨텍스트입니다.
+    ///   - baseRiskLevel: 클라이언트가 관측한 기본 날씨 위험도입니다.
+    ///   - now: 서버 summary를 계산할 기준 시각입니다.
+    /// - Returns: 서버가 확정한 실내 미션 보드 canonical snapshot입니다.
+    func fetchSummary(
+        context: IndoorMissionPetContext,
+        baseRiskLevel: IndoorWeatherRiskLevel,
+        now: Date
+    ) async throws -> IndoorMissionCanonicalSummarySnapshot {
+        let data = try await client.request(
+            .rest(path: "rpc/rpc_get_indoor_mission_summary"),
+            method: .post,
+            bodyData: try JSONSerialization.data(withJSONObject: [
+                "payload": makeSummaryPayload(context: context, baseRiskLevel: baseRiskLevel, now: now)
+            ])
+        )
+        let row = try decodeRow(SummaryRowDTO.self, from: data)
+        return makeSummary(from: row, context: context, baseRiskLevel: baseRiskLevel, now: now)
+    }
+
+    /// 실내 미션의 자가보고 행동 +1 이벤트를 서버 canonical 경로로 기록합니다.
+    /// - Parameters:
+    ///   - missionInstanceId: 진행을 누적할 실내 미션 인스턴스 식별자입니다.
+    ///   - requestId: 멱등 처리를 위한 요청 식별자입니다.
+    ///   - now: 서버 처리 기준 시각입니다.
+    /// - Returns: 서버가 반영한 최신 action 누적 결과입니다.
+    func recordAction(
+        missionInstanceId: String,
+        requestId: String,
+        now: Date
+    ) async throws -> IndoorMissionCanonicalActionMutationResult {
+        guard let canonicalMissionInstanceId = missionInstanceId.canonicalUUIDString else {
+            throw SupabaseHTTPError.invalidBody
+        }
+        let normalizedRequestId = normalizedRequestId(requestId)
+        let data = try await client.request(
+            .rest(path: "rpc/rpc_record_indoor_mission_action"),
+            method: .post,
+            bodyData: try JSONSerialization.data(withJSONObject: [
+                "payload": [
+                    "in_mission_instance_id": canonicalMissionInstanceId,
+                    "in_request_id": normalizedRequestId,
+                    "in_event_id": normalizedRequestId,
+                    "in_now_ts": ISO8601DateFormatter().string(from: now)
+                ]
+            ])
+        )
+        let row = try decodeRow(ActionRowDTO.self, from: data)
+        guard let resolvedMissionInstanceId = row.missionInstanceId?.canonicalUUIDString,
+              let resolvedTemplateId = row.templateId, resolvedTemplateId.isEmpty == false,
+              let resolvedEventId = row.eventId, resolvedEventId.isEmpty == false else {
+            throw SupabaseHTTPError.invalidResponse
+        }
+        return IndoorMissionCanonicalActionMutationResult(
+            missionInstanceId: resolvedMissionInstanceId,
+            templateId: resolvedTemplateId,
+            eventId: resolvedEventId,
+            idempotent: row.idempotent ?? false,
+            actionCount: max(0, row.actionCount ?? 0),
+            minimumActionCount: max(1, row.minimumActionCount ?? 1),
+            claimable: row.claimable ?? false,
+            statusRawValue: row.status ?? "active",
+            refreshedAt: SupabaseISO8601.parseEpoch(row.refreshedAt) ?? now.timeIntervalSince1970
+        )
+    }
+
+    /// 실내 미션 보상 수령/완료를 서버 canonical 경로로 확정합니다.
+    /// - Parameters:
+    ///   - missionInstanceId: 보상을 수령할 실내 미션 인스턴스 식별자입니다.
+    ///   - dayKey: 현재 홈 보드 day key입니다.
+    ///   - petContextId: 현재 선택 반려견 context 식별자입니다.
+    ///   - requestId: 멱등 처리를 위한 요청 식별자입니다.
+    ///   - now: 서버 처리 기준 시각입니다.
+    /// - Returns: 서버가 확정한 claim 결과입니다.
+    func claimReward(
+        missionInstanceId: String,
+        dayKey: String,
+        petContextId: String?,
+        requestId: String,
+        now: Date
+    ) async throws -> IndoorMissionCanonicalClaimMutationResult {
+        guard let canonicalMissionInstanceId = missionInstanceId.canonicalUUIDString else {
+            throw SupabaseHTTPError.invalidBody
+        }
+        var payload: [String: Any] = [
+            "in_mission_instance_id": canonicalMissionInstanceId,
+            "in_day_key": dayKey,
+            "in_request_id": normalizedRequestId(requestId),
+            "in_now_ts": ISO8601DateFormatter().string(from: now)
+        ]
+        if let petContextId = normalizedPetContextId(petContextId) {
+            payload["in_pet_context_id"] = petContextId
+        }
+        let data = try await client.request(
+            .rest(path: "rpc/rpc_claim_indoor_mission_reward"),
+            method: .post,
+            bodyData: try JSONSerialization.data(withJSONObject: ["payload": payload])
+        )
+        let row = try decodeRow(ClaimRowDTO.self, from: data)
+        guard let resolvedMissionInstanceId = row.missionInstanceId?.canonicalUUIDString,
+              let resolvedTemplateId = row.templateId, resolvedTemplateId.isEmpty == false else {
+            throw SupabaseHTTPError.invalidResponse
+        }
+        return IndoorMissionCanonicalClaimMutationResult(
+            missionInstanceId: resolvedMissionInstanceId,
+            templateId: resolvedTemplateId,
+            claimStatusRawValue: row.claimStatus ?? "failed",
+            alreadyClaimed: row.alreadyClaimed ?? false,
+            rewardPoints: max(0, row.rewardPoints ?? 0),
+            claimedAt: SupabaseISO8601.parseEpoch(row.claimedAt),
+            refreshedAt: SupabaseISO8601.parseEpoch(row.refreshedAt) ?? now.timeIntervalSince1970
+        )
+    }
+
+    /// 쉬운 날 모드를 서버 canonical 경로로 활성화합니다.
+    /// - Parameters:
+    ///   - context: 선택 반려견 기준 실내 미션 컨텍스트입니다.
+    ///   - baseRiskLevel: 클라이언트가 관측한 기본 날씨 위험도입니다.
+    ///   - now: 서버 처리 기준 시각입니다.
+    /// - Returns: 쉬운 날 적용 결과입니다.
+    func activateEasyDay(
+        context: IndoorMissionPetContext,
+        baseRiskLevel: IndoorWeatherRiskLevel,
+        now: Date
+    ) async throws -> IndoorMissionCanonicalEasyDayMutationResult {
+        let data = try await client.request(
+            .rest(path: "rpc/rpc_activate_indoor_easy_day"),
+            method: .post,
+            bodyData: try JSONSerialization.data(withJSONObject: [
+                "payload": makeSummaryPayload(context: context, baseRiskLevel: baseRiskLevel, now: now)
+            ])
+        )
+        let row = try decodeRow(EasyDayRowDTO.self, from: data)
+        return IndoorMissionCanonicalEasyDayMutationResult(
+            outcomeRawValue: row.outcome ?? "failed",
+            petContextId: normalizedPetContextId(row.petContextId),
+            alreadyApplied: row.alreadyApplied ?? false,
+            refreshedAt: SupabaseISO8601.parseEpoch(row.refreshedAt) ?? now.timeIntervalSince1970
+        )
+    }
+
+    /// 선택 반려견/날씨 문맥을 실내 미션 summary RPC payload로 직렬화합니다.
+    /// - Parameters:
+    ///   - context: 현재 선택 반려견 컨텍스트입니다.
+    ///   - baseRiskLevel: 클라이언트가 관측한 기본 위험도입니다.
+    ///   - now: 서버 처리 기준 시각입니다.
+    /// - Returns: RPC wrapper 안에 넣을 payload 딕셔너리입니다.
+    private func makeSummaryPayload(
+        context: IndoorMissionPetContext,
+        baseRiskLevel: IndoorWeatherRiskLevel,
+        now: Date
+    ) -> [String: Any] {
+        var payload: [String: Any] = [
+            "in_pet_name": context.petName,
+            "in_recent_daily_minutes": max(0, context.recentDailyMinutes),
+            "in_average_weekly_walk_count": max(0, context.averageWeeklyWalkCount),
+            "in_base_risk_level": baseRiskLevel.rawValue,
+            "in_now_ts": ISO8601DateFormatter().string(from: now)
+        ]
+        if let petId = normalizedPetContextId(context.petId) {
+            payload["in_pet_context_id"] = petId
+        }
+        if let ageYears = context.ageYears {
+            payload["in_age_years"] = ageYears
+        }
+        return payload
+    }
+
+    /// RPC 원시 응답에서 객체/배열 어느 형태든 단일 row를 정규화해 디코딩합니다.
+    /// - Parameters:
+    ///   - type: 디코딩할 row 타입입니다.
+    ///   - data: RPC 원시 응답 데이터입니다.
+    /// - Returns: 정규화된 단일 row입니다.
+    private func decodeRow<T: Decodable>(_ type: T.Type, from data: Data) throws -> T {
+        let decoder = JSONDecoder()
+        if let row = try? decoder.decode(T.self, from: data) {
+            return row
+        }
+        if let rows = try? decoder.decode([T].self, from: data), let first = rows.first {
+            return first
+        }
+        throw SupabaseHTTPError.invalidResponse
+    }
+
+    /// 서버 summary row를 앱 공용 실내 미션 canonical snapshot으로 정규화합니다.
+    /// - Parameters:
+    ///   - row: 서버가 반환한 실내 미션 summary row입니다.
+    ///   - context: 현재 선택 반려견 컨텍스트입니다.
+    ///   - baseRiskLevel: 응답에 값이 없을 때 사용할 기본 위험도입니다.
+    ///   - now: refreshedAt fallback에 사용할 기준 시각입니다.
+    /// - Returns: 앱이 재사용할 실내 미션 canonical snapshot입니다.
+    private func makeSummary(
+        from row: SummaryRowDTO,
+        context: IndoorMissionPetContext,
+        baseRiskLevel: IndoorWeatherRiskLevel,
+        now: Date
+    ) -> IndoorMissionCanonicalSummarySnapshot {
+        let normalizedOwnerUserId = row.ownerUserId?.canonicalUUIDString ?? currentOwnerUserId()
+        let resolvedPetContextId = normalizedPetContextId(row.petContextId) ?? normalizedPetContextId(context.petId)
+        let resolvedPetName = normalizedPetName(row.petName, fallback: context.petName)
+        let difficultySummary = IndoorMissionCanonicalDifficultySummarySnapshot(
+            petId: resolvedPetContextId,
+            petName: resolvedPetName,
+            ageBandRawValue: row.ageBand ?? IndoorMissionPetAgeBand.unknown.rawValue,
+            activityLevelRawValue: row.activityLevel ?? IndoorMissionActivityLevel.moderate.rawValue,
+            walkFrequencyRawValue: row.walkFrequency ?? IndoorMissionWalkFrequencyBand.steady.rawValue,
+            appliedMultiplier: max(0.75, min(1.25, row.appliedMultiplier ?? 1.0)),
+            adjustmentDescription: row.adjustmentDescription ?? "기본 난이도 유지",
+            adjustmentReasons: row.adjustmentReasons ?? [],
+            easyDayStateRawValue: row.easyDayState ?? IndoorMissionEasyDayState.unavailable.rawValue,
+            easyDayMessage: row.easyDayMessage ?? "",
+            history: (row.history ?? []).map { history in
+                IndoorMissionCanonicalDifficultyHistorySnapshot(
+                    dayKey: history.dayKey ?? "",
+                    petId: normalizedPetContextId(history.petId),
+                    petName: normalizedPetName(history.petName, fallback: resolvedPetName),
+                    multiplier: max(0.75, min(1.25, history.multiplier ?? 1.0)),
+                    ageBandRawValue: history.ageBand ?? IndoorMissionPetAgeBand.unknown.rawValue,
+                    activityLevelRawValue: history.activityLevel ?? IndoorMissionActivityLevel.moderate.rawValue,
+                    walkFrequencyRawValue: history.walkFrequency ?? IndoorMissionWalkFrequencyBand.steady.rawValue,
+                    easyDayApplied: history.easyDayApplied ?? false
+                )
+            }
+        )
+
+        let missions = (row.missions ?? []).compactMap { mission -> IndoorMissionCanonicalMissionSnapshot? in
+            guard let missionInstanceId = mission.missionInstanceId?.canonicalUUIDString,
+                  let templateId = mission.templateId, templateId.isEmpty == false else {
+                return nil
+            }
+            return IndoorMissionCanonicalMissionSnapshot(
+                missionInstanceId: missionInstanceId,
+                templateId: templateId,
+                categoryRawValue: mission.category ?? IndoorMissionCategory.recordCleanup.rawValue,
+                title: mission.title ?? "",
+                description: mission.description ?? "",
+                minimumActionCount: max(1, mission.minimumActionCount ?? 1),
+                rewardPoint: max(0, mission.rewardPoint ?? 0),
+                streakEligible: mission.streakEligible ?? false,
+                trackingDayKey: mission.trackingDayKey ?? row.dayKey ?? "",
+                isExtension: mission.isExtension ?? false,
+                extensionSourceDayKey: mission.extensionSourceDayKey,
+                extensionRewardScale: max(0, mission.extensionRewardScale ?? 1.0),
+                actionCount: max(0, mission.actionCount ?? 0),
+                claimable: mission.claimable ?? false,
+                rewardEligible: mission.rewardEligible ?? false,
+                claimedAt: SupabaseISO8601.parseEpoch(mission.claimedAt),
+                statusRawValue: mission.status ?? "active"
+            )
+        }
+
+        return IndoorMissionCanonicalSummarySnapshot(
+            ownerUserId: normalizedOwnerUserId,
+            petContextId: resolvedPetContextId,
+            dayKey: row.dayKey ?? "",
+            baseRiskLevel: IndoorWeatherRiskLevel(rawValue: row.baseRiskLevel ?? "") ?? baseRiskLevel,
+            effectiveRiskLevel: IndoorWeatherRiskLevel(rawValue: row.effectiveRiskLevel ?? "") ?? baseRiskLevel,
+            extensionStateRawValue: row.extensionState ?? IndoorMissionExtensionState.none.rawValue,
+            extensionMessage: row.extensionMessage,
+            difficultySummary: difficultySummary,
+            missions: missions,
+            refreshedAt: SupabaseISO8601.parseEpoch(row.refreshedAt) ?? now.timeIntervalSince1970
+        )
+    }
+
+    /// 현재 인증 세션의 사용자 식별자를 canonical owner 형식으로 정규화합니다.
+    /// - Returns: 로그인 세션이 있으면 lowercased UUID 문자열, 없으면 `nil`입니다.
+    private func currentOwnerUserId() -> String? {
+        switch AppFeatureGate.currentSession() {
+        case .guest:
+            return nil
+        case .member(let userId):
+            return userId.canonicalUUIDString ?? userId.lowercased()
+        }
+    }
+
+    /// 멱등 요청 식별자를 비어 있지 않은 lowercased 문자열로 정규화합니다.
+    /// - Parameter requestId: 정규화할 원시 request id입니다.
+    /// - Returns: RPC 멱등 처리에 사용할 canonical request id입니다.
+    private func normalizedRequestId(_ requestId: String) -> String {
+        let trimmed = requestId.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return trimmed.isEmpty ? UUID().uuidString.lowercased() : trimmed
+    }
+
+    /// 반려견 context 식별자를 RPC/앱 공용 형식으로 정규화합니다.
+    /// - Parameter petContextId: 정규화할 원시 pet context 식별자입니다.
+    /// - Returns: 비어 있지 않은 식별자이며, `__none__` 또는 빈 값이면 `nil`입니다.
+    private func normalizedPetContextId(_ petContextId: String?) -> String? {
+        guard let petContextId = petContextId?.trimmingCharacters(in: .whitespacesAndNewlines),
+              petContextId.isEmpty == false,
+              petContextId != "__none__" else {
+            return nil
+        }
+        return petContextId
+    }
+
+    /// 반려견 표시명을 비어 있지 않은 사용자 노출 문자열로 정규화합니다.
+    /// - Parameters:
+    ///   - value: 서버가 반환한 원시 반려견 이름입니다.
+    ///   - fallback: 값이 비었을 때 사용할 기본 이름입니다.
+    /// - Returns: 비어 있지 않은 반려견 표시명입니다.
+    private func normalizedPetName(_ value: String?, fallback: String) -> String {
+        let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? fallback : trimmed
+    }
+}

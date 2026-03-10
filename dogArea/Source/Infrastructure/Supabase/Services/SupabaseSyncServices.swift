@@ -22,11 +22,13 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
     private struct SyncStageResponseDTO: Decodable {
         let seasonScoreSummary: SeasonScoreSummaryDTO?
         let seasonCanonicalSummary: SeasonCanonicalSummaryDTO?
+        let indoorMissionCanonicalSummary: IndoorMissionCanonicalSummaryDTO?
         let weatherReplacementSummary: WeatherReplacementSummaryDTO?
 
         enum CodingKeys: String, CodingKey {
             case seasonScoreSummary = "season_score_summary"
             case seasonCanonicalSummary = "season_canonical_summary"
+            case indoorMissionCanonicalSummary = "indoor_mission_canonical_summary"
             case weatherReplacementSummary = "weather_replacement_summary"
         }
     }
@@ -119,6 +121,101 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
             case feedbackUsedThisWeek = "feedback_used_this_week"
             case weeklyFeedbackLimit = "weekly_feedback_limit"
             case feedbackRemainingCount = "feedback_remaining_count"
+            case refreshedAt = "refreshed_at"
+        }
+    }
+
+    private struct IndoorMissionCanonicalHistoryDTO: Decodable {
+        let dayKey: String?
+        let petId: String?
+        let petName: String?
+        let multiplier: Double?
+        let ageBand: String?
+        let activityLevel: String?
+        let walkFrequency: String?
+        let easyDayApplied: Bool?
+    }
+
+    private struct IndoorMissionCanonicalMissionDTO: Decodable {
+        let missionInstanceId: String?
+        let templateId: String?
+        let category: String?
+        let title: String?
+        let description: String?
+        let minimumActionCount: Int?
+        let rewardPoint: Int?
+        let streakEligible: Bool?
+        let trackingDayKey: String?
+        let isExtension: Bool?
+        let extensionSourceDayKey: String?
+        let extensionRewardScale: Double?
+        let actionCount: Int?
+        let claimable: Bool?
+        let rewardEligible: Bool?
+        let claimedAt: String?
+        let status: String?
+
+        enum CodingKeys: String, CodingKey {
+            case missionInstanceId = "mission_instance_id"
+            case templateId = "template_id"
+            case category
+            case title
+            case description
+            case minimumActionCount = "minimum_action_count"
+            case rewardPoint = "reward_point"
+            case streakEligible = "streak_eligible"
+            case trackingDayKey = "tracking_day_key"
+            case isExtension = "is_extension"
+            case extensionSourceDayKey = "extension_source_day_key"
+            case extensionRewardScale = "extension_reward_scale"
+            case actionCount = "action_count"
+            case claimable
+            case rewardEligible = "reward_eligible"
+            case claimedAt = "claimed_at"
+            case status
+        }
+    }
+
+    private struct IndoorMissionCanonicalSummaryDTO: Decodable {
+        let ownerUserId: String?
+        let petContextId: String?
+        let dayKey: String?
+        let baseRiskLevel: String?
+        let effectiveRiskLevel: String?
+        let extensionState: String?
+        let extensionMessage: String?
+        let petName: String?
+        let ageBand: String?
+        let activityLevel: String?
+        let walkFrequency: String?
+        let appliedMultiplier: Double?
+        let adjustmentDescription: String?
+        let adjustmentReasons: [String]?
+        let easyDayState: String?
+        let easyDayMessage: String?
+        let history: [IndoorMissionCanonicalHistoryDTO]?
+        let missions: [IndoorMissionCanonicalMissionDTO]?
+        let refreshedAt: String?
+
+        enum CodingKeys: String, CodingKey {
+            case ownerUserId = "owner_user_id"
+            case petContextId = "pet_context_id"
+            case dayKey = "day_key"
+            case baseRiskLevel = "base_risk_level"
+            case effectiveRiskLevel = "effective_risk_level"
+            case extensionState = "extension_state"
+            case extensionMessage = "extension_message"
+            case petName = "pet_name"
+            case ageBand = "age_band"
+            case activityLevel = "activity_level"
+            case walkFrequency = "walk_frequency"
+            case appliedMultiplier = "applied_multiplier"
+            case adjustmentDescription = "adjustment_description"
+            case adjustmentReasons = "adjustment_reasons"
+            case easyDayState = "easy_day_state"
+            case easyDayMessage = "easy_day_message"
+            case history
+            case missions
             case refreshedAt = "refreshed_at"
         }
     }
@@ -385,6 +482,7 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
         let decoded = try? JSONDecoder().decode(SyncStageResponseDTO.self, from: data)
         guard let season = decoded?.seasonScoreSummary else {
             persistSeasonCanonicalSummaryIfNeeded(item: item, response: decoded)
+            persistIndoorMissionCanonicalSummaryIfNeeded(item: item, response: decoded)
             persistWeatherReplacementSummaryIfNeeded(item: item, response: decoded)
             return
         }
@@ -405,6 +503,7 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
         )
         UserdefaultSetting.shared.updateSeasonCatchupBuffSnapshot(snapshot)
         persistSeasonCanonicalSummaryIfNeeded(item: item, response: decoded)
+        persistIndoorMissionCanonicalSummaryIfNeeded(item: item, response: decoded)
         persistWeatherReplacementSummaryIfNeeded(item: item, response: decoded)
     }
 
@@ -506,6 +605,93 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
         WeatherReplacementSummaryStore.shared.save(snapshot)
     }
 
+    /// `sync-walk` points stage 응답에 포함된 실내 미션 canonical summary를 member cache로 저장합니다.
+    /// - Parameters:
+    ///   - item: 처리 중인 sync outbox 항목입니다.
+    ///   - response: 디코딩된 sync points stage 응답입니다.
+    private func persistIndoorMissionCanonicalSummaryIfNeeded(
+        item: SyncOutboxItem,
+        response: SyncStageResponseDTO?
+    ) {
+        guard item.stage == .points,
+              let summary = response?.indoorMissionCanonicalSummary else {
+            return
+        }
+        guard case .member(let userId) = AppFeatureGate.currentSession() else {
+            return
+        }
+
+        let normalizedOwnerUserId = normalizedSeasonIdentifier(summary.ownerUserId) ?? normalizedSeasonIdentifier(userId)
+        let resolvedPetContextId = normalizedSeasonIdentifier(summary.petContextId)
+        let difficultySummary = IndoorMissionCanonicalDifficultySummarySnapshot(
+            petId: resolvedPetContextId,
+            petName: normalizedIndoorMissionPetName(summary.petName),
+            ageBandRawValue: summary.ageBand ?? IndoorMissionPetAgeBand.unknown.rawValue,
+            activityLevelRawValue: summary.activityLevel ?? IndoorMissionActivityLevel.moderate.rawValue,
+            walkFrequencyRawValue: summary.walkFrequency ?? IndoorMissionWalkFrequencyBand.steady.rawValue,
+            appliedMultiplier: max(0.75, min(1.25, summary.appliedMultiplier ?? 1.0)),
+            adjustmentDescription: summary.adjustmentDescription ?? "기본 난이도 유지",
+            adjustmentReasons: summary.adjustmentReasons ?? [],
+            easyDayStateRawValue: summary.easyDayState ?? IndoorMissionEasyDayState.unavailable.rawValue,
+            easyDayMessage: summary.easyDayMessage ?? "",
+            history: (summary.history ?? []).map { entry in
+                IndoorMissionCanonicalDifficultyHistorySnapshot(
+                    dayKey: entry.dayKey ?? "",
+                    petId: normalizedSeasonIdentifier(entry.petId),
+                    petName: normalizedIndoorMissionPetName(entry.petName),
+                    multiplier: max(0.75, min(1.25, entry.multiplier ?? 1.0)),
+                    ageBandRawValue: entry.ageBand ?? IndoorMissionPetAgeBand.unknown.rawValue,
+                    activityLevelRawValue: entry.activityLevel ?? IndoorMissionActivityLevel.moderate.rawValue,
+                    walkFrequencyRawValue: entry.walkFrequency ?? IndoorMissionWalkFrequencyBand.steady.rawValue,
+                    easyDayApplied: entry.easyDayApplied ?? false
+                )
+            }
+        )
+
+        let missions = (summary.missions ?? []).compactMap { mission -> IndoorMissionCanonicalMissionSnapshot? in
+            guard let missionInstanceId = mission.missionInstanceId?.canonicalUUIDString,
+                  let templateId = mission.templateId,
+                  templateId.isEmpty == false else {
+                return nil
+            }
+            return IndoorMissionCanonicalMissionSnapshot(
+                missionInstanceId: missionInstanceId,
+                templateId: templateId,
+                categoryRawValue: mission.category ?? IndoorMissionCategory.recordCleanup.rawValue,
+                title: mission.title ?? "",
+                description: mission.description ?? "",
+                minimumActionCount: max(1, mission.minimumActionCount ?? 1),
+                rewardPoint: max(0, mission.rewardPoint ?? 0),
+                streakEligible: mission.streakEligible ?? false,
+                trackingDayKey: mission.trackingDayKey ?? summary.dayKey ?? "",
+                isExtension: mission.isExtension ?? false,
+                extensionSourceDayKey: mission.extensionSourceDayKey,
+                extensionRewardScale: max(0, mission.extensionRewardScale ?? 1.0),
+                actionCount: max(0, mission.actionCount ?? 0),
+                claimable: mission.claimable ?? false,
+                rewardEligible: mission.rewardEligible ?? false,
+                claimedAt: SupabaseISO8601.parseEpoch(mission.claimedAt),
+                statusRawValue: mission.status ?? "active"
+            )
+        }
+
+        let snapshot = IndoorMissionCanonicalSummarySnapshot(
+            ownerUserId: normalizedOwnerUserId,
+            petContextId: resolvedPetContextId,
+            dayKey: summary.dayKey ?? "",
+            baseRiskLevel: IndoorWeatherRiskLevel(rawValue: summary.baseRiskLevel ?? "") ?? .clear,
+            effectiveRiskLevel: IndoorWeatherRiskLevel(rawValue: summary.effectiveRiskLevel ?? "")
+                ?? IndoorWeatherRiskLevel(rawValue: summary.baseRiskLevel ?? "")
+                ?? .clear,
+            extensionStateRawValue: summary.extensionState ?? IndoorMissionExtensionState.none.rawValue,
+            extensionMessage: summary.extensionMessage,
+            difficultySummary: difficultySummary,
+            missions: missions,
+            refreshedAt: SupabaseISO8601.parseEpoch(summary.refreshedAt) ?? Date().timeIntervalSince1970
+        )
+        IndoorMissionCanonicalSummaryStore.shared.save(snapshot)
+    }
+
     /// 서버가 반환한 시즌 랭크 문자열을 앱 공용 시즌 랭크로 정규화합니다.
     /// - Parameter rawValue: 서버 응답의 시즌 랭크 문자열입니다.
     /// - Returns: 앱에서 사용할 시즌 랭크 값입니다.
@@ -540,6 +726,16 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
     private func normalizedWeekKey(_ value: String?) -> String? {
         guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), value.isEmpty == false else {
             return nil
+        }
+        return value
+    }
+
+    /// 서버가 내려준 반려견 이름을 UI 기본값과 호환되는 비어 있지 않은 문자열로 정규화합니다.
+    /// - Parameter value: 서버 응답의 원시 반려견 이름입니다.
+    /// - Returns: 비어 있지 않은 반려견 이름이며, 없으면 `강아지`입니다.
+    private func normalizedIndoorMissionPetName(_ value: String?) -> String {
+        guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), value.isEmpty == false else {
+            return "강아지"
         }
         return value
     }

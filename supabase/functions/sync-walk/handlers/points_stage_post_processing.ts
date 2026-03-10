@@ -1,5 +1,6 @@
 import { asRecord, asString, logSyncWalkStageFailure, toNumber, toUUIDOrNull } from "../support/core.ts";
 import type {
+  IndoorMissionCanonicalSummaryDTO,
   QuestProgressSummaryDTO,
   SeasonCanonicalSummaryDTO,
   SeasonPipelineSummaryDTO,
@@ -18,6 +19,7 @@ type PointsPostProcessingContext = SyncWalkStageRequestContext & {
 type PointsPostProcessingResult = {
   seasonScoreSummary: SeasonScoreSummaryDTO | null;
   seasonCanonicalSummary: SeasonCanonicalSummaryDTO | null;
+  indoorMissionCanonicalSummary: IndoorMissionCanonicalSummaryDTO | null;
   seasonPipelineSummary: SeasonPipelineSummaryDTO | null;
   weatherReplacementSummary: WeatherReplacementSummaryDTO | null;
   questProgressSummary: QuestProgressSummaryDTO[];
@@ -111,6 +113,34 @@ async function loadWeatherReplacementSummary(
   return Array.isArray(data) && data.length > 0 ? data[0] as WeatherReplacementSummaryDTO : null;
 }
 
+async function loadIndoorMissionCanonicalSummary(
+  context: PointsPostProcessingContext,
+  nowISO: string,
+): Promise<IndoorMissionCanonicalSummaryDTO | null> {
+  const payload: Record<string, unknown> = {
+    in_base_risk_level: asString(context.payload.weather_risk_level) ?? "clear",
+    in_now_ts: nowISO,
+  };
+  const petContextId = asString(context.payload.pet_id);
+  if (petContextId && petContextId.trim().length > 0) {
+    payload.in_pet_context_id = petContextId;
+  }
+
+  const { data, error } = await context.userClient.rpc(
+    "rpc_get_indoor_mission_summary",
+    {
+      payload,
+    },
+  );
+
+  if (error) {
+    logSyncWalkStageFailure(context.requestId, "points", "indoor_mission_canonical_summary", error.message);
+    return null;
+  }
+
+  return Array.isArray(data) && data.length > 0 ? data[0] as IndoorMissionCanonicalSummaryDTO : null;
+}
+
 async function loadQuestProgressSummary(
   context: PointsPostProcessingContext,
   nowISO: string,
@@ -195,12 +225,14 @@ export async function runPointsStagePostProcessing(
   const [
     seasonScoreSummary,
     seasonCanonicalSummary,
+    indoorMissionCanonicalSummary,
     seasonPipelineSummary,
     weatherReplacementSummary,
     questProgressSummary,
   ] = await Promise.all([
     loadSeasonScoreSummary(context, nowISO),
     loadSeasonCanonicalSummary(context, nowISO),
+    loadIndoorMissionCanonicalSummary(context, nowISO),
     loadSeasonPipelineSummary(context, nowISO),
     loadWeatherReplacementSummary(context, nowISO),
     loadQuestProgressSummary(context, nowISO),
@@ -209,6 +241,7 @@ export async function runPointsStagePostProcessing(
   return {
     seasonScoreSummary,
     seasonCanonicalSummary,
+    indoorMissionCanonicalSummary,
     seasonPipelineSummary,
     weatherReplacementSummary,
     questProgressSummary,

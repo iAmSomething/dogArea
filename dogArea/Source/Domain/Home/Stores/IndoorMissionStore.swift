@@ -135,6 +135,48 @@ final class IndoorMissionStore {
         buildBoard(now: now, context: context, weatherStatus: nil, serverSummary: nil)
     }
 
+    /// 서버 canonical summary snapshot을 홈 카드용 보드 모델로 변환합니다.
+    /// - Parameter summary: 서버가 최종 확정한 실내 미션 summary snapshot입니다.
+    /// - Returns: 홈 UI가 그대로 소비할 수 있는 실내 미션 보드입니다.
+    func buildBoard(from summary: IndoorMissionCanonicalSummarySnapshot) -> IndoorMissionBoard {
+        let missions = summary.missions.map { mission in
+            let minimumActionCount = max(1, mission.minimumActionCount)
+            return IndoorMissionCardModel(
+                id: mission.missionInstanceId,
+                category: resolvedMissionCategory(from: mission.categoryRawValue),
+                title: mission.title,
+                description: mission.description,
+                minimumActionCount: minimumActionCount,
+                rewardPoint: max(0, mission.rewardPoint),
+                streakEligible: mission.streakEligible,
+                trackingMissionId: mission.templateId,
+                dayKey: mission.trackingDayKey,
+                isExtension: mission.isExtension,
+                extensionSourceDayKey: mission.extensionSourceDayKey,
+                extensionRewardScale: mission.extensionRewardScale,
+                progress: .init(
+                    actionCount: max(0, mission.actionCount),
+                    minimumActionCount: minimumActionCount,
+                    isCompleted: mission.claimedAt != nil || mission.statusRawValue == "claimed"
+                ),
+                canonicalMissionInstanceId: mission.missionInstanceId,
+                claimable: mission.claimable,
+                rewardEligible: mission.rewardEligible,
+                source: .serverCanonical
+            )
+        }
+
+        return .init(
+            riskLevel: summary.effectiveRiskLevel,
+            dayKey: summary.dayKey,
+            missions: missions,
+            extensionState: resolvedExtensionState(from: summary.extensionStateRawValue),
+            extensionMessage: summary.extensionMessage,
+            difficultySummary: makeDifficultySummary(from: summary.difficultySummary),
+            source: .serverCanonical
+        )
+    }
+
     /// 서버 canonical summary를 우선 반영해 실내 미션 보드를 생성합니다.
     /// - Parameters:
     ///   - now: 보드 집계 기준 시각입니다.
@@ -297,7 +339,11 @@ final class IndoorMissionStore {
                 actionCount: counts[key] ?? 0,
                 minimumActionCount: mission.minimumActionCount,
                 isCompleted: completed[key] != nil
-            )
+            ),
+            canonicalMissionInstanceId: mission.canonicalMissionInstanceId,
+            claimable: mission.claimable,
+            rewardEligible: mission.rewardEligible,
+            source: mission.source
         )
     }
 
@@ -533,6 +579,81 @@ final class IndoorMissionStore {
             extensionScale: entry.rewardScale,
             streakEligibleOverride: false
         )
+    }
+
+    /// 서버가 내려준 난이도 summary snapshot을 홈 카드용 난이도 모델로 변환합니다.
+    /// - Parameter summary: 서버 canonical 난이도 summary snapshot입니다.
+    /// - Returns: 홈 카드가 표시할 난이도/쉬운 날 요약 모델입니다.
+    private func makeDifficultySummary(
+        from summary: IndoorMissionCanonicalDifficultySummarySnapshot?
+    ) -> IndoorMissionDifficultySummary? {
+        guard let summary else { return nil }
+        return .init(
+            petId: summary.petId,
+            petName: summary.petName,
+            ageBand: resolvedPetAgeBand(from: summary.ageBandRawValue),
+            activityLevel: resolvedActivityLevel(from: summary.activityLevelRawValue),
+            walkFrequency: resolvedWalkFrequency(from: summary.walkFrequencyRawValue),
+            appliedMultiplier: summary.appliedMultiplier,
+            adjustmentDescription: summary.adjustmentDescription,
+            reasons: summary.adjustmentReasons,
+            easyDayState: resolvedEasyDayState(from: summary.easyDayStateRawValue),
+            easyDayMessage: summary.easyDayMessage,
+            history: summary.history.map { entry in
+                .init(
+                    dayKey: entry.dayKey,
+                    petId: entry.petId ?? "__none__",
+                    petName: entry.petName,
+                    multiplier: entry.multiplier,
+                    ageBand: resolvedPetAgeBand(from: entry.ageBandRawValue),
+                    activityLevel: resolvedActivityLevel(from: entry.activityLevelRawValue),
+                    walkFrequency: resolvedWalkFrequency(from: entry.walkFrequencyRawValue),
+                    easyDayApplied: entry.easyDayApplied
+                )
+            }
+        )
+    }
+
+    /// 서버 raw category 문자열을 앱 공용 실내 미션 카테고리로 정규화합니다.
+    /// - Parameter rawValue: 서버가 내려준 카테고리 문자열입니다.
+    /// - Returns: 홈 카드가 사용할 실내 미션 카테고리입니다.
+    private func resolvedMissionCategory(from rawValue: String) -> IndoorMissionCategory {
+        IndoorMissionCategory(rawValue: rawValue) ?? .recordCleanup
+    }
+
+    /// 서버 raw extension state 문자열을 앱 공용 extension 상태로 정규화합니다.
+    /// - Parameter rawValue: 서버가 내려준 extension state 문자열입니다.
+    /// - Returns: 홈 카드가 사용할 extension 상태입니다.
+    private func resolvedExtensionState(from rawValue: String) -> IndoorMissionExtensionState {
+        IndoorMissionExtensionState(rawValue: rawValue) ?? .none
+    }
+
+    /// 서버 raw 연령대 문자열을 앱 공용 실내 미션 연령대 타입으로 정규화합니다.
+    /// - Parameter rawValue: 서버가 내려준 연령대 문자열입니다.
+    /// - Returns: 홈 카드가 사용할 연령대 타입입니다.
+    private func resolvedPetAgeBand(from rawValue: String) -> IndoorMissionPetAgeBand {
+        IndoorMissionPetAgeBand(rawValue: rawValue) ?? .unknown
+    }
+
+    /// 서버 raw 활동량 문자열을 앱 공용 실내 미션 활동량 타입으로 정규화합니다.
+    /// - Parameter rawValue: 서버가 내려준 활동량 문자열입니다.
+    /// - Returns: 홈 카드가 사용할 활동량 타입입니다.
+    private func resolvedActivityLevel(from rawValue: String) -> IndoorMissionActivityLevel {
+        IndoorMissionActivityLevel(rawValue: rawValue) ?? .moderate
+    }
+
+    /// 서버 raw 산책 빈도 문자열을 앱 공용 실내 미션 빈도 타입으로 정규화합니다.
+    /// - Parameter rawValue: 서버가 내려준 산책 빈도 문자열입니다.
+    /// - Returns: 홈 카드가 사용할 산책 빈도 타입입니다.
+    private func resolvedWalkFrequency(from rawValue: String) -> IndoorMissionWalkFrequencyBand {
+        IndoorMissionWalkFrequencyBand(rawValue: rawValue) ?? .steady
+    }
+
+    /// 서버 raw 쉬운 날 상태 문자열을 앱 공용 쉬운 날 상태로 정규화합니다.
+    /// - Parameter rawValue: 서버가 내려준 쉬운 날 상태 문자열입니다.
+    /// - Returns: 홈 카드가 사용할 쉬운 날 상태입니다.
+    private func resolvedEasyDayState(from rawValue: String) -> IndoorMissionEasyDayState {
+        IndoorMissionEasyDayState(rawValue: rawValue) ?? .unavailable
     }
 
     private func template(for missionId: String) -> IndoorMissionTemplate? {
@@ -1122,4 +1243,146 @@ final class IndoorMissionStore {
         formatter.dateFormat = "HH:mm"
         return formatter
     }()
+}
+
+final class IndoorMissionCanonicalSummaryStore: IndoorMissionCanonicalSummaryStoreProtocol {
+    static let shared = IndoorMissionCanonicalSummaryStore()
+
+    private enum Key {
+        static let summaries = "indoor.mission.canonical.summary.cache.v1"
+    }
+
+    private let defaults: UserDefaults
+    private let encoder = JSONEncoder()
+    private let decoder = JSONDecoder()
+    private let stateQueue = DispatchQueue(label: "com.th.dogArea.indoor-mission-canonical-summary-store.state")
+
+    /// UserDefaults 기반 실내 미션 canonical summary 저장소를 생성합니다.
+    /// - Parameter defaults: snapshot을 저장할 UserDefaults 인스턴스입니다.
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+    }
+
+    /// 서버 canonical summary snapshot을 저장합니다.
+    /// - Parameter summary: 저장할 실내 미션 canonical summary입니다.
+    func save(_ summary: IndoorMissionCanonicalSummarySnapshot) {
+        stateQueue.sync {
+            guard let ownerUserId = normalizedUserId(summary.ownerUserId) else { return }
+            guard let data = try? encoder.encode(summary) else { return }
+            var storage = defaults.dictionary(forKey: Key.summaries) as? [String: Data] ?? [:]
+            storage[storageKey(ownerUserId: ownerUserId, dayKey: summary.dayKey, petContextId: summary.petContextId)] = data
+            storage = prunedStorage(storage)
+            defaults.set(storage, forKey: Key.summaries)
+        }
+    }
+
+    /// 특정 사용자/일자/반려견 문맥에 대응하는 summary snapshot을 조회합니다.
+    /// - Parameters:
+    ///   - userId: 현재 사용자 식별자입니다.
+    ///   - dayKey: 조회 기준 day key입니다.
+    ///   - petContextId: 반려견 context 식별자입니다.
+    /// - Returns: 저장된 snapshot이며, 없거나 다른 사용자 캐시면 `nil`입니다.
+    func loadSummary(
+        for userId: String?,
+        dayKey: String,
+        petContextId: String?
+    ) -> IndoorMissionCanonicalSummarySnapshot? {
+        stateQueue.sync {
+            guard let ownerUserId = normalizedUserId(userId) else { return nil }
+            let storage = defaults.dictionary(forKey: Key.summaries) as? [String: Data] ?? [:]
+            let key = storageKey(ownerUserId: ownerUserId, dayKey: dayKey, petContextId: petContextId)
+            guard let data = storage[key] else { return nil }
+            guard let snapshot = try? decoder.decode(IndoorMissionCanonicalSummarySnapshot.self, from: data) else {
+                return nil
+            }
+            guard normalizedUserId(snapshot.ownerUserId) == ownerUserId else { return nil }
+            return snapshot
+        }
+    }
+
+    /// 최대 허용 나이 안에 있는 canonical summary snapshot을 조회합니다.
+    /// - Parameters:
+    ///   - maxAge: 허용할 최대 snapshot 나이(초)입니다.
+    ///   - userId: 현재 사용자 식별자입니다.
+    ///   - dayKey: 조회 기준 day key입니다.
+    ///   - petContextId: 반려견 context 식별자입니다.
+    /// - Returns: 유효한 snapshot이며, 없거나 만료되면 `nil`입니다.
+    func loadFreshSummary(
+        maxAge: TimeInterval,
+        for userId: String?,
+        dayKey: String,
+        petContextId: String?
+    ) -> IndoorMissionCanonicalSummarySnapshot? {
+        guard let snapshot = loadSummary(for: userId, dayKey: dayKey, petContextId: petContextId) else {
+            return nil
+        }
+        let age = Date().timeIntervalSince1970 - snapshot.refreshedAt
+        guard age <= maxAge else { return nil }
+        return snapshot
+    }
+
+    /// 특정 사용자에게 속한 실내 미션 canonical snapshot을 모두 삭제합니다.
+    /// - Parameter userId: 삭제할 사용자 식별자입니다. `nil`이면 전체 캐시를 비웁니다.
+    func clear(for userId: String?) {
+        stateQueue.sync {
+            guard let ownerUserId = normalizedUserId(userId) else {
+                defaults.removeObject(forKey: Key.summaries)
+                return
+            }
+            let storage = defaults.dictionary(forKey: Key.summaries) as? [String: Data] ?? [:]
+            let filtered = storage.filter { $0.key.hasPrefix(ownerUserId + "|") == false }
+            defaults.set(filtered, forKey: Key.summaries)
+        }
+    }
+
+    /// 사용자/일자/반려견 문맥 조합으로 canonical cache key를 생성합니다.
+    /// - Parameters:
+    ///   - ownerUserId: snapshot 소유 사용자 식별자입니다.
+    ///   - dayKey: snapshot day key입니다.
+    ///   - petContextId: 반려견 context 식별자입니다.
+    /// - Returns: UserDefaults 저장에 사용할 안정적인 cache key입니다.
+    private func storageKey(ownerUserId: String, dayKey: String, petContextId: String?) -> String {
+        "\(ownerUserId)|\(dayKey)|\(normalizedPetContextId(petContextId))"
+    }
+
+    /// 반려견 context 식별자를 cache key용 canonical 문자열로 정규화합니다.
+    /// - Parameter petContextId: 정규화할 원시 반려견 context 식별자입니다.
+    /// - Returns: 비어 있지 않은 canonical context 문자열이며, 없으면 `__none__`입니다.
+    private func normalizedPetContextId(_ petContextId: String?) -> String {
+        let trimmed = petContextId?.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let trimmed, trimmed.isEmpty == false {
+            return trimmed.lowercased()
+        }
+        return "__none__"
+    }
+
+    /// 사용자 식별자를 cache owner key로 정규화합니다.
+    /// - Parameter userId: 정규화할 원시 사용자 식별자입니다.
+    /// - Returns: 비어 있지 않은 lowercased 사용자 식별자이며, 없으면 `nil`입니다.
+    private func normalizedUserId(_ userId: String?) -> String? {
+        guard let userId = userId?.trimmingCharacters(in: .whitespacesAndNewlines), userId.isEmpty == false else {
+            return nil
+        }
+        return userId.lowercased()
+    }
+
+    /// 최근 snapshot만 남기도록 저장소를 절제합니다.
+    /// - Parameter storage: 현재 저장된 cache 사전입니다.
+    /// - Returns: 최신 `12`개 snapshot만 유지한 사전입니다.
+    private func prunedStorage(_ storage: [String: Data]) -> [String: Data] {
+        guard storage.count > 12 else { return storage }
+        let decodedPairs = storage.compactMap { key, data -> (String, IndoorMissionCanonicalSummarySnapshot)? in
+            guard let snapshot = try? decoder.decode(IndoorMissionCanonicalSummarySnapshot.self, from: data) else {
+                return nil
+            }
+            return (key, snapshot)
+        }
+        let keysToKeep = Set(
+            decodedPairs
+                .sorted { $0.1.refreshedAt > $1.1.refreshedAt }
+                .prefix(12)
+                .map(\.0)
+        )
+        return storage.filter { keysToKeep.contains($0.key) }
+    }
 }

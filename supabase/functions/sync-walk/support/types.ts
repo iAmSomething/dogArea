@@ -52,6 +52,59 @@ export type WeatherReplacementSummaryDTO = {
   refreshed_at: string;
 };
 
+export type IndoorMissionCanonicalDifficultyHistoryDTO = {
+  dayKey: string | null;
+  petId: string | null;
+  petName: string | null;
+  multiplier: number | null;
+  ageBand: string | null;
+  activityLevel: string | null;
+  walkFrequency: string | null;
+  easyDayApplied: boolean | null;
+};
+
+export type IndoorMissionCanonicalMissionDTO = {
+  mission_instance_id: string | null;
+  template_id: string | null;
+  category: string | null;
+  title: string | null;
+  description: string | null;
+  minimum_action_count: number | null;
+  reward_point: number | null;
+  streak_eligible: boolean | null;
+  tracking_day_key: string | null;
+  is_extension: boolean | null;
+  extension_source_day_key: string | null;
+  extension_reward_scale: number | null;
+  action_count: number | null;
+  claimable: boolean | null;
+  reward_eligible: boolean | null;
+  claimed_at: string | null;
+  status: string | null;
+};
+
+export type IndoorMissionCanonicalSummaryDTO = {
+  owner_user_id: string | null;
+  pet_context_id: string | null;
+  day_key: string | null;
+  base_risk_level: string | null;
+  effective_risk_level: string | null;
+  extension_state: string | null;
+  extension_message: string | null;
+  pet_name: string | null;
+  age_band: string | null;
+  activity_level: string | null;
+  walk_frequency: string | null;
+  applied_multiplier: number | null;
+  adjustment_description: string | null;
+  adjustment_reasons: string[] | null;
+  easy_day_state: string | null;
+  easy_day_message: string | null;
+  history: IndoorMissionCanonicalDifficultyHistoryDTO[] | null;
+  missions: IndoorMissionCanonicalMissionDTO[] | null;
+  refreshed_at: string | null;
+};
+
 export type SeasonCanonicalSummaryDTO = {
   current_season_id: string | null;
   current_season_key: string | null;

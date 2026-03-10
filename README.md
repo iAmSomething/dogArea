@@ -53,6 +53,7 @@
 - 시즌 주간 정책 Stage1 v1: `docs/season-weekly-policy-stage1-v1.md`
 - 시즌 집계/정산 파이프라인 Stage2 v1: `docs/season-stage2-pipeline-v1.md`
 - 시즌 canonical server state v1: `docs/season-canonical-server-state-v1.md`
+- 실내 미션 canonical server state v1: `docs/indoor-mission-canonical-server-state-v1.md`
 - 시즌 첫 진입 설명/도움말 레이어 v1: `docs/map-season-onboarding-help-layer-v1.md`
 - 체감 날씨 피드백 루프 v1: `docs/weather-feedback-loop-v1.md`
 - 날씨 리스크 모델/Provider 정책 v1: `docs/weather-risk-provider-policy-v1.md`

@@ -202,6 +202,12 @@ extension HomeViewModel {
         userInfo = userSessionStore.currentUserInfo()
         selectedPet = userSessionStore.selectedPet(from: userInfo)
         selectedPetId = selectedPet?.petId ?? ""
+        let indoorMissionDayKey = indoorMissionStore.dayStampForPreview(now: Date())
+        latestIndoorMissionCanonicalSummary = indoorMissionCanonicalSummaryStore.loadSummary(
+            for: userInfo?.id,
+            dayKey: indoorMissionDayKey,
+            petContextId: selectedPet?.petId
+        )
         latestSeasonCanonicalSummary = seasonCanonicalSummaryStore.loadSummary(for: userInfo?.id)
     }
 

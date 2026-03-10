@@ -144,6 +144,7 @@ swift scripts/season_policy_stage1_unit_check.swift
 swift scripts/weather_risk_policy_stage1_unit_check.swift
 swift scripts/weather_snapshot_provider_unit_check.swift
 swift scripts/weather_canonical_server_state_unit_check.swift
+swift scripts/indoor_mission_canonical_server_state_unit_check.swift
 swift scripts/home_refresh_dedup_lightweight_unit_check.swift
 swift scripts/home_refresh_entrypoint_unit_check.swift
 swift scripts/home_mission_pet_context_snapshot_unit_check.swift
