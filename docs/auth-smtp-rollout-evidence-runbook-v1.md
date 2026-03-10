@@ -15,6 +15,7 @@
 - live-send validation matrix: `docs/auth-smtp-live-send-validation-matrix-v1.md`
 - 복붙용 기록 템플릿: `docs/auth-smtp-rollout-evidence-template-v1.md`
 - 종료 체크리스트: `docs/auth-smtp-closure-checklist-v1.md`
+- helper: `bash scripts/render_manual_evidence_pack.sh auth-smtp --write`
 
 ## 최소 증적 세트
 - provider 선택 정보
