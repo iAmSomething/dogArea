@@ -37,7 +37,9 @@
 - 앱 활성화(`didBecomeActive`) 및 주기 tick(5초)에서 flush 트리거
 - 실패 시 exponential backoff
   - 기본 5초, 최대 15분
-- 첫 실패 지점에서 flush 중단해 순서 보장
+- `retryable` 실패는 첫 실패 지점에서 flush 중단해 순서 보장
+- `permanent` 실패는 해당 stage를 격리하고, 같은 세션의 후속 stage도 함께 `permanentFailed`로 내려 다른 정상 세션 flush는 계속 진행
+- 즉, 문제 세션 하나가 outbox 전체를 장시간 막지 않도록 한다
 
 ## 6. 이미지 저장 실패 분리
 - 지도 이미지가 없더라도 세션/포인트 저장은 진행

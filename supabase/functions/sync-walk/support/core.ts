@@ -45,12 +45,14 @@ export const logSyncWalkStageFailure = (
   stage: string,
   scope: string,
   detail: string,
+  metadata: Record<string, unknown> = {},
 ) => {
   console.warn("[sync-walk]", {
     request_id: requestId,
     stage,
     scope,
     detail,
+    ...metadata,
   });
 };
 

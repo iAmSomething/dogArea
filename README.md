@@ -198,6 +198,7 @@
 - 산책 세션 자동 복구/자동 종료 정책 v1: `docs/walk-session-recovery-auto-end-v1.md`
 - 산책 런타임 예외 방어 가드레일 v1: `docs/walk-runtime-guardrails-v1.md`
 - 산책 저장/동기화 정합성 아웃박스 v1: `docs/walk-sync-consistency-outbox-v1.md`
+- Sync-walk session stage 오류 분류 정책 v1: `docs/sync-walk-session-stage-error-policy-v1.md`
 - Cycle #80 결과 보고서(2026-02-26): `docs/cycle-80-sync-consistency-report-2026-02-26.md`
 - 예외처리 장애주입 매트릭스 v1: `docs/fault-injection-matrix-v1.md`
 - 예외처리 장애주입 런북 v1: `docs/fault-injection-runbook-v1.md`

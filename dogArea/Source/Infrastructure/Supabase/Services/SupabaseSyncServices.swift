@@ -326,7 +326,7 @@ struct SupabaseSyncOutboxTransport: WalkSyncServiceProtocol {
                 case 401, 403:
                     return .retryable(.tokenExpired)
                 case 409:
-                    return .success
+                    return .permanent(.conflict)
                 case 429, 500..<600:
                     return .retryable(.serverError)
                 case 404:

@@ -61,6 +61,30 @@ sync_walk_stage_member="$(harness_request_json \
   "{\"action\":\"sync_walk_stage\",\"stage\":\"session\",\"walk_session_id\":\"$fixed_session_id\",\"request_id\":\"smoke-426-sync-walk-session-request\",\"idempotency_key\":\"smoke-416-session\",\"payload\":{\"created_at\":1700000000,\"started_at\":1700000000,\"ended_at\":1700000600,\"duration_sec\":600,\"area_m2\":12.5,\"source_device\":\"ios\",\"pet_id\":\"$member_pet_id\"}}")"
 harness_expect_status "sync-walk.session.member" "200" "$sync_walk_stage_member" "route=/functions/v1/sync-walk action=sync_walk_stage"
 
+sync_walk_session_missing_pet="$(harness_request_json \
+  "POST" \
+  "$SUPABASE_URL/functions/v1/sync-walk" \
+  "$SUPABASE_ANON_KEY" \
+  "$member_auth" \
+  "{\"action\":\"sync_walk_stage\",\"stage\":\"session\",\"walk_session_id\":\"00000000-0000-4000-8000-000000006861\",\"request_id\":\"smoke-686-sync-walk-missing-pet\",\"idempotency_key\":\"smoke-686-missing-pet\",\"payload\":{\"created_at\":1700000000,\"started_at\":1700000000,\"ended_at\":1700000600,\"duration_sec\":600,\"area_m2\":12.5,\"source_device\":\"ios\"}}")"
+harness_expect_status "sync-walk.session.invalid_payload.missing_pet" "422" "$sync_walk_session_missing_pet" "route=/functions/v1/sync-walk action=sync_walk_stage"
+
+sync_walk_session_invalid_pet="$(harness_request_json \
+  "POST" \
+  "$SUPABASE_URL/functions/v1/sync-walk" \
+  "$SUPABASE_ANON_KEY" \
+  "$member_auth" \
+  "{\"action\":\"sync_walk_stage\",\"stage\":\"session\",\"walk_session_id\":\"00000000-0000-4000-8000-000000006862\",\"request_id\":\"smoke-686-sync-walk-invalid-pet\",\"idempotency_key\":\"smoke-686-invalid-pet\",\"payload\":{\"created_at\":1700000000,\"started_at\":1700000000,\"ended_at\":1700000600,\"duration_sec\":600,\"area_m2\":12.5,\"source_device\":\"ios\",\"pet_id\":\"00000000-0000-4000-8000-000000009999\"}}")"
+harness_expect_status "sync-walk.session.invalid_payload.invalid_pet" "422" "$sync_walk_session_invalid_pet" "route=/functions/v1/sync-walk action=sync_walk_stage"
+
+sync_walk_session_reverse_time="$(harness_request_json \
+  "POST" \
+  "$SUPABASE_URL/functions/v1/sync-walk" \
+  "$SUPABASE_ANON_KEY" \
+  "$member_auth" \
+  "{\"action\":\"sync_walk_stage\",\"stage\":\"session\",\"walk_session_id\":\"00000000-0000-4000-8000-000000006864\",\"request_id\":\"smoke-687-sync-walk-reverse-time\",\"idempotency_key\":\"smoke-687-reverse-time\",\"payload\":{\"created_at\":1700000000,\"started_at\":1700000600,\"ended_at\":1700000000,\"duration_sec\":0,\"area_m2\":12.5,\"source_device\":\"ios\",\"pet_id\":\"$member_pet_id\"}}")"
+harness_expect_status "sync-walk.session.invalid_payload.reverse_time" "422" "$sync_walk_session_reverse_time" "route=/functions/v1/sync-walk action=sync_walk_stage"
+
 sync_walk_summary_member="$(harness_request_json \
   "POST" \
   "$SUPABASE_URL/functions/v1/sync-walk" \

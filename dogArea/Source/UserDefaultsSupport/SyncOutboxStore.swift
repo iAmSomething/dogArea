@@ -250,7 +250,13 @@ final class SyncOutboxStore {
                 if code == .notConfigured {
                     continue
                 }
-                return summary()
+                markPendingStagesPermanent(
+                    walkSessionId: next.walkSessionId,
+                    excludingItemId: next.id,
+                    code: code,
+                    now: currentNow
+                )
+                continue
             }
         }
         return summary()
@@ -316,6 +322,47 @@ final class SyncOutboxStore {
                 block(&items[idx])
                 persistLocked()
             }
+        }
+    }
+
+    /// 동일 세션의 후속 pending stage를 영구 실패로 격리해 다른 정상 세션 flush를 계속 진행합니다.
+    /// - Parameters:
+    ///   - walkSessionId: 영구 실패가 확정된 산책 세션 식별자입니다.
+    ///   - excludingItemId: 이미 실패 처리한 현재 stage 항목 식별자입니다.
+    ///   - code: 후속 stage에 동일하게 기록할 영구 오류 코드입니다.
+    ///   - now: 상태 갱신 시각(epoch seconds)입니다.
+    private func markPendingStagesPermanent(
+        walkSessionId: String,
+        excludingItemId: String,
+        code: SyncOutboxErrorCode,
+        now: TimeInterval
+    ) {
+        stateQueue.sync {
+            var mutated = false
+            for index in items.indices {
+                guard items[index].walkSessionId == walkSessionId else { continue }
+                guard items[index].id != excludingItemId else { continue }
+                guard Self.isPendingStatus(items[index].status) else { continue }
+                items[index].status = .permanentFailed
+                items[index].lastErrorCode = code
+                items[index].updatedAt = now
+                mutated = true
+            }
+            if mutated {
+                persistLocked()
+            }
+        }
+    }
+
+    /// pending 상태로 간주할 outbox 상태인지 판정합니다.
+    /// - Parameter status: 판정할 outbox 상태입니다.
+    /// - Returns: 추가 전송 또는 격리 대상이면 `true`, 그 외에는 `false`입니다.
+    private static func isPendingStatus(_ status: SyncOutboxStatus) -> Bool {
+        switch status {
+        case .queued, .retrying, .processing:
+            return true
+        case .permanentFailed, .completed:
+            return false
         }
     }
 

@@ -85,6 +85,11 @@ payload 키:
 - 네트워크/서버 일시 오류: retryable (`offline`, `server_error`)
 - 스키마 불일치: permanent (`schema_mismatch`)
 - 영구실패 항목은 `requeuePermanentFailures`로 재큐잉
+- `sync-walk` session stage는 아래 성격을 구분한다.
+  - `422`: 같은 payload로는 성공할 수 없는 데이터 오류 (`pet_id` 누락/무효, 시간 역전, schema constraint)
+  - `409`: ownership/context conflict
+  - `503/500`: 일시적 또는 미분류 서버 오류
+- 영구실패가 난 세션은 같은 세션의 후속 stage도 함께 격리해, 다른 정상 세션 동기화는 계속 진행한다.
 
 ## 7. 완료 기준
 - 동일 스냅샷 재실행 시 세션/포인트 합계가 증가하지 않는다.
