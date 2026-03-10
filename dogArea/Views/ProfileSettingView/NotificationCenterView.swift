@@ -88,10 +88,12 @@ struct NotificationCenterView: View {
     var memberContent: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
-                settingsHeader(
-                    title: "설정",
-                    subtitle: "프로필, 실제 설정, 법적 문서와 지원 정보를 한 곳에서 관리해요."
-                )
+                NonMapRootHeaderContainer {
+                    settingsHeader(
+                        title: "설정",
+                        subtitle: "프로필, 실제 설정, 법적 문서와 지원 정보를 한 곳에서 관리해요."
+                    )
+                }
 
                 memberProfileCard
 
@@ -107,7 +109,6 @@ struct NotificationCenterView: View {
                 accountActionCard
             }
             .padding(.horizontal, 16)
-            .padding(.top, 24)
         }
         .appTabRootScrollLayout(extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding)
         .accessibilityIdentifier("screen.settings.member")
@@ -123,10 +124,12 @@ struct NotificationCenterView: View {
     var guestLockedContent: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
-                settingsHeader(
-                    title: "설정",
-                    subtitle: "로그인 없이도 운영 정보와 문의 경로를 확인할 수 있어요."
-                )
+                NonMapRootHeaderContainer {
+                    settingsHeader(
+                        title: "설정",
+                        subtitle: "로그인 없이도 운영 정보와 문의 경로를 확인할 수 있어요."
+                    )
+                }
 
                 guestSignInCard
                 guestFeaturePreviewCard
@@ -136,7 +139,6 @@ struct NotificationCenterView: View {
                 appInfoCard
             }
             .padding(.horizontal, 16)
-            .padding(.top, 24)
         }
         .appTabRootScrollLayout(extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding)
         .accessibilityIdentifier("screen.settings.guest")

@@ -8,10 +8,6 @@
 import SwiftUI
 import CoreLocation
 
-private enum WalkListRootLayoutMetrics {
-    static let contentTopPadding: CGFloat = 10
-}
-
 struct WalkListView: View {
     @StateObject private var viewModel = WalkListViewModel()
     @EnvironmentObject var authFlow: AuthFlowCoordinator
@@ -21,18 +17,20 @@ struct WalkListView: View {
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 18, pinnedViews: [.sectionHeaders]) {
-                WalkListDashboardHeaderView(
-                    overview: viewModel.overviewModel,
-                    calendar: viewModel.calendarModel,
-                    pets: viewModel.pets,
-                    selectedPetId: viewModel.selectedPetId,
-                    onSelectPet: viewModel.selectPet(_:),
-                    onRestoreSelected: viewModel.showSelectedPetRecords,
-                    onPreviousCalendarMonth: viewModel.showPreviousCalendarMonth,
-                    onNextCalendarMonth: viewModel.showNextCalendarMonth,
-                    onSelectCalendarDate: viewModel.selectCalendarDate(_:),
-                    onClearCalendarSelection: viewModel.clearCalendarSelection
-                )
+                NonMapRootHeaderContainer {
+                    WalkListDashboardHeaderView(
+                        overview: viewModel.overviewModel,
+                        calendar: viewModel.calendarModel,
+                        pets: viewModel.pets,
+                        selectedPetId: viewModel.selectedPetId,
+                        onSelectPet: viewModel.selectPet(_:),
+                        onRestoreSelected: viewModel.showSelectedPetRecords,
+                        onPreviousCalendarMonth: viewModel.showPreviousCalendarMonth,
+                        onNextCalendarMonth: viewModel.showNextCalendarMonth,
+                        onSelectCalendarDate: viewModel.selectCalendarDate(_:),
+                        onClearCalendarSelection: viewModel.clearCalendarSelection
+                    )
+                }
                 .padding(.horizontal, 16)
 
                 if authFlow.isGuestMode {
@@ -80,7 +78,6 @@ struct WalkListView: View {
                     }
                 }
             }
-            .padding(.top, WalkListRootLayoutMetrics.contentTopPadding)
             .padding(.bottom, 12)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
