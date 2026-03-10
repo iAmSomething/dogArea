@@ -11,6 +11,7 @@ struct NotificationCenterView: View {
     private enum ActiveSheet: String, Identifiable {
         case profileEdit
         case petManagement
+        case privacyCenter
 
         var id: String { rawValue }
     }
@@ -63,7 +64,11 @@ struct NotificationCenterView: View {
         } message: {
             Text("탈퇴 시 계정 정보와 프로필 데이터가 삭제되며 복구할 수 없습니다.")
         }
-        .sheet(item: $activeSheet) { sheet in
+        .sheet(item: $activeSheet, onDismiss: {
+            Task {
+                await viewModel.refreshProductSurface()
+            }
+        }) { sheet in
             switch sheet {
             case .profileEdit:
                 ProfileFieldEditSheet(viewModel: viewModel) { message in
@@ -76,6 +81,16 @@ struct NotificationCenterView: View {
                 }
             case .petManagement:
                 PetManagementSheet(viewModel: viewModel)
+            case .privacyCenter:
+                SettingsPrivacyCenterView(
+                    viewModel: SettingsPrivacyCenterViewModel(),
+                    onRequestSignIn: {
+                        _ = authFlow.requestAccess(feature: .cloudSync)
+                    },
+                    onClose: {
+                        activeSheet = nil
+                    }
+                )
             }
         }
         .sheet(item: $activeDocument) { document in
@@ -95,6 +110,7 @@ struct NotificationCenterView: View {
                 }
 
                 petInfoCard
+                privacyCenterCard
                 appSettingsCard
                 legalDocumentsCard
                 supportCard
@@ -126,6 +142,7 @@ struct NotificationCenterView: View {
     var guestLockedContent: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
+                privacyCenterCard
                 guestSignInCard
                 guestFeaturePreviewCard
                 appSettingsCard
@@ -156,6 +173,12 @@ struct NotificationCenterView: View {
             actions: viewModel.appSettingsActions,
             onSelect: handleSettingsAction
         )
+    }
+
+    var privacyCenterCard: some View {
+        SettingsPrivacyCenterEntryCardView(summary: viewModel.privacyCenterEntrySummary) {
+            activeSheet = .privacyCenter
+        }
     }
 
     var legalDocumentsCard: some View {

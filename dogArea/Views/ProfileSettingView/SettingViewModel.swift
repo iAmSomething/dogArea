@@ -40,6 +40,7 @@ final class SettingViewModel: ObservableObject {
     @Published var seasonProfileSummary: SeasonProfileSummary? = nil
     @Published var notificationSettingsSummary: SettingsNotificationSummary = .unknown
     @Published var appMetadata: SettingsAppMetadata = .placeholder
+    @Published var privacyCenterEntrySummary: SettingsPrivacyEntrySummary = .placeholder
     @Published var isCaricatureGenerating: Bool = false
     @Published var isAccountDeletionInProgress: Bool = false
 
@@ -53,6 +54,7 @@ final class SettingViewModel: ObservableObject {
     let appMetadataService: SettingsAppMetadataProviding
     let notificationAuthorizationService: SettingsNotificationAuthorizationProviding
     let settingsSurfaceCatalogService: SettingsSurfaceCatalogProviding
+    let privacyCenterService: SettingsPrivacyCenterProviding
     let featureFlags = FeatureFlagStore.shared
     let metricTracker = AppMetricTracker.shared
     let caricatureClient = CaricatureEdgeClient()
@@ -87,6 +89,7 @@ final class SettingViewModel: ObservableObject {
     ///   - appMetadataService: 앱 버전/빌드/지원 채널 메타데이터를 조립하는 서비스입니다.
     ///   - notificationAuthorizationService: 시스템 알림 권한 상태를 요약하는 서비스입니다.
     ///   - settingsSurfaceCatalogService: 설정 화면의 앱 설정/법적 문서/지원/앱 정보 섹션을 조립하는 서비스입니다.
+    ///   - privacyCenterService: 설정 메인/상세에 표시할 프라이버시 상태 요약을 조립하는 서비스입니다.
     init(
         profileRepository: ProfileRepository = DefaultProfileRepository.shared,
         imageRepository: ProfileImageRepository = SupabaseProfileImageRepository.shared,
@@ -97,7 +100,8 @@ final class SettingViewModel: ObservableObject {
         seasonProfileSummaryService: SettingsSeasonProfileSummaryProviding = SettingsSeasonProfileSummaryService(),
         appMetadataService: SettingsAppMetadataProviding = SettingsAppMetadataService(),
         notificationAuthorizationService: SettingsNotificationAuthorizationProviding = SettingsNotificationAuthorizationService(),
-        settingsSurfaceCatalogService: SettingsSurfaceCatalogProviding = SettingsSurfaceCatalogService()
+        settingsSurfaceCatalogService: SettingsSurfaceCatalogProviding = SettingsSurfaceCatalogService(),
+        privacyCenterService: SettingsPrivacyCenterProviding = SettingsPrivacyCenterService()
     ) {
         self.profileRepository = profileRepository
         self.imageRepository = imageRepository
@@ -109,7 +113,12 @@ final class SettingViewModel: ObservableObject {
         self.appMetadataService = appMetadataService
         self.notificationAuthorizationService = notificationAuthorizationService
         self.settingsSurfaceCatalogService = settingsSurfaceCatalogService
+        self.privacyCenterService = privacyCenterService
         self.appMetadata = appMetadataService.loadMetadata(currentIdentity: authSessionStore.currentIdentity())
+        self.privacyCenterEntrySummary = privacyCenterService.loadEntrySummary(
+            currentIdentity: authSessionStore.currentTokenSession() == nil ? nil : authSessionStore.currentIdentity(),
+            notificationSummary: .unknown
+        )
         bindSelectedPetSync()
         bindAuthSessionSync()
         fetchModel()

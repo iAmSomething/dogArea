@@ -1154,6 +1154,42 @@ final class FeatureRegressionUITests: XCTestCase {
         )
     }
 
+    /// 설정 탭의 프라이버시 센터 진입이 현재 상태/권한/문서 허브를 한 화면에서 노출하는지 검증합니다.
+    func testFeatureRegression_SettingsPrivacyCenterRouteSurfacesControlAndDocuments() throws {
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.AutoGuest"])
+        XCTAssertTrue(waitUntilExists(app.buttons["tab.4"], timeout: 12), "탭바가 렌더링되지 않았습니다.")
+        XCTAssertTrue(openTab(index: 4, app: app), "설정 탭 진입에 실패했습니다.")
+
+        let privacyEntry = app.descendants(matching: .any).matching(identifier: "settings.privacyCenter.entry").firstMatch
+        XCTAssertTrue(
+            revealExistingElementByVerticalScroll(privacyEntry, app: app, maxSwipes: 5),
+            "프라이버시 센터 진입 경로를 화면 안으로 노출하지 못했습니다."
+        )
+        XCTAssertTrue(tapIfExists(privacyEntry), "프라이버시 센터 진입 버튼 탭에 실패했습니다.")
+
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "screen.settings.privacyCenter", in: app), timeout: 6),
+            "프라이버시 센터 화면이 열리지 않았습니다."
+        )
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "settings.privacyCenter.currentStatus", in: app), timeout: 2),
+            "현재 공유 상태 카드가 노출되지 않았습니다."
+        )
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "settings.privacyCenter.control", in: app), timeout: 2),
+            "공유 제어 카드가 노출되지 않았습니다."
+        )
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "settings.privacyCenter.permissions", in: app), timeout: 2),
+            "권한 상태 카드가 노출되지 않았습니다."
+        )
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "settings.privacyCenter.documents", in: app), timeout: 2),
+            "보존/삭제/문서 카드가 노출되지 않았습니다."
+        )
+
+    }
+
     /// 홈 미션 카드가 완료 기준/자가 기록 가이드/완료 아카이브 상태를 분리해 노출하는지 검증합니다.
     func testFeatureRegression_HomeMissionLifecycleSeparatesCompletedMissionState() throws {
         let app = launchAppForFeatureRegression(extraArguments: ["-UITest.HomeMissionLifecycleStub"])

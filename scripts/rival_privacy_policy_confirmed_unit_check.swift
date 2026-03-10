@@ -26,18 +26,27 @@ let rivalViewModel = loadMany([
     "dogArea/Views/ProfileSettingView/RivalTabViewModelSupport/RivalTabViewModel+ModerationAndLocation.swift"
 ])
 let rivalView = load("dogArea/Views/ProfileSettingView/RivalTabView.swift")
+let privacyStore = load("dogArea/Source/UserDefaultsSupport/PrivacyControlStateStore.swift")
 
 assertTrue(
-    rivalViewModel.contains("locationSharingPolicyInitializedKeyPrefix"),
-    "rival privacy policy should keep per-user initialization key prefix"
+    privacyStore.contains("scopedSharingKeyPrefix = \"nearby.locationSharingEnabled.v1\""),
+    "privacy state store should keep the scoped sharing key prefix"
 )
 assertTrue(
     rivalViewModel.contains("loadLocationSharingPreference(for: currentUserId)"),
     "rival tab should resolve sharing state from session-aware policy loader"
 )
 assertTrue(
-    rivalViewModel.contains("seededValue = true"),
-    "member sharing default should seed to ON when no prior preference exists"
+    privacyStore.contains("seededValue = false"),
+    "shared privacy policy should seed member sharing default to OFF when no prior preference exists"
+)
+assertTrue(
+    rivalViewModel.contains("privacyControlStateStore.loadSharingEnabled(for: userId)"),
+    "rival tab should load sharing preference through the shared privacy state store"
+)
+assertTrue(
+    rivalViewModel.contains("privacyControlStateStore.persistSharingEnabled(enabled, for: userId)"),
+    "rival tab should persist sharing preference through the shared privacy state store"
 )
 assertTrue(
     rivalViewModel.contains("visibilityOffPropagationDeadline: TimeInterval = 30"),
@@ -52,8 +61,8 @@ assertTrue(
     "sharing OFF should be persisted immediately before server acknowledgement"
 )
 assertTrue(
-    rivalViewModel.contains("preferenceStore.removeObject(forKey: locationSharingLegacyGlobalKey)"),
-    "legacy global sharing key should be cleaned during migration to scoped key"
+    privacyStore.contains("preferenceStore.removeObject(forKey: legacyMapGlobalKey)"),
+    "legacy map sharing key should be cleaned during migration to scoped key"
 )
 
 assertTrue(

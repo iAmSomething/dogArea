@@ -128,6 +128,12 @@
 		A37600010000000000000026 /* PetManagementEditPetSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37600010000000000000016 /* PetManagementEditPetSheet.swift */; };
 		A37600010000000000000027 /* PetManagementEditPetSheetViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37600010000000000000017 /* PetManagementEditPetSheetViewModel.swift */; };
 		A37600010000000000000028 /* PetManagementSheetViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37600010000000000000018 /* PetManagementSheetViewModel.swift */; };
+		A26800010000000000000001 /* SettingsPrivacyCenterModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A26800010000000000000011 /* SettingsPrivacyCenterModels.swift */; };
+		A26800010000000000000002 /* SettingsPrivacyCenterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A26800010000000000000012 /* SettingsPrivacyCenterService.swift */; };
+		A26800010000000000000003 /* PrivacyControlStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A26800010000000000000013 /* PrivacyControlStateStore.swift */; };
+		A26800010000000000000004 /* SettingsPrivacyCenterEntryCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A26800010000000000000014 /* SettingsPrivacyCenterEntryCardView.swift */; };
+		A26800010000000000000005 /* SettingsPrivacyCenterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A26800010000000000000015 /* SettingsPrivacyCenterView.swift */; };
+		A26800010000000000000006 /* SettingsPrivacyCenterViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A26800010000000000000016 /* SettingsPrivacyCenterViewModel.swift */; };
 		A37700010000000000000001 /* AreaReferenceCatalogInsightService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37700010000000000000011 /* AreaReferenceCatalogInsightService.swift */; };
 		A37700010000000000000002 /* AreaDetailCatalogSnapshotSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37700010000000000000012 /* AreaDetailCatalogSnapshotSectionView.swift */; };
 		A37800010000000000000001 /* AppTabScaffold.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37800010000000000000002 /* AppTabScaffold.swift */; };
@@ -538,6 +544,12 @@
 		A37600010000000000000016 /* PetManagementEditPetSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetManagementEditPetSheet.swift; sourceTree = "<group>"; };
 		A37600010000000000000017 /* PetManagementEditPetSheetViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetManagementEditPetSheetViewModel.swift; sourceTree = "<group>"; };
 		A37600010000000000000018 /* PetManagementSheetViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetManagementSheetViewModel.swift; sourceTree = "<group>"; };
+		A26800010000000000000011 /* SettingsPrivacyCenterModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsPrivacyCenterModels.swift; sourceTree = "<group>"; };
+		A26800010000000000000012 /* SettingsPrivacyCenterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsPrivacyCenterService.swift; sourceTree = "<group>"; };
+		A26800010000000000000013 /* PrivacyControlStateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyControlStateStore.swift; sourceTree = "<group>"; };
+		A26800010000000000000014 /* SettingsPrivacyCenterEntryCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsPrivacyCenterEntryCardView.swift; sourceTree = "<group>"; };
+		A26800010000000000000015 /* SettingsPrivacyCenterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsPrivacyCenterView.swift; sourceTree = "<group>"; };
+		A26800010000000000000016 /* SettingsPrivacyCenterViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsPrivacyCenterViewModel.swift; sourceTree = "<group>"; };
 		A37700010000000000000011 /* AreaReferenceCatalogInsightService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaReferenceCatalogInsightService.swift; sourceTree = "<group>"; };
 		A37700010000000000000012 /* AreaDetailCatalogSnapshotSectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaDetailCatalogSnapshotSectionView.swift; sourceTree = "<group>"; };
 		A37800010000000000000002 /* AppTabScaffold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTabScaffold.swift; sourceTree = "<group>"; };
@@ -1007,6 +1019,7 @@
 			isa = PBXGroup;
 			children = (
 				A37600010000000000000011 /* ProfileEditorDraft.swift */,
+				A26800010000000000000011 /* SettingsPrivacyCenterModels.swift */,
 				A50000010000000000000011 /* SettingsSurfaceModels.swift */,
 				72F12802474DD64B59485B1E /* SeasonProfileSummary.swift */,
 			);
@@ -1017,6 +1030,7 @@
 			isa = PBXGroup;
 			children = (
 				A37600010000000000000012 /* SettingsPetManagementService.swift */,
+				A26800010000000000000012 /* SettingsPrivacyCenterService.swift */,
 				A50000010000000000000012 /* SettingsProductSurfaceService.swift */,
 				9D5A36B3041BCFBBD4C59BDC /* SettingsSeasonProfileSummaryService.swift */,
 			);
@@ -1070,6 +1084,7 @@
 				A50000010000000000000014 /* SettingsAppInfoCardView.swift */,
 				A50000010000000000000015 /* SettingsDocumentSheetView.swift */,
 				A45200010000000000000011 /* SettingsEditableImageButton.swift */,
+				A26800010000000000000014 /* SettingsPrivacyCenterEntryCardView.swift */,
 				A37600010000000000000014 /* PetManagementSheet.swift */,
 				A37600010000000000000016 /* PetManagementEditPetSheet.swift */,
 			);
@@ -1137,6 +1152,7 @@
 				A41500010000000000000015 /* AppPreferenceStores.swift */,
 				A41500010000000000000016 /* FeatureFlagStore.swift */,
 				A41500010000000000000017 /* AppMetricTracker.swift */,
+				A26800010000000000000013 /* PrivacyControlStateStore.swift */,
 				A50700010000000000000013 /* AuthMailActionStateStore.swift */,
 				A56400010000000000000013 /* HomeMissionGuideStateStore.swift */,
 				A56800010000000000000013 /* SeasonGuideStateStore.swift */,
@@ -1606,6 +1622,8 @@
 				A37600010000000000000017 /* PetManagementEditPetSheetViewModel.swift */,
 				A37600010000000000000018 /* PetManagementSheetViewModel.swift */,
 				DA8BB9E72B0255B700E350C4 /* SettingViewModel.swift */,
+				A26800010000000000000015 /* SettingsPrivacyCenterView.swift */,
+				A26800010000000000000016 /* SettingsPrivacyCenterViewModel.swift */,
 				AEEB7566FB4DD44BCB259429 /* SettingViewModelSupport */,
 				FFE36A05F119A92311550278 /* RivalTabViewModelSupport */,
 			);
@@ -2205,6 +2223,12 @@
 				DAE147B11420000000000001 /* MapClusterAnnotationService.swift in Sources */,
 				A37600010000000000000021 /* ProfileEditorDraft.swift in Sources */,
 				A37600010000000000000022 /* SettingsPetManagementService.swift in Sources */,
+				A26800010000000000000001 /* SettingsPrivacyCenterModels.swift in Sources */,
+				A26800010000000000000002 /* SettingsPrivacyCenterService.swift in Sources */,
+				A26800010000000000000003 /* PrivacyControlStateStore.swift in Sources */,
+				A26800010000000000000004 /* SettingsPrivacyCenterEntryCardView.swift in Sources */,
+				A26800010000000000000005 /* SettingsPrivacyCenterView.swift in Sources */,
+				A26800010000000000000006 /* SettingsPrivacyCenterViewModel.swift in Sources */,
 				A50000010000000000000001 /* SettingsSurfaceModels.swift in Sources */,
 				A50000010000000000000002 /* SettingsProductSurfaceService.swift in Sources */,
 				DA4513832AFB25C2007AD69B /* PositionMarkerView.swift in Sources */,
