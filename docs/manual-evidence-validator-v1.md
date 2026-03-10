@@ -38,6 +38,8 @@
 - validator 통과 뒤 closure comment 생성
   - `bash scripts/render_closure_comment_from_evidence.sh widget <evidence-dir> --write`
   - `bash scripts/render_closure_comment_from_evidence.sh auth-smtp .codex_tmp/auth-smtp-evidence-pack.md --negative-guard \"...\" --negative-provider-event \"...\" --write`
+  - `bash scripts/post_closure_comment_from_evidence.sh widget --issue 408 <evidence-dir> --post`
+  - `bash scripts/post_closure_comment_from_evidence.sh auth-smtp --issue 482 .codex_tmp/auth-smtp-evidence-pack.md --negative-guard \"...\" --negative-provider-event \"...\" --post`
 
 ## 출력 규칙
 - 성공 시

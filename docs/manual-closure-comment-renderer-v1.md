@@ -45,4 +45,5 @@
 ## 운영 규칙
 - renderer는 validator 통과 전 evidence를 받지 않는다.
 - renderer가 comment body를 만든다고 해서 이슈를 자동 종료하지는 않는다.
+- 실제 게시가 필요하면 `bash scripts/post_closure_comment_from_evidence.sh ... --post`를 사용한다.
 - `#408`, `#482` 종료 전에는 실제 로그/스크린샷/실수신 결과가 채워졌는지 최종 검토가 필요하다.
