@@ -87,6 +87,7 @@ struct MapView : View{
                 recomputeBannerQueue()
             }
         })
+        composed = AnyView(composed.onChange(of: viewModel.livePresenceRetryBannerText) { recomputeBannerQueue() })
         composed = AnyView(composed.onChange(of: viewModel.syncOutboxLastErrorCodeText) { recomputeBannerQueue() })
         composed = AnyView(composed.onChange(of: viewModel.syncOutboxPendingCount) { recomputeBannerQueue() })
         composed = AnyView(composed.onChange(of: viewModel.syncOutboxPermanentFailureCount) { recomputeBannerQueue() })
@@ -462,6 +463,8 @@ struct MapView : View{
             returnToOriginSuggestionBanner
         case .runtimeGuard:
             runtimeGuardBanner
+        case .livePresenceRetry:
+            livePresenceRetryBanner
         case .syncOutbox:
             syncOutboxBanner
         case .offlineMode:
@@ -689,6 +692,15 @@ struct MapView : View{
             .mapChromeSurface()
     }
 
+    var livePresenceRetryBanner: some View {
+        Text(viewModel.livePresenceRetryBannerText)
+            .font(.appFont(for: .Light, size: 11))
+            .foregroundStyle(MapChromePalette.secondaryText)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .mapChromeSurface()
+    }
+
     var syncOutboxBanner: some View {
         Text(viewModel.syncOutboxStatusText)
             .font(.appFont(for: .Light, size: 11))
@@ -842,6 +854,9 @@ struct MapView : View{
 
     private func dismissTopBanner(_ kind: MapTopBannerKind, suppressFor: TimeInterval) {
         bannerSuppressedUntil[kind] = Date().addingTimeInterval(suppressFor)
+        if kind == .livePresenceRetry {
+            viewModel.clearLivePresenceRetryBanner()
+        }
         if activeBanner?.kind == kind {
             activeBanner = nil
         }
@@ -909,6 +924,17 @@ struct MapView : View{
                 MapTopBannerCandidate(
                     kind: .runtimeGuard,
                     severity: .p1,
+                    autoDismissAfter: 4.0,
+                    suppressFor: 20
+                )
+            )
+        }
+
+        if viewModel.hasLivePresenceRetryBanner {
+            candidates.append(
+                MapTopBannerCandidate(
+                    kind: .livePresenceRetry,
+                    severity: .p2,
                     autoDismissAfter: 4.0,
                     suppressFor: 20
                 )
@@ -984,6 +1010,7 @@ private enum MapTopBannerKind: String, Hashable {
     case recoverableSession
     case returnToOrigin
     case runtimeGuard
+    case livePresenceRetry
     case syncOutbox
     case offlineMode
     case guestBackup
@@ -1027,8 +1054,9 @@ private extension MapTopBannerKind {
         case .syncOutbox: return 3
         case .runtimeGuard: return 4
         case .offlineMode: return 5
-        case .guestBackup: return 6
-        case .watchStatus: return 7
+        case .livePresenceRetry: return 6
+        case .guestBackup: return 7
+        case .watchStatus: return 8
         }
     }
 }
