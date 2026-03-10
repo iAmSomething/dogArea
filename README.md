@@ -29,6 +29,7 @@
 - 위젯 액션 종료 체크리스트 v1: `docs/widget-action-closure-checklist-v1.md`
 - 위젯 액션 종료 코멘트 템플릿 v1: `docs/widget-action-closure-comment-template-v1.md`
 - Manual evidence helper v1: `docs/manual-evidence-helper-v1.md`
+- Manual blocker evidence status runner v1: `docs/manual-blocker-evidence-status-runner-v1.md`
 - Manual evidence validator v1: `docs/manual-evidence-validator-v1.md`
 - Manual closure comment renderer v1: `docs/manual-closure-comment-renderer-v1.md`
 - Manual closure comment poster v1: `docs/manual-closure-comment-poster-v1.md`
@@ -230,6 +231,7 @@
 - 문서/유닛만 빠르게 체크: `DOGAREA_SKIP_BUILD=1 bash scripts/ios_pr_check.sh`
 - 위젯 액션 기능 회귀 UI: `bash scripts/run_widget_action_regression_ui_tests.sh`
 - blocker evidence helper: `bash scripts/render_manual_evidence_pack.sh <widget|auth-smtp> --write`
+- blocker evidence status runner: `bash scripts/manual_blocker_evidence_status.sh [widget|auth-smtp] [--write-missing]`
 - blocker evidence validator: `bash scripts/validate_manual_evidence_pack.sh <widget|auth-smtp> <filled-markdown>`
 - blocker closure renderer: `bash scripts/render_closure_comment_from_evidence.sh <widget|auth-smtp> ...`
 - blocker closure poster: `bash scripts/post_closure_comment_from_evidence.sh <widget|auth-smtp> --issue <number> ... [--post]`
