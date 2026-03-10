@@ -55,6 +55,8 @@
 - Quest/Rival widget next action recovery v1: `docs/quest-rival-widget-next-action-recovery-v1.md`
 - 라이벌 프라이버시 하드 가드 v1: `docs/rival-privacy-hard-guard-v1.md`
 - 라이벌 프라이버시 정책 Stage1 v1: `docs/rival-privacy-policy-stage1-v1.md`
+- 설정 프라이버시 센터 IA v1: `docs/settings-privacy-center-ia-v1.md`
+- 프라이버시 제어/권한 복구/보존 삭제 플로우 v1: `docs/privacy-control-recovery-retention-flow-v1.md`
 - 라이벌 공정 리그 매칭 v1: `docs/rival-fair-league-v1.md`
 - 라이벌 Stage2 백엔드(리더보드/권리경로) v1: `docs/rival-stage2-backend-v1.md`
 - 라이벌 Stage3 클라이언트 UX v1: `docs/rival-stage3-client-ux-v1.md`
