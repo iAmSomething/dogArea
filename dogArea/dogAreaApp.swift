@@ -144,9 +144,6 @@ struct dogAreaApp: App {
                     }
                 }
             }
-            .onReceive(NotificationCenter.default.publisher(for: .authSessionDidChange)) { _ in
-                authFlow.refresh()
-            }
 
         if shouldAutoGuestForUITest {
             baseRoot
