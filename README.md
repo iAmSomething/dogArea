@@ -74,6 +74,8 @@
 - 이슈 #610 #611 #612 클로저 증적 스냅샷 v1: `docs/issues-610-611-612-closure-evidence-v1.md`
 - 이슈 #618 #619 #622 클로저 증적 스냅샷 v1: `docs/issues-618-619-622-closure-evidence-v1.md`
 - 산책 가치 설명/저장 후 연결 흐름 v1: `docs/walk-value-flow-onboarding-v1.md`
+- 첫 산책 온보딩 Step1 이해 구조 v1: `docs/first-walk-onboarding-step1-understanding-v1.md`
+- 첫 산책 온보딩 Step2 기록/공유 기본값 v1: `docs/first-walk-onboarding-step2-recording-sharing-v1.md`
 - 홈 미션 정의/등장 이유/완료 방식 도움말 레이어 v1: `docs/home-quest-help-layer-v1.md`
 - 홈 미션 자동 기록/직접 체크 구분 가이드 v1: `docs/home-quest-tracking-mode-guideline-v1.md`
 - 홈 상단 safe area 계약 v1: `docs/home-top-safearea-contract-v1.md`
