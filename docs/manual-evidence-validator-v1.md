@@ -35,6 +35,9 @@
 - evidence를 채운 뒤 validator 실행
   - `bash scripts/validate_manual_evidence_pack.sh widget .codex_tmp/widget-action-evidence-pack.md`
   - `bash scripts/validate_manual_evidence_pack.sh auth-smtp .codex_tmp/auth-smtp-evidence-pack.md`
+- validator 통과 뒤 closure comment 생성
+  - `bash scripts/render_closure_comment_from_evidence.sh widget <evidence-dir> --write`
+  - `bash scripts/render_closure_comment_from_evidence.sh auth-smtp .codex_tmp/auth-smtp-evidence-pack.md --negative-guard \"...\" --negative-provider-event \"...\" --write`
 
 ## 출력 규칙
 - 성공 시
