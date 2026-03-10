@@ -2475,7 +2475,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     /// heatmap이 실제로 화면에 보이는 상태인지 계산합니다.
     /// - Returns: feature flag, 사용자 토글, 지도 모드가 모두 heatmap 표시를 허용하면 `true`입니다.
     var isHeatmapVisibleInMapUI: Bool {
-        isHeatmapFeatureAvailable && heatmapEnabled && isWalking == false && showOnlyOne == false
+        isHeatmapFeatureAvailable && heatmapEnabled && (showOnlyOne == false || isWalking)
     }
 
     var isSeasonTileMapVisible: Bool {
@@ -2721,6 +2721,10 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         return "\(summary.title) · \(summary.countLine)"
     }
 
+    var seasonTileChromeSummaryPresentation: MapSeasonTileChromeSummaryPresentation {
+        seasonTilePresentationService.makeChromeSummaryPresentation(from: seasonTileMapTiles)
+    }
+
     var seasonTileSummaryCardPresentation: MapSeasonTileSummaryPresentation {
         seasonTileSummaryPresentation
             ?? seasonTilePresentationService.makeSummaryPresentation(from: seasonTileMapTiles)
@@ -2738,79 +2742,6 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private var selectedSeasonTile: MapSeasonTilePresentation? {
         guard let selectedSeasonTileGeohash else { return nil }
         return seasonTileMapTiles.first { $0.geohash == selectedSeasonTileGeohash }
-    }
-
-    /// 시즌 타일 채움 색을 계산합니다.
-    /// - Parameter score: 시즌 셀에 누적된 정규화 점수입니다.
-    /// - Returns: 시즌 타일 단계에 대응하는 채움 색입니다.
-    func heatmapColor(for score: Double) -> Color {
-        let level = seasonTileIntensityLevel(for: score)
-        let status = seasonTileStatusText(for: score)
-        switch (level, status) {
-        case (0, _): return Color.appGreen
-        case (1, _): return Color.appYellowPale
-        case (2, "점령"): return Color.appPeach
-        case (2, _): return Color.appYellow
-        case (3, "점령"): return Color.appRed
-        default: return Color.appPeach
-        }
-    }
-
-    /// 시즌 타일 채움 투명도를 계산합니다.
-    /// - Parameter score: 시즌 셀에 누적된 정규화 점수입니다.
-    /// - Returns: 시즌 타일 단계에 대응하는 채움 투명도입니다.
-    func heatmapOpacity(for score: Double) -> Double {
-        switch seasonTileIntensityLevel(for: score) {
-        case 0: return 0.28
-        case 1: return 0.38
-        case 2: return 0.50
-        default: return 0.62
-        }
-    }
-
-    /// 시즌 타일 셀의 채움 색을 계산합니다.
-    /// - Parameter tile: 지도에 렌더링할 시즌 타일 셀 표현입니다.
-    /// - Returns: 셀의 상태/강도에 대응하는 채움 색입니다.
-    func seasonTileFillColor(for tile: MapSeasonTilePresentation) -> Color {
-        heatmapColor(for: tile.score)
-    }
-
-    /// 시즌 타일 셀의 채움 투명도를 계산합니다.
-    /// - Parameter tile: 지도에 렌더링할 시즌 타일 셀 표현입니다.
-    /// - Returns: 셀의 상태/강도에 대응하는 채움 투명도입니다.
-    func seasonTileFillOpacity(for tile: MapSeasonTilePresentation) -> Double {
-        let baseOpacity = min(0.68, heatmapOpacity(for: tile.score) + 0.08)
-        return isSeasonTileSelected(tile) ? min(0.78, baseOpacity + 0.08) : baseOpacity
-    }
-
-    /// 시즌 타일 셀의 테두리 색을 계산합니다.
-    /// - Parameter tile: 지도에 렌더링할 시즌 타일 셀 표현입니다.
-    /// - Returns: 점령/유지 상태를 식별하는 테두리 색입니다.
-    func seasonTileStrokeColor(for tile: MapSeasonTilePresentation) -> Color {
-        if isSeasonTileSelected(tile) {
-            return Color.appYellow
-        }
-        switch tile.status {
-        case .occupied:
-            return Color.appDynamicHex(light: 0xC2410C, dark: 0xFDBA74)
-        case .maintained:
-            return Color.appDynamicHex(light: 0x0F766E, dark: 0x5EEAD4)
-        }
-    }
-
-    /// 시즌 타일 셀의 테두리 스타일을 계산합니다.
-    /// - Parameter tile: 지도에 렌더링할 시즌 타일 셀 표현입니다.
-    /// - Returns: 점령/유지 상태에 대응하는 스트로크 스타일입니다.
-    func seasonTileStrokeStyle(for tile: MapSeasonTilePresentation) -> StrokeStyle {
-        if isSeasonTileSelected(tile) {
-            return StrokeStyle(lineWidth: 2.8, lineCap: .round, lineJoin: .round)
-        }
-        switch tile.status {
-        case .occupied:
-            return StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round)
-        case .maintained:
-            return StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round, dash: [7, 5])
-        }
     }
 
     /// 시즌 타일 선택 상태를 토글합니다.

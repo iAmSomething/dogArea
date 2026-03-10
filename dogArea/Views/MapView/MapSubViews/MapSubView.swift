@@ -19,9 +19,121 @@ struct MapSubView: View {
         let selectedPolygonSnapshot = viewModel.walkPointSnapshot(for: viewModel.polygon)
 
         return Map(position: $viewModel.cameraPosition, interactionModes: .all) {
+            if viewModel.isSeasonTileMapVisible {
+                ForEach(viewModel.seasonTileMapTiles) { tile in
+                    MapPolygon(tile.polygon)
+                        .foregroundStyle(
+                            viewModel.seasonTileFillColor(for: tile)
+                                .opacity(viewModel.seasonTileFillOpacity(for: tile))
+                        )
+                        .annotationTitles(.hidden)
+                }
+            }
+            if let walkArea = viewModel.polygon.polygon {
+                if viewModel.showOnlyOne {
+                    MapPolygon(walkArea)
+                        .stroke(Color.appYellow, lineWidth: 0.5)
+                        .foregroundStyle(Color.appYellow.opacity(0.3))
+                        .annotationTitles(.visible)
+                } else {
+                    ForEach(viewModel.renderablePolygonOverlays) { item in
+                        if let polygon = item.polygon {
+                            MapPolygon(polygon)
+                                .stroke(Color.appYellow, lineWidth: 0.5)
+                                .foregroundStyle(Color.appYellow.opacity(0.3))
+                                .annotationTitles(.visible)
+                        }
+                    }
+                }
+            }
+            if viewModel.isSeasonTileMapVisible {
+                ForEach(viewModel.seasonTileMapTiles) { tile in
+                    MapPolygon(tile.polygon)
+                        .stroke(
+                            viewModel.seasonTileStrokeColor(for: tile),
+                            style: viewModel.seasonTileStrokeStyle(for: tile)
+                        )
+                        .annotationTitles(.hidden)
+                }
+                ForEach(viewModel.seasonTileMapTiles.filter(viewModel.isSeasonTileSelected)) { tile in
+                    MapPolygon(tile.polygon)
+                        .stroke(
+                            viewModel.seasonTileSelectionHaloColor(for: tile),
+                            style: viewModel.seasonTileSelectionHaloStyle(for: tile)
+                        )
+                        .annotationTitles(.hidden)
+                }
+                ForEach(viewModel.seasonTileMapTiles) { tile in
+                    Annotation("", coordinate: tile.centerCoordinate) {
+                        seasonTileSelectionHitTarget(for: tile)
+                    }
+                    .annotationTitles(.hidden)
+                }
+            }
             if viewModel.isWalking, activeWalkSnapshot.hasRenderableRoute {
                 MapPolyline(coordinates: activeWalkSnapshot.routeCoordinates)
                     .stroke(routeStrokeColor, style: routeStrokeStyle)
+            }
+            if let walkArea = viewModel.polygon.polygon {
+                if viewModel.showOnlyOne {
+                    if selectedPolygonSnapshot.hasRenderableRoute {
+                        MapPolyline(coordinates: selectedPolygonSnapshot.routeCoordinates)
+                            .stroke(routeStrokeColor, style: routeStrokeStyle)
+                    }
+                    Annotation("", coordinate: walkArea.coordinate) {
+                        VStack {
+                            Image(systemName: "pawprint.fill")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(Color.white)
+                                .frame(width: 24, height: 24)
+                                .background(Color.appGreen)
+                                .cornerRadius(10)
+                                .shadow(radius: 5)
+                            Text("\(viewModel.polygon.createdAt.createdAtTimeYYMMDD)")
+                                .font(.appFont(for: .Regular, size: 12))
+                                .foregroundColor(.appTextDarkGray)
+                        }
+                    }
+                    ForEach(selectedPolygonSnapshot.markLocations) { location in
+                        Annotation("", coordinate: location.coordinate) {
+                            PositionMarkerView()
+                        }
+                    }
+                } else {
+                    ForEach(viewModel.centerLocations.indices, id: \.self) { index in
+                        Annotation("", coordinate: viewModel.centerLocations[index].center) {
+                            MapClusterPulseAnnotationView(
+                                count: viewModel.centerLocations[index].sumLocs.count,
+                                isReducedMotion: viewModel.isMapMotionReduced,
+                                animationDuration: viewModel.clusterMotionAnimationDuration,
+                                motionState: viewModel.clusterMotionState
+                            ) {
+                                viewModel.fetchSelectedPolygonList(for: viewModel.centerLocations[index])
+                            }
+                        }
+                    }
+                }
+            } else {
+                if viewModel.isWalking == false, activeWalkSnapshot.hasRenderableRoute {
+                    MapPolyline(coordinates: activeWalkSnapshot.routeCoordinates)
+                        .stroke(routeStrokeColor, style: routeStrokeStyle)
+                }
+                ForEach(activeWalkSnapshot.markLocations) { location in
+                    Annotation("", coordinate: location.coordinate) {
+                        PositionMarkerView()
+                            .onTapGesture {
+                                viewModel.selectedMarker = location
+                                myAlert.callAlert(type: .annotationSelected(location))
+                            }
+                    }
+                }
+            }
+            if viewModel.isNearbyHotspotFeatureAvailable && viewModel.nearbyHotspotEnabled {
+                ForEach(viewModel.renderableNearbyHotspotNodes) { hotspot in
+                    Annotation("", coordinate: hotspot.centerCoordinate) {
+                        nearbyHotspotAnnotationView(for: hotspot)
+                    }
+                }
             }
             ForEach(viewModel.activeCaptureRipples()) { ripple in
                 Annotation("", coordinate: ripple.coordinate) {
@@ -51,103 +163,6 @@ struct MapSubView: View {
                         .shadow(radius: 5)
                 }
             }
-            if viewModel.isSeasonTileMapVisible {
-                ForEach(viewModel.seasonTileMapTiles) { tile in
-                    MapPolygon(tile.polygon)
-                        .foregroundStyle(
-                            viewModel.seasonTileFillColor(for: tile)
-                                .opacity(viewModel.seasonTileFillOpacity(for: tile))
-                        )
-                        .annotationTitles(.hidden)
-                }
-                ForEach(viewModel.seasonTileMapTiles) { tile in
-                    MapPolygon(tile.polygon)
-                        .stroke(
-                            viewModel.seasonTileStrokeColor(for: tile),
-                            style: viewModel.seasonTileStrokeStyle(for: tile)
-                        )
-                        .annotationTitles(.hidden)
-                }
-                ForEach(viewModel.seasonTileMapTiles) { tile in
-                    Annotation("", coordinate: tile.centerCoordinate) {
-                        seasonTileSelectionHitTarget(for: tile)
-                    }
-                    .annotationTitles(.hidden)
-                }
-            }
-            if viewModel.isNearbyHotspotFeatureAvailable && viewModel.nearbyHotspotEnabled {
-                ForEach(viewModel.renderableNearbyHotspotNodes) { hotspot in
-                    Annotation("", coordinate: hotspot.centerCoordinate) {
-                        nearbyHotspotAnnotationView(for: hotspot)
-                    }
-                }
-            }
-            if let walkArea = viewModel.polygon.polygon {
-                if viewModel.showOnlyOne {
-                    if selectedPolygonSnapshot.hasRenderableRoute {
-                        MapPolyline(coordinates: selectedPolygonSnapshot.routeCoordinates)
-                            .stroke(routeStrokeColor, style: routeStrokeStyle)
-                    }
-                    ForEach(selectedPolygonSnapshot.markLocations) { location in
-                        Annotation("", coordinate: location.coordinate) {
-                            PositionMarkerView()
-                        }
-                    }
-                    MapPolygon(walkArea)
-                        .stroke(Color.appYellow, lineWidth: 0.5)
-                        .foregroundStyle(Color.appYellow.opacity(0.3))
-                        .annotationTitles(.visible)
-                    Annotation("", coordinate: walkArea.coordinate) {
-                        VStack {
-                            Image(systemName: "pawprint.fill")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(Color.white)
-                                .frame(width: 24, height: 24)
-                                .background(Color.appGreen)
-                                .cornerRadius(10)
-                                .shadow(radius: 5)
-                            Text("\(viewModel.polygon.createdAt.createdAtTimeYYMMDD)")
-                                .font(.appFont(for: .Regular, size: 12))
-                                .foregroundColor(.appTextDarkGray)
-                        }
-                    }
-                } else {
-                    ForEach(viewModel.centerLocations.indices, id: \.self) { index in
-                        Annotation("", coordinate: viewModel.centerLocations[index].center) {
-                            MapClusterPulseAnnotationView(
-                                count: viewModel.centerLocations[index].sumLocs.count,
-                                isReducedMotion: viewModel.isMapMotionReduced,
-                                animationDuration: viewModel.clusterMotionAnimationDuration,
-                                motionState: viewModel.clusterMotionState
-                            ) {
-                                viewModel.fetchSelectedPolygonList(for: viewModel.centerLocations[index])
-                            }
-                        }
-                    }
-                    ForEach(viewModel.renderablePolygonOverlays) { item in
-                        if let polygon = item.polygon {
-                            MapPolygon(polygon)
-                                .stroke(Color.appYellow, lineWidth: 0.5)
-                                .foregroundStyle(Color.appYellow.opacity(0.3))
-                                .annotationTitles(.visible)
-                        }
-                    }
-                }
-            } else {
-                if viewModel.isWalking == false, activeWalkSnapshot.hasRenderableRoute {
-                    MapPolyline(coordinates: activeWalkSnapshot.routeCoordinates)
-                        .stroke(routeStrokeColor, style: routeStrokeStyle)
-                }
-                ForEach(activeWalkSnapshot.markLocations) { location in
-                    Annotation("", coordinate: location.coordinate) {
-                        PositionMarkerView()
-                            .onTapGesture {
-                                viewModel.selectedMarker = location
-                                myAlert.callAlert(type: .annotationSelected(location))
-                            }
-                    }
-                }
-            }
         }
         .mapControls {
 //            mapControls
@@ -172,13 +187,6 @@ struct MapSubView: View {
             Circle()
                 .fill(Color.appInk.opacity(0.001))
                 .frame(width: 44, height: 44)
-                .overlay {
-                    if viewModel.isSeasonTileSelected(tile) {
-                        Circle()
-                            .stroke(Color.appYellow, lineWidth: 2.4)
-                            .frame(width: 18, height: 18)
-                    }
-                }
         }
         .buttonStyle(.plain)
         .contentShape(Circle())

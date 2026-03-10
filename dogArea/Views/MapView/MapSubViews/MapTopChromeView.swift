@@ -90,5 +90,8 @@ struct MapTopChromeView: View {
         }
         .foregroundStyle(MapChromePalette.secondaryText)
         .mapChromePill(.neutral)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("map.season.summary.pill")
+        .accessibilityLabel("시즌 점령 지도 요약 \(text)")
     }
 }

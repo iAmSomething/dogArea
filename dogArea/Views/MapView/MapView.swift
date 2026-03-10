@@ -23,6 +23,7 @@ struct MapView : View{
     @State private var distance = 2000.0
     @State private var selectedPolygonData: WalkDataModel? = nil
     @State private var seasonGuideSheetPresentation: SeasonGuidePresentation? = nil
+    @State private var isSeasonTileSummarySheetPresented: Bool = false
     @State private var walkValueGuideSheetPresentation: WalkValueGuidePresentation? = nil
     @State private var isWalkingHUDDetailPresented: Bool = false
     @State private var recoveryIssue: RecoveryIssue? = nil
@@ -146,6 +147,28 @@ struct MapView : View{
                 }
             )
         })
+        composed = AnyView(composed.sheet(isPresented: $isSeasonTileSummarySheetPresented) {
+            MapSeasonTileSummarySheetView(
+                summary: viewModel.seasonTileSummaryCardPresentation,
+                onOpenGuide: {
+                    isSeasonTileSummarySheetPresented = false
+                    DispatchQueue.main.async {
+                        viewModel.presentSeasonGuideFromMapHelp()
+                    }
+                },
+                onOpenDetail: viewModel.seasonTileMapTiles.isEmpty
+                    ? nil
+                    : {
+                        isSeasonTileSummarySheetPresented = false
+                        DispatchQueue.main.async {
+                            viewModel.openRepresentativeSeasonTileDetail()
+                        }
+                    },
+                onClose: { isSeasonTileSummarySheetPresented = false }
+            )
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+        })
         composed = AnyView(composed.sheet(item: $walkValueGuideSheetPresentation, onDismiss: {
             viewModel.dismissWalkValueGuide()
         }) { presentation in
@@ -222,14 +245,11 @@ struct MapView : View{
                     seasonTileSummaryText: viewModel.isSeasonTileMapVisible
                         ? viewModel.seasonTileStatusSummaryText
                         : nil,
-                    seasonTileSummaryContent: viewModel.isSeasonTileMapVisible
+                    seasonTileSummaryContent: shouldShowExpandedSeasonSummaryChrome
                         ? AnyView(
                             MapSeasonTileSummaryCardView(
-                                summary: viewModel.seasonTileSummaryCardPresentation,
-                                onOpenGuide: { viewModel.presentSeasonGuideFromMapHelp() },
-                                onOpenDetail: viewModel.seasonTileMapTiles.isEmpty
-                                    ? nil
-                                    : { viewModel.openRepresentativeSeasonTileDetail() }
+                                summary: viewModel.seasonTileChromeSummaryPresentation,
+                                onOpenOverview: { isSeasonTileSummarySheetPresented = true }
                             )
                         )
                         : nil,
@@ -393,7 +413,19 @@ struct MapView : View{
     private var hasCompetingTopChrome: Bool {
         activeBanner != nil
             || statusOverlayContent != nil
-            || viewModel.isSeasonTileMapVisible
+            || shouldShowExpandedSeasonSummaryChrome
+            || viewModel.seasonTileDetailCardPresentation != nil
+    }
+
+    private var shouldShowExpandedSeasonSummaryChrome: Bool {
+        guard viewModel.isSeasonTileMapVisible else { return false }
+        guard viewModel.isWalking == false else { return false }
+        if ProcessInfo.processInfo.arguments.contains("-UITest.MapForceSeasonTileVisible") {
+            return true
+        }
+        guard activeBanner == nil else { return false }
+        guard statusOverlayContent == nil else { return false }
+        return true
     }
 
     /// 산책 중 slim HUD의 disclosure 동작을 현재 overlay 경쟁 상태에 맞게 처리합니다.

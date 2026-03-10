@@ -39,6 +39,8 @@
 		A56500010000000000000009 /* MapWalkValueFlowPresentationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56500010000000000000019 /* MapWalkValueFlowPresentationModels.swift */; };
 		106E27D50C08D7997FD7982D /* RivalNetworkErrorInterpreter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4548C0C604B933CC43644FA /* RivalNetworkErrorInterpreter.swift */; };
 		127B2251C5595A11763BE6D4 /* MapSeasonTileDetailCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244A2DC41EA14E7143F727B2 /* MapSeasonTileDetailCardView.swift */; };
+		A69000010000000000000021 /* MapViewModel+SeasonTileVisualPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A69000010000000000000011 /* MapViewModel+SeasonTileVisualPolicy.swift */; };
+		A69100010000000000000021 /* MapSeasonTileSummarySheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A69100010000000000000011 /* MapSeasonTileSummarySheetView.swift */; };
 		17BEA4EED401E70749B3A96B /* HomeQuestWidgetTabSelectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84B94FEE2D80935CA3AA5917 /* HomeQuestWidgetTabSelectorView.swift */; };
 		1A87E29B8817434BC0210F5F /* WalkControlIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B86CA6EAAA6D2939A4516B9 /* WalkControlIntents.swift */; };
 		1BCE551255C692E2B20F154E /* HomeIndoorMissionRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66C12577FC501DA46E9411D5 /* HomeIndoorMissionRowView.swift */; };
@@ -464,6 +466,8 @@
 		20C1D8D928E86A27596CB933 /* HomeWalkPrimaryLoopPresentationModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeWalkPrimaryLoopPresentationModels.swift; sourceTree = "<group>"; };
 		21CE83B02069A8E4171B35DE /* RivalTabView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RivalTabView.swift; path = dogArea/Views/ProfileSettingView/RivalTabView.swift; sourceTree = "<group>"; };
 		244A2DC41EA14E7143F727B2 /* MapSeasonTileDetailCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MapSeasonTileDetailCardView.swift; path = dogArea/Views/MapView/MapSubViews/MapSeasonTileDetailCardView.swift; sourceTree = "<group>"; };
+		A69000010000000000000011 /* MapViewModel+SeasonTileVisualPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MapViewModel+SeasonTileVisualPolicy.swift"; sourceTree = "<group>"; };
+		A69100010000000000000011 /* MapSeasonTileSummarySheetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MapSeasonTileSummarySheetView.swift; path = dogArea/Views/MapView/MapSubViews/MapSeasonTileSummarySheetView.swift; sourceTree = "<group>"; };
 		2615443270FF3222AEBDE893 /* ThumbnailImageView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ThumbnailImageView.swift; sourceTree = "<group>"; };
 		26182C87E44E1C0D9629CD03 /* HomeAnimatedSeasonGaugeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeAnimatedSeasonGaugeView.swift; sourceTree = "<group>"; };
 		29F07A82B4C3550CACA2C6ED /* GuestDataUpgradePromptSheetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GuestDataUpgradePromptSheetView.swift; sourceTree = "<group>"; };
@@ -1076,6 +1080,7 @@
 			isa = PBXGroup;
 			children = (
 				A50100010000000000000014 /* MapClusterMotionState.swift */,
+				A69000010000000000000011 /* MapViewModel+SeasonTileVisualPolicy.swift */,
 				A41000010000000000000012 /* MapViewModel+WidgetRuntimeSupport.swift */,
 				A41000010000000000000013 /* MapViewModel+WatchConnectivitySupport.swift */,
 				A41000010000000000000014 /* MapViewModel+LivePresenceRetrySupport.swift */,
@@ -1551,6 +1556,7 @@
 				739206D93B3E1667D2A58593 /* dogAreaWidgetExtension */,
 				07A9319CC39884A076CAEAAD /* MapSeasonTilePresentationService.swift */,
 				129A67F7268C49E59BE08698 /* MapSeasonTileSummaryCardView.swift */,
+				A69100010000000000000011 /* MapSeasonTileSummarySheetView.swift */,
 				244A2DC41EA14E7143F727B2 /* MapSeasonTileDetailCardView.swift */,
 			);
 			sourceTree = "<group>";
@@ -2380,11 +2386,13 @@
 				A41000010000000000000021 /* MapViewModel+WidgetRuntimeSupport.swift in Sources */,
 				A41000010000000000000022 /* MapViewModel+WatchConnectivitySupport.swift in Sources */,
 				A41000010000000000000023 /* MapViewModel+LivePresenceRetrySupport.swift in Sources */,
+				A69000010000000000000021 /* MapViewModel+SeasonTileVisualPolicy.swift in Sources */,
 				71C13F32C41AB0D41B9E1BC5 /* RivalTabViewModel+SessionLifecycle.swift in Sources */,
 				015946C5C501B37603E066FD /* RivalTabViewModel+SharingAndLeaderboard.swift in Sources */,
 				9B600C1F7FA22CF43EFC09C2 /* RivalTabViewModel+ModerationAndLocation.swift in Sources */,
 				220A5C5B593A98C896A1CC95 /* MapSeasonTilePresentationService.swift in Sources */,
 				4CA956518324D7B25056E8F3 /* MapSeasonTileSummaryCardView.swift in Sources */,
+				A69100010000000000000021 /* MapSeasonTileSummarySheetView.swift in Sources */,
 				127B2251C5595A11763BE6D4 /* MapSeasonTileDetailCardView.swift in Sources */,
 				A8E4AC91644EC2FE314DDC07 /* HomeWalkPrimaryLoopPresentationModels.swift in Sources */,
 				4B703C0505DCDFEC328E40CB /* HomeWalkPrimaryLoopPresentationService.swift in Sources */,

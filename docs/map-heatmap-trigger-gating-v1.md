@@ -3,7 +3,7 @@
 ## 배경
 - 변경 전 `MapViewModel.refreshHeatmap()`는 `HeatmapEngine.aggregate(...)`를 직접 호출했습니다.
 - `applyPolygonList()`, `applyFeatureFlags()`, `toggleHeatmapEnabled()` 경로가 모두 같은 함수로 들어가면서, 실제 입력 데이터가 그대로여도 전체 heatmap 재집계를 다시 수행할 수 있었습니다.
-- 특히 heatmap이 실제로 화면에 보이지 않는 상태(`산책 중`, `단일 영역 보기`, `feature off`, `사용자 toggle off`)에서도 `polygonList` 갱신이나 feature flag 재적용이 들어오면 전체 히스토리를 다시 훑는 구조였습니다.
+- 특히 heatmap이 실제로 화면에 보이지 않는 상태(`단일 영역 보기`, `feature off`, `사용자 toggle off`)에서도 `polygonList` 갱신이나 feature flag 재적용이 들어오면 전체 히스토리를 다시 훑는 구조였습니다.
 
 ## 구조 변경
 - `MapHeatmapDatasetFingerprint` / `MapHeatmapAggregationSnapshot` 모델 추가
@@ -18,8 +18,7 @@
 - 재계산 허용 조건
   - `feature flag on`
   - `heatmapEnabled == true`
-  - `isWalking == false`
-  - `showOnlyOne == false`
+  - `showOnlyOne == false || isWalking == true`
 - 동일 입력 재사용 조건
   - polygon/location fingerprint 동일
   - 현재 시각이 `15분 bucket` 안
@@ -27,6 +26,10 @@
   - 진행 중 집계 task 취소
   - `heatmapCells`만 비우고 snapshot은 유지
   - 다시 노출될 때 fingerprint가 같으면 즉시 재사용
+
+## 산책 중 노출 정책
+- 산책 중에는 현재 산책 route와 시즌 타일을 함께 봐야 하므로 heatmap/season tile을 유지합니다.
+- 단, 저장된 단일 산책 기록에 집중하는 `showOnlyOne` 모드에서는 시즌 타일을 숨깁니다.
 
 ## Before / After 근거
 
