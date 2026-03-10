@@ -26,15 +26,20 @@ let checkScript = read(root + "/scripts/ios_pr_check.sh")
 
 assertTrue(readme.contains("watch-action-feedback-ux-v1.md"), "README should index watch action feedback doc")
 assertTrue(doc.contains("#520"), "doc should mention issue #520")
+assertTrue(doc.contains("#697"), "doc should mention issue #697")
 assertTrue(doc.contains("processing"), "doc should define processing state")
 assertTrue(doc.contains("queued"), "doc should define queued state")
 assertTrue(doc.contains("duplicateSuppressed"), "doc should define duplicate suppression state")
 assertTrue(doc.contains("3초 안 재탭"), "doc should define endWalk confirmation window")
 assertTrue(doc.contains("햅틱"), "doc should document haptic policy")
+assertTrue(doc.contains("탭 직후"), "doc should define immediate addPoint haptic feedback")
+assertTrue(doc.contains("0.35초"), "doc should define addPoint haptic throttle policy")
 
 assertTrue(models.contains("enum WatchActionExecutionState"), "models should define execution state enum")
 assertTrue(models.contains("case confirmRequired"), "models should include confirmRequired state")
 assertTrue(models.contains("var cooldownInterval"), "models should define cooldown policy")
+assertTrue(models.contains("enum WatchActionHapticEvent"), "models should define dedicated watch action haptic events")
+assertTrue(models.contains("var inputAcknowledgementHapticThrottleInterval"), "models should define immediate haptic throttle policy")
 
 assertTrue(viewModel.contains("@Published private var executionStates"), "view model should publish execution states")
 assertTrue(viewModel.contains("func handleActionTap"), "view model should handle user taps with UX guardrails")
@@ -42,6 +47,10 @@ assertTrue(viewModel.contains("shouldSuppressDuplicateTap"), "view model should 
 assertTrue(viewModel.contains("presentBanner"), "view model should publish banner feedback")
 assertTrue(viewModel.contains("DefaultWatchActionHapticService"), "view model should use haptic service")
 assertTrue(viewModel.contains("transition(action, to: .confirmRequired"), "end walk should require confirmation")
+assertTrue(viewModel.contains("playInputAcknowledgementIfNeeded"), "view model should emit an immediate addPoint acknowledgement haptic")
+assertTrue(viewModel.contains(".addPointTapAccepted"), "view model should trigger addPoint immediate haptic events")
+assertTrue(viewModel.contains(".addPointQueued"), "view model should differentiate queued addPoint haptics")
+assertTrue(viewModel.contains(".addPointCompleted"), "view model should differentiate completed addPoint haptics")
 
 assertTrue(view.contains("WatchActionBannerView"), "watch content should render banner view")
 assertTrue(view.contains("WatchPrimaryActionDockView"), "watch content should render a dedicated action dock")
@@ -53,6 +62,7 @@ assertTrue(queueCardView.contains("큐 \\(queueStatus.pendingCount)건"), "queue
 assertTrue(buttonView.contains("showsProgress"), "button view should support progress state")
 assertTrue(bannerView.contains("WatchActionFeedbackBanner"), "banner view should render typed banner model")
 assertTrue(hapticService.contains("WKInterfaceDevice.current().play"), "haptic service should trigger watch haptics")
+assertTrue(hapticService.contains("func playActionEvent"), "haptic service should expose dedicated action-event playback")
 
 assertTrue(checkScript.contains("swift scripts/watch_action_feedback_ux_unit_check.swift"), "ios_pr_check should run watch feedback unit check")
 

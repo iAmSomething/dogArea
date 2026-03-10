@@ -27,6 +27,15 @@ enum WatchActionExecutionState: Equatable {
     case confirmRequired
 }
 
+enum WatchActionHapticEvent: Equatable {
+    case addPointTapAccepted
+    case addPointQueued
+    case addPointAcknowledged
+    case addPointCompleted
+    case addPointDuplicateSuppressed
+    case addPointFailed
+}
+
 struct WatchActionFeedbackBanner: Equatable {
     let title: String
     let detail: String
@@ -163,6 +172,15 @@ extension WatchActionType {
         case .endWalk:
             return 3.0
         case .startWalk, .addPoint, .discardWalk, .syncState:
+            return 0.0
+        }
+    }
+
+    var inputAcknowledgementHapticThrottleInterval: TimeInterval {
+        switch self {
+        case .addPoint:
+            return 0.35
+        case .startWalk, .endWalk, .discardWalk, .syncState:
             return 0.0
         }
     }
