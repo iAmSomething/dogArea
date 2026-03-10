@@ -71,6 +71,11 @@ extension RivalTabViewModel {
             do {
                 try await nearbyService.setVisibility(userId: userId, enabled: true)
                 persistLocationSharingPreference(true, for: userId)
+                recordRecentPrivacyStatus(
+                    kind: .sharingOn,
+                    detail: "서버 반영까지 확인했어요. 산책 중 익명 공유를 다시 사용할 수 있어요.",
+                    for: userId
+                )
                 locationSharingEnabled = true
                 metricTracker.track(
                     .rivalPrivacyOptInCompleted,
@@ -87,6 +92,7 @@ extension RivalTabViewModel {
                     return
                 }
                 persistLocationSharingPreference(false, for: userId)
+                recordVisibilityFailureStatus(enabled: true, for: userId, error: error)
                 locationSharingEnabled = false
                 refreshViewState()
                 showToast(visibilityFailureMessage(for: error))
@@ -106,6 +112,11 @@ extension RivalTabViewModel {
 
         isSharingInFlight = true
         persistLocationSharingPreference(false, for: userId)
+        recordRecentPrivacyStatus(
+            kind: .privateMode,
+            detail: "지금부터 비공개예요. 새 공유는 우선 중단됐어요.",
+            for: userId
+        )
         locationSharingEnabled = false
         hotspots = []
         leaderboardEntries = []
@@ -308,27 +319,6 @@ extension RivalTabViewModel {
         return permissionState == .authorized ? Color.appGreen : Color.appRed
     }
 
-    /// 사용자 ID 범위에 맞는 위치 공유 설정 키를 생성합니다.
-    /// - Parameter userId: 현재 인증 사용자 ID입니다.
-    /// - Returns: 사용자 범위가 포함된 저장 키 문자열입니다.
-    private func locationSharingPreferenceKey(for userId: String?) -> String {
-        let scope: String
-        if let userId {
-            let normalized = userId.trimmingCharacters(in: .whitespacesAndNewlines)
-            scope = normalized.isEmpty ? "guest" : normalized
-        } else {
-            scope = "guest"
-        }
-        return "\(locationSharingKeyPrefix).\(scope)"
-    }
-
-    /// 사용자별 위치 공유 기본 정책 초기화 여부 키를 생성합니다.
-    /// - Parameter userId: 현재 인증 사용자 ID입니다.
-    /// - Returns: 정책 초기화 여부를 저장할 키 문자열입니다.
-    private func locationSharingPolicyInitializedKey(for userId: String) -> String {
-        "\(locationSharingPolicyInitializedKeyPrefix).\(userId)"
-    }
-
     /// 사용자 ID 범위에 맞는 핫스팟 반경 preset 저장 키를 생성합니다.
     /// - Parameter userId: 현재 인증 사용자 ID입니다.
     /// - Returns: 사용자 범위가 포함된 반경 preset 저장 키 문자열입니다.
@@ -343,46 +333,11 @@ extension RivalTabViewModel {
         return "\(hotspotRadiusPresetKeyPrefix).\(scope)"
     }
 
-    /// 특정 키에 저장된 Bool 값이 존재할 때만 해당 값을 반환합니다.
-    /// - Parameter key: 조회할 UserDefaults 키입니다.
-    /// - Returns: 저장된 값이 있으면 `Bool`, 없으면 `nil`입니다.
-    private func storedBoolIfExists(forKey key: String) -> Bool? {
-        let whenDefaultTrue = preferenceStore.bool(forKey: key, default: true)
-        let whenDefaultFalse = preferenceStore.bool(forKey: key, default: false)
-        guard whenDefaultTrue == whenDefaultFalse else {
-            return nil
-        }
-        return whenDefaultTrue
-    }
-
-    /// 정책(회원 기본 ON)에 따라 현재 세션의 공유 상태를 로드합니다.
+    /// 공통 프라이버시 저장소에서 현재 세션의 공유 상태를 로드합니다.
     /// - Parameter userId: 현재 인증 사용자 ID입니다.
     /// - Returns: 현재 사용자에게 적용할 익명 공유 활성 상태입니다.
     func loadLocationSharingPreference(for userId: String?) -> Bool {
-        guard let userId else {
-            return false
-        }
-
-        let normalizedUserId = userId.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard normalizedUserId.isEmpty == false else { return false }
-        let key = locationSharingPreferenceKey(for: normalizedUserId)
-        let initializedKey = locationSharingPolicyInitializedKey(for: normalizedUserId)
-        let isInitialized = preferenceStore.bool(forKey: initializedKey, default: false)
-        if isInitialized {
-            return preferenceStore.bool(forKey: key, default: true)
-        }
-
-        let seededValue: Bool
-        if let legacyValue = storedBoolIfExists(forKey: locationSharingLegacyGlobalKey) {
-            seededValue = legacyValue
-        } else {
-            seededValue = true
-        }
-
-        preferenceStore.set(seededValue, forKey: key)
-        preferenceStore.set(true, forKey: initializedKey)
-        preferenceStore.removeObject(forKey: locationSharingLegacyGlobalKey)
-        return seededValue
+        privacyControlStateStore.loadSharingEnabled(for: userId)
     }
 
     /// 현재 사용자 범위에 익명 공유 상태를 저장합니다.
@@ -390,11 +345,7 @@ extension RivalTabViewModel {
     ///   - enabled: 저장할 공유 활성 상태입니다.
     ///   - userId: 저장 대상 사용자 ID입니다.
     private func persistLocationSharingPreference(_ enabled: Bool, for userId: String?) {
-        guard let userId else { return }
-        let normalizedUserId = userId.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard normalizedUserId.isEmpty == false else { return }
-        preferenceStore.set(enabled, forKey: locationSharingPreferenceKey(for: normalizedUserId))
-        preferenceStore.set(true, forKey: locationSharingPolicyInitializedKey(for: normalizedUserId))
+        privacyControlStateStore.persistSharingEnabled(enabled, for: userId)
     }
 
     /// 현재 사용자 범위에 저장된 핫스팟 반경 preset을 로드합니다.
@@ -423,11 +374,21 @@ extension RivalTabViewModel {
     ///   - attempt: 현재 재시도 시도 횟수입니다.
     private func syncVisibilityOffWithRetry(userId: String, startedAt: Date, attempt: Int) async {
         if attempt > visibilityOffMaxRetries {
+            recordRecentPrivacyStatus(
+                kind: .serverDelayed,
+                detail: "비공개 요청의 서버 반영이 조금 늦고 있어요. 잠시 후 다시 확인해주세요.",
+                for: userId
+            )
             showToast("공유 OFF 서버 반영이 지연되고 있어요. 네트워크 확인 후 다시 시도해주세요.")
             return
         }
         do {
             try await nearbyService.setVisibility(userId: userId, enabled: false)
+            recordRecentPrivacyStatus(
+                kind: .privateMode,
+                detail: "서버 반영까지 확인했어요. 새 공유는 더 이상 반영되지 않아요.",
+                for: userId
+            )
         } catch {
             if handleAuthFailureIfNeeded(error) {
                 return
@@ -436,6 +397,7 @@ extension RivalTabViewModel {
             let elapsed = Date().timeIntervalSince(startedAt)
             let remaining = visibilityOffPropagationDeadline - elapsed
             guard remaining > 0 else {
+                recordVisibilityFailureStatus(enabled: false, for: userId, error: error)
                 showToast("공유 OFF 서버 반영이 지연되고 있어요. 네트워크 확인 후 다시 시도해주세요.")
                 return
             }
@@ -464,6 +426,48 @@ extension RivalTabViewModel {
             return nil
         }
         return canonical
+    }
+
+    /// 최근 프라이버시 상태 요약을 현재 사용자 범위에 저장합니다.
+    /// - Parameters:
+    ///   - kind: 저장할 상태 종류입니다.
+    ///   - detail: 프라이버시 센터와 토스트에 노출할 사용자 문구입니다.
+    ///   - userId: 저장 대상 사용자 ID입니다.
+    private func recordRecentPrivacyStatus(
+        kind: PrivacyControlRecentStatus.Kind,
+        detail: String,
+        for userId: String?
+    ) {
+        privacyControlStateStore.recordRecentStatus(
+            kind: kind,
+            detail: detail,
+            for: userId,
+            at: Date()
+        )
+    }
+
+    /// 공유 상태 동기화 실패를 최근 상태 문구/배지로 변환해 저장합니다.
+    /// - Parameters:
+    ///   - enabled: 사용자가 의도한 목표 공유 상태입니다.
+    ///   - userId: 현재 사용자 ID입니다.
+    ///   - error: 서버 동기화 실패 원본 오류입니다.
+    private func recordVisibilityFailureStatus(
+        enabled: Bool,
+        for userId: String?,
+        error: Error
+    ) {
+        if RivalNetworkErrorInterpreter.isConnectivityError(error) {
+            let detail = enabled
+                ? "연결이 없어 공유 시작 반영이 보류됐어요. 연결이 돌아오면 다시 확인해주세요."
+                : "연결이 없어 비공개 반영이 늦을 수 있어요. 새 공유는 우선 멈췄어요."
+            recordRecentPrivacyStatus(kind: .offlinePending, detail: detail, for: userId)
+            return
+        }
+
+        let detail = enabled
+            ? "서버 반영이 조금 늦고 있어요. 잠시 후 다시 확인해주세요."
+            : "비공개 요청의 서버 반영이 조금 늦고 있어요. 잠시 후 다시 확인해주세요."
+        recordRecentPrivacyStatus(kind: .serverDelayed, detail: detail, for: userId)
     }
 
     /// Supabase 응답이 인증 실패(401/403)인지 판정합니다.
@@ -514,6 +518,11 @@ extension RivalTabViewModel {
         }
         let affectedUserId = currentUserId
         persistLocationSharingPreference(false, for: affectedUserId)
+        recordRecentPrivacyStatus(
+            kind: .guestLocked,
+            detail: "인증 세션이 없어 공유 상태를 유지할 수 없어요. 다시 로그인 후 시도해주세요.",
+            for: affectedUserId
+        )
         locationSharingEnabled = false
         hotspots = []
         updateHotspotSummary()

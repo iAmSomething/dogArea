@@ -457,7 +457,6 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private let activeWalkSessionStorageKey = "walk.activeSession.v1"
     let lastWidgetActionIdKey = "walk.widget.lastActionId.v1"
     private let heatmapEnabledKey = "heatmap.enabled"
-    private let locationSharingKey = "nearby.locationSharingEnabled"
     private let nearbyHotspotEnabledKey = "nearby.hotspotEnabled"
     private let nearbyPresenceUserIdKey = "nearby.presenceUserId"
     private let livePresenceSessionIdKey = "nearby.livePresence.sessionId.v1"
@@ -552,6 +551,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     let userSessionStore: UserSessionStoreProtocol
     private let authSessionStore: AuthSessionStoreProtocol
     let preferenceStore: MapPreferenceStoreProtocol
+    private let privacyControlStateStore: PrivacyControlStateStoreProtocol
     private let weatherSnapshotProvider: WeatherSnapshotProviding
     private let weatherSnapshotStore: WeatherSnapshotStoreProtocol
     private let areaCalculationService: MapAreaCalculationServicing
@@ -665,6 +665,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         userSessionStore: UserSessionStoreProtocol = DefaultUserSessionStore.shared,
         authSessionStore: AuthSessionStoreProtocol = DefaultAuthSessionStore.shared,
         preferenceStore: MapPreferenceStoreProtocol = DefaultMapPreferenceStore.shared,
+        privacyControlStateStore: PrivacyControlStateStoreProtocol = DefaultPrivacyControlStateStore.shared,
         weatherSnapshotProvider: WeatherSnapshotProviding = OpenMeteoWeatherSnapshotProvider(),
         weatherSnapshotStore: WeatherSnapshotStoreProtocol = WeatherSnapshotStore.shared,
         areaCalculationService: MapAreaCalculationServicing = MapAreaCalculationService(),
@@ -688,6 +689,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         self.userSessionStore = userSessionStore
         self.authSessionStore = authSessionStore
         self.preferenceStore = preferenceStore
+        self.privacyControlStateStore = privacyControlStateStore
         self.weatherSnapshotProvider = weatherSnapshotProvider
         self.weatherSnapshotStore = weatherSnapshotStore
         self.areaCalculationService = areaCalculationService
@@ -720,7 +722,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 
         let storedHeatmapEnabled = preferenceStore.bool(forKey: heatmapEnabledKey, default: true)
         let storedNearbyHotspotEnabled = preferenceStore.bool(forKey: nearbyHotspotEnabledKey, default: true)
-        let storedLocationSharingEnabled = preferenceStore.bool(forKey: locationSharingKey, default: false)
+        let storedLocationSharingEnabled = privacyControlStateStore.loadSharingEnabled(for: currentPresenceUserId())
         let storedMotionReduced = preferenceStore.bool(forKey: mapMotionReducedKey, default: false)
         let storedAddPointLongPressMode = preferenceStore.bool(forKey: addPointLongPressModeKey, default: false)
 
@@ -3259,13 +3261,25 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     func toggleLocationSharing() {
         guard isNearbyHotspotFeatureAvailable else {
             self.locationSharingEnabled = false
-            preferenceStore.set(false, forKey: locationSharingKey)
+            privacyControlStateStore.persistSharingEnabled(false, for: currentPresenceUserId())
+            recordPrivacyRecentStatus(
+                kind: .privateMode,
+                detail: "지금부터 비공개예요. 새 공유는 우선 중단됐어요.",
+                for: currentPresenceUserId()
+            )
             self.syncVisibilitySettingIfNeeded()
             self.handleLivePresenceSharingStateChanged()
             return
         }
         self.locationSharingEnabled.toggle()
-        preferenceStore.set(self.locationSharingEnabled, forKey: locationSharingKey)
+        privacyControlStateStore.persistSharingEnabled(self.locationSharingEnabled, for: currentPresenceUserId())
+        recordPrivacyRecentStatus(
+            kind: self.locationSharingEnabled ? .sharingOn : .privateMode,
+            detail: self.locationSharingEnabled
+                ? "다시 공유를 시작했어요. 실제 반영은 산책 중일 때 이루어집니다."
+                : "지금부터 비공개예요. 새 공유는 우선 중단됐어요.",
+            for: currentPresenceUserId()
+        )
         metricTracker.track(
             self.locationSharingEnabled ? .nearbyOptInEnabled : .nearbyOptInDisabled,
             userKey: currentMetricUserId(),
@@ -3826,6 +3840,13 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             guard let self else { return }
             do {
                 try await self.nearbyService.setVisibility(userId: userId, enabled: enabled)
+                self.recordPrivacyRecentStatus(
+                    kind: enabled ? .sharingOn : .privateMode,
+                    detail: enabled
+                        ? "서버 반영까지 확인했어요. 산책 중 익명 공유를 다시 사용할 수 있어요."
+                        : "서버 반영까지 확인했어요. 새 공유는 더 이상 반영되지 않아요.",
+                    for: userId
+                )
                 if enabled == false {
                     await MainActor.run {
                         self.nearbyHotspots = []
@@ -3836,8 +3857,14 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
                     #if DEBUG
                     print("visibility sync failed (not found): \(error.localizedDescription)")
                     #endif
+                    self.recordPrivacyRecentStatus(
+                        kind: .serverDelayed,
+                        detail: "공유 기능이 아직 완전히 준비되지 않았어요. 잠시 후 다시 확인해주세요.",
+                        for: userId
+                    )
                     return
                 }
+                self.recordVisibilitySyncFailureStatus(enabled: enabled, userId: userId, error: error)
                 self.logVisibilitySyncErrorIfNeeded(error)
             }
         }
@@ -3859,7 +3886,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         let nearbyAllowedForSession = nearbyAllowed && isNearbySocialAvailableForSession
         let heatmapPreference = preferenceStore.bool(forKey: heatmapEnabledKey, default: true)
         let nearbyPreference = preferenceStore.bool(forKey: nearbyHotspotEnabledKey, default: true)
-        let sharingPreference = preferenceStore.bool(forKey: locationSharingKey, default: false)
+        let sharingPreference = privacyControlStateStore.loadSharingEnabled(for: currentPresenceUserId())
 
         self.heatmapEnabled = heatmapAllowed ? heatmapPreference : false
         self.nearbyHotspotEnabled = nearbyAllowedForSession ? nearbyPreference : false
@@ -3873,7 +3900,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 
         if nearbyAllowedForSession == false {
             self.nearbyHotspots = []
-            preferenceStore.set(false, forKey: locationSharingKey)
+            privacyControlStateStore.persistSharingEnabled(false, for: currentPresenceUserId())
             self.syncVisibilitySettingIfNeeded()
         }
         handleLivePresenceSharingStateChanged()
@@ -4013,6 +4040,53 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 
         preferenceStore.removeObject(forKey: nearbyPresenceUserIdKey)
         return nil
+    }
+
+    /// 프라이버시 센터용 최근 공유 상태 요약을 현재 사용자 범위에 저장합니다.
+    /// - Parameters:
+    ///   - kind: 저장할 상태 종류입니다.
+    ///   - detail: 사용자에게 노출할 상태 설명입니다.
+    ///   - userId: 저장 대상 사용자 ID입니다.
+    private func recordPrivacyRecentStatus(
+        kind: PrivacyControlRecentStatus.Kind,
+        detail: String,
+        for userId: String?
+    ) {
+        privacyControlStateStore.recordRecentStatus(
+            kind: kind,
+            detail: detail,
+            for: userId,
+            at: Date()
+        )
+    }
+
+    /// 가시성 동기화 실패를 최근 공유 상태 문구로 변환해 저장합니다.
+    /// - Parameters:
+    ///   - enabled: 사용자가 의도한 목표 공유 상태입니다.
+    ///   - userId: 현재 사용자 ID입니다.
+    ///   - error: 서버 동기화 실패 원본 오류입니다.
+    private func recordVisibilitySyncFailureStatus(
+        enabled: Bool,
+        userId: String,
+        error: Error
+    ) {
+        if let urlError = error as? URLError {
+            switch urlError.code {
+            case .notConnectedToInternet, .networkConnectionLost, .timedOut, .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed:
+                let detail = enabled
+                    ? "연결이 없어 공유 시작 반영이 보류됐어요. 연결이 돌아오면 다시 확인해주세요."
+                    : "연결이 없어 비공개 반영이 늦을 수 있어요. 새 공유는 우선 멈췄어요."
+                recordPrivacyRecentStatus(kind: .offlinePending, detail: detail, for: userId)
+                return
+            default:
+                break
+            }
+        }
+
+        let detail = enabled
+            ? "서버 반영이 조금 늦고 있어요. 잠시 후 다시 확인해주세요."
+            : "비공개 요청의 서버 반영이 조금 늦고 있어요. 잠시 후 다시 확인해주세요."
+        recordPrivacyRecentStatus(kind: .serverDelayed, detail: detail, for: userId)
     }
 
 }

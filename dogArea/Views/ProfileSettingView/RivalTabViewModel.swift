@@ -183,13 +183,11 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
     let rivalLeagueService: RivalLeagueServiceProtocol
     let preferenceStore: MapPreferenceStoreProtocol
     let moderationStore: RivalModerationStoreProtocol
+    let privacyControlStateStore: PrivacyControlStateStoreProtocol
     let locationManager: CLLocationManager
     let authSessionStore: AuthSessionStoreProtocol
     let sessionProvider: () -> AppSessionState
     let metricTracker: AppMetricTracker
-    let locationSharingKeyPrefix = "nearby.locationSharingEnabled.v1"
-    let locationSharingLegacyGlobalKey = "nearby.locationSharingEnabled.v1"
-    let locationSharingPolicyInitializedKeyPrefix = "nearby.locationSharingPolicyInitialized.v1"
     let hotspotRadiusPresetKeyPrefix = "rival.hotspot.radiusPreset.v1"
     let visibilityOffPropagationDeadline: TimeInterval = 30
     let visibilityOffRetryInterval: TimeInterval = 10
@@ -212,6 +210,7 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
         rivalLeagueService: RivalLeagueServiceProtocol = RivalLeagueService(),
         preferenceStore: MapPreferenceStoreProtocol = DefaultMapPreferenceStore.shared,
         moderationStore: RivalModerationStoreProtocol? = nil,
+        privacyControlStateStore: PrivacyControlStateStoreProtocol = DefaultPrivacyControlStateStore.shared,
         locationManager: CLLocationManager = CLLocationManager(),
         authSessionStore: AuthSessionStoreProtocol = DefaultAuthSessionStore.shared,
         sessionProvider: @escaping () -> AppSessionState = { AppFeatureGate.currentSession() },
@@ -221,6 +220,7 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
         self.rivalLeagueService = rivalLeagueService
         self.preferenceStore = preferenceStore
         self.moderationStore = moderationStore ?? RivalModerationStore(preferenceStore: preferenceStore)
+        self.privacyControlStateStore = privacyControlStateStore
         self.locationManager = locationManager
         self.authSessionStore = authSessionStore
         self.sessionProvider = sessionProvider

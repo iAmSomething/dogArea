@@ -30,6 +30,10 @@ extension SettingViewModel {
             selectedPetId = ""
             seasonProfileSummary = nil
             appMetadata = appMetadataService.loadMetadata(currentIdentity: authSessionStore.currentIdentity())
+            privacyCenterEntrySummary = privacyCenterService.loadEntrySummary(
+                currentIdentity: nil,
+                notificationSummary: notificationSettingsSummary
+            )
             return
         }
         reloadUserInfo()
