@@ -22,6 +22,7 @@ swift scripts/auth_smtp_live_send_validation_matrix_unit_check.swift
 swift scripts/auth_smtp_closure_pack_unit_check.swift
 swift scripts/manual_evidence_helper_unit_check.swift
 swift scripts/manual_evidence_validator_unit_check.swift
+swift scripts/manual_closure_comment_renderer_unit_check.swift
 swift scripts/auth_service_mail_channel_separation_unit_check.swift
 swift scripts/auth_mail_observability_unit_check.swift
 swift scripts/season_canonical_server_state_unit_check.swift
