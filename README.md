@@ -32,6 +32,7 @@
 - Manual evidence validator v1: `docs/manual-evidence-validator-v1.md`
 - Manual closure comment renderer v1: `docs/manual-closure-comment-renderer-v1.md`
 - Manual closure comment poster v1: `docs/manual-closure-comment-poster-v1.md`
+- Issues #680 #681 closure evidence v1: `docs/issues-680-681-closure-evidence-v1.md`
 - Widget state CTA taxonomy v1: `docs/widget-state-cta-taxonomy-v1.md`
 - Widget Lock Screen accessory family plan v1: `docs/widget-lock-screen-accessory-family-plan-v1.md`
 - Watch Smart Stack glance plan v1: `docs/watch-smart-stack-glance-plan-v1.md`
