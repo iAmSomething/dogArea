@@ -12,6 +12,7 @@
 - 검증 축 정의: `docs/widget-action-real-device-validation-matrix-v1.md`
 - 복붙용 기록 템플릿: `docs/widget-action-real-device-evidence-template-v1.md`
 - 종료 체크리스트: `docs/widget-action-closure-checklist-v1.md`
+- helper: `bash scripts/render_manual_evidence_pack.sh widget --write`
 - 자동 회귀 러너: `bash scripts/run_widget_action_regression_ui_tests.sh`
 
 ## 최소 증적 세트
