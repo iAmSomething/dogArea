@@ -177,7 +177,7 @@ final class HomeIndoorMissionPresentationService: HomeIndoorMissionPresenting {
         let lifecycleState: HomeIndoorMissionLifecycleState
         if mission.progress.isCompleted {
             lifecycleState = .completed
-        } else if mission.progress.actionCount >= mission.minimumActionCount {
+        } else if mission.claimable ?? (mission.progress.actionCount >= mission.minimumActionCount) {
             lifecycleState = .readyToFinalize
         } else {
             lifecycleState = .actionRequired

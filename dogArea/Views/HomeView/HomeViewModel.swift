@@ -63,6 +63,8 @@ final class HomeViewModel: ObservableObject {
     let weatherWalkGuidanceService: HomeWeatherWalkGuidancePresenting
     let indoorMissionPresentationService: HomeIndoorMissionPresenting
     let indoorMissionPetContextSnapshotService: HomeIndoorMissionPetContextSnapshotServicing
+    let indoorMissionCanonicalSummaryStore: IndoorMissionCanonicalSummaryStoreProtocol
+    let indoorMissionCanonicalSummaryService: IndoorMissionCanonicalSummaryServicing
     let weatherSnapshotStore: WeatherSnapshotStoreProtocol
     let weatherReplacementSummaryStore: WeatherReplacementSummaryStoreProtocol
     let weatherReplacementSummaryService: WeatherReplacementSummaryServicing
@@ -76,12 +78,14 @@ final class HomeViewModel: ObservableObject {
     var featuredGoalAreas: [AreaMeter] = []
     var areaMilestoneQueue: [AreaMilestoneEvent] = []
     var areaReferenceTask: Task<Void, Never>? = nil
+    var indoorMissionCanonicalSummaryTask: Task<Void, Never>? = nil
     var weatherReplacementSummaryTask: Task<Void, Never>? = nil
     var seasonCanonicalSummaryTask: Task<Void, Never>? = nil
     var questReminderSyncTask: Task<Void, Never>? = nil
     var hasSkippedInitialActiveSceneRefresh: Bool = false
     var indoorMissionPetContextPolygonFingerprint: HomeIndoorMissionPetContextPolygonFingerprint? = nil
     var indoorMissionPetContextAggregationSnapshot: HomeIndoorMissionPetContextAggregationSnapshot? = nil
+    var latestIndoorMissionCanonicalSummary: IndoorMissionCanonicalSummarySnapshot? = nil
     var latestSeasonCanonicalSummary: SeasonCanonicalSummarySnapshot? = nil
     var lastSeasonCanonicalMismatchSignature: String? = nil
     var seasonCanonicalOptimisticUntil: TimeInterval? = nil
@@ -146,6 +150,8 @@ final class HomeViewModel: ObservableObject {
         weatherWalkGuidanceService: HomeWeatherWalkGuidancePresenting = HomeWeatherWalkGuidanceService(),
         indoorMissionPresentationService: HomeIndoorMissionPresenting = HomeIndoorMissionPresentationService(),
         indoorMissionPetContextSnapshotService: HomeIndoorMissionPetContextSnapshotServicing = HomeIndoorMissionPetContextSnapshotService(),
+        indoorMissionCanonicalSummaryStore: IndoorMissionCanonicalSummaryStoreProtocol = IndoorMissionCanonicalSummaryStore.shared,
+        indoorMissionCanonicalSummaryService: IndoorMissionCanonicalSummaryServicing = SupabaseIndoorMissionCanonicalSummaryService(),
         weatherSnapshotStore: WeatherSnapshotStoreProtocol = WeatherSnapshotStore.shared,
         weatherReplacementSummaryStore: WeatherReplacementSummaryStoreProtocol = WeatherReplacementSummaryStore.shared,
         weatherReplacementSummaryService: WeatherReplacementSummaryServicing = SupabaseWeatherReplacementSummaryService(),
@@ -165,6 +171,8 @@ final class HomeViewModel: ObservableObject {
         self.weatherWalkGuidanceService = weatherWalkGuidanceService
         self.indoorMissionPresentationService = indoorMissionPresentationService
         self.indoorMissionPetContextSnapshotService = indoorMissionPetContextSnapshotService
+        self.indoorMissionCanonicalSummaryStore = indoorMissionCanonicalSummaryStore
+        self.indoorMissionCanonicalSummaryService = indoorMissionCanonicalSummaryService
         self.weatherSnapshotStore = weatherSnapshotStore
         self.weatherReplacementSummaryStore = weatherReplacementSummaryStore
         self.weatherReplacementSummaryService = weatherReplacementSummaryService
@@ -186,6 +194,7 @@ final class HomeViewModel: ObservableObject {
 
     deinit {
         areaReferenceTask?.cancel()
+        indoorMissionCanonicalSummaryTask?.cancel()
         weatherReplacementSummaryTask?.cancel()
         seasonCanonicalSummaryTask?.cancel()
         questReminderSyncTask?.cancel()
