@@ -29,6 +29,7 @@
 - 위젯 액션 종료 체크리스트 v1: `docs/widget-action-closure-checklist-v1.md`
 - 위젯 액션 종료 코멘트 템플릿 v1: `docs/widget-action-closure-comment-template-v1.md`
 - Manual evidence helper v1: `docs/manual-evidence-helper-v1.md`
+- Manual evidence validator v1: `docs/manual-evidence-validator-v1.md`
 - Widget state CTA taxonomy v1: `docs/widget-state-cta-taxonomy-v1.md`
 - Widget Lock Screen accessory family plan v1: `docs/widget-lock-screen-accessory-family-plan-v1.md`
 - Watch Smart Stack glance plan v1: `docs/watch-smart-stack-glance-plan-v1.md`
@@ -212,6 +213,7 @@
 - 문서/유닛만 빠르게 체크: `DOGAREA_SKIP_BUILD=1 bash scripts/ios_pr_check.sh`
 - 위젯 액션 기능 회귀 UI: `bash scripts/run_widget_action_regression_ui_tests.sh`
 - blocker evidence helper: `bash scripts/render_manual_evidence_pack.sh <widget|auth-smtp> --write`
+- blocker evidence validator: `bash scripts/validate_manual_evidence_pack.sh <widget|auth-smtp> <filled-markdown>`
 - Backend drift / RPC contract 전용 체크: `bash scripts/backend_migration_drift_check.sh`
 - Backend smoke entrypoint: `bash scripts/backend_pr_check.sh`
 - Live Supabase smoke matrix: `DOGAREA_RUN_SUPABASE_SMOKE=1 DOGAREA_TEST_EMAIL=... DOGAREA_TEST_PASSWORD=... bash scripts/backend_pr_check.sh`

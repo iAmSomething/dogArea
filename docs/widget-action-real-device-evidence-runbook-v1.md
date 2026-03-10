@@ -67,6 +67,7 @@
 7. 최종 도착 화면에서 `step-2`를 저장한다.
 8. `docs/widget-action-real-device-evidence-template-v1.md` 형식으로 결과를 기록한다.
 9. 이슈 또는 PR 코멘트에 템플릿 본문과 스크린샷/로그를 함께 남긴다.
+10. 코멘트로 올리기 전 `bash scripts/validate_manual_evidence_pack.sh widget <filled-markdown>` 으로 완결성을 검사한다.
 
 ## Pass 기준
 - 기대한 탭/상세 화면에 도착한다.

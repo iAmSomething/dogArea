@@ -39,6 +39,9 @@
 - 원하는 경로로 쓰기
   - `bash scripts/render_manual_evidence_pack.sh widget --output .codex_tmp/widget-pack.md`
   - `bash scripts/render_manual_evidence_pack.sh auth-smtp --output .codex_tmp/auth-smtp-pack.md`
+- 채운 뒤 validator 실행
+  - `bash scripts/validate_manual_evidence_pack.sh widget .codex_tmp/widget-action-evidence-pack.md`
+  - `bash scripts/validate_manual_evidence_pack.sh auth-smtp .codex_tmp/auth-smtp-evidence-pack.md`
 
 ## 출력 규칙
 - 기본은 stdout 출력이다.
