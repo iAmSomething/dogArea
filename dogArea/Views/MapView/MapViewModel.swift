@@ -395,6 +395,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     @Published var walkStatusMessage: String? = nil
     @Published private(set) var returnToOriginSuggestionContext: ReturnToOriginSuggestionContext? = nil
     @Published var runtimeGuardStatusText: String = ""
+    @Published var livePresenceRetryBannerText: String = ""
     @Published private(set) var walkSavedOutcomePresentation: MapWalkSavedOutcomePresentation? = nil
     @Published var syncOutboxPendingCount: Int = 0
     @Published var syncOutboxPermanentFailureCount: Int = 0
@@ -436,6 +437,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private var lastAcceptedLivePresenceLocation: CLLocation?
     private var lastAcceptedLivePresenceAt: Date = .distantPast
     private var isPresenceFlushInFlight: Bool = false
+    var livePresenceRetryState = MapLivePresenceRetryState()
     private var captureRippleExpiryTasks: [UUID: Task<Void, Never>] = [:]
     private var lastNearbyFetchedAt: Date = .distantPast
     private var lastNearbyHotspotErrorLogAt: Date = .distantPast
@@ -1134,6 +1136,10 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         syncOutboxPendingCount > 0 && syncOutboxLastErrorCodeText == SyncOutboxErrorCode.offline.rawValue
     }
 
+    var hasLivePresenceRetryBanner: Bool {
+        livePresenceRetryBannerText.isEmpty == false
+    }
+
     var syncOutboxStatusText: String {
         if syncOutboxPermanentFailureCount > 0 {
             if syncOutboxLastErrorCodeText.isEmpty == false {
@@ -1157,6 +1163,11 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 
     func clearRuntimeGuardStatus() {
         runtimeGuardStatusText = ""
+    }
+
+    /// 실시간 공유 재시도 배너를 즉시 내립니다.
+    func clearLivePresenceRetryBanner() {
+        livePresenceRetryBannerText = ""
     }
 
     func clearSyncRecoveryToastMessage() {
@@ -3451,6 +3462,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             return
         }
         guard isPresenceFlushInFlight == false else { return }
+        guard shouldSkipLivePresenceFlush(now: Date()) == false else { return }
         guard let userId = currentPresenceUserId() else { return }
         guard let next = livePresenceOutbox.first else { return }
 
@@ -3467,17 +3479,26 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
                     self.livePresenceOutbox.removeFirst()
                     self.lastPresenceSuccessfulAt = Date()
                     self.setPresenceHeartbeatState(.active)
+                    self.resetLivePresenceRetryFailureState()
                     self.persistLivePresenceStateToDefaults()
                     self.isPresenceFlushInFlight = false
                 }
             } catch {
                 await MainActor.run {
-                    if self.shouldQueueLivePresenceRetry(for: error) == false,
+                    let shouldRetry = self.shouldQueueLivePresenceRetry(for: error)
+                    let now = Date()
+                    if shouldRetry == false,
                        self.livePresenceOutbox.isEmpty == false {
                         self.livePresenceOutbox.removeFirst()
                     }
+                    if shouldRetry {
+                        self.applyLivePresenceFailureBackoff(for: error, now: now)
+                        self.presentLivePresenceFailureBannerIfNeeded(for: error, now: now)
+                    } else {
+                        self.resetLivePresenceRetryFailureState()
+                        self.walkStatusMessage = self.livePresenceFailureMessage(for: error)
+                    }
                     self.setPresenceHeartbeatState(.stale)
-                    self.walkStatusMessage = self.livePresenceFailureMessage(for: error)
                     self.persistLivePresenceStateToDefaults()
                     self.isPresenceFlushInFlight = false
                 }
@@ -3606,6 +3627,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         lastPresenceSuccessfulAt = .distantPast
         lastAcceptedLivePresenceLocation = nil
         lastAcceptedLivePresenceAt = .distantPast
+        resetLivePresenceRetryFailureState()
         setPresenceHeartbeatState(.stale)
         persistLivePresenceStateToDefaults()
     }
@@ -3623,6 +3645,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         if clearOutbox {
             livePresenceOutbox.removeAll()
         }
+        resetLivePresenceRetryFailureState()
         setPresenceHeartbeatState(.ended)
         persistLivePresenceStateToDefaults()
     }
@@ -3659,7 +3682,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     /// 라이브 프레즌스 전송 실패 시 사용자에게 보여줄 복구 메시지를 생성합니다.
     /// - Parameter error: 전송 실패 원본 에러입니다.
     /// - Returns: 실패 원인별 복구 안내 메시지입니다.
-    private func livePresenceFailureMessage(for error: Error) -> String {
+    func livePresenceFailureMessage(for error: Error) -> String {
         if let supabaseError = error as? SupabaseHTTPError {
             switch supabaseError {
             case .notConfigured:
@@ -3695,7 +3718,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     /// 전송 실패 항목을 큐에 유지해 재시도할지 판정합니다.
     /// - Parameter error: 업로드 실패 에러입니다.
     /// - Returns: 재시도 대상이면 `true`, 즉시 폐기 대상이면 `false`입니다.
-    private func shouldQueueLivePresenceRetry(for error: Error) -> Bool {
+    func shouldQueueLivePresenceRetry(for error: Error) -> Bool {
         if let supabaseError = error as? SupabaseHTTPError {
             switch supabaseError {
             case .notConfigured:
