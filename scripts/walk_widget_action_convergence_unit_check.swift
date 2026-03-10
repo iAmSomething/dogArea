@@ -29,6 +29,8 @@ let service = load("dogArea/Source/Domain/Map/Services/WalkWidgetActionConvergen
 let mapViewModel = load("dogArea/Views/MapView/MapViewModel.swift")
 let widgetRuntime = load("dogArea/Views/MapView/MapViewModelSupport/MapViewModel+WidgetRuntimeSupport.swift")
 let rootView = load("dogArea/Views/GlobalViews/BaseView/RootView.swift")
+let mapView = load("dogArea/Views/MapView/MapView.swift")
+let mapViewModelStore = load("dogArea/Views/GlobalViews/BaseView/MapViewModelStore.swift")
 let widgetBridge = load("dogArea/Source/WidgetBridge/WalkWidgetBridge.swift")
 
 for heading in [
@@ -60,6 +62,12 @@ assertTrue(mapViewModel.contains("walkWidgetActionConvergenceService: WalkWidget
 assertTrue(widgetRuntime.contains("walkWidgetActionConvergenceService.resolve("), "widget runtime should resolve action state through convergence service")
 assertTrue(widgetRuntime.contains("func reconcileWalkWidgetActionSurfacesOnAppActive()"), "widget runtime should expose app active reconciliation helper")
 assertTrue(widgetRuntime.contains("trackWalkWidgetActionConvergenceIfNeeded"), "widget runtime should track convergence transitions")
+assertTrue(widgetRuntime.contains("func enqueueWidgetWalkAction(_ route: WalkWidgetActionRoute)"), "widget runtime should queue widget actions until map runtime is active")
+assertTrue(widgetRuntime.contains("func applyQueuedWidgetWalkActionIfPossible()"), "widget runtime should flush queued widget actions when runtime is active")
+assertTrue(mapViewModelStore.contains("func queueWidgetWalkAction(_ route: WalkWidgetActionRoute)"), "map view model store should expose a queue helper for widget walk actions")
+assertTrue(rootView.contains("mapViewModelStore.queueWidgetWalkAction(route)"), "RootView should queue walk widget actions directly into the map view model store")
+assertTrue(mapView.contains("applyQueuedWidgetWalkActionIfPossible()"), "MapView should flush queued widget actions after runtime activation")
+assertTrue(mapView.contains("walkWidgetActionRequested") == false, "MapView should no longer depend on notification-based widget action dispatch")
 
 assertTrue(widgetBridge.contains("func discardPending(matching actionId: String) -> Bool"), "widget action request store should expose matching discard API")
 assertTrue(rootView.contains("widgetActionStore.discardPending(matching: route.actionId)"), "RootView should discard matching pending request when deep link is already parsed")

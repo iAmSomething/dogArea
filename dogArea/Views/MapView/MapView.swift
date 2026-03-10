@@ -47,6 +47,7 @@ struct MapView : View{
         composed = AnyView(composed.onAppear {
             MapRenderBudgetProbe.resetIfNeeded()
             viewModel.activateMapRuntimeServices()
+            viewModel.applyQueuedWidgetWalkActionIfPossible()
             seasonGuideSheetPresentation = viewModel.seasonGuidePresentation
             walkValueGuideSheetPresentation = viewModel.walkValueGuidePresentation
             viewModel.reloadSelectedPetContext()
@@ -108,22 +109,8 @@ struct MapView : View{
         composed = AnyView(composed.onReceive(authFlow.objectWillChange) { _ in
             recomputeBannerQueue()
         })
-        composed = AnyView(composed.onReceive(NotificationCenter.default.publisher(for: .walkWidgetActionRequested)) { notification in
-            guard
-                let rawKind = notification.userInfo?["kind"] as? String,
-                let kind = WalkWidgetActionKind(rawValue: rawKind),
-                let actionId = notification.userInfo?["actionId"] as? String
-            else { return }
-            let source = (notification.userInfo?["source"] as? String) ?? "widget"
-            let route = WalkWidgetActionRoute(
-                kind: kind,
-                actionId: actionId,
-                source: source,
-                contextId: notification.userInfo?["contextId"] as? String
-            )
-            viewModel.applyWidgetWalkAction(route)
-        })
         composed = AnyView(composed.onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            viewModel.applyQueuedWidgetWalkActionIfPossible()
             recomputeBannerQueue()
         })
         composed = AnyView(composed.onDisappear {

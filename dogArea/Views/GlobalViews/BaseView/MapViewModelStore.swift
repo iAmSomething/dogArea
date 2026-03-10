@@ -11,6 +11,13 @@ final class MapViewModelStore: ObservableObject {
         mapViewModel = MapViewModel()
     }
 
+    /// 위젯 산책 액션을 지도 ViewModel에 큐잉합니다.
+    /// - Parameter route: 지도 런타임 준비 후 적용할 위젯 산책 액션입니다.
+    func queueWidgetWalkAction(_ route: WalkWidgetActionRoute) {
+        prepareIfNeeded()
+        mapViewModel?.enqueueWidgetWalkAction(route)
+    }
+
     /// 인증 오버레이가 보이는 동안 Metal 렌더 경합을 막기 위해 지도 ViewModel을 해제합니다.
     func suspendForAuthenticationOverlay() {
         mapViewModel = nil

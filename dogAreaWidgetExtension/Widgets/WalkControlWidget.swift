@@ -101,6 +101,10 @@ struct WalkControlWidgetEntryView: View {
         entry.snapshot.normalizedActionState
     }
 
+    private var layoutBudget: WidgetSurfaceLayoutBudget {
+        .resolve(for: family)
+    }
+
     private var petContext: WalkWidgetPetContext {
         entry.snapshot.normalizedPetContext
     }
@@ -113,7 +117,7 @@ struct WalkControlWidgetEntryView: View {
         if entry.snapshot.isWalking {
             return .liveTimer(referenceDate: entry.snapshot.timerReferenceDate)
         }
-        return .frozen(text: WidgetFormatting.formattedElapsed(entry.snapshot.elapsedSeconds))
+        return .frozen(text: layoutBudget.elapsedText(entry.snapshot.elapsedSeconds))
     }
 
     private var preferredActionKind: WalkWidgetActionKind {
@@ -178,16 +182,28 @@ struct WalkControlWidgetEntryView: View {
         }
     }
 
+    private var badgeDescriptors: [WidgetBadgeDescriptor] {
+        if activeActionState != nil {
+            return [
+                WidgetBadgeDescriptor(id: "action", title: actionBadgeTitle, color: actionBadgeColor)
+            ]
+        }
+
+        return [
+            WidgetBadgeDescriptor(id: "pet", title: petContext.badgeTitle, color: petContextBadgeColor)
+        ]
+    }
+
     /// 소형 위젯 레이아웃을 렌더링합니다.
     /// - Returns: 핵심 상태와 CTA 하나만 남긴 compact 위젯 본문입니다.
     @ViewBuilder
     private var smallLayout: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: layoutBudget.verticalSpacing) {
             badgeRow
 
             Text(walkStateTitle)
                 .font(.headline)
-                .lineLimit(1)
+                .lineLimit(layoutBudget.headlineLineLimit)
 
             Text(petContext.petName)
                 .font(.caption.weight(.semibold))
@@ -207,7 +223,7 @@ struct WalkControlWidgetEntryView: View {
                 Text(compactSupportText)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    .lineLimit(layoutBudget.detailLineLimit)
             }
 
             Spacer(minLength: 2)
@@ -220,13 +236,13 @@ struct WalkControlWidgetEntryView: View {
     /// - Returns: 반려견 문맥과 상태 메시지를 함께 담는 확장 위젯 본문입니다.
     @ViewBuilder
     private var mediumLayout: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: layoutBudget.verticalSpacing) {
             badgeRow
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(walkStateTitle)
                     .font(.headline)
-                    .lineLimit(1)
+                    .lineLimit(layoutBudget.headlineLineLimit)
                 Text(petContext.petName)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -236,7 +252,7 @@ struct WalkControlWidgetEntryView: View {
             Text(petContext.detailText)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
-                .lineLimit(2)
+                .lineLimit(layoutBudget.detailLineLimit)
 
             HStack(spacing: 6) {
                 Image(systemName: "clock")
@@ -255,7 +271,7 @@ struct WalkControlWidgetEntryView: View {
                 Text(statusMessage)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .lineLimit(2)
+                    .lineLimit(layoutBudget.statusLineLimit)
             }
 
             Spacer(minLength: 2)
@@ -268,15 +284,15 @@ struct WalkControlWidgetEntryView: View {
     /// - Returns: 현재 상태에 맞는 배지와 보조 인디케이터를 담은 상단 행입니다.
     @ViewBuilder
     private var badgeRow: some View {
-        HStack(spacing: 6) {
-            if let activeActionState {
-                WidgetStatusBadge(title: actionBadgeTitle, color: actionBadgeColor)
-                if activeActionState.phase == .pending {
-                    ProgressView()
-                        .controlSize(.small)
-                }
-            } else {
-                WidgetStatusBadge(title: petContext.badgeTitle, color: petContextBadgeColor)
+        HStack(spacing: layoutBudget.badgeSpacing) {
+            WidgetBadgeStripView(
+                badges: badgeDescriptors,
+                budget: layoutBudget
+            )
+            if let activeActionState,
+               activeActionState.phase == .pending {
+                ProgressView()
+                    .controlSize(.small)
             }
         }
     }
@@ -393,8 +409,13 @@ struct WalkControlWidgetEntryView: View {
     private func actionLabel(title: String, systemImage: String, compact: Bool) -> some View {
         Label(title, systemImage: systemImage)
             .font(compact ? .caption.weight(.semibold) : .callout.weight(.semibold))
-            .lineLimit(compact ? 1 : 2)
-            .frame(maxWidth: .infinity, minHeight: compact ? 34 : 40)
+            .lineLimit(compact ? layoutBudget.ctaLineLimit : WidgetSurfaceLayoutBudget.standard.ctaLineLimit)
+            .minimumScaleFactor(0.82)
+            .frame(
+                maxWidth: .infinity,
+                minHeight: compact ? layoutBudget.ctaMinHeight : WidgetSurfaceLayoutBudget.standard.ctaMinHeight,
+                maxHeight: compact ? layoutBudget.ctaMaxHeight : WidgetSurfaceLayoutBudget.standard.ctaMaxHeight
+            )
     }
 
     /// pending 상태에서 사용하는 비활성 CTA surface를 생성합니다.
@@ -404,7 +425,11 @@ struct WalkControlWidgetEntryView: View {
         Label("처리 중", systemImage: "hourglass")
             .font(compact ? .caption.weight(.semibold) : .callout.weight(.semibold))
             .lineLimit(1)
-            .frame(maxWidth: .infinity, minHeight: compact ? 34 : 40)
+            .frame(
+                maxWidth: .infinity,
+                minHeight: compact ? layoutBudget.ctaMinHeight : WidgetSurfaceLayoutBudget.standard.ctaMinHeight,
+                maxHeight: compact ? layoutBudget.ctaMaxHeight : WidgetSurfaceLayoutBudget.standard.ctaMaxHeight
+            )
             .foregroundStyle(.secondary)
             .background(Color.secondary.opacity(0.12))
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))

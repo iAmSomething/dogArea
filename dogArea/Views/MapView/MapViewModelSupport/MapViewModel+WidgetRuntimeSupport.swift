@@ -1,6 +1,21 @@
 import Foundation
 
 extension MapViewModel {
+    /// 위젯 산책 액션을 지도 런타임 준비 시점까지 큐에 보관합니다.
+    /// - Parameter route: 지도 런타임이 준비되면 적용할 위젯 산책 액션입니다.
+    func enqueueWidgetWalkAction(_ route: WalkWidgetActionRoute) {
+        queuedWidgetWalkActionRoute = route
+        applyQueuedWidgetWalkActionIfPossible()
+    }
+
+    /// 지도 런타임이 활성 상태면 대기 중인 위젯 산책 액션을 즉시 적용합니다.
+    func applyQueuedWidgetWalkActionIfPossible() {
+        guard isMapViewActive,
+              let route = queuedWidgetWalkActionRoute else { return }
+        queuedWidgetWalkActionRoute = nil
+        applyWidgetWalkAction(route)
+    }
+
     /// 현재 메트릭 수집에 사용할 사용자 식별자를 반환합니다.
     /// - Returns: 유효한 사용자 ID가 있으면 반환하고, 없으면 `nil`을 반환합니다.
     func currentMetricUserId() -> String? {

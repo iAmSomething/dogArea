@@ -323,7 +323,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private let locationManager = CLLocationManager()
     private var timer: Timer? = nil
     private var isLocationUpdatesRunning: Bool = false
-    private var isMapViewActive: Bool = false
+    private(set) var isMapViewActive: Bool = false
     private var lastLocationSideEffectAt: Date = .distantPast
     private let locationSideEffectInterval: TimeInterval = 1.0
     private let mapLocationPublishMinimumDistance: CLLocationDistance = 6.0
@@ -448,6 +448,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     var processedWatchActionIds: Set<String> = []
     var processedWatchActionOrder: [String] = []
     let maxProcessedWatchActions = 500
+    var queuedWidgetWalkActionRoute: WalkWidgetActionRoute?
     var lastWatchContextSyncAt: Date = .distantPast
     var lastAppliedWatchActionId: String = ""
     var lastWatchCompletionSummaryPayload: [String: Any]? = nil

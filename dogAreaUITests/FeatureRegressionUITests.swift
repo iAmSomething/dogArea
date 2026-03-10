@@ -1510,6 +1510,19 @@ final class FeatureRegressionUITests: XCTestCase {
         )
     }
 
+    /// 위젯 종료 액션이 지도 런타임 준비 이후에도 한 번만 소비되어 종료 상태로 수렴하는지 검증합니다.
+    func testFeatureRegression_WidgetEndRouteConvergesMapPrimaryAction() throws {
+        let app = launchAppForFeatureRegression(
+            extraArguments: ["-UITest.MapForceWalkingState", "-UITest.WidgetRoute", "end_walk"]
+        )
+        let primaryAction = screenElement(identifier: "map.walk.primaryAction", in: app)
+        XCTAssertTrue(
+            waitUntilExists(primaryAction, timeout: 10),
+            "위젯 종료 라우트 후 지도 주행동 버튼을 찾지 못했습니다."
+        )
+        XCTAssertEqual(primaryAction.label, "산책 시작", "위젯 종료 라우트가 산책 종료 상태로 수렴하지 않았습니다.")
+    }
+
     /// 퀘스트 위젯 상세 CTA가 홈 퀘스트 카드 위치로 바로 이동하는지 검증합니다.
     func testFeatureRegression_QuestWidgetRouteOpensQuestMissionBoard() throws {
         let app = launchAppForFeatureRegression(extraArguments: ["-UITest.WidgetRoute", "open_quest_detail"])

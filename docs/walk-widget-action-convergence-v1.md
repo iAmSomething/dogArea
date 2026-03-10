@@ -24,15 +24,17 @@
 
 1. 위젯 intent는 App Group 저장소에 pending 요청을 저장할 수 있다.
 2. 앱이 딥링크 URL을 직접 파싱한 경우, 동일 `actionId`의 pending 요청은 즉시 제거한다.
-3. 이 제거 규칙이 없으면 `didBecomeActive` 경로에서 같은 액션이 한 번 더 소비될 수 있다.
+3. RootView는 이 요청을 `NotificationCenter`로 브로드캐스트하지 않고, `MapViewModel.enqueueWidgetWalkAction` 큐에 넣는다.
+4. 이 제거 규칙이 없으면 `didBecomeActive` 경로에서 같은 액션이 한 번 더 소비될 수 있다.
 
 ## 4. 앱 활성화 시 재동기화 규칙
 
 1. 앱 `onAppear` / `didBecomeActive` / 인증 오버레이 해제 시점에는 준비된 `MapViewModel`이 있으면 `reconcileWalkWidgetActionSurfacesOnAppActive()`를 호출한다.
-2. 이 재동기화는 다음 두 표면을 함께 맞춘다.
+2. `MapView`는 `activateMapRuntimeServices()` 직후 `applyQueuedWidgetWalkActionIfPossible()`를 호출해 대기 중이던 widget action을 canonical 세션에 반영한다.
+3. 이 재동기화는 다음 두 표면을 함께 맞춘다.
    - `WalkWidgetSnapshot`
    - `WalkLiveActivity`
-3. 지도 ViewModel이 아직 준비되지 않은 경우에는 강제로 생성하지 않는다.
+4. 지도 ViewModel이 아직 준비되지 않은 경우에는 강제로 생성하지 않고, 큐에 저장된 action이 런타임 준비 시점에만 적용된다.
 
 ## 5. 관측성 규칙
 

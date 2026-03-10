@@ -46,6 +46,10 @@ struct TerritoryStatusWidgetEntryView: View {
 
     let entry: TerritoryStatusTimelineEntry
 
+    private var layoutBudget: WidgetSurfaceLayoutBudget {
+        .resolve(for: family)
+    }
+
     var body: some View {
         Group {
             switch entry.snapshot.status {
@@ -76,15 +80,16 @@ struct TerritoryStatusWidgetEntryView: View {
             surface: .territory
         )
         return VStack(alignment: .leading, spacing: 8) {
-            WidgetStatusBadge(title: guide.badgeTitle, color: guide.badgeColor)
+            WidgetStatusBadge(title: guide.badgeTitle, color: guide.badgeColor, budget: layoutBudget)
             Text(guide.headline)
                 .font(.headline)
+                .lineLimit(layoutBudget.headlineLineLimit)
             Text(guide.detail)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .lineLimit(3)
+                .lineLimit(layoutBudget.detailLineLimit)
             Spacer(minLength: 2)
-            WidgetStateCTAView(cta: guide.cta)
+            WidgetStateCTAView(cta: guide.cta, budget: layoutBudget)
         }
     }
 
@@ -94,23 +99,23 @@ struct TerritoryStatusWidgetEntryView: View {
             surface: .territory
         )
         return VStack(alignment: .leading, spacing: 8) {
-            WidgetStatusBadge(title: guide.badgeTitle, color: guide.badgeColor)
+            WidgetStatusBadge(title: guide.badgeTitle, color: guide.badgeColor, budget: layoutBudget)
             Text(guide.headline)
                 .font(.headline)
-                .lineLimit(2)
+                .lineLimit(layoutBudget.headlineLineLimit)
             Text(guide.detail)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .lineLimit(3)
+                .lineLimit(layoutBudget.detailLineLimit)
             Spacer(minLength: 2)
-            WidgetStateCTAView(cta: guide.cta, tint: .blue)
+            WidgetStateCTAView(cta: guide.cta, budget: layoutBudget, tint: .blue)
         }
     }
 
     private var dataContent: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 8) {
-                WidgetStatusBadge(title: statusBadgeText, color: statusBadgeColor)
+                WidgetStatusBadge(title: statusBadgeText, color: statusBadgeColor, budget: layoutBudget)
                 Spacer(minLength: 0)
                 Text(updatedAtText)
                     .font(.caption2)
@@ -129,9 +134,10 @@ struct TerritoryStatusWidgetEntryView: View {
                     Text(guide.detail)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
-                        .lineLimit(2)
+                        .lineLimit(layoutBudget.detailLineLimit)
                     WidgetStateCTAView(
                         cta: guide.cta,
+                        budget: layoutBudget,
                         tint: entry.snapshot.status == .syncDelayed ? .red : .orange
                     )
                 }
@@ -170,7 +176,7 @@ struct TerritoryStatusWidgetEntryView: View {
             Text("오늘 \(summary.todayTileCount) · 방어 \(summary.defenseScheduledTileCount)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .lineLimit(1)
+                .lineLimit(layoutBudget.detailLineLimit)
         }
     }
 
@@ -183,7 +189,7 @@ struct TerritoryStatusWidgetEntryView: View {
                 Text(summary.goalContext?.contextLabel ?? "앱에서 목표 기준을 다시 동기화해주세요.")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    .lineLimit(layoutBudget.detailLineLimit)
             }
 
             goalSummarySection(summary.goalContext)
@@ -211,8 +217,8 @@ struct TerritoryStatusWidgetEntryView: View {
         case .ready:
             accentColor = .orange
             titleText = goalContext?.nextGoalName ?? "다음 목표"
-            let remainingText = WidgetFormatting.formattedArea(goalContext?.remainingAreaM2 ?? 0)
-            let goalAreaText = WidgetFormatting.formattedArea(goalContext?.nextGoalAreaM2 ?? 0)
+            let remainingText = layoutBudget.areaText(goalContext?.remainingAreaM2 ?? 0)
+            let goalAreaText = layoutBudget.areaText(goalContext?.nextGoalAreaM2 ?? 0)
             detailText = "남은 \(remainingText) · 목표 \(goalAreaText)"
             captionText = goalContext?.message ?? "다음 산책 목표를 계산했어요."
             progressRatio = goalContext?.progressRatio
@@ -244,11 +250,11 @@ struct TerritoryStatusWidgetEntryView: View {
                         .foregroundStyle(.secondary)
                     Text(titleText)
                         .font(.headline)
-                        .lineLimit(1)
+                        .lineLimit(layoutBudget.headlineLineLimit)
                     Text(detailText)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                        .lineLimit(layoutBudget.detailLineLimit)
                 }
                 Spacer(minLength: 8)
                 if let progressRatio {
@@ -273,7 +279,7 @@ struct TerritoryStatusWidgetEntryView: View {
             Text(captionText)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
-                .lineLimit(2)
+                .lineLimit(layoutBudget.detailLineLimit)
         }
         .padding(.vertical, 10)
         .padding(.horizontal, 10)
@@ -288,21 +294,12 @@ struct TerritoryStatusWidgetEntryView: View {
     ///   - tint: 지표 강조 색상입니다.
     /// - Returns: 타이틀/숫자/배경 강조가 적용된 지표 타일 뷰입니다.
     private func metricTile(title: String, value: Int, tint: Color) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-            Text("\(value)")
-                .font(.title3.weight(.bold))
-                .monospacedDigit()
-                .foregroundStyle(tint)
-                .lineLimit(1)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, 8)
-        .padding(.horizontal, 9)
-        .background(tint.opacity(0.12))
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        WidgetMetricTileView(
+            title: title,
+            value: "\(value)",
+            tint: tint,
+            budget: layoutBudget
+        )
     }
 
     private var updatedAtText: String {

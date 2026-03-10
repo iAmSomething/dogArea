@@ -11,6 +11,9 @@ func require(_ condition: @autoclosure () -> Bool, _ message: String) -> Bool {
 
 let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
 
+/// 저장소 루트 기준 상대 경로 파일을 UTF-8 문자열로 읽습니다.
+/// - Parameter relativePath: 저장소 루트 기준 상대 경로입니다.
+/// - Returns: 파일 전체 문자열입니다.
 func read(_ relativePath: String) -> String {
     let url = root.appendingPathComponent(relativePath)
     guard let content = try? String(contentsOf: url, encoding: .utf8) else {
@@ -20,6 +23,7 @@ func read(_ relativePath: String) -> String {
     return content
 }
 
+let support = read("dogAreaWidgetExtension/Shared/WidgetPresentationSupport.swift")
 let widget = read("dogAreaWidgetExtension/Widgets/WalkControlWidget.swift")
 let doc = read("docs/walk-control-widget-family-layout-v1.md")
 let readme = read("README.md")
@@ -27,16 +31,23 @@ let prCheck = read("scripts/ios_pr_check.sh")
 
 require(widget.contains("@Environment(\\.widgetFamily) private var family"), "WalkControlWidget should read widgetFamily from the environment.")
 require(widget.contains("if family == .systemSmall"), "WalkControlWidget should explicitly branch small and medium families.")
+require(widget.contains("private var layoutBudget: WidgetSurfaceLayoutBudget"), "WalkControlWidget should resolve a shared family budget.")
 require(widget.contains("private var smallLayout"), "WalkControlWidget should provide a dedicated small layout.")
 require(widget.contains("private var mediumLayout"), "WalkControlWidget should provide a dedicated medium layout.")
 require(widget.contains("primaryActionButton(compact: true)"), "WalkControlWidget small layout should use compact CTA styling.")
 require(widget.contains("primaryActionButton(compact: false)"), "WalkControlWidget medium layout should use standard CTA styling.")
 require(widget.contains("compactActionBlockedTitle"), "WalkControlWidget should shorten the blocked inline-start CTA in small family.")
-require(widget.contains("lineLimit(compact ? 1 : 2)"), "WalkControlWidget CTA lineLimit policy should split by family.")
-require(widget.contains("minHeight: compact ? 34 : 40"), "WalkControlWidget CTA min-height policy should split by family.")
+require(widget.contains("layoutBudget.elapsedText(entry.snapshot.elapsedSeconds)"), "WalkControlWidget should use shared elapsed formatting fallback.")
+require(widget.contains("WidgetBadgeStripView("), "WalkControlWidget should render top badges through the shared badge strip.")
+require(widget.contains("lineLimit(compact ? layoutBudget.ctaLineLimit : WidgetSurfaceLayoutBudget.standard.ctaLineLimit)"), "WalkControlWidget CTA line-limit policy should flow through the shared budget.")
+require(widget.contains("WidgetSurfaceLayoutBudget.standard.ctaMinHeight"), "WalkControlWidget should pull CTA height from the shared budget.")
 require(widget.contains("compactSupportText"), "WalkControlWidget should collapse support text for small family.")
 require(widget.contains("WidgetFormatting.formattedTime(timestamp: entry.snapshot.updatedAt)"), "WalkControlWidget medium layout should keep update time inline.")
 require(widget.contains("#Preview(as: .systemMedium)"), "WalkControlWidget should include a medium preview.")
+
+require(support.contains("static let compact = WidgetSurfaceLayoutBudget("), "shared support should define compact widget budget.")
+require(support.contains("static let standard = WidgetSurfaceLayoutBudget("), "shared support should define standard widget budget.")
+require(support.contains("WidgetBadgeStripView"), "shared support should provide badge strip view.")
 
 require(doc.contains("## Canonical layout split"), "doc should describe the family layout split.")
 require(doc.contains("### systemSmall"), "doc should describe the small family policy.")

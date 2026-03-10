@@ -31,6 +31,7 @@ xcodebuild -scheme dogArea \
   build-for-testing
 
 run_ui_test "testFeatureRegression_WidgetRouteOpensRivalTab"
+run_ui_test "testFeatureRegression_WidgetEndRouteConvergesMapPrimaryAction"
 run_ui_test "testFeatureRegression_HotspotWidgetRouteOpensRivalWithMatchingRadiusPreset"
 run_ui_test "testFeatureRegression_QuestWidgetRouteOpensQuestMissionBoard"
 run_ui_test "testFeatureRegression_QuestWidgetRecoveryRouteOpensQuestMissionBoard"
