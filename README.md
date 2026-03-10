@@ -26,6 +26,8 @@
 - 위젯 액션 실기기 검증 매트릭스 v1: `docs/widget-action-real-device-validation-matrix-v1.md`
 - 위젯 액션 실기기 증적 런북 v1: `docs/widget-action-real-device-evidence-runbook-v1.md`
 - 위젯 액션 실기기 증적 템플릿 v1: `docs/widget-action-real-device-evidence-template-v1.md`
+- 위젯 액션 종료 체크리스트 v1: `docs/widget-action-closure-checklist-v1.md`
+- 위젯 액션 종료 코멘트 템플릿 v1: `docs/widget-action-closure-comment-template-v1.md`
 - Widget state CTA taxonomy v1: `docs/widget-state-cta-taxonomy-v1.md`
 - Widget Lock Screen accessory family plan v1: `docs/widget-lock-screen-accessory-family-plan-v1.md`
 - Watch Smart Stack glance plan v1: `docs/watch-smart-stack-glance-plan-v1.md`

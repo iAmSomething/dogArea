@@ -13,6 +13,7 @@
 - 정적 게이트: `swift scripts/widget_action_regression_pack_unit_check.swift`
 - 실기기 증적 런북: `docs/widget-action-real-device-evidence-runbook-v1.md`
 - 복붙용 증적 템플릿: `docs/widget-action-real-device-evidence-template-v1.md`
+- 종료 체크리스트: `docs/widget-action-closure-checklist-v1.md`
 
 ## 축 정의
 
