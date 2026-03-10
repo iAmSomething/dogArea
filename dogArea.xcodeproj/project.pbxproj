@@ -16,6 +16,9 @@
 		A56500010000000000000003 /* MapWalkValueFlowPresentationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56500010000000000000013 /* MapWalkValueFlowPresentationService.swift */; };
 		A56500010000000000000004 /* WalkValueGuideStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56500010000000000000014 /* WalkValueGuideStateStore.swift */; };
 		A56500010000000000000005 /* WalkValueGuideSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56500010000000000000015 /* WalkValueGuideSheetView.swift */; };
+		A5650001000000000000000A /* WalkOutcomeExplanationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5650001000000000000001A /* WalkOutcomeExplanationModels.swift */; };
+		A5650001000000000000000B /* SettingViewModel+WalkGuide.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5650001000000000000001B /* SettingViewModel+WalkGuide.swift */; };
+		A5650001000000000000000C /* WalkListDetailOutcomeReportSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5650001000000000000001C /* WalkListDetailOutcomeReportSectionView.swift */; };
 		A56400010000000000000001 /* HomeMissionGuidePresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56400010000000000000011 /* HomeMissionGuidePresentation.swift */; };
 		A56400010000000000000002 /* HomeMissionGuidePresentationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56400010000000000000012 /* HomeMissionGuidePresentationService.swift */; };
 		A56400010000000000000003 /* HomeMissionGuideStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56400010000000000000013 /* HomeMissionGuideStateStore.swift */; };
@@ -657,6 +660,9 @@
 		A56500010000000000000017 /* MapWalkSavedOutcomeCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapWalkSavedOutcomeCardView.swift; sourceTree = "<group>"; };
 		A56500010000000000000018 /* WalkCompletionValueFlowCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkCompletionValueFlowCardView.swift; sourceTree = "<group>"; };
 		A56500010000000000000019 /* MapWalkValueFlowPresentationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapWalkValueFlowPresentationModels.swift; sourceTree = "<group>"; };
+		A5650001000000000000001A /* WalkOutcomeExplanationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkOutcomeExplanationModels.swift; sourceTree = "<group>"; };
+		A5650001000000000000001B /* SettingViewModel+WalkGuide.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SettingViewModel+WalkGuide.swift"; sourceTree = "<group>"; };
+		A5650001000000000000001C /* WalkListDetailOutcomeReportSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDetailOutcomeReportSectionView.swift; sourceTree = "<group>"; };
 		A56700010000000000000011 /* WalkListCalendarPresentationModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListCalendarPresentationModels.swift; sourceTree = "<group>"; };
 		A56700010000000000000012 /* WalkListCalendarPresentationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListCalendarPresentationService.swift; sourceTree = "<group>"; };
 		A56700010000000000000013 /* WalkListMonthlyCalendarCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListMonthlyCalendarCardView.swift; sourceTree = "<group>"; };
@@ -1289,6 +1295,7 @@
 				D833B7DD0594CABE821B3469 /* SettingViewModel+PetManagement.swift */,
 				A50000010000000000000016 /* SettingViewModel+ProductSurface.swift */,
 				A013B53969138FCAAF1E0428 /* SettingViewModel+SessionSync.swift */,
+				A5650001000000000000001B /* SettingViewModel+WalkGuide.swift */,
 			);
 			name = SettingViewModelSupport;
 			path = SettingViewModelSupport;
@@ -1385,6 +1392,7 @@
 				A53000010000000000000005 /* WalkListDetailTimelineSectionView.swift */,
 				A53000010000000000000006 /* WalkListDetailMetaSectionView.swift */,
 				A53000010000000000000007 /* WalkListDetailActionSectionView.swift */,
+				A5650001000000000000001C /* WalkListDetailOutcomeReportSectionView.swift */,
 				2615443270FF3222AEBDE893 /* ThumbnailImageView.swift */,
 				1E80E41C53C8D19EF8E7DEF3 /* WalkListPrimaryLoopSummaryCardView.swift */,
 				A62300010000000000000001 /* WalkListContextSummaryCardView.swift */,
@@ -1807,6 +1815,7 @@
 				A50400010000000000000011 /* MapHotspotClusterSnapshot.swift */,
 				A50200010000000000000011 /* MapWalkPointSnapshot.swift */,
 				A56500010000000000000011 /* WalkValueGuidePresentation.swift */,
+				A5650001000000000000001A /* WalkOutcomeExplanationModels.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -2146,6 +2155,7 @@
 				A53000010000000000000015 /* WalkListDetailTimelineSectionView.swift in Sources */,
 				A53000010000000000000016 /* WalkListDetailMetaSectionView.swift in Sources */,
 				A53000010000000000000017 /* WalkListDetailActionSectionView.swift in Sources */,
+				A5650001000000000000000C /* WalkListDetailOutcomeReportSectionView.swift in Sources */,
 				DA3F9BD52AE0FF9B0048550C /* CustomTabBar.swift in Sources */,
 				DAC19F1E2B0B331A002FE2E8 /* SigningViewModel.swift in Sources */,
 				DAC19F102B0AF661002FE2E8 /* TitleTextView.swift in Sources */,
@@ -2213,6 +2223,7 @@
 				A50400010000000000000001 /* MapHotspotClusterSnapshot.swift in Sources */,
 				A50200010000000000000001 /* MapWalkPointSnapshot.swift in Sources */,
 				A56500010000000000000001 /* WalkValueGuidePresentation.swift in Sources */,
+				A5650001000000000000000A /* WalkOutcomeExplanationModels.swift in Sources */,
 				DAE148A11420000000000001 /* MapAreaCalculationService.swift in Sources */,
 				A50300010000000000000002 /* MapHeatmapAggregationService.swift in Sources */,
 				A50400010000000000000002 /* MapHotspotClusterRenderingService.swift in Sources */,
@@ -2397,6 +2408,7 @@
 				771A99CFD333C282650284FA /* SettingViewModel+PetManagement.swift in Sources */,
 				A50000010000000000000006 /* SettingViewModel+ProductSurface.swift in Sources */,
 				85B9C2AED02D77D491DA93CA /* SettingViewModel+SessionSync.swift in Sources */,
+				A5650001000000000000000B /* SettingViewModel+WalkGuide.swift in Sources */,
 				9315EFC2423955870AFCC18F /* HomeViewModel+SessionLifecycle.swift in Sources */,
 				B8774AA566F72FF9E7151938 /* HomeViewModel+AreaProgress.swift in Sources */,
 				C2A4309E392F82F548955737 /* HomeViewModel+IndoorMissionFlow.swift in Sources */,

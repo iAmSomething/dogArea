@@ -11,6 +11,7 @@ struct WalkSessionMetadata: Codable, Equatable {
     let endReason: WalkSessionEndReason
     let endedAt: TimeInterval
     let petId: String?
+    let outcomeSnapshot: WalkOutcomeCalculationSnapshot?
     let updatedAt: TimeInterval
 }
 
@@ -41,13 +42,15 @@ final class WalkSessionMetadataStore {
         sessionId: UUID,
         reason: WalkSessionEndReason,
         endedAt: TimeInterval,
-        petId: String? = nil
+        petId: String? = nil,
+        outcomeSnapshot: WalkOutcomeCalculationSnapshot? = nil
     ) {
         stateQueue.sync {
             cache[sessionId.uuidString.lowercased()] = WalkSessionMetadata(
                 endReason: reason,
                 endedAt: endedAt,
                 petId: petId,
+                outcomeSnapshot: outcomeSnapshot,
                 updatedAt: Date().timeIntervalSince1970
             )
             persistLocked()

@@ -1,6 +1,14 @@
 import Foundation
 
 struct WalkListDetailPresentationService: WalkListDetailPresentationServicing {
+    private let outcomeExplanationService: WalkOutcomeExplaining
+
+    /// 산책 상세 프레젠테이션 서비스 의존성을 구성합니다.
+    /// - Parameter outcomeExplanationService: 저장 직후/상세 공통 결과 설명 DTO를 생성하는 서비스입니다.
+    init(outcomeExplanationService: WalkOutcomeExplaining = WalkOutcomeExplanationService()) {
+        self.outcomeExplanationService = outcomeExplanationService
+    }
+
     /// 산책 상세 화면에 필요한 표시 전용 스냅샷을 구성합니다.
     /// - Parameters:
     ///   - model: 현재 상세 화면이 표현할 산책 기록 모델입니다.
@@ -24,6 +32,7 @@ struct WalkListDetailPresentationService: WalkListDetailPresentationServicing {
         let effectiveSelectedID = selectedLocationID ?? visibleLocations.first?.id ?? model.locations.first?.id
         return WalkListDetailPresentationSnapshot(
             hero: makeHero(model: model, petName: petName, sessionMetadata: sessionMetadata),
+            outcomeExplanation: makeOutcomeExplanation(model: model, sessionMetadata: sessionMetadata),
             metrics: makeMetrics(model: model, sessionMetadata: sessionMetadata, isMeter: isMeter),
             timeline: makeTimeline(
                 locations: visibleLocations,
@@ -37,6 +46,30 @@ struct WalkListDetailPresentationService: WalkListDetailPresentationServicing {
             timelineFootnote: visibleLocations.count < model.locations.count ? "긴 기록이라 대표 시점만 먼저 보여주고 있어요." : nil,
             hasMapContent: model.locations.isEmpty == false && model.toPolygon().polygon != nil
         )
+    }
+
+    /// 저장된 산책을 공통 결과 설명 DTO로 변환합니다.
+    /// - Parameters:
+    ///   - model: 현재 산책 기록 모델입니다.
+    ///   - sessionMetadata: 종료 사유/설명 스냅샷을 담은 세션 메타데이터입니다.
+    /// - Returns: 저장 직후 카드와 같은 상태 체계를 따르는 결과 설명 DTO입니다.
+    private func makeOutcomeExplanation(
+        model: WalkDataModel,
+        sessionMetadata: WalkSessionMetadata?
+    ) -> WalkOutcomeExplanationDTO {
+        if let snapshot = sessionMetadata?.outcomeSnapshot {
+            return outcomeExplanationService.makeExplanationDTO(from: snapshot)
+        }
+
+        let markCount = model.locations.filter { $0.pointRole == .mark }.count
+        let routeCount = model.locations.filter { $0.pointRole == .route }.count
+        let fallbackSnapshot = outcomeExplanationService.makeLegacyCalculationSnapshot(
+            appliedPointCount: model.locations.count,
+            areaM2: model.walkArea,
+            markPointCount: markCount,
+            routePointCount: routeCount
+        )
+        return outcomeExplanationService.makeExplanationDTO(from: fallbackSnapshot)
     }
 
     /// 헤더 카드에 필요한 요약 문구를 구성합니다.

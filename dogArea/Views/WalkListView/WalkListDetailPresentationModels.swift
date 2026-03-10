@@ -2,6 +2,7 @@ import Foundation
 
 struct WalkListDetailPresentationSnapshot {
     let hero: WalkListDetailHeroModel
+    let outcomeExplanation: WalkOutcomeExplanationDTO
     let metrics: [WalkListDetailMetricModel]
     let timeline: [WalkListDetailTimelineChipModel]
     let metaRows: [WalkListDetailMetaRowModel]

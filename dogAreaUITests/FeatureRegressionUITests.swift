@@ -325,16 +325,12 @@ final class FeatureRegressionUITests: XCTestCase {
             "산책 가치 설명 가이드가 자동 노출되지 않았습니다."
         )
         XCTAssertTrue(
-            waitUntilExists(screenElement(identifier: "map.walk.guide.flow.before", in: app), timeout: 2),
-            "산책 시작 전 가치 설명 단계가 노출되지 않았습니다."
+            waitUntilExists(screenElement(identifier: "map.walk.guide.step.understanding", in: app), timeout: 2),
+            "첫 산책 이해 step이 노출되지 않았습니다."
         )
         XCTAssertTrue(
-            waitUntilExists(screenElement(identifier: "map.walk.guide.flow.during", in: app), timeout: 2),
-            "산책 진행 중 가치 설명 단계가 노출되지 않았습니다."
-        )
-        XCTAssertTrue(
-            waitUntilExists(screenElement(identifier: "map.walk.guide.flow.after", in: app), timeout: 2),
-            "산책 저장 후 가치 설명 단계가 노출되지 않았습니다."
+            waitUntilExists(app.buttons["map.walk.guide.close"], timeout: 2),
+            "자동 노출된 가이드에서 닫기 CTA가 보여야 합니다."
         )
     }
 
@@ -641,6 +637,7 @@ final class FeatureRegressionUITests: XCTestCase {
 
         XCTAssertTrue(waitUntilExists(screenElement(identifier: "walklist.detail.hero", in: app), timeout: 2), "상단 요약 카드가 노출되지 않았습니다.")
         XCTAssertTrue(waitUntilExists(screenElement(identifier: "walklist.detail.loopSummary", in: app), timeout: 2), "산책 기록 의미 요약 카드가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(screenElement(identifier: "walklist.detail.outcomeReport", in: app), timeout: 2), "산책 결과 리포트 카드가 노출되지 않았습니다.")
         XCTAssertTrue(waitUntilExists(screenElement(identifier: "walklist.detail.map", in: app), timeout: 2), "지도 카드가 노출되지 않았습니다.")
         XCTAssertTrue(waitUntilExists(screenElement(identifier: "walklist.detail.timeline", in: app), timeout: 2), "포인트 타임라인 카드가 노출되지 않았습니다.")
         XCTAssertTrue(waitUntilExists(screenElement(identifier: "walklist.detail.meta", in: app), timeout: 2), "세션 메타 카드가 노출되지 않았습니다.")
@@ -658,6 +655,41 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertTrue(waitUntilHittable(shareAction, timeout: 2), "공유 primary CTA가 탭 가능한 상태가 아닙니다.")
         XCTAssertTrue(waitUntilHittable(saveAction, timeout: 2), "저장 secondary CTA가 탭 가능한 상태가 아닙니다.")
         XCTAssertTrue(waitUntilHittable(dismissAction, timeout: 2), "확인 dismiss CTA가 탭 가능한 상태가 아닙니다.")
+    }
+
+    /// 저장된 산책 상세 결과 리포트가 반영/제외/연결/근거를 같은 DTO 기준으로 펼쳐 보여주는지 검증합니다.
+    func testFeatureRegression_WalkListDetailOutcomeReportExplainsAppliedExcludedAndConnections() throws {
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.WalkDetailPreviewRoute"])
+        XCTAssertTrue(openTab(index: 1, app: app), "산책 목록 탭 진입에 실패했습니다.")
+
+        let detailScreen = screenElement(identifier: "screen.walkListDetail.content", in: app)
+        XCTAssertTrue(waitUntilExists(detailScreen, timeout: 8), "산책 상세 화면 preview route 진입에 실패했습니다.")
+
+        let outcomeReport = screenElement(identifier: "walklist.detail.outcomeReport", in: app)
+        XCTAssertTrue(waitUntilExists(outcomeReport, timeout: 2), "산책 결과 리포트 섹션이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(screenElement(identifier: "walklist.detail.outcomeReport.summary", in: app), timeout: 2), "산책 결과 요약 블록이 노출되지 않았습니다.")
+
+        let exclusionsToggle = app.buttons["walklist.detail.outcomeReport.exclusions.toggle"]
+        XCTAssertTrue(revealElementByVerticalScroll(exclusionsToggle, app: app, maxSwipes: 4), "제외 이유 토글이 화면에 노출되지 않았습니다.")
+        exclusionsToggle.tap()
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "walklist.detail.outcomeReport.exclusions.empty", in: app), timeout: 2)
+                || waitUntilExists(app.descendants(matching: .any).matching(identifier: "walklist.detail.outcomeReport.reason.lowAccuracy").firstMatch, timeout: 1)
+                || waitUntilExists(app.descendants(matching: .any).matching(identifier: "walklist.detail.outcomeReport.reason.jump").firstMatch, timeout: 1)
+                || waitUntilExists(app.descendants(matching: .any).matching(identifier: "walklist.detail.outcomeReport.reason.duplicateOrPause").firstMatch, timeout: 1)
+                || waitUntilExists(app.descendants(matching: .any).matching(identifier: "walklist.detail.outcomeReport.reason.policyGuard").firstMatch, timeout: 1),
+            "제외 이유 펼침 결과가 노출되지 않았습니다."
+        )
+
+        let connectionsToggle = app.buttons["walklist.detail.outcomeReport.connections.toggle"]
+        XCTAssertTrue(waitUntilHittable(connectionsToggle, timeout: 2), "이어지는 흐름 토글이 탭 가능한 상태가 아닙니다.")
+        connectionsToggle.tap()
+        XCTAssertTrue(waitUntilExists(screenElement(identifier: "walklist.detail.outcomeReport.connection.record", in: app), timeout: 2), "기록 연결 row가 노출되지 않았습니다.")
+
+        let contributionToggle = app.buttons["walklist.detail.outcomeReport.contribution.toggle"]
+        XCTAssertTrue(waitUntilHittable(contributionToggle, timeout: 2), "계산 근거 토글이 탭 가능한 상태가 아닙니다.")
+        contributionToggle.tap()
+        XCTAssertTrue(waitUntilExists(screenElement(identifier: "walklist.detail.outcomeReport.contribution.mark", in: app), timeout: 2), "영역 표시 기여 row가 노출되지 않았습니다.")
     }
 
     /// 산책 상세 화면이 상단 기본 back affordance를 복구해 자연스럽게 목록으로 돌아갈 수 있는지 검증합니다.
@@ -1188,6 +1220,31 @@ final class FeatureRegressionUITests: XCTestCase {
             "보존/삭제/문서 카드가 노출되지 않았습니다."
         )
 
+    }
+
+    /// 설정 탭의 산책과 기록 카드에서 첫 산책 가이드를 다시 열고 Step2까지 진입할 수 있는지 검증합니다.
+    func testFeatureRegression_SettingsWalkGuideReentryPresentsTwoStepGuide() throws {
+        let app = launchAppForFeatureRegression()
+
+        XCTAssertTrue(openTab(index: 4, app: app), "설정 탭 진입에 실패했습니다.")
+
+        let reopenButton = app.buttons["settings.walkGuide.reopen"]
+        XCTAssertTrue(
+            revealElementByVerticalScroll(reopenButton, app: app, maxSwipes: 5),
+            "설정의 산책 가이드 재진입 버튼을 화면 안으로 노출하지 못했습니다."
+        )
+        XCTAssertTrue(waitUntilHittable(reopenButton, timeout: 2), "산책 가이드 재진입 버튼이 탭 가능한 상태가 아닙니다.")
+        reopenButton.tap()
+
+        XCTAssertTrue(waitUntilExists(screenElement(identifier: "map.walk.guide.sheet", in: app), timeout: 4), "설정에서 첫 산책 가이드 시트가 열리지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(screenElement(identifier: "map.walk.guide.step.understanding", in: app), timeout: 2), "설정 재진입 시 첫 산책 이해 step이 보여야 합니다.")
+
+        let nextButton = app.buttons["map.walk.guide.next"]
+        XCTAssertTrue(waitUntilHittable(nextButton, timeout: 2), "설정 재진입 가이드의 다음 버튼이 탭 가능한 상태가 아닙니다.")
+        nextButton.tap()
+
+        XCTAssertTrue(waitUntilExists(screenElement(identifier: "map.walk.guide.step.preferences", in: app), timeout: 2), "설정 재진입 가이드의 핵심 설정 step이 보여야 합니다.")
+        XCTAssertTrue(waitUntilExists(screenElement(identifier: "map.walk.guide.recordMode.manual", in: app), timeout: 2), "설정 재진입 가이드에서 수동 기록 옵션이 노출되지 않았습니다.")
     }
 
     /// 홈 미션 카드가 완료 기준/자가 기록 가이드/완료 아카이브 상태를 분리해 노출하는지 검증합니다.

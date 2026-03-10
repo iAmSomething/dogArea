@@ -12,6 +12,7 @@ struct NotificationCenterView: View {
         case profileEdit
         case petManagement
         case privacyCenter
+        case walkGuide
 
         var id: String { rawValue }
     }
@@ -91,6 +92,24 @@ struct NotificationCenterView: View {
                         activeSheet = nil
                     }
                 )
+            case .walkGuide:
+                WalkValueGuideSheetView(
+                    presentation: viewModel.makeWalkGuidePresentation(),
+                    onClose: {
+                        activeSheet = nil
+                    },
+                    onSkipWithSafeDefaults: {
+                        viewModel.applyWalkGuideSafeDefaults()
+                        activeSheet = nil
+                    },
+                    onApplyPreferences: { pointRecordModeRawValue, sharingEnabled in
+                        viewModel.applyWalkGuidePreferences(
+                            pointRecordModeRawValue: pointRecordModeRawValue,
+                            sharingEnabled: sharingEnabled
+                        )
+                        activeSheet = nil
+                    }
+                )
             }
         }
         .sheet(item: $activeDocument) { document in
@@ -110,6 +129,7 @@ struct NotificationCenterView: View {
                 }
 
                 petInfoCard
+                walkGuideCard
                 privacyCenterCard
                 appSettingsCard
                 legalDocumentsCard
@@ -142,6 +162,7 @@ struct NotificationCenterView: View {
     var guestLockedContent: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
+                walkGuideCard
                 privacyCenterCard
                 guestSignInCard
                 guestFeaturePreviewCard
@@ -179,6 +200,43 @@ struct NotificationCenterView: View {
         SettingsPrivacyCenterEntryCardView(summary: viewModel.privacyCenterEntrySummary) {
             activeSheet = .privacyCenter
         }
+    }
+
+    var walkGuideCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("산책과 기록")
+                .font(.appScaledFont(for: .SemiBold, size: 16, relativeTo: .headline))
+                .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
+
+            Text("첫 산책 흐름과 현재 기본값을 다시 확인하고, 기록 방식을 바로 바꿀 수 있어요.")
+                .font(.appScaledFont(for: .Regular, size: 13, relativeTo: .body))
+                .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
+                .fixedSize(horizontal: false, vertical: true)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(viewModel.walkGuideRecordModeTitle)
+                    .font(.appScaledFont(for: .SemiBold, size: 13, relativeTo: .subheadline))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
+                Text(viewModel.walkGuideSharingDefaultSummary)
+                    .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .caption))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
+            }
+
+            Button {
+                activeSheet = .walkGuide
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "figure.walk")
+                    Text("첫 산책 가이드 다시 보기")
+                }
+            }
+            .buttonStyle(AppFilledButtonStyle(role: .secondary))
+            .frame(minHeight: 44)
+            .accessibilityIdentifier("settings.walkGuide.reopen")
+        }
+        .appCardSurface()
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("settings.section.walkGuide")
     }
 
     var legalDocumentsCard: some View {
