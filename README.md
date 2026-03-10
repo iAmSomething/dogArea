@@ -164,6 +164,10 @@
 - Backend Edge observability adoption matrix v1: `docs/backend-edge-observability-adoption-matrix-v1.md`
 - Backend Edge failure dashboard view v1: `docs/backend-edge-failure-dashboard-view-v1.md`
 - 릴리즈 회귀 체크리스트 v1: `docs/release-regression-checklist-v1.md`
+- PR fast smoke gate v1: `docs/pr-fast-smoke-gate-v1.md`
+- PR fast smoke gate report template v1: `docs/pr-fast-smoke-gate-report-template-v1.md`
+- Nightly full regression gate v1: `docs/nightly-full-regression-gate-v1.md`
+- Release real-device evidence matrix v1: `docs/release-real-device-evidence-matrix-v1.md`
 - 릴리즈 회귀 실행 리포트(2026-02-26): `docs/release-regression-report-2026-02-26.md`
 - 에픽 #21 클로저 증적 스냅샷 v1: `docs/epic-21-closure-evidence-v1.md`
 - 에픽 #123 클로저 증적 스냅샷 v1: `docs/epic-123-closure-evidence-v1.md`
