@@ -10,6 +10,7 @@
 ## 선행 문서
 - rollout evidence runbook: `docs/auth-smtp-rollout-evidence-runbook-v1.md`
 - copy-ready evidence template: `docs/auth-smtp-rollout-evidence-template-v1.md`
+- closure checklist: `docs/auth-smtp-closure-checklist-v1.md`
 - provider / DNS / secret checklist: `docs/auth-smtp-provider-selection-dns-secret-checklist-v1.md`
 
 ## 검증 축
