@@ -47,7 +47,10 @@ struct MapWalkSavedOutcomeItemPresentation: Identifiable, Equatable {
 struct MapWalkSavedOutcomePresentation: Equatable {
     let title: String
     let summary: String
-    let followUpItems: [MapWalkSavedOutcomeItemPresentation]
+    let statusBody: String
+    let appliedSummary: String
+    let primaryReasonLine: String?
+    let connectionLine: String
     let primaryActionTitle: String
 }
 

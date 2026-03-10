@@ -228,7 +228,79 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         let pointRecordMode: String
         let lastMovementAt: TimeInterval?
         let points: [ActiveWalkPointSnapshot]
+        let exclusions: WalkOutcomeExclusionSnapshot
         let savedAt: TimeInterval
+
+        enum CodingKeys: String, CodingKey {
+            case sessionId
+            case startedAt
+            case elapsedTime
+            case selectedPetId
+            case selectedPetName
+            case currentWalkingPetName
+            case pointRecordMode
+            case lastMovementAt
+            case points
+            case exclusions
+            case savedAt
+        }
+
+        /// 활성 산책 세션의 저장용 스냅샷을 생성합니다.
+        /// - Parameters:
+        ///   - sessionId: 현재 세션 식별자입니다.
+        ///   - startedAt: 산책 시작 시각입니다.
+        ///   - elapsedTime: 현재까지 경과 시간입니다.
+        ///   - selectedPetId: 현재 선택 반려견 식별자입니다.
+        ///   - selectedPetName: 현재 선택 반려견 이름입니다.
+        ///   - currentWalkingPetName: 산책 중 표시용 반려견 이름입니다.
+        ///   - pointRecordMode: 현재 포인트 기록 방식 원시 값입니다.
+        ///   - lastMovementAt: 마지막 이동 시각입니다.
+        ///   - points: 세션에 누적된 포인트 스냅샷입니다.
+        ///   - exclusions: 세션 중 제외된 기록 집계입니다.
+        ///   - savedAt: 스냅샷을 저장한 시각입니다.
+        init(
+            sessionId: String?,
+            startedAt: TimeInterval,
+            elapsedTime: TimeInterval,
+            selectedPetId: String?,
+            selectedPetName: String,
+            currentWalkingPetName: String,
+            pointRecordMode: String,
+            lastMovementAt: TimeInterval?,
+            points: [ActiveWalkPointSnapshot],
+            exclusions: WalkOutcomeExclusionSnapshot,
+            savedAt: TimeInterval
+        ) {
+            self.sessionId = sessionId
+            self.startedAt = startedAt
+            self.elapsedTime = elapsedTime
+            self.selectedPetId = selectedPetId
+            self.selectedPetName = selectedPetName
+            self.currentWalkingPetName = currentWalkingPetName
+            self.pointRecordMode = pointRecordMode
+            self.lastMovementAt = lastMovementAt
+            self.points = points
+            self.exclusions = exclusions
+            self.savedAt = savedAt
+        }
+
+        /// 저장된 활성 산책 스냅샷을 하위 호환성을 유지하며 디코딩합니다.
+        /// - Parameter decoder: JSON 키/값을 읽어올 디코더입니다.
+        /// - Throws: 필수 필드 디코딩에 실패하면 에러를 던집니다.
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            sessionId = try container.decodeIfPresent(String.self, forKey: .sessionId)
+            startedAt = try container.decode(TimeInterval.self, forKey: .startedAt)
+            elapsedTime = try container.decode(TimeInterval.self, forKey: .elapsedTime)
+            selectedPetId = try container.decodeIfPresent(String.self, forKey: .selectedPetId)
+            selectedPetName = try container.decode(String.self, forKey: .selectedPetName)
+            currentWalkingPetName = try container.decode(String.self, forKey: .currentWalkingPetName)
+            pointRecordMode = try container.decode(String.self, forKey: .pointRecordMode)
+            lastMovementAt = try container.decodeIfPresent(TimeInterval.self, forKey: .lastMovementAt)
+            points = try container.decode([ActiveWalkPointSnapshot].self, forKey: .points)
+            exclusions = try container.decodeIfPresent(WalkOutcomeExclusionSnapshot.self, forKey: .exclusions) ?? .empty
+            savedAt = try container.decode(TimeInterval.self, forKey: .savedAt)
+        }
     }
 
     struct WalkHybridContributionSummary: Equatable {
@@ -420,6 +492,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private let walkValueGuidePresentationService: WalkValueGuidePresentationProviding
     private let walkValueGuideStateStore: WalkValueGuideStateStoring
     private let walkValueFlowPresentationService: MapWalkValueFlowPresenting
+    private let walkOutcomeExplanationService: WalkOutcomeExplaining
     private let hotspotClusterRenderingService: MapHotspotClusterRenderingServicing
     private var nearbyTickTimer: Timer? = nil
     private var heatmapAggregationSnapshot: MapHeatmapAggregationSnapshot?
@@ -440,6 +513,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     var livePresenceRetryState = MapLivePresenceRetryState()
     private var captureRippleExpiryTasks: [UUID: Task<Void, Never>] = [:]
     private var lastNearbyFetchedAt: Date = .distantPast
+    private var activeWalkExclusionSnapshot: WalkOutcomeExclusionSnapshot = .empty
     private var lastNearbyHotspotErrorLogAt: Date = .distantPast
     private var suppressedNearbyHotspotErrorCount: Int = 0
     private var lastVisibilitySyncErrorLogAt: Date = .distantPast
@@ -676,6 +750,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         walkValueGuidePresentationService: WalkValueGuidePresentationProviding = WalkValueGuidePresentationService(),
         walkValueGuideStateStore: WalkValueGuideStateStoring = DefaultWalkValueGuideStateStore.shared,
         walkValueFlowPresentationService: MapWalkValueFlowPresenting = MapWalkValueFlowPresentationService(),
+        walkOutcomeExplanationService: WalkOutcomeExplaining = WalkOutcomeExplanationService(),
         walkPointSnapshotService: MapWalkPointSnapshotServicing = MapWalkPointSnapshotService(),
         clusterAnnotationService: MapClusterAnnotationServicing = MapClusterAnnotationService(),
         hotspotClusterRenderingService: MapHotspotClusterRenderingServicing? = nil,
@@ -700,6 +775,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         self.walkValueGuidePresentationService = walkValueGuidePresentationService
         self.walkValueGuideStateStore = walkValueGuideStateStore
         self.walkValueFlowPresentationService = walkValueFlowPresentationService
+        self.walkOutcomeExplanationService = walkOutcomeExplanationService
         self.walkPointSnapshotService = walkPointSnapshotService
         self.clusterAnnotationService = clusterAnnotationService
         self.hotspotClusterRenderingService = hotspotClusterRenderingService
@@ -999,14 +1075,25 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
                     )
                     if saved {
                         let endedAt = (endedAtOverride ?? Date()).timeIntervalSince1970
+                        let outcomeSnapshot = makeWalkOutcomeCalculationSnapshot(
+                            pointCount: completedPolygon.locations.count,
+                            finalAreaM2: completedPolygon.walkingArea,
+                            exclusions: activeWalkExclusionSnapshot,
+                            markPointCount: completedPolygon.locations.filter { $0.pointRole == .mark }.count,
+                            routePointCount: completedPolygon.locations.filter { $0.pointRole == .route }.count
+                        )
                         WalkSessionMetadataStore.shared.set(
                             sessionId: completedPolygon.id,
                             reason: .init(rawValue: reason.rawValue) ?? .manual,
                             endedAt: endedAt,
-                            petId: selectedPetId
+                            petId: selectedPetId,
+                            outcomeSnapshot: outcomeSnapshot
                         )
                         enqueueSyncOutbox(for: completedPolygon, hasImage: img != nil)
-                        updateWalkSavedOutcomePresentation(savedPolygon: completedPolygon)
+                        updateWalkSavedOutcomePresentation(
+                            savedPolygon: completedPolygon,
+                            outcomeSnapshot: outcomeSnapshot
+                        )
                         walkStatusMessage = "산책 기록을 저장했어요. 목록에서 다시 보며 목표와 미션 반영을 확인할 수 있어요."
                     } else {
                         walkStatusMessage = "로컬 저장에 실패해 동기화 큐 적재를 건너뛰었습니다."
@@ -1034,6 +1121,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             polygon.petId = selectedPetId
             self.currentWalkingPetName = self.selectedPetName
             self.resetAutoPointRecordState()
+            self.activeWalkExclusionSnapshot = .empty
             self.lastAcceptedWalkLocation = nil
             self.lastPointEventAt = Date()
             self.resetInactivityTracking(now: Date(), clearAnchor: true)
@@ -1455,6 +1543,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private func validateWalkLocationSample(_ location: CLLocation) -> Bool {
         guard location.horizontalAccuracy > 0,
               location.horizontalAccuracy <= locationAccuracyThreshold else {
+            recordWalkExclusion(reason: .lowAccuracy)
             setRuntimeGuardStatus("저정확도 GPS 샘플 폐기")
             return false
         }
@@ -1466,6 +1555,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             let isJumpBySpeed = speed > jumpSpeedThreshold && distance > autoRecordNoiseDistance
             let isJumpByDistance = distance > jumpDistanceThreshold && delta <= jumpTimeWindow
             if isJumpBySpeed || isJumpByDistance {
+                recordWalkExclusion(reason: .jump)
                 setRuntimeGuardStatus("비정상 점프 포인트 폐기")
                 return false
             }
@@ -1473,6 +1563,42 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 
         lastAcceptedWalkLocation = location
         return true
+    }
+
+    /// 현재 산책 세션의 제외 사유 집계를 1건 증가시킵니다.
+    /// - Parameter reason: 증가시킬 제외 사유 식별자입니다.
+    private func recordWalkExclusion(reason: WalkOutcomeExclusionReasonID) {
+        let current = activeWalkExclusionSnapshot
+        switch reason {
+        case .lowAccuracy:
+            activeWalkExclusionSnapshot = WalkOutcomeExclusionSnapshot(
+                lowAccuracyCount: current.lowAccuracyCount + 1,
+                jumpCount: current.jumpCount,
+                duplicateOrPauseCount: current.duplicateOrPauseCount,
+                policyGuardCount: current.policyGuardCount
+            )
+        case .jump:
+            activeWalkExclusionSnapshot = WalkOutcomeExclusionSnapshot(
+                lowAccuracyCount: current.lowAccuracyCount,
+                jumpCount: current.jumpCount + 1,
+                duplicateOrPauseCount: current.duplicateOrPauseCount,
+                policyGuardCount: current.policyGuardCount
+            )
+        case .duplicateOrPause:
+            activeWalkExclusionSnapshot = WalkOutcomeExclusionSnapshot(
+                lowAccuracyCount: current.lowAccuracyCount,
+                jumpCount: current.jumpCount,
+                duplicateOrPauseCount: current.duplicateOrPauseCount + 1,
+                policyGuardCount: current.policyGuardCount
+            )
+        case .policyGuard:
+            activeWalkExclusionSnapshot = WalkOutcomeExclusionSnapshot(
+                lowAccuracyCount: current.lowAccuracyCount,
+                jumpCount: current.jumpCount,
+                duplicateOrPauseCount: current.duplicateOrPauseCount,
+                policyGuardCount: current.policyGuardCount + 1
+            )
+        }
     }
 
     /// 첫 유효 위치 샘플을 세션 출발지 체크포인트로 저장합니다.
@@ -1803,6 +1929,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         currentWalkingPetName = snapshot.currentWalkingPetName
         walkPointRecordMode = WalkPointRecordMode(rawValue: snapshot.pointRecordMode) ?? .auto
         userSessionStore.setWalkPointRecordModeRawValue(walkPointRecordMode.rawValue)
+        activeWalkExclusionSnapshot = snapshot.exclusions
 
         lastPointEventAt = snapshot.points.last.map { Date(timeIntervalSince1970: $0.createdAt) } ?? Date()
         lastMovementAt = snapshot.lastMovementAt.map { Date(timeIntervalSince1970: $0) } ?? lastPointEventAt
@@ -1921,9 +2048,18 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             petId: snapshot.selectedPetId
         )
         var finalized = completed
+        let contributionSummary = makeHybridContributionSummary(points: restoredPoints)
         finalized.makePolygon(
-            walkArea: makeHybridContributionSummary(points: restoredPoints).finalAreaM2,
+            walkArea: contributionSummary.finalAreaM2,
             walkTime: walkTime
+        )
+        let outcomeSnapshot = makeWalkOutcomeCalculationSnapshot(
+            pointCount: restoredPoints.count,
+            finalAreaM2: finalized.walkingArea,
+            exclusions: snapshot.exclusions,
+            markPointCount: restoredPoints.filter { $0.pointRole == .mark }.count,
+            routePointCount: restoredPoints.filter { $0.pointRole == .route }.count,
+            contributionSummaryOverride: contributionSummary
         )
         let updated = walkRepository.savePolygon(finalized)
         if updated.contains(where: { $0.id == finalized.id }) {
@@ -1931,11 +2067,16 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
                 sessionId: finalized.id,
                 reason: reason,
                 endedAt: finalizedEndAt,
-                petId: snapshot.selectedPetId
+                petId: snapshot.selectedPetId,
+                outcomeSnapshot: outcomeSnapshot
             )
             enqueueSyncOutbox(for: finalized, hasImage: finalized.binaryImage != nil)
             walkStatusMessage = successMessage
-            updateWalkSavedOutcomePresentation(savedPolygon: finalized)
+            activeWalkExclusionSnapshot = snapshot.exclusions
+            updateWalkSavedOutcomePresentation(
+                savedPolygon: finalized,
+                outcomeSnapshot: outcomeSnapshot
+            )
             metricTracker.track(
                 .recoveryFinalizeConfirmed,
                 userKey: currentMetricUserId(),
@@ -1990,6 +2131,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
                     pointRole: $0.pointRole
                 )
             },
+            exclusions: activeWalkExclusionSnapshot,
             savedAt: now.timeIntervalSince1970
         )
 
@@ -2005,6 +2147,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         hasRecoverableWalkSession = false
         recoverableWalkSummaryText = ""
         recoverableWalkEstimateText = ""
+        activeWalkExclusionSnapshot = .empty
         lastPointEventAt = nil
         lastMovementAt = nil
         movementAnchorLocation = nil
@@ -2237,6 +2380,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
                 longitude: lastPoint.coordinate.longitude
             )
             if location.distance(from: lastPointLocation) < autoRecordNoiseDistance {
+                recordWalkExclusion(reason: .duplicateOrPause)
                 return false
             }
         }
@@ -2251,9 +2395,14 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 
         guard let previousHeading = lastAutoRecordedHeading,
               let currentHeading = heading(from: location) else {
+            recordWalkExclusion(reason: .duplicateOrPause)
             return false
         }
-        return headingDelta(lhs: previousHeading, rhs: currentHeading) >= autoRecordCornerHeadingDelta
+        let canAppend = headingDelta(lhs: previousHeading, rhs: currentHeading) >= autoRecordCornerHeadingDelta
+        if canAppend == false {
+            recordWalkExclusion(reason: .duplicateOrPause)
+        }
+        return canAppend
     }
     /// 지도 카메라를 내 위치 추적 모드로 전환합니다.
     /// - Parameter reason: 추적 전환을 유발한 원인입니다. 전달 시 카메라 변경 로그 원인으로 사용됩니다.
@@ -2789,10 +2938,33 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         walkValueGuidePresentation = walkValueGuidePresentationService.makePresentation(for: .mapHelperReentry)
     }
 
+    /// 설정 탭에서 첫 산책 가이드를 다시 엽니다.
+    func presentWalkValueGuideFromSettings() {
+        walkValueGuideAutoPresentationTask?.cancel()
+        walkValueGuideStateStore.markInitialGuidePresented()
+        walkValueGuidePresentation = walkValueGuidePresentationService.makePresentation(for: .settingsReentry)
+    }
+
     /// 열린 산책 가치 설명 가이드를 닫습니다.
     func dismissWalkValueGuide() {
         walkValueGuideAutoPresentationTask?.cancel()
         walkValueGuidePresentation = nil
+    }
+
+    /// 첫 산책 가이드 Step2에서 고른 설정을 저장합니다.
+    /// - Parameters:
+    ///   - pointRecordModeRawValue: 저장할 포인트 기록 방식 원시 값입니다.
+    ///   - sharingEnabled: 저장할 익명 공유 기본값입니다.
+    func applyWalkValueGuidePreferences(pointRecordModeRawValue: String, sharingEnabled: Bool) {
+        userSessionStore.setWalkPointRecordModeRawValue(pointRecordModeRawValue)
+        walkPointRecordMode = WalkPointRecordMode(rawValue: pointRecordModeRawValue) ?? .manual
+        privacyControlStateStore.persistSharingEnabled(sharingEnabled, for: currentPresenceUserId())
+        dismissWalkValueGuide()
+    }
+
+    /// 첫 산책 가이드 Step2를 스킵할 때 안전 기본값을 저장합니다.
+    func applyWalkValueGuideSafeDefaults() {
+        applyWalkValueGuidePreferences(pointRecordModeRawValue: "manual", sharingEnabled: false)
     }
 
     /// 저장 직후 후속 행동 카드를 닫습니다.
@@ -2835,14 +3007,110 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     }
 
     /// 저장한 산책을 기준으로 후속 행동 카드를 갱신합니다.
-    /// - Parameter savedPolygon: 저장이 완료된 산책 세션입니다.
-    private func updateWalkSavedOutcomePresentation(savedPolygon: Polygon) {
+    /// - Parameters:
+    ///   - savedPolygon: 저장이 완료된 산책 세션입니다.
+    ///   - outcomeSnapshot: 이미 계산된 공통 결과 스냅샷입니다. `nil`이면 현재 런타임 상태로 다시 계산합니다.
+    private func updateWalkSavedOutcomePresentation(
+        savedPolygon: Polygon,
+        outcomeSnapshot: WalkOutcomeCalculationSnapshot? = nil
+    ) {
         let resolvedPetName = availablePets.first(where: { $0.petId == savedPolygon.petId })?.petName
             ?? selectedPetName
+        let resolvedSnapshot = outcomeSnapshot ?? makeWalkOutcomeCalculationSnapshot(
+            pointCount: savedPolygon.locations.count,
+            finalAreaM2: savedPolygon.walkingArea,
+            exclusions: activeWalkExclusionSnapshot,
+            markPointCount: savedPolygon.locations.filter { $0.pointRole == .mark }.count,
+            routePointCount: savedPolygon.locations.filter { $0.pointRole == .route }.count
+        )
         walkSavedOutcomePresentation = walkValueFlowPresentationService.makeSavedOutcomePresentation(
             petName: resolvedPetName,
-            pointCount: savedPolygon.locations.count,
-            areaText: calculatedAreaString(areaSize: savedPolygon.walkingArea, isPyong: false)
+            areaText: calculatedAreaString(areaSize: savedPolygon.walkingArea, isPyong: false),
+            explanation: walkOutcomeExplanationService.makeExplanationDTO(from: resolvedSnapshot)
+        )
+    }
+
+    /// 현재 산책 종료 결과를 공통 계산 스냅샷으로 변환합니다.
+    /// - Parameters:
+    ///   - pointCount: 저장된 포인트 수입니다.
+    ///   - finalAreaM2: 최종 계산된 산책 영역 값입니다.
+    ///   - exclusions: 세션 중 제외된 기록 집계입니다.
+    ///   - markPointCount: 영역 표시 포인트 수입니다.
+    ///   - routePointCount: 이동 경로 포인트 수입니다.
+    ///   - contributionSummaryOverride: 이미 계산된 영역 기여 요약이 있으면 전달합니다.
+    /// - Returns: 종료 직후 카드와 저장된 산책 상세가 함께 읽을 계산 스냅샷입니다.
+    private func makeWalkOutcomeCalculationSnapshot(
+        pointCount: Int,
+        finalAreaM2: Double,
+        exclusions: WalkOutcomeExclusionSnapshot,
+        markPointCount: Int,
+        routePointCount: Int,
+        contributionSummaryOverride: WalkHybridContributionSummary? = nil
+    ) -> WalkOutcomeCalculationSnapshot {
+        let contributionSummary = contributionSummaryOverride ?? walkHybridContributionSummary
+        let contribution = WalkOutcomeContributionSnapshot(
+            markAreaM2: contributionSummary.markAreaM2,
+            routeAreaM2: contributionSummary.routeAreaM2,
+            routeCappedAreaM2: contributionSummary.routeCappedAreaM2,
+            finalAreaM2: finalAreaM2,
+            routeContributionRatio: contributionSummary.routeContributionRatio
+        )
+        let snapshot = walkOutcomeExplanationService.makeCalculationSnapshot(
+            appliedPointCount: pointCount,
+            exclusions: exclusions,
+            contribution: contribution,
+            connections: makeWalkOutcomeConnectionSnapshot(pointCount: pointCount, finalAreaM2: finalAreaM2)
+        )
+        if snapshot.appliedPointCount == 0, snapshot.excludedPointCount == 0 {
+            return walkOutcomeExplanationService.makeLegacyCalculationSnapshot(
+                appliedPointCount: pointCount,
+                areaM2: finalAreaM2,
+                markPointCount: markPointCount,
+                routePointCount: routePointCount
+            )
+        }
+        return snapshot
+    }
+
+    /// 현재 산책 종료 결과를 사용자용 공통 설명 DTO로 변환합니다.
+    /// - Parameters:
+    ///   - pointCount: 저장된 포인트 수입니다.
+    ///   - finalAreaM2: 최종 계산된 산책 영역 값입니다.
+    ///   - exclusions: 세션 중 제외된 기록 집계입니다.
+    ///   - markPointCount: 영역 표시 포인트 수입니다.
+    ///   - routePointCount: 이동 경로 포인트 수입니다.
+    /// - Returns: 종료 직후 카드와 상세 화면이 함께 사용할 결과 설명 DTO입니다.
+    private func makeWalkOutcomeExplanation(
+        pointCount: Int,
+        finalAreaM2: Double,
+        exclusions: WalkOutcomeExclusionSnapshot,
+        markPointCount: Int,
+        routePointCount: Int
+    ) -> WalkOutcomeExplanationDTO {
+        let snapshot = makeWalkOutcomeCalculationSnapshot(
+            pointCount: pointCount,
+            finalAreaM2: finalAreaM2,
+            exclusions: exclusions,
+            markPointCount: markPointCount,
+            routePointCount: routePointCount
+        )
+        return walkOutcomeExplanationService.makeExplanationDTO(from: snapshot)
+    }
+
+    /// 현재 산책 결과가 기록/영역/시즌/미션에 어떻게 이어지는지 상태를 계산합니다.
+    /// - Parameters:
+    ///   - pointCount: 저장된 포인트 수입니다.
+    ///   - finalAreaM2: 최종 계산된 산책 영역 값입니다.
+    /// - Returns: 공통 결과 설명 DTO가 사용할 연결 상태 스냅샷입니다.
+    private func makeWalkOutcomeConnectionSnapshot(
+        pointCount: Int,
+        finalAreaM2: Double
+    ) -> WalkOutcomeConnectionSnapshot {
+        WalkOutcomeConnectionSnapshot(
+            recordStatus: .updated,
+            territoryStatus: finalAreaM2 > 0 ? .updated : .pending,
+            seasonStatus: pointCount > 0 ? .updated : .pending,
+            questStatus: pointCount > 0 ? .pending : .notApplicable
         )
     }
 

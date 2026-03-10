@@ -38,6 +38,10 @@ struct WalkListDetailView: View {
                     onToggleAreaUnit: { isMeter.toggle() }
                 )
 
+                WalkListDetailOutcomeReportSectionView(
+                    explanation: presentationSnapshot.outcomeExplanation
+                )
+
                 WalkListDetailMapSectionView(
                     polygon: polygon,
                     selectedLocation: $selectedLoc,

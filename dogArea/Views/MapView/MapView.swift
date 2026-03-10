@@ -164,6 +164,17 @@ struct MapView : View{
                 onClose: {
                     walkValueGuideSheetPresentation = nil
                     viewModel.dismissWalkValueGuide()
+                },
+                onSkipWithSafeDefaults: {
+                    walkValueGuideSheetPresentation = nil
+                    viewModel.applyWalkValueGuideSafeDefaults()
+                },
+                onApplyPreferences: { pointRecordModeRawValue, sharingEnabled in
+                    walkValueGuideSheetPresentation = nil
+                    viewModel.applyWalkValueGuidePreferences(
+                        pointRecordModeRawValue: pointRecordModeRawValue,
+                        sharingEnabled: sharingEnabled
+                    )
                 }
             )
         })
