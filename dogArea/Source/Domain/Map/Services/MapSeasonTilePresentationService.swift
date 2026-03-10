@@ -64,6 +64,15 @@ struct MapSeasonTileSummaryPresentation: Equatable {
     let legendItems: [MapSeasonTileLegendPresentation]
 }
 
+/// 지도 상단 chrome에 축약해서 노출할 시즌 타일 요약 모델입니다.
+struct MapSeasonTileChromeSummaryPresentation: Equatable {
+    let title: String
+    let occupiedValue: String
+    let maintainedValue: String
+    let topLevelValue: String
+    let accessibilitySummary: String
+}
+
 /// 지도에서 선택한 시즌 타일 하나를 해석해 보여줄 상세 패널 모델입니다.
 struct MapSeasonTileDetailPresentation: Equatable {
     let title: String
@@ -95,6 +104,11 @@ protocol MapSeasonTilePresentationServicing {
     /// - Parameter tiles: 지도에 표시 중인 시즌 타일 셀 표현 배열입니다.
     /// - Returns: 시즌 점령 지도 의미와 현재 개수를 담은 요약 모델입니다.
     func makeSummaryPresentation(from tiles: [MapSeasonTilePresentation]) -> MapSeasonTileSummaryPresentation
+
+    /// 지도 상단 chrome에 사용할 축약 요약을 생성합니다.
+    /// - Parameter tiles: 지도에 표시 중인 시즌 타일 셀 표현 배열입니다.
+    /// - Returns: 상단 chrome에 맞게 압축한 시즌 요약 모델입니다.
+    func makeChromeSummaryPresentation(from tiles: [MapSeasonTilePresentation]) -> MapSeasonTileChromeSummaryPresentation
 
     /// 지도에서 선택한 시즌 타일의 상세 해설 모델을 생성합니다.
     /// - Parameter tile: 사용자가 선택한 시즌 타일 표현입니다.
@@ -169,6 +183,23 @@ final class MapSeasonTilePresentationService: MapSeasonTilePresentationServicing
             occupiedCount: occupiedCount,
             maintainedCount: maintainedCount,
             legendItems: makeLegendPresentations()
+        )
+    }
+
+    /// 지도 상단 chrome에 사용할 축약 요약을 생성합니다.
+    /// - Parameter tiles: 지도에 표시 중인 시즌 타일 셀 표현 배열입니다.
+    /// - Returns: 상단 chrome에 맞게 압축한 시즌 요약 모델입니다.
+    func makeChromeSummaryPresentation(from tiles: [MapSeasonTilePresentation]) -> MapSeasonTileChromeSummaryPresentation {
+        let occupiedCount = tiles.filter { $0.status == .occupied }.count
+        let maintainedCount = tiles.filter { $0.status == .maintained }.count
+        let topLevel = (tiles.map(\.intensityLevel).max() ?? 0) + 1
+
+        return MapSeasonTileChromeSummaryPresentation(
+            title: "시즌 점령 지도",
+            occupiedValue: "\(occupiedCount)칸",
+            maintainedValue: "\(maintainedCount)칸",
+            topLevelValue: "\(topLevel)단계",
+            accessibilitySummary: "점령 \(occupiedCount)칸, 유지 \(maintainedCount)칸, 최고 \(topLevel)단계"
         )
     }
 

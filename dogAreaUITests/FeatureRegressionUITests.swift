@@ -130,23 +130,72 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
 
         let summaryCard = screenElement(identifier: "map.season.summary.card", in: app)
+        let primaryAction = mapPrimaryAction(in: app)
         XCTAssertTrue(waitUntilExists(summaryCard, timeout: 6), "시즌 점령 지도 요약 카드가 노출되지 않았습니다.")
         XCTAssertTrue(
-            waitUntilExists(screenElement(identifier: "map.season.summary.status.occupied", in: app), timeout: 2),
-            "점령 상태 범례가 노출되지 않았습니다."
+            waitUntilExists(screenElement(identifier: "map.season.summary.metric.occupied", in: app), timeout: 2),
+            "점령 핵심값이 노출되지 않았습니다."
         )
         XCTAssertTrue(
-            waitUntilExists(screenElement(identifier: "map.season.summary.status.maintained", in: app), timeout: 2),
-            "유지 상태 범례가 노출되지 않았습니다."
+            waitUntilExists(screenElement(identifier: "map.season.summary.metric.maintained", in: app), timeout: 2),
+            "유지 핵심값이 노출되지 않았습니다."
         )
         XCTAssertTrue(
-            waitUntilExists(screenElement(identifier: "map.season.summary.level.4", in: app), timeout: 2),
-            "강도 4단계 스트립이 노출되지 않았습니다."
+            waitUntilExists(screenElement(identifier: "map.season.summary.metric.topLevel", in: app), timeout: 2),
+            "최고 단계 핵심값이 노출되지 않았습니다."
         )
-        XCTAssertTrue(
-            waitUntilExists(screenElement(identifier: "map.season.summary.relation", in: app), timeout: 2),
-            "산책 반영 관계 설명이 노출되지 않았습니다."
+        XCTAssertTrue(waitUntilExists(primaryAction, timeout: 4), "하단 산책 주행동이 노출되지 않았습니다.")
+        XCTAssertLessThan(
+            summaryCard.frame.height,
+            120,
+            "시즌 점령 지도 요약 카드는 지도 본면을 가리지 않도록 compact chrome 높이를 유지해야 합니다."
         )
+        XCTAssertLessThan(
+            summaryCard.frame.maxY + 32,
+            primaryAction.frame.minY,
+            "시즌 점령 요약 카드와 하단 산책 주행동은 충분히 분리돼야 합니다."
+        )
+        XCTAssertFalse(
+            screenElement(identifier: "map.season.sheet.relation", in: app).exists,
+            "긴 설명 행은 기본 top chrome이 아니라 별도 overview sheet에 있어야 합니다."
+        )
+    }
+
+    /// 시즌 점령 지도 overview sheet가 확장 설명과 범례를 별도 표면으로 제공하는지 검증합니다.
+    func testFeatureRegression_MapSeasonOverviewSheetSurfacesMeaningAndLegend() throws {
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.MapForceSeasonTileVisible"])
+        XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.")
+        XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
+
+        let openOverview = screenElement(identifier: "map.season.summary.openOverview", in: app)
+        XCTAssertTrue(waitUntilHittable(openOverview, timeout: 6), "시즌 점령 지도 overview 진입 버튼이 노출되지 않았습니다.")
+        openOverview.tap()
+
+        let overviewSheet = screenElement(identifier: "map.season.summary.sheet", in: app)
+        XCTAssertTrue(waitUntilExists(overviewSheet, timeout: 4), "시즌 점령 지도 overview sheet가 열리지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(screenElement(identifier: "map.season.sheet.relation", in: app), timeout: 2), "overview sheet에 산책 반영 설명이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(screenElement(identifier: "map.season.sheet.level.4", in: app), timeout: 2), "overview sheet에 4단계 강도 범례가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(screenElement(identifier: "map.season.sheet.openGuide", in: app), timeout: 2), "overview sheet에 시즌 가이드 진입 CTA가 노출되지 않았습니다.")
+    }
+
+    /// 산책 중에는 시즌 정보가 pill로만 유지되고 대형 요약 카드가 지도 본면을 가리지 않는지 검증합니다.
+    func testFeatureRegression_MapSeasonSummaryCollapsesToPillWhileWalking() throws {
+        let app = launchAppForFeatureRegression(
+            extraArguments: [
+                "-UITest.MapForceWalkingState",
+                "-UITest.MapForceSeasonTileVisible"
+            ]
+        )
+        XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.")
+        XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
+
+        let seasonPill = screenElement(identifier: "map.season.summary.pill", in: app)
+        let summaryCard = screenElement(identifier: "map.season.summary.card", in: app)
+        let primaryAction = mapPrimaryAction(in: app)
+
+        XCTAssertTrue(waitUntilExists(seasonPill, timeout: 6), "산책 중 시즌 요약 pill이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(primaryAction, timeout: 4), "산책 중 하단 주행동이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilGone(summaryCard, timeout: 1.5), "산책 중에는 대형 시즌 요약 카드가 사라지고 pill만 유지돼야 합니다.")
     }
 
     /// 시즌 타일을 선택하면 상태 해설과 다음 행동이 포함된 상세 패널이 열리는지 검증합니다.
@@ -161,10 +210,7 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
 
         let hitTarget = screenElement(identifier: "map.season.tile.hitTarget", in: app)
-        let summaryAction = screenElement(identifier: "map.season.summary.openDetail", in: app)
-        let hasTileTarget = waitUntilExists(hitTarget, timeout: 3)
-        let hasSummaryAction = waitUntilExists(summaryAction, timeout: 3)
-        XCTAssertTrue(hasTileTarget || hasSummaryAction, "시즌 타일 상세를 여는 선택 affordance가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(hitTarget, timeout: 3), "시즌 타일 상세를 여는 선택 affordance가 노출되지 않았습니다.")
 
         let detailCard = screenElement(identifier: "map.season.detail.card", in: app)
         XCTAssertTrue(waitUntilExists(detailCard, timeout: 3), "시즌 타일 상세 패널이 열리지 않았습니다.")
