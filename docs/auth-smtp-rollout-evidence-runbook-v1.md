@@ -84,6 +84,7 @@
 10. rollback readiness와 secret rotation 담당자를 기록한다.
 11. `docs/auth-smtp-rollout-evidence-template-v1.md` 형식으로 issue 또는 PR 코멘트에 남긴다.
 12. 코멘트로 올리기 전 `bash scripts/validate_manual_evidence_pack.sh auth-smtp <filled-markdown>` 으로 완결성을 검사한다.
+13. closure comment를 바로 게시하려면 `bash scripts/post_closure_comment_from_evidence.sh auth-smtp --issue 482 <filled-markdown> --negative-guard "..." --negative-provider-event "..." --post`를 사용한다.
 
 ## 실수신 시나리오 규칙
 ### Signup confirmation

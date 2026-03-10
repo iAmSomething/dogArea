@@ -31,6 +31,7 @@
 - Manual evidence helper v1: `docs/manual-evidence-helper-v1.md`
 - Manual evidence validator v1: `docs/manual-evidence-validator-v1.md`
 - Manual closure comment renderer v1: `docs/manual-closure-comment-renderer-v1.md`
+- Manual closure comment poster v1: `docs/manual-closure-comment-poster-v1.md`
 - Widget state CTA taxonomy v1: `docs/widget-state-cta-taxonomy-v1.md`
 - Widget Lock Screen accessory family plan v1: `docs/widget-lock-screen-accessory-family-plan-v1.md`
 - Watch Smart Stack glance plan v1: `docs/watch-smart-stack-glance-plan-v1.md`
@@ -218,6 +219,7 @@
 - blocker evidence helper: `bash scripts/render_manual_evidence_pack.sh <widget|auth-smtp> --write`
 - blocker evidence validator: `bash scripts/validate_manual_evidence_pack.sh <widget|auth-smtp> <filled-markdown>`
 - blocker closure renderer: `bash scripts/render_closure_comment_from_evidence.sh <widget|auth-smtp> ...`
+- blocker closure poster: `bash scripts/post_closure_comment_from_evidence.sh <widget|auth-smtp> --issue <number> ... [--post]`
 - Backend drift / RPC contract 전용 체크: `bash scripts/backend_migration_drift_check.sh`
 - Backend smoke entrypoint: `bash scripts/backend_pr_check.sh`
 - Live Supabase smoke matrix: `DOGAREA_RUN_SUPABASE_SMOKE=1 DOGAREA_TEST_EMAIL=... DOGAREA_TEST_PASSWORD=... bash scripts/backend_pr_check.sh`
