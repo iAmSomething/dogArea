@@ -146,6 +146,8 @@ swift scripts/season_stage2_pipeline_unit_check.swift
 swift scripts/season_canonical_server_state_unit_check.swift
 swift scripts/season_stage3_ui_unit_check.swift
 swift scripts/season_onboarding_help_layer_unit_check.swift
+swift scripts/onboarding_step1_first_walk_understanding_unit_check.swift
+swift scripts/onboarding_step2_recording_sharing_unit_check.swift
 swift scripts/widget_extension_split_unit_check.swift
 swift scripts/territory_status_widget_unit_check.swift
 swift scripts/hotspot_widget_privacy_unit_check.swift
