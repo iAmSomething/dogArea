@@ -14,25 +14,23 @@ struct WalkListView: View {
     @State private var isPresentingUITestDetailPreview = false
     @State private var didPresentUITestDetailPreview = false
 
+    private var topChromeTitle: String {
+        if ProcessInfo.processInfo.arguments.contains("-UITest.WalkListHeaderLongSubtitle") {
+            return "산책 기록과 월별 흐름"
+        }
+        return viewModel.overviewModel.title
+    }
+
+    private var topChromeSubtitle: String {
+        if ProcessInfo.processInfo.arguments.contains("-UITest.WalkListHeaderLongSubtitle") {
+            return "선택한 반려견 기록과 달력 흐름을 한 번에 보고 원하는 날짜 기록으로 바로 이동해보세요"
+        }
+        return viewModel.overviewModel.subtitle
+    }
+
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 18, pinnedViews: [.sectionHeaders]) {
-                NonMapRootHeaderContainer {
-                    WalkListDashboardHeaderView(
-                        overview: viewModel.overviewModel,
-                        calendar: viewModel.calendarModel,
-                        pets: viewModel.pets,
-                        selectedPetId: viewModel.selectedPetId,
-                        onSelectPet: viewModel.selectPet(_:),
-                        onRestoreSelected: viewModel.showSelectedPetRecords,
-                        onPreviousCalendarMonth: viewModel.showPreviousCalendarMonth,
-                        onNextCalendarMonth: viewModel.showNextCalendarMonth,
-                        onSelectCalendarDate: viewModel.selectCalendarDate(_:),
-                        onClearCalendarSelection: viewModel.clearCalendarSelection
-                    )
-                }
-                .padding(.horizontal, 16)
-
                 if authFlow.isGuestMode {
                     guestUpgradeCard
                         .padding(.horizontal, 16)
@@ -47,6 +45,20 @@ struct WalkListView: View {
                             .padding(.horizontal, 16)
                     }
                 }
+
+                WalkListDashboardHeaderView(
+                    overview: viewModel.overviewModel,
+                    calendar: viewModel.calendarModel,
+                    pets: viewModel.pets,
+                    selectedPetId: viewModel.selectedPetId,
+                    onSelectPet: viewModel.selectPet(_:),
+                    onRestoreSelected: viewModel.showSelectedPetRecords,
+                    onPreviousCalendarMonth: viewModel.showPreviousCalendarMonth,
+                    onNextCalendarMonth: viewModel.showNextCalendarMonth,
+                    onSelectCalendarDate: viewModel.selectCalendarDate(_:),
+                    onClearCalendarSelection: viewModel.clearCalendarSelection
+                )
+                .padding(.horizontal, 16)
 
                 ForEach(viewModel.sectionModels) { section in
                     Section {
@@ -80,12 +92,23 @@ struct WalkListView: View {
             }
             .padding(.bottom, 12)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(Color.appTabScaffoldBackground.ignoresSafeArea())
         .refreshable {
             viewModel.fetchModel()
         }
-        .appTabRootScrollLayout(extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding)
+        .appTabRootScrollLayout(
+            extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding,
+            topSafeAreaPadding: 0
+        )
+        .accessibilityIdentifier("screen.walkList.content")
+        .nonMapRootPinnedHeaderLayout(bottomSpacing: 18) {
+            TitleTextView(
+                title: topChromeTitle,
+                type: .MediumTitle,
+                subTitle: topChromeSubtitle,
+                accessibilityIdentifierPrefix: "walklist.header"
+            )
+            .padding(.horizontal, 16)
+        }
         .onAppear {
             viewModel.fetchModel()
             presentWalkDetailPreviewIfNeeded()
@@ -96,7 +119,6 @@ struct WalkListView: View {
         .navigationDestination(isPresented: $isPresentingUITestDetailPreview) {
             WalkListDetailView(model: Self.makeUITestDetailPreviewModel())
         }
-        .accessibilityIdentifier("screen.walkList.content")
     }
 
     var guestUpgradeCard: some View {

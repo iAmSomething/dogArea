@@ -12,29 +12,8 @@ struct WalkListDashboardHeaderView: View {
     let onSelectCalendarDate: (Date) -> Void
     let onClearCalendarSelection: () -> Void
 
-    private var headerTitle: String {
-        if ProcessInfo.processInfo.arguments.contains("-UITest.WalkListHeaderLongSubtitle") {
-            return "산책 기록과 월별 흐름"
-        }
-        return overview.title
-    }
-
-    private var headerSubtitle: String {
-        if ProcessInfo.processInfo.arguments.contains("-UITest.WalkListHeaderLongSubtitle") {
-            return "선택한 반려견 기준 기록, 달력 문맥, 최근 요약을 한 번에 훑고 바로 원하는 날짜 기록으로 이동해보세요"
-        }
-        return overview.subtitle
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            TitleTextView(
-                title: headerTitle,
-                subTitle: headerSubtitle,
-                accessibilityIdentifierPrefix: "walklist.header"
-            )
-            .accessibilityElement(children: .contain)
-
             WalkListPrimaryLoopSummaryCardView(
                 badgeText: overview.primaryLoopBadge,
                 title: overview.primaryLoopTitle,
@@ -89,7 +68,5 @@ struct WalkListDashboardHeaderView: View {
                 onClearSelection: onClearCalendarSelection
             )
         }
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("walklist.header")
     }
 }

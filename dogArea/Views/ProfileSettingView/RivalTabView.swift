@@ -31,10 +31,6 @@ struct RivalTabView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 12) {
-                NonMapRootHeaderContainer {
-                    rivalHeaderSection
-                }
-                statusBadgeRow
                 privacyCard
                 hotspotCard
                 leaderboardCard
@@ -42,7 +38,16 @@ struct RivalTabView: View {
                 footerButtons
             }
         }
-        .appTabRootScrollLayout(extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding)
+        .appTabRootScrollLayout(
+            extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding,
+            topSafeAreaPadding: 0
+        )
+        .nonMapRootTopChrome(bottomSpacing: 12) {
+            VStack(spacing: 8) {
+                rivalHeaderSection
+                statusBadgeRow
+            }
+        }
         .accessibilityIdentifier("screen.rival.content")
         .onAppear {
             viewModel.start()
@@ -122,7 +127,8 @@ struct RivalTabView: View {
             Spacer()
         }
         .padding(.horizontal, 16)
-        .accessibilityElement(children: .contain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(viewModel.sharingBadgeText), \(viewModel.permissionBadgeText)")
         .accessibilityIdentifier("rival.header.badges")
     }
 

@@ -447,18 +447,20 @@ final class FeatureRegressionUITests: XCTestCase {
         let app = launchAppForFeatureRegression(extraArguments: ["-UITest.AutoGuest"])
         XCTAssertTrue(openTab(index: 1, app: app), "산책 목록 탭 진입에 실패했습니다.")
 
-        let header = screenElement(identifier: "walklist.header", in: app)
+        let headerTitle = screenElement(identifier: "walklist.header.title", in: app)
+        let headerSubtitle = screenElement(identifier: "walklist.header.subtitle", in: app)
         let primaryLoopCard = screenElement(identifier: "walklist.primaryLoop.card", in: app)
         let summary = screenElement(identifier: "walklist.summary", in: app)
         let context = screenElement(identifier: "walklist.context", in: app)
         let calendarCard = screenElement(identifier: "walklist.calendar.card", in: app)
         let guestLoginButton = app.buttons["walklist.guest.login"]
 
-        XCTAssertTrue(waitUntilExists(header, timeout: 8), "산책 목록 헤더 허브가 렌더링되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(headerTitle, timeout: 8), "산책 목록 루트 헤더 타이틀이 렌더링되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(headerSubtitle, timeout: 2), "산책 목록 루트 헤더 부제가 렌더링되지 않았습니다.")
         XCTAssertTrue(waitUntilExists(primaryLoopCard, timeout: 3), "산책이 기록의 시작점이라는 허브 카드가 노출되지 않았습니다.")
         XCTAssertTrue(waitUntilExists(summary, timeout: 3), "산책 목록 요약 카드가 노출되지 않았습니다.")
         XCTAssertTrue(waitUntilExists(context, timeout: 3), "산책 목록 필터 문맥 카드가 노출되지 않았습니다.")
-        XCTAssertTrue(waitUntilExists(calendarCard, timeout: 3), "산책 목록 월별 캘린더 카드가 노출되지 않았습니다.")
+        XCTAssertTrue(revealExistingElementByVerticalScroll(calendarCard, app: app, maxSwipes: 2), "산책 목록 월별 캘린더 카드가 노출되지 않았습니다.")
         XCTAssertTrue(
             revealElementByVerticalScroll(guestLoginButton, app: app, maxSwipes: 4),
             "게스트 상태의 로그인 CTA가 노출되지 않았습니다."
@@ -738,6 +740,15 @@ final class FeatureRegressionUITests: XCTestCase {
             title.frame.maxY,
             "홈 헤더 서브타이틀은 타이틀 아래에 안정적으로 배치되어야 합니다."
         )
+
+        let initialTitleMinY = title.frame.minY
+        app.swipeUp()
+        usleep(260_000)
+        XCTAssertLessThanOrEqual(
+            abs(title.frame.minY - initialTitleMinY),
+            6,
+            "홈 루트 헤더는 스크롤 콘텐츠 밖 상단 chrome에 고정되어야 합니다."
+        )
     }
 
     /// 긴 부제와 큰 글자 크기에서도 라이벌 헤더와 첫 배지 행이 status bar 아래에 안정적으로 배치되는지 검증합니다.
@@ -751,15 +762,15 @@ final class FeatureRegressionUITests: XCTestCase {
         )
         XCTAssertTrue(openTab(index: 3, app: app), "라이벌 탭 진입에 실패했습니다.")
 
-        let header = screenElement(identifier: "rival.header.section", in: app)
         let title = screenElement(identifier: "rival.header.title", in: app)
         let subtitle = screenElement(identifier: "rival.header.subtitle", in: app)
-        let badges = screenElement(identifier: "rival.header.badges", in: app)
+        let sharingBadge = app.staticTexts["비공개"].firstMatch
+        let permissionBadge = app.staticTexts["로그인 필요"].firstMatch
 
-        XCTAssertTrue(waitUntilExists(header, timeout: 8), "라이벌 헤더가 노출되지 않았습니다.")
-        XCTAssertTrue(waitUntilExists(title, timeout: 2), "라이벌 헤더 타이틀이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(title, timeout: 8), "라이벌 헤더 타이틀이 노출되지 않았습니다.")
         XCTAssertTrue(waitUntilExists(subtitle, timeout: 2), "라이벌 헤더 서브타이틀이 노출되지 않았습니다.")
-        XCTAssertTrue(waitUntilExists(badges, timeout: 2), "라이벌 헤더 첫 배지 행이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(sharingBadge, timeout: 2), "라이벌 공유 상태 배지가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(permissionBadge, timeout: 2), "라이벌 권한 상태 배지가 노출되지 않았습니다.")
 
         let minimumSafeHeaderOffset: CGFloat = 52
         XCTAssertGreaterThanOrEqual(
@@ -773,9 +784,18 @@ final class FeatureRegressionUITests: XCTestCase {
             "라이벌 헤더 서브타이틀은 타이틀 아래에 안정적으로 배치되어야 합니다."
         )
         XCTAssertGreaterThanOrEqual(
-            badges.frame.minY,
+            min(sharingBadge.frame.minY, permissionBadge.frame.minY),
             subtitle.frame.maxY + 4,
             "라이벌 첫 배지 행은 헤더 부제 아래에 안전 간격을 두고 배치되어야 합니다."
+        )
+
+        let initialTitleMinY = title.frame.minY
+        app.swipeUp()
+        usleep(260_000)
+        XCTAssertLessThanOrEqual(
+            abs(title.frame.minY - initialTitleMinY),
+            6,
+            "라이벌 루트 헤더는 스크롤 콘텐츠 밖 상단 chrome에 고정되어야 합니다."
         )
     }
 
@@ -797,6 +817,14 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertTrue(waitUntilExists(homeSubtitle, timeout: 2), "홈 헤더 서브타이틀이 노출되지 않았습니다.")
         XCTAssertGreaterThanOrEqual(homeTitle.frame.minY, 52, "홈 헤더 타이틀이 status bar 아래에서 시작해야 합니다.")
         XCTAssertGreaterThan(homeSubtitle.frame.maxY, homeTitle.frame.maxY, "홈 헤더 부제가 타이틀 아래에 배치되어야 합니다.")
+        let initialHomeTitleMinY = homeTitle.frame.minY
+        app.swipeUp()
+        usleep(260_000)
+        XCTAssertLessThanOrEqual(
+            abs(homeTitle.frame.minY - initialHomeTitleMinY),
+            6,
+            "홈 루트 헤더는 스크롤 중에도 상단 chrome에 고정되어야 합니다."
+        )
 
         XCTAssertTrue(openTab(index: 4, app: app), "설정 탭 진입에 실패했습니다.")
         let settingsTitle = screenElement(identifier: "settings.header.title", in: app)
@@ -805,9 +833,17 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertTrue(waitUntilExists(settingsSubtitle, timeout: 2), "설정 헤더 서브타이틀이 노출되지 않았습니다.")
         XCTAssertGreaterThanOrEqual(settingsTitle.frame.minY, 52, "설정 헤더 타이틀이 status bar 아래에서 시작해야 합니다.")
         XCTAssertGreaterThan(settingsSubtitle.frame.maxY, settingsTitle.frame.maxY, "설정 헤더 부제가 타이틀 아래에 배치되어야 합니다.")
+        let initialSettingsTitleMinY = settingsTitle.frame.minY
+        app.swipeUp()
+        usleep(260_000)
+        XCTAssertLessThanOrEqual(
+            abs(settingsTitle.frame.minY - initialSettingsTitleMinY),
+            6,
+            "설정 루트 헤더는 스크롤 중에도 상단 chrome에 고정되어야 합니다."
+        )
     }
 
-    /// 산책 기록의 sticky section header가 상단에 고정될 때도 status bar 아래에 유지되는지 검증합니다.
+    /// 산책 기록의 sticky section header가 스크롤 중에도 고정 top chrome 바로 아래에 유지되는지 검증합니다.
     func testFeatureRegression_WalkListStickySectionHeaderStaysBelowStatusBar() throws {
         let app = launchAppForFeatureRegression(
             extraArguments: [
@@ -819,31 +855,43 @@ final class FeatureRegressionUITests: XCTestCase {
         )
 
         XCTAssertTrue(openTab(index: 1, app: app), "산책 기록 탭 진입에 실패했습니다.")
+        let dashboardTitle = screenElement(identifier: "walklist.header.title", in: app)
+        let dashboardSubtitle = screenElement(identifier: "walklist.header.subtitle", in: app)
+        XCTAssertTrue(waitUntilExists(dashboardTitle, timeout: 8), "산책 기록 상단 허브 타이틀이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(dashboardSubtitle, timeout: 2), "산책 기록 상단 허브 부제가 노출되지 않았습니다.")
+        let fixedTopChromeBottom = dashboardSubtitle.frame.maxY + 22
 
-        let sectionHeader = screenElement(identifier: "walklist.section.thisWeek", in: app)
+        let thisWeekHeader = app.staticTexts["이번 주 산책"].firstMatch
+        let previousHeader = app.staticTexts["이전 기록"].firstMatch
+        let revealedSectionHeader: XCUIElement
+        if revealExistingElementByVerticalScroll(thisWeekHeader, app: app, maxSwipes: 6) {
+            revealedSectionHeader = thisWeekHeader
+        } else {
+            revealedSectionHeader = previousHeader
+        }
         XCTAssertTrue(
-            revealExistingElementByVerticalScroll(sectionHeader, app: app, maxSwipes: 6),
+            revealedSectionHeader.exists || revealExistingElementByVerticalScroll(revealedSectionHeader, app: app, maxSwipes: 2),
             "산책 기록 섹션 헤더를 찾지 못했습니다."
         )
 
         for _ in 0..<8 {
-            if sectionHeader.frame.minY <= 96 {
+            if revealedSectionHeader.frame.minY <= fixedTopChromeBottom + 28 {
                 break
             }
             app.swipeUp()
             usleep(260_000)
         }
 
-        XCTAssertTrue(sectionHeader.exists, "sticky section header가 접근성 트리에서 사라지면 안 됩니다.")
-        XCTAssertLessThanOrEqual(
-            sectionHeader.frame.minY,
-            96,
-            "섹션 헤더가 sticky 상태로 상단에 고정되어야 합니다."
-        )
+        XCTAssertTrue(revealedSectionHeader.exists, "sticky section header가 접근성 트리에서 사라지면 안 됩니다.")
         XCTAssertGreaterThanOrEqual(
-            sectionHeader.frame.minY,
-            52,
-            "sticky section header가 status bar 아래에 유지되어야 합니다."
+            revealedSectionHeader.frame.minY,
+            fixedTopChromeBottom - 2,
+            "sticky section header는 고정 top chrome 아래로 침범하면 안 됩니다."
+        )
+        XCTAssertLessThanOrEqual(
+            revealedSectionHeader.frame.minY,
+            fixedTopChromeBottom + 28,
+            "섹션 헤더가 sticky 상태로 고정 top chrome 바로 아래에 머물러야 합니다."
         )
     }
 

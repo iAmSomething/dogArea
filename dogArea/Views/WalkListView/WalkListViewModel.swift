@@ -265,29 +265,73 @@ final class WalkListViewModel: ObservableObject {
             return nil
         }
 
+        let referenceDate = Date()
+        let currentWeekStart = currentCalendar.dateInterval(of: .weekOfYear, for: referenceDate)?.start
+            ?? currentCalendar.startOfDay(for: referenceDate)
+
         return [
             makePreviewRecord(
                 id: "11111111-aaaa-bbbb-cccc-111111111111",
-                start: DateComponents(calendar: currentCalendar, year: 2026, month: 3, day: 8, hour: 9, minute: 20).date ?? Date(),
+                start: makeUITestPreviewRecordDate(
+                    fromWeekAnchor: currentWeekStart,
+                    dayOffset: 0,
+                    hour: 9,
+                    minute: 20
+                ),
                 duration: 1_260,
                 area: 7_420,
                 coordinateSeed: (37.5665, 126.9780)
             ),
             makePreviewRecord(
                 id: "22222222-aaaa-bbbb-cccc-222222222222",
-                start: DateComponents(calendar: currentCalendar, year: 2026, month: 3, day: 7, hour: 23, minute: 50).date ?? Date(),
+                start: makeUITestPreviewRecordDate(
+                    fromWeekAnchor: currentWeekStart,
+                    dayOffset: -2,
+                    hour: 18,
+                    minute: 10
+                ),
                 duration: 1_800,
                 area: 5_860,
                 coordinateSeed: (37.5658, 126.9771)
             ),
             makePreviewRecord(
                 id: "33333333-aaaa-bbbb-cccc-333333333333",
-                start: DateComponents(calendar: currentCalendar, year: 2026, month: 3, day: 5, hour: 18, minute: 5).date ?? Date(),
+                start: makeUITestPreviewRecordDate(
+                    fromWeekAnchor: currentWeekStart,
+                    dayOffset: -5,
+                    hour: 7,
+                    minute: 40
+                ),
                 duration: 980,
                 area: 4_240,
                 coordinateSeed: (37.5649, 126.9761)
             )
         ]
+    }
+
+    /// UI 테스트용 산책 기록 샘플 날짜를 현재 주차 기준으로 계산합니다.
+    /// - Parameters:
+    ///   - weekAnchor: 현재 주차의 시작 시각입니다.
+    ///   - dayOffset: 주 시작 기준으로 이동할 일 수입니다. 음수면 이전 주 기록을 만듭니다.
+    ///   - hour: 생성할 샘플 시각의 시(hour) 값입니다.
+    ///   - minute: 생성할 샘플 시각의 분(minute) 값입니다.
+    /// - Returns: 현재 달력 기준으로 안정적인 주차 섹션을 만들 수 있는 샘플 날짜입니다.
+    private static func makeUITestPreviewRecordDate(
+        fromWeekAnchor weekAnchor: Date,
+        dayOffset: Int,
+        hour: Int,
+        minute: Int
+    ) -> Date {
+        let shiftedDay = currentCalendar.date(byAdding: .day, value: dayOffset, to: weekAnchor) ?? weekAnchor
+        let components = currentCalendar.dateComponents([.year, .month, .day], from: shiftedDay)
+        return DateComponents(
+            calendar: currentCalendar,
+            year: components.year,
+            month: components.month,
+            day: components.day,
+            hour: hour,
+            minute: minute
+        ).date ?? shiftedDay
     }
 
     /// UI 테스트용 샘플 산책 기록 한 건을 생성합니다.

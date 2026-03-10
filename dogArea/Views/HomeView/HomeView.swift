@@ -186,26 +186,17 @@ struct HomeView: View {
                 homeDashboardContent
             }
         )
+        .nonMapRootTopChrome {
+            homeHeaderSection
+                .padding(.horizontal, 16)
+        }
     }
 
     /// 홈 대시보드의 카드와 배너 콘텐츠를 순서대로 렌더링합니다.
     /// - Returns: 홈 스크롤 내부에 배치되는 메인 콘텐츠 뷰입니다.
     private var homeDashboardContent: some View {
         VStack(spacing: 16) {
-            Color.clear
-                .frame(height: 0)
-                .id("home.scroll.top")
-            GeometryReader { proxy in
-                Color.clear.preference(
-                    key: HomeScrollOffsetPreferenceKey.self,
-                    value: proxy.frame(in: .named("home.scroll")).minY
-                )
-            }
-            .frame(height: 0)
-
-            NonMapRootHeaderContainer {
-                homeHeaderSection
-            }
+            homeScrollAnchorMarkers
             homeWalkPrimaryLoopSection
             homeGuestDataUpgradeSection
             homeStatusBannerSection
@@ -526,7 +517,7 @@ struct HomeView: View {
                     onClose: { homeMissionGuidePresentation = nil }
                 )
             }
-            .appTabRootScrollLayout(extraBottomPadding: 12)
+            .appTabRootScrollLayout(extraBottomPadding: 12, topSafeAreaPadding: 0)
     }
 
     /// 홈 대시보드 상단 인사말과 레벨 배지를 렌더링합니다.
@@ -536,6 +527,21 @@ struct HomeView: View {
             levelBadgeText: levelBadgeText,
             selectedPetName: headerSelectedPetName
         )
+    }
+
+    private var homeScrollAnchorMarkers: some View {
+        VStack(spacing: 0) {
+            Color.clear
+                .frame(height: 0)
+                .id("home.scroll.top")
+            GeometryReader { proxy in
+                Color.clear.preference(
+                    key: HomeScrollOffsetPreferenceKey.self,
+                    value: proxy.frame(in: .named("home.scroll")).minY
+                )
+            }
+            .frame(height: 0)
+        }
     }
 
     /// 홈에서 선택 반려견을 빠르게 전환하는 칩 목록입니다.
