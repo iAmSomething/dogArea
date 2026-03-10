@@ -121,6 +121,10 @@ struct HotspotStatusWidgetEntryView: View {
 
     let entry: HotspotStatusTimelineEntry
 
+    private var layoutBudget: WidgetSurfaceLayoutBudget {
+        .resolve(for: family)
+    }
+
     var body: some View {
         Group {
             switch entry.snapshot.status {
@@ -155,19 +159,16 @@ struct HotspotStatusWidgetEntryView: View {
             surface: .hotspot(radiusPreset: currentPreset)
         )
         return VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top, spacing: 8) {
-                WidgetStatusBadge(title: guide.badgeTitle, color: guide.badgeColor)
-                Spacer(minLength: 0)
-                presetBadge(currentPreset)
-            }
+            badgeStrip(primaryTitle: guide.badgeTitle, primaryColor: guide.badgeColor, preset: currentPreset)
             Text(guide.headline)
                 .font(.headline)
+                .lineLimit(layoutBudget.headlineLineLimit)
             Text(guide.detail)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .lineLimit(3)
+                .lineLimit(layoutBudget.detailLineLimit)
             Spacer(minLength: 2)
-            WidgetStateCTAView(cta: guide.cta)
+            WidgetStateCTAView(cta: guide.cta, budget: layoutBudget)
         }
     }
 
@@ -178,20 +179,16 @@ struct HotspotStatusWidgetEntryView: View {
             fallbackMessage: entry.snapshot.message
         )
         return VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top, spacing: 8) {
-                WidgetStatusBadge(title: guide.badgeTitle, color: guide.badgeColor)
-                Spacer(minLength: 0)
-                presetBadge(currentPreset)
-            }
+            badgeStrip(primaryTitle: guide.badgeTitle, primaryColor: guide.badgeColor, preset: currentPreset)
             Text(guide.headline)
                 .font(.headline)
-                .lineLimit(2)
+                .lineLimit(layoutBudget.headlineLineLimit)
             Text(guide.detail)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .lineLimit(3)
+                .lineLimit(layoutBudget.detailLineLimit)
             Spacer(minLength: 2)
-            WidgetStateCTAView(cta: guide.cta, tint: .blue)
+            WidgetStateCTAView(cta: guide.cta, budget: layoutBudget, tint: .blue)
         }
     }
 
@@ -199,9 +196,18 @@ struct HotspotStatusWidgetEntryView: View {
         let summary = entry.snapshot.summary ?? .zero(radiusPreset: entry.snapshot.radiusPreset)
         return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 8) {
-                WidgetStatusBadge(title: statusBadgeTitle(summary), color: statusBadgeColor(summary))
-                Spacer(minLength: 0)
-                presetBadge(summary.radiusPreset)
+                badgeStrip(
+                    primaryTitle: statusBadgeTitle(summary),
+                    primaryColor: statusBadgeColor(summary),
+                    preset: summary.radiusPreset
+                )
+                if layoutBudget.prefersCompactFormatting == false {
+                    Spacer(minLength: 0)
+                    Text(updatedAtText)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
             }
 
             if family == .systemSmall {
@@ -215,9 +221,10 @@ struct HotspotStatusWidgetEntryView: View {
                     Text(guide.detail)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
-                        .lineLimit(2)
+                        .lineLimit(layoutBudget.detailLineLimit)
                     WidgetStateCTAView(
                         cta: guide.cta,
+                        budget: layoutBudget,
                         tint: entry.snapshot.status == .syncDelayed ? .red : .orange
                     )
                 }
@@ -225,7 +232,7 @@ struct HotspotStatusWidgetEntryView: View {
                 Text(entry.snapshot.message)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .lineLimit(2)
+                    .lineLimit(layoutBudget.detailLineLimit)
             }
         }
     }
@@ -247,6 +254,30 @@ struct HotspotStatusWidgetEntryView: View {
         case .guestLocked, .emptyData, .memberReady, .privacyGuarded:
             return nil
         }
+    }
+
+    /// 상태 배지와 반경 preset 배지를 family 예산에 맞춰 함께 렌더링합니다.
+    /// - Parameters:
+    ///   - primaryTitle: 좌측 대표 배지 제목입니다.
+    ///   - primaryColor: 좌측 대표 배지 색상입니다.
+    ///   - preset: 우측에 함께 표시할 반경 preset입니다.
+    /// - Returns: badge 최대 개수 규칙이 적용된 상단 배지 행입니다.
+    private func badgeStrip(
+        primaryTitle: String,
+        primaryColor: Color,
+        preset: HotspotWidgetRadiusPreset
+    ) -> some View {
+        WidgetBadgeStripView(
+            badges: [
+                WidgetBadgeDescriptor(id: "status", title: primaryTitle, color: primaryColor),
+                WidgetBadgeDescriptor(
+                    id: "preset",
+                    title: preset.shortLabel,
+                    color: Color.secondary.opacity(0.12)
+                )
+            ],
+            budget: layoutBudget
+        )
     }
 
     /// 반경 preset을 간단한 배지 형태로 렌더링합니다.
@@ -277,11 +308,7 @@ struct HotspotStatusWidgetEntryView: View {
             Text(signalDistributionSummary(summary))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
-                .lineLimit(2)
-            Text(policyFootnote(summary))
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
+                .lineLimit(layoutBudget.detailLineLimit)
         }
     }
 
@@ -295,7 +322,7 @@ struct HotspotStatusWidgetEntryView: View {
             Text(summary.radiusPreset.widgetSummaryDetail)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
-                .lineLimit(2)
+                .lineLimit(layoutBudget.detailLineLimit)
             HStack(spacing: 8) {
                 stageChip(title: "높음", isActive: summary.highCellCount > 0, tint: .red)
                 stageChip(title: "보통", isActive: summary.mediumCellCount > 0, tint: .orange)
@@ -304,17 +331,17 @@ struct HotspotStatusWidgetEntryView: View {
             Text(signalDistributionSummary(summary))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
-                .lineLimit(2)
+                .lineLimit(layoutBudget.detailLineLimit)
             if let stalePriority = summary.radiusPreset.stalePriorityDescription {
                 Text(stalePriority)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .lineLimit(2)
+                    .lineLimit(layoutBudget.detailLineLimit)
             }
             Text(policyFootnote(summary))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
-                .lineLimit(2)
+                .lineLimit(layoutBudget.detailLineLimit)
         }
     }
 
@@ -325,14 +352,13 @@ struct HotspotStatusWidgetEntryView: View {
     ///   - tint: 활성 상태일 때 사용할 강조 색상입니다.
     /// - Returns: 단계 상태를 나타내는 캡슐 배지 뷰입니다.
     private func stageChip(title: String, isActive: Bool, tint: Color) -> some View {
-        Text(title)
-            .font(.caption2.weight(.semibold))
-            .foregroundStyle(isActive ? tint : .secondary)
-            .padding(.vertical, 6)
-            .padding(.horizontal, 10)
-            .background((isActive ? tint.opacity(0.18) : Color.secondary.opacity(0.12)))
-            .clipShape(Capsule())
-            .accessibilityLabel(isActive ? "\(title) 단계 감지됨" : "\(title) 단계 없음")
+        WidgetStatusBadge(
+            title: title,
+            color: isActive ? tint.opacity(0.18) : Color.secondary.opacity(0.12),
+            budget: layoutBudget
+        )
+        .foregroundStyle(isActive ? tint : .secondary)
+        .accessibilityLabel(isActive ? "\(title) 단계 감지됨" : "\(title) 단계 없음")
     }
 
     /// 익명 단계 분포를 숫자 없이 요약 문구로 변환합니다.

@@ -1,16 +1,146 @@
+import WidgetKit
 import SwiftUI
+
+enum WidgetSurfaceLayoutTier {
+    case compact
+    case standard
+}
+
+struct WidgetSurfaceLayoutBudget: Equatable {
+    let tier: WidgetSurfaceLayoutTier
+    let verticalSpacing: CGFloat
+    let badgeSpacing: CGFloat
+    let maxBadgeCount: Int
+    let headlineLineLimit: Int
+    let detailLineLimit: Int
+    let statusLineLimit: Int
+    let ctaLineLimit: Int
+    let ctaMinHeight: CGFloat
+    let ctaMaxHeight: CGFloat
+    let metricTileMinHeight: CGFloat
+    let metricTileVerticalPadding: CGFloat
+    let metricTileHorizontalPadding: CGFloat
+
+    static let compact = WidgetSurfaceLayoutBudget(
+        tier: .compact,
+        verticalSpacing: 6,
+        badgeSpacing: 6,
+        maxBadgeCount: 2,
+        headlineLineLimit: 1,
+        detailLineLimit: 1,
+        statusLineLimit: 1,
+        ctaLineLimit: 1,
+        ctaMinHeight: 34,
+        ctaMaxHeight: 38,
+        metricTileMinHeight: 48,
+        metricTileVerticalPadding: 6,
+        metricTileHorizontalPadding: 8
+    )
+
+    static let standard = WidgetSurfaceLayoutBudget(
+        tier: .standard,
+        verticalSpacing: 8,
+        badgeSpacing: 8,
+        maxBadgeCount: 2,
+        headlineLineLimit: 2,
+        detailLineLimit: 2,
+        statusLineLimit: 2,
+        ctaLineLimit: 2,
+        ctaMinHeight: 40,
+        ctaMaxHeight: 46,
+        metricTileMinHeight: 58,
+        metricTileVerticalPadding: 8,
+        metricTileHorizontalPadding: 9
+    )
+
+    /// WidgetKit family에 대응하는 공통 레이아웃 예산을 반환합니다.
+    /// - Parameter family: 현재 위젯이 렌더링되는 family입니다.
+    /// - Returns: small은 compact, 그 외 지원 family는 standard 예산을 반환합니다.
+    static func resolve(for family: WidgetFamily) -> WidgetSurfaceLayoutBudget {
+        family == .systemSmall ? .compact : .standard
+    }
+
+    var prefersCompactFormatting: Bool {
+        tier == .compact
+    }
+
+    /// 현재 family 예산에 맞는 경과 시간 문자열을 생성합니다.
+    /// - Parameter elapsedSeconds: 경과 시간(초)입니다.
+    /// - Returns: compact family면 축약 문자열을, 아니면 전체 시간 문자열을 반환합니다.
+    func elapsedText(_ elapsedSeconds: Int) -> String {
+        prefersCompactFormatting
+            ? WidgetFormatting.formattedElapsedCompact(elapsedSeconds)
+            : WidgetFormatting.formattedElapsed(elapsedSeconds)
+    }
+
+    /// 현재 family 예산에 맞는 면적 문자열을 생성합니다.
+    /// - Parameter areaM2: 원본 면적(`m²`)입니다.
+    /// - Returns: compact family면 축약 면적 문자열을, 아니면 기본 면적 문자열을 반환합니다.
+    func areaText(_ areaM2: Double) -> String {
+        prefersCompactFormatting
+            ? WidgetFormatting.formattedCompactArea(areaM2)
+            : WidgetFormatting.formattedArea(areaM2)
+    }
+}
+
+struct WidgetBadgeDescriptor: Identifiable {
+    let id: String
+    let title: String
+    let color: Color
+
+    init(id: String? = nil, title: String, color: Color) {
+        self.id = id ?? title
+        self.title = title
+        self.color = color
+    }
+}
 
 struct WidgetStatusBadge: View {
     let title: String
     let color: Color
+    var budget: WidgetSurfaceLayoutBudget = .standard
 
     var body: some View {
         Text(title)
             .font(.caption2.weight(.semibold))
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
+            .lineLimit(1)
+            .minimumScaleFactor(0.78)
+            .padding(.horizontal, budget.prefersCompactFormatting ? 7 : 8)
+            .padding(.vertical, budget.prefersCompactFormatting ? 3 : 4)
             .background(color)
             .clipShape(Capsule())
+    }
+}
+
+struct WidgetBadgeStripView: View {
+    let badges: [WidgetBadgeDescriptor]
+    let budget: WidgetSurfaceLayoutBudget
+
+    private var visibleBadges: [WidgetBadgeDescriptor] {
+        Array(badges.prefix(budget.maxBadgeCount))
+    }
+
+    private var overflowCount: Int {
+        max(0, badges.count - budget.maxBadgeCount)
+    }
+
+    var body: some View {
+        HStack(spacing: budget.badgeSpacing) {
+            ForEach(visibleBadges) { badge in
+                WidgetStatusBadge(
+                    title: badge.title,
+                    color: badge.color,
+                    budget: budget
+                )
+            }
+            if overflowCount > 0 {
+                WidgetStatusBadge(
+                    title: "+\(overflowCount)",
+                    color: Color.secondary.opacity(0.14),
+                    budget: budget
+                )
+            }
+        }
     }
 }
 
@@ -203,15 +333,51 @@ enum WidgetStatePresentationGuide {
 
 struct WidgetStateCTAView: View {
     let cta: WidgetStateCTAContent
+    var budget: WidgetSurfaceLayoutBudget = .standard
     var tint: Color = .orange
 
     var body: some View {
         Label(cta.title, systemImage: cta.systemImage)
-            .font(.caption2.weight(.semibold))
+            .font(budget.prefersCompactFormatting ? .caption2.weight(.semibold) : .caption.weight(.semibold))
+            .lineLimit(budget.ctaLineLimit)
+            .minimumScaleFactor(0.82)
+            .frame(
+                maxWidth: .infinity,
+                minHeight: budget.ctaMinHeight,
+                maxHeight: budget.ctaMaxHeight,
+                alignment: .leading
+            )
             .foregroundStyle(tint)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(cta.accessibilityLabel)
             .accessibilityHint(cta.accessibilityHint)
+    }
+}
+
+struct WidgetMetricTileView: View {
+    let title: String
+    let value: String
+    let tint: Color
+    let budget: WidgetSurfaceLayoutBudget
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            Text(value)
+                .font(.title3.weight(.bold))
+                .monospacedDigit()
+                .foregroundStyle(tint)
+                .lineLimit(1)
+                .minimumScaleFactor(0.82)
+        }
+        .frame(maxWidth: .infinity, minHeight: budget.metricTileMinHeight, alignment: .leading)
+        .padding(.vertical, budget.metricTileVerticalPadding)
+        .padding(.horizontal, budget.metricTileHorizontalPadding)
+        .background(tint.opacity(0.12))
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
 

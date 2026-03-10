@@ -57,7 +57,10 @@ assertTrue(services.contains("goalContextService.makeGoalContext"), "territory w
 assertTrue(services.contains("current.contextKey == contextKey"), "failure path should guard cached territory snapshots by context key")
 
 assertTrue(widget.contains("goalSummarySection"), "territory widget should render a next-goal summary section")
-assertTrue(widget.contains("WidgetFormatting.formattedArea"), "territory widget should format remaining/goal area")
+assertTrue(
+    widget.contains("layoutBudget.areaText") || widget.contains("WidgetFormatting.formattedArea"),
+    "territory widget should format remaining/goal area through shared budget or direct formatter"
+)
 assertTrue(widget.contains("WidgetFormatting.formattedPercent"), "territory widget should show goal progress percentage")
 assertTrue(widget.contains("다음 목표"), "territory widget medium layout should expose next-goal copy")
 

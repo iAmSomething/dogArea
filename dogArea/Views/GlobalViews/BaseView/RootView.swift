@@ -455,23 +455,11 @@ struct RootView: View {
             return
         }
         pendingWalkWidgetRoute = nil
-        mapViewModelStore.prepareIfNeeded()
         selectedTab = 2
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-            #if DEBUG
-            print("[WidgetAction] posting walkWidgetActionRequested kind=\(route.kind.rawValue) actionId=\(route.actionId)")
-            #endif
-            NotificationCenter.default.post(
-                name: .walkWidgetActionRequested,
-                object: nil,
-                userInfo: [
-                    "kind": route.kind.rawValue,
-                    "actionId": route.actionId,
-                    "source": route.source,
-                    "contextId": route.contextId as Any
-                ]
-            )
-        }
+        mapViewModelStore.queueWidgetWalkAction(route)
+        #if DEBUG
+        print("[WidgetAction] queued walk action kind=\(route.kind.rawValue) actionId=\(route.actionId)")
+        #endif
     }
 
     /// 산책 위젯 액션 상태를 최신 스냅샷에 반영합니다.

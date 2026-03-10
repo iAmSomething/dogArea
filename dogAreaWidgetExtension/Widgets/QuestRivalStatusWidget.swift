@@ -46,6 +46,10 @@ struct QuestRivalStatusWidgetEntryView: View {
 
     let entry: QuestRivalStatusTimelineEntry
 
+    private var layoutBudget: WidgetSurfaceLayoutBudget {
+        .resolve(for: family)
+    }
+
     var body: some View {
         Group {
             switch entry.snapshot.status {
@@ -66,17 +70,20 @@ struct QuestRivalStatusWidgetEntryView: View {
             surface: .questRival
         )
         return VStack(alignment: .leading, spacing: 8) {
-            WidgetStatusBadge(title: guide.badgeTitle, color: guide.badgeColor)
+            WidgetStatusBadge(title: guide.badgeTitle, color: guide.badgeColor, budget: layoutBudget)
             Text(guide.headline)
                 .font(.headline)
+                .lineLimit(layoutBudget.headlineLineLimit)
             Text(guide.detail)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .lineLimit(3)
+                .lineLimit(layoutBudget.detailLineLimit)
             Spacer(minLength: 2)
             Button(intent: OpenQuestDetailIntent()) {
-                Label(guide.cta.title, systemImage: guide.cta.systemImage)
-                    .frame(maxWidth: .infinity)
+                actionButtonLabel(
+                    title: guide.cta.title,
+                    systemImage: guide.cta.systemImage
+                )
             }
             .buttonStyle(.bordered)
             .accessibilityLabel(guide.cta.accessibilityLabel)
@@ -91,18 +98,20 @@ struct QuestRivalStatusWidgetEntryView: View {
             fallbackMessage: entry.snapshot.message
         )
         return VStack(alignment: .leading, spacing: 8) {
-            WidgetStatusBadge(title: guide.badgeTitle, color: guide.badgeColor)
+            WidgetStatusBadge(title: guide.badgeTitle, color: guide.badgeColor, budget: layoutBudget)
             Text(guide.headline)
                 .font(.headline)
-                .lineLimit(2)
+                .lineLimit(layoutBudget.headlineLineLimit)
             Text(guide.detail)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .lineLimit(3)
+                .lineLimit(layoutBudget.detailLineLimit)
             Spacer(minLength: 2)
             Button(intent: OpenQuestDetailIntent()) {
-                Label(guide.cta.title, systemImage: guide.cta.systemImage)
-                    .frame(maxWidth: .infinity)
+                actionButtonLabel(
+                    title: guide.cta.title,
+                    systemImage: guide.cta.systemImage
+                )
             }
             .buttonStyle(.bordered)
             .accessibilityLabel(guide.cta.accessibilityLabel)
@@ -114,7 +123,7 @@ struct QuestRivalStatusWidgetEntryView: View {
         let summary = entry.snapshot.summary ?? .zero
         return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 8) {
-                WidgetStatusBadge(title: statusBadgeTitle, color: statusBadgeColor)
+                WidgetStatusBadge(title: statusBadgeTitle, color: statusBadgeColor, budget: layoutBudget)
                 Spacer(minLength: 0)
                 Text(updatedAtText)
                     .font(.caption2)
@@ -131,7 +140,7 @@ struct QuestRivalStatusWidgetEntryView: View {
             Text(actionStateGuide?.detail ?? entry.snapshot.message)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
-                .lineLimit(2)
+                .lineLimit(layoutBudget.detailLineLimit)
         }
     }
 
@@ -161,7 +170,7 @@ struct QuestRivalStatusWidgetEntryView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(summary.questTitle)
                 .font(.caption)
-                .lineLimit(2)
+                .lineLimit(layoutBudget.headlineLineLimit)
             ProgressView(value: summary.questProgressRatio)
                 .tint(.orange)
             HStack {
@@ -176,7 +185,7 @@ struct QuestRivalStatusWidgetEntryView: View {
             Text(nextActionCaption(summary))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
-                .lineLimit(2)
+                .lineLimit(layoutBudget.detailLineLimit)
             primaryActionButton(summary: summary, prominent: true)
         }
     }
@@ -193,7 +202,7 @@ struct QuestRivalStatusWidgetEntryView: View {
                         .foregroundStyle(.secondary)
                     Text(summary.questTitle)
                         .font(.headline)
-                        .lineLimit(1)
+                        .lineLimit(layoutBudget.headlineLineLimit)
                 }
                 Spacer(minLength: 8)
                 VStack(alignment: .trailing, spacing: 2) {
@@ -227,7 +236,7 @@ struct QuestRivalStatusWidgetEntryView: View {
                 Text(nextActionCaption(summary))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .lineLimit(2)
+                    .lineLimit(layoutBudget.detailLineLimit)
             }
             HStack(spacing: 8) {
                 primaryActionButton(summary: summary, prominent: true)
@@ -442,89 +451,94 @@ struct QuestRivalStatusWidgetEntryView: View {
         case .claimQuestReward:
             if prominent {
                 Button(intent: ClaimQuestRewardIntent()) {
-                    Label(title, systemImage: actionSymbolName(for: kind))
-                        .frame(maxWidth: .infinity)
+                    actionButtonLabel(title: title, systemImage: actionSymbolName(for: kind))
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.orange)
             } else {
                 Button(intent: ClaimQuestRewardIntent()) {
-                    Label(title, systemImage: actionSymbolName(for: kind))
-                        .frame(maxWidth: .infinity)
+                    actionButtonLabel(title: title, systemImage: actionSymbolName(for: kind))
                 }
                 .buttonStyle(.bordered)
             }
         case .openQuestDetail:
             if prominent {
                 Button(intent: OpenQuestDetailIntent()) {
-                    Label(title, systemImage: actionSymbolName(for: kind))
-                        .frame(maxWidth: .infinity)
+                    actionButtonLabel(title: title, systemImage: actionSymbolName(for: kind))
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.orange)
             } else {
                 Button(intent: OpenQuestDetailIntent()) {
-                    Label(title, systemImage: actionSymbolName(for: kind))
-                        .frame(maxWidth: .infinity)
+                    actionButtonLabel(title: title, systemImage: actionSymbolName(for: kind))
                 }
                 .buttonStyle(.bordered)
             }
         case .openQuestRecovery:
             if prominent {
                 Button(intent: OpenQuestRecoveryIntent()) {
-                    Label(title, systemImage: actionSymbolName(for: kind))
-                        .frame(maxWidth: .infinity)
+                    actionButtonLabel(title: title, systemImage: actionSymbolName(for: kind))
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.orange)
             } else {
                 Button(intent: OpenQuestRecoveryIntent()) {
-                    Label(title, systemImage: actionSymbolName(for: kind))
-                        .frame(maxWidth: .infinity)
+                    actionButtonLabel(title: title, systemImage: actionSymbolName(for: kind))
                 }
                 .buttonStyle(.bordered)
             }
         case .openRivalTab:
             Button(intent: OpenRivalTabIntent()) {
-                Label(title, systemImage: actionSymbolName(for: kind))
-                    .frame(maxWidth: .infinity)
+                actionButtonLabel(title: title, systemImage: actionSymbolName(for: kind))
             }
             .buttonStyle(.bordered)
         case .openWalkTab:
             Button(intent: OpenWalkTabIntent()) {
-                Label(title, systemImage: actionSymbolName(for: kind))
-                    .frame(maxWidth: .infinity)
+                actionButtonLabel(title: title, systemImage: actionSymbolName(for: kind))
             }
             .buttonStyle(.bordered)
         case .startWalk:
             if prominent {
                 Button(intent: StartWalkIntent()) {
-                    Label(title, systemImage: actionSymbolName(for: kind))
-                        .frame(maxWidth: .infinity)
+                    actionButtonLabel(title: title, systemImage: actionSymbolName(for: kind))
                 }
                 .buttonStyle(.borderedProminent)
             } else {
                 Button(intent: StartWalkIntent()) {
-                    Label(title, systemImage: actionSymbolName(for: kind))
-                        .frame(maxWidth: .infinity)
+                    actionButtonLabel(title: title, systemImage: actionSymbolName(for: kind))
                 }
                 .buttonStyle(.bordered)
             }
         case .endWalk:
             if prominent {
                 Button(intent: EndWalkIntent()) {
-                    Label(title, systemImage: actionSymbolName(for: kind))
-                        .frame(maxWidth: .infinity)
+                    actionButtonLabel(title: title, systemImage: actionSymbolName(for: kind))
                 }
                 .buttonStyle(.borderedProminent)
             } else {
                 Button(intent: EndWalkIntent()) {
-                    Label(title, systemImage: actionSymbolName(for: kind))
-                        .frame(maxWidth: .infinity)
+                    actionButtonLabel(title: title, systemImage: actionSymbolName(for: kind))
                 }
                 .buttonStyle(.bordered)
             }
         }
+    }
+
+    /// family 예산에 맞는 CTA 버튼 라벨을 생성합니다.
+    /// - Parameters:
+    ///   - title: 버튼 제목입니다.
+    ///   - systemImage: 라벨에 함께 노출할 SF Symbol 이름입니다.
+    /// - Returns: 줄 수와 높이 예산이 반영된 CTA 라벨 뷰입니다.
+    private func actionButtonLabel(title: String, systemImage: String) -> some View {
+        Label(title, systemImage: systemImage)
+            .font(layoutBudget.prefersCompactFormatting ? .caption.weight(.semibold) : .callout.weight(.semibold))
+            .lineLimit(layoutBudget.ctaLineLimit)
+            .minimumScaleFactor(0.82)
+            .frame(
+                maxWidth: .infinity,
+                minHeight: layoutBudget.ctaMinHeight,
+                maxHeight: layoutBudget.ctaMaxHeight
+            )
     }
 
     /// 퀘스트 진행값을 `현재/목표` 문자열로 변환합니다.
