@@ -12,6 +12,7 @@
 - provider / DNS / secret 체크리스트: `docs/auth-smtp-provider-selection-dns-secret-checklist-v1.md`
 - auth abuse guard 정책: `docs/auth-abuse-guard-policy-v1.md`
 - auth observability 기준: `docs/auth-mail-observability-metric-alert-request-key-v1.md`
+- live-send validation matrix: `docs/auth-smtp-live-send-validation-matrix-v1.md`
 - 복붙용 기록 템플릿: `docs/auth-smtp-rollout-evidence-template-v1.md`
 
 ## 최소 증적 세트
@@ -57,28 +58,29 @@
 
 ## 증적 수집 순서
 1. sender domain과 provider를 확정한다.
-2. provider dashboard에서 domain verification 상태를 캡처한다.
-3. DNS 검사 결과를 정리한다.
+2. `docs/auth-smtp-live-send-validation-matrix-v1.md`에서 대상 케이스를 고른다.
+3. provider dashboard에서 domain verification 상태를 캡처한다.
+4. DNS 검사 결과를 정리한다.
    - SPF pass
    - DKIM verified
    - DMARC record 존재
-4. `Supabase Dashboard > Auth > Emails > SMTP Settings` 반영 상태를 캡처한다.
-5. 운영값을 템플릿에 기록한다.
+5. `Supabase Dashboard > Auth > Emails > SMTP Settings` 반영 상태를 캡처한다.
+6. 운영값을 템플릿에 기록한다.
    - `email_sent`
    - `auth.email.max_frequency`
-6. 아래 3개 실수신 시나리오를 실제로 실행한다.
+7. 아래 3개 실수신 시나리오를 실제로 실행한다.
    - signup confirmation
    - password reset
    - email change
-7. 각 시나리오마다 아래를 남긴다.
+8. 각 시나리오마다 아래를 남긴다.
    - request time
    - recipient mask/hash
    - provider accepted 여부
    - provider_message_id
    - mailbox 수신 여부
-8. bounce/reject/deferred가 있으면 provider event 캡처를 남긴다.
-9. rollback readiness와 secret rotation 담당자를 기록한다.
-10. `docs/auth-smtp-rollout-evidence-template-v1.md` 형식으로 issue 또는 PR 코멘트에 남긴다.
+9. bounce/reject/deferred가 있으면 provider event 캡처를 남긴다.
+10. rollback readiness와 secret rotation 담당자를 기록한다.
+11. `docs/auth-smtp-rollout-evidence-template-v1.md` 형식으로 issue 또는 PR 코멘트에 남긴다.
 
 ## 실수신 시나리오 규칙
 ### Signup confirmation
