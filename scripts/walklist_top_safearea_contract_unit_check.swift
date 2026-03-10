@@ -39,12 +39,12 @@ assertTrue(
     "AppTabScaffold should not use safeAreaPadding for the root top reservation anymore"
 )
 assertTrue(
-    walkList.contains("private enum WalkListRootLayoutMetrics"),
-    "WalkListView should centralize walk list-specific top content spacing"
+    walkList.contains("NonMapRootHeaderContainer {\n                    WalkListDashboardHeaderView("),
+    "WalkListView should wrap the dashboard header in NonMapRootHeaderContainer"
 )
 assertTrue(
-    walkList.contains("static let contentTopPadding"),
-    "WalkListView should keep only a small contentTopPadding value"
+    !walkList.contains("WalkListRootLayoutMetrics"),
+    "WalkListView should not keep a per-screen root header top padding enum"
 )
 assertTrue(
     walkList.contains(".appTabRootScrollLayout(extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding)"),
@@ -55,8 +55,8 @@ assertTrue(
     "WalkListView should keep the pinned section header structure covered by this contract"
 )
 assertTrue(
-    walkList.contains(".padding(.top, WalkListRootLayoutMetrics.contentTopPadding)"),
-    "WalkListView content spacing should remain separate from the root top reservation"
+    !walkList.contains(".padding(.top, WalkListRootLayoutMetrics.contentTopPadding)"),
+    "WalkListView should not reintroduce a dedicated root header top padding"
 )
 assertTrue(
     sectionHeader.contains(".accessibilityIdentifier(model.accessibilityIdentifier ?? \"\")"),
@@ -77,8 +77,9 @@ assertTrue(
 assertTrue(
     contractDoc.contains("safeAreaInset(edge: .top)") &&
     contractDoc.contains("WalkListSectionHeaderView") &&
-    contractDoc.contains("walklist.section.thisWeek"),
-    "WalkList top safe area contract doc should document the scaffold, sticky header, and QA target"
+    contractDoc.contains("walklist.section.thisWeek") &&
+    contractDoc.contains("NonMapRootHeaderContainer"),
+    "WalkList top safe area contract doc should document the scaffold, reusable header container, sticky header, and QA target"
 )
 assertTrue(
     nonMapDoc.contains("safeAreaInset(edge: .top)") &&

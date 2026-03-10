@@ -7,12 +7,12 @@
 ## 원인 정리
 - 산책 기록 탭은 `ScrollView + LazyVStack(... pinnedViews: [.sectionHeaders])` 구조를 사용한다.
 - 이 구조에서 루트 상단 예약을 `safeAreaPadding(.top)`에만 의존하면, sticky section header가 상단에 pin 될 때 status bar와 충돌할 수 있다.
-- 따라서 루트 상단 예약은 `safeAreaInset(edge: .top)`이 맡고, 산책 기록 화면은 `contentTopPadding` 수준의 내부 리듬만 책임져야 한다.
+- 따라서 루트 상단 예약은 `safeAreaInset(edge: .top)`이 맡고, 산책 기록 화면의 첫 허브 시작 간격은 `NonMapRootHeaderContainer`가 맡아야 한다.
 
 ## 계약
 - 루트 상단 예약은 `AppTabScaffold.appTabRootScrollLayout`의 `safeAreaInset(edge: .top)`이 담당한다.
 - 산책 기록 화면은 `.appTabRootScrollLayout(extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding)`을 사용한다.
-- 산책 기록 화면 내부의 추가 상단 간격은 `WalkListRootLayoutMetrics.contentTopPadding` 한 곳에서만 조정한다.
+- 산책 기록의 첫 허브 블록은 `NonMapRootHeaderContainer`로 시작한다.
 - `WalkListSectionHeaderView`는 sticky pin 상태에서도 같은 top safe area 예약 안에서 머물러야 한다.
 - 섹션 헤더 배경은 `Color.appTabScaffoldBackground`를 유지해 status bar 아래 카드/셀과 시각적으로 겹쳐 보이지 않게 한다.
 
@@ -21,7 +21,7 @@
   - non-map 루트 상단 예약 공간을 제공한다.
   - pinned section header까지 포함한 루트 safe area 계약을 담당한다.
 - `WalkListView`
-  - 허브와 섹션 사이의 내부 리듬을 조정한다.
+  - 첫 허브를 `NonMapRootHeaderContainer`로 감싸 공통 시작 간격을 사용한다.
   - 루트 top inset override나 임시 큰 패딩으로 문제를 덮지 않는다.
 - `WalkListSectionHeaderView`
   - sticky 상태에서도 읽기 쉬운 배경/간격/접근성 식별자를 유지한다.

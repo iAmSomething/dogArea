@@ -18,8 +18,8 @@
 - 제목/부제/배지는 접근성 식별자를 제공해 회귀 테스트가 실제 프레임을 검증할 수 있어야 한다.
 
 ## 구현 계약
-- `HomeView`는 `HomeRootLayoutMetrics`로 콘텐츠 간격만 관리한다.
-- `homeDashboardContent`의 상단 간격은 콘텐츠 리듬 용도만 담당한다.
+- `HomeView`의 첫 커스텀 헤더는 `NonMapRootHeaderContainer`로 시작한다.
+- 홈은 화면 전용 `contentTopPadding` enum을 다시 두지 않는다.
 - 홈 루트 scroll layout은 공통 non-map 계약을 그대로 사용한다.
 
 ```swift

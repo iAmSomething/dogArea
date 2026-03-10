@@ -37,12 +37,12 @@ assertTrue(
     "AppTabScaffold should expose the shared non-map root top inset"
 )
 assertTrue(
-    homeView.contains("private enum HomeRootLayoutMetrics"),
-    "HomeView should centralize home-specific layout metrics"
+    homeView.contains("NonMapRootHeaderContainer {\n                homeHeaderSection"),
+    "HomeView should start its first custom header with NonMapRootHeaderContainer"
 )
 assertTrue(
-    homeView.contains("static let contentTopPadding"),
-    "HomeView should keep content spacing independent from the root safe area contract"
+    !homeView.contains("HomeRootLayoutMetrics"),
+    "HomeView should not keep a screen-specific root header top padding enum"
 )
 assertTrue(
     homeView.contains(".appTabRootScrollLayout(extraBottomPadding: 12)"),
@@ -53,8 +53,8 @@ assertTrue(
     "HomeView should not override the root top inset directly"
 )
 assertTrue(
-    homeView.contains(".padding(.top, HomeRootLayoutMetrics.contentTopPadding)"),
-    "HomeView content spacing should remain a smaller content-only top padding"
+    !homeView.contains(".padding(.top, HomeRootLayoutMetrics.contentTopPadding)"),
+    "HomeView should not reintroduce a dedicated root header top padding"
 )
 assertTrue(
     headerView.contains("home.header.section"),
@@ -83,8 +83,9 @@ assertTrue(
 assertTrue(
     doc.contains("공통 scaffold 책임") &&
     doc.contains("홈 헤더 책임") &&
-    doc.contains("AppTabLayoutMetrics.nonMapRootTopSafeAreaPadding"),
-    "Home safe area contract doc should document scaffold/header ownership and the shared non-map contract"
+    doc.contains("AppTabLayoutMetrics.nonMapRootTopSafeAreaPadding") &&
+    doc.contains("NonMapRootHeaderContainer"),
+    "Home safe area contract doc should document scaffold/header ownership and the reusable non-map header container"
 )
 assertTrue(
     readme.contains("docs/home-top-safearea-contract-v1.md"),

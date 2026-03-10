@@ -37,12 +37,12 @@ assertTrue(
     "AppTabScaffold should expose the shared non-map root top inset"
 )
 assertTrue(
-    rivalView.contains("private enum RivalRootLayoutMetrics"),
-    "RivalTabView should centralize rival-specific layout metrics"
+    rivalView.contains("NonMapRootHeaderContainer {\n                    rivalHeaderSection"),
+    "RivalTabView should wrap the first custom header in NonMapRootHeaderContainer"
 )
 assertTrue(
-    rivalView.contains("static let contentTopPadding"),
-    "RivalTabView should keep content spacing independent from the root safe area contract"
+    !rivalView.contains("RivalRootLayoutMetrics"),
+    "RivalTabView should not keep a screen-specific root header top padding enum"
 )
 assertTrue(
     rivalView.contains(".appTabRootScrollLayout(extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding)"),
@@ -53,8 +53,8 @@ assertTrue(
     "RivalTabView should not override the root top inset directly"
 )
 assertTrue(
-    rivalView.contains(".padding(.top, RivalRootLayoutMetrics.contentTopPadding)"),
-    "RivalTabView content spacing should remain a smaller content-only top padding"
+    !rivalView.contains(".padding(.top, RivalRootLayoutMetrics.contentTopPadding)"),
+    "RivalTabView should not reintroduce a dedicated root header top padding"
 )
 assertTrue(
     rivalView.contains("-UITest.RivalHeaderLongSubtitle"),
@@ -92,8 +92,9 @@ assertTrue(
     doc.contains("공통 scaffold 책임") &&
     doc.contains("라이벌 헤더 책임") &&
     doc.contains("공통 TitleTextView 책임") &&
-    doc.contains("AppTabLayoutMetrics.nonMapRootTopSafeAreaPadding"),
-    "Rival safe area contract doc should document scaffold, rival header, shared title responsibilities, and the shared non-map contract"
+    doc.contains("AppTabLayoutMetrics.nonMapRootTopSafeAreaPadding") &&
+    doc.contains("NonMapRootHeaderContainer"),
+    "Rival safe area contract doc should document scaffold, rival header, shared title responsibilities, and the reusable non-map header container"
 )
 assertTrue(
     readme.contains("docs/rival-top-safearea-contract-v1.md"),

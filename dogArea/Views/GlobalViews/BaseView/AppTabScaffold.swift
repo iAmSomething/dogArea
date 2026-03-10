@@ -8,6 +8,7 @@ enum AppTabBarVisibility: Equatable {
 enum AppTabLayoutMetrics {
     static let defaultTabBarReservedHeight: CGFloat = 124
     static let nonMapRootTopSafeAreaPadding: CGFloat = 18
+    static let nonMapRootHeaderTopSpacing: CGFloat = 12
     static let mapOverlayTopExtraSpacing: CGFloat = 8
     static let minimumBottomPadding: CGFloat = 12
     static let defaultScrollExtraBottomPadding: CGFloat = 12
@@ -148,6 +149,34 @@ struct AppTabRootContainer<Content: View>: View {
                     .accessibilityIdentifier(accessibilityIdentifier)
             }
         }
+    }
+}
+
+struct NonMapRootHeaderContainer<Content: View>: View {
+    private let topSpacing: CGFloat
+    private let bottomSpacing: CGFloat
+    private let content: Content
+
+    /// 비지도 탭 루트의 첫 커스텀 헤더 블록에 공통 시작 간격을 적용합니다.
+    /// - Parameters:
+    ///   - topSpacing: 루트 safe area 예약 이후 헤더 앞에 확보할 공통 상단 간격입니다.
+    ///   - bottomSpacing: 헤더 블록 아래에 유지할 공통 하단 간격입니다.
+    ///   - content: 루트 헤더 영역에 렌더링할 커스텀 헤더 콘텐츠입니다.
+    init(
+        topSpacing: CGFloat = AppTabLayoutMetrics.nonMapRootHeaderTopSpacing,
+        bottomSpacing: CGFloat = 0,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.topSpacing = topSpacing
+        self.bottomSpacing = bottomSpacing
+        self.content = content()
+    }
+
+    var body: some View {
+        content
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, topSpacing)
+            .padding(.bottom, bottomSpacing)
     }
 }
 

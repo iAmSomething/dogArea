@@ -1,9 +1,5 @@
 import SwiftUI
 
-private enum RivalRootLayoutMetrics {
-    static let contentTopPadding: CGFloat = 6
-}
-
 struct RivalTabView: View {
     @EnvironmentObject private var authFlow: AuthFlowCoordinator
     @StateObject private var viewModel = RivalTabViewModel()
@@ -35,7 +31,9 @@ struct RivalTabView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 12) {
-                rivalHeaderSection
+                NonMapRootHeaderContainer {
+                    rivalHeaderSection
+                }
                 statusBadgeRow
                 privacyCard
                 hotspotCard
@@ -43,7 +41,6 @@ struct RivalTabView: View {
                 safetyInfoCard
                 footerButtons
             }
-            .padding(.top, RivalRootLayoutMetrics.contentTopPadding)
         }
         .appTabRootScrollLayout(extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding)
         .accessibilityIdentifier("screen.rival.content")

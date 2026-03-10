@@ -7,10 +7,6 @@
 
 import SwiftUI
 
-private enum HomeRootLayoutMetrics {
-    static let contentTopPadding: CGFloat = 12
-}
-
 struct HomeView: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @Environment(\.scenePhase) private var scenePhase
@@ -207,7 +203,9 @@ struct HomeView: View {
             }
             .frame(height: 0)
 
-            homeHeaderSection
+            NonMapRootHeaderContainer {
+                homeHeaderSection
+            }
             homeWalkPrimaryLoopSection
             homeGuestDataUpgradeSection
             homeStatusBannerSection
@@ -221,7 +219,6 @@ struct HomeView: View {
             recentConqueredCard
         }
         .padding(.horizontal, 16)
-        .padding(.top, HomeRootLayoutMetrics.contentTopPadding)
     }
 
     /// 게스트 데이터 이관 리포트 카드를 필요할 때만 렌더링합니다.
