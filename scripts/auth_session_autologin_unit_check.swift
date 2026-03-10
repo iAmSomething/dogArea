@@ -42,7 +42,11 @@ assertTrue(auth.contains("persist(tokenSession:"), "auth session store should pe
 assertTrue(auth.contains("currentTokenSession()"), "auth session store should read token sessions")
 assertTrue(auth.contains("clearTokenSession()"), "auth session store should clear only token sessions")
 assertTrue(auth.contains("AuthCredentialResult"), "auth layer should return credential result containing session")
-assertTrue(auth.contains("sessionStore.persist(tokenSession:"), "auth use case should store token session on login")
+assertTrue(
+    auth.contains("sessionStore.persistAuthenticatedSession(identity: result.credential.identity, tokenSession: tokenSession)") ||
+    auth.contains("sessionStore.persist(tokenSession:"),
+    "auth use case should store token session on login"
+)
 
 assertTrue(
     infra.contains("resolvedAuthorizationHeader"),
@@ -50,7 +54,11 @@ assertTrue(
 )
 assertTrue(infra.contains("grant_type=refresh_token"), "supabase http client should refresh expired access tokens")
 assertTrue(infra.contains("SupabaseRefreshTokenRequestDTO"), "supabase http client should send refresh token payload")
-assertTrue(infra.contains("authSessionStore.persist(tokenSession:"), "refresh flow should persist rotated token session")
+assertTrue(
+    infra.contains("authSessionStore.persistAuthenticatedSession(identity: refreshed.identity, tokenSession: tokenSession)") ||
+    infra.contains("authSessionStore.persist(tokenSession:"),
+    "refresh flow should persist rotated token session"
+)
 assertTrue(infra.contains(".syncAuthRefreshSucceeded"), "refresh flow should track syncAuthRefreshSucceeded metric")
 assertTrue(infra.contains(".syncAuthRefreshFailed"), "refresh flow should track syncAuthRefreshFailed metric")
 assertTrue(defaults.contains("case syncAuthRefreshSucceeded = \"sync_auth_refresh_succeeded\""), "metric enum should define sync_auth_refresh_succeeded")

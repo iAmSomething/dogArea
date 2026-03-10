@@ -449,7 +449,6 @@ struct SupabaseHTTPClient {
         let refreshOutcome = await refreshCredential(config: config, refreshToken: currentSession.refreshToken)
         switch refreshOutcome {
         case .success(let refreshed):
-            authSessionStore.persist(refreshed.identity)
             guard let tokenSession = refreshed.tokenSession else {
                 return .unrecovered(
                     statusCode: statusCode,
@@ -457,7 +456,7 @@ struct SupabaseHTTPClient {
                     accessToken: accessToken
                 )
             }
-            authSessionStore.persist(tokenSession: tokenSession)
+            authSessionStore.persistAuthenticatedSession(identity: refreshed.identity, tokenSession: tokenSession)
 
             var retryRequest = request
             retryRequest.setValue("Bearer \(tokenSession.accessToken)", forHTTPHeaderField: "Authorization")
@@ -651,9 +650,8 @@ struct SupabaseHTTPClient {
         let refreshOutcome = await refreshCredential(config: config, refreshToken: current.refreshToken)
         switch refreshOutcome {
         case .success(let refreshed):
-            authSessionStore.persist(refreshed.identity)
             if let tokenSession = refreshed.tokenSession {
-                authSessionStore.persist(tokenSession: tokenSession)
+                authSessionStore.persistAuthenticatedSession(identity: refreshed.identity, tokenSession: tokenSession)
                 metricTracker.track(
                     .syncAuthRefreshSucceeded,
                     userKey: refreshed.identity.userId
