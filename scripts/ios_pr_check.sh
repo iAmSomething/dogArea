@@ -53,6 +53,7 @@ swift scripts/home_quest_reminder_same_day_suppression_unit_check.swift
 swift scripts/release_regression_checklist_unit_check.swift
 swift scripts/epic_21_closure_evidence_unit_check.swift
 swift scripts/epic_123_closure_evidence_unit_check.swift
+swift scripts/epic_420_closure_evidence_unit_check.swift
 swift scripts/issue_566_closure_evidence_unit_check.swift
 swift scripts/issue_533_closure_evidence_unit_check.swift
 swift scripts/issue_532_closure_evidence_unit_check.swift

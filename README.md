@@ -149,6 +149,7 @@
 - 릴리즈 회귀 실행 리포트(2026-02-26): `docs/release-regression-report-2026-02-26.md`
 - 에픽 #21 클로저 증적 스냅샷 v1: `docs/epic-21-closure-evidence-v1.md`
 - 에픽 #123 클로저 증적 스냅샷 v1: `docs/epic-123-closure-evidence-v1.md`
+- 에픽 #420 클로저 증적 스냅샷 v1: `docs/epic-420-closure-evidence-v1.md`
 - 이슈 #566 클로저 증적 스냅샷 v1: `docs/issue-566-closure-evidence-v1.md`
 - 이슈 #533 클로저 증적 스냅샷 v1: `docs/issue-533-closure-evidence-v1.md`
 - 이슈 #532 클로저 증적 스냅샷 v1: `docs/issue-532-closure-evidence-v1.md`

@@ -8,6 +8,7 @@ echo "[dogArea-backend] running integration harness structure checks"
 swift scripts/supabase_integration_harness_unit_check.swift
 swift scripts/backend_contract_versioning_unit_check.swift
 swift scripts/backend_edge_observability_unit_check.swift
+swift scripts/epic_420_closure_evidence_unit_check.swift
 swift scripts/backend_edge_failure_dashboard_unit_check.swift
 swift scripts/backend_edge_auth_unification_unit_check.swift
 swift scripts/backend_edge_auth_inventory_unit_check.swift
