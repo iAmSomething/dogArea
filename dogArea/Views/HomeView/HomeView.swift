@@ -35,6 +35,7 @@ struct HomeView: View {
     @State private var seasonResetBannerVisible: Bool = false
     @State private var seasonGuidePresentation: SeasonGuidePresentation? = nil
     @State private var homeMissionGuidePresentation: HomeMissionGuidePresentation? = nil
+    @State private var isWalkPrimaryLoopGuidePresented: Bool = false
     @State private var isHomeMissionGuideCoachVisible: Bool = false
     @State private var areaMilestonePop: Bool = false
     @State private var questWidgetTab: HomeQuestWidgetTab = .daily
@@ -274,7 +275,10 @@ struct HomeView: View {
 
     /// 홈 상단에서 산책이 제품의 기본 루프라는 설명 카드를 렌더링합니다.
     private var homeWalkPrimaryLoopSection: some View {
-        HomeWalkPrimaryLoopCardView(presentation: walkPrimaryLoopPresentation)
+        HomeWalkPrimaryLoopCardView(
+            presentation: walkPrimaryLoopPresentation,
+            onOpenGuide: { isWalkPrimaryLoopGuidePresented = true }
+        )
     }
 
     /// 날씨 기반 미션 카드와 보조 상태 카드를 한 섹션으로 렌더링합니다.
@@ -505,6 +509,12 @@ struct HomeView: View {
                 HomeWeatherGuidanceSheetView(
                     presentation: viewModel.weatherGuidancePresentation,
                     onClose: { isWeatherGuidancePresented = false }
+                )
+            }
+            .sheet(isPresented: $isWalkPrimaryLoopGuidePresented) {
+                HomeWalkPrimaryLoopGuideSheetView(
+                    presentation: walkPrimaryLoopPresentation,
+                    onClose: { isWalkPrimaryLoopGuidePresented = false }
                 )
             }
             .sheet(item: $seasonGuidePresentation) { presentation in

@@ -6,12 +6,9 @@
 - 실내 미션은 삭제하지 않고 `예외 상황의 보조 흐름`으로 명확히 내린다.
 
 ## 제품 결정
-- 홈 상단에는 `산책이 이 앱의 시작점이에요` 카드가 먼저 나온다.
-- 이 카드는 최소 4가지를 직접 설명한다.
-  - 산책을 시작하면 경로와 영역이 기록된다.
-  - 산책 시간과 기록이 누적된다.
-  - 산책 결과가 목표, 미션, 시즌 해석에 연결된다.
-  - 실내 미션은 악천후/예외 상황에서만 열리는 보조 흐름이다.
+- 홈 상단에는 `산책이 이 앱의 시작점이에요` compact summary 카드가 먼저 나온다.
+- 홈 기본 루프 카드는 `badge + 짧은 요약 + compact metric 3개 + 보조 흐름 한 줄 + 설명 보기 버튼`까지만 상시 노출한다.
+- 장문 설명과 pillar 3개는 `설명 보기`로 여는 sheet에만 둔다.
 - 홈의 실내 미션 영역은 `보조 흐름` 라벨과 함께 노출한다.
 - 지도 시작 전 상태에는 CTA를 가리지 않는 compact 설명 카드를 시작 덱 안에 둔다.
 - 지도 산책 중 상태 문구는 `산책 진행 중`이 아니라 `경로·영역 기록 중`으로 읽히게 한다.
@@ -22,7 +19,7 @@
 ### 홈
 1. 인사말
 2. 선택 반려견 문맥
-3. 산책 기본 루프 설명 카드
+3. 산책 기본 루프 compact summary 카드
 4. 주간/시즌/날씨 정보
 5. 실내 미션 보조 영역
 
@@ -39,6 +36,7 @@
 
 ## 자동 검증
 - `FeatureRegressionUITests/testFeatureRegression_HomeAndMapPrioritizeWalkingAsPrimaryLoop`
+- `FeatureRegressionUITests/testFeatureRegression_HomeWalkPrimaryLoopCardStaysCompactAndOpensGuideOnDemand`
 - `FeatureRegressionUITests/testFeatureRegression_WalkListHeaderSurfacesOverviewAndContextCards`
 - `FeatureRegressionUITests/testFeatureRegression_WalkListDetailClarifiesSummaryAndActionHierarchy`
 - `swift scripts/walk_primary_loop_information_hierarchy_unit_check.swift`

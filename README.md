@@ -60,6 +60,7 @@
 - 홈 날씨 반려견 가이드 시트 v1: `docs/home-weather-pet-guidance-sheet-v1.md`
 - 날씨 canonical server state v1: `docs/weather-canonical-server-state-v1.md`
 - 산책 기본 루프 정보 위계 v1: `docs/walk-primary-loop-information-hierarchy-v1.md`
+- 이슈 #610 #611 #612 클로저 증적 스냅샷 v1: `docs/issues-610-611-612-closure-evidence-v1.md`
 - 산책 가치 설명/저장 후 연결 흐름 v1: `docs/walk-value-flow-onboarding-v1.md`
 - 홈 미션 정의/등장 이유/완료 방식 도움말 레이어 v1: `docs/home-quest-help-layer-v1.md`
 - 홈 미션 자동 기록/직접 체크 구분 가이드 v1: `docs/home-quest-tracking-mode-guideline-v1.md`

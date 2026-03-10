@@ -682,6 +682,32 @@ final class FeatureRegressionUITests: XCTestCase {
         )
     }
 
+    /// 홈 기본 루프 카드가 compact 상태를 유지하고, 자세한 설명은 명시적 진입 이후에만 여는지 검증합니다.
+    func testFeatureRegression_HomeWalkPrimaryLoopCardStaysCompactAndOpensGuideOnDemand() throws {
+        let app = launchAppForFeatureRegression()
+        XCTAssertTrue(openTab(index: 0, app: app), "홈 탭 진입에 실패했습니다.")
+
+        let card = screenElement(identifier: "home.walkPrimaryLoop.card", in: app)
+        XCTAssertTrue(waitUntilExists(card, timeout: 8), "홈 기본 루프 카드가 노출되지 않았습니다.")
+
+        XCTAssertFalse(
+            app.staticTexts["경로와 영역이 기록돼요"].exists,
+            "장문 pillar 설명은 compact 카드 본문에 상시 노출되면 안 됩니다."
+        )
+
+        let openGuide = screenElement(identifier: "home.walkPrimaryLoop.openGuide", in: app)
+        XCTAssertTrue(waitUntilExists(openGuide, timeout: 3), "기본 루프 가이드 진입 버튼이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilHittable(openGuide, timeout: 2), "기본 루프 가이드 진입 버튼이 탭 가능한 상태가 아닙니다.")
+        openGuide.tap()
+
+        let guideSheet = screenElement(identifier: "home.walkPrimaryLoop.guide.sheet", in: app)
+        XCTAssertTrue(waitUntilExists(guideSheet, timeout: 4), "기본 루프 가이드 sheet가 열려야 합니다.")
+        XCTAssertTrue(
+            app.staticTexts["경로와 영역이 기록돼요"].exists,
+            "가이드 sheet에서는 산책 기록 흐름의 상세 설명을 읽을 수 있어야 합니다."
+        )
+    }
+
     /// 긴 이름과 큰 글자 크기에서도 홈 헤더가 status bar 아래에 안정적으로 배치되는지 검증합니다.
     func testFeatureRegression_HomeHeaderStaysBelowStatusBarWithLongNames() throws {
         let app = launchAppForFeatureRegression(
