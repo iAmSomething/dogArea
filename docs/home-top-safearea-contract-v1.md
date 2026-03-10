@@ -8,9 +8,9 @@
 ## 책임 분리
 
 ### 공통 scaffold 책임
-- 탭 루트 화면의 상단 safe area 예약은 `AppTabScaffold.appTabRootScrollLayout`이 맡는다.
+- 탭 루트 화면의 상단 safe area 예약과 고정 top chrome 삽입은 `AppTabScaffold`가 맡는다.
 - 홈은 비지도 탭 공통 계약 `AppTabLayoutMetrics.nonMapRootTopSafeAreaPadding`을 그대로 따른다.
-- status bar 충돌 방지는 루트 scroll layout 단계에서 해결한다.
+- status bar 충돌 방지는 루트 scroll layout과 `nonMapRootTopChrome` 단계에서 해결한다.
 
 ### 홈 헤더 책임
 - `HomeHeaderSectionView`는 상단 inset을 직접 계산하지 않는다.
@@ -18,12 +18,13 @@
 - 제목/부제/배지는 접근성 식별자를 제공해 회귀 테스트가 실제 프레임을 검증할 수 있어야 한다.
 
 ## 구현 계약
-- `HomeView`의 첫 커스텀 헤더는 `NonMapRootHeaderContainer`로 시작한다.
+- `HomeView`의 첫 커스텀 헤더는 `nonMapRootTopChrome`으로 scroll content 밖 상단에 고정한다.
 - 홈은 화면 전용 `contentTopPadding` enum을 다시 두지 않는다.
-- 홈 루트 scroll layout은 공통 non-map 계약을 그대로 사용한다.
+- 홈 루트 scroll layout은 빈 상단 inset을 추가로 만들지 않도록 `topSafeAreaPadding: 0`을 사용한다.
 
 ```swift
-.appTabRootScrollLayout(extraBottomPadding: 12)
+.appTabRootScrollLayout(extraBottomPadding: 12, topSafeAreaPadding: 0)
+.nonMapRootTopChrome { ... }
 ```
 
 - 헤더 텍스트는 다음을 유지한다.
@@ -47,3 +48,4 @@
 - 홈 첫 진입 시 헤더 타이틀/부제가 status bar 아래에 위치한다.
 - 긴 사용자명/반려견 이름과 큰 글자 크기에서도 헤더가 겹치지 않는다.
 - 홈 복귀/스크롤/상세 복귀 뒤에도 상단 위치 기준이 흔들리지 않는다.
+- 스크롤 중에도 홈 헤더는 본문과 분리된 상단 chrome 위치를 유지한다.

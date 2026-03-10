@@ -9,6 +9,7 @@ enum AppTabLayoutMetrics {
     static let defaultTabBarReservedHeight: CGFloat = 124
     static let nonMapRootTopSafeAreaPadding: CGFloat = 18
     static let nonMapRootHeaderTopSpacing: CGFloat = 12
+    static let nonMapRootChromeBottomSpacing: CGFloat = 16
     static let mapOverlayTopExtraSpacing: CGFloat = 8
     static let minimumBottomPadding: CGFloat = 12
     static let defaultScrollExtraBottomPadding: CGFloat = 12
@@ -180,6 +181,83 @@ struct NonMapRootHeaderContainer<Content: View>: View {
     }
 }
 
+struct NonMapRootTopChromeContainer<Content: View>: View {
+    private let topSpacing: CGFloat
+    private let bottomSpacing: CGFloat
+    private let content: Content
+
+    /// 비지도 탭 루트의 고정 상단 chrome을 safe area 아래에 배치합니다.
+    /// - Parameters:
+    ///   - topSpacing: 상태 바 safe area 뒤에 헤더 콘텐츠가 시작할 상단 간격입니다.
+    ///   - bottomSpacing: 고정 헤더와 스크롤 본문 사이에 유지할 하단 간격입니다.
+    ///   - content: 스크롤 바깥 상단 chrome에 고정할 헤더 콘텐츠입니다.
+    init(
+        topSpacing: CGFloat = AppTabLayoutMetrics.nonMapRootHeaderTopSpacing,
+        bottomSpacing: CGFloat = AppTabLayoutMetrics.nonMapRootChromeBottomSpacing,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.topSpacing = topSpacing
+        self.bottomSpacing = bottomSpacing
+        self.content = content()
+    }
+
+    var body: some View {
+        NonMapRootHeaderContainer(
+            topSpacing: topSpacing,
+            bottomSpacing: bottomSpacing
+        ) {
+            content
+        }
+        .padding(.top, AppTabLayoutMetrics.nonMapRootTopSafeAreaPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.appTabScaffoldBackground)
+    }
+}
+
+private struct NonMapRootTopChromeModifier<Chrome: View>: ViewModifier {
+    let topSpacing: CGFloat
+    let bottomSpacing: CGFloat
+    let chrome: Chrome
+
+    /// 실제 헤더 chrome을 safe area inset으로 삽입해 스크롤 콘텐츠와 구조적으로 분리합니다.
+    /// - Parameter content: 상단 chrome을 제외한 스크롤 콘텐츠 원본 뷰입니다.
+    /// - Returns: 고정 상단 chrome이 적용된 루트 스크롤 뷰입니다.
+    func body(content: Content) -> some View {
+        content.safeAreaInset(edge: .top, spacing: 0) {
+            NonMapRootTopChromeContainer(
+                topSpacing: topSpacing,
+                bottomSpacing: bottomSpacing
+            ) {
+                chrome
+            }
+        }
+    }
+}
+
+private struct NonMapRootPinnedHeaderLayoutModifier<Chrome: View>: ViewModifier {
+    let topSpacing: CGFloat
+    let bottomSpacing: CGFloat
+    let chrome: Chrome
+
+    /// pinned section header를 쓰는 비지도 탭 루트에서 고정 chrome과 스크롤 본문을 서로 다른 레이아웃 영역으로 분리합니다.
+    /// - Parameter content: 고정 chrome 아래에서 스크롤될 본문 콘텐츠입니다.
+    /// - Returns: pinned section header가 고정 chrome 아래에 머무는 루트 레이아웃입니다.
+    func body(content: Content) -> some View {
+        VStack(spacing: 0) {
+            NonMapRootTopChromeContainer(
+                topSpacing: topSpacing,
+                bottomSpacing: bottomSpacing
+            ) {
+                chrome
+            }
+
+            content
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(Color.appTabScaffoldBackground.ignoresSafeArea())
+    }
+}
+
 extension View {
     /// 전역 탭 스캐폴드가 예약한 하단 높이를 하위 뷰 환경에 주입합니다.
     /// - Parameter height: 탭 바가 점유하는 예약 높이입니다.
@@ -237,5 +315,45 @@ extension View {
     /// - Returns: 탭 바 표시 정책 preference가 적용된 뷰입니다.
     func appTabBarVisibility(_ visibility: AppTabBarVisibility) -> some View {
         preference(key: AppTabBarVisibilityPreferenceKey.self, value: visibility)
+    }
+
+    /// 비지도 탭 루트의 첫 헤더를 스크롤 콘텐츠 밖 상단 chrome으로 고정합니다.
+    /// - Parameters:
+    ///   - topSpacing: safe area 아래에서 헤더 콘텐츠가 시작할 상단 간격입니다.
+    ///   - bottomSpacing: 고정 헤더와 스크롤 본문 사이에 확보할 하단 간격입니다.
+    ///   - chrome: 스크롤 밖 상단 chrome으로 고정할 헤더 콘텐츠입니다.
+    /// - Returns: 상단 chrome이 safe area inset으로 적용된 뷰입니다.
+    func nonMapRootTopChrome<Chrome: View>(
+        topSpacing: CGFloat = AppTabLayoutMetrics.nonMapRootHeaderTopSpacing,
+        bottomSpacing: CGFloat = AppTabLayoutMetrics.nonMapRootChromeBottomSpacing,
+        @ViewBuilder chrome: () -> Chrome
+    ) -> some View {
+        modifier(
+            NonMapRootTopChromeModifier(
+                topSpacing: topSpacing,
+                bottomSpacing: bottomSpacing,
+                chrome: chrome()
+            )
+        )
+    }
+
+    /// pinned section header를 쓰는 비지도 탭 루트에 고정 top chrome 분리 레이아웃을 적용합니다.
+    /// - Parameters:
+    ///   - topSpacing: safe area 아래에서 헤더 콘텐츠가 시작할 상단 간격입니다.
+    ///   - bottomSpacing: 고정 헤더와 스크롤 본문 사이에 확보할 하단 간격입니다.
+    ///   - chrome: 스크롤 밖 상단 chrome으로 고정할 헤더 콘텐츠입니다.
+    /// - Returns: pinned section header가 고정 chrome 아래에 머무는 분리 레이아웃이 적용된 뷰입니다.
+    func nonMapRootPinnedHeaderLayout<Chrome: View>(
+        topSpacing: CGFloat = AppTabLayoutMetrics.nonMapRootHeaderTopSpacing,
+        bottomSpacing: CGFloat = AppTabLayoutMetrics.nonMapRootChromeBottomSpacing,
+        @ViewBuilder chrome: () -> Chrome
+    ) -> some View {
+        modifier(
+            NonMapRootPinnedHeaderLayoutModifier(
+                topSpacing: topSpacing,
+                bottomSpacing: bottomSpacing,
+                chrome: chrome()
+            )
+        )
     }
 }

@@ -37,16 +37,17 @@ assertTrue(
     "AppTabScaffold should expose the shared non-map root top inset"
 )
 assertTrue(
-    rivalView.contains("NonMapRootHeaderContainer {\n                    rivalHeaderSection"),
-    "RivalTabView should wrap the first custom header in NonMapRootHeaderContainer"
+    rivalView.contains(".nonMapRootTopChrome(bottomSpacing: 12)") &&
+    rivalView.contains("rivalHeaderSection"),
+    "RivalTabView should move the first custom header into fixed nonMapRootTopChrome"
 )
 assertTrue(
     !rivalView.contains("RivalRootLayoutMetrics"),
     "RivalTabView should not keep a screen-specific root header top padding enum"
 )
 assertTrue(
-    rivalView.contains(".appTabRootScrollLayout(extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding)"),
-    "RivalTabView should use the shared non-map root scroll layout contract"
+    rivalView.contains(".appTabRootScrollLayout(\n            extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding,\n            topSafeAreaPadding: 0\n        )"),
+    "RivalTabView should use fixed top chrome and zero the blank top inset"
 )
 assertTrue(
     !rivalView.contains("topSafeAreaPadding: RivalRootLayoutMetrics.rootTopSafeAreaPadding"),
@@ -93,8 +94,8 @@ assertTrue(
     doc.contains("라이벌 헤더 책임") &&
     doc.contains("공통 TitleTextView 책임") &&
     doc.contains("AppTabLayoutMetrics.nonMapRootTopSafeAreaPadding") &&
-    doc.contains("NonMapRootHeaderContainer"),
-    "Rival safe area contract doc should document scaffold, rival header, shared title responsibilities, and the reusable non-map header container"
+    doc.contains("nonMapRootTopChrome"),
+    "Rival safe area contract doc should document scaffold, rival header, shared title responsibilities, and the fixed non-map top chrome"
 )
 assertTrue(
     readme.contains("docs/rival-top-safearea-contract-v1.md"),

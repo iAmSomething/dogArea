@@ -88,13 +88,6 @@ struct NotificationCenterView: View {
     var memberContent: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
-                NonMapRootHeaderContainer {
-                    settingsHeader(
-                        title: "설정",
-                        subtitle: "프로필, 실제 설정, 법적 문서와 지원 정보를 한 곳에서 관리해요."
-                    )
-                }
-
                 memberProfileCard
 
                 if let season = viewModel.seasonProfileSummary {
@@ -110,7 +103,16 @@ struct NotificationCenterView: View {
             }
             .padding(.horizontal, 16)
         }
-        .appTabRootScrollLayout(extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding)
+        .appTabRootScrollLayout(
+            extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding,
+            topSafeAreaPadding: 0
+        )
+        .nonMapRootTopChrome {
+            settingsHeader(
+                title: "설정",
+                subtitle: "프로필, 실제 설정, 법적 문서와 지원 정보를 한 곳에서 관리해요."
+            )
+        }
         .accessibilityIdentifier("screen.settings.member")
         .overlay(alignment: .bottom) {
             if let toastMessage {
@@ -124,13 +126,6 @@ struct NotificationCenterView: View {
     var guestLockedContent: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
-                NonMapRootHeaderContainer {
-                    settingsHeader(
-                        title: "설정",
-                        subtitle: "로그인 없이도 운영 정보와 문의 경로를 확인할 수 있어요."
-                    )
-                }
-
                 guestSignInCard
                 guestFeaturePreviewCard
                 appSettingsCard
@@ -140,7 +135,16 @@ struct NotificationCenterView: View {
             }
             .padding(.horizontal, 16)
         }
-        .appTabRootScrollLayout(extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding)
+        .appTabRootScrollLayout(
+            extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding,
+            topSafeAreaPadding: 0
+        )
+        .nonMapRootTopChrome {
+            settingsHeader(
+                title: "설정",
+                subtitle: "로그인 없이도 운영 정보와 문의 경로를 확인할 수 있어요."
+            )
+        }
         .accessibilityIdentifier("screen.settings.guest")
     }
 

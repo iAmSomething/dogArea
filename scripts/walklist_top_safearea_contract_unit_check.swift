@@ -39,16 +39,19 @@ assertTrue(
     "AppTabScaffold should not use safeAreaPadding for the root top reservation anymore"
 )
 assertTrue(
-    walkList.contains("NonMapRootHeaderContainer {\n                    WalkListDashboardHeaderView("),
-    "WalkListView should wrap the dashboard header in NonMapRootHeaderContainer"
+    scaffold.contains("func nonMapRootPinnedHeaderLayout<Chrome: View>(") &&
+    walkList.contains(".nonMapRootPinnedHeaderLayout(bottomSpacing: 18)") &&
+    walkList.contains("TitleTextView(") &&
+    walkList.contains("WalkListDashboardHeaderView("),
+    "WalkListView should keep only the root title chrome fixed through the pinned-header layout and render dashboard cards in scroll content"
 )
 assertTrue(
     !walkList.contains("WalkListRootLayoutMetrics"),
     "WalkListView should not keep a per-screen root header top padding enum"
 )
 assertTrue(
-    walkList.contains(".appTabRootScrollLayout(extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding)"),
-    "WalkListView should use the shared non-map root scroll layout contract"
+    walkList.contains(".appTabRootScrollLayout(\n            extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding,\n            topSafeAreaPadding: 0\n        )"),
+    "WalkListView should use fixed top chrome and zero the blank top inset"
 )
 assertTrue(
     walkList.contains("pinnedViews: [.sectionHeaders]"),
@@ -78,13 +81,14 @@ assertTrue(
     contractDoc.contains("safeAreaInset(edge: .top)") &&
     contractDoc.contains("WalkListSectionHeaderView") &&
     contractDoc.contains("walklist.section.thisWeek") &&
-    contractDoc.contains("NonMapRootHeaderContainer"),
-    "WalkList top safe area contract doc should document the scaffold, reusable header container, sticky header, and QA target"
+    contractDoc.contains("nonMapRootPinnedHeaderLayout"),
+    "WalkList top safe area contract doc should document the scaffold, fixed top chrome, sticky header, and QA target"
 )
 assertTrue(
     nonMapDoc.contains("safeAreaInset(edge: .top)") &&
-    nonMapDoc.contains("pinnedViews: [.sectionHeaders]"),
-    "Non-map root contract doc should mention safeAreaInset and pinned section header compatibility"
+    nonMapDoc.contains("pinnedViews: [.sectionHeaders]") &&
+    nonMapDoc.contains("nonMapRootPinnedHeaderLayout"),
+    "Non-map root contract doc should mention safeAreaInset, pinned-header top chrome, and pinned section header compatibility"
 )
 assertTrue(
     readme.contains("docs/walklist-top-safearea-contract-v1.md"),

@@ -32,7 +32,7 @@ struct TitleTextView: View {
                     Text(subTitle)
                         .font(subTitleFont)
                         .foregroundStyle(Color.appTextDarkGray)
-                        .lineLimit(type == .LargeTitle ? 3 : 2)
+                        .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier(accessibilityIdentifierPrefix.map { "\($0).subtitle" } ?? "")
                 }
