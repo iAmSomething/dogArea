@@ -52,6 +52,8 @@ swift scripts/quest_stage2_engine_unit_check.swift
 swift scripts/season_motion_pack_unit_check.swift
 swift scripts/home_quest_reminder_same_day_suppression_unit_check.swift
 swift scripts/release_regression_checklist_unit_check.swift
+swift scripts/pr_fast_smoke_gate_unit_check.swift
+swift scripts/nightly_full_regression_gate_unit_check.swift
 swift scripts/epic_21_closure_evidence_unit_check.swift
 swift scripts/epic_123_closure_evidence_unit_check.swift
 swift scripts/epic_420_closure_evidence_unit_check.swift
