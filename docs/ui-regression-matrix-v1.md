@@ -48,6 +48,7 @@
 | `FR-HOME-QUEST-003` | `docs/home-quest-tracking-mode-guideline-v1.md`, `#563` | 홈 미션 카드 표면에서 자동 기록형/직접 체크형 구분 | `FeatureRegressionUITests/testFeatureRegression_HomeMissionCardDifferentiatesAutoAndManualTrackingModes` | 버튼을 누르기 전에 자동 반영과 직접 체크 규칙 차이가 즉시 읽히는지 확인 |
 | `FR-AUTH-001` | `docs/profile-edit-flow-v1.md`, `docs/supabase-auth-apple-plan.md` | 설정 탭의 로그인/로그아웃 진입점 | `FeatureRegressionUITests/testFeatureRegression_SettingsAuthEntryPoints` | guest/member 상태별 CTA 문구 확인 |
 | `FR-SET-001` | `docs/profile-edit-flow-v1.md` | 설정 메인 카드의 사용자/반려견 이미지 탭 편집 진입 | `FeatureRegressionUITests/testFeatureRegression_SettingsImageTapAffordanceOpensProfileEdit` | 이미지 자체가 1차 편집 진입점으로 이해되는지 확인 |
+| `FR-SET-002` | `docs/privacy-deletion-request-intake-tracking-v1.md`, `#720` | 설정 프라이버시 센터의 삭제 요청 흐름 진입 | `FeatureRegressionUITests/testFeatureRegression_SettingsPrivacyDeletionRequestFlowExplainsNextSteps` | 삭제 요청 시트에서 요청 ID, 수집 항목, 다음 단계, 전송/문의 액션이 한 흐름으로 읽히는지 확인 |
 | `FR-PROFILE-001` | `docs/profile-edit-flow-v1.md` | 회원 상태 프로필 편집 저장 | `FeatureRegressionUITests/testFeatureRegression_MemberProfileEditPersistsUpdatedPetName` | 프로필 편집 저장 후 재진입 시 값 유지 확인 |
 | `FR-RIVAL-001` | `docs/rival-tab-ui-design-spec-v1.md`, `docs/nearby-anonymous-hotspot-v1.md` | 로그아웃 후 재로그인, 익명 공유 시작 | `FeatureRegressionUITests/testFeatureRegression_RivalAuthRevalidationFlow` | 세션 재검증 후 공유 시작 가능 여부 확인 |
 | `FR-RIVAL-002` | `docs/rival-tab-ui-design-spec-v1.md` | 라이벌 푸터 버튼 라우팅 | `FeatureRegressionUITests/testFeatureRegression_RivalFooterButtonsRouteToMapAndSettings` | 지도/설정으로의 전환 및 복귀 확인 |

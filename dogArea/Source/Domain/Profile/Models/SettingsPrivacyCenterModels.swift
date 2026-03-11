@@ -66,6 +66,7 @@ struct SettingsPrivacyCenterSnapshot: Equatable {
     let notificationPermission: SettingsPrivacyPermissionRowContent
     let recentStatus: SettingsPrivacyStatusContent
     let moderationSummary: SettingsPrivacyModerationContent
+    let deletionRequestSummary: SettingsPrivacyDeletionRequestSummary
     let documentActions: [SettingsSurfaceAction]
 
     static let placeholder = SettingsPrivacyCenterSnapshot(
@@ -102,6 +103,15 @@ struct SettingsPrivacyCenterSnapshot: Equatable {
         moderationSummary: SettingsPrivacyModerationContent(
             title: "숨김/차단 현황을 준비하는 중이에요",
             subtitle: "잠시 후 요약 정보를 불러옵니다."
+        ),
+        deletionRequestSummary: SettingsPrivacyDeletionRequestSummary(
+            title: "삭제 요청 흐름을 준비하는 중이에요",
+            subtitle: "잠시 후 요청 ID, 접수 안내, 상태 문의 경로를 보여드려요.",
+            badgeText: "로딩 중",
+            tone: .neutral,
+            requestId: nil,
+            footer: "삭제 요청은 일반 문의와 분리된 전용 흐름으로 다룹니다.",
+            buttonTitle: "삭제 요청 흐름 열기"
         ),
         documentActions: []
     )
