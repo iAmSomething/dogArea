@@ -43,27 +43,29 @@ struct StartButtonView: View {
                 petSelectionHint
             }
 
-            HStack(spacing: MapWalkControlBarMetrics.interItemSpacing) {
-                if viewModel.isWalking {
-                    walkMetricCard(
-                        title: "영역 넓이",
-                        value: viewModel.calculatedAreaString(isPyong: !isMeter),
-                        subtitle: isMeter ? "탭하면 평으로 보기" : "탭하면 ㎡로 보기",
-                        emphasized: true,
-                        tapAction: {
-                            isMeter.toggle()
-                        }
-                    )
-                } else {
-                    idleContextCard
-                }
+            ZStack {
+                HStack(spacing: MapWalkControlBarMetrics.interItemSpacing) {
+                    if viewModel.isWalking {
+                        walkMetricCard(
+                            title: "영역 넓이",
+                            value: viewModel.calculatedAreaString(isPyong: !isMeter),
+                            subtitle: isMeter ? "탭하면 평으로 보기" : "탭하면 ㎡로 보기",
+                            emphasized: true,
+                            tapAction: {
+                                isMeter.toggle()
+                            }
+                        )
+                    } else {
+                        idleContextCard
+                    }
 
-                primaryActionButton
+                    primaryActionButton
 
-                if viewModel.isWalking {
-                    walkingControlContextCard
-                } else {
-                    idleHintCard
+                    if viewModel.isWalking {
+                        walkingControlContextCard
+                    } else {
+                        idleHintCard
+                    }
                 }
             }
             .padding(.horizontal, MapWalkControlBarMetrics.surfaceHorizontalPadding)
@@ -84,7 +86,11 @@ struct StartButtonView: View {
             )
             .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 4)
             .accessibilityElement(children: .contain)
-            .accessibilityIdentifier("map.walk.controlBar")
+            .accessibilityIdentifier(
+                ProcessInfo.processInfo.arguments.contains("-UITest.FeatureRegression")
+                    ? "map.walk.controlBar"
+                    : ""
+            )
         }
         .padding(.horizontal, MapChromeLayoutMetrics.horizontalPadding)
         .onChange(of: viewModel.isWalking) { _, isWalking in

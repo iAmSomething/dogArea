@@ -276,7 +276,6 @@ struct MapView : View{
                     mapBottomControlOverlay
                 }
             }
-            .appTabBarContentPadding(extra: 8)
         }
     }
 
@@ -286,6 +285,11 @@ struct MapView : View{
 
     private var shouldShowBottomControls: Bool {
         !isCriticalModalPresented && !endWalkingViewPresented
+    }
+
+    private var shouldShowRecenterButton: Bool {
+        ProcessInfo.processInfo.arguments.contains("-UITest.MapForceRecenterVisible")
+            || (isCameraSeeingSomewhere && viewModel.location != nil)
     }
 
     private var resolvedTabBarVisibility: AppTabBarVisibility {
@@ -527,7 +531,7 @@ struct MapView : View{
 
     private var mapFloatingControlOverlay: some View {
         MapFloatingControlColumnView(
-            showsRecenterButton: isCameraSeeingSomewhere && viewModel.location != nil,
+            showsRecenterButton: shouldShowRecenterButton,
             showsAddPointButton: viewModel.isWalking,
             isAutoPointRecordMode: viewModel.isAutoPointRecordMode,
             isAddPointLongPressModeEnabled: viewModel.isAddPointLongPressModeEnabled,
@@ -549,7 +553,7 @@ struct MapView : View{
 
     private var mapFloatingControlLayoutContext: MapFloatingControlLayoutContext {
         MapFloatingControlLayoutContext(
-            showsRecenterButton: isCameraSeeingSomewhere && viewModel.location != nil,
+            showsRecenterButton: shouldShowRecenterButton,
             showsAddPointButton: viewModel.isWalking,
             showsAutoRecordBadge: viewModel.isWalking && viewModel.isAutoPointRecordMode,
             showsLongPressBadge: viewModel.isWalking && viewModel.isAddPointLongPressModeEnabled

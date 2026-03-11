@@ -23,6 +23,8 @@ struct CustomTabBar: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
+            bottomBackdrop
+
             HStack(spacing: 8) {
                 tabItemButton(for: sideItems[0])
                 tabItemButton(for: sideItems[1])
@@ -33,22 +35,53 @@ struct CustomTabBar: View {
                 tabItemButton(for: sideItems[3])
             }
             .padding(.horizontal, 12)
-            .padding(.top, 8)
+            .padding(.top, 6)
             .padding(.bottom, 10)
-            .background(
-                RoundedRectangle(cornerRadius: 26, style: .continuous)
-                    .fill(Color.appDynamicHex(light: 0xFFFFFF, dark: 0x1E293B, alpha: 0.98))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 26, style: .continuous)
-                            .stroke(Color.appDynamicHex(light: 0xE2E8F0, dark: 0x334155), lineWidth: 1)
-                    )
-                    .shadow(color: Color.black.opacity(0.09), radius: 18, x: 0, y: -6)
-            )
             .padding(.horizontal, 10)
             .padding(.bottom, 6)
         }
+        .overlay {
+            if ProcessInfo.processInfo.arguments.contains("-UITest.FeatureRegression") {
+                Color.clear
+                    .allowsHitTesting(false)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("하단 탭바 영역")
+                    .accessibilityIdentifier("tabBar.surface")
+            }
+        }
+        .overlay(alignment: .bottom) {
+            if ProcessInfo.processInfo.arguments.contains("-UITest.FeatureRegression") {
+                Color.clear
+                    .frame(height: 76)
+                    .allowsHitTesting(false)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("하단 탭바 시각 영역")
+                    .accessibilityIdentifier("tabBar.visualBand")
+            }
+        }
         .frame(maxWidth: .infinity)
         .frame(height: AppTabLayoutMetrics.defaultTabBarReservedHeight, alignment: .bottom)
+    }
+
+    private var bottomBackdrop: some View {
+        LinearGradient(
+            colors: [
+                Color.appDynamicHex(light: 0xFFFFFF, dark: 0x020617, alpha: 0.0),
+                Color.appDynamicHex(light: 0xFFFFFF, dark: 0x020617, alpha: 0.86)
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+        .frame(maxWidth: .infinity)
+        .frame(height: 76)
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(Color.appDynamicHex(light: 0xE2E8F0, dark: 0x334155, alpha: 0.72))
+                .frame(height: 1)
+                .padding(.horizontal, 18)
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 
     /// 일반 탭 아이템 버튼을 렌더링합니다.
@@ -79,6 +112,16 @@ struct CustomTabBar: View {
                     .minimumScaleFactor(0.8)
             }
             .frame(maxWidth: .infinity, minHeight: 52)
+            .background {
+                if isSelected {
+                    Capsule(style: .continuous)
+                        .fill(Color.appDynamicHex(light: 0xFFFFFF, dark: 0x1E293B, alpha: 0.92))
+                        .overlay(
+                            Capsule(style: .continuous)
+                                .stroke(Color.appDynamicHex(light: 0xE2E8F0, dark: 0x475569), lineWidth: 1)
+                        )
+                }
+            }
             .padding(.vertical, 4)
         }
         .buttonStyle(.plain)

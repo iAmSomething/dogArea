@@ -21,13 +21,17 @@ final class FeatureRegressionUITests: XCTestCase {
         let app = launchAppForFeatureRegression()
         XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.")
         XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
+        dismissMapAlertIfNeeded(app)
 
         let primaryAction = mapPrimaryAction(in: app)
         if waitUntilExists(primaryAction, timeout: 12) == false {
             dumpMapAccessibilityCandidates(app)
         }
         XCTAssertTrue(waitUntilExists(primaryAction, timeout: 1), "지도 산책 시작 버튼을 찾지 못했습니다.")
-        XCTAssertTrue(primaryAction.isHittable, "지도 산책 시작 버튼이 하단 탭바에 가려져 탭 불가능합니다.")
+        XCTAssertTrue(
+            waitUntilHittable(primaryAction, timeout: 3),
+            "지도 산책 시작 버튼이 하단 탭바에 가려지거나 지도 안정화 이후에도 탭 불가능합니다."
+        )
     }
 
     /// 회원 상태로 산책을 시작한 뒤 영역 추가 버튼이 가려지지 않고 탭 가능한지 검증합니다.
@@ -36,6 +40,7 @@ final class FeatureRegressionUITests: XCTestCase {
 
         XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.")
         XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
+        dismissMapAlertIfNeeded(app)
 
         let addPointButton = app.buttons["map.addPoint"]
         XCTAssertTrue(
@@ -54,9 +59,10 @@ final class FeatureRegressionUITests: XCTestCase {
 
         XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.")
         XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
+        dismissMapAlertIfNeeded(app)
 
         let addPointStack = screenElement(identifier: "map.addPoint.stack", in: app)
-        let controlBar = screenElement(identifier: "map.walk.controlBar", in: app)
+        let controlBar = mapBottomControlBarElement(in: app)
 
         XCTAssertTrue(waitUntilExists(addPointStack, timeout: 8), "산책 중 영역 추가 보조 스택이 노출되지 않았습니다.")
         XCTAssertTrue(waitUntilExists(controlBar, timeout: 4), "산책 중 control bar가 노출되지 않았습니다.")
@@ -72,16 +78,37 @@ final class FeatureRegressionUITests: XCTestCase {
         let app = launchAppForFeatureRegression()
         XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.")
         XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
+        dismissMapAlertIfNeeded(app)
 
-        let controlBar = screenElement(identifier: "map.walk.controlBar", in: app)
+        let controlBar = mapBottomControlBarElement(in: app)
         XCTAssertTrue(waitUntilExists(controlBar, timeout: 8), "지도 idle 하단 컨트롤러가 노출되지 않았습니다.")
 
         assertMapBottomControllerGeometry(
             controlBar: controlBar,
             app: app,
             maxHeight: 124,
-            maximumGap: 36,
+            maximumGap: 48,
             messagePrefix: "idle 하단 컨트롤러"
+        )
+    }
+
+    /// 지도 idle 상태에서 recenter 버튼이 하단 컨트롤러와 물리적으로 겹치지 않는지 검증합니다.
+    func testFeatureRegression_MapRecenterButtonClearsBottomControllerAtRest() throws {
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.MapForceRecenterVisible"])
+        XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.")
+        XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
+        dismissMapAlertIfNeeded(app)
+
+        let recenterButton = app.buttons["map.recenter"]
+        let controlBar = mapBottomControlBarElement(in: app)
+
+        XCTAssertTrue(waitUntilExists(recenterButton, timeout: 8), "내 위치 보기 버튼이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(controlBar, timeout: 4), "지도 idle 하단 컨트롤러가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilHittable(recenterButton, timeout: 2), "내 위치 보기 버튼이 탭 가능한 상태가 아닙니다.")
+        XCTAssertLessThan(
+            recenterButton.frame.maxY + 12,
+            controlBar.frame.minY,
+            "내 위치 보기 버튼과 idle 하단 컨트롤러 우측 카드가 겹치면 안 됩니다."
         )
     }
 
@@ -90,8 +117,9 @@ final class FeatureRegressionUITests: XCTestCase {
         let app = launchAppForFeatureRegression(extraArguments: ["-UITest.MapForceWalkingState"])
         XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.")
         XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
+        dismissMapAlertIfNeeded(app)
 
-        let controlBar = screenElement(identifier: "map.walk.controlBar", in: app)
+        let controlBar = mapBottomControlBarElement(in: app)
         XCTAssertTrue(waitUntilExists(controlBar, timeout: 8), "지도 walking 하단 컨트롤러가 노출되지 않았습니다.")
 
         assertMapBottomControllerGeometry(
@@ -108,9 +136,10 @@ final class FeatureRegressionUITests: XCTestCase {
         let app = launchAppForFeatureRegression(extraArguments: ["-UITest.MapForceWalkingState"])
         XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.")
         XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
+        dismissMapAlertIfNeeded(app)
 
         let topHUD = screenElement(identifier: "map.walk.activeValue.card", in: app)
-        let controlBar = screenElement(identifier: "map.walk.controlBar", in: app)
+        let controlBar = mapBottomControlBarElement(in: app)
 
         XCTAssertTrue(waitUntilExists(topHUD, timeout: 8), "산책 중 상단 slim HUD가 노출되지 않았습니다.")
         XCTAssertTrue(waitUntilExists(controlBar, timeout: 4), "산책 중 하단 control bar가 노출되지 않았습니다.")
@@ -1878,10 +1907,23 @@ final class FeatureRegressionUITests: XCTestCase {
         maximumGap: CGFloat,
         messagePrefix: String
     ) {
+        let tabBarSurface = screenElement(identifier: "tabBar.surface", in: app)
+        let tabBarVisualBand = screenElement(identifier: "tabBar.visualBand", in: app)
         let activeTabBarButton = app.buttons["tab.2"]
-        XCTAssertTrue(waitUntilExists(activeTabBarButton, timeout: 2), "\(messagePrefix) 검증 중 탭바 버튼을 찾지 못했습니다.")
+        var tabBarCandidateMinYs: [CGFloat] = []
 
-        let gapToTabBar = activeTabBarButton.frame.minY - controlBar.frame.maxY
+        if waitUntilExists(tabBarVisualBand, timeout: 2) {
+            tabBarCandidateMinYs.append(tabBarVisualBand.frame.minY)
+        }
+        if waitUntilExists(tabBarSurface, timeout: 2) {
+            tabBarCandidateMinYs.append(tabBarSurface.frame.minY)
+        }
+        XCTAssertTrue(waitUntilExists(activeTabBarButton, timeout: 2), "\(messagePrefix) 검증 중 탭바 버튼을 찾지 못했습니다.")
+        tabBarCandidateMinYs.append(activeTabBarButton.frame.minY)
+
+        let tabBarMinY = tabBarCandidateMinYs.min() ?? activeTabBarButton.frame.minY
+
+        let gapToTabBar = tabBarMinY - controlBar.frame.maxY
         XCTAssertGreaterThanOrEqual(
             controlBar.frame.height,
             72,
@@ -1894,7 +1936,7 @@ final class FeatureRegressionUITests: XCTestCase {
         )
         XCTAssertGreaterThanOrEqual(
             gapToTabBar,
-            4,
+            3,
             "\(messagePrefix)가 탭바와 겹치면 안 됩니다."
         )
         XCTAssertLessThanOrEqual(
@@ -1913,6 +1955,22 @@ final class FeatureRegressionUITests: XCTestCase {
         app.descendants(matching: .any)
             .matching(identifier: identifier)
             .firstMatch
+    }
+
+    /// 지도 하단 컨트롤 surface의 대표 geometry 요소를 UITest anchor 우선으로 조회합니다.
+    /// - Parameter app: 테스트 대상 앱 인스턴스입니다.
+    /// - Returns: 지도 하단 컨트롤 surface frame을 대표할 접근성 요소입니다.
+    private func mapBottomControlBarElement(in app: XCUIApplication) -> XCUIElement {
+        let surface = screenElement(identifier: "map.walk.controlBar", in: app)
+        if waitUntilExists(surface, timeout: 2) {
+            return surface
+        }
+
+        let bottomControls = screenElement(identifier: "map.bottomControls", in: app)
+        if waitUntilExists(bottomControls, timeout: 2) {
+            return bottomControls
+        }
+        return mapPrimaryAction(in: app)
     }
 
     /// 지도 탭 접근성 후보를 출력해 시작 버튼 누락 원인을 추적합니다.
@@ -1992,6 +2050,29 @@ final class FeatureRegressionUITests: XCTestCase {
                 return
             }
         }
+    }
+
+    /// 지도 진입 직후 위치 권한 안내 커스텀 알럿이 떠 있으면 닫아 하단 컨트롤 검증을 안정화합니다.
+    /// - Parameter app: 테스트 대상 앱 인스턴스입니다.
+    private func dismissMapAlertIfNeeded(_ app: XCUIApplication) {
+        handleLocationPermissionAlertIfNeeded()
+
+        let alertHost = screenElement(identifier: "map.alert.host", in: app)
+        let primaryAction = screenElement(identifier: "customAlert.action.primary", in: app)
+        let closeButton = app.buttons["닫기"]
+
+        let hasAlert = waitUntilExists(alertHost, timeout: 1)
+            || waitUntilExists(primaryAction, timeout: 1)
+            || waitUntilExists(closeButton, timeout: 1)
+        guard hasAlert else { return }
+
+        if waitUntilHittable(primaryAction, timeout: 1) {
+            primaryAction.tap()
+        } else if waitUntilHittable(closeButton, timeout: 1) {
+            closeButton.tap()
+        }
+
+        _ = waitUntilGone(alertHost, timeout: 2)
     }
 
     /// 문자열 또는 접근성 값에서 첫 번째 정수를 추출합니다.

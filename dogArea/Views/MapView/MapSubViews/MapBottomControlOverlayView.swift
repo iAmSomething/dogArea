@@ -10,16 +10,22 @@ struct MapFloatingControlLayoutContext {
         showsAddPointButton
     }
 
+    var requiresIdleDeckSeparation: Bool {
+        showsRecenterButton && showsAddPointButton == false
+    }
+
     var reservesSupportBadgeBuffer: Bool {
         showsAutoRecordBadge || showsLongPressBadge
     }
 }
 
 enum MapBottomControlOverlayMetrics {
+    static let visualBandClearanceCompensation: CGFloat = 54
     static let primaryActionLiftWhenVisible: CGFloat = 70
     static let floatingControlsBottomSpacingWhenPrimaryVisible: CGFloat = 18
     static let floatingControlsBottomSpacingWhenPrimaryHidden: CGFloat = 24
     static let floatingControlsWalkingDeckClearance: CGFloat = 14
+    static let floatingControlsIdleDeckClearance: CGFloat = 14
     static let floatingControlsSupportBadgeBuffer: CGFloat = 10
     static let selectedTrayBottomSpacingWhenPrimaryVisible: CGFloat = 104
     static let selectedTrayBottomSpacingWhenPrimaryHidden: CGFloat = 20
@@ -35,7 +41,7 @@ enum MapBottomControlOverlayMetrics {
         return max(
             reservedHeight - AppTabLayoutMetrics.floatingOverlayLift - compactAdditionalLift,
             AppTabLayoutMetrics.minimumBottomPadding
-        )
+        ) + visualBandClearanceCompensation
     }
 
     /// 우측 플로팅 조작 버튼군의 바닥 여백을 계산합니다.
@@ -57,6 +63,10 @@ enum MapBottomControlOverlayMetrics {
             let deckClearance = MapWalkControlBarMetrics.walkingFootprintBudget
                 + floatingControlsWalkingDeckClearance
                 + (layoutContext.reservesSupportBadgeBuffer ? floatingControlsSupportBadgeBuffer : 0)
+            additionalSpacing = max(deckClearance, floatingControlsBottomSpacingWhenPrimaryVisible)
+        } else if layoutContext.requiresIdleDeckSeparation {
+            let deckClearance = MapWalkControlBarMetrics.idleFootprintBudget
+                + floatingControlsIdleDeckClearance
             additionalSpacing = max(deckClearance, floatingControlsBottomSpacingWhenPrimaryVisible)
         } else {
             additionalSpacing = floatingControlsBottomSpacingWhenPrimaryVisible

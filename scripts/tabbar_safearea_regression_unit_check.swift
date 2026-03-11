@@ -26,6 +26,7 @@ func load(_ relativePath: String) -> String {
 
 let rootView = load("dogArea/Views/GlobalViews/BaseView/RootView.swift")
 let scaffold = load("dogArea/Views/GlobalViews/BaseView/AppTabScaffold.swift")
+let customTabBar = load("dogArea/Views/GlobalViews/BaseView/CustomTabBar.swift")
 let homeView = load("dogArea/Views/HomeView/HomeView.swift")
 let mapView = load("dogArea/Views/MapView/MapView.swift")
 let mapTopChromeView = load("dogArea/Views/MapView/MapSubViews/MapTopChromeView.swift")
@@ -44,6 +45,18 @@ assertTrue(
 assertTrue(
     rootView.contains("CustomTabBar(selectedTab: $selectedTab)"),
     "RootView should render CustomTabBar inside bottom safe area inset"
+)
+assertTrue(
+    customTabBar.contains("LinearGradient("),
+    "CustomTabBar should use a lighter bottom backdrop instead of a heavy card background"
+)
+assertTrue(
+    !customTabBar.contains("RoundedRectangle(cornerRadius: 26, style: .continuous)"),
+    "CustomTabBar should no longer render the full-width rounded card background"
+)
+assertTrue(
+    customTabBar.contains("Capsule(style: .continuous)"),
+    "CustomTabBar should move selection emphasis to per-item chrome"
 )
 assertTrue(
     !rootView.contains("NavigationView"),
