@@ -348,6 +348,23 @@ final class SupabaseProfileImageRepository: ProfileImageRepository {
         try await upload(data: data, ownerId: ownerId, imageKind: "pet")
     }
 
+    /// 프로필 이미지 업로드 실패 상태 코드를 사용자 메시지로 변환합니다.
+    /// - Parameters:
+    ///   - statusCode: Edge Function이 반환한 HTTP 상태 코드입니다.
+    ///   - imageKind: 업로드 대상 종류(`user`/`pet`)입니다.
+    /// - Returns: 설정 화면에 바로 노출할 수 있는 지역화 메시지입니다.
+    private func localizedUploadFailureMessage(statusCode: Int, imageKind: String) -> String {
+        let assetName = imageKind == "pet" ? "반려견 프로필 사진" : "프로필 사진"
+        switch statusCode {
+        case 400:
+            return "\(assetName) 형식이 올바르지 않거나 너무 커서 업로드할 수 없어요. 이미지를 다시 선택해 주세요."
+        case 401, 403:
+            return "\(assetName) 업로드 권한을 확인하지 못했어요. 다시 로그인한 뒤 다시 시도해 주세요."
+        default:
+            return "\(assetName) 업로드에 실패했어요. 잠시 후 다시 시도해 주세요. (\(statusCode))"
+        }
+    }
+
     private func upload(data: Data, ownerId: String, imageKind: String) async throws -> String {
         let safeOwnerId = ownerId
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -357,11 +374,21 @@ final class SupabaseProfileImageRepository: ProfileImageRepository {
             imageBase64: data.base64EncodedString(),
             imageKind: imageKind
         )
-        let responseData = try await client.request(
-            .function(name: "upload-profile-image"),
-            method: .post,
-            body: requestBody
-        )
+        let responseData: Data
+        do {
+            responseData = try await client.request(
+                .function(name: "upload-profile-image"),
+                method: .post,
+                body: requestBody
+            )
+        } catch let httpError as SupabaseHTTPError {
+            if case .unexpectedStatusCode(let statusCode) = httpError {
+                throw SupabaseAssetError.serverError(
+                    localizedUploadFailureMessage(statusCode: statusCode, imageKind: imageKind)
+                )
+            }
+            throw SupabaseAssetError.serverError("프로필 사진 업로드 요청을 완료하지 못했어요. 네트워크 상태를 확인한 뒤 다시 시도해 주세요.")
+        }
         let decoded = try JSONDecoder().decode(UploadProfileImageResponseDTO.self, from: responseData)
         if let url = decoded.publicUrl, url.isEmpty == false {
             return url

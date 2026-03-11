@@ -16,6 +16,9 @@ func load(_ relativePath: String) -> String {
 }
 
 let infra = load("dogArea/Source/Infrastructure/Supabase/SupabaseInfrastructure.swift")
+let allowlistSnippet = infra.range(of: "private static let edgeFunctionAnonRetryAllowlist").map {
+    String(infra[$0.lowerBound...].prefix(180))
+} ?? ""
 
 assertTrue(
     infra.contains("private static let edgeFunctionAnonRetryAllowlist"),
@@ -23,9 +26,12 @@ assertTrue(
 )
 assertTrue(
     infra.contains("\"feature-control\"")
-        && infra.contains("\"nearby-presence\"")
-        && infra.contains("\"upload-profile-image\""),
-    "anon fallback allowlist should include feature-control, nearby-presence and upload-profile-image"
+        && infra.contains("\"nearby-presence\""),
+    "anon fallback allowlist should include feature-control and nearby-presence"
+)
+assertTrue(
+    !allowlistSnippet.contains("\"upload-profile-image\""),
+    "upload-profile-image should not use anon-first or anon-retry routing because member owner binding must stay authoritative"
 )
 assertTrue(
     infra.contains("private func shouldRetryWithAnonAuthorization("),
