@@ -4,6 +4,7 @@ import UIKit
 struct SettingsPrivacyCenterView: View {
     @StateObject var viewModel: SettingsPrivacyCenterViewModel
     let onRequestSignIn: () -> Void
+    let onOpenDeletionRequest: () -> Void
     let onClose: () -> Void
 
     @Environment(\.openURL) private var openURL
@@ -14,14 +15,17 @@ struct SettingsPrivacyCenterView: View {
     /// - Parameters:
     ///   - viewModel: 프라이버시 센터 읽기/쓰기 상태를 관리할 뷰모델입니다.
     ///   - onRequestSignIn: 게스트 상태에서 로그인/회원가입 흐름을 여는 콜백입니다.
+    ///   - onOpenDeletionRequest: 삭제 요청 전용 화면으로 전환할 때 실행할 콜백입니다.
     ///   - onClose: 프라이버시 센터 시트를 닫을 때 실행할 콜백입니다.
     init(
         viewModel: SettingsPrivacyCenterViewModel,
         onRequestSignIn: @escaping () -> Void,
+        onOpenDeletionRequest: @escaping () -> Void,
         onClose: @escaping () -> Void
     ) {
         _viewModel = StateObject(wrappedValue: viewModel)
         self.onRequestSignIn = onRequestSignIn
+        self.onOpenDeletionRequest = onOpenDeletionRequest
         self.onClose = onClose
     }
 
@@ -36,6 +40,7 @@ struct SettingsPrivacyCenterView: View {
                     permissionCard
                     statusCard(viewModel.snapshot.recentStatus, identifier: "settings.privacyCenter.recent")
                     moderationCard
+                    deletionRequestCard
                     documentCard
                 }
                 .padding(.horizontal, 16)
@@ -165,10 +170,55 @@ struct SettingsPrivacyCenterView: View {
         .accessibilityIdentifier("settings.privacyCenter.moderation")
     }
 
+    private var deletionRequestCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(viewModel.snapshot.deletionRequestSummary.title)
+                        .font(.appScaledFont(for: .SemiBold, size: 18, relativeTo: .headline))
+                        .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
+                    Text(viewModel.snapshot.deletionRequestSummary.subtitle)
+                        .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .body))
+                        .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 8)
+
+                Text(viewModel.snapshot.deletionRequestSummary.badgeText)
+                    .font(.appScaledFont(for: .SemiBold, size: 11, relativeTo: .caption))
+                    .foregroundStyle(toneForegroundColor(viewModel.snapshot.deletionRequestSummary.tone))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(toneBackgroundColor(viewModel.snapshot.deletionRequestSummary.tone))
+                    .clipShape(Capsule())
+            }
+
+            if let requestId = viewModel.snapshot.deletionRequestSummary.requestId {
+                Text("요청 ID · \(requestId)")
+                    .font(.appScaledFont(for: .SemiBold, size: 12, relativeTo: .caption))
+                    .foregroundStyle(Color.appDynamicHex(light: 0x334155, dark: 0xCBD5E1))
+                    .accessibilityIdentifier("settings.privacyCenter.deleteRequest.requestId")
+            }
+
+            Text(viewModel.snapshot.deletionRequestSummary.footer)
+                .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .caption))
+                .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0x94A3B8))
+                .fixedSize(horizontal: false, vertical: true)
+
+            Button(viewModel.snapshot.deletionRequestSummary.buttonTitle, action: onOpenDeletionRequest)
+            .buttonStyle(AppFilledButtonStyle(role: .destructive, fillsWidth: false))
+            .frame(minHeight: 44)
+            .accessibilityIdentifier("settings.privacyCenter.deleteRequest.open")
+        }
+        .appCardSurface()
+        .accessibilityIdentifier("settings.privacyCenter.deleteRequest")
+    }
+
     private var documentCard: some View {
         SettingsActionSectionCardView(
             title: "보존 / 삭제 / 문서",
-            subtitle: "정책, 삭제 요청, 현재 숨김/차단 관계를 한 번에 다시 확인합니다.",
+            subtitle: "보존 정책, 삭제 요청 운영 기준, 현재 숨김/차단 관계를 한 번에 다시 확인합니다.",
             accessibilityIdentifier: "settings.privacyCenter.documents",
             actions: viewModel.snapshot.documentActions,
             onSelect: handleDocumentAction

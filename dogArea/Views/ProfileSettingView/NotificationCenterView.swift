@@ -12,6 +12,7 @@ struct NotificationCenterView: View {
         case profileEdit
         case petManagement
         case privacyCenter
+        case privacyDeletionRequest
         case walkGuide
 
         var id: String { rawValue }
@@ -22,6 +23,7 @@ struct NotificationCenterView: View {
     @Environment(\.openURL) var openURL
     @Environment(\.scenePhase) var scenePhase
     @State private var activeSheet: ActiveSheet? = nil
+    @State private var pendingSheet: ActiveSheet? = nil
     @State private var activeDocument: SettingsDocumentContent? = nil
     @State private var toastMessage: String? = nil
     @State private var isLogoutAlertPresented: Bool = false
@@ -69,6 +71,12 @@ struct NotificationCenterView: View {
             Task {
                 await viewModel.refreshProductSurface()
             }
+            if let nextSheet = pendingSheet {
+                pendingSheet = nil
+                DispatchQueue.main.async {
+                    activeSheet = nextSheet
+                }
+            }
         }) { sheet in
             switch sheet {
             case .profileEdit:
@@ -88,7 +96,19 @@ struct NotificationCenterView: View {
                     onRequestSignIn: {
                         _ = authFlow.requestAccess(feature: .cloudSync)
                     },
+                    onOpenDeletionRequest: {
+                        pendingSheet = .privacyDeletionRequest
+                        activeSheet = nil
+                    },
                     onClose: {
+                        activeSheet = nil
+                    }
+                )
+            case .privacyDeletionRequest:
+                SettingsPrivacyDeletionRequestSheetView(
+                    viewModel: SettingsPrivacyDeletionRequestSheetViewModel(),
+                    onClose: {
+                        pendingSheet = .privacyCenter
                         activeSheet = nil
                     }
                 )

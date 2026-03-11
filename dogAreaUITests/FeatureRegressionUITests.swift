@@ -1319,6 +1319,61 @@ final class FeatureRegressionUITests: XCTestCase {
 
     }
 
+    /// 설정 탭의 삭제 요청 흐름이 요청 ID/수집 항목/다음 단계를 한 시트 안에서 설명하는지 검증합니다.
+    func testFeatureRegression_SettingsPrivacyDeletionRequestFlowExplainsNextSteps() throws {
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.AutoGuest"])
+        XCTAssertTrue(waitUntilExists(app.buttons["tab.4"], timeout: 12), "탭바가 렌더링되지 않았습니다.")
+        XCTAssertTrue(openTab(index: 4, app: app), "설정 탭 진입에 실패했습니다.")
+
+        let privacyEntry = app.descendants(matching: .any).matching(identifier: "settings.privacyCenter.entry").firstMatch
+        XCTAssertTrue(
+            revealExistingElementByVerticalScroll(privacyEntry, app: app, maxSwipes: 5),
+            "프라이버시 센터 진입 경로를 화면 안으로 노출하지 못했습니다."
+        )
+        XCTAssertTrue(tapIfExists(privacyEntry), "프라이버시 센터 진입 버튼 탭에 실패했습니다.")
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "screen.settings.privacyCenter", in: app), timeout: 6),
+            "프라이버시 센터 화면이 열리지 않았습니다."
+        )
+
+        let deleteRequestButton = app.descendants(matching: .any)
+            .matching(identifier: "settings.privacyCenter.deleteRequest.open")
+            .firstMatch
+        let deleteRequestFallbackButton = app.buttons["삭제 요청 흐름 열기"]
+        XCTAssertTrue(
+            revealExistingElementByVerticalScroll(deleteRequestButton, app: app, maxSwipes: 8)
+                || revealExistingElementByVerticalScroll(deleteRequestFallbackButton, app: app, maxSwipes: 2),
+            "삭제 요청 진입 버튼을 화면 안으로 노출하지 못했습니다."
+        )
+        let resolvedDeleteRequestButton = deleteRequestButton.exists ? deleteRequestButton : deleteRequestFallbackButton
+        XCTAssertTrue(tapIfExists(resolvedDeleteRequestButton), "삭제 요청 진입 버튼 탭에 실패했습니다.")
+
+        let deletionRequestRoot = screenElement(identifier: "sheet.settings.privacyDeletionRequest", in: app)
+        let deletionRequestCollection = screenElement(identifier: "settings.privacyDeletionRequest.collection", in: app)
+        let deletionRequestNextSteps = screenElement(identifier: "settings.privacyDeletionRequest.nextSteps", in: app)
+        XCTAssertTrue(
+            waitUntilExists(deletionRequestRoot, timeout: 2)
+                || waitUntilExists(deletionRequestCollection, timeout: 2)
+                || waitUntilExists(deletionRequestNextSteps, timeout: 2),
+            "삭제 요청 화면이 열리지 않았습니다."
+        )
+        XCTAssertTrue(
+            deletionRequestCollection.exists,
+            "삭제 요청 시트가 수집 항목 안내를 노출하지 않았습니다."
+        )
+        XCTAssertTrue(
+            deletionRequestNextSteps.exists,
+            "삭제 요청 시트가 다음 단계 안내를 노출하지 않았습니다."
+        )
+        let deletionRequestActionCard = screenElement(identifier: "settings.privacyDeletionRequest.actions", in: app)
+        let deletionRequestActionTitle = app.staticTexts["요청 보내기 / 상태 문의"]
+        XCTAssertTrue(
+            revealExistingElementByVerticalScroll(deletionRequestActionCard, app: app, maxSwipes: 2)
+                || revealExistingElementByVerticalScroll(deletionRequestActionTitle, app: app, maxSwipes: 2),
+            "삭제 요청 시트가 요청 보내기 액션 영역을 노출하지 않았습니다."
+        )
+    }
+
     /// 설정 탭의 산책과 기록 카드에서 첫 산책 가이드를 다시 열고 Step2까지 진입할 수 있는지 검증합니다.
     func testFeatureRegression_SettingsWalkGuideReentryPresentsTwoStepGuide() throws {
         let app = launchAppForFeatureRegression()

@@ -29,17 +29,25 @@ protocol SettingsPrivacyCenterProviding {
 final class SettingsPrivacyCenterService: SettingsPrivacyCenterProviding {
     private let privacyControlStateStore: PrivacyControlStateStoreProtocol
     private let moderationStore: RivalModerationStoreProtocol
+    private let deletionRequestService: SettingsPrivacyDeletionRequestProviding
+    private let deletionRequestStore: PrivacyDeletionRequestStoreProtocol
 
     /// 프라이버시 센터 서비스 의존성을 구성합니다.
     /// - Parameters:
     ///   - privacyControlStateStore: 공유 기본값과 최근 상태 요약을 읽는 저장소입니다.
     ///   - moderationStore: 숨김/차단 익명코드 스냅샷을 읽는 저장소입니다.
+    ///   - deletionRequestService: 삭제 요청 ID, 요약 카드, 메일 초안을 조립하는 서비스입니다.
+    ///   - deletionRequestStore: 삭제 요청 로컬 추적 상태를 읽는 저장소입니다.
     init(
         privacyControlStateStore: PrivacyControlStateStoreProtocol = DefaultPrivacyControlStateStore.shared,
-        moderationStore: RivalModerationStoreProtocol = RivalModerationStore(preferenceStore: DefaultMapPreferenceStore.shared)
+        moderationStore: RivalModerationStoreProtocol = RivalModerationStore(preferenceStore: DefaultMapPreferenceStore.shared),
+        deletionRequestService: SettingsPrivacyDeletionRequestProviding = SettingsPrivacyDeletionRequestService(),
+        deletionRequestStore: PrivacyDeletionRequestStoreProtocol = DefaultPrivacyDeletionRequestStore.shared
     ) {
         self.privacyControlStateStore = privacyControlStateStore
         self.moderationStore = moderationStore
+        self.deletionRequestService = deletionRequestService
+        self.deletionRequestStore = deletionRequestStore
     }
 
     /// 설정 메인에서 사용할 프라이버시 센터 진입 요약을 생성합니다.
@@ -87,6 +95,11 @@ final class SettingsPrivacyCenterService: SettingsPrivacyCenterProviding {
             serverSyncSnapshot: serverSyncSnapshot
         )
         let moderationSummary = moderationSummaryPresentation()
+        let deletionRequestSummary = deletionRequestService.loadSummary(
+            currentIdentity: currentIdentity,
+            metadata: metadata,
+            record: deletionRequestStore.loadRecord(for: currentIdentity?.userId)
+        )
         let actionKind = primaryActionKind(
             currentIdentity: currentIdentity,
             locationPermission: locationStatus,
@@ -111,6 +124,7 @@ final class SettingsPrivacyCenterService: SettingsPrivacyCenterProviding {
             notificationPermission: notificationStatus,
             recentStatus: recentStatus,
             moderationSummary: moderationSummary,
+            deletionRequestSummary: deletionRequestSummary,
             documentActions: documentActions(metadata: metadata, moderationSummary: moderationSummary)
         )
     }
@@ -622,14 +636,14 @@ final class SettingsPrivacyCenterService: SettingsPrivacyCenterProviding {
                 target: .document(retentionDocument())
             ),
             SettingsSurfaceAction(
-                id: "privacy.deleteRequest",
-                title: "삭제 요청 메일 보내기",
-                subtitle: "개인정보 삭제 요청 또는 처리 상태 문의를 메일로 바로 접수합니다.",
-                iconSystemName: "trash",
+                id: "privacy.deleteRequestGuide",
+                title: "삭제 요청 처리 기준",
+                subtitle: "요청 ID, 접수 확인 신호, 회신 SLA, 상태 문의 규칙을 먼저 확인합니다.",
+                iconSystemName: "tray.full",
                 badgeText: nil,
                 badgeTone: nil,
-                accessibilityIdentifier: "settings.privacyCenter.deleteRequest",
-                target: .external(deleteRequestMailURL(metadata: metadata))
+                accessibilityIdentifier: "settings.privacyCenter.deleteRequestGuide",
+                target: .document(deleteRequestProcessDocument(metadata: metadata))
             ),
             SettingsSurfaceAction(
                 id: "privacy.moderationSummary",
@@ -769,21 +783,38 @@ final class SettingsPrivacyCenterService: SettingsPrivacyCenterProviding {
         )
     }
 
-    /// 삭제 요청 메일 URL을 구성합니다.
-    /// - Parameter metadata: 앱 버전/빌드/계정 정보를 포함한 메타데이터입니다.
-    /// - Returns: 개인정보 삭제 요청 메일 작성 화면으로 연결할 URL입니다.
-    private func deleteRequestMailURL(metadata: SettingsAppMetadata) -> URL {
-        var components = URLComponents()
-        components.scheme = "mailto"
-        components.path = metadata.supportEmail
-        components.queryItems = [
-            URLQueryItem(name: "subject", value: "DogArea 개인정보 삭제 요청"),
-            URLQueryItem(
-                name: "body",
-                value: "삭제 요청 또는 처리 상태 문의 내용을 작성해주세요.\n\n앱 버전: \(metadata.version)\n빌드: \(metadata.build)\n현재 계정: \(metadata.signedInEmail ?? "guest")"
-            )
-        ]
-        return components.url ?? metadata.repositoryURL
+    /// 삭제 요청 접수/회신 기준 문서를 구성합니다.
+    /// - Parameter metadata: 앱 버전/빌드/지원 채널 메타데이터입니다.
+    /// - Returns: 요청 ID, 접수 확인, 상태 문의 규칙을 요약한 문서입니다.
+    private func deleteRequestProcessDocument(metadata: SettingsAppMetadata) -> SettingsDocumentContent {
+        SettingsDocumentContent(
+            id: "privacy.deleteRequestGuide",
+            title: "삭제 요청 처리 기준",
+            subtitle: "삭제 요청은 일반 문의와 분리된 전용 흐름으로 접수합니다.",
+            sections: [
+                SettingsDocumentSection(
+                    id: "privacy.deleteRequest.requestId",
+                    title: "요청 ID 발급",
+                    body: "앱은 삭제 요청을 시작할 때 요청 ID를 만들고, 메일 제목과 본문에 함께 넣습니다. 이후 접수 확인과 상태 문의도 같은 요청 ID를 계속 사용합니다."
+                ),
+                SettingsDocumentSection(
+                    id: "privacy.deleteRequest.collection",
+                    title: "함께 전달되는 정보",
+                    body: "현재 계정 이메일, 앱 버전/빌드, 번들 ID, 요청 ID가 메일 본문에 함께 들어갑니다. 어떤 데이터를 확인/삭제하고 싶은지는 사용자가 추가 설명으로 보완할 수 있습니다."
+                ),
+                SettingsDocumentSection(
+                    id: "privacy.deleteRequest.sla",
+                    title: "접수 확인과 회신",
+                    body: "메일 전송 후 첫 접수 회신은 24시간 안을 기본 목표로 합니다. 추가 확인이 필요하면 같은 스레드에서 요청 ID를 유지한 채 안내합니다."
+                ),
+                SettingsDocumentSection(
+                    id: "privacy.deleteRequest.followUp",
+                    title: "처리 상태 문의",
+                    body: "접수 후 진행 상황이 궁금하면 앱의 상태 문의 버튼으로 같은 요청 ID를 다시 인용해 문의할 수 있습니다. 일반 지원 문의와 삭제 요청을 같은 메일 제목으로 섞지 않는 것이 원칙입니다."
+                )
+            ],
+            footer: "현재 지원 채널은 \(metadata.supportEmail)이며, 앱 안에서는 삭제 요청 흐름과 일반 문의 흐름을 분리해서 보여줍니다."
+        )
     }
 
     /// 최근 상태 시각을 `n분 전` 형식의 짧은 문구로 변환합니다.

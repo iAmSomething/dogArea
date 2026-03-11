@@ -137,6 +137,12 @@
 		A26800010000000000000004 /* SettingsPrivacyCenterEntryCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A26800010000000000000014 /* SettingsPrivacyCenterEntryCardView.swift */; };
 		A26800010000000000000005 /* SettingsPrivacyCenterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A26800010000000000000015 /* SettingsPrivacyCenterView.swift */; };
 		A26800010000000000000006 /* SettingsPrivacyCenterViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A26800010000000000000016 /* SettingsPrivacyCenterViewModel.swift */; };
+		A72000010000000000000001 /* PrivacyDeletionRequestModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72000010000000000000011 /* PrivacyDeletionRequestModels.swift */; };
+		A72000010000000000000002 /* SettingsPrivacyDeletionRequestService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72000010000000000000012 /* SettingsPrivacyDeletionRequestService.swift */; };
+		A72000010000000000000003 /* PrivacyDeletionRequestStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72000010000000000000013 /* PrivacyDeletionRequestStore.swift */; };
+		A72000010000000000000004 /* SettingsMailComposeSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72000010000000000000014 /* SettingsMailComposeSheet.swift */; };
+		A72000010000000000000005 /* SettingsPrivacyDeletionRequestSheetViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72000010000000000000015 /* SettingsPrivacyDeletionRequestSheetViewModel.swift */; };
+		A72000010000000000000006 /* SettingsPrivacyDeletionRequestSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72000010000000000000016 /* SettingsPrivacyDeletionRequestSheetView.swift */; };
 		A37700010000000000000001 /* AreaReferenceCatalogInsightService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37700010000000000000011 /* AreaReferenceCatalogInsightService.swift */; };
 		A37700010000000000000002 /* AreaDetailCatalogSnapshotSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37700010000000000000012 /* AreaDetailCatalogSnapshotSectionView.swift */; };
 		A37800010000000000000001 /* AppTabScaffold.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37800010000000000000002 /* AppTabScaffold.swift */; };
@@ -556,6 +562,12 @@
 		A26800010000000000000014 /* SettingsPrivacyCenterEntryCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsPrivacyCenterEntryCardView.swift; sourceTree = "<group>"; };
 		A26800010000000000000015 /* SettingsPrivacyCenterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsPrivacyCenterView.swift; sourceTree = "<group>"; };
 		A26800010000000000000016 /* SettingsPrivacyCenterViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsPrivacyCenterViewModel.swift; sourceTree = "<group>"; };
+		A72000010000000000000011 /* PrivacyDeletionRequestModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyDeletionRequestModels.swift; sourceTree = "<group>"; };
+		A72000010000000000000012 /* SettingsPrivacyDeletionRequestService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsPrivacyDeletionRequestService.swift; sourceTree = "<group>"; };
+		A72000010000000000000013 /* PrivacyDeletionRequestStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyDeletionRequestStore.swift; sourceTree = "<group>"; };
+		A72000010000000000000014 /* SettingsMailComposeSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsMailComposeSheet.swift; sourceTree = "<group>"; };
+		A72000010000000000000015 /* SettingsPrivacyDeletionRequestSheetViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsPrivacyDeletionRequestSheetViewModel.swift; sourceTree = "<group>"; };
+		A72000010000000000000016 /* SettingsPrivacyDeletionRequestSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsPrivacyDeletionRequestSheetView.swift; sourceTree = "<group>"; };
 		A37700010000000000000011 /* AreaReferenceCatalogInsightService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaReferenceCatalogInsightService.swift; sourceTree = "<group>"; };
 		A37700010000000000000012 /* AreaDetailCatalogSnapshotSectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaDetailCatalogSnapshotSectionView.swift; sourceTree = "<group>"; };
 		A37800010000000000000002 /* AppTabScaffold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTabScaffold.swift; sourceTree = "<group>"; };
@@ -1032,6 +1044,7 @@
 			children = (
 				A37600010000000000000011 /* ProfileEditorDraft.swift */,
 				A26800010000000000000011 /* SettingsPrivacyCenterModels.swift */,
+				A72000010000000000000011 /* PrivacyDeletionRequestModels.swift */,
 				A50000010000000000000011 /* SettingsSurfaceModels.swift */,
 				72F12802474DD64B59485B1E /* SeasonProfileSummary.swift */,
 			);
@@ -1043,6 +1056,7 @@
 			children = (
 				A37600010000000000000012 /* SettingsPetManagementService.swift */,
 				A26800010000000000000012 /* SettingsPrivacyCenterService.swift */,
+				A72000010000000000000012 /* SettingsPrivacyDeletionRequestService.swift */,
 				A50000010000000000000012 /* SettingsProductSurfaceService.swift */,
 				9D5A36B3041BCFBBD4C59BDC /* SettingsSeasonProfileSummaryService.swift */,
 			);
@@ -1095,8 +1109,10 @@
 				A50000010000000000000013 /* SettingsActionSectionCardView.swift */,
 				A50000010000000000000014 /* SettingsAppInfoCardView.swift */,
 				A50000010000000000000015 /* SettingsDocumentSheetView.swift */,
+				A72000010000000000000014 /* SettingsMailComposeSheet.swift */,
 				A45200010000000000000011 /* SettingsEditableImageButton.swift */,
 				A26800010000000000000014 /* SettingsPrivacyCenterEntryCardView.swift */,
+				A72000010000000000000016 /* SettingsPrivacyDeletionRequestSheetView.swift */,
 				A37600010000000000000014 /* PetManagementSheet.swift */,
 				A37600010000000000000016 /* PetManagementEditPetSheet.swift */,
 			);
@@ -1166,6 +1182,7 @@
 				A41500010000000000000016 /* FeatureFlagStore.swift */,
 				A41500010000000000000017 /* AppMetricTracker.swift */,
 				A26800010000000000000013 /* PrivacyControlStateStore.swift */,
+				A72000010000000000000013 /* PrivacyDeletionRequestStore.swift */,
 				A50700010000000000000013 /* AuthMailActionStateStore.swift */,
 				A56400010000000000000013 /* HomeMissionGuideStateStore.swift */,
 				A56800010000000000000013 /* SeasonGuideStateStore.swift */,
@@ -1639,6 +1656,7 @@
 				DA8BB9E72B0255B700E350C4 /* SettingViewModel.swift */,
 				A26800010000000000000015 /* SettingsPrivacyCenterView.swift */,
 				A26800010000000000000016 /* SettingsPrivacyCenterViewModel.swift */,
+				A72000010000000000000015 /* SettingsPrivacyDeletionRequestSheetViewModel.swift */,
 				AEEB7566FB4DD44BCB259429 /* SettingViewModelSupport */,
 				FFE36A05F119A92311550278 /* RivalTabViewModelSupport */,
 			);
@@ -2249,6 +2267,12 @@
 				A26800010000000000000004 /* SettingsPrivacyCenterEntryCardView.swift in Sources */,
 				A26800010000000000000005 /* SettingsPrivacyCenterView.swift in Sources */,
 				A26800010000000000000006 /* SettingsPrivacyCenterViewModel.swift in Sources */,
+				A72000010000000000000001 /* PrivacyDeletionRequestModels.swift in Sources */,
+				A72000010000000000000002 /* SettingsPrivacyDeletionRequestService.swift in Sources */,
+				A72000010000000000000003 /* PrivacyDeletionRequestStore.swift in Sources */,
+				A72000010000000000000004 /* SettingsMailComposeSheet.swift in Sources */,
+				A72000010000000000000005 /* SettingsPrivacyDeletionRequestSheetViewModel.swift in Sources */,
+				A72000010000000000000006 /* SettingsPrivacyDeletionRequestSheetView.swift in Sources */,
 				A50000010000000000000001 /* SettingsSurfaceModels.swift in Sources */,
 				A50000010000000000000002 /* SettingsProductSurfaceService.swift in Sources */,
 				DA4513832AFB25C2007AD69B /* PositionMarkerView.swift in Sources */,
