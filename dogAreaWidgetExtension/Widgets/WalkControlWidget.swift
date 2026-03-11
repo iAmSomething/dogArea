@@ -81,6 +81,23 @@ struct WalkControlTimelineProvider: TimelineProvider {
     }
 }
 
+private enum WalkControlPresentationMode: Equatable {
+    case walking
+    case ready
+    case noActivePet
+    case pending(WalkWidgetActionKind)
+    case requiresAppOpen(WalkWidgetActionKind)
+    case failedRetry(WalkWidgetActionKind)
+    case failedOpenApp(WalkWidgetActionKind)
+}
+
+private struct WalkControlPresentationContent {
+    let headline: String
+    let supportingLine: String?
+    let detailLine: String?
+    let showsElapsed: Bool
+}
+
 struct WalkControlWidgetEntryView: View {
     @Environment(\.widgetFamily) private var family
 
@@ -109,8 +126,31 @@ struct WalkControlWidgetEntryView: View {
         entry.snapshot.normalizedPetContext
     }
 
-    private var effectiveStatusMessage: String? {
-        activeActionState?.message ?? entry.snapshot.statusMessage
+    private var presentationMode: WalkControlPresentationMode {
+        if let activeActionState {
+            switch (activeActionState.phase, activeActionState.followUp) {
+            case (.pending, _):
+                return .pending(activeActionState.kind)
+            case (.requiresAppOpen, _):
+                return .requiresAppOpen(activeActionState.kind)
+            case (.failed, .retry):
+                return .failedRetry(activeActionState.kind)
+            case (.failed, _):
+                return .failedOpenApp(activeActionState.kind)
+            case (.succeeded, _):
+                break
+            }
+        }
+
+        if entry.snapshot.isWalking {
+            return .walking
+        }
+
+        if petContext.blocksInlineStart {
+            return .noActivePet
+        }
+
+        return .ready
     }
 
     private var elapsedDisplayMode: WalkControlElapsedDisplayMode {
@@ -122,19 +162,6 @@ struct WalkControlWidgetEntryView: View {
 
     private var preferredActionKind: WalkWidgetActionKind {
         activeActionState?.kind ?? (entry.snapshot.isWalking ? .endWalk : .startWalk)
-    }
-
-    private var walkStateTitle: String {
-        entry.snapshot.isWalking ? "산책 중" : "산책 대기"
-    }
-
-    private var compactSupportText: String? {
-        let message = effectiveStatusMessage?.trimmingCharacters(in: .whitespacesAndNewlines)
-        if let message, message.isEmpty == false {
-            return message
-        }
-        let detail = petContext.detailText.trimmingCharacters(in: .whitespacesAndNewlines)
-        return detail.isEmpty ? nil : detail
     }
 
     private var compactActionBlockedTitle: String {
@@ -194,36 +221,153 @@ struct WalkControlWidgetEntryView: View {
         ]
     }
 
+    /// `systemSmall` family의 worst-case 상태를 감안한 compact 카피를 계산합니다.
+    /// - Returns: compact family에서 사용할 headline, 보조 줄, 세부 줄, 경과 시간 표시 여부입니다.
+    private func makeCompactPresentation() -> WalkControlPresentationContent {
+        switch presentationMode {
+        case .walking:
+            return .init(
+                headline: "산책 중",
+                supportingLine: petContext.petName,
+                detailLine: nil,
+                showsElapsed: true
+            )
+        case .ready:
+            return .init(
+                headline: "산책 준비",
+                supportingLine: petContext.petName,
+                detailLine: "바로 시작할 수 있어요",
+                showsElapsed: false
+            )
+        case .noActivePet:
+            return .init(
+                headline: "앱에서 확인",
+                supportingLine: nil,
+                detailLine: "반려견 선택이 필요해요",
+                showsElapsed: false
+            )
+        case .pending:
+            return .init(
+                headline: "처리 중",
+                supportingLine: petContext.petName,
+                detailLine: "앱으로 전환 중이에요",
+                showsElapsed: false
+            )
+        case .requiresAppOpen:
+            return .init(
+                headline: "앱에서 확인",
+                supportingLine: nil,
+                detailLine: "상태 확인이 필요해요",
+                showsElapsed: false
+            )
+        case .failedRetry:
+            return .init(
+                headline: "다시 시도",
+                supportingLine: petContext.petName,
+                detailLine: "위젯에서 다시 시도해요",
+                showsElapsed: false
+            )
+        case .failedOpenApp:
+            return .init(
+                headline: "앱에서 확인",
+                supportingLine: nil,
+                detailLine: "상태 확인이 필요해요",
+                showsElapsed: false
+            )
+        }
+    }
+
+    /// `systemMedium` family의 canonical 카피를 계산합니다.
+    /// - Returns: standard family에서 사용할 headline, 보조 줄, 세부 줄, 경과 시간 표시 여부입니다.
+    private func makeStandardPresentation() -> WalkControlPresentationContent {
+        switch presentationMode {
+        case .walking:
+            return .init(
+                headline: "산책 중",
+                supportingLine: petContext.petName,
+                detailLine: "지금 산책 기록을 계속 반영하고 있어요.",
+                showsElapsed: true
+            )
+        case .ready:
+            return .init(
+                headline: "산책 준비",
+                supportingLine: petContext.petName,
+                detailLine: "\(petContext.petName)와 바로 산책을 시작할 수 있어요.",
+                showsElapsed: false
+            )
+        case .noActivePet:
+            return .init(
+                headline: "앱에서 반려견 확인",
+                supportingLine: nil,
+                detailLine: "활성 반려견이 없어 앱에서 먼저 확인이 필요해요.",
+                showsElapsed: false
+            )
+        case .pending(let kind):
+            return .init(
+                headline: kind == .startWalk ? "산책 시작 준비" : "산책 종료 준비",
+                supportingLine: petContext.petName,
+                detailLine: "앱이 열리면 요청을 이어서 처리해요.",
+                showsElapsed: false
+            )
+        case .requiresAppOpen(let kind):
+            return .init(
+                headline: kind == .startWalk ? "앱에서 시작 확인" : "앱에서 종료 확인",
+                supportingLine: nil,
+                detailLine: "권한 또는 현재 산책 상태를 앱에서 확인해 주세요.",
+                showsElapsed: false
+            )
+        case .failedRetry(let kind):
+            return .init(
+                headline: kind == .startWalk ? "산책 시작 재시도" : "산책 종료 재시도",
+                supportingLine: petContext.petName,
+                detailLine: "요청이 끝나지 않았어요. 위젯에서 다시 시도할 수 있어요.",
+                showsElapsed: false
+            )
+        case .failedOpenApp(let kind):
+            return .init(
+                headline: kind == .startWalk ? "앱에서 시작 확인" : "앱에서 종료 확인",
+                supportingLine: nil,
+                detailLine: "현재 상태 확인이 필요해 앱에서 이어서 처리해 주세요.",
+                showsElapsed: false
+            )
+        }
+    }
+
     /// 소형 위젯 레이아웃을 렌더링합니다.
     /// - Returns: 핵심 상태와 CTA 하나만 남긴 compact 위젯 본문입니다.
     @ViewBuilder
     private var smallLayout: some View {
+        let presentation = makeCompactPresentation()
         VStack(alignment: .leading, spacing: layoutBudget.verticalSpacing) {
             badgeRow
 
-            Text(walkStateTitle)
+            Text(presentation.headline)
                 .font(.headline)
                 .lineLimit(layoutBudget.headlineLineLimit)
 
-            Text(petContext.petName)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-
-            HStack(spacing: 6) {
-                Image(systemName: "clock")
+            if let supportingLine = presentation.supportingLine {
+                Text(supportingLine)
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
-                WalkControlElapsedTextView(displayMode: elapsedDisplayMode)
-                    .font(.system(.caption, design: .rounded).monospacedDigit().weight(.semibold))
-                Spacer(minLength: 0)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.86)
             }
 
-            if let compactSupportText {
-                Text(compactSupportText)
+            if presentation.showsElapsed {
+                HStack(spacing: 6) {
+                    Image(systemName: "clock")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    WalkControlElapsedTextView(displayMode: elapsedDisplayMode)
+                        .font(.system(.caption, design: .rounded).monospacedDigit().weight(.semibold))
+                    Spacer(minLength: 0)
+                }
+            } else if let detailLine = presentation.detailLine {
+                Text(detailLine)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .lineLimit(layoutBudget.detailLineLimit)
+                    .minimumScaleFactor(0.88)
             }
 
             Spacer(minLength: 2)
@@ -236,42 +380,42 @@ struct WalkControlWidgetEntryView: View {
     /// - Returns: 반려견 문맥과 상태 메시지를 함께 담는 확장 위젯 본문입니다.
     @ViewBuilder
     private var mediumLayout: some View {
+        let presentation = makeStandardPresentation()
         VStack(alignment: .leading, spacing: layoutBudget.verticalSpacing) {
             badgeRow
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(walkStateTitle)
+                Text(presentation.headline)
                     .font(.headline)
                     .lineLimit(layoutBudget.headlineLineLimit)
-                Text(petContext.petName)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                if let supportingLine = presentation.supportingLine {
+                    Text(supportingLine)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.88)
+                }
             }
 
-            Text(petContext.detailText)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .lineLimit(layoutBudget.detailLineLimit)
-
-            HStack(spacing: 6) {
-                Image(systemName: "clock")
-                    .foregroundStyle(.secondary)
-                WalkControlElapsedTextView(displayMode: elapsedDisplayMode)
-                    .font(.system(.body, design: .rounded).monospacedDigit())
-                Spacer(minLength: 0)
-                Text(WidgetFormatting.formattedTime(timestamp: entry.snapshot.updatedAt))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-
-            if let statusMessage = effectiveStatusMessage,
-               statusMessage.isEmpty == false {
-                Text(statusMessage)
+            if let detailLine = presentation.detailLine {
+                Text(detailLine)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .lineLimit(layoutBudget.statusLineLimit)
+            }
+
+            if presentation.showsElapsed {
+                HStack(spacing: 6) {
+                    Image(systemName: "clock")
+                        .foregroundStyle(.secondary)
+                    WalkControlElapsedTextView(displayMode: elapsedDisplayMode)
+                        .font(.system(.body, design: .rounded).monospacedDigit())
+                    Spacer(minLength: 0)
+                    Text(WidgetFormatting.formattedTime(timestamp: entry.snapshot.updatedAt))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
             }
 
             Spacer(minLength: 2)

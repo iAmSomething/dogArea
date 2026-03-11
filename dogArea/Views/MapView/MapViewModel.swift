@@ -368,6 +368,12 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         ProcessInfo.processInfo.arguments.contains("-UITest.MapForceWalkingState")
     }
 
+    /// UI 테스트에서 위젯 산책 액션의 최소 선행조건을 강제로 만족시킬지 여부를 반환합니다.
+    /// - Returns: `-UITest.MapForceWidgetActionEligible` 인자가 포함되면 `true`를 반환합니다.
+    static func shouldForceWidgetActionEligibilityForUITest() -> Bool {
+        ProcessInfo.processInfo.arguments.contains("-UITest.MapForceWidgetActionEligible")
+    }
+
     /// UI 테스트에서 시즌 점령 지도를 항상 보이게 강제할지 여부를 반환합니다.
     /// - Returns: `-UITest.MapForceSeasonTileVisible` 인자가 포함되면 `true`를 반환합니다.
     private static func shouldForceSeasonTileMapVisibleForUITest() -> Bool {
@@ -633,6 +639,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private let clusterAnnotationService: MapClusterAnnotationServicing
     let walkWidgetActionConvergenceService: WalkWidgetActionConverging
     let widgetSnapshotStore: WalkWidgetSnapshotStoring
+    let widgetActionRequestStore: WalkWidgetActionRequestStoring
     let liveActivityService: WalkLiveActivityServicing
     private let eventCenter: AppEventCenterProtocol
     private var lastCaptureHapticAt: Date = .distantPast
@@ -756,6 +763,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         hotspotClusterRenderingService: MapHotspotClusterRenderingServicing? = nil,
         walkWidgetActionConvergenceService: WalkWidgetActionConverging = WalkWidgetActionConvergenceService(),
         widgetSnapshotStore: WalkWidgetSnapshotStoring = DefaultWalkWidgetSnapshotStore.shared,
+        widgetActionRequestStore: WalkWidgetActionRequestStoring = DefaultWalkWidgetActionRequestStore.shared,
         liveActivityService: WalkLiveActivityServicing = WalkLiveActivityService(),
         eventCenter: AppEventCenterProtocol = DefaultAppEventCenter.shared
     ) {
@@ -782,6 +790,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             ?? MapHotspotClusterRenderingService(clusterAnnotationService: clusterAnnotationService)
         self.walkWidgetActionConvergenceService = walkWidgetActionConvergenceService
         self.widgetSnapshotStore = widgetSnapshotStore
+        self.widgetActionRequestStore = widgetActionRequestStore
         self.liveActivityService = liveActivityService
         self.eventCenter = eventCenter
         super.init()
@@ -1215,6 +1224,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     }
 
     var isLocationPermissionDenied: Bool {
+        if Self.shouldForceWidgetActionEligibilityForUITest() {
+            return false
+        }
         let status = locationManager.authorizationStatus
         MapCoreLocationCallTracer.record(
             "authorizationStatus.read",
@@ -1812,7 +1824,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 
     private func pauseWalkForAuthorizationDowngrade() {
         guard isWalking else { return }
-        if Self.shouldForceWalkingStateForUITest() {
+        if Self.shouldForceWalkingStateForUITest() || Self.shouldForceWidgetActionEligibilityForUITest() {
             walkStatusMessage = "UI 테스트 강제 산책 상태를 유지합니다."
             syncWatchContext(force: true)
             syncWalkWidgetSnapshot(force: true)
@@ -4590,6 +4602,11 @@ extension MapViewModel {
             syncWalkWidgetSnapshot(force: true)
             syncWalkLiveActivity(force: true)
         case .restricted, .denied:
+            if Self.shouldForceWidgetActionEligibilityForUITest() {
+                syncWalkWidgetSnapshot(force: true)
+                syncWalkLiveActivity(force: true)
+                return
+            }
             pauseWalkForAuthorizationDowngrade()
             stopLocationUpdatesIfNeeded()
             syncWalkWidgetSnapshot(force: true, statusOverride: .locationDenied)

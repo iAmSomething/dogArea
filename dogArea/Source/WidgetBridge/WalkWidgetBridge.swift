@@ -280,6 +280,10 @@ protocol WalkWidgetActionRequestStoring {
     /// - Parameter request: 앱 실행 후 소비할 액션 요청 모델입니다.
     func setPending(_ request: WalkWidgetActionRequest)
 
+    /// 현재 대기 중인 위젯 액션 요청을 읽되 제거하지 않습니다.
+    /// - Returns: 대기 요청이 있으면 반환하고, 없으면 `nil`을 반환합니다.
+    func pendingRequest() -> WalkWidgetActionRequest?
+
     /// 현재 대기 중인 위젯 액션 요청을 읽고 즉시 제거합니다.
     /// - Returns: 대기 요청이 있으면 반환하고, 없으면 `nil`을 반환합니다.
     func consumePending() -> WalkWidgetActionRequest?
@@ -310,14 +314,23 @@ final class DefaultWalkWidgetActionRequestStore: WalkWidgetActionRequestStoring 
         storage.set(data, forKey: WalkWidgetBridgeContract.actionRequestStorageKey)
     }
 
-    /// 현재 대기 중인 위젯 액션 요청을 읽고 즉시 제거합니다.
-    /// - Returns: 대기 요청이 있으면 반환하고, 없으면 `nil`을 반환합니다.
-    func consumePending() -> WalkWidgetActionRequest? {
+    /// 현재 대기 중인 위젯 액션 요청을 제거하지 않고 복원합니다.
+    /// - Returns: 복원 가능한 요청이 있으면 반환하고, 없으면 `nil`을 반환합니다.
+    func pendingRequest() -> WalkWidgetActionRequest? {
         guard let data = storage.data(forKey: WalkWidgetBridgeContract.actionRequestStorageKey) else {
             return nil
         }
-        storage.removeObject(forKey: WalkWidgetBridgeContract.actionRequestStorageKey)
         return try? decoder.decode(WalkWidgetActionRequest.self, from: data)
+    }
+
+    /// 현재 대기 중인 위젯 액션 요청을 읽고 즉시 제거합니다.
+    /// - Returns: 대기 요청이 있으면 반환하고, 없으면 `nil`을 반환합니다.
+    func consumePending() -> WalkWidgetActionRequest? {
+        guard let request = pendingRequest() else {
+            return nil
+        }
+        storage.removeObject(forKey: WalkWidgetBridgeContract.actionRequestStorageKey)
+        return request
     }
 
     /// 지정한 액션 식별자와 일치하는 대기 요청을 제거합니다.
