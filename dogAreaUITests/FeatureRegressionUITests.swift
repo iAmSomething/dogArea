@@ -342,6 +342,48 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertTrue(waitUntilExists(bottomControls, timeout: 3), "종료 알럿 해제 후 하단 control overlay가 다시 보여야 합니다.")
     }
 
+    /// 영구 실패 동기화 배너가 복구/정리/문의 세 갈래를 모두 노출하는지 검증합니다.
+    func testFeatureRegression_MapSyncPermanentFailureBannerSurfacesRecoveryChoices() throws {
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.MapSyncOutboxPermanentFailurePreview"])
+
+        XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.")
+        XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
+        dismissMapAlertIfNeeded(app)
+
+        let banner = screenElement(identifier: "map.syncOutbox.recoveryBanner", in: app)
+        let rebuildButton = app.buttons["복구 다시 만들기"]
+        let archiveButton = app.buttons["동기화 목록 정리"]
+        let contactSupportButton = app.buttons["문의 메일"]
+        let dismissButton = app.buttons["나중에 보기"]
+        XCTAssertTrue(waitUntilExists(banner, timeout: 8), "영구 실패 복구 배너가 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(rebuildButton, timeout: 2), "복구 다시 만들기 버튼이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(archiveButton, timeout: 2), "동기화 목록 정리 버튼이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(contactSupportButton, timeout: 2), "문의 메일 버튼이 노출되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(dismissButton, timeout: 2), "나중에 보기 버튼이 노출되지 않았습니다.")
+    }
+
+    /// 복구 가능한 영구 실패 세션을 다시 만들면 영구 실패 건수가 줄어드는지 검증합니다.
+    func testFeatureRegression_MapSyncPermanentFailureRebuildActionReducesFailureCount() throws {
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.MapSyncOutboxPermanentFailurePreview"])
+
+        XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.")
+        XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
+        dismissMapAlertIfNeeded(app)
+
+        let title = app.staticTexts.matching(
+            NSPredicate(format: "label BEGINSWITH %@", "동기화 정리가 필요한 기록")
+        ).firstMatch
+        XCTAssertTrue(waitUntilExists(title, timeout: 8), "영구 실패 배너 제목이 노출되지 않았습니다.")
+        XCTAssertTrue(title.label.contains("3건"), "preview 상태는 영구 실패 3건으로 시작해야 합니다.")
+
+        let rebuildButton = app.buttons["복구 다시 만들기"]
+        XCTAssertTrue(waitUntilHittable(rebuildButton, timeout: 2), "복구 다시 만들기 버튼이 탭 가능한 상태가 아닙니다.")
+        rebuildButton.tap()
+
+        XCTAssertTrue(waitUntilExists(title, timeout: 2), "복구 후에도 영구 실패 배너 제목이 유지되어야 합니다.")
+        XCTAssertTrue(title.label.contains("2건"), "복구 액션 후 영구 실패 건수는 2건으로 줄어야 합니다.")
+    }
+
     /// 지도 첫 진입 시 산책 가치 설명 가이드가 자동으로 열리는지 검증합니다.
     func testFeatureRegression_MapWalkValueGuideAutoPresentsOnFirstVisit() throws {
         let app = launchAppForFeatureRegression(extraArguments: ["-UITest.WalkValueGuideAutoPresent"])

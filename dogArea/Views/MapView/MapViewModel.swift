@@ -478,6 +478,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     @Published var syncOutboxPendingCount: Int = 0
     @Published var syncOutboxPermanentFailureCount: Int = 0
     @Published var syncOutboxLastErrorCodeText: String = ""
+    @Published var syncOutboxRecoveryOverview: SyncOutboxPermanentFailureOverview? = nil
     @Published var syncRecoveryToastMessage: String? = nil
     @Published private(set) var captureRipples: [CaptureRipple] = []
     @Published private(set) var weatherOverlayRiskLevel: WeatherOverlayRiskLevel = .clear
@@ -625,9 +626,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     var liveActivitySyncTask: Task<Void, Never>? = nil
     var lastLiveActivityFallbackReason: WalkLiveActivityFallbackReason? = nil
     private var syncFlushTask: Task<Void, Never>? = nil
-    private let syncOutbox = SyncOutboxStore.shared
+    let syncOutbox = SyncOutboxStore.shared
     private let syncTransport = SupabaseSyncOutboxTransport()
-    private let walkRepository: WalkRepositoryProtocol
+    let walkRepository: WalkRepositoryProtocol
     let userSessionStore: UserSessionStoreProtocol
     private let authSessionStore: AuthSessionStoreProtocol
     let preferenceStore: MapPreferenceStoreProtocol
@@ -846,6 +847,8 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         if isUITestRuntime == false {
             self.refreshFeatureFlagsFromRemote()
             self.refreshSyncOutboxSummary()
+        } else if Self.shouldForceSyncOutboxPermanentFailurePreviewForUITest() {
+            self.applyUITestSyncOutboxPermanentFailurePreviewIfNeeded()
         }
         self.syncWalkWidgetSnapshot(force: true)
         self.syncWalkLiveActivity(force: true)
@@ -1245,6 +1248,9 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
 
     var syncOutboxStatusText: String {
         if syncOutboxPermanentFailureCount > 0 {
+            if let overview = syncOutboxRecoveryOverview {
+                return overview.title
+            }
             if syncOutboxLastErrorCodeText.isEmpty == false {
                 return "동기화 영구실패 \(syncOutboxPermanentFailureCount)건 (\(syncOutboxErrorDescription(rawValue: syncOutboxLastErrorCodeText)))"
             }
@@ -1304,12 +1310,18 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         flushSyncOutboxIfNeeded(force: true)
     }
 
-    private func refreshSyncOutboxSummary() {
+    func refreshSyncOutboxSummary() {
+        if Self.shouldForceSyncOutboxPermanentFailurePreviewForUITest() {
+            applyUITestSyncOutboxPermanentFailurePreviewIfNeeded()
+            lastSyncSummarySnapshot = nil
+            return
+        }
         let previous = lastSyncSummarySnapshot
         let summary = syncOutbox.summary()
         syncOutboxPendingCount = summary.pendingCount
         syncOutboxPermanentFailureCount = summary.permanentFailureCount
         syncOutboxLastErrorCodeText = summary.lastErrorCode?.rawValue ?? ""
+        refreshSyncOutboxRecoveryOverview()
 
         if let previous,
            previous.pendingCount > 0,
@@ -1339,6 +1351,14 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             return "서버 오류"
         case .schemaMismatch:
             return "스키마 불일치"
+        case .petIdRequired:
+            return "반려견 정보 누락"
+        case .sessionInvalidPetReference:
+            return "반려견 연결 불일치"
+        case .sessionTimeRangeInvalid:
+            return "시간 범위 오류"
+        case .sessionOwnershipConflict:
+            return "소유권 충돌"
         case .storageQuota:
             return "저장소 한도"
         case .conflict:
@@ -1362,7 +1382,11 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         flushSyncOutboxIfNeeded(force: true)
     }
 
-    private func flushSyncOutboxIfNeeded(force: Bool = false) {
+    func flushSyncOutboxIfNeeded(force: Bool = false) {
+        if Self.shouldForceSyncOutboxPermanentFailurePreviewForUITest() {
+            applyUITestSyncOutboxPermanentFailurePreviewIfNeeded()
+            return
+        }
         let now = Date()
         if force == false, now.timeIntervalSince(lastSyncFlushAt) < 5.0 {
             return
