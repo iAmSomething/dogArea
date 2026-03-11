@@ -15,6 +15,7 @@ HARNESS_LAST_LOGIN_STATUS=""
 HARNESS_LAST_LOGIN_BODY=""
 HARNESS_MEMBER_TOKEN=""
 HARNESS_MEMBER_USER_ID=""
+HARNESS_MEMBER_REFRESH_TOKEN=""
 HARNESS_PROJECT_REF=""
 
 resolve_xcconfig_value() {
@@ -100,12 +101,22 @@ harness_request_json() {
   local error_file
   error_file="$(mktemp)"
 
-  if response="$(curl -sS --max-time "$CURL_TIMEOUT" -X "$method" "$url" \
-    -H "Content-Type: application/json" \
-    -H "apikey: $apikey" \
-    -H "Authorization: $authorization" \
-    --data "$body" \
-    -w '\n%{http_code}' 2>"$error_file")"; then
+  local -a curl_args=(
+    -sS
+    --max-time "$CURL_TIMEOUT"
+    -X "$method"
+    "$url"
+    -H "Content-Type: application/json"
+    -H "apikey: $apikey"
+    -H "Authorization: $authorization"
+    -w '\n%{http_code}'
+  )
+
+  if [[ -n "$body" ]]; then
+    curl_args+=(--data "$body")
+  fi
+
+  if response="$(curl "${curl_args[@]}" 2>"$error_file")"; then
     status="$(printf '%s' "$response" | tail -n 1)"
     payload="$(printf '%s' "$response" | sed '$d')"
   else
@@ -138,15 +149,48 @@ obj = json.loads(raw)
 for key in path:
     if isinstance(obj, dict):
         obj = obj.get(key)
+    elif isinstance(obj, list) and key.isdigit():
+        index = int(key)
+        obj = obj[index] if 0 <= index < len(obj) else None
     else:
         obj = None
     if obj is None:
         print("")
         raise SystemExit(0)
-if isinstance(obj, (str, int, float, bool)):
+if isinstance(obj, bool):
+    print("true" if obj else "false")
+elif isinstance(obj, (str, int, float)):
     print(obj)
 else:
     print("")
+PY
+}
+
+harness_response_diag() {
+  local body="$1"
+  JSON_PAYLOAD="$body" python3 - <<'PY'
+import json
+import os
+
+raw = os.environ.get("JSON_PAYLOAD", "")
+try:
+    obj = json.loads(raw)
+except Exception:
+    print("")
+    raise SystemExit(0)
+
+if not isinstance(obj, dict):
+    print("")
+    raise SystemExit(0)
+
+request_id = obj.get("request_id") or obj.get("requestId") or ""
+error_code = obj.get("errorCode") or obj.get("error_code") or obj.get("code") or obj.get("error") or ""
+parts = []
+if isinstance(request_id, str) and request_id:
+    parts.append(f"request_id={request_id}")
+if isinstance(error_code, (str, int, float)) and str(error_code):
+    parts.append(f"error_code={error_code}")
+print(" ".join(parts))
 PY
 }
 
@@ -195,7 +239,7 @@ harness_expect_status() {
     return 0
   fi
   HARNESS_CASE_TOTAL=$((HARNESS_CASE_TOTAL + 1))
-  local actual body snippet
+  local actual body snippet diag
   actual="$(harness_response_status "$response")"
   body="$(harness_response_body "$response")"
   if [[ "$actual" == "$expected" ]]; then
@@ -204,7 +248,42 @@ harness_expect_status() {
   fi
   HARNESS_CASE_FAILED=$((HARNESS_CASE_FAILED + 1))
   snippet="$(harness_snippet "$body")"
-  harness_note "FAIL $name expected=$expected actual=$actual $detail body=$snippet"
+  diag="$(harness_response_diag "$body")"
+  harness_note "FAIL $name expected=$expected actual=$actual ${diag:+$diag }$detail body=$snippet"
+  return 0
+}
+
+harness_expect_status_in() {
+  local name="$1"
+  local allowed_csv="$2"
+  local response="$3"
+  local detail="$4"
+  if ! harness_case_enabled "$name"; then
+    harness_note "SKIP $name filter=$CASE_FILTER"
+    return 0
+  fi
+
+  HARNESS_CASE_TOTAL=$((HARNESS_CASE_TOTAL + 1))
+  local actual body snippet diag
+  actual="$(harness_response_status "$response")"
+  body="$(harness_response_body "$response")"
+
+  IFS=',' read -r -a allowed_statuses <<< "$allowed_csv"
+  for allowed in "${allowed_statuses[@]}"; do
+    if [[ "$actual" == "${allowed// /}" ]]; then
+      harness_note "PASS $name status=$actual $detail"
+      return 0
+    fi
+  done
+
+  HARNESS_CASE_FAILED=$((HARNESS_CASE_FAILED + 1))
+  snippet="$(harness_snippet "$body")"
+  diag="$(harness_response_diag "$body")"
+  if [[ "$actual" =~ ^5[0-9][0-9]$ ]]; then
+    harness_note "FAIL $name allowed=$allowed_csv actual=$actual class=server_5xx ${diag:+$diag }$detail body=$snippet"
+    return 0
+  fi
+  harness_note "FAIL $name allowed=$allowed_csv actual=$actual ${diag:+$diag }$detail body=$snippet"
   return 0
 }
 
@@ -218,7 +297,7 @@ harness_expect_not_status() {
     return 0
   fi
   HARNESS_CASE_TOTAL=$((HARNESS_CASE_TOTAL + 1))
-  local actual body snippet
+  local actual body snippet diag
   actual="$(harness_response_status "$response")"
   body="$(harness_response_body "$response")"
   if [[ "$actual" != "$rejected" ]]; then
@@ -227,7 +306,8 @@ harness_expect_not_status() {
   fi
   HARNESS_CASE_FAILED=$((HARNESS_CASE_FAILED + 1))
   snippet="$(harness_snippet "$body")"
-  harness_note "FAIL $name rejected=$rejected actual=$actual $detail body=$snippet"
+  diag="$(harness_response_diag "$body")"
+  harness_note "FAIL $name rejected=$rejected actual=$actual ${diag:+$diag }$detail body=$snippet"
   return 0
 }
 
@@ -246,7 +326,8 @@ harness_login_member() {
   fi
   HARNESS_MEMBER_TOKEN="$(harness_json_field "$HARNESS_LAST_LOGIN_BODY" "access_token")"
   HARNESS_MEMBER_USER_ID="$(harness_json_field "$HARNESS_LAST_LOGIN_BODY" "user.id")"
-  [[ -n "$HARNESS_MEMBER_TOKEN" && -n "$HARNESS_MEMBER_USER_ID" ]]
+  HARNESS_MEMBER_REFRESH_TOKEN="$(harness_json_field "$HARNESS_LAST_LOGIN_BODY" "refresh_token")"
+  [[ -n "$HARNESS_MEMBER_TOKEN" && -n "$HARNESS_MEMBER_USER_ID" && -n "$HARNESS_MEMBER_REFRESH_TOKEN" ]]
 }
 
 harness_finish() {

@@ -6,6 +6,8 @@ cd "$ROOT_DIR"
 
 echo "[dogArea-backend] running integration harness structure checks"
 swift scripts/supabase_integration_harness_unit_check.swift
+swift scripts/member_supabase_http_inventory_unit_check.swift
+swift scripts/member_supabase_http_zero_budget_gate_unit_check.swift
 swift scripts/backend_contract_versioning_unit_check.swift
 swift scripts/backend_edge_observability_unit_check.swift
 swift scripts/epic_420_closure_evidence_unit_check.swift

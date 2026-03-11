@@ -16,6 +16,7 @@
   - nearby-presence 오류/복구
   - widget 상태 전이
   - watch 큐/동기화/종료 요약
+  - member full sweep / 5xx zero-budget 추세 확인
 
 ## nightly 대상 축
 
@@ -51,10 +52,12 @@
   - 401
   - 500
   - network loss
+  - member full sweep 결과에서 unexpected `5xx` 0 유지
 - pass 기준
   - session downgrade 오탐 없음
   - retry/backoff가 과호출 없이 동작
   - 복구 후 member 경로 200 재확인
+  - `docs/member-supabase-http-5xx-zero-budget-gate-v1.md` 기준 위반 없음
 
 ### NF-004 widget 상태 전이
 - 최소 조건

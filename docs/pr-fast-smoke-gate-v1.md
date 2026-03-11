@@ -22,6 +22,7 @@
 - widget action 회귀: `bash scripts/run_widget_action_regression_ui_tests.sh`
 - backend/sync smoke: `bash scripts/backend_pr_check.sh`
 - member auth + nearby smoke: `DOGAREA_AUTH_SMOKE_ITERATIONS=1 bash scripts/auth_member_401_smoke_check.sh`
+- member full sweep / 5xx zero-budget 기준: `docs/member-supabase-http-full-sweep-v1.md`, `docs/member-supabase-http-5xx-zero-budget-gate-v1.md`
 
 ## 대상 축
 
@@ -82,11 +83,13 @@
 
 ### FS-005 sync / outbox / nearby-presence 복구 smoke
 - 최소 확인
+  - member full sweep inventory가 문서/runner/체크와 일치
   - member auth 경로에서 401 downgrade 없음
   - nearby-presence member/app smoke 성공
   - outbox/sync 핵심 route 404/500 없음
 - pass 기준
   - `backend_pr_check.sh` 통과
+  - member full sweep에서 unexpected `5xx`가 0건
   - `auth_member_401_smoke_check.sh`에서 member 경로 200 유지
 - fail bucket
   - `sync_recovery`

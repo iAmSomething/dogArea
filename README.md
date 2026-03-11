@@ -125,6 +125,8 @@
 - 프로젝트 설정/의존성 안정화 v1: `docs/project-settings-dependency-stability-v1.md`
 - Supabase 마이그레이션/운영 검증 v1: `docs/supabase-migration.md`
 - Supabase integration smoke matrix v1: `docs/supabase-integration-smoke-matrix-v1.md`
+- Member Supabase HTTP full sweep v1: `docs/member-supabase-http-full-sweep-v1.md`
+- Member Supabase HTTP 5xx zero-budget gate v1: `docs/member-supabase-http-5xx-zero-budget-gate-v1.md`
 - Backend geo test seed / fixture lifecycle v1: `docs/backend-geo-test-fixture-lifecycle-v1.md`
 - Backend 계약 버저닝 정책 v1: `docs/backend-contract-versioning-policy-v1.md`
 - Backend 고위험 계약 매트릭스 v1: `docs/backend-high-risk-contract-matrix-v1.md`
