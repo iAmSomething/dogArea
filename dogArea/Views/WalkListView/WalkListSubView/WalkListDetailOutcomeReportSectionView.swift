@@ -2,10 +2,32 @@ import SwiftUI
 
 struct WalkListDetailOutcomeReportSectionView: View {
     let explanation: WalkOutcomeExplanationDTO
+    let onPresented: () -> Void
+    let onDisclosureToggle: (WalkOutcomeReportDisclosureSection, Bool) -> Void
+    let onOpenInquiry: () -> Void
 
     @State private var isExclusionsExpanded: Bool = false
     @State private var isConnectionsExpanded: Bool = false
     @State private var isContributionExpanded: Bool = false
+    @State private var hasTrackedPresentation: Bool = false
+
+    /// 저장된 산책 결과 리포트 섹션과 상호작용 콜백을 구성합니다.
+    /// - Parameters:
+    ///   - explanation: 화면에 렌더링할 결과 설명 DTO입니다.
+    ///   - onPresented: 결과 리포트가 처음 노출될 때 실행할 콜백입니다.
+    ///   - onDisclosureToggle: disclosure 펼침 상태가 바뀔 때 실행할 콜백입니다.
+    ///   - onOpenInquiry: 문의 CTA를 탭했을 때 실행할 콜백입니다.
+    init(
+        explanation: WalkOutcomeExplanationDTO,
+        onPresented: @escaping () -> Void = {},
+        onDisclosureToggle: @escaping (WalkOutcomeReportDisclosureSection, Bool) -> Void = { _, _ in },
+        onOpenInquiry: @escaping () -> Void = {}
+    ) {
+        self.explanation = explanation
+        self.onPresented = onPresented
+        self.onDisclosureToggle = onDisclosureToggle
+        self.onOpenInquiry = onOpenInquiry
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -15,9 +37,7 @@ struct WalkListDetailOutcomeReportSectionView: View {
                 identifier: "walklist.detail.outcomeReport.exclusions.toggle",
                 isExpanded: isExclusionsExpanded
             ) {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isExclusionsExpanded.toggle()
-                }
+                toggleDisclosure(section: .exclusions, isExpanded: &isExclusionsExpanded)
             }
             if isExclusionsExpanded {
                 exclusionsSection
@@ -28,9 +48,7 @@ struct WalkListDetailOutcomeReportSectionView: View {
                 identifier: "walklist.detail.outcomeReport.connections.toggle",
                 isExpanded: isConnectionsExpanded
             ) {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isConnectionsExpanded.toggle()
-                }
+                toggleDisclosure(section: .connections, isExpanded: &isConnectionsExpanded)
             }
             if isConnectionsExpanded {
                 connectionsSection
@@ -41,17 +59,18 @@ struct WalkListDetailOutcomeReportSectionView: View {
                 identifier: "walklist.detail.outcomeReport.contribution.toggle",
                 isExpanded: isContributionExpanded
             ) {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isContributionExpanded.toggle()
-                }
+                toggleDisclosure(section: .contribution, isExpanded: &isContributionExpanded)
             }
             if isContributionExpanded {
                 contributionSection
             }
+
+            inquiryButton
         }
         .appCardSurface()
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("walklist.detail.outcomeReport")
+        .onAppear(perform: trackPresentationIfNeeded)
     }
 
     /// 상태 요약과 핵심 수치를 항상 펼친 상태로 렌더링합니다.
@@ -167,6 +186,31 @@ struct WalkListDetailOutcomeReportSectionView: View {
         }
     }
 
+    /// 결과 리포트 이해가 어려울 때 지원 문의 흐름으로 연결하는 CTA를 렌더링합니다.
+    /// - Returns: 문의 진입 버튼 뷰입니다.
+    private var inquiryButton: some View {
+        Button(action: onOpenInquiry) {
+            HStack(spacing: 8) {
+                Image(systemName: "questionmark.bubble")
+                    .font(.system(size: 13, weight: .semibold))
+                Text("이 결과가 이해되지 않으면 문의하기")
+                    .font(.appScaledFont(for: .SemiBold, size: 13, relativeTo: .body))
+                Spacer(minLength: 0)
+                Image(systemName: "arrow.up.right")
+                    .font(.system(size: 12, weight: .semibold))
+            }
+            .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.appDynamicHex(light: 0xFFF7EB, dark: 0x1E293B, alpha: 0.72))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .frame(minHeight: 44)
+        .accessibilityIdentifier("walklist.detail.outcomeReport.inquiry")
+    }
+
     /// 섹션 토글 버튼을 공통 시각 구조로 렌더링합니다.
     /// - Parameters:
     ///   - title: 버튼 제목입니다.
@@ -261,5 +305,26 @@ struct WalkListDetailOutcomeReportSectionView: View {
         )
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .accessibilityIdentifier(identifier)
+    }
+
+    /// 결과 리포트 섹션이 처음 보이는 시점을 한 번만 기록합니다.
+    private func trackPresentationIfNeeded() {
+        guard hasTrackedPresentation == false else { return }
+        hasTrackedPresentation = true
+        onPresented()
+    }
+
+    /// 결과 리포트 disclosure 상태를 토글하고 외부 계측 콜백에 새 상태를 전달합니다.
+    /// - Parameters:
+    ///   - section: 토글한 결과 리포트 section입니다.
+    ///   - isExpanded: 토글할 로컬 펼침 상태 바인딩입니다.
+    private func toggleDisclosure(
+        section: WalkOutcomeReportDisclosureSection,
+        isExpanded: inout Bool
+    ) {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            isExpanded.toggle()
+        }
+        onDisclosureToggle(section, isExpanded)
     }
 }

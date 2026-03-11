@@ -45,6 +45,7 @@ struct MapWalkSavedOutcomeItemPresentation: Identifiable, Equatable {
 }
 
 struct MapWalkSavedOutcomePresentation: Equatable {
+    let detailModel: WalkDataModel
     let title: String
     let summary: String
     let statusBody: String
@@ -52,6 +53,8 @@ struct MapWalkSavedOutcomePresentation: Equatable {
     let primaryReasonLine: String?
     let connectionLine: String
     let primaryActionTitle: String
+    let secondaryActionTitle: String
+    let analyticsContext: WalkOutcomeReportAnalyticsContext
 }
 
 struct WalkCompletionValueItemPresentation: Identifiable, Equatable {

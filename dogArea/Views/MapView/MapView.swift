@@ -36,6 +36,7 @@ struct MapView : View{
     @State private var lastCameraEventProcessedAt: Date = .distantPast
     private let walkTopHUDPresentationService: MapWalkTopHUDPresenting = MapWalkTopHUDPresentationService()
     private let walkValueFlowPresentationService: MapWalkValueFlowPresenting = MapWalkValueFlowPresentationService()
+    private let walkOutcomeReportInteractionService: WalkOutcomeReportInteracting = WalkOutcomeReportInteractionService()
 
     /// 지도 화면에 사용할 상태 객체를 주입해 탭 전환 후에도 카메라/산책 상태를 유지합니다.
     /// - Parameter viewModel: 지도 상태를 보유하는 `MapViewModel`입니다.
@@ -71,6 +72,14 @@ struct MapView : View{
         })
         composed = AnyView(composed.onChange(of: viewModel.walkValueGuidePresentation) { _, newValue in
             walkValueGuideSheetPresentation = newValue
+        })
+        composed = AnyView(composed.onChange(of: viewModel.walkSavedOutcomePresentation) { _, newValue in
+            guard let presentation = newValue else { return }
+            walkOutcomeReportInteractionService.trackPresented(
+                surface: .mapSavedCard,
+                context: presentation.analyticsContext,
+                userKey: viewModel.currentMetricUserId()
+            )
         })
         composed = AnyView(composed.onChange(of: viewModel.isWalking) { _, isWalking in
             if isWalking == false {
@@ -286,7 +295,9 @@ struct MapView : View{
     }
 
     private var shouldShowBottomControls: Bool {
-        !isCriticalModalPresented && !endWalkingViewPresented
+        !isCriticalModalPresented
+            && !endWalkingViewPresented
+            && viewModel.walkSavedOutcomePresentation == nil
     }
 
     private var shouldShowRecenterButton: Bool {
@@ -295,7 +306,9 @@ struct MapView : View{
     }
 
     private var resolvedTabBarVisibility: AppTabBarVisibility {
-        (isCriticalModalPresented || endWalkingViewPresented) ? .hidden : .automatic
+        (isCriticalModalPresented || endWalkingViewPresented || viewModel.walkSavedOutcomePresentation != nil)
+            ? .hidden
+            : .automatic
     }
 
     private var statusOverlayView: some View {
@@ -304,10 +317,32 @@ struct MapView : View{
                 MapWalkSavedOutcomeCardView(
                     presentation: presentation,
                     onOpenHistory: {
+                        walkOutcomeReportInteractionService.trackHistoryOpened(
+                            surface: .mapSavedCard,
+                            context: presentation.analyticsContext,
+                            userKey: viewModel.currentMetricUserId()
+                        )
                         NotificationCenter.default.post(name: .openWalkHistoryRequested, object: nil)
                         viewModel.clearWalkSavedOutcomePresentation()
                     },
+                    onOpenDetail: {
+                        let savedWalk = presentation.detailModel
+                        walkOutcomeReportInteractionService.trackDetailOpened(
+                            surface: .mapSavedCard,
+                            context: presentation.analyticsContext,
+                            userKey: viewModel.currentMetricUserId()
+                        )
+                        WalkDetailPresentationCoordinator.shared.stage(model: savedWalk)
+                        NotificationCenter.default.post(name: .openWalkDetailRequested, object: savedWalk)
+                        viewModel.clearWalkSavedOutcomePresentation()
+                    },
                     onDismiss: {
+                        walkOutcomeReportInteractionService.trackDismissed(
+                            surface: .mapSavedCard,
+                            context: presentation.analyticsContext,
+                            dismissalSource: "close_button",
+                            userKey: viewModel.currentMetricUserId()
+                        )
                         viewModel.clearWalkSavedOutcomePresentation()
                     }
                 )

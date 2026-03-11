@@ -87,6 +87,21 @@ struct WalkOutcomeConnectionRow: Identifiable, Equatable {
     let detail: String
 }
 
+struct WalkOutcomeReportAnalyticsContext: Equatable {
+    let summaryState: WalkOutcomeSummaryState
+    let appliedPointCount: Int
+    let appliedPointBucket: String
+    let excludedPointCount: Int
+    let excludedRatioBucket: String
+    let topExclusionReasonIDs: [WalkOutcomeExclusionReasonID]
+    let recordConnectionStatus: WalkOutcomeConnectionStatus
+    let territoryConnectionStatus: WalkOutcomeConnectionStatus
+    let seasonConnectionStatus: WalkOutcomeConnectionStatus
+    let questConnectionStatus: WalkOutcomeConnectionStatus
+    let connectionStateKey: String
+    let calculationSourceVersion: String
+}
+
 struct WalkOutcomeExplanationDTO: Equatable {
     let summaryState: WalkOutcomeSummaryState
     let statusTitle: String
@@ -100,4 +115,5 @@ struct WalkOutcomeExplanationDTO: Equatable {
     let contributionRows: [WalkOutcomeContributionRow]
     let connectionRows: [WalkOutcomeConnectionRow]
     let calculationSourceVersion: String
+    let analyticsContext: WalkOutcomeReportAnalyticsContext
 }

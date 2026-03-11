@@ -46,7 +46,9 @@ assertTrue(
 )
 assertTrue(
     mapView.contains("if shouldShowBottomControls {") &&
-    mapView.contains("!isCriticalModalPresented && !endWalkingViewPresented"),
+    mapView.contains("!isCriticalModalPresented") &&
+    mapView.contains("&& !endWalkingViewPresented") &&
+    mapView.contains("&& viewModel.walkSavedOutcomePresentation == nil"),
     "MapView should suppress bottom controls while alert/sheet transitions are active"
 )
 assertTrue(
