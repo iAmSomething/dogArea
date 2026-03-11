@@ -23,6 +23,7 @@ struct RootView: View {
     @State private var tabBarVisibility: AppTabBarVisibility = .automatic
     @State private var pendingWalkWidgetRoute: WalkWidgetActionRoute? = nil
     @State private var pendingHomeRoute: HomeExternalRoute? = nil
+    @State private var pendingWalkDetailModel: WalkDataModel? = nil
     @State private var pendingRivalRoute: RivalExternalRoute? = nil
     @State private var deferredTerritoryWidgetRoute: TerritoryWidgetDeepLinkRoute? = nil
     @State private var didDispatchUITestWidgetRoute = false
@@ -171,6 +172,13 @@ struct RootView: View {
                     onDismiss: { authFlow.dismissSignIn() }
                 )
             }
+            .fullScreenCover(item: $pendingWalkDetailModel, onDismiss: {
+                pendingWalkDetailModel = nil
+            }) { model in
+                NavigationStack {
+                    WalkListDetailView(model: model)
+                }
+            }
             .onAppear {
                 dispatchUITestWidgetActionIfNeeded()
                 dispatchUITestTerritoryWidgetRouteIfNeeded()
@@ -189,7 +197,10 @@ struct RootView: View {
                 syncQuestRivalWidgetSnapshot(force: false)
             }
             .onReceive(NotificationCenter.default.publisher(for: .openWalkHistoryRequested)) { _ in
-                selectedTab = 1
+                handleWalkHistoryRouteRequested()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .openWalkDetailRequested)) { notification in
+                handleWalkDetailRouteRequested(notification)
             }
             .onReceive(NotificationCenter.default.publisher(for: UserdefaultSetting.selectedPetDidChangeNotification)) { _ in
                 syncTerritoryWidgetSnapshot(force: true)
@@ -379,6 +390,26 @@ struct RootView: View {
             selectedTab = 0
             dispatchQuestWidgetRoute(route, statusOverride: .claimInFlight)
             handleQuestRewardClaimFromWidget(route)
+        }
+    }
+
+    /// 산책 목록 히스토리 화면만 열어야 할 때 보류 중인 즉시 상세 라우트를 정리하고 목록 탭으로 이동합니다.
+    private func handleWalkHistoryRouteRequested() {
+        WalkDetailPresentationCoordinator.shared.clear()
+        pendingWalkDetailModel = nil
+        selectedTab = 1
+    }
+
+    /// 저장 직후 산책 상세 라우트 요청을 받아 목록 탭 전환 후 즉시 상세 화면을 올립니다.
+    /// - Parameter notification: 즉시 상세 진입에 사용할 산책 모델이 담긴 알림입니다.
+    private func handleWalkDetailRouteRequested(_ notification: Notification) {
+        let routedModel = (notification.object as? WalkDataModel)
+            ?? WalkDetailPresentationCoordinator.shared.consumeStagedRoute()
+        selectedTab = 1
+        guard let routedModel else { return }
+        Task { @MainActor in
+            await Task.yield()
+            pendingWalkDetailModel = routedModel
         }
     }
 

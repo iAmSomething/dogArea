@@ -3050,6 +3050,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         savedPolygon: Polygon,
         outcomeSnapshot: WalkOutcomeCalculationSnapshot? = nil
     ) {
+        let detailModel = WalkDataModel(polygon: savedPolygon)
         let resolvedPetName = availablePets.first(where: { $0.petId == savedPolygon.petId })?.petName
             ?? selectedPetName
         let resolvedSnapshot = outcomeSnapshot ?? makeWalkOutcomeCalculationSnapshot(
@@ -3060,6 +3061,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
             routePointCount: savedPolygon.locations.filter { $0.pointRole == .route }.count
         )
         walkSavedOutcomePresentation = walkValueFlowPresentationService.makeSavedOutcomePresentation(
+            detailModel: detailModel,
             petName: resolvedPetName,
             areaText: calculatedAreaString(areaSize: savedPolygon.walkingArea, isPyong: false),
             explanation: walkOutcomeExplanationService.makeExplanationDTO(from: resolvedSnapshot)

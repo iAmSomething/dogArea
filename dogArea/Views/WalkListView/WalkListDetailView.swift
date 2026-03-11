@@ -4,6 +4,7 @@ import MapKit
 
 struct WalkListDetailView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
     @State var model: WalkDataModel
     @State private var isMeter: Bool = true
     @State private var showSaveMessage: String? = nil
@@ -16,6 +17,7 @@ struct WalkListDetailView: View {
     @StateObject private var imageRenderer = MapImageProvider()
 
     private let presentationService: WalkListDetailPresentationServicing = WalkListDetailPresentationService()
+    private let outcomeReportInteractionService: WalkOutcomeReportInteracting = WalkOutcomeReportInteractionService()
 
     private var presentationSnapshot: WalkListDetailPresentationSnapshot {
         presentationService.makeSnapshot(
@@ -39,7 +41,24 @@ struct WalkListDetailView: View {
                 )
 
                 WalkListDetailOutcomeReportSectionView(
-                    explanation: presentationSnapshot.outcomeExplanation
+                    explanation: presentationSnapshot.outcomeExplanation,
+                    onPresented: {
+                        outcomeReportInteractionService.trackPresented(
+                            surface: .walkListDetail,
+                            context: presentationSnapshot.outcomeExplanation.analyticsContext,
+                            userKey: currentMetricUserId()
+                        )
+                    },
+                    onDisclosureToggle: { section, isExpanded in
+                        outcomeReportInteractionService.trackDisclosureToggle(
+                            section: section,
+                            isExpanded: isExpanded,
+                            surface: .walkListDetail,
+                            context: presentationSnapshot.outcomeExplanation.analyticsContext,
+                            userKey: currentMetricUserId()
+                        )
+                    },
+                    onOpenInquiry: openOutcomeReportInquiry
                 )
 
                 WalkListDetailMapSectionView(
@@ -154,6 +173,50 @@ struct WalkListDetailView: View {
         guard imageRenderer.capturedImage == nil,
               let polygon = model.toPolygon().polygon else { return }
         imageRenderer.captureMapImage(for: polygon)
+    }
+
+    /// 산책 결과 리포트 문의 경로를 열고 관련 interaction metric을 기록합니다.
+    private func openOutcomeReportInquiry() {
+        guard let url = outcomeReportInteractionService.makeInquiryURL(
+            surface: .walkListDetail,
+            context: presentationSnapshot.outcomeExplanation.analyticsContext,
+            walkCreatedAt: model.createdAt,
+            walkDurationText: outcomeMetricValue(id: "duration", fallback: "\(Int(model.walkDuration / 60))분"),
+            areaText: outcomeMetricValue(id: "area", fallback: "\(Int(model.walkArea))㎡"),
+            pointCount: model.locations.count,
+            currentUserId: currentMetricUserId()
+        ) else {
+            showToast("문의 경로를 준비하지 못했어요. 잠시 후 다시 시도해주세요.")
+            return
+        }
+
+        openURL(url) { accepted in
+            if accepted {
+                outcomeReportInteractionService.trackInquiryOpened(
+                    surface: .walkListDetail,
+                    context: presentationSnapshot.outcomeExplanation.analyticsContext,
+                    channel: url.scheme == "mailto" ? "mailto" : "fallback_url",
+                    userKey: currentMetricUserId()
+                )
+            } else {
+                showToast("문의 앱을 열지 못했어요. 설정을 확인한 뒤 다시 시도해주세요.")
+            }
+        }
+    }
+
+    /// 결과 리포트 문의 본문에 넣을 핵심 메트릭 문자열을 스냅샷에서 읽습니다.
+    /// - Parameters:
+    ///   - id: 찾을 메트릭 식별자입니다.
+    ///   - fallback: 동일 식별자를 찾지 못했을 때 대신 사용할 문자열입니다.
+    /// - Returns: 산책 상세 스냅샷이 계산한 메트릭 문자열입니다.
+    private func outcomeMetricValue(id: String, fallback: String) -> String {
+        presentationSnapshot.metrics.first(where: { $0.id == id })?.value ?? fallback
+    }
+
+    /// 결과 리포트 interaction metric에 사용할 현재 사용자 식별자를 반환합니다.
+    /// - Returns: 로그인 사용자 식별자 또는 `nil`입니다.
+    private func currentMetricUserId() -> String? {
+        UserdefaultSetting.shared.getValue()?.id
     }
 
     /// 공유 시트에 전달할 요약 텍스트와 카드 이미지를 구성합니다.

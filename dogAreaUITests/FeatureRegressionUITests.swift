@@ -444,6 +444,43 @@ final class FeatureRegressionUITests: XCTestCase {
         )
     }
 
+    /// 저장 직후 후속 카드에서 방금 저장한 산책 상세 리포트로 곧바로 진입할 수 있는지 검증합니다.
+    func testFeatureRegression_MapSavedOutcomeCardOpensImmediateDetailReport() throws {
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.MapForceWalkingState"])
+
+        XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.")
+        XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
+
+        let primaryAction = mapPrimaryAction(in: app)
+        XCTAssertTrue(waitUntilHittable(primaryAction, timeout: 6), "산책 종료 버튼이 탭 가능한 상태가 아닙니다.")
+        primaryAction.tap()
+
+        let primaryAlertAction = screenElement(identifier: "customAlert.action.primary", in: app)
+        XCTAssertTrue(waitUntilExists(primaryAlertAction, timeout: 4), "산책 종료 알럿의 주 행동 버튼이 보이지 않습니다.")
+        primaryAlertAction.tap()
+
+        let confirmButton = app.buttons["walk.detail.confirm"]
+        XCTAssertTrue(waitUntilExists(confirmButton, timeout: 4), "산책 저장 후 종료 버튼이 보이지 않습니다.")
+        confirmButton.tap()
+
+        let savedOutcomeCard = screenElement(identifier: "map.walk.savedOutcome.card", in: app)
+        XCTAssertTrue(waitUntilExists(savedOutcomeCard, timeout: 5), "산책 저장 후 후속 행동 카드가 노출되지 않았습니다.")
+
+        let openDetailButton = app.buttons["map.walk.savedOutcome.openDetail"]
+        XCTAssertTrue(waitUntilExists(openDetailButton, timeout: 2), "방금 저장한 산책 상세 진입 CTA가 보이지 않습니다.")
+        openDetailButton.tap()
+
+        let detailScreen = screenElement(identifier: "screen.walkListDetail.content", in: app)
+        XCTAssertTrue(waitUntilExists(detailScreen, timeout: 5), "저장 직후 산책 상세 화면으로 이동하지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(screenElement(identifier: "walklist.detail.outcomeReport", in: app), timeout: 2), "산책 결과 리포트 섹션이 노출되지 않았습니다.")
+
+        let inquiryButton = app.buttons["walklist.detail.outcomeReport.inquiry"]
+        XCTAssertTrue(
+            revealElementByVerticalScroll(inquiryButton, app: app, maxSwipes: 4),
+            "산책 결과 리포트 문의 CTA가 화면에 노출되지 않았습니다."
+        )
+    }
+
     /// 지도 시작 전 의미 카드는 기본 축약 상태로 노출되고, 명시적 disclosure 후에만 상세 본문을 펼치는지 검증합니다.
     func testFeatureRegression_MapStartMeaningDisclosureExpandsOnlyWhenRequested() throws {
         let app = launchAppForFeatureRegression()
@@ -787,6 +824,12 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertTrue(waitUntilHittable(contributionToggle, timeout: 2), "계산 근거 토글이 탭 가능한 상태가 아닙니다.")
         contributionToggle.tap()
         XCTAssertTrue(waitUntilExists(screenElement(identifier: "walklist.detail.outcomeReport.contribution.mark", in: app), timeout: 2), "영역 표시 기여 row가 노출되지 않았습니다.")
+
+        let inquiryButton = app.buttons["walklist.detail.outcomeReport.inquiry"]
+        XCTAssertTrue(
+            revealElementByVerticalScroll(inquiryButton, app: app, maxSwipes: 4),
+            "산책 결과 리포트 문의 CTA가 화면에 노출되지 않았습니다."
+        )
     }
 
     /// 산책 상세 화면이 상단 기본 back affordance를 복구해 자연스럽게 목록으로 돌아갈 수 있는지 검증합니다.

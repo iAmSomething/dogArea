@@ -19,6 +19,7 @@
 		A5650001000000000000000A /* WalkOutcomeExplanationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5650001000000000000001A /* WalkOutcomeExplanationModels.swift */; };
 		A5650001000000000000000B /* SettingViewModel+WalkGuide.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5650001000000000000001B /* SettingViewModel+WalkGuide.swift */; };
 		A5650001000000000000000C /* WalkListDetailOutcomeReportSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5650001000000000000001C /* WalkListDetailOutcomeReportSectionView.swift */; };
+		A72100010000000000000001 /* WalkOutcomeReportInteractionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72100010000000000000011 /* WalkOutcomeReportInteractionService.swift */; };
 		A56400010000000000000001 /* HomeMissionGuidePresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56400010000000000000011 /* HomeMissionGuidePresentation.swift */; };
 		A56400010000000000000002 /* HomeMissionGuidePresentationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56400010000000000000012 /* HomeMissionGuidePresentationService.swift */; };
 		A56400010000000000000003 /* HomeMissionGuideStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56400010000000000000013 /* HomeMissionGuideStateStore.swift */; };
@@ -121,6 +122,7 @@
 		A37500010000000000000024 /* AppFeatureGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37500010000000000000014 /* AppFeatureGate.swift */; };
 		A37500010000000000000025 /* GuestDataUpgradeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37500010000000000000015 /* GuestDataUpgradeService.swift */; };
 		A37500010000000000000026 /* AuthFlowCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37500010000000000000016 /* AuthFlowCoordinator.swift */; };
+		A72100010000000000000002 /* WalkDetailPresentationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72100010000000000000012 /* WalkDetailPresentationCoordinator.swift */; };
 		A37500010000000000000027 /* AuthUserInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37500010000000000000017 /* AuthUserInfo.swift */; };
 		A37500010000000000000028 /* EmailSignUpSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37500010000000000000018 /* EmailSignUpSheetView.swift */; };
 		A37600010000000000000021 /* ProfileEditorDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37600010000000000000011 /* ProfileEditorDraft.swift */; };
@@ -546,6 +548,7 @@
 		A37500010000000000000014 /* AppFeatureGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppFeatureGate.swift; sourceTree = "<group>"; };
 		A37500010000000000000015 /* GuestDataUpgradeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuestDataUpgradeService.swift; sourceTree = "<group>"; };
 		A37500010000000000000016 /* AuthFlowCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthFlowCoordinator.swift; sourceTree = "<group>"; };
+		A72100010000000000000012 /* WalkDetailPresentationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkDetailPresentationCoordinator.swift; sourceTree = "<group>"; };
 		A37500010000000000000017 /* AuthUserInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthUserInfo.swift; sourceTree = "<group>"; };
 		A37500010000000000000018 /* EmailSignUpSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailSignUpSheetView.swift; sourceTree = "<group>"; };
 		A37600010000000000000011 /* ProfileEditorDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileEditorDraft.swift; sourceTree = "<group>"; };
@@ -679,6 +682,7 @@
 		A5650001000000000000001A /* WalkOutcomeExplanationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkOutcomeExplanationModels.swift; sourceTree = "<group>"; };
 		A5650001000000000000001B /* SettingViewModel+WalkGuide.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SettingViewModel+WalkGuide.swift"; sourceTree = "<group>"; };
 		A5650001000000000000001C /* WalkListDetailOutcomeReportSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListDetailOutcomeReportSectionView.swift; sourceTree = "<group>"; };
+		A72100010000000000000011 /* WalkOutcomeReportInteractionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkOutcomeReportInteractionService.swift; sourceTree = "<group>"; };
 		A56700010000000000000011 /* WalkListCalendarPresentationModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListCalendarPresentationModels.swift; sourceTree = "<group>"; };
 		A56700010000000000000012 /* WalkListCalendarPresentationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListCalendarPresentationService.swift; sourceTree = "<group>"; };
 		A56700010000000000000013 /* WalkListMonthlyCalendarCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalkListMonthlyCalendarCardView.swift; sourceTree = "<group>"; };
@@ -994,6 +998,7 @@
 				A37500010000000000000014 /* AppFeatureGate.swift */,
 				A37500010000000000000015 /* GuestDataUpgradeService.swift */,
 				A37500010000000000000016 /* AuthFlowCoordinator.swift */,
+				A72100010000000000000012 /* WalkDetailPresentationCoordinator.swift */,
 			);
 			path = AppSession;
 			sourceTree = "<group>";
@@ -1859,6 +1864,7 @@
 				BB7213218B73F5E29A0DF33C /* MapWalkStartPresentationService.swift */,
 				A56500010000000000000012 /* WalkValueGuidePresentationService.swift */,
 				A56500010000000000000013 /* MapWalkValueFlowPresentationService.swift */,
+				A72100010000000000000011 /* WalkOutcomeReportInteractionService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -2212,6 +2218,7 @@
 				A37500010000000000000024 /* AppFeatureGate.swift in Sources */,
 				A37500010000000000000025 /* GuestDataUpgradeService.swift in Sources */,
 				A37500010000000000000026 /* AuthFlowCoordinator.swift in Sources */,
+				A72100010000000000000002 /* WalkDetailPresentationCoordinator.swift in Sources */,
 				DA3EB07A2B0344CD00AEA65D /* AreaDetailView.swift in Sources */,
 				DA933BE92ADD04E70029856C /* CustomAlertView.swift in Sources */,
 				DAC19F202B0B3798002FE2E8 /* LoadingView.swift in Sources */,
@@ -2258,6 +2265,7 @@
 				A61700010000000000000001 /* WalkWidgetActionConvergenceService.swift in Sources */,
 				A56500010000000000000002 /* WalkValueGuidePresentationService.swift in Sources */,
 				A56500010000000000000003 /* MapWalkValueFlowPresentationService.swift in Sources */,
+				A72100010000000000000001 /* WalkOutcomeReportInteractionService.swift in Sources */,
 				DAE147B11420000000000001 /* MapClusterAnnotationService.swift in Sources */,
 				A37600010000000000000021 /* ProfileEditorDraft.swift in Sources */,
 				A37600010000000000000022 /* SettingsPetManagementService.swift in Sources */,

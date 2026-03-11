@@ -118,6 +118,34 @@ struct WalkOutcomeExplanationService: WalkOutcomeExplaining {
             primaryConnectionLine: makePrimaryConnectionLine(from: snapshot.connections),
             contributionRows: makeContributionRows(from: snapshot.contribution),
             connectionRows: makeConnectionRows(from: snapshot.connections),
+            calculationSourceVersion: snapshot.calculationSourceVersion,
+            analyticsContext: makeAnalyticsContext(from: snapshot, summaryState: summaryState, reasons: reasonSummaries)
+        )
+    }
+
+    /// 결과 설명 DTO가 공통으로 쓸 analytics 분석 축을 생성합니다.
+    /// - Parameters:
+    ///   - snapshot: 원본 계산 스냅샷입니다.
+    ///   - summaryState: 사용자 요약 상태입니다.
+    ///   - reasons: 사용자 노출용 제외 사유 요약 배열입니다.
+    /// - Returns: surface 간 동일하게 재사용할 analytics context입니다.
+    private func makeAnalyticsContext(
+        from snapshot: WalkOutcomeCalculationSnapshot,
+        summaryState: WalkOutcomeSummaryState,
+        reasons: [WalkOutcomeExclusionReasonSummary]
+    ) -> WalkOutcomeReportAnalyticsContext {
+        WalkOutcomeReportAnalyticsContext(
+            summaryState: summaryState,
+            appliedPointCount: snapshot.appliedPointCount,
+            appliedPointBucket: appliedPointBucket(for: snapshot.appliedPointCount),
+            excludedPointCount: snapshot.excludedPointCount,
+            excludedRatioBucket: excludedRatioBucket(for: snapshot.excludedRatio),
+            topExclusionReasonIDs: Array(reasons.prefix(3).map(\.reasonID)),
+            recordConnectionStatus: snapshot.connections.recordStatus,
+            territoryConnectionStatus: snapshot.connections.territoryStatus,
+            seasonConnectionStatus: snapshot.connections.seasonStatus,
+            questConnectionStatus: snapshot.connections.questStatus,
+            connectionStateKey: connectionStateKey(for: snapshot.connections),
             calculationSourceVersion: snapshot.calculationSourceVersion
         )
     }
@@ -325,6 +353,54 @@ struct WalkOutcomeExplanationService: WalkOutcomeExplaining {
         ]
     }
 
+    /// 반영 포인트 수를 coarse bucket으로 변환합니다.
+    /// - Parameter count: 실제 반영 포인트 수입니다.
+    /// - Returns: 분석에 사용할 포인트 수 bucket 문자열입니다.
+    private func appliedPointBucket(for count: Int) -> String {
+        switch count {
+        case ..<1:
+            return "0"
+        case 1...2:
+            return "1_2"
+        case 3...5:
+            return "3_5"
+        case 6...10:
+            return "6_10"
+        default:
+            return "11_plus"
+        }
+    }
+
+    /// 제외 비율을 coarse bucket으로 변환합니다.
+    /// - Parameter ratio: 제외 비율입니다.
+    /// - Returns: 분석에 사용할 제외 비율 bucket 문자열입니다.
+    private func excludedRatioBucket(for ratio: Double) -> String {
+        switch ratio {
+        case ..<0.001:
+            return "none"
+        case ..<0.25:
+            return "low_0_24"
+        case ..<0.5:
+            return "mid_25_49"
+        case ..<0.75:
+            return "high_50_74"
+        default:
+            return "very_high_75_plus"
+        }
+    }
+
+    /// 연결 상태 스냅샷을 compact combo key로 변환합니다.
+    /// - Parameter connections: 기록/영역/시즌/미션 연결 상태 스냅샷입니다.
+    /// - Returns: 분석과 필터링에 사용할 고정 combo 문자열입니다.
+    private func connectionStateKey(for connections: WalkOutcomeConnectionSnapshot) -> String {
+        [
+            "record:\(connections.recordStatus.rawValue)",
+            "territory:\(connections.territoryStatus.rawValue)",
+            "season:\(connections.seasonStatus.rawValue)",
+            "quest:\(connections.questStatus.rawValue)"
+        ].joined(separator: "|")
+    }
+
     /// 단일 연결 상태를 사용자용 상세 행 모델로 변환합니다.
     /// - Parameters:
     ///   - id: 행 식별자입니다.
@@ -400,11 +476,13 @@ protocol MapWalkValueFlowPresenting {
 
     /// 산책 저장 직후 후속 행동 카드 프레젠테이션을 생성합니다.
     /// - Parameters:
+    ///   - detailModel: 저장 직후 상세 화면을 바로 열 때 사용할 산책 모델입니다.
     ///   - petName: 저장한 산책에 연결된 반려견 이름입니다.
     ///   - areaText: 저장한 세션의 영역 문자열입니다.
     ///   - explanation: 종료 직후 요약과 상세 화면이 함께 사용할 결과 설명 DTO입니다.
     /// - Returns: 저장 후 무엇이 반영됐는지 설명하는 후속 카드 프레젠테이션입니다.
     func makeSavedOutcomePresentation(
+        detailModel: WalkDataModel,
         petName: String,
         areaText: String,
         explanation: WalkOutcomeExplanationDTO
@@ -483,24 +561,29 @@ struct MapWalkValueFlowPresentationService: MapWalkValueFlowPresenting {
 
     /// 산책 저장 직후 후속 행동 카드 프레젠테이션을 생성합니다.
     /// - Parameters:
+    ///   - detailModel: 저장 직후 상세 화면을 바로 열 때 사용할 산책 모델입니다.
     ///   - petName: 저장한 산책에 연결된 반려견 이름입니다.
     ///   - areaText: 저장한 세션의 영역 문자열입니다.
     ///   - explanation: 종료 직후 요약과 상세 화면이 함께 사용할 결과 설명 DTO입니다.
     /// - Returns: 저장 후 무엇이 반영됐는지 설명하는 후속 카드 프레젠테이션입니다.
     func makeSavedOutcomePresentation(
+        detailModel: WalkDataModel,
         petName: String,
         areaText: String,
         explanation: WalkOutcomeExplanationDTO
     ) -> MapWalkSavedOutcomePresentation {
         let summary = "\(petName)와 남긴 포인트 \(explanation.appliedPointCount)개가 저장됐고, 이번 산책 영역은 \(areaText)예요."
         return MapWalkSavedOutcomePresentation(
+            detailModel: detailModel,
             title: explanation.statusTitle,
             summary: summary,
             statusBody: explanation.statusBody,
             appliedSummary: "반영된 포인트 \(explanation.appliedPointCount)개 · 제외 비율 \(explanation.excludedRatioText)",
             primaryReasonLine: explanation.primaryReasonLine,
             connectionLine: explanation.primaryConnectionLine,
-            primaryActionTitle: "목록에서 보기"
+            primaryActionTitle: "목록에서 보기",
+            secondaryActionTitle: "방금 상세 보기",
+            analyticsContext: explanation.analyticsContext
         )
     }
 
