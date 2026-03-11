@@ -890,7 +890,16 @@ struct WalkLivePresenceDTO: Identifiable, Equatable {
 }
 
 protocol NearbyPresenceServiceProtocol {
-    func setVisibility(userId: String, enabled: Bool) async throws
+    /// 현재 사용자 범위의 canonical visibility 상태를 읽습니다.
+    /// - Parameter userId: 조회 대상 사용자 UUID 문자열입니다.
+    /// - Returns: 서버가 보유한 현재 visibility 상태와 갱신 시각입니다.
+    func getVisibility(userId: String) async throws -> PrivacyVisibilitySyncResultDTO
+    /// 현재 사용자 범위의 visibility 상태를 변경하고 canonical 결과를 반환합니다.
+    /// - Parameters:
+    ///   - userId: 변경 대상 사용자 UUID 문자열입니다.
+    ///   - enabled: 서버에 반영할 목표 공유 상태입니다.
+    /// - Returns: 서버가 최종 반영한 canonical visibility 상태와 갱신 시각입니다.
+    func setVisibility(userId: String, enabled: Bool) async throws -> PrivacyVisibilitySyncResultDTO
     func upsertPresence(userId: String, latitude: Double, longitude: Double) async throws
     func getHotspots(userId: String?, centerLatitude: Double, centerLongitude: Double, radiusKm: Double) async throws -> [NearbyHotspotDTO]
     /// 실시간 위치 표시용 원시 presence 레코드를 멱등 업서트합니다.
@@ -935,6 +944,13 @@ protocol NearbyPresenceServiceProtocol {
         requesterUserId: String?,
         excludedUserIds: [String]
     ) async throws -> [WalkLivePresenceDTO]
+}
+
+/// nearby presence 서버가 반환하는 canonical visibility 상태 DTO입니다.
+struct PrivacyVisibilitySyncResultDTO: Equatable {
+    let enabled: Bool
+    let updatedAtEpoch: TimeInterval?
+    let requestId: String?
 }
 
 enum RivalLeaderboardPeriod: String, CaseIterable {

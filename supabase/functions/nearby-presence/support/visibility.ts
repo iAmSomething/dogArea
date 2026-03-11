@@ -1,14 +1,17 @@
 import { asRecord, asUUIDOrNull, geohashEncode, json, roundCoord } from "./core.ts";
 import { resolveCanonicalIdempotencyKey } from "../../_shared/request_keys.ts";
-import type { NearbyPresenceClient, RequestDTO } from "./types.ts";
+import type { NearbyPresenceClient, RequestDTO, VisibilitySettingDTO } from "./types.ts";
+
+const resolveVisibilityRequestUserId = (body: RequestDTO): string | null =>
+  asUUIDOrNull(body.userId) ?? asUUIDOrNull(body.user_id);
 
 export async function readVisibilitySetting(
   client: NearbyPresenceClient,
   userId: string,
-): Promise<{ ok: true; enabled: boolean } | { ok: false; response: Response }> {
+): Promise<{ ok: true; visibility: VisibilitySettingDTO } | { ok: false; response: Response }> {
   const { data: visibility, error } = await client
     .from("user_visibility_settings")
-    .select("location_sharing_enabled")
+    .select("location_sharing_enabled, updated_at")
     .eq("user_id", userId)
     .maybeSingle();
 
@@ -18,15 +21,42 @@ export async function readVisibilitySetting(
 
   return {
     ok: true,
-    enabled: Boolean(visibility?.location_sharing_enabled),
+    visibility: {
+      enabled: Boolean(visibility?.location_sharing_enabled),
+      updated_at: visibility?.updated_at ?? null,
+    },
   };
+}
+
+export async function handleGetVisibility(
+  client: NearbyPresenceClient,
+  body: RequestDTO,
+): Promise<Response> {
+  const userId = resolveVisibilityRequestUserId(body);
+  if (!userId) {
+    return json({ error: "INVALID_PAYLOAD" }, 400);
+  }
+
+  const visibility = await readVisibilitySetting(client, userId);
+  if (!visibility.ok) {
+    return visibility.response;
+  }
+
+  return json({
+    ok: true,
+    request_id: resolveCanonicalIdempotencyKey(asRecord(body), {
+      keys: ["request_id", "requestId", "action_id"],
+      fallback: null,
+    }),
+    visibility: visibility.visibility,
+  });
 }
 
 export async function handleSetVisibility(
   client: NearbyPresenceClient,
   body: RequestDTO,
 ): Promise<Response> {
-  const userId = asUUIDOrNull(body.userId);
+  const userId = resolveVisibilityRequestUserId(body);
   if (!userId || typeof body.enabled !== "boolean") {
     return json({ error: "INVALID_PAYLOAD" }, 400);
   }
@@ -37,10 +67,16 @@ export async function handleSetVisibility(
     updated_at: new Date().toISOString(),
   });
   if (error) return json({ error: error.message }, 500);
+
+  const visibility = await readVisibilitySetting(client, userId);
+  if (!visibility.ok) {
+    return visibility.response;
+  }
+
   return json({ ok: true, request_id: resolveCanonicalIdempotencyKey(asRecord(body), {
     keys: ["request_id", "requestId", "action_id"],
     fallback: null,
-  }) });
+  }), visibility: visibility.visibility });
 }
 
 export async function handleUpsertPresence(
@@ -68,7 +104,7 @@ export async function handleUpsertPresence(
   if (!visibility.ok) {
     return visibility.response;
   }
-  if (!visibility.enabled) {
+  if (!visibility.visibility.enabled) {
     return json({ ok: true, skipped: "location_sharing_disabled" });
   }
 

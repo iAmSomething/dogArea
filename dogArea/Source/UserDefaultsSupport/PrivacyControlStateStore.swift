@@ -7,6 +7,7 @@ struct PrivacyControlRecentStatus: Codable, Equatable {
         case privateMode
         case sharingOn
         case permissionRequired
+        case authRefreshRequired
         case offlinePending
         case serverDelayed
     }
@@ -14,6 +15,227 @@ struct PrivacyControlRecentStatus: Codable, Equatable {
     let kind: Kind
     let detail: String
     let updatedAt: TimeInterval
+}
+
+/// 프라이버시 센터에서 서버 기준 공유 상태를 표현하는 canonical 스냅샷입니다.
+struct PrivacyControlServerSyncSnapshot: Codable, Equatable {
+    enum State: String, Codable {
+        case localPending
+        case serverConfirmed
+        case serverFailed
+    }
+
+    enum FailureCategory: String, Codable {
+        case offline
+        case serverDelayed
+        case authRequired
+        case unknown
+    }
+
+    let desiredEnabled: Bool
+    let canonicalEnabled: Bool?
+    let requestedAt: TimeInterval?
+    let resultRecordedAt: TimeInterval
+    let serverUpdatedAt: TimeInterval?
+    let requestId: String?
+    let state: State
+    let failureCategory: FailureCategory?
+    let failureCode: String?
+
+    /// 사용자가 방금 기기에서 요청한 optimistic 상태를 생성합니다.
+    /// - Parameters:
+    ///   - desiredEnabled: 사용자가 의도한 목표 공유 상태입니다.
+    ///   - lastCanonicalEnabled: 서버에서 마지막으로 확인한 canonical 상태입니다. 아직 없으면 `nil`입니다.
+    ///   - requestedAt: 사용자가 토글을 누른 시각입니다.
+    ///   - requestId: 서버와 상호 추적할 요청 식별자입니다.
+    /// - Returns: 서버 확인 전 단계의 canonical snapshot입니다.
+    static func localPending(
+        desiredEnabled: Bool,
+        lastCanonicalEnabled: Bool?,
+        requestedAt: Date,
+        requestId: String? = nil
+    ) -> PrivacyControlServerSyncSnapshot {
+        PrivacyControlServerSyncSnapshot(
+            desiredEnabled: desiredEnabled,
+            canonicalEnabled: lastCanonicalEnabled,
+            requestedAt: requestedAt.timeIntervalSince1970,
+            resultRecordedAt: requestedAt.timeIntervalSince1970,
+            serverUpdatedAt: nil,
+            requestId: requestId,
+            state: .localPending,
+            failureCategory: nil,
+            failureCode: nil
+        )
+    }
+
+    /// 서버 반영 완료 응답을 canonical snapshot으로 변환합니다.
+    /// - Parameters:
+    ///   - desiredEnabled: 사용자가 의도했던 목표 공유 상태입니다.
+    ///   - canonicalEnabled: 서버가 최종적으로 반영한 공유 상태입니다.
+    ///   - requestedAt: 사용자가 마지막으로 요청한 시각입니다. 없으면 `nil`입니다.
+    ///   - serverUpdatedAt: 서버 row가 갱신된 시각입니다. 없으면 `nil`입니다.
+    ///   - recordedAt: 앱이 성공 응답을 기록한 시각입니다.
+    ///   - requestId: 서버와 상호 추적할 요청 식별자입니다.
+    /// - Returns: 서버 확인 완료 상태의 canonical snapshot입니다.
+    static func serverConfirmed(
+        desiredEnabled: Bool,
+        canonicalEnabled: Bool,
+        requestedAt: Date?,
+        serverUpdatedAt: Date?,
+        recordedAt: Date,
+        requestId: String? = nil
+    ) -> PrivacyControlServerSyncSnapshot {
+        PrivacyControlServerSyncSnapshot(
+            desiredEnabled: desiredEnabled,
+            canonicalEnabled: canonicalEnabled,
+            requestedAt: requestedAt?.timeIntervalSince1970,
+            resultRecordedAt: recordedAt.timeIntervalSince1970,
+            serverUpdatedAt: serverUpdatedAt?.timeIntervalSince1970,
+            requestId: requestId,
+            state: .serverConfirmed,
+            failureCategory: nil,
+            failureCode: nil
+        )
+    }
+
+    /// 마지막 요청 메타데이터를 보존한 채 서버 canonical 상태만 새로 갱신합니다.
+    /// - Parameters:
+    ///   - canonicalEnabled: 서버가 현재 보유한 canonical 공유 상태입니다.
+    ///   - requestedAt: 마지막 사용자 요청 시각입니다. 없으면 `nil`입니다.
+    ///   - desiredEnabled: 사용자가 현재 기기에 저장한 목표 공유 상태입니다.
+    ///   - previousRequestId: 이전 요청 식별자입니다.
+    ///   - serverUpdatedAt: 서버 row가 갱신된 시각입니다. 없으면 `nil`입니다.
+    ///   - recordedAt: 앱이 서버 canonical 상태를 읽어온 시각입니다.
+    /// - Returns: fetch 기반으로 새로 고친 canonical snapshot입니다.
+    static func refreshedCanonical(
+        canonicalEnabled: Bool,
+        requestedAt: Date?,
+        desiredEnabled: Bool,
+        previousRequestId: String?,
+        serverUpdatedAt: Date?,
+        recordedAt: Date
+    ) -> PrivacyControlServerSyncSnapshot {
+        PrivacyControlServerSyncSnapshot(
+            desiredEnabled: desiredEnabled,
+            canonicalEnabled: canonicalEnabled,
+            requestedAt: requestedAt?.timeIntervalSince1970,
+            resultRecordedAt: recordedAt.timeIntervalSince1970,
+            serverUpdatedAt: serverUpdatedAt?.timeIntervalSince1970,
+            requestId: previousRequestId,
+            state: .serverConfirmed,
+            failureCategory: nil,
+            failureCode: nil
+        )
+    }
+
+    /// 서버 반영 실패 결과를 canonical snapshot으로 변환합니다.
+    /// - Parameters:
+    ///   - desiredEnabled: 사용자가 의도한 목표 공유 상태입니다.
+    ///   - lastCanonicalEnabled: 마지막으로 확인된 canonical 상태입니다. 없으면 `nil`입니다.
+    ///   - requestedAt: 사용자가 요청한 시각입니다. 없으면 `nil`입니다.
+    ///   - recordedAt: 앱이 실패를 기록한 시각입니다.
+    ///   - requestId: 서버와 상호 추적할 요청 식별자입니다.
+    ///   - failureCategory: 사용자 문구에 매핑할 실패 분류입니다.
+    ///   - failureCode: 장애 분석용 세부 코드입니다.
+    /// - Returns: 서버 확인 실패 상태의 canonical snapshot입니다.
+    static func serverFailed(
+        desiredEnabled: Bool,
+        lastCanonicalEnabled: Bool?,
+        requestedAt: Date?,
+        recordedAt: Date,
+        requestId: String? = nil,
+        failureCategory: FailureCategory,
+        failureCode: String?
+    ) -> PrivacyControlServerSyncSnapshot {
+        PrivacyControlServerSyncSnapshot(
+            desiredEnabled: desiredEnabled,
+            canonicalEnabled: lastCanonicalEnabled,
+            requestedAt: requestedAt?.timeIntervalSince1970,
+            resultRecordedAt: recordedAt.timeIntervalSince1970,
+            serverUpdatedAt: nil,
+            requestId: requestId,
+            state: .serverFailed,
+            failureCategory: failureCategory,
+            failureCode: failureCode
+        )
+    }
+}
+
+/// 프라이버시 공유 동기화 실패를 사용자 문구와 서버 스냅샷 분류로 해석한 결과입니다.
+struct PrivacyControlVisibilityFailureDescriptor: Equatable {
+    let recentStatusKind: PrivacyControlRecentStatus.Kind
+    let detail: String
+    let toastMessage: String
+    let failureCategory: PrivacyControlServerSyncSnapshot.FailureCategory
+    let failureCode: String?
+
+    /// 원본 오류를 프라이버시 센터 표면에 맞는 실패 분류로 변환합니다.
+    /// - Parameters:
+    ///   - error: 서버 동기화 중 발생한 원본 오류입니다.
+    ///   - enabled: 사용자가 의도한 목표 공유 상태입니다.
+    ///   - authSessionAvailable: 현재 로컬 토큰 세션이 남아 있는지 여부입니다.
+    /// - Returns: 최근 상태 문구, 토스트, 서버 snapshot 분류가 정리된 결과입니다.
+    static func make(
+        from error: Error,
+        enabled: Bool,
+        authSessionAvailable: Bool
+    ) -> PrivacyControlVisibilityFailureDescriptor {
+        if let urlError = error as? URLError {
+            switch urlError.code {
+            case .notConnectedToInternet, .networkConnectionLost, .timedOut, .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed:
+                let detail = enabled
+                    ? "연결이 없어 공유 시작 요청을 저장만 했어요. 서버 확인은 연결이 돌아오면 다시 진행됩니다."
+                    : "연결이 없어 비공개 전환 요청을 저장만 했어요. 서버 확인은 연결이 돌아오면 다시 진행됩니다."
+                return PrivacyControlVisibilityFailureDescriptor(
+                    recentStatusKind: .offlinePending,
+                    detail: detail,
+                    toastMessage: detail,
+                    failureCategory: .offline,
+                    failureCode: "url_\(urlError.code.rawValue)"
+                )
+            default:
+                break
+            }
+        }
+
+        if let supabaseError = error as? SupabaseHTTPError,
+           case .unexpectedStatusCode(let statusCode) = supabaseError {
+            if statusCode == 401 || statusCode == 403 {
+                let detail = authSessionAvailable
+                    ? "로그인은 유지되어 있지만 서버 인증 확인이 필요해요. 잠시 후 다시 시도해주세요."
+                    : "로그인 상태를 다시 확인한 뒤 공유 상태를 바꿔주세요."
+                return PrivacyControlVisibilityFailureDescriptor(
+                    recentStatusKind: .authRefreshRequired,
+                    detail: detail,
+                    toastMessage: detail,
+                    failureCategory: .authRequired,
+                    failureCode: "http_\(statusCode)"
+                )
+            }
+
+            let detail = enabled
+                ? "공유 시작 요청을 보냈지만 서버 확인이 늦고 있어요. 잠시 후 다시 확인해주세요."
+                : "비공개 전환 요청을 보냈지만 서버 확인이 늦고 있어요. 잠시 후 다시 확인해주세요."
+            return PrivacyControlVisibilityFailureDescriptor(
+                recentStatusKind: .serverDelayed,
+                detail: detail,
+                toastMessage: detail,
+                failureCategory: .serverDelayed,
+                failureCode: "http_\(statusCode)"
+            )
+        }
+
+        let detail = enabled
+            ? "공유 시작 요청을 보냈지만 서버 확인이 늦고 있어요. 잠시 후 다시 확인해주세요."
+            : "비공개 전환 요청을 보냈지만 서버 확인이 늦고 있어요. 잠시 후 다시 확인해주세요."
+        return PrivacyControlVisibilityFailureDescriptor(
+            recentStatusKind: .serverDelayed,
+            detail: detail,
+            toastMessage: detail,
+            failureCategory: .unknown,
+            failureCode: nil
+        )
+    }
 }
 
 /// 공유 기본값과 최근 상태 스냅샷을 공통으로 저장/조회하는 계약입니다.
@@ -34,6 +256,11 @@ protocol PrivacyControlStateStoreProtocol {
     /// - Returns: 저장된 최근 공유 상태가 있으면 반환하고, 없으면 `nil`입니다.
     func loadRecentStatus(for userId: String?) -> PrivacyControlRecentStatus?
 
+    /// 현재 사용자 범위에 저장된 서버 기준 공유 상태 스냅샷을 읽습니다.
+    /// - Parameter userId: 현재 인증 사용자 ID입니다. 게스트면 guest 스코프를 읽습니다.
+    /// - Returns: 저장된 canonical server snapshot이 있으면 반환하고, 없으면 `nil`입니다.
+    func loadServerSyncSnapshot(for userId: String?) -> PrivacyControlServerSyncSnapshot?
+
     /// 최근 공유 상태 요약을 현재 사용자 범위에 저장합니다.
     /// - Parameters:
     ///   - kind: 저장할 최근 상태 종류입니다.
@@ -46,6 +273,12 @@ protocol PrivacyControlStateStoreProtocol {
         for userId: String?,
         at date: Date
     )
+
+    /// 서버 기준 공유 상태 스냅샷을 현재 사용자 범위에 저장합니다.
+    /// - Parameters:
+    ///   - snapshot: 저장할 canonical server snapshot입니다.
+    ///   - userId: 저장 대상 사용자 ID입니다. 게스트면 guest 스코프에 저장합니다.
+    func persistServerSyncSnapshot(_ snapshot: PrivacyControlServerSyncSnapshot, for userId: String?)
 }
 
 final class DefaultPrivacyControlStateStore: PrivacyControlStateStoreProtocol {
@@ -57,6 +290,7 @@ final class DefaultPrivacyControlStateStore: PrivacyControlStateStoreProtocol {
     private let legacyScopedGlobalKey = "nearby.locationSharingEnabled.v1"
     private let legacyMapGlobalKey = "nearby.locationSharingEnabled"
     private let recentStatusKeyPrefix = "privacy.center.recentStatus.v1"
+    private let serverSnapshotKeyPrefix = "privacy.center.serverSyncSnapshot.v1"
 
     /// 공통 프라이버시 상태 저장소를 구성합니다.
     /// - Parameter preferenceStore: UserDefaults 기반 값 저장/조회에 사용할 저장소입니다.
@@ -116,6 +350,16 @@ final class DefaultPrivacyControlStateStore: PrivacyControlStateStoreProtocol {
         return try? JSONDecoder().decode(PrivacyControlRecentStatus.self, from: data)
     }
 
+    /// 현재 사용자 범위에 저장된 서버 기준 공유 상태 스냅샷을 읽습니다.
+    /// - Parameter userId: 현재 인증 사용자 ID입니다. 게스트면 guest 스코프를 읽습니다.
+    /// - Returns: 저장된 canonical server snapshot이 있으면 반환하고, 없으면 `nil`입니다.
+    func loadServerSyncSnapshot(for userId: String?) -> PrivacyControlServerSyncSnapshot? {
+        guard let data = preferenceStore.data(forKey: serverSyncSnapshotKey(for: userId)) else {
+            return nil
+        }
+        return try? JSONDecoder().decode(PrivacyControlServerSyncSnapshot.self, from: data)
+    }
+
     /// 최근 공유 상태 요약을 현재 사용자 범위에 저장합니다.
     /// - Parameters:
     ///   - kind: 저장할 최근 상태 종류입니다.
@@ -135,6 +379,15 @@ final class DefaultPrivacyControlStateStore: PrivacyControlStateStoreProtocol {
         )
         let encoded = try? JSONEncoder().encode(snapshot)
         preferenceStore.set(encoded, forKey: recentStatusKey(for: userId))
+    }
+
+    /// 서버 기준 공유 상태 스냅샷을 현재 사용자 범위에 저장합니다.
+    /// - Parameters:
+    ///   - snapshot: 저장할 canonical server snapshot입니다.
+    ///   - userId: 저장 대상 사용자 ID입니다. 게스트면 guest 스코프에 저장합니다.
+    func persistServerSyncSnapshot(_ snapshot: PrivacyControlServerSyncSnapshot, for userId: String?) {
+        let encoded = try? JSONEncoder().encode(snapshot)
+        preferenceStore.set(encoded, forKey: serverSyncSnapshotKey(for: userId))
     }
 
     /// 저장된 Bool 값이 실제로 존재할 때만 해당 값을 반환합니다.
@@ -178,5 +431,13 @@ final class DefaultPrivacyControlStateStore: PrivacyControlStateStoreProtocol {
     private func recentStatusKey(for userId: String?) -> String {
         let scope = normalizedUserID(from: userId) ?? "guest"
         return "\(recentStatusKeyPrefix).\(scope)"
+    }
+
+    /// 서버 기준 공유 상태 스냅샷 저장 키를 생성합니다.
+    /// - Parameter userId: 현재 인증 사용자 ID입니다. 게스트면 guest 스코프를 사용합니다.
+    /// - Returns: 사용자 범위가 포함된 canonical server snapshot 저장 키 문자열입니다.
+    private func serverSyncSnapshotKey(for userId: String?) -> String {
+        let scope = normalizedUserID(from: userId) ?? "guest"
+        return "\(serverSnapshotKeyPrefix).\(scope)"
     }
 }

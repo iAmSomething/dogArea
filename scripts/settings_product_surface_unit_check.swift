@@ -47,9 +47,13 @@ assertTrue(settingProductSurface.contains("var appInfoRows: [SettingsInfoRow]"),
 
 assertTrue(surfaceModels.contains("struct SettingsDocumentContent"), "settings surface models should define document content")
 assertTrue(surfaceModels.contains("enum SettingsSurfaceActionTarget"), "settings surface models should define action targets")
+assertTrue(surfaceModels.contains("let badgeTone: SettingsPrivacyTone?"), "settings surface models should model badge tone explicitly")
 assertTrue(surfaceModels.contains("supportEmail: \"st939823@gmail.com\""), "settings surface models should keep support email placeholder")
 
 assertTrue(productSurfaceService.contains("UIApplication.openSettingsURLString"), "product surface service should expose system settings deep link")
+assertTrue(productSurfaceService.contains("badgeText: \"허용됨\""), "product surface service should expose user-facing notification allow copy")
+assertTrue(productSurfaceService.contains("badgeText: \"꺼짐\""), "product surface service should expose user-facing notification disabled copy")
+assertTrue(productSurfaceService.contains("badgeText: \"미설정\""), "product surface service should expose user-facing notification unresolved copy")
 assertTrue(productSurfaceService.contains("개인정보처리방침"), "product surface service should define privacy policy document")
 assertTrue(productSurfaceService.contains("이용약관"), "product surface service should define terms document")
 assertTrue(productSurfaceService.contains("오픈소스/SDK 안내"), "product surface service should define license/sdk document")
@@ -66,6 +70,7 @@ assertTrue(productSurfaceService.contains("settings.app.notifications"), "produc
 assertTrue(productSurfaceService.contains("settings.support.email"), "product surface service should define support email entry identifier")
 
 assertTrue(actionCard.contains("action.accessibilityIdentifier"), "settings action card should apply row accessibility identifiers")
+assertTrue(actionCard.contains("badgeForegroundColor"), "settings action card should style badges by tone instead of a fixed color")
 assertTrue(appInfoCard.contains("row.accessibilityIdentifier"), "settings app info card should apply row accessibility identifiers")
 assertTrue(documentSheet.contains("sheet.settings.document."), "settings document sheet should expose accessibility identifier")
 

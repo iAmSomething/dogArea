@@ -49,10 +49,10 @@ struct SettingsActionSectionCardView: View {
                             if let badgeText = action.badgeText {
                                 Text(badgeText)
                                     .font(.appScaledFont(for: .SemiBold, size: 11, relativeTo: .caption))
-                                    .foregroundStyle(Color.appYellow)
+                                    .foregroundStyle(badgeForegroundColor(for: action.badgeTone))
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 5)
-                                    .background(Color.appYellow.opacity(0.12))
+                                    .background(badgeBackgroundColor(for: action.badgeTone))
                                     .clipShape(Capsule())
                             }
 
@@ -76,5 +76,37 @@ struct SettingsActionSectionCardView: View {
         }
         .appCardSurface()
         .accessibilityIdentifier(accessibilityIdentifier)
+    }
+
+    /// 설정 액션 배지의 foreground 색상을 톤에 맞춰 계산합니다.
+    /// - Parameter tone: 액션이 노출할 배지 강조 톤입니다.
+    /// - Returns: 사용자 상태에 맞는 배지 전경색입니다.
+    private func badgeForegroundColor(for tone: SettingsPrivacyTone?) -> Color {
+        switch tone {
+        case .positive:
+            return Color.appGreen
+        case .warning:
+            return Color.appYellow
+        case .critical:
+            return Color.appRed
+        case .neutral, .none:
+            return Color.appTextDarkGray
+        }
+    }
+
+    /// 설정 액션 배지의 background 색상을 톤에 맞춰 계산합니다.
+    /// - Parameter tone: 액션이 노출할 배지 강조 톤입니다.
+    /// - Returns: 사용자 상태에 맞는 배지 배경색입니다.
+    private func badgeBackgroundColor(for tone: SettingsPrivacyTone?) -> Color {
+        switch tone {
+        case .positive:
+            return Color.appGreen.opacity(0.14)
+        case .warning:
+            return Color.appYellow.opacity(0.14)
+        case .critical:
+            return Color.appRed.opacity(0.14)
+        case .neutral, .none:
+            return Color.appTextLightGray.opacity(0.18)
+        }
     }
 }

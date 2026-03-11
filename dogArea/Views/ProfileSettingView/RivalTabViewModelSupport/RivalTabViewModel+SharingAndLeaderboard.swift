@@ -66,11 +66,25 @@ extension RivalTabViewModel {
         }
 
         isSharingInFlight = true
+        let requestDate = Date()
+        let previousServerSnapshot = privacyControlStateStore.loadServerSyncSnapshot(for: userId)
+        persistPrivacyServerSyncPending(
+            desiredEnabled: true,
+            previousCanonicalEnabled: previousServerSnapshot?.canonicalEnabled,
+            for: userId,
+            at: requestDate
+        )
         Task {
             defer { isSharingInFlight = false }
             do {
-                try await nearbyService.setVisibility(userId: userId, enabled: true)
+                let result = try await nearbyService.setVisibility(userId: userId, enabled: true)
                 persistLocationSharingPreference(true, for: userId)
+                persistPrivacyServerSyncConfirmed(
+                    result: result,
+                    desiredEnabled: true,
+                    requestedAt: requestDate,
+                    for: userId
+                )
                 recordRecentPrivacyStatus(
                     kind: .sharingOn,
                     detail: "서버 반영까지 확인했어요. 산책 중 익명 공유를 다시 사용할 수 있어요.",
@@ -92,7 +106,13 @@ extension RivalTabViewModel {
                     return
                 }
                 persistLocationSharingPreference(false, for: userId)
-                recordVisibilityFailureStatus(enabled: true, for: userId, error: error)
+                recordVisibilityFailureStatus(
+                    enabled: true,
+                    for: userId,
+                    requestedAt: requestDate,
+                    lastCanonicalEnabled: previousServerSnapshot?.canonicalEnabled,
+                    error: error
+                )
                 locationSharingEnabled = false
                 refreshViewState()
                 showToast(visibilityFailureMessage(for: error))
@@ -111,7 +131,15 @@ extension RivalTabViewModel {
         }
 
         isSharingInFlight = true
+        let requestDate = Date()
+        let previousServerSnapshot = privacyControlStateStore.loadServerSyncSnapshot(for: userId)
         persistLocationSharingPreference(false, for: userId)
+        persistPrivacyServerSyncPending(
+            desiredEnabled: false,
+            previousCanonicalEnabled: previousServerSnapshot?.canonicalEnabled,
+            for: userId,
+            at: requestDate
+        )
         recordRecentPrivacyStatus(
             kind: .privateMode,
             detail: "지금부터 비공개예요. 새 공유는 우선 중단됐어요.",
@@ -126,7 +154,13 @@ extension RivalTabViewModel {
 
         Task {
             defer { isSharingInFlight = false }
-            await syncVisibilityOffWithRetry(userId: userId, startedAt: Date(), attempt: 0)
+            await syncVisibilityOffWithRetry(
+                userId: userId,
+                startedAt: requestDate,
+                attempt: 0,
+                requestedAt: requestDate,
+                lastCanonicalEnabled: previousServerSnapshot?.canonicalEnabled
+            )
         }
     }
 
@@ -372,8 +406,24 @@ extension RivalTabViewModel {
     ///   - userId: 공유 비활성화를 적용할 사용자 ID입니다.
     ///   - startedAt: OFF 처리 시작 시각입니다.
     ///   - attempt: 현재 재시도 시도 횟수입니다.
-    private func syncVisibilityOffWithRetry(userId: String, startedAt: Date, attempt: Int) async {
+    ///   - requestedAt: 사용자가 비공개 전환을 요청한 시각입니다.
+    ///   - lastCanonicalEnabled: 마지막으로 확인된 서버 기준 공유 상태입니다.
+    private func syncVisibilityOffWithRetry(
+        userId: String,
+        startedAt: Date,
+        attempt: Int,
+        requestedAt: Date,
+        lastCanonicalEnabled: Bool?
+    ) async {
         if attempt > visibilityOffMaxRetries {
+            persistPrivacyServerSyncFailure(
+                enabled: false,
+                userId: userId,
+                requestedAt: requestedAt,
+                lastCanonicalEnabled: lastCanonicalEnabled,
+                failureCategory: .serverDelayed,
+                failureCode: "retry_timeout"
+            )
             recordRecentPrivacyStatus(
                 kind: .serverDelayed,
                 detail: "비공개 요청의 서버 반영이 조금 늦고 있어요. 잠시 후 다시 확인해주세요.",
@@ -383,7 +433,13 @@ extension RivalTabViewModel {
             return
         }
         do {
-            try await nearbyService.setVisibility(userId: userId, enabled: false)
+            let result = try await nearbyService.setVisibility(userId: userId, enabled: false)
+            persistPrivacyServerSyncConfirmed(
+                result: result,
+                desiredEnabled: false,
+                requestedAt: requestedAt,
+                for: userId
+            )
             recordRecentPrivacyStatus(
                 kind: .privateMode,
                 detail: "서버 반영까지 확인했어요. 새 공유는 더 이상 반영되지 않아요.",
@@ -397,7 +453,13 @@ extension RivalTabViewModel {
             let elapsed = Date().timeIntervalSince(startedAt)
             let remaining = visibilityOffPropagationDeadline - elapsed
             guard remaining > 0 else {
-                recordVisibilityFailureStatus(enabled: false, for: userId, error: error)
+                recordVisibilityFailureStatus(
+                    enabled: false,
+                    for: userId,
+                    requestedAt: requestedAt,
+                    lastCanonicalEnabled: lastCanonicalEnabled,
+                    error: error
+                )
                 showToast("공유 OFF 서버 반영이 지연되고 있어요. 네트워크 확인 후 다시 시도해주세요.")
                 return
             }
@@ -408,7 +470,9 @@ extension RivalTabViewModel {
             await syncVisibilityOffWithRetry(
                 userId: userId,
                 startedAt: startedAt,
-                attempt: attempt + 1
+                attempt: attempt + 1,
+                requestedAt: requestedAt,
+                lastCanonicalEnabled: lastCanonicalEnabled
             )
         }
     }
@@ -446,28 +510,109 @@ extension RivalTabViewModel {
         )
     }
 
+    /// 서버 확인 전 optimistic 공유 상태를 canonical snapshot으로 저장합니다.
+    /// - Parameters:
+    ///   - desiredEnabled: 사용자가 의도한 목표 공유 상태입니다.
+    ///   - previousCanonicalEnabled: 마지막으로 확인된 서버 기준 공유 상태입니다.
+    ///   - userId: 저장 대상 사용자 ID입니다.
+    ///   - date: 사용자가 토글을 누른 시각입니다.
+    private func persistPrivacyServerSyncPending(
+        desiredEnabled: Bool,
+        previousCanonicalEnabled: Bool?,
+        for userId: String,
+        at date: Date
+    ) {
+        let snapshot = PrivacyControlServerSyncSnapshot.localPending(
+            desiredEnabled: desiredEnabled,
+            lastCanonicalEnabled: previousCanonicalEnabled,
+            requestedAt: date
+        )
+        privacyControlStateStore.persistServerSyncSnapshot(snapshot, for: userId)
+    }
+
+    /// 서버 성공 응답을 canonical snapshot으로 저장합니다.
+    /// - Parameters:
+    ///   - result: nearby visibility 변경 후 서버가 반환한 canonical 결과입니다.
+    ///   - desiredEnabled: 사용자가 의도했던 목표 공유 상태입니다.
+    ///   - requestedAt: 사용자가 토글을 누른 시각입니다.
+    ///   - userId: 저장 대상 사용자 ID입니다.
+    private func persistPrivacyServerSyncConfirmed(
+        result: PrivacyVisibilitySyncResultDTO,
+        desiredEnabled: Bool,
+        requestedAt: Date,
+        for userId: String
+    ) {
+        let snapshot = PrivacyControlServerSyncSnapshot.serverConfirmed(
+            desiredEnabled: desiredEnabled,
+            canonicalEnabled: result.enabled,
+            requestedAt: requestedAt,
+            serverUpdatedAt: result.updatedAtEpoch.map(Date.init(timeIntervalSince1970:)),
+            recordedAt: Date(),
+            requestId: result.requestId
+        )
+        privacyControlStateStore.persistServerSyncSnapshot(snapshot, for: userId)
+    }
+
+    /// 서버 실패 응답을 canonical snapshot으로 저장합니다.
+    /// - Parameters:
+    ///   - enabled: 사용자가 의도한 목표 공유 상태입니다.
+    ///   - userId: 저장 대상 사용자 ID입니다.
+    ///   - requestedAt: 사용자가 마지막으로 요청한 시각입니다.
+    ///   - lastCanonicalEnabled: 마지막으로 확인된 서버 기준 공유 상태입니다.
+    ///   - failureCategory: 사용자 문구에 매핑할 실패 분류입니다.
+    ///   - failureCode: 장애 분석용 세부 코드입니다.
+    private func persistPrivacyServerSyncFailure(
+        enabled: Bool,
+        userId: String,
+        requestedAt: Date,
+        lastCanonicalEnabled: Bool?,
+        failureCategory: PrivacyControlServerSyncSnapshot.FailureCategory,
+        failureCode: String?
+    ) {
+        let snapshot = PrivacyControlServerSyncSnapshot.serverFailed(
+            desiredEnabled: enabled,
+            lastCanonicalEnabled: lastCanonicalEnabled,
+            requestedAt: requestedAt,
+            recordedAt: Date(),
+            failureCategory: failureCategory,
+            failureCode: failureCode
+        )
+        privacyControlStateStore.persistServerSyncSnapshot(snapshot, for: userId)
+    }
+
     /// 공유 상태 동기화 실패를 최근 상태 문구/배지로 변환해 저장합니다.
     /// - Parameters:
     ///   - enabled: 사용자가 의도한 목표 공유 상태입니다.
     ///   - userId: 현재 사용자 ID입니다.
+    ///   - requestedAt: 사용자가 마지막으로 공유 상태 변경을 요청한 시각입니다.
+    ///   - lastCanonicalEnabled: 마지막으로 확인된 서버 기준 공유 상태입니다.
     ///   - error: 서버 동기화 실패 원본 오류입니다.
     private func recordVisibilityFailureStatus(
         enabled: Bool,
         for userId: String?,
+        requestedAt: Date,
+        lastCanonicalEnabled: Bool?,
         error: Error
     ) {
-        if RivalNetworkErrorInterpreter.isConnectivityError(error) {
-            let detail = enabled
-                ? "연결이 없어 공유 시작 반영이 보류됐어요. 연결이 돌아오면 다시 확인해주세요."
-                : "연결이 없어 비공개 반영이 늦을 수 있어요. 새 공유는 우선 멈췄어요."
-            recordRecentPrivacyStatus(kind: .offlinePending, detail: detail, for: userId)
-            return
-        }
-
-        let detail = enabled
-            ? "서버 반영이 조금 늦고 있어요. 잠시 후 다시 확인해주세요."
-            : "비공개 요청의 서버 반영이 조금 늦고 있어요. 잠시 후 다시 확인해주세요."
-        recordRecentPrivacyStatus(kind: .serverDelayed, detail: detail, for: userId)
+        guard let userId else { return }
+        let descriptor = PrivacyControlVisibilityFailureDescriptor.make(
+            from: error,
+            enabled: enabled,
+            authSessionAvailable: authSessionStore.currentTokenSession() != nil
+        )
+        persistPrivacyServerSyncFailure(
+            enabled: enabled,
+            userId: userId,
+            requestedAt: requestedAt,
+            lastCanonicalEnabled: lastCanonicalEnabled,
+            failureCategory: descriptor.failureCategory,
+            failureCode: descriptor.failureCode
+        )
+        recordRecentPrivacyStatus(
+            kind: descriptor.recentStatusKind,
+            detail: descriptor.detail,
+            for: userId
+        )
     }
 
     /// Supabase 응답이 인증 실패(401/403)인지 판정합니다.

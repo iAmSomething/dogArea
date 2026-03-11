@@ -71,18 +71,26 @@ final class SettingsPrivacyCenterService: SettingsPrivacyCenterProviding {
         metadata: SettingsAppMetadata
     ) -> SettingsPrivacyCenterSnapshot {
         let isGuest = currentIdentity == nil
+        let sharingEnabled = privacyControlStateStore.loadSharingEnabled(for: currentIdentity?.userId)
+        let serverSyncSnapshot = privacyControlStateStore.loadServerSyncSnapshot(for: currentIdentity?.userId)
         let locationStatus = locationPermissionPresentation(isGuest: isGuest)
         let notificationStatus = notificationPermissionPresentation(from: notificationSummary)
         let currentStatus = currentSharingStatusPresentation(
             currentIdentity: currentIdentity,
-            locationPermission: locationStatus
+            locationPermission: locationStatus,
+            sharingEnabled: sharingEnabled,
+            serverSyncSnapshot: serverSyncSnapshot
         )
-        let recentStatus = recentStatusPresentation(for: currentIdentity)
+        let recentStatus = recentStatusPresentation(
+            for: currentIdentity,
+            sharingEnabled: sharingEnabled,
+            serverSyncSnapshot: serverSyncSnapshot
+        )
         let moderationSummary = moderationSummaryPresentation()
         let actionKind = primaryActionKind(
             currentIdentity: currentIdentity,
             locationPermission: locationStatus,
-            sharingEnabled: privacyControlStateStore.loadSharingEnabled(for: currentIdentity?.userId)
+            sharingEnabled: sharingEnabled
         )
         let entrySummary = SettingsPrivacyEntrySummary(
             title: "프라이버시 센터",
@@ -150,21 +158,11 @@ final class SettingsPrivacyCenterService: SettingsPrivacyCenterProviding {
     private func notificationPermissionPresentation(
         from notificationSummary: SettingsNotificationSummary
     ) -> SettingsPrivacyPermissionRowContent {
-        let tone: SettingsPrivacyTone
-        switch notificationSummary.badgeText {
-        case "ON", "QUIET", "TEMP":
-            tone = .positive
-        case "OFF", "TODO":
-            tone = .warning
-        default:
-            tone = .neutral
-        }
-
         return SettingsPrivacyPermissionRowContent(
             title: notificationSummary.title,
             subtitle: notificationSummary.subtitle,
             badgeText: notificationSummary.badgeText,
-            tone: tone
+            tone: notificationSummary.tone
         )
     }
 
@@ -175,9 +173,11 @@ final class SettingsPrivacyCenterService: SettingsPrivacyCenterProviding {
     /// - Returns: 현재 공유 상태 카드에 표시할 요약 정보입니다.
     private func currentSharingStatusPresentation(
         currentIdentity: AuthenticatedUserIdentity?,
-        locationPermission: SettingsPrivacyPermissionRowContent
+        locationPermission: SettingsPrivacyPermissionRowContent,
+        sharingEnabled: Bool,
+        serverSyncSnapshot: PrivacyControlServerSyncSnapshot?
     ) -> SettingsPrivacyStatusContent {
-        guard let currentIdentity else {
+        guard currentIdentity != nil else {
             return SettingsPrivacyStatusContent(
                 title: "로그인 후 공유 상태를 관리할 수 있어요",
                 subtitle: "게스트 모드에서는 문서와 정책만 확인할 수 있고, 공유 제어는 로그인 후 사용할 수 있어요.",
@@ -186,11 +186,55 @@ final class SettingsPrivacyCenterService: SettingsPrivacyCenterProviding {
             )
         }
 
-        let sharingEnabled = privacyControlStateStore.loadSharingEnabled(for: currentIdentity.userId)
+        if let serverSyncSnapshot {
+            switch serverSyncSnapshot.state {
+            case .serverConfirmed:
+                if serverSyncSnapshot.canonicalEnabled == true {
+                    return SettingsPrivacyStatusContent(
+                        title: "현재 서버 기준으로 공유 허용 상태예요",
+                        subtitle: serverConfirmedSubtitle(
+                            canonicalEnabled: true,
+                            serverSyncSnapshot: serverSyncSnapshot,
+                            sharingEnabled: sharingEnabled
+                        ),
+                        badgeText: "서버 반영 완료",
+                        tone: .positive
+                    )
+                }
+
+                return SettingsPrivacyStatusContent(
+                    title: "현재 서버 기준으로 비공개예요",
+                    subtitle: serverConfirmedSubtitle(
+                        canonicalEnabled: false,
+                        serverSyncSnapshot: serverSyncSnapshot,
+                        sharingEnabled: sharingEnabled
+                    ),
+                    badgeText: "서버 반영 완료",
+                    tone: .neutral
+                )
+            case .localPending:
+                return SettingsPrivacyStatusContent(
+                    title: serverSyncSnapshot.desiredEnabled
+                        ? "이 기기에서는 공유 시작을 요청했어요"
+                        : "이 기기에서는 비공개 전환을 요청했어요",
+                    subtitle: localPendingSubtitle(for: serverSyncSnapshot),
+                    badgeText: "서버 확인 대기",
+                    tone: .warning
+                )
+            case .serverFailed:
+                return SettingsPrivacyStatusContent(
+                    title: currentStatusFailureTitle(for: serverSyncSnapshot),
+                    subtitle: serverFailureSubtitle(for: serverSyncSnapshot),
+                    badgeText: currentStatusFailureBadgeText(for: serverSyncSnapshot),
+                    tone: currentStatusFailureTone(for: serverSyncSnapshot)
+                )
+            }
+        }
+
         if locationPermission.badgeText == "권한 필요" && sharingEnabled {
             return SettingsPrivacyStatusContent(
                 title: "현재 공유를 다시 시작하려면 위치 권한이 필요해요",
-                subtitle: "공유 기본값은 켜져 있지만, 지금은 위치 권한이 없어 실제 반영을 이어갈 수 없어요.",
+                subtitle: "이 기기 기본값은 공유 허용으로 저장되어 있지만, 서버 기준 상태를 새로 확인하려면 위치 권한부터 복구해야 해요.",
                 badgeText: "권한 필요",
                 tone: .warning
             )
@@ -198,17 +242,17 @@ final class SettingsPrivacyCenterService: SettingsPrivacyCenterProviding {
 
         if sharingEnabled {
             return SettingsPrivacyStatusContent(
-                title: "현재 익명 공유를 허용한 상태예요",
-                subtitle: "산책 중에는 근처 열기 집계에 반영될 수 있고, 설정이나 지도/라이벌 shortcut에서 바로 비공개로 바꿀 수 있어요.",
-                badgeText: "공유 중",
+                title: "이 기기에 저장된 기본값은 공유 허용이에요",
+                subtitle: "아직 서버 기준 확인 기록이 없어 기기 기본값을 먼저 보여드리고 있어요.",
+                badgeText: "기기 기준",
                 tone: .positive
             )
         }
 
         return SettingsPrivacyStatusContent(
-            title: "지금은 비공개예요",
-            subtitle: "산책 기록은 남지만 근처 공유에는 참여하지 않아요. 필요할 때만 다시 켤 수 있어요.",
-            badgeText: "비공개",
+            title: "이 기기에 저장된 기본값은 비공개예요",
+            subtitle: "아직 서버 기준 확인 기록이 없어 기기 기본값을 먼저 보여드리고 있어요.",
+            badgeText: "기기 기준",
             tone: .neutral
         )
     }
@@ -217,7 +261,9 @@ final class SettingsPrivacyCenterService: SettingsPrivacyCenterProviding {
     /// - Parameter currentIdentity: 현재 인증된 사용자 식별 정보입니다. 게스트면 `nil`입니다.
     /// - Returns: 최근 공유 상태 카드에 표시할 요약 정보입니다.
     private func recentStatusPresentation(
-        for currentIdentity: AuthenticatedUserIdentity?
+        for currentIdentity: AuthenticatedUserIdentity?,
+        sharingEnabled: Bool,
+        serverSyncSnapshot: PrivacyControlServerSyncSnapshot?
     ) -> SettingsPrivacyStatusContent {
         guard let currentIdentity else {
             return SettingsPrivacyStatusContent(
@@ -228,11 +274,18 @@ final class SettingsPrivacyCenterService: SettingsPrivacyCenterProviding {
             )
         }
 
+        if let serverSyncSnapshot {
+            return serverGroundedRecentStatusPresentation(
+                serverSyncSnapshot: serverSyncSnapshot,
+                sharingEnabled: sharingEnabled
+            )
+        }
+
         guard let recentStatus = privacyControlStateStore.loadRecentStatus(for: currentIdentity.userId) else {
             return SettingsPrivacyStatusContent(
-                title: "아직 최근 공유 상태 기록이 없어요",
-                subtitle: "처음 공유를 켜거나 끈 뒤에는 마지막 반영 결과와 오류 여부를 여기서 다시 확인할 수 있어요.",
-                badgeText: "기록 없음",
+                title: "아직 서버 확인 기록이 없어요",
+                subtitle: "처음 공유를 켜거나 끈 뒤에는 서버 반영 완료/지연/오프라인 보류 기록을 여기서 다시 확인할 수 있어요.",
+                badgeText: "서버 기록 없음",
                 tone: .neutral
             )
         }
@@ -267,9 +320,16 @@ final class SettingsPrivacyCenterService: SettingsPrivacyCenterProviding {
                 badgeText: "권한 필요",
                 tone: .warning
             )
+        case .authRefreshRequired:
+            return SettingsPrivacyStatusContent(
+                title: "최근 상태: 서버 인증 확인 필요",
+                subtitle: "\(recentStatus.detail) · \(relativeTime)",
+                badgeText: "확인 필요",
+                tone: .warning
+            )
         case .offlinePending:
             return SettingsPrivacyStatusContent(
-                title: "최근 상태: 오프라인으로 보류 중",
+                title: "최근 상태: 서버 확인 보류",
                 subtitle: "\(recentStatus.detail) · \(relativeTime)",
                 badgeText: "오프라인 보류",
                 tone: .warning
@@ -350,6 +410,197 @@ final class SettingsPrivacyCenterService: SettingsPrivacyCenterProviding {
         }
     }
 
+    /// 서버 기준 최근 상태 카드를 canonical snapshot으로부터 생성합니다.
+    /// - Parameters:
+    ///   - serverSyncSnapshot: 현재 사용자 범위에 저장된 canonical server snapshot입니다.
+    ///   - sharingEnabled: 현재 기기에 저장된 공유 기본값입니다.
+    /// - Returns: 최근 상태 카드에 바로 사용할 사용자 문구 모델입니다.
+    private func serverGroundedRecentStatusPresentation(
+        serverSyncSnapshot: PrivacyControlServerSyncSnapshot,
+        sharingEnabled: Bool
+    ) -> SettingsPrivacyStatusContent {
+        switch serverSyncSnapshot.state {
+        case .serverConfirmed:
+            let requestText = requestTimestampPhrase(from: serverSyncSnapshot.requestedAt)
+            let serverText = serverTimestampPhrase(from: serverSyncSnapshot.serverUpdatedAt ?? serverSyncSnapshot.resultRecordedAt)
+            let title = serverSyncSnapshot.requestedAt == nil
+                ? "현재 서버 기준 상태를 확인했어요"
+                : "마지막 요청이 서버에 반영됐어요"
+            let subtitle = [
+                requestText,
+                "서버 기준은 \(canonicalVisibilityLabel(for: serverSyncSnapshot.canonicalEnabled ?? sharingEnabled))",
+                serverText
+            ]
+                .compactMap { $0 }
+                .joined(separator: " · ")
+            return SettingsPrivacyStatusContent(
+                title: title,
+                subtitle: subtitle,
+                badgeText: "서버 반영 완료",
+                tone: .positive
+            )
+        case .localPending:
+            let requestText = requestTimestampPhrase(from: serverSyncSnapshot.requestedAt) ?? "방금 요청했어요"
+            let canonicalText = canonicalVisibilityLabel(for: serverSyncSnapshot.canonicalEnabled)
+            return SettingsPrivacyStatusContent(
+                title: "마지막 요청은 서버 확인 대기 중이에요",
+                subtitle: "\(requestText) · 현재 확인된 서버 기준은 \(canonicalText)이며, 이 기기 요청은 아직 확인 전이에요.",
+                badgeText: "서버 확인 대기",
+                tone: .warning
+            )
+        case .serverFailed:
+            let requestText = requestTimestampPhrase(from: serverSyncSnapshot.requestedAt) ?? "최근 요청 시각을 기록하지 못했어요"
+            let failureText = serverFailureSummary(for: serverSyncSnapshot)
+            let canonicalText = canonicalVisibilityLabel(for: serverSyncSnapshot.canonicalEnabled)
+            return SettingsPrivacyStatusContent(
+                title: "마지막 요청이 서버에서 확인되지 않았어요",
+                subtitle: "\(requestText) · \(failureText) · 마지막 서버 기준은 \(canonicalText)예요.",
+                badgeText: currentStatusFailureBadgeText(for: serverSyncSnapshot),
+                tone: currentStatusFailureTone(for: serverSyncSnapshot)
+            )
+        }
+    }
+
+    /// 서버 반영 완료 상태 카드의 보조 문구를 생성합니다.
+    /// - Parameters:
+    ///   - canonicalEnabled: 서버가 보유한 현재 canonical visibility 상태입니다.
+    ///   - serverSyncSnapshot: 현재 사용자 범위의 canonical server snapshot입니다.
+    ///   - sharingEnabled: 현재 기기에 저장된 공유 기본값입니다.
+    /// - Returns: 현재 상태 카드에 표시할 보조 설명 문자열입니다.
+    private func serverConfirmedSubtitle(
+        canonicalEnabled: Bool,
+        serverSyncSnapshot: PrivacyControlServerSyncSnapshot,
+        sharingEnabled: Bool
+    ) -> String {
+        let serverText = serverTimestampPhrase(from: serverSyncSnapshot.serverUpdatedAt ?? serverSyncSnapshot.resultRecordedAt)
+            ?? "서버 시각을 아직 받지 못했어요."
+        if serverSyncSnapshot.desiredEnabled != canonicalEnabled || sharingEnabled != canonicalEnabled {
+            return "\(serverText) 이 기기 기본값과 서버 기준이 잠시 달랐지만, 지금은 서버 기준을 우선 보여드리고 있어요."
+        }
+        return "\(serverText) 프라이버시 센터는 이 값을 현재 서버 기준 상태로 사용합니다."
+    }
+
+    /// 로컬 요청 대기 상태 카드의 보조 문구를 생성합니다.
+    /// - Parameter serverSyncSnapshot: 현재 사용자 범위의 pending canonical snapshot입니다.
+    /// - Returns: 현재 상태 카드에 표시할 보조 설명 문자열입니다.
+    private func localPendingSubtitle(for serverSyncSnapshot: PrivacyControlServerSyncSnapshot) -> String {
+        let requestText = requestTimestampPhrase(from: serverSyncSnapshot.requestedAt) ?? "방금 요청했어요."
+        let canonicalText = canonicalVisibilityLabel(for: serverSyncSnapshot.canonicalEnabled)
+        return "\(requestText) 현재 확인된 서버 기준은 \(canonicalText)이며, 이 기기 요청은 아직 확인 전이에요."
+    }
+
+    /// 서버 확인 실패 상태 카드 제목을 생성합니다.
+    /// - Parameter serverSyncSnapshot: 현재 사용자 범위의 failure canonical snapshot입니다.
+    /// - Returns: 현재 상태 카드 제목입니다.
+    private func currentStatusFailureTitle(
+        for serverSyncSnapshot: PrivacyControlServerSyncSnapshot
+    ) -> String {
+        switch serverSyncSnapshot.failureCategory {
+        case .authRequired:
+            return "서버 인증 상태를 다시 확인해야 해요"
+        case .offline:
+            return "이 기기 요청은 저장했지만 서버 확인이 보류 중이에요"
+        case .serverDelayed, .unknown, .none:
+            return "서버 확인이 지연되고 있어요"
+        }
+    }
+
+    /// 서버 확인 실패 상태 카드 배지 문구를 생성합니다.
+    /// - Parameter serverSyncSnapshot: 현재 사용자 범위의 failure canonical snapshot입니다.
+    /// - Returns: 현재 상태 카드 배지 문자열입니다.
+    private func currentStatusFailureBadgeText(
+        for serverSyncSnapshot: PrivacyControlServerSyncSnapshot
+    ) -> String {
+        switch serverSyncSnapshot.failureCategory {
+        case .authRequired:
+            return "확인 필요"
+        case .offline:
+            return "오프라인 보류"
+        case .serverDelayed, .unknown, .none:
+            return "서버 지연"
+        }
+    }
+
+    /// 서버 확인 실패 상태 카드 강조 톤을 생성합니다.
+    /// - Parameter serverSyncSnapshot: 현재 사용자 범위의 failure canonical snapshot입니다.
+    /// - Returns: 현재 상태 카드 강조 톤입니다.
+    private func currentStatusFailureTone(
+        for serverSyncSnapshot: PrivacyControlServerSyncSnapshot
+    ) -> SettingsPrivacyTone {
+        switch serverSyncSnapshot.failureCategory {
+        case .authRequired, .offline:
+            return .warning
+        case .serverDelayed, .unknown, .none:
+            return .critical
+        }
+    }
+
+    /// 서버 확인 실패 상태 카드의 보조 문구를 생성합니다.
+    /// - Parameter serverSyncSnapshot: 현재 사용자 범위의 failure canonical snapshot입니다.
+    /// - Returns: 현재 상태 카드에 표시할 보조 설명 문자열입니다.
+    private func serverFailureSubtitle(
+        for serverSyncSnapshot: PrivacyControlServerSyncSnapshot
+    ) -> String {
+        let requestText = requestTimestampPhrase(from: serverSyncSnapshot.requestedAt) ?? "최근 요청 시각을 기록하지 못했어요."
+        let failureText = serverFailureSummary(for: serverSyncSnapshot)
+        let canonicalText = canonicalVisibilityLabel(for: serverSyncSnapshot.canonicalEnabled)
+        return "\(requestText) \(failureText) 마지막 서버 기준은 \(canonicalText)예요."
+    }
+
+    /// canonical visibility 상태를 사용자용 짧은 문구로 변환합니다.
+    /// - Parameter enabled: 서버가 보유한 현재 공유 상태입니다. 없으면 `nil`입니다.
+    /// - Returns: 프라이버시 센터에 표시할 상태 라벨 문자열입니다.
+    private func canonicalVisibilityLabel(for enabled: Bool?) -> String {
+        switch enabled {
+        case true:
+            return "공유 허용"
+        case false:
+            return "비공개"
+        case nil:
+            return "아직 모름"
+        }
+    }
+
+    /// 마지막 요청 시각을 짧은 설명 문구로 변환합니다.
+    /// - Parameter timestamp: epoch seconds 기준 요청 시각입니다. 없으면 `nil`입니다.
+    /// - Returns: 최근 요청 시각을 설명하는 사용자 문구입니다.
+    private func requestTimestampPhrase(from timestamp: TimeInterval?) -> String? {
+        guard let timestamp else { return nil }
+        return "마지막 요청은 \(relativeTimestampString(from: timestamp))에 기록됐어요."
+    }
+
+    /// 서버 반영 시각을 짧은 설명 문구로 변환합니다.
+    /// - Parameter timestamp: epoch seconds 기준 서버 반영 시각입니다.
+    /// - Returns: 서버 반영 시각을 설명하는 사용자 문구입니다.
+    private func serverTimestampPhrase(from timestamp: TimeInterval?) -> String? {
+        guard let timestamp else { return nil }
+        return "서버 확인은 \(relativeTimestampString(from: timestamp))에 끝났어요."
+    }
+
+    /// failure snapshot을 사용자용 짧은 실패 설명으로 변환합니다.
+    /// - Parameter serverSyncSnapshot: 현재 사용자 범위의 failure canonical snapshot입니다.
+    /// - Returns: 오프라인/인증/지연 상태를 설명하는 짧은 사용자 문구입니다.
+    private func serverFailureSummary(
+        for serverSyncSnapshot: PrivacyControlServerSyncSnapshot
+    ) -> String {
+        let suffix = serverSyncSnapshot.failureCode.map { "(\($0))" } ?? nil
+        let body: String
+        switch serverSyncSnapshot.failureCategory {
+        case .offline:
+            body = "오프라인이라 서버 확인이 미뤄졌어요"
+        case .authRequired:
+            body = "서버 인증 상태를 다시 확인해야 해요"
+        case .serverDelayed:
+            body = "서버 반영 응답이 늦고 있어요"
+        case .unknown, .none:
+            body = "서버 확인 결과를 아직 확정하지 못했어요"
+        }
+        if let suffix {
+            return "\(body) \(suffix)"
+        }
+        return body
+    }
+
     /// 프라이버시 센터 하단 문서/요청 액션 목록을 구성합니다.
     /// - Parameters:
     ///   - metadata: 앱 메타데이터입니다.
@@ -366,6 +617,7 @@ final class SettingsPrivacyCenterService: SettingsPrivacyCenterProviding {
                 subtitle: "공유 데이터가 어떤 주기로 정리되는지 사용자 기준으로 다시 확인합니다.",
                 iconSystemName: "clock.arrow.circlepath",
                 badgeText: nil,
+                badgeTone: nil,
                 accessibilityIdentifier: "settings.privacyCenter.retention",
                 target: .document(retentionDocument())
             ),
@@ -375,6 +627,7 @@ final class SettingsPrivacyCenterService: SettingsPrivacyCenterProviding {
                 subtitle: "개인정보 삭제 요청 또는 처리 상태 문의를 메일로 바로 접수합니다.",
                 iconSystemName: "trash",
                 badgeText: nil,
+                badgeTone: nil,
                 accessibilityIdentifier: "settings.privacyCenter.deleteRequest",
                 target: .external(deleteRequestMailURL(metadata: metadata))
             ),
@@ -384,6 +637,7 @@ final class SettingsPrivacyCenterService: SettingsPrivacyCenterProviding {
                 subtitle: moderationSummary.subtitle,
                 iconSystemName: "hand.raised",
                 badgeText: nil,
+                badgeTone: nil,
                 accessibilityIdentifier: "settings.privacyCenter.moderation",
                 target: .document(moderationSummaryDocument(summary: moderationSummary))
             ),
@@ -393,6 +647,7 @@ final class SettingsPrivacyCenterService: SettingsPrivacyCenterProviding {
                 subtitle: "수집 항목과 사용 목적, 삭제 흐름을 요약해서 다시 확인합니다.",
                 iconSystemName: "lock.shield",
                 badgeText: nil,
+                badgeTone: nil,
                 accessibilityIdentifier: "settings.privacyCenter.privacyPolicy",
                 target: .document(privacyPolicyDocument())
             ),
@@ -402,6 +657,7 @@ final class SettingsPrivacyCenterService: SettingsPrivacyCenterProviding {
                 subtitle: "공유 기능과 계정 사용 책임 범위를 약관 요약으로 다시 확인합니다.",
                 iconSystemName: "doc.text",
                 badgeText: nil,
+                badgeTone: nil,
                 accessibilityIdentifier: "settings.privacyCenter.terms",
                 target: .document(termsDocument())
             )
