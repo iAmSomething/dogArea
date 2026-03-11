@@ -33,6 +33,7 @@ xcodebuild -scheme dogArea \
 run_ui_test "testFeatureRegression_MapPrimaryActionIsNotObscuredByTabBar"
 run_ui_test "testFeatureRegression_MapAddPointControlRemainsHittableWhileWalking"
 run_ui_test "testFeatureRegression_MapBottomControllerStaysAnchoredAndCompactAtRest"
+run_ui_test "testFeatureRegression_MapRecenterButtonClearsBottomControllerAtRest"
 run_ui_test "testFeatureRegression_MapWalkingTopHUDStaysBelowSafeAreaAndAboveBottomControls"
 
 echo "[PRFastSmoke][FS-001] Done"

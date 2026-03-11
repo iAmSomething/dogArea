@@ -42,6 +42,14 @@ assertTrue(
     "bottom control overlay should centralize floating control bottom padding"
 )
 assertTrue(
+    bottomOverlay.contains("requiresIdleDeckSeparation"),
+    "bottom control overlay should reserve a dedicated idle deck clearance path for the recenter button"
+)
+assertTrue(
+    bottomOverlay.contains("MapWalkControlBarMetrics.idleFootprintBudget"),
+    "bottom control overlay should reserve the idle control bar footprint before placing the recenter button"
+)
+assertTrue(
     floatingControls.contains("@Environment(\\.appTabBarReservedHeight)") == false,
     "MapFloatingControlColumnView should not own tab bar padding rules directly"
 )
