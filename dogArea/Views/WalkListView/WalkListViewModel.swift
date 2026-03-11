@@ -31,7 +31,11 @@ final class WalkListViewModel: ObservableObject {
     private let calendarPresentationService: WalkListCalendarPresentationServicing
 
     var pets: [PetInfo] {
-        userInfo?.pet.filter(\.isActive) ?? []
+        if Self.shouldUseUITestLongMetricPreview() {
+            return [Self.makeUITestPreviewPetInfo()]
+        }
+        let activePets = userInfo?.pet.filter(\.isActive) ?? []
+        return activePets
     }
 
     var shouldShowSelectedPetEmptyState: Bool {
@@ -179,9 +183,22 @@ final class WalkListViewModel: ObservableObject {
     /// 현재 저장된 사용자 정보와 선택 반려견 정보를 다시 동기화합니다.
     private func synchronizeSelectedPetContext() {
         userInfo = UserdefaultSetting.shared.getValue()
+        if Self.shouldUseUITestLongMetricPreview() {
+            let previewPet = Self.makeUITestPreviewPetInfo()
+            selectedPetId = previewPet.petId
+            selectedPetName = previewPet.petName
+            return
+        }
+
         let selected = UserdefaultSetting.shared.selectedPet(from: userInfo)
-        selectedPetId = selected?.petId ?? ""
-        selectedPetName = selected?.petName ?? "강아지"
+        if let selected {
+            selectedPetId = selected.petId
+            selectedPetName = selected.petName
+            return
+        }
+
+        selectedPetId = ""
+        selectedPetName = "강아지"
     }
 
     /// 선택 반려견 변경 알림을 구독해 산책 목록 스코프를 동기화합니다.
@@ -268,6 +285,8 @@ final class WalkListViewModel: ObservableObject {
         let referenceDate = Date()
         let currentWeekStart = currentCalendar.dateInterval(of: .weekOfYear, for: referenceDate)?.start
             ?? currentCalendar.startOfDay(for: referenceDate)
+        let usesLongMetricPreview = shouldUseUITestLongMetricPreview()
+        let previewPetId = usesLongMetricPreview ? makeUITestPreviewPetInfo().petId : nil
 
         return [
             makePreviewRecord(
@@ -278,9 +297,11 @@ final class WalkListViewModel: ObservableObject {
                     hour: 9,
                     minute: 20
                 ),
-                duration: 1_260,
-                area: 7_420,
-                coordinateSeed: (37.5665, 126.9780)
+                duration: usesLongMetricPreview ? 54_060 : 1_260,
+                area: usesLongMetricPreview ? 123_456.78 : 7_420,
+                coordinateSeed: (37.5665, 126.9780),
+                pointCount: usesLongMetricPreview ? 16 : 3,
+                petId: previewPetId
             ),
             makePreviewRecord(
                 id: "22222222-aaaa-bbbb-cccc-222222222222",
@@ -292,7 +313,9 @@ final class WalkListViewModel: ObservableObject {
                 ),
                 duration: 1_800,
                 area: 5_860,
-                coordinateSeed: (37.5658, 126.9771)
+                coordinateSeed: (37.5658, 126.9771),
+                pointCount: 4,
+                petId: previewPetId
             ),
             makePreviewRecord(
                 id: "33333333-aaaa-bbbb-cccc-333333333333",
@@ -304,7 +327,9 @@ final class WalkListViewModel: ObservableObject {
                 ),
                 duration: 980,
                 area: 4_240,
-                coordinateSeed: (37.5649, 126.9761)
+                coordinateSeed: (37.5649, 126.9761),
+                pointCount: 3,
+                petId: previewPetId
             )
         ]
     }
@@ -341,45 +366,63 @@ final class WalkListViewModel: ObservableObject {
     ///   - duration: 산책 지속 시간(초)입니다.
     ///   - area: 산책 영역 넓이(㎡)입니다.
     ///   - coordinateSeed: 샘플 경로를 구성할 기준 좌표입니다.
+    ///   - pointCount: 샘플 경로에 포함할 위치 포인트 수입니다.
+    ///   - petId: 샘플 산책 기록에 연결할 반려견 식별자입니다.
     /// - Returns: 월별 캘린더/리스트 회귀 테스트에 사용할 산책 기록 모델입니다.
     private static func makePreviewRecord(
         id: String,
         start: Date,
         duration: Double,
         area: Double,
-        coordinateSeed: (Double, Double)
+        coordinateSeed: (Double, Double),
+        pointCount: Int,
+        petId: String?
     ) -> WalkDataModel {
         let baseLatitude = coordinateSeed.0
         let baseLongitude = coordinateSeed.1
+        let safePointCount = max(3, pointCount)
+        let timeStep = duration / Double(max(1, safePointCount - 1))
+        let locations = (0..<safePointCount).map { index in
+            let latitudeStep = Double(index) * 0.0002
+            let longitudeStep = Double(index) * 0.00018
+            let createdAt = start.timeIntervalSince1970 + (Double(index) * timeStep)
+            let role: WalkPointRole = index == 0 || index == safePointCount - 1 ? .mark : .route
+            return Location(
+                coordinate: CLLocationCoordinate2D(
+                    latitude: baseLatitude + latitudeStep,
+                    longitude: baseLongitude + longitudeStep
+                ),
+                id: UUID(),
+                createdAt: createdAt,
+                pointRole: role
+            )
+        }
         let polygon = Polygon(
-            locations: [
-                Location(
-                    coordinate: CLLocationCoordinate2D(latitude: baseLatitude, longitude: baseLongitude),
-                    id: UUID(),
-                    createdAt: start.timeIntervalSince1970,
-                    pointRole: .mark
-                ),
-                Location(
-                    coordinate: CLLocationCoordinate2D(latitude: baseLatitude + 0.0006, longitude: baseLongitude + 0.0005),
-                    id: UUID(),
-                    createdAt: start.timeIntervalSince1970 + min(duration / 2, 600),
-                    pointRole: .route
-                ),
-                Location(
-                    coordinate: CLLocationCoordinate2D(latitude: baseLatitude + 0.0012, longitude: baseLongitude + 0.0009),
-                    id: UUID(),
-                    createdAt: start.timeIntervalSince1970 + duration,
-                    pointRole: .mark
-                )
-            ],
+            locations: locations,
             createdAt: start.timeIntervalSince1970,
             id: UUID(uuidString: id) ?? UUID(),
             walkingTime: duration,
             walkingArea: area,
             imgData: nil,
-            petId: nil
+            petId: petId
         )
         return WalkDataModel(polygon: polygon)
+    }
+
+    /// 긴 값과 작은 화면 레이아웃 회귀를 검증할지 여부를 반환합니다.
+    /// - Returns: `-UITest.WalkListLongMetricPreview` 인자가 있으면 `true`입니다.
+    private static func shouldUseUITestLongMetricPreview() -> Bool {
+        ProcessInfo.processInfo.arguments.contains("-UITest.WalkListLongMetricPreview")
+    }
+
+    /// 긴 반려견 이름이 필요한 UI 테스트용 미리보기 반려견 정보를 생성합니다.
+    /// - Returns: 목록 셀과 상단 허브의 줄바꿈 규칙을 검증할 수 있는 샘플 반려견 정보입니다.
+    private static func makeUITestPreviewPetInfo() -> PetInfo {
+        PetInfo(
+            petId: "walklist-preview-long-pet",
+            petName: "이름이 긴 반려견 산책 샘플",
+            petProfile: nil
+        )
     }
 
     private static var currentCalendar: Calendar {

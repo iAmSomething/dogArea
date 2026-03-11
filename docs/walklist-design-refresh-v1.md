@@ -28,8 +28,8 @@
 
 ## 리스트 셀 구조
 - 날짜 / 시작 시각
-- 반려견 배지
 - 영역 중심 헤드라인
+- 반려견 문맥 chip
 - 산책 시간 / 영역 넓이 / 포인트 수 / 반려견 4개 메트릭 타일
 - 썸네일 또는 기록 요약 placeholder
 - chevron affordance 유지
@@ -38,6 +38,7 @@
 - 얇은 border 반복 대신 라운드 surface + 내부 metric tile rhythm 사용
 - 지도/설정과 같은 spacing, typography, background tone 사용
 - Dynamic Type 시 카드 높이는 자연스럽게 증가하고 텍스트가 잘리지 않아야 함
+- 작은 화면에서는 `...` 대신 줄바꿈과 surface 분리로 해결한다.
 
 ## 유지해야 하는 기존 동작
 - `WalkListDetailView` 네비게이션

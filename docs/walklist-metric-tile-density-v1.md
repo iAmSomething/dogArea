@@ -7,9 +7,10 @@
 ## 결정
 - 셀 메트릭 타일은 `시간 / 넓이 / 포인트 / 반려견` 4개만 유지합니다.
 - 셀 안의 장문 설명은 제거합니다.
-- 공용 타일은 `minHeight 76pt`, `detail 1줄`, `value 최대 2줄` 계약을 갖습니다.
-- 긴 값은 `minimumScaleFactor 0.72`와 `allowsTightening(true)`로 축약합니다.
-- 카드 밀도를 위해 썸네일은 `84pt`, 셀 패딩은 `14pt`로 줄입니다.
+- 공용 타일은 `minHeight 64pt`, `detail 최대 2줄`, `value 최대 3줄` 계약을 갖습니다.
+- 긴 값은 `minimumScaleFactor 0.78`와 `allowsTightening(true)`로 축약하고, 그래도 부족하면 줄바꿈으로 해결합니다.
+- 카드 밀도를 위해 썸네일은 `76pt`, 셀 패딩은 `12pt`로 줄입니다.
+- 작은 화면과 Dynamic Type 확대에서도 같은 줄의 메트릭 타일 높이가 흔들리지 않아야 합니다.
 
 ## 유지 범위
 - 산책 상세 네비게이션 유지
@@ -17,6 +18,7 @@
 - 대표 수치/반려견 문맥 유지
 
 ## 회귀 기준
-- `WalkListMetricTileView`는 `고정 최소 높이 76pt`를 가진다.
+- `WalkListMetricTileView`는 `고정 최소 높이 64pt`를 가진다.
 - `WalkListCell`에는 기존 장문 설명 문자열이 남아 있지 않다.
 - 샘플 preview에서 4개 타일이 모두 렌더링되고 장문 설명이 다시 노출되지 않는다.
+- 긴 면적 값/긴 반려견 이름/큰 글자 크기 조합에서도 같은 줄의 타일 높이가 2pt 이상 벌어지지 않는다.
