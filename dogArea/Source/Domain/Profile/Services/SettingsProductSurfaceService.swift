@@ -63,31 +63,36 @@ final class SettingsNotificationAuthorizationService: SettingsNotificationAuthor
             return SettingsNotificationSummary(
                 title: "알림 허용",
                 subtitle: "퀘스트와 운영 안내를 정상적으로 받을 수 있어요.",
-                badgeText: "ON"
+                badgeText: "허용됨",
+                tone: .positive
             )
         case .denied:
             return SettingsNotificationSummary(
                 title: "알림 꺼짐",
                 subtitle: "iOS 설정 앱에서 다시 허용해야 알림을 받을 수 있어요.",
-                badgeText: "OFF"
+                badgeText: "꺼짐",
+                tone: .warning
             )
         case .provisional:
             return SettingsNotificationSummary(
                 title: "조용한 알림",
                 subtitle: "알림이 조용히 전달되고 있어요. 설정 앱에서 노출 방식을 바꿀 수 있어요.",
-                badgeText: "QUIET"
+                badgeText: "조용히 전달",
+                tone: .positive
             )
         case .ephemeral:
             return SettingsNotificationSummary(
                 title: "임시 허용",
                 subtitle: "현재 세션 기준으로만 알림이 허용되어 있어요.",
-                badgeText: "TEMP"
+                badgeText: "임시 허용",
+                tone: .warning
             )
         case .notDetermined:
             return SettingsNotificationSummary(
                 title: "알림 미설정",
                 subtitle: "아직 알림 권한을 선택하지 않았어요. 설정 앱에서 다시 확인할 수 있어요.",
-                badgeText: "TODO"
+                badgeText: "미설정",
+                tone: .warning
             )
         @unknown default:
             return .unknown
@@ -137,6 +142,7 @@ final class SettingsSurfaceCatalogService: SettingsSurfaceCatalogProviding {
                 subtitle: notificationSummary.subtitle,
                 iconSystemName: "bell.badge",
                 badgeText: notificationSummary.badgeText,
+                badgeTone: notificationSummary.tone,
                 accessibilityIdentifier: "settings.app.notifications",
                 target: .external(settingsURL)
             ),
@@ -146,6 +152,7 @@ final class SettingsSurfaceCatalogService: SettingsSurfaceCatalogProviding {
                 subtitle: "알림, 사진, 카메라 같은 권한을 iOS 설정 앱에서 직접 조정합니다.",
                 iconSystemName: "gearshape",
                 badgeText: nil,
+                badgeTone: nil,
                 accessibilityIdentifier: "settings.app.systemSettings",
                 target: .external(settingsURL)
             )
@@ -162,6 +169,7 @@ final class SettingsSurfaceCatalogService: SettingsSurfaceCatalogProviding {
                 subtitle: "수집 항목, 사용 목적, 삭제 시점을 앱 안에서 바로 확인합니다.",
                 iconSystemName: "lock.shield",
                 badgeText: nil,
+                badgeTone: nil,
                 accessibilityIdentifier: "settings.legal.privacy",
                 target: .document(privacyPolicyDocument())
             ),
@@ -171,6 +179,7 @@ final class SettingsSurfaceCatalogService: SettingsSurfaceCatalogProviding {
                 subtitle: "서비스 이용 조건, 계정 책임, 베타 운영 전제를 확인합니다.",
                 iconSystemName: "doc.text",
                 badgeText: nil,
+                badgeTone: nil,
                 accessibilityIdentifier: "settings.legal.terms",
                 target: .document(termsOfServiceDocument())
             ),
@@ -180,6 +189,7 @@ final class SettingsSurfaceCatalogService: SettingsSurfaceCatalogProviding {
                 subtitle: "앱을 구성하는 주요 프레임워크와 외부 서비스 사용 범위를 봅니다.",
                 iconSystemName: "shippingbox",
                 badgeText: nil,
+                badgeTone: nil,
                 accessibilityIdentifier: "settings.legal.licenses",
                 target: .document(openSourceDocument())
             )
@@ -197,6 +207,7 @@ final class SettingsSurfaceCatalogService: SettingsSurfaceCatalogProviding {
                 subtitle: "기기 정보와 앱 버전을 포함한 문의 메일을 바로 작성합니다.",
                 iconSystemName: "envelope",
                 badgeText: nil,
+                badgeTone: nil,
                 accessibilityIdentifier: "settings.support.email",
                 target: .external(makeSupportMailURL(metadata: metadata))
             ),
@@ -206,6 +217,7 @@ final class SettingsSurfaceCatalogService: SettingsSurfaceCatalogProviding {
                 subtitle: "GitHub 이슈 페이지로 이동해 재현 절차와 로그를 남깁니다.",
                 iconSystemName: "ladybug",
                 badgeText: nil,
+                badgeTone: nil,
                 accessibilityIdentifier: "settings.support.bug",
                 target: .external(metadata.bugReportURL)
             ),
@@ -215,6 +227,7 @@ final class SettingsSurfaceCatalogService: SettingsSurfaceCatalogProviding {
                 subtitle: "문서, 릴리즈 히스토리, 공개 이슈 현황을 확인합니다.",
                 iconSystemName: "safari",
                 badgeText: nil,
+                badgeTone: nil,
                 accessibilityIdentifier: "settings.support.repository",
                 target: .external(metadata.repositoryURL)
             )

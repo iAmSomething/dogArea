@@ -1,5 +1,6 @@
 export type Action =
   | "set_visibility"
+  | "get_visibility"
   | "upsert_presence"
   | "get_hotspots"
   | "upsert_live_presence"
@@ -11,6 +12,7 @@ export type RequestDTO = {
   requestId?: string;
   action_id?: string;
   userId?: string;
+  user_id?: string;
   excludedUserIds?: string[];
   deviceKey?: string;
   enabled?: boolean;
@@ -76,6 +78,11 @@ export type NearbyPresenceRequestContext = {
   client: NearbyPresenceClient;
   body: RequestDTO;
   requestId: string;
+};
+
+export type VisibilitySettingDTO = {
+  enabled: boolean;
+  updated_at: string | null;
 };
 
 export type LivePresenceUpsertPayload = {

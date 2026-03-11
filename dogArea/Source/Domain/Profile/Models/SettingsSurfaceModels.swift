@@ -25,6 +25,7 @@ struct SettingsSurfaceAction: Identifiable, Equatable {
     let subtitle: String
     let iconSystemName: String
     let badgeText: String?
+    let badgeTone: SettingsPrivacyTone?
     let accessibilityIdentifier: String
     let target: SettingsSurfaceActionTarget
 }
@@ -40,11 +41,13 @@ struct SettingsNotificationSummary: Equatable {
     let title: String
     let subtitle: String
     let badgeText: String
+    let tone: SettingsPrivacyTone
 
     static let unknown = SettingsNotificationSummary(
         title: "알림 설정 확인",
         subtitle: "iOS 설정 앱에서 퀘스트와 운영 알림을 조정할 수 있어요.",
-        badgeText: "CHECK"
+        badgeText: "확인 필요",
+        tone: .warning
     )
 }
 

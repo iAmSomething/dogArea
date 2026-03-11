@@ -4104,10 +4104,24 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
     private func syncVisibilitySettingIfNeeded() {
         guard let userId = currentPresenceUserId() else { return }
         let enabled = isNearbyHotspotFeatureAvailable ? self.locationSharingEnabled : false
+        let requestDate = Date()
+        let previousServerSnapshot = privacyControlStateStore.loadServerSyncSnapshot(for: userId)
+        persistPrivacyServerSyncPending(
+            desiredEnabled: enabled,
+            previousCanonicalEnabled: previousServerSnapshot?.canonicalEnabled,
+            for: userId,
+            at: requestDate
+        )
         Task { [weak self] in
             guard let self else { return }
             do {
-                try await self.nearbyService.setVisibility(userId: userId, enabled: enabled)
+                let result = try await self.nearbyService.setVisibility(userId: userId, enabled: enabled)
+                self.persistPrivacyServerSyncConfirmed(
+                    result: result,
+                    desiredEnabled: enabled,
+                    requestedAt: requestDate,
+                    for: userId
+                )
                 self.recordPrivacyRecentStatus(
                     kind: enabled ? .sharingOn : .privateMode,
                     detail: enabled
@@ -4125,6 +4139,14 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
                     #if DEBUG
                     print("visibility sync failed (not found): \(error.localizedDescription)")
                     #endif
+                    self.persistPrivacyServerSyncFailure(
+                        enabled: enabled,
+                        userId: userId,
+                        requestedAt: requestDate,
+                        lastCanonicalEnabled: previousServerSnapshot?.canonicalEnabled,
+                        failureCategory: .serverDelayed,
+                        failureCode: "http_404"
+                    )
                     self.recordPrivacyRecentStatus(
                         kind: .serverDelayed,
                         detail: "공유 기능이 아직 완전히 준비되지 않았어요. 잠시 후 다시 확인해주세요.",
@@ -4132,7 +4154,13 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
                     )
                     return
                 }
-                self.recordVisibilitySyncFailureStatus(enabled: enabled, userId: userId, error: error)
+                self.recordVisibilitySyncFailureStatus(
+                    enabled: enabled,
+                    userId: userId,
+                    requestedAt: requestDate,
+                    lastCanonicalEnabled: previousServerSnapshot?.canonicalEnabled,
+                    error: error
+                )
                 self.logVisibilitySyncErrorIfNeeded(error)
             }
         }
@@ -4328,33 +4356,104 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate, WCSes
         )
     }
 
+    /// 서버 확인 전 optimistic 공유 상태를 canonical snapshot으로 저장합니다.
+    /// - Parameters:
+    ///   - desiredEnabled: 사용자가 의도한 목표 공유 상태입니다.
+    ///   - previousCanonicalEnabled: 마지막으로 확인된 서버 기준 공유 상태입니다.
+    ///   - userId: 저장 대상 사용자 ID입니다.
+    ///   - date: 사용자가 토글을 누른 시각입니다.
+    private func persistPrivacyServerSyncPending(
+        desiredEnabled: Bool,
+        previousCanonicalEnabled: Bool?,
+        for userId: String,
+        at date: Date
+    ) {
+        let snapshot = PrivacyControlServerSyncSnapshot.localPending(
+            desiredEnabled: desiredEnabled,
+            lastCanonicalEnabled: previousCanonicalEnabled,
+            requestedAt: date
+        )
+        privacyControlStateStore.persistServerSyncSnapshot(snapshot, for: userId)
+    }
+
+    /// 서버 성공 응답을 canonical snapshot으로 저장합니다.
+    /// - Parameters:
+    ///   - result: nearby visibility 변경 후 서버가 반환한 canonical 결과입니다.
+    ///   - desiredEnabled: 사용자가 의도했던 목표 공유 상태입니다.
+    ///   - requestedAt: 사용자가 토글을 누른 시각입니다.
+    ///   - userId: 저장 대상 사용자 ID입니다.
+    private func persistPrivacyServerSyncConfirmed(
+        result: PrivacyVisibilitySyncResultDTO,
+        desiredEnabled: Bool,
+        requestedAt: Date,
+        for userId: String
+    ) {
+        let snapshot = PrivacyControlServerSyncSnapshot.serverConfirmed(
+            desiredEnabled: desiredEnabled,
+            canonicalEnabled: result.enabled,
+            requestedAt: requestedAt,
+            serverUpdatedAt: result.updatedAtEpoch.map(Date.init(timeIntervalSince1970:)),
+            recordedAt: Date(),
+            requestId: result.requestId
+        )
+        privacyControlStateStore.persistServerSyncSnapshot(snapshot, for: userId)
+    }
+
+    /// 서버 실패 응답을 canonical snapshot으로 저장합니다.
+    /// - Parameters:
+    ///   - enabled: 사용자가 의도한 목표 공유 상태입니다.
+    ///   - userId: 저장 대상 사용자 ID입니다.
+    ///   - requestedAt: 사용자가 마지막으로 요청한 시각입니다.
+    ///   - lastCanonicalEnabled: 마지막으로 확인된 서버 기준 공유 상태입니다.
+    ///   - failureCategory: 사용자 문구에 매핑할 실패 분류입니다.
+    ///   - failureCode: 장애 분석용 세부 코드입니다.
+    private func persistPrivacyServerSyncFailure(
+        enabled: Bool,
+        userId: String,
+        requestedAt: Date,
+        lastCanonicalEnabled: Bool?,
+        failureCategory: PrivacyControlServerSyncSnapshot.FailureCategory,
+        failureCode: String?
+    ) {
+        let snapshot = PrivacyControlServerSyncSnapshot.serverFailed(
+            desiredEnabled: enabled,
+            lastCanonicalEnabled: lastCanonicalEnabled,
+            requestedAt: requestedAt,
+            recordedAt: Date(),
+            failureCategory: failureCategory,
+            failureCode: failureCode
+        )
+        privacyControlStateStore.persistServerSyncSnapshot(snapshot, for: userId)
+    }
+
     /// 가시성 동기화 실패를 최근 공유 상태 문구로 변환해 저장합니다.
     /// - Parameters:
     ///   - enabled: 사용자가 의도한 목표 공유 상태입니다.
     ///   - userId: 현재 사용자 ID입니다.
+    ///   - requestedAt: 사용자가 마지막으로 공유 상태 변경을 요청한 시각입니다.
+    ///   - lastCanonicalEnabled: 마지막으로 확인된 서버 기준 공유 상태입니다.
     ///   - error: 서버 동기화 실패 원본 오류입니다.
     private func recordVisibilitySyncFailureStatus(
         enabled: Bool,
         userId: String,
+        requestedAt: Date,
+        lastCanonicalEnabled: Bool?,
         error: Error
     ) {
-        if let urlError = error as? URLError {
-            switch urlError.code {
-            case .notConnectedToInternet, .networkConnectionLost, .timedOut, .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed:
-                let detail = enabled
-                    ? "연결이 없어 공유 시작 반영이 보류됐어요. 연결이 돌아오면 다시 확인해주세요."
-                    : "연결이 없어 비공개 반영이 늦을 수 있어요. 새 공유는 우선 멈췄어요."
-                recordPrivacyRecentStatus(kind: .offlinePending, detail: detail, for: userId)
-                return
-            default:
-                break
-            }
-        }
-
-        let detail = enabled
-            ? "서버 반영이 조금 늦고 있어요. 잠시 후 다시 확인해주세요."
-            : "비공개 요청의 서버 반영이 조금 늦고 있어요. 잠시 후 다시 확인해주세요."
-        recordPrivacyRecentStatus(kind: .serverDelayed, detail: detail, for: userId)
+        let descriptor = PrivacyControlVisibilityFailureDescriptor.make(
+            from: error,
+            enabled: enabled,
+            authSessionAvailable: authSessionStore.currentTokenSession() != nil
+        )
+        persistPrivacyServerSyncFailure(
+            enabled: enabled,
+            userId: userId,
+            requestedAt: requestedAt,
+            lastCanonicalEnabled: lastCanonicalEnabled,
+            failureCategory: descriptor.failureCategory,
+            failureCode: descriptor.failureCode
+        )
+        recordPrivacyRecentStatus(kind: descriptor.recentStatusKind, detail: descriptor.detail, for: userId)
     }
 
 }

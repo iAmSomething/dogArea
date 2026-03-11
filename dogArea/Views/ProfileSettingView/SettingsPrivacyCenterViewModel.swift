@@ -40,6 +40,9 @@ final class SettingsPrivacyCenterViewModel: ObservableObject {
     func refresh() async {
         let notificationSummary = await notificationAuthorizationService.loadSummary()
         let currentIdentity = resolvedCurrentIdentity()
+        if let currentIdentity {
+            await refreshCanonicalVisibilitySnapshot(for: currentIdentity)
+        }
         let metadata = appMetadataService.loadMetadata(currentIdentity: currentIdentity)
         snapshot = privacyCenterService.loadSnapshot(
             currentIdentity: currentIdentity,
@@ -63,20 +66,36 @@ final class SettingsPrivacyCenterViewModel: ObservableObject {
             return
         }
 
+        let requestDate = Date()
+        let previousServerSnapshot = privacyControlStateStore.loadServerSyncSnapshot(for: currentIdentity.userId)
         privacyControlStateStore.persistSharingEnabled(enabled, for: currentIdentity.userId)
+        privacyControlStateStore.persistServerSyncSnapshot(
+            PrivacyControlServerSyncSnapshot.localPending(
+                desiredEnabled: enabled,
+                lastCanonicalEnabled: previousServerSnapshot?.canonicalEnabled,
+                requestedAt: requestDate
+            ),
+            for: currentIdentity.userId
+        )
         privacyControlStateStore.recordRecentStatus(
             kind: enabled ? .sharingOn : .privateMode,
             detail: enabled
-            ? "다시 공유를 시작했어요. 실제 반영은 산책 중일 때 이루어집니다."
-            : "지금부터 비공개예요. 새 공유는 우선 중단됐어요.",
+            ? "이 기기에서는 공유 시작을 요청했어요. 서버 확인이 끝나면 상태 카드가 갱신됩니다."
+            : "이 기기에서는 비공개 전환을 요청했어요. 서버 확인이 끝나면 상태 카드가 갱신됩니다.",
             for: currentIdentity.userId,
-            at: Date()
+            at: requestDate
         )
         await refresh()
 
         do {
-            try await nearbyService.setVisibility(userId: currentIdentity.userId, enabled: enabled)
-            toastMessage = enabled ? "다시 공유를 시작할 준비가 됐어요" : "지금부터 비공개예요"
+            let result = try await nearbyService.setVisibility(userId: currentIdentity.userId, enabled: enabled)
+            persistConfirmedServerSnapshot(
+                result: result,
+                desiredEnabled: enabled,
+                requestedAt: requestDate,
+                for: currentIdentity.userId
+            )
+            toastMessage = enabled ? "서버 반영까지 확인했어요" : "서버 기준으로 비공개 전환을 확인했어요"
             privacyControlStateStore.recordRecentStatus(
                 kind: enabled ? .sharingOn : .privateMode,
                 detail: enabled
@@ -87,6 +106,18 @@ final class SettingsPrivacyCenterViewModel: ObservableObject {
             )
         } catch {
             let failure = failurePresentation(for: error, enabled: enabled)
+            let previousCanonicalEnabled = previousServerSnapshot?.canonicalEnabled
+            privacyControlStateStore.persistServerSyncSnapshot(
+                PrivacyControlServerSyncSnapshot.serverFailed(
+                    desiredEnabled: enabled,
+                    lastCanonicalEnabled: previousCanonicalEnabled,
+                    requestedAt: requestDate,
+                    recordedAt: Date(),
+                    failureCategory: failure.failureCategory,
+                    failureCode: failure.failureCode
+                ),
+                for: currentIdentity.userId
+            )
             privacyControlStateStore.recordRecentStatus(
                 kind: failure.kind,
                 detail: failure.detail,
@@ -120,22 +151,70 @@ final class SettingsPrivacyCenterViewModel: ObservableObject {
     private func failurePresentation(
         for error: Error,
         enabled: Bool
-    ) -> (kind: PrivacyControlRecentStatus.Kind, detail: String, toastMessage: String) {
-        if let urlError = error as? URLError {
-            switch urlError.code {
-            case .notConnectedToInternet, .networkConnectionLost, .timedOut, .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed:
-                let detail = enabled
-                ? "연결이 없어 공유 시작 반영이 보류됐어요. 연결이 돌아오면 다시 확인해주세요."
-                : "연결이 없어 비공개 반영이 늦을 수 있어요. 새 공유는 우선 멈췄어요."
-                return (.offlinePending, detail, detail)
-            default:
-                break
-            }
-        }
+    ) -> (
+        kind: PrivacyControlRecentStatus.Kind,
+        detail: String,
+        toastMessage: String,
+        failureCategory: PrivacyControlServerSyncSnapshot.FailureCategory,
+        failureCode: String?
+    ) {
+        let descriptor = PrivacyControlVisibilityFailureDescriptor.make(
+            from: error,
+            enabled: enabled,
+            authSessionAvailable: authSessionStore.currentTokenSession() != nil
+        )
+        return (
+            descriptor.recentStatusKind,
+            descriptor.detail,
+            descriptor.toastMessage,
+            descriptor.failureCategory,
+            descriptor.failureCode
+        )
+    }
 
-        let detail = enabled
-        ? "서버 반영이 조금 늦고 있어요. 잠시 후 다시 확인해주세요."
-        : "비공개 요청의 서버 반영이 조금 늦고 있어요. 잠시 후 다시 확인해주세요."
-        return (.serverDelayed, detail, detail)
+    /// 현재 사용자 범위의 canonical visibility 상태를 서버에서 다시 읽어 저장합니다.
+    /// - Parameter currentIdentity: 서버 조회에 사용할 현재 인증 사용자 식별 정보입니다.
+    private func refreshCanonicalVisibilitySnapshot(for currentIdentity: AuthenticatedUserIdentity) async {
+        do {
+            let result = try await nearbyService.getVisibility(userId: currentIdentity.userId)
+            let existingSnapshot = privacyControlStateStore.loadServerSyncSnapshot(for: currentIdentity.userId)
+            let refreshed = PrivacyControlServerSyncSnapshot.refreshedCanonical(
+                canonicalEnabled: result.enabled,
+                requestedAt: existingSnapshot.flatMap { snapshot in
+                    snapshot.requestedAt.map(Date.init(timeIntervalSince1970:))
+                },
+                desiredEnabled: existingSnapshot?.desiredEnabled
+                    ?? privacyControlStateStore.loadSharingEnabled(for: currentIdentity.userId),
+                previousRequestId: result.requestId ?? existingSnapshot?.requestId,
+                serverUpdatedAt: result.updatedAtEpoch.map(Date.init(timeIntervalSince1970:)),
+                recordedAt: Date()
+            )
+            privacyControlStateStore.persistServerSyncSnapshot(refreshed, for: currentIdentity.userId)
+        } catch {
+            // 서버 확인 실패 시 기존 canonical snapshot과 로컬 fallback을 그대로 사용합니다.
+        }
+    }
+
+    /// 서버 성공 응답을 canonical snapshot으로 저장합니다.
+    /// - Parameters:
+    ///   - result: nearby visibility 변경 후 서버가 반환한 canonical 결과입니다.
+    ///   - desiredEnabled: 사용자가 의도한 목표 공유 상태입니다.
+    ///   - requestedAt: 사용자가 토글을 누른 시각입니다.
+    ///   - userId: 저장 대상 사용자 ID입니다.
+    private func persistConfirmedServerSnapshot(
+        result: PrivacyVisibilitySyncResultDTO,
+        desiredEnabled: Bool,
+        requestedAt: Date,
+        for userId: String
+    ) {
+        let snapshot = PrivacyControlServerSyncSnapshot.serverConfirmed(
+            desiredEnabled: desiredEnabled,
+            canonicalEnabled: result.enabled,
+            requestedAt: requestedAt,
+            serverUpdatedAt: result.updatedAtEpoch.map(Date.init(timeIntervalSince1970:)),
+            recordedAt: Date(),
+            requestId: result.requestId
+        )
+        privacyControlStateStore.persistServerSyncSnapshot(snapshot, for: userId)
     }
 }

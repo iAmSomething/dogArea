@@ -2,6 +2,16 @@ import Foundation
 import CoreLocation
 
 struct NearbyPresenceService: NearbyPresenceServiceProtocol {
+    private struct VisibilityEnvelope: Decodable {
+        struct VisibilityDTO: Decodable {
+            let enabled: Bool
+            let updated_at: String?
+        }
+
+        let request_id: String?
+        let visibility: VisibilityDTO
+    }
+
     private struct ResponseHotspotDTO: Decodable {
         let geohash7: String
         let count: Int
@@ -54,17 +64,39 @@ struct NearbyPresenceService: NearbyPresenceServiceProtocol {
         self.client = client
     }
 
-    func setVisibility(userId: String, enabled: Bool) async throws {
+    /// 현재 사용자 범위의 canonical visibility 상태를 읽습니다.
+    /// - Parameter userId: 조회 대상 사용자 UUID 문자열입니다.
+    /// - Returns: 서버가 보유한 현재 visibility 상태와 갱신 시각입니다.
+    func getVisibility(userId: String) async throws -> PrivacyVisibilitySyncResultDTO {
+        let body: [String: Any] = [
+            "action": "get_visibility",
+            "userId": userId
+        ]
+        let data = try await client.request(
+            .function(name: "nearby-presence"),
+            method: .post,
+            bodyData: try JSONSerialization.data(withJSONObject: body)
+        )
+        return try decodeVisibilityResult(from: data)
+    }
+
+    /// 현재 사용자 범위의 visibility 상태를 변경하고 canonical 결과를 반환합니다.
+    /// - Parameters:
+    ///   - userId: 변경 대상 사용자 UUID 문자열입니다.
+    ///   - enabled: 서버에 반영할 목표 공유 상태입니다.
+    /// - Returns: 서버가 최종 반영한 canonical visibility 상태와 갱신 시각입니다.
+    func setVisibility(userId: String, enabled: Bool) async throws -> PrivacyVisibilitySyncResultDTO {
         let body: [String: Any] = [
             "action": "set_visibility",
             "userId": userId,
             "enabled": enabled
         ]
-        _ = try await client.request(
+        let data = try await client.request(
             .function(name: "nearby-presence"),
             method: .post,
             bodyData: try JSONSerialization.data(withJSONObject: body)
         )
+        return try decodeVisibilityResult(from: data)
     }
 
     func upsertPresence(userId: String, latitude: Double, longitude: Double) async throws {
@@ -246,6 +278,18 @@ struct NearbyPresenceService: NearbyPresenceServiceProtocol {
             sanctionLevel: row.sanction_level,
             sanctionUntilEpoch: SupabaseISO8601.parseEpoch(row.sanction_until),
             writeApplied: row.write_applied
+        )
+    }
+
+    /// Edge Function visibility 응답을 앱 DTO로 변환합니다.
+    /// - Parameter data: `nearby-presence` visibility action 원시 응답 데이터입니다.
+    /// - Returns: 프라이버시 센터와 공유 토글 흐름에서 사용할 canonical visibility DTO입니다.
+    private func decodeVisibilityResult(from data: Data) throws -> PrivacyVisibilitySyncResultDTO {
+        let envelope = try JSONDecoder().decode(VisibilityEnvelope.self, from: data)
+        return PrivacyVisibilitySyncResultDTO(
+            enabled: envelope.visibility.enabled,
+            updatedAtEpoch: SupabaseISO8601.parseEpoch(envelope.visibility.updated_at),
+            requestId: envelope.request_id
         )
     }
 }
