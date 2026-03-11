@@ -669,6 +669,32 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts["어느 반려견 기록인지"].exists, "장문 설명이 산책 기록 카드 타일에 다시 나타나면 안 됩니다.")
     }
 
+    /// 작은 화면과 긴 값 조건에서도 산책 기록 카드 메트릭 타일이 같은 높이 리듬을 유지하는지 검증합니다.
+    func testFeatureRegression_WalkListLongMetricTilesStayUniformOnSmallScreen() throws {
+        let app = launchAppForFeatureRegression(
+            extraArguments: [
+                "-UITest.WalkListCalendarPreview",
+                "-UITest.WalkListLongMetricPreview",
+                "-UIPreferredContentSizeCategoryName",
+                "UICTContentSizeCategoryAccessibilityXL"
+            ]
+        )
+        XCTAssertTrue(openTab(index: 1, app: app), "산책 목록 탭 진입에 실패했습니다.")
+
+        let targetCell = screenElement(identifier: "walklist.cell.11111111-aaaa-bbbb-cccc-111111111111", in: app)
+        XCTAssertTrue(
+            revealExistingElementByVerticalScroll(targetCell, app: app, maxSwipes: 4),
+            "긴 값 샘플 산책 기록 셀이 노출되지 않았습니다."
+        )
+
+        XCTAssertTrue(targetCell.exists, "긴 값 샘플 산책 기록 셀은 작은 화면에서도 접근성 트리에 남아 있어야 합니다.")
+        XCTAssertLessThan(
+            targetCell.frame.height,
+            280,
+            "긴 값과 큰 글자 크기 조건에서도 산책 기록 카드 높이가 과도하게 커지면 안 됩니다."
+        )
+    }
+
     /// 산책 기록 상단 허브 카드가 onboarding 톤 대신 compact한 정보 허브로 정리되는지 검증합니다.
     func testFeatureRegression_WalkListHeaderCardsStayCompactWithoutVerboseOnboardingCopy() throws {
         let app = launchAppForFeatureRegression(extraArguments: ["-UITest.WalkListCalendarPreview"])
@@ -1010,8 +1036,8 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertTrue(waitUntilExists(dashboardSubtitle, timeout: 2), "산책 기록 상단 허브 부제가 노출되지 않았습니다.")
         let fixedTopChromeBottom = dashboardSubtitle.frame.maxY + 22
 
-        let thisWeekHeader = app.staticTexts["이번 주 산책"].firstMatch
-        let previousHeader = app.staticTexts["이전 기록"].firstMatch
+        let thisWeekHeader = screenElement(identifier: "walklist.section.thisWeek", in: app)
+        let previousHeader = screenElement(identifier: "walklist.section.previous", in: app)
         let revealedSectionHeader: XCUIElement
         if revealExistingElementByVerticalScroll(thisWeekHeader, app: app, maxSwipes: 6) {
             revealedSectionHeader = thisWeekHeader

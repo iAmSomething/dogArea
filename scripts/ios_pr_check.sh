@@ -233,6 +233,7 @@ swift scripts/tabbar_symbol_fallback_unit_check.swift
 swift scripts/walk_record_tab_label_unit_check.swift
 swift scripts/walklist_hub_density_compact_unit_check.swift
 swift scripts/walklist_metric_tile_density_unit_check.swift
+swift scripts/ui_overlap_ellipsis_small_screen_policy_unit_check.swift
 swift scripts/tabbar_safearea_regression_unit_check.swift
 swift scripts/root_view_supporting_type_split_unit_check.swift
 swift scripts/home_presentation_split_unit_check.swift

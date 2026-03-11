@@ -56,8 +56,8 @@ struct WalkListContextSummaryCardView: View {
             Text(helperMessage)
                 .font(.appScaledFont(for: .Regular, size: 11, relativeTo: .caption))
                 .foregroundStyle(Color.appDynamicHex(light: 0x94A3B8, dark: 0x94A3B8))
-                .lineLimit(1)
-                .minimumScaleFactor(0.82)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("walklist.context.helper")
         }
         .frame(maxWidth: .infinity, alignment: .leading)

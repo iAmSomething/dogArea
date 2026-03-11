@@ -68,17 +68,12 @@ struct WalkListView: View {
                                     NavigationLink(value: item.walkData) {
                                         WalkListCell(
                                             walkData: item.walkData,
-                                            petName: item.petName
+                                            petName: item.petName,
+                                            accessibilityIdentifier: item.accessibilityIdentifier
                                         )
                                     }
                                     .buttonStyle(.plain)
                                     .accessibilityIdentifier("walklist.cell")
-
-                                    Color.clear
-                                        .frame(width: 1, height: 1)
-                                        .allowsHitTesting(false)
-                                        .accessibilityElement()
-                                        .accessibilityIdentifier(item.accessibilityIdentifier)
                                 }
                             }
                         }

@@ -26,8 +26,8 @@ struct WalkListPrimaryLoopSummaryCardView: View {
             Text(secondaryFlowText)
                 .font(.appScaledFont(for: .Regular, size: 11, relativeTo: .caption))
                 .foregroundStyle(Color.appDynamicHex(light: 0x92400E, dark: 0xFCD34D))
-                .lineLimit(1)
-                .minimumScaleFactor(0.82)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("walklist.primaryLoop.secondary")
         }
         .frame(maxWidth: .infinity, alignment: .leading)

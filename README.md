@@ -141,6 +141,7 @@
 - WalkList design refresh v1: `docs/walklist-design-refresh-v1.md`
 - WalkList hub density compact v1: `docs/walklist-hub-density-compact-v1.md`
 - WalkList metric tile density v1: `docs/walklist-metric-tile-density-v1.md`
+- UI overlap / ellipsis / small screen policy v1: `docs/ui-overlap-ellipsis-small-screen-policy-v1.md`
 - WalkList month calendar hub v1: `docs/walklist-month-calendar-hub-v1.md`
 - WalkList calendar weekend/holiday semantic v1: `docs/walklist-calendar-weekend-holiday-semantic-v1.md`
 - WalkList detail design refresh v1: `docs/walklist-detail-design-refresh-v1.md`
