@@ -204,8 +204,7 @@ struct SupabaseHTTPClient {
     static let live = SupabaseHTTPClient()
     private static let edgeFunctionAnonRetryAllowlist: Set<String> = [
         "feature-control",
-        "nearby-presence",
-        "upload-profile-image"
+        "nearby-presence"
     ]
 
     private enum AccessTokenValidationState {

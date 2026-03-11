@@ -38,9 +38,14 @@ let signingVM = load("dogArea/Views/SigningView/SigningViewModel.swift")
 let function = load("supabase/functions/upload-profile-image/index.ts")
 let readme = load("supabase/functions/upload-profile-image/README.md")
 let sharedHelper = load("supabase/functions/_shared/storage_upload.ts")
+let allowlistSnippet = infra.range(of: "private static let edgeFunctionAnonRetryAllowlist").map {
+    String(infra[$0.lowerBound...].prefix(180))
+} ?? ""
 
 assertTrue(infra.contains("SupabaseProfileImageRepository"), "infra should define SupabaseProfileImageRepository")
 assertTrue(infra.contains("upload-profile-image"), "infra should call upload-profile-image edge function")
+assertTrue(!allowlistSnippet.contains("\"upload-profile-image\""), "http client should not route upload-profile-image through anon-first allowlist")
+assertTrue(infra.contains("localizedUploadFailureMessage(statusCode: statusCode, imageKind: imageKind)"), "profile image repository should map upload status codes to user-facing failure copy")
 assertTrue(signingVM.contains("SupabaseProfileImageRepository.shared"), "signup should default to supabase image repository")
 
 assertTrue(function.contains("storage"), "edge function should call storage")

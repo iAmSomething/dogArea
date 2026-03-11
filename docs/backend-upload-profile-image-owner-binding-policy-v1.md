@@ -29,6 +29,8 @@
 ## rationale
 
 - member path는 caller supplied `ownerId`를 신뢰하면 안 됩니다.
+- 앱 HTTP 클라이언트도 member 세션이 있으면 반드시 member bearer를 먼저 사용해야 합니다.
+- `upload-profile-image`를 anon-first로 호출하면 회원 프로필 편집도 anon path로 해석되어 `403 ANON_OWNER_NAMESPACE_REQUIRED`가 발생합니다.
 - anon path는 완전 차단보다 temporary namespace 격리가 더 현실적입니다.
 - path를 물리적으로 분리해야 운영 중 object ownership drift를 빨리 찾을 수 있습니다.
 
@@ -44,6 +46,7 @@
 - `upload_profile member=200`
 - `upload_profile app=200`
 - `upload_profile member_mismatch=403`
+- `anon bearer + member ownerId => 403 ANON_OWNER_NAMESPACE_REQUIRED`
 
 ## related
 
