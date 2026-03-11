@@ -24,6 +24,18 @@
 - member auth + nearby smoke: `DOGAREA_AUTH_SMOKE_ITERATIONS=1 bash scripts/auth_member_401_smoke_check.sh`
 - member full sweep / 5xx zero-budget 기준: `docs/member-supabase-http-full-sweep-v1.md`, `docs/member-supabase-http-5xx-zero-budget-gate-v1.md`
 
+## Workflow binding
+- GitHub Actions workflow: `.github/workflows/pr-fast-smoke-gate.yml`
+- comprehensive main/manual workflow: `.github/workflows/ios-pr-check.yml`
+- workflow step naming은 `FS-001` ~ `FS-005`를 그대로 사용한다.
+- workflow runner script binding
+  - `FS-001`: `bash scripts/run_pr_fast_smoke_map_ui_tests.sh`
+  - `FS-002`: `bash scripts/run_pr_fast_smoke_widget_layout_checks.sh`
+  - `FS-003`: `bash scripts/run_widget_action_regression_ui_tests.sh`
+  - `FS-004`: `bash scripts/run_pr_fast_smoke_watch_contract_checks.sh`
+  - `FS-005`: `bash scripts/backend_pr_check.sh` + `bash scripts/auth_member_401_smoke_check.sh`
+- PR에서는 fast smoke workflow를 primary status surface로 사용하고, `ios-pr-check.yml`은 comprehensive main/manual validation으로 분리한다.
+
 ## 대상 축
 
 | Axis ID | 축 | 자동화 | 대표 진입점 | 포함 이유 |

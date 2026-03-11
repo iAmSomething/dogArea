@@ -1,0 +1,39 @@
+name: nightly-full-regression-gate
+
+on:
+  schedule:
+    - cron: "0 19 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: nightly-full-regression-gate
+  cancel-in-progress: false
+
+jobs:
+  nightly_full_regression_gate:
+    name: NF nightly_full_regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "5.10"
+
+      - name: Run nightly regression artifact pipeline
+        env:
+          DOGAREA_TEST_EMAIL: ${{ secrets.DOGAREA_TEST_EMAIL }}
+          DOGAREA_TEST_PASSWORD: ${{ secrets.DOGAREA_TEST_PASSWORD }}
+        run: bash scripts/run_nightly_full_regression_gate.sh
+
+      - name: Upload nightly regression artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-full-regression-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .artifacts/nightly-full-regression
+          if-no-files-found: error
