@@ -1645,6 +1645,22 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertEqual(primaryAction.label, "산책 시작", "위젯 종료 라우트가 산책 종료 상태로 수렴하지 않았습니다.")
     }
 
+    /// 위젯 시작 액션이 cold start 경로에서도 지도 런타임으로 전달되어 산책 중 상태로 수렴하는지 검증합니다.
+    func testFeatureRegression_WidgetStartRouteConvergesMapWalkingState() throws {
+        let app = launchAppForFeatureRegression(
+            extraArguments: ["-UITest.MapForceWidgetActionEligible", "-UITest.WidgetRoute", "start_walk"]
+        )
+        let primaryAction = screenElement(identifier: "map.walk.primaryAction", in: app)
+        XCTAssertTrue(
+            waitUntilExists(primaryAction, timeout: 10),
+            "위젯 시작 라우트 후 지도 주행동 버튼을 찾지 못했습니다."
+        )
+        XCTAssertTrue(
+            waitUntilAccessibilityLabel(primaryAction, equals: "산책 종료", timeout: 4),
+            "위젯 시작 라우트가 산책 중 상태로 수렴하지 않았습니다. 현재 라벨: \(primaryAction.label)"
+        )
+    }
+
     /// 퀘스트 위젯 상세 CTA가 홈 퀘스트 카드 위치로 바로 이동하는지 검증합니다.
     func testFeatureRegression_QuestWidgetRouteOpensQuestMissionBoard() throws {
         let app = launchAppForFeatureRegression(extraArguments: ["-UITest.WidgetRoute", "open_quest_detail"])
@@ -2264,6 +2280,29 @@ final class FeatureRegressionUITests: XCTestCase {
     private func waitUntilExists(_ element: XCUIElement, timeout: TimeInterval) -> Bool {
         element.waitForExistence(timeout: timeout)
     }
+
+    /// UI 요소의 접근성 라벨이 지정한 값으로 수렴할 때까지 대기합니다.
+    /// - Parameters:
+    ///   - element: 라벨 변화를 관찰할 UI 요소입니다.
+    ///   - expectedLabel: 최종적으로 일치해야 하는 접근성 라벨입니다.
+    ///   - timeout: 최대 대기 시간(초)입니다.
+    /// - Returns: 시간 내 라벨이 기대값과 일치하면 `true`, 아니면 `false`입니다.
+    private func waitUntilAccessibilityLabel(
+        _ element: XCUIElement,
+        equals expectedLabel: String,
+        timeout: TimeInterval
+    ) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if element.exists, element.label == expectedLabel {
+                usleep(180_000)
+                return true
+            }
+            usleep(120_000)
+        }
+        return element.exists && element.label == expectedLabel
+    }
+
 
     /// UI 요소가 지정 시간 내에 탭 가능한 상태로 안정화되는지 대기합니다.
     /// - Parameters:

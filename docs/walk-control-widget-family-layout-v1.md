@@ -11,17 +11,18 @@ Issue: #614
 ### systemSmall
 - Show only the primary walk state headline.
 - Keep exactly one supporting pet line.
-- Keep exactly one compact support line.
+- Keep exactly one compact support line with widget-only short copy.
 - Keep exactly one primary CTA.
+- Do not show raw `statusMessage` or pet detail prose directly.
 - Do not show both pet detail and multi-line status message at the same time.
 - CTA uses a compact height budget.
+- Compact badge strip is limited to one badge.
 
 ### systemMedium
 - Keep the walk state headline and pet name block.
-- Allow pet detail copy.
-- Allow status message copy.
+- Allow one canonical detail block only.
 - Keep the primary CTA at standard height.
-- Show the latest update time inline with elapsed state.
+- Show the latest update time inline only while elapsed state is visible.
 
 ## Height and overflow policy
 
@@ -32,6 +33,7 @@ Issue: #614
 - `systemSmall` support text: `lineLimit(1)`
 - `systemMedium` detail/status text: `lineLimit(2)`
 - `systemSmall` must never render badge + pet detail + status message as separate stacked text blocks.
+- Widget surface must use short family/state-specific copy so the user never sees UI truncation as `...`.
 
 ## Action-state policy
 
@@ -39,6 +41,8 @@ Issue: #614
 - `requiresAppOpen`: one CTA only.
 - `failed + retry`: one retry CTA only.
 - `noActivePet`: small uses shorter `반려견 확인`, medium keeps `앱에서 반려견 확인`.
+- `systemSmall` state copy must collapse to `headline + optional pet line + optional one-line detail + CTA`.
+- `systemMedium` state copy must collapse to `headline + optional pet line + one detail block + optional elapsed row + CTA`.
 
 ## QA points
 
@@ -46,3 +50,4 @@ Issue: #614
 - `systemSmall` must keep the CTA fully inside the widget bounds for idle, walking, pending, failed, and requires-app-open states.
 - `systemMedium` must keep pet detail and status message readable without forcing the CTA offscreen.
 - Family branching must be explicit through `widgetFamily`.
+- Smallest supported real device is the acceptance baseline, not preview.

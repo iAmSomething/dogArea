@@ -63,7 +63,7 @@ struct RootView: View {
         }
         return WalkWidgetActionRoute(
             kind: kind,
-            actionId: "ui-test-widget-route",
+            actionId: "ui-test-widget-route-\(UUID().uuidString.lowercased())",
             source: "ui-test",
             contextId: nil
         )
@@ -279,7 +279,8 @@ struct RootView: View {
             #if DEBUG
             print("[WidgetAction] parsed deep link kind=\(route.kind.rawValue) actionId=\(route.actionId) source=\(route.source)")
             #endif
-            if widgetActionStore.discardPending(matching: route.actionId) {
+            if route.kind != .startWalk && route.kind != .endWalk,
+               widgetActionStore.discardPending(matching: route.actionId) {
                 metricTracker.track(
                     .widgetActionPendingDiscarded,
                     payload: [
@@ -312,10 +313,21 @@ struct RootView: View {
 
     /// 공유 저장소에 대기 중인 위젯 액션 요청을 소비해 앱 내부 액션으로 전달합니다.
     private func consumePendingWidgetActionIfNeeded() {
-        guard let request = widgetActionStore.consumePending() else { return }
+        guard let request = widgetActionStore.pendingRequest() else { return }
         #if DEBUG
-        print("[WidgetAction] consumed pending request kind=\(request.kind.rawValue) actionId=\(request.actionId) source=\(request.source)")
+        print("[WidgetAction] loaded pending request kind=\(request.kind.rawValue) actionId=\(request.actionId) source=\(request.source)")
         #endif
+        if request.kind != .startWalk && request.kind != .endWalk {
+            if widgetActionStore.discardPending(matching: request.actionId) {
+                metricTracker.track(
+                    .widgetActionPendingDiscarded,
+                    payload: [
+                        "action": request.kind.rawValue,
+                        "source": request.source
+                    ]
+                )
+            }
+        }
         dispatchWidgetAction(request.asRoute())
     }
 

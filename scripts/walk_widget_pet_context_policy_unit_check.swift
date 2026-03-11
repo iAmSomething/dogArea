@@ -37,7 +37,11 @@ assertTrue(intents.contains("snapshot.normalizedPetContext.petId"), "start inten
 assertTrue(intents.contains("petContext: current.petContext ?? current.normalizedPetContext"), "pending route persistence should preserve pet context")
 
 assertTrue(widgetView.contains("private var petContext: WalkWidgetPetContext"), "widget view should read normalized pet context")
-assertTrue(widgetView.contains("petContext.detailText"), "widget view should show pet context description")
+assertTrue(
+    widgetView.contains("supportingLine: petContext.petName") ||
+        widgetView.contains("\\(petContext.petName)와 바로 산책을 시작할 수 있어요."),
+    "widget view should surface pet context through presentation copy"
+)
 assertTrue(widgetView.contains("앱에서 반려견 확인"), "widget view should expose app-open CTA when no active pet exists")
 assertTrue(widgetView.contains("petContext.badgeTitle"), "widget view should expose pet context badge")
 

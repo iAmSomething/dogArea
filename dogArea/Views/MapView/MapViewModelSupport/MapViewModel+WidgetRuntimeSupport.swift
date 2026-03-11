@@ -28,6 +28,8 @@ extension MapViewModel {
     /// 위젯에서 전달된 산책 액션 딥링크를 적용합니다.
     /// - Parameter route: 위젯 액션 종류와 중복 방지 식별자를 담은 라우트입니다.
     func applyWidgetWalkAction(_ route: WalkWidgetActionRoute) {
+        _ = widgetActionRequestStore.discardPending(matching: route.actionId)
+
         guard shouldProcessWidgetAction(actionId: route.actionId) else {
             metricTracker.track(
                 .widgetActionDuplicate,
@@ -384,6 +386,15 @@ extension MapViewModel {
     /// - Returns: 선택 반려견, 활성 반려견 대체, 앱 확인 필요 중 하나의 문맥입니다.
     private func resolveIdleWalkWidgetPetContext(from userInfo: UserInfo?) -> WalkWidgetPetContext {
         let startPolicy = currentWalkWidgetStartPolicy()
+        if Self.shouldForceWidgetActionEligibilityForUITest() {
+            return WalkWidgetPetContext(
+                petId: "ui-test-widget-pet",
+                petName: "테스트 반려견",
+                source: .selectedPet,
+                startPolicy: startPolicy,
+                fallbackReason: nil
+            )
+        }
         guard let userInfo else {
             return WalkWidgetPetContext(
                 petId: nil,

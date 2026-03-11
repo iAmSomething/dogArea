@@ -23,9 +23,10 @@
 ## 3. 딥링크와 pending 요청 중복 소비 규칙
 
 1. 위젯 intent는 App Group 저장소에 pending 요청을 저장할 수 있다.
-2. 앱이 딥링크 URL을 직접 파싱한 경우, 동일 `actionId`의 pending 요청은 즉시 제거한다.
-3. RootView는 이 요청을 `NotificationCenter`로 브로드캐스트하지 않고, `MapViewModel.enqueueWidgetWalkAction` 큐에 넣는다.
-4. 이 제거 규칙이 없으면 `didBecomeActive` 경로에서 같은 액션이 한 번 더 소비될 수 있다.
+2. `start/end` 산책 액션은 앱이 실제로 `MapViewModel.applyWidgetWalkAction`에 도달해 ack 하기 전까지 pending 요청을 유지한다.
+3. 딥링크 URL을 직접 파싱한 경우에도 `start/end`는 즉시 제거하지 않고, `open_rival_tab` 등 즉시 처리 surface만 같은 `actionId`를 바로 제거한다.
+4. RootView는 이 요청을 `NotificationCenter`로 브로드캐스트하지 않고, `MapViewModel.enqueueWidgetWalkAction` 큐에 넣는다.
+5. 이 ack 규칙이 없으면 cold start / auth overlay / background 복귀 경로에서 요청이 너무 일찍 사라져 사용자가 "버튼이 안 먹는다"고 체감할 수 있다.
 
 ## 4. 앱 활성화 시 재동기화 규칙
 

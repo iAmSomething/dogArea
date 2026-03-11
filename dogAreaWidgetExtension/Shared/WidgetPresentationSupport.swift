@@ -23,9 +23,9 @@ struct WidgetSurfaceLayoutBudget: Equatable {
 
     static let compact = WidgetSurfaceLayoutBudget(
         tier: .compact,
-        verticalSpacing: 6,
-        badgeSpacing: 6,
-        maxBadgeCount: 2,
+        verticalSpacing: 5,
+        badgeSpacing: 5,
+        maxBadgeCount: 1,
         headlineLineLimit: 1,
         detailLineLimit: 1,
         statusLineLimit: 1,

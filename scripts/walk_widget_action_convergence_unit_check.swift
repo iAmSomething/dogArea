@@ -69,8 +69,11 @@ assertTrue(rootView.contains("mapViewModelStore.queueWidgetWalkAction(route)"), 
 assertTrue(mapView.contains("applyQueuedWidgetWalkActionIfPossible()"), "MapView should flush queued widget actions after runtime activation")
 assertTrue(mapView.contains("walkWidgetActionRequested") == false, "MapView should no longer depend on notification-based widget action dispatch")
 
+assertTrue(widgetBridge.contains("func pendingRequest() -> WalkWidgetActionRequest?"), "widget action request store should expose non-destructive pending read API")
 assertTrue(widgetBridge.contains("func discardPending(matching actionId: String) -> Bool"), "widget action request store should expose matching discard API")
+assertTrue(rootView.contains("widgetActionStore.pendingRequest()"), "RootView should load walk widget pending requests without clearing them first")
 assertTrue(rootView.contains("widgetActionStore.discardPending(matching: route.actionId)"), "RootView should discard matching pending request when deep link is already parsed")
+assertTrue(widgetRuntime.contains("widgetActionRequestStore.discardPending(matching: route.actionId)"), "Map widget runtime should acknowledge pending walk actions when they actually apply")
 assertTrue(rootView.contains("reconcileWalkWidgetActionSurfacesIfPossible()"), "RootView should reconcile walk widget surfaces on app lifecycle events")
 
 assertTrue(readme.contains("docs/walk-widget-action-convergence-v1.md"), "README should link convergence doc")
