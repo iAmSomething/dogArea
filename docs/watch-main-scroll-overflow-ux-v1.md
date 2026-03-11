@@ -10,28 +10,34 @@
 ## 연결 이슈
 - `#533`
 - `#698`
+- `#724`
+- `#737`
+- `#738`
 
 ## 결정
 
 1. 메인 화면을 `control surface`와 `information surface` 두 페이지로 분리한다.
 2. 기본 landing은 항상 `control surface`다.
-3. `information surface`만 `ScrollView`를 사용한다.
-4. `WatchPrimaryActionDockView`는 `control surface`에서만 `safeAreaInset(edge: .bottom)`로 붙는다.
-5. 반려견 문맥/오프라인 큐/보조 배너는 `information surface`에서 읽는다.
-6. CTA 버튼은 `minHeight 52pt` 이상을 유지하고, 제목/설명은 multiline 허용으로 Dynamic Type 증가에 대응한다.
-7. 큐 상태 카드의 chip/action row는 `ViewThatFits`로 horizontal 우선, 실패 시 vertical fallback 한다.
+3. `control surface`와 `information surface` 모두 `ScrollView`를 사용해 overflow를 허용한다.
+4. `control surface`는 `WatchControlSurfaceView` 하나의 주된 surface 안에 상태 요약, inline feedback, CTA를 통합한다.
+5. `WatchPrimaryActionDockView`는 더 이상 `safeAreaInset(edge: .bottom)` overlay로 고정하지 않고 control surface 내부 섹션으로 배치한다.
+6. 반려견 문맥/오프라인 큐/상세 recovery 정보는 `information surface`에서 읽고, control surface에는 최소 상태와 조작만 남긴다.
+7. CTA 버튼은 `minHeight 52pt` 이상을 유지하고, 제목/설명은 multiline 허용으로 Dynamic Type 증가에 대응한다.
+8. 큐 상태 카드의 chip/action row는 `ViewThatFits`로 horizontal 우선, 실패 시 vertical fallback 한다.
+9. 최초 진입 시에는 `WatchSurfacePagingHintView`로 다른 page 존재를 알려 주되, 정보 페이지를 한 번 방문하면 hint를 내린다.
 
 ## 우선순위
 
 ### control surface
-- 상단: 현재 산책 상태와 최소 메트릭
-- 중단: 최근 액션 배너 1개
-- 하단 고정: 핵심 CTA
+- 단일 card surface 안에서 현재 산책 상태와 최소 메트릭
+- 같은 surface 안에서 최근 액션 배너 1개를 inline 상태로 축약
+- 같은 surface 안에서 핵심 CTA를 바로 이어서 노출
 
 ### information surface
-- 상단: 최근 액션 배너 1개
-- 중단: 반려견 문맥
-- 하단: 큐/동기화 상태
+- 상단: 반려견 문맥
+- 중단: 큐/동기화 상태
+- 하단: 필요 시 페이지 이동 affordance
+- feedback banner는 queue card와 중복 노출하지 않는다.
 
 ## 비범위
 
@@ -43,4 +49,4 @@
 
 - watch 빌드 성공
 - `ios_pr_check` 통과
-- 정적 체크에서 `TabView + control/info split + info scroll + control-only dock + multiline/minHeight`를 보장
+- 정적 체크에서 `TabView + control/info split + control/info scroll + integrated control surface + multiline/minHeight`를 보장

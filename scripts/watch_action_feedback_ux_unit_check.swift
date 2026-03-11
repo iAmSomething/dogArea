@@ -21,6 +21,7 @@ let buttonView = read(root + "/dogAreaWatch Watch App/WatchActionButtonView.swif
 let actionDockView = read(root + "/dogAreaWatch Watch App/WatchPrimaryActionDockView.swift")
 let bannerView = read(root + "/dogAreaWatch Watch App/WatchActionBannerView.swift")
 let queueCardView = read(root + "/dogAreaWatch Watch App/WatchOfflineQueueStatusCardView.swift")
+let controlSurfaceView = read(root + "/dogAreaWatch Watch App/WatchControlSurfaceView.swift")
 let hapticService = read(root + "/dogAreaWatch Watch App/WatchActionHapticService.swift")
 let checkScript = read(root + "/scripts/ios_pr_check.sh")
 
@@ -52,8 +53,9 @@ assertTrue(viewModel.contains(".addPointTapAccepted"), "view model should trigge
 assertTrue(viewModel.contains(".addPointQueued"), "view model should differentiate queued addPoint haptics")
 assertTrue(viewModel.contains(".addPointCompleted"), "view model should differentiate completed addPoint haptics")
 
-assertTrue(view.contains("WatchActionBannerView"), "watch content should render banner view")
-assertTrue(view.contains("WatchPrimaryActionDockView"), "watch content should render a dedicated action dock")
+assertTrue(view.contains("WatchControlSurfaceView"), "watch content should render the unified control surface")
+assertTrue(controlSurfaceView.contains("WatchActionBannerView"), "control surface should render banner view")
+assertTrue(controlSurfaceView.contains("WatchPrimaryActionDockView"), "control surface should render a dedicated action dock")
 assertTrue(actionDockView.contains("WatchActionButtonView"), "watch action dock should render action button view")
 assertTrue(view.contains("WatchOfflineQueueStatusCardView"), "watch content should render queue status card")
 assertTrue(queueCardView.contains("ACK \\(queueStatus.lastAckStatus)"), "queue card should keep ACK visibility")

@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-private enum WatchMainSurface: Hashable {
+enum WatchMainSurface: Hashable {
     case control
     case info
 }
@@ -18,38 +18,45 @@ struct ContentView: View {
     @State private var isWalkEndDecisionPresented = false
     @State private var selectedSurface: WatchMainSurface = .control
     @State private var hasInitializedLandingSurface = false
+    @State private var hasVisitedInfoSurface = false
 
     var body: some View {
         TabView(selection: $selectedSurface) {
-            VStack(alignment: .leading, spacing: 10) {
-                WatchMainStatusSummaryView(
-                    isWalking: viewModel.isWalking,
-                    isReachable: viewModel.isReachable,
-                    walkingTime: viewModel.walkingTime,
-                    walkingArea: viewModel.walkingArea,
-                    pointCount: viewModel.currentPointCount,
-                    petName: viewModel.currentWalkingPetName
-                )
+            ScrollView {
+                VStack(alignment: .leading, spacing: 10) {
+                    WatchControlSurfaceView(
+                        isWalking: viewModel.isWalking,
+                        isReachable: viewModel.isReachable,
+                        walkingTime: viewModel.walkingTime,
+                        walkingArea: viewModel.walkingArea,
+                        pointCount: viewModel.currentPointCount,
+                        petContext: viewModel.petContext,
+                        feedbackBanner: viewModel.feedbackBanner,
+                        startWalkPresentation: viewModel.controlPresentation(for: .startWalk),
+                        addPointPresentation: viewModel.controlPresentation(for: .addPoint),
+                        endWalkPresentation: viewModel.controlPresentation(for: .endWalk),
+                        onStartWalk: { viewModel.handleActionTap(.startWalk) },
+                        onAddPoint: { viewModel.handleActionTap(.addPoint) },
+                        onEndWalk: { isWalkEndDecisionPresented = true }
+                    )
 
-                if let feedbackBanner = viewModel.feedbackBanner {
-                    WatchActionBannerView(banner: feedbackBanner)
+                    if shouldShowPagingHint {
+                        WatchSurfacePagingHintView(
+                            currentSurface: .control,
+                            targetSurfaceLabel: "정보 화면"
+                        )
+                    }
                 }
-
-                Spacer(minLength: 0)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12)
+                .padding(.top, 12)
+                .padding(.bottom, 12)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .padding(.horizontal, 12)
-            .padding(.top, 12)
-            .padding(.bottom, 12)
             .tag(WatchMainSurface.control)
             .accessibilityIdentifier("screen.watch.main.control")
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {
-                    if let feedbackBanner = viewModel.feedbackBanner {
-                        WatchActionBannerView(banner: feedbackBanner)
-                    }
-
                     WatchSelectedPetContextCardView(
                         petContext: viewModel.petContext,
                         isReachable: viewModel.isReachable,
@@ -61,6 +68,13 @@ struct ContentView: View {
                         onOpenDetail: { isQueueStatusPresented = true },
                         onManualSync: { viewModel.handleManualQueueResync() }
                     )
+
+                    if shouldShowPagingHint {
+                        WatchSurfacePagingHintView(
+                            currentSurface: .info,
+                            targetSurfaceLabel: "조작 화면"
+                        )
+                    }
 
                     Color.clear
                         .frame(height: 2)
@@ -74,21 +88,6 @@ struct ContentView: View {
             .accessibilityIdentifier("screen.watch.main.info")
         }
         .tabViewStyle(.page(indexDisplayMode: .automatic))
-        .safeAreaInset(edge: .bottom, spacing: 8) {
-            if selectedSurface == .control {
-                WatchPrimaryActionDockView(
-                    isWalking: viewModel.isWalking,
-                    startWalkPresentation: viewModel.controlPresentation(for: .startWalk),
-                    addPointPresentation: viewModel.controlPresentation(for: .addPoint),
-                    endWalkPresentation: viewModel.controlPresentation(for: .endWalk),
-                    onStartWalk: { viewModel.handleActionTap(.startWalk) },
-                    onAddPoint: { viewModel.handleActionTap(.addPoint) },
-                    onEndWalk: { isWalkEndDecisionPresented = true }
-                )
-                .padding(.horizontal, 12)
-                .padding(.bottom, 4)
-            }
-        }
         .accessibilityIdentifier("screen.watch.main.pager")
         .sheet(isPresented: $isQueueStatusPresented) {
             WatchOfflineQueueStatusSheetView(
@@ -138,6 +137,11 @@ struct ContentView: View {
         .onChange(of: viewModel.isWalking) { _, isWalking in
             syncLandingSurface(isWalking: isWalking)
         }
+        .onChange(of: selectedSurface) { _, surface in
+            if surface == .info {
+                hasVisitedInfoSurface = true
+            }
+        }
     }
 
     /// 현재 산책 진행 여부에 맞춰 watch 메인 landing surface를 조정합니다.
@@ -151,6 +155,12 @@ struct ContentView: View {
         if isWalking {
             selectedSurface = .control
         }
+    }
+
+    /// 사용자가 정보 화면을 아직 확인하지 않았다면 페이지 이동 affordance를 노출합니다.
+    /// - Returns: 정보 화면 첫 발견 전이면 `true`입니다.
+    private var shouldShowPagingHint: Bool {
+        hasVisitedInfoSurface == false
     }
 }
 

@@ -11,6 +11,7 @@
   - `docs/watch-main-scroll-overflow-ux-v1.md`
 - 핵심 구현 파일:
   - `dogAreaWatch Watch App/ContentView.swift`
+  - `dogAreaWatch Watch App/WatchControlSurfaceView.swift`
   - `dogAreaWatch Watch App/WatchMainStatusSummaryView.swift`
   - `dogAreaWatch Watch App/WatchPrimaryActionDockView.swift`
   - `dogAreaWatch Watch App/WatchActionButtonView.swift`
@@ -18,11 +19,11 @@
 ## DoD 판정
 ### 1. watch 메인 화면에서 overflow된 콘텐츠가 스크롤 가능하다
 - 현재 구조는 `control surface`와 `information surface`로 분리됐다.
-- 상태/배너/반려견 문맥/큐 상태는 `information surface`의 `ScrollView` 안에서 스크롤되도록 정리됐다.
+- `control surface`와 `information surface` 모두 `ScrollView` 안에서 스크롤되도록 정리됐다.
 - 판정: `PASS`
 
 ### 2. active walk와 idle 두 상태에서 모든 텍스트와 버튼 접근이 가능하다
-- `control surface`는 조작 전용이고, `WatchPrimaryActionDockView`는 이 페이지에서만 `safeAreaInset(edge: .bottom)`로 고정된다.
+- `control surface`는 조작 전용이고, `WatchControlSurfaceView` 안에서 상태·배너·CTA를 하나의 surface로 통합한다.
 - 작은 화면에서도 `산책 시작`, `영역 표시하기`, `산책 종료`가 정보 카드와 경쟁하지 않고 접근 가능하다.
 - 판정: `PASS`
 

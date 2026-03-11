@@ -7,8 +7,14 @@
 
 import SwiftUI
 
+enum WatchActionBannerStyle: Equatable {
+    case card
+    case inline
+}
+
 struct WatchActionBannerView: View {
     let banner: WatchActionFeedbackBanner
+    var style: WatchActionBannerStyle = .card
 
     var body: some View {
         HStack(alignment: .top, spacing: 6) {
@@ -28,9 +34,29 @@ struct WatchActionBannerView: View {
             Spacer(minLength: 0)
         }
         .padding(8)
-        .background(
+        .background(backgroundShape)
+        .overlay(alignment: .leading) {
+            if style == .inline {
+                Capsule(style: .continuous)
+                    .fill(banner.tone.tintColor)
+                    .frame(width: 3)
+                    .padding(.vertical, 6)
+            }
+        }
+        .accessibilityIdentifier("watch.main.feedbackBanner")
+    }
+
+    /// 현재 배너 스타일에 맞는 배경 surface를 계산합니다.
+    /// - Returns: 카드형 또는 inline형 watch 배너 배경 뷰입니다.
+    @ViewBuilder
+    private var backgroundShape: some View {
+        switch style {
+        case .card:
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(banner.tone.backgroundColor)
-        )
+        case .inline:
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(banner.tone.backgroundColor.opacity(0.55))
+        }
     }
 }

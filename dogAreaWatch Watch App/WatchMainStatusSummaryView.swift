@@ -6,10 +6,10 @@ struct WatchMainStatusSummaryView: View {
     let walkingTime: TimeInterval
     let walkingArea: Double
     let pointCount: Int
-    let petName: String
+    let petContext: WatchSelectedPetContextState
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 6) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(isWalking ? "산책 조작" : "산책 시작")
@@ -17,7 +17,7 @@ struct WatchMainStatusSummaryView: View {
                     Text(summarySubtitle)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
-                        .lineLimit(2)
+                        .lineLimit(3)
                 }
                 Spacer(minLength: 0)
                 Text(isReachable ? "실시간 연결" : "오프라인 큐")
@@ -31,26 +31,42 @@ struct WatchMainStatusSummaryView: View {
                     )
             }
 
-            HStack(spacing: 6) {
-                metricTile(
-                    title: "시간",
-                    value: formatTime(walkingTime)
-                )
-                metricTile(
-                    title: "포인트",
-                    value: "\(pointCount)개"
-                )
-                metricTile(
-                    title: "연결",
-                    value: isReachable ? "바로 전송" : "큐 저장"
-                )
+            if isWalking == false {
+                compactPetContext
+            }
+
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 6) {
+                    metricTile(
+                        title: "시간",
+                        value: formatTime(walkingTime)
+                    )
+                    metricTile(
+                        title: "포인트",
+                        value: "\(pointCount)개"
+                    )
+                    metricTile(
+                        title: "연결",
+                        value: isReachable ? "바로 전송" : "큐 저장"
+                    )
+                }
+
+                VStack(alignment: .leading, spacing: 6) {
+                    metricTile(
+                        title: "시간",
+                        value: formatTime(walkingTime)
+                    )
+                    metricTile(
+                        title: "포인트",
+                        value: "\(pointCount)개"
+                    )
+                    metricTile(
+                        title: "연결",
+                        value: isReachable ? "바로 전송" : "큐 저장"
+                    )
+                }
             }
         }
-        .padding(10)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.white.opacity(0.08))
-        )
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("watch.main.statusSummary")
     }
@@ -58,11 +74,29 @@ struct WatchMainStatusSummaryView: View {
     /// control surface에 노출할 현재 산책 요약 문구를 반환합니다.
     /// - Returns: 반려견 문맥과 산책 진행 상태를 반영한 짧은 안내 문구입니다.
     private var summarySubtitle: String {
-        let resolvedPetName = petName.isEmpty ? "반려견" : petName
         if isWalking {
-            return "\(resolvedPetName)와 산책을 이어가며 포인트와 종료를 바로 조작할 수 있어요."
+            return "\(petContext.petName)와 산책을 이어가며 포인트와 종료를 바로 조작할 수 있어요."
         }
-        return "\(resolvedPetName) 기준으로 바로 산책을 시작할 수 있어요."
+        if petContext.blocksInlineStart {
+            return "watch에서는 바로 시작하지 않고 iPhone 확인이 먼저 필요해요."
+        }
+        return "\(petContext.petName) 기준으로 바로 산책을 시작할 수 있어요."
+    }
+
+    /// 비산책 상태에서 현재 반려견 문맥을 짧게 요약해 표시합니다.
+    /// - Returns: 시작 전 반려견 이름과 선택 상태를 설명하는 보조 문맥 뷰입니다.
+    private var compactPetContext: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(petContext.petName)
+                .font(.callout.weight(.semibold))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            Text(petContext.detail)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+        }
     }
 
     /// 상단 요약 메트릭 한 칸을 렌더링합니다.
@@ -81,9 +115,10 @@ struct WatchMainStatusSummaryView: View {
                 .minimumScaleFactor(0.75)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(8)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
         .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(Color.white.opacity(0.08))
         )
     }
