@@ -1,0 +1,159 @@
+name: pr-fast-smoke-gate
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: pr-fast-smoke-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fs_001_map_root_ui:
+    name: FS-001 map_root_ui
+    runs-on: macos-14
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Xcode Version
+        run: xcodebuild -version
+
+      - name: Prepare artifact directory
+        run: mkdir -p .artifacts/pr-fast-smoke/logs
+
+      - name: Run FS-001 map root UI smoke
+        run: bash scripts/run_pr_fast_smoke_map_ui_tests.sh | tee .artifacts/pr-fast-smoke/logs/FS-001-map_root_ui.log
+
+      - name: Upload FS-001 log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-fast-smoke-FS-001-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .artifacts/pr-fast-smoke/logs/FS-001-map_root_ui.log
+          if-no-files-found: error
+
+  fs_002_widget_layout:
+    name: FS-002 widget_layout
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "5.10"
+
+      - name: Prepare artifact directory
+        run: mkdir -p .artifacts/pr-fast-smoke/logs
+
+      - name: Run FS-002 widget family / clipping checks
+        run: bash scripts/run_pr_fast_smoke_widget_layout_checks.sh | tee .artifacts/pr-fast-smoke/logs/FS-002-widget_layout.log
+
+      - name: Upload FS-002 log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-fast-smoke-FS-002-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .artifacts/pr-fast-smoke/logs/FS-002-widget_layout.log
+          if-no-files-found: error
+
+  fs_003_widget_action:
+    name: FS-003 widget_action
+    runs-on: macos-14
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Xcode Version
+        run: xcodebuild -version
+
+      - name: Prepare artifact directory
+        run: mkdir -p .artifacts/pr-fast-smoke/logs
+
+      - name: Run FS-003 widget start/end action smoke
+        run: bash scripts/run_widget_action_regression_ui_tests.sh | tee .artifacts/pr-fast-smoke/logs/FS-003-widget_action.log
+
+      - name: Upload FS-003 log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-fast-smoke-FS-003-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .artifacts/pr-fast-smoke/logs/FS-003-widget_action.log
+          if-no-files-found: error
+
+  fs_004_watch_basic_action:
+    name: FS-004 watch_basic_action
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "5.10"
+
+      - name: Prepare artifact directory
+        run: mkdir -p .artifacts/pr-fast-smoke/logs
+
+      - name: Run FS-004 watch baseline contract checks
+        run: bash scripts/run_pr_fast_smoke_watch_contract_checks.sh | tee .artifacts/pr-fast-smoke/logs/FS-004-watch_basic_action.log
+
+      - name: Upload FS-004 log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-fast-smoke-FS-004-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .artifacts/pr-fast-smoke/logs/FS-004-watch_basic_action.log
+          if-no-files-found: error
+
+  fs_005_sync_recovery:
+    name: FS-005 sync_recovery
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "5.10"
+
+      - name: Prepare artifact directory
+        run: mkdir -p .artifacts/pr-fast-smoke/logs
+
+      - name: Run FS-005 backend baseline checks
+        run: bash scripts/backend_pr_check.sh | tee .artifacts/pr-fast-smoke/logs/FS-005-backend_pr_check.log
+
+      - name: Run FS-005 member auth + nearby smoke
+        env:
+          DOGAREA_TEST_EMAIL: ${{ secrets.DOGAREA_TEST_EMAIL }}
+          DOGAREA_TEST_PASSWORD: ${{ secrets.DOGAREA_TEST_PASSWORD }}
+        run: |
+          if [[ -z "${DOGAREA_TEST_EMAIL:-}" || -z "${DOGAREA_TEST_PASSWORD:-}" ]]; then
+            echo "FS-005 requires DOGAREA_TEST_EMAIL and DOGAREA_TEST_PASSWORD secrets"
+            exit 1
+          fi
+          DOGAREA_AUTH_SMOKE_ITERATIONS=1 bash scripts/auth_member_401_smoke_check.sh | tee .artifacts/pr-fast-smoke/logs/FS-005-auth_member_401_smoke.log
+
+      - name: Upload FS-005 logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-fast-smoke-FS-005-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .artifacts/pr-fast-smoke/logs/FS-005-*.log
+          if-no-files-found: error

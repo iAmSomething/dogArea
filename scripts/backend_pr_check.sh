@@ -5,6 +5,8 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 echo "[dogArea-backend] running integration harness structure checks"
+swift scripts/pr_fast_smoke_gate_unit_check.swift
+swift scripts/nightly_full_regression_gate_unit_check.swift
 swift scripts/supabase_integration_harness_unit_check.swift
 swift scripts/member_supabase_http_inventory_unit_check.swift
 swift scripts/member_supabase_http_zero_budget_gate_unit_check.swift

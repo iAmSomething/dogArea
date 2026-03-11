@@ -18,6 +18,20 @@
   - watch 큐/동기화/종료 요약
   - member full sweep / 5xx zero-budget 추세 확인
 
+## Workflow binding
+- GitHub Actions workflow: `.github/workflows/nightly-full-regression-gate.yml`
+- runner: `bash scripts/run_nightly_full_regression_gate.sh`
+- artifact root: `.artifacts/nightly-full-regression`
+- artifact directory contract
+  - `reports/`
+  - `logs/`
+  - `evidence/`
+- manual blocker linkage
+  - `bash scripts/manual_blocker_evidence_status.sh --write-missing`
+  - `bash scripts/render_manual_evidence_pack.sh`
+  - `bash scripts/validate_manual_evidence_pack.sh`
+- nightly workflow는 실기기 전용 축을 무인화했다고 가정하지 않는다. 대신 sample artifact / blocker evidence / live smoke 결과를 한곳에 모아 다음 날 triage 가능하게 만든다.
+
 ## nightly 대상 축
 
 | Axis ID | 축 | 자동화 | 실기기 필요 | 핵심 목표 |

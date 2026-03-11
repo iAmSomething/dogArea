@@ -26,14 +26,17 @@
 2. iOS build
 3. watchOS build
 
-## 5. CI PR 체크 기준
+## 5. CI 역할 분리 기준
 - 워크플로 파일: `.github/workflows/ios-pr-check.yml`
 - 트리거:
-  - `pull_request` to `main`
+  - `push` to `main`
   - `workflow_dispatch`
-- 머지 게이트:
-  - iOS/watchOS 빌드 실패 시 머지 차단
-  - 문서/계약 스크립트 실패 시 머지 차단
+- 역할:
+  - `ios-pr-check.yml`은 comprehensive main/manual validation
+  - PR 머지 게이트는 `.github/workflows/pr-fast-smoke-gate.yml`
+- main/manual validation 기준:
+  - iOS/watchOS 빌드 실패 시 실패
+  - 문서/계약 스크립트 실패 시 실패
 
 ## 6. Drift 방지 규칙
 - `project.pbxproj`의 deployment target/Swift 버전 변경은 별도 이슈에서만 수행한다.
@@ -42,5 +45,6 @@
 
 ## 7. 재현 체크리스트
 1. 클린 체크아웃 후 `bash scripts/ios_pr_check.sh` 실행 가능
-2. 동일 브랜치 PR에서 `iOS PR Check` 통과
-3. 문서(`README`, 본 문서) 기준으로 신규 환경에서도 동일 절차 재현 가능
+2. `main` push 또는 수동 실행에서 `ios-full-check` 통과
+3. 동일 브랜치 PR에서 `pr-fast-smoke-gate` 통과
+4. 문서(`README`, 본 문서) 기준으로 신규 환경에서도 동일 절차 재현 가능
