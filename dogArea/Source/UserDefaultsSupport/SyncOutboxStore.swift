@@ -29,6 +29,10 @@ enum SyncOutboxErrorCode: String, Codable {
     case serverError = "server_error"
     case conflict = "conflict"
     case schemaMismatch = "schema_mismatch"
+    case petIdRequired = "pet_id_required"
+    case sessionInvalidPetReference = "session_invalid_pet_reference"
+    case sessionTimeRangeInvalid = "session_time_range_invalid"
+    case sessionOwnershipConflict = "session_ownership_conflict"
     case storageQuota = "storage_quota"
     case notConfigured = "not_configured"
     case unknown = "unknown"
@@ -52,6 +56,22 @@ struct SyncOutboxSummary: Equatable {
     let pendingCount: Int
     let permanentFailureCount: Int
     let lastErrorCode: SyncOutboxErrorCode?
+}
+
+struct SyncOutboxPermanentFailureSessionSnapshot: Identifiable, Equatable {
+    let walkSessionId: String
+    let stageErrorCodes: [SyncOutboxStage: SyncOutboxErrorCode]
+    let stagePayloads: [SyncOutboxStage: [String: String]]
+    let updatedAt: TimeInterval
+
+    var id: String { walkSessionId }
+
+    /// 특정 stage에 대해 마지막으로 저장된 영구 실패 payload를 조회합니다.
+    /// - Parameter stage: payload를 조회할 stage입니다.
+    /// - Returns: 해당 stage의 payload이며, 없으면 `nil`입니다.
+    func payload(for stage: SyncOutboxStage) -> [String: String]? {
+        stagePayloads[stage]
+    }
 }
 
 struct SyncBackfillValidationSummary: Codable, Equatable {
@@ -89,89 +109,12 @@ final class SyncOutboxStore {
     /// 산책 세션 DTO를 stage별 outbox 항목으로 분해해 큐에 적재합니다.
     /// - Parameter sessionDTO: 큐에 적재할 산책 세션 백필 DTO입니다.
     func enqueueWalkStages(sessionDTO: WalkSessionBackfillDTO) {
-        let sessionId = sessionDTO.walkSessionId
-        let baseKey = "walk-\(sessionId)"
         let now = Date().timeIntervalSince1970
-        let basePayload: [String: String] = [
-            "walk_session_id": sessionId,
-            "user_id": sessionDTO.ownerUserId ?? "",
-            "pet_id": sessionDTO.petId ?? "",
-            "created_at": String(sessionDTO.createdAt),
-            "started_at": String(sessionDTO.startedAt),
-            "ended_at": String(sessionDTO.endedAt),
-            "source_device": sessionDTO.sourceDevice
-        ]
-
-        let stagePayloads: [(SyncOutboxStage, [String: String])] = [
-            (
-                .session,
-                basePayload.merging(
-                    [
-                        "duration_sec": String(sessionDTO.durationSec),
-                        "area_m2": String(sessionDTO.areaM2),
-                    ],
-                    uniquingKeysWith: { _, latest in latest }
-                )
-            ),
-            (
-                .points,
-                basePayload.merging(
-                    [
-                        "point_count": String(sessionDTO.pointCount),
-                        "points_json": sessionDTO.pointsJSONString,
-                        "route_point_count": String(sessionDTO.routePoints.count),
-                        "mark_point_count": String(sessionDTO.markPoints.count),
-                        "route_points_json": sessionDTO.routePointsJSONString,
-                        "mark_points_json": sessionDTO.markPointsJSONString
-                    ],
-                    uniquingKeysWith: { _, latest in latest }
-                )
-            ),
-            (
-                .meta,
-                basePayload.merging(
-                    [
-                        "has_image": sessionDTO.hasImage ? "true" : "false",
-                        "map_image_url": sessionDTO.mapImageURL ?? ""
-                    ],
-                    uniquingKeysWith: { _, latest in latest }
-                )
-            ),
-        ]
-
+        let sessionId = sessionDTO.walkSessionId
         stateQueue.sync {
             var mutableItems = items
-            var enqueuedCount = 0
-            stagePayloads.forEach { stage, payload in
-                let idempotencyKey = "\(baseKey)-\(stage.rawValue)"
-                let exists = mutableItems.contains(where: { $0.idempotencyKey == idempotencyKey })
-                guard exists == false else { return }
-                mutableItems.append(
-                    SyncOutboxItem(
-                        id: UUID().uuidString.lowercased(),
-                        walkSessionId: sessionId,
-                        stage: stage,
-                        idempotencyKey: idempotencyKey,
-                        payload: payload,
-                        status: .queued,
-                        retryCount: 0,
-                        nextRetryAt: now,
-                        lastErrorCode: nil,
-                        createdAt: now,
-                        updatedAt: now
-                    )
-                )
-                enqueuedCount += 1
-            }
-            if mutableItems.count > maxItems {
-                let overflow = mutableItems.count - maxItems
-                let removable = mutableItems
-                    .enumerated()
-                    .filter { _, item in item.status == .completed || item.status == .permanentFailed }
-                    .prefix(overflow)
-                    .map(\.offset)
-                removable.reversed().forEach { mutableItems.remove(at: $0) }
-            }
+            let enqueuedCount = enqueueWalkStagesLocked(sessionDTO: sessionDTO, now: now, items: &mutableItems)
+            trimOverflowItemsIfNeeded(items: &mutableItems)
             items = mutableItems
             persistLocked()
             #if DEBUG
@@ -282,12 +225,186 @@ final class SyncOutboxStore {
         }
     }
 
+    /// 영구 실패 세션을 stage별 payload와 오류 코드 기준으로 묶어 반환합니다.
+    /// - Returns: 사용자 복구/정리 흐름에서 사용할 세션 단위 영구 실패 스냅샷 목록입니다.
+    func permanentFailureSessions() -> [SyncOutboxPermanentFailureSessionSnapshot] {
+        stateQueue.sync {
+            let grouped = Dictionary(grouping: items.filter { $0.status == .permanentFailed }, by: \.walkSessionId)
+            return grouped.map { sessionId, sessionItems in
+                let latestPerStage = Dictionary(
+                    grouping: sessionItems,
+                    by: \.stage
+                ).compactMapValues { stageItems in
+                    stageItems.max(by: { $0.updatedAt < $1.updatedAt })
+                }
+                let stageErrorCodes = latestPerStage.reduce(into: [SyncOutboxStage: SyncOutboxErrorCode]()) { partial, entry in
+                    partial[entry.key] = entry.value.lastErrorCode ?? .unknown
+                }
+                let stagePayloads = latestPerStage.reduce(into: [SyncOutboxStage: [String: String]]()) { partial, entry in
+                    partial[entry.key] = entry.value.payload
+                }
+                return SyncOutboxPermanentFailureSessionSnapshot(
+                    walkSessionId: sessionId,
+                    stageErrorCodes: stageErrorCodes,
+                    stagePayloads: stagePayloads,
+                    updatedAt: sessionItems.map(\.updatedAt).max() ?? 0
+                )
+            }
+            .sorted { $0.updatedAt > $1.updatedAt }
+        }
+    }
+
+    /// 선택한 세션들의 기존 outbox stage를 버리고 최신 로컬 DTO 기준으로 다시 적재합니다.
+    /// - Parameter sessionDTOs: 재생성에 사용할 최신 세션 DTO 목록입니다.
+    /// - Returns: 새로 큐에 적재한 stage 개수입니다.
+    func replaceStagesForSessions(_ sessionDTOs: [WalkSessionBackfillDTO]) -> Int {
+        guard sessionDTOs.isEmpty == false else { return 0 }
+        let now = Date().timeIntervalSince1970
+        return stateQueue.sync {
+            let targetSessionIds = Set(sessionDTOs.map(\.walkSessionId))
+            items.removeAll { targetSessionIds.contains($0.walkSessionId) }
+
+            var mutableItems = items
+            var enqueuedCount = 0
+            for sessionDTO in sessionDTOs {
+                enqueuedCount += enqueueWalkStagesLocked(sessionDTO: sessionDTO, now: now, items: &mutableItems)
+            }
+            trimOverflowItemsIfNeeded(items: &mutableItems)
+            items = mutableItems
+            persistLocked()
+            return enqueuedCount
+        }
+    }
+
+    /// 선택한 세션의 영구 실패 outbox 항목만 목록에서 제거합니다.
+    /// - Parameter walkSessionIds: 로컬 기록은 유지하고 동기화 대상에서만 정리할 세션 식별자 집합입니다.
+    /// - Returns: 실제 제거된 영구 실패 항목 개수입니다.
+    func archivePermanentFailures(walkSessionIds: Set<String>) -> Int {
+        guard walkSessionIds.isEmpty == false else { return 0 }
+        return stateQueue.sync {
+            let before = items.count
+            items.removeAll { item in
+                walkSessionIds.contains(item.walkSessionId) && item.status == .permanentFailed
+            }
+            let removedCount = before - items.count
+            if removedCount > 0 {
+                persistLocked()
+            }
+            return removedCount
+        }
+    }
+
     /// 재시도 횟수에 따른 지수 백오프 지연 시간을 계산합니다.
     /// - Parameter retryCount: 현재까지 누적된 재시도 횟수입니다.
     /// - Returns: 다음 재시도까지 대기할 초 단위 시간입니다.
     private static func retryDelay(retryCount: Int) -> TimeInterval {
         let exp = pow(2.0, Double(max(0, retryCount)))
         return min(900.0, 5.0 * exp)
+    }
+
+    /// 세션 DTO를 stage payload로 변환합니다.
+    /// - Parameter sessionDTO: outbox 적재 기준이 되는 세션 DTO입니다.
+    /// - Returns: stage별 payload 목록입니다.
+    private func makeStagePayloads(for sessionDTO: WalkSessionBackfillDTO) -> [(SyncOutboxStage, [String: String])] {
+        let basePayload: [String: String] = [
+            "walk_session_id": sessionDTO.walkSessionId,
+            "user_id": sessionDTO.ownerUserId ?? "",
+            "pet_id": sessionDTO.petId ?? "",
+            "created_at": String(sessionDTO.createdAt),
+            "started_at": String(sessionDTO.startedAt),
+            "ended_at": String(sessionDTO.endedAt),
+            "source_device": sessionDTO.sourceDevice
+        ]
+
+        return [
+            (
+                .session,
+                basePayload.merging(
+                    [
+                        "duration_sec": String(sessionDTO.durationSec),
+                        "area_m2": String(sessionDTO.areaM2),
+                    ],
+                    uniquingKeysWith: { _, latest in latest }
+                )
+            ),
+            (
+                .points,
+                basePayload.merging(
+                    [
+                        "point_count": String(sessionDTO.pointCount),
+                        "points_json": sessionDTO.pointsJSONString,
+                        "route_point_count": String(sessionDTO.routePoints.count),
+                        "mark_point_count": String(sessionDTO.markPoints.count),
+                        "route_points_json": sessionDTO.routePointsJSONString,
+                        "mark_points_json": sessionDTO.markPointsJSONString
+                    ],
+                    uniquingKeysWith: { _, latest in latest }
+                )
+            ),
+            (
+                .meta,
+                basePayload.merging(
+                    [
+                        "has_image": sessionDTO.hasImage ? "true" : "false",
+                        "map_image_url": sessionDTO.mapImageURL ?? ""
+                    ],
+                    uniquingKeysWith: { _, latest in latest }
+                )
+            ),
+        ]
+    }
+
+    /// 이미 잠금이 잡힌 상태에서 세션 DTO를 stage별 outbox 항목으로 적재합니다.
+    /// - Parameters:
+    ///   - sessionDTO: 적재할 세션 DTO입니다.
+    ///   - now: 적재 시각(epoch seconds)입니다.
+    ///   - items: 적재 대상 outbox 배열입니다.
+    /// - Returns: 실제 추가된 stage 개수입니다.
+    private func enqueueWalkStagesLocked(
+        sessionDTO: WalkSessionBackfillDTO,
+        now: TimeInterval,
+        items: inout [SyncOutboxItem]
+    ) -> Int {
+        let sessionId = sessionDTO.walkSessionId
+        let baseKey = "walk-\(sessionId)"
+        var enqueuedCount = 0
+
+        makeStagePayloads(for: sessionDTO).forEach { stage, payload in
+            let idempotencyKey = "\(baseKey)-\(stage.rawValue)"
+            let exists = items.contains(where: { $0.idempotencyKey == idempotencyKey })
+            guard exists == false else { return }
+            items.append(
+                SyncOutboxItem(
+                    id: UUID().uuidString.lowercased(),
+                    walkSessionId: sessionId,
+                    stage: stage,
+                    idempotencyKey: idempotencyKey,
+                    payload: payload,
+                    status: .queued,
+                    retryCount: 0,
+                    nextRetryAt: now,
+                    lastErrorCode: nil,
+                    createdAt: now,
+                    updatedAt: now
+                )
+            )
+            enqueuedCount += 1
+        }
+
+        return enqueuedCount
+    }
+
+    /// 최대 보관 개수를 넘기면 완료/영구 실패 항목부터 오래된 순서로 정리합니다.
+    /// - Parameter items: 정리 대상 outbox 배열입니다.
+    private func trimOverflowItemsIfNeeded(items: inout [SyncOutboxItem]) {
+        guard items.count > maxItems else { return }
+        let overflow = items.count - maxItems
+        let removable = items
+            .enumerated()
+            .filter { _, item in item.status == .completed || item.status == .permanentFailed }
+            .prefix(overflow)
+            .map(\.offset)
+        removable.reversed().forEach { items.remove(at: $0) }
     }
 
     /// 현재 시각 기준으로 바로 전송 가능한 다음 outbox 항목을 선택합니다.

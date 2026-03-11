@@ -14,6 +14,7 @@ import UIKit
 struct MapView : View{
     @EnvironmentObject var loading: LoadingViewModel
     @EnvironmentObject var authFlow: AuthFlowCoordinator
+    @Environment(\.openURL) private var openURL
     @StateObject private var myAlert = CustomAlertViewModel()
     @ObservedObject var viewModel: MapViewModel
     @State private var isModalPresented = false
@@ -93,6 +94,7 @@ struct MapView : View{
         composed = AnyView(composed.onChange(of: viewModel.syncOutboxLastErrorCodeText) { recomputeBannerQueue() })
         composed = AnyView(composed.onChange(of: viewModel.syncOutboxPendingCount) { recomputeBannerQueue() })
         composed = AnyView(composed.onChange(of: viewModel.syncOutboxPermanentFailureCount) { recomputeBannerQueue() })
+        composed = AnyView(composed.onChange(of: viewModel.syncOutboxRecoveryOverview) { recomputeBannerQueue() })
         composed = AnyView(composed.onChange(of: viewModel.hasRecoverableWalkSession) { recomputeBannerQueue() })
         composed = AnyView(composed.onChange(of: viewModel.hasReturnToOriginSuggestion) { recomputeBannerQueue() })
         composed = AnyView(composed.onChange(of: viewModel.isWalking) { recomputeBannerQueue() })
@@ -736,12 +738,35 @@ struct MapView : View{
     }
 
     var syncOutboxBanner: some View {
-        Text(viewModel.syncOutboxStatusText)
-            .font(.appFont(for: .Light, size: 11))
-            .foregroundStyle(MapChromePalette.secondaryText)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .mapChromeSurface()
+        Group {
+            if let overview = viewModel.syncOutboxRecoveryOverview,
+               viewModel.syncOutboxPermanentFailureCount > 0 {
+                SyncOutboxRecoveryBanner(
+                    overview: overview,
+                    onRebuild: overview.hasRebuildableSessions
+                        ? { viewModel.rebuildRecoverableSyncOutboxSessions() }
+                        : nil,
+                    onArchive: overview.hasArchiveableSessions
+                        ? { viewModel.archiveCleanupEligibleSyncOutboxSessions() }
+                        : nil,
+                    onContactSupport: overview.hasSupportRequiredSessions
+                        ? {
+                            guard let url = viewModel.syncOutboxSupportMailURL() else { return }
+                            openURL(url)
+                            dismissTopBanner(.syncOutbox, suppressFor: 1800)
+                        }
+                        : nil,
+                    onDismiss: { dismissTopBanner(.syncOutbox, suppressFor: 1800) }
+                )
+            } else {
+                Text(viewModel.syncOutboxStatusText)
+                    .font(.appFont(for: .Light, size: 11))
+                    .foregroundStyle(MapChromePalette.secondaryText)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .mapChromeSurface()
+            }
+        }
     }
 
     var offlineModeBadge: some View {
@@ -898,6 +923,18 @@ struct MapView : View{
     }
 
     private func prioritizedBannerCandidates() -> [MapTopBannerCandidate] {
+        if MapViewModel.shouldForceSyncOutboxPermanentFailurePreviewForUITest(),
+           viewModel.syncOutboxPermanentFailureCount > 0 {
+            return [
+                MapTopBannerCandidate(
+                    kind: .syncOutbox,
+                    severity: .p0,
+                    autoDismissAfter: nil,
+                    suppressFor: 1800
+                )
+            ]
+        }
+
         var candidates: [MapTopBannerCandidate] = []
 
         if recoveryIssue != nil {
@@ -939,7 +976,7 @@ struct MapView : View{
                     kind: .syncOutbox,
                     severity: .p1,
                     autoDismissAfter: nil,
-                    suppressFor: 120
+                    suppressFor: 1800
                 )
             )
         } else if viewModel.hasSyncOutboxStatus {

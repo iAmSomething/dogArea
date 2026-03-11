@@ -144,6 +144,7 @@
 		A41000010000000000000021 /* MapViewModel+WidgetRuntimeSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41000010000000000000012 /* MapViewModel+WidgetRuntimeSupport.swift */; };
 		A41000010000000000000022 /* MapViewModel+WatchConnectivitySupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41000010000000000000013 /* MapViewModel+WatchConnectivitySupport.swift */; };
 		A41000010000000000000023 /* MapViewModel+LivePresenceRetrySupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41000010000000000000014 /* MapViewModel+LivePresenceRetrySupport.swift */; };
+		A72600010000000000000021 /* MapViewModel+SyncOutboxRecoverySupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72600010000000000000011 /* MapViewModel+SyncOutboxRecoverySupport.swift */; };
 		A41300010000000000000021 /* SupabaseEdgeSupportServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41300010000000000000011 /* SupabaseEdgeSupportServices.swift */; };
 		A41300010000000000000022 /* SupabaseSyncServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41300010000000000000012 /* SupabaseSyncServices.swift */; };
 		A41300010000000000000023 /* SupabasePresenceAndQuestServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41300010000000000000013 /* SupabasePresenceAndQuestServices.swift */; };
@@ -562,6 +563,7 @@
 		A41000010000000000000012 /* MapViewModel+WidgetRuntimeSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MapViewModel+WidgetRuntimeSupport.swift"; sourceTree = "<group>"; };
 		A41000010000000000000013 /* MapViewModel+WatchConnectivitySupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MapViewModel+WatchConnectivitySupport.swift"; sourceTree = "<group>"; };
 		A41000010000000000000014 /* MapViewModel+LivePresenceRetrySupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MapViewModel+LivePresenceRetrySupport.swift"; sourceTree = "<group>"; };
+		A72600010000000000000011 /* MapViewModel+SyncOutboxRecoverySupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MapViewModel+SyncOutboxRecoverySupport.swift"; sourceTree = "<group>"; };
 		A41300010000000000000011 /* SupabaseEdgeSupportServices.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SupabaseEdgeSupportServices.swift; sourceTree = "<group>"; };
 		A41300010000000000000012 /* SupabaseSyncServices.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SupabaseSyncServices.swift; sourceTree = "<group>"; };
 		A41300010000000000000013 /* SupabasePresenceAndQuestServices.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SupabasePresenceAndQuestServices.swift; sourceTree = "<group>"; };
@@ -1106,6 +1108,7 @@
 			children = (
 				A50100010000000000000014 /* MapClusterMotionState.swift */,
 				A69000010000000000000011 /* MapViewModel+SeasonTileVisualPolicy.swift */,
+				A72600010000000000000011 /* MapViewModel+SyncOutboxRecoverySupport.swift */,
 				A41000010000000000000012 /* MapViewModel+WidgetRuntimeSupport.swift */,
 				A41000010000000000000013 /* MapViewModel+WatchConnectivitySupport.swift */,
 				A41000010000000000000014 /* MapViewModel+LivePresenceRetrySupport.swift */,
@@ -2428,6 +2431,7 @@
 				A41000010000000000000021 /* MapViewModel+WidgetRuntimeSupport.swift in Sources */,
 				A41000010000000000000022 /* MapViewModel+WatchConnectivitySupport.swift in Sources */,
 				A41000010000000000000023 /* MapViewModel+LivePresenceRetrySupport.swift in Sources */,
+				A72600010000000000000021 /* MapViewModel+SyncOutboxRecoverySupport.swift in Sources */,
 				A69000010000000000000021 /* MapViewModel+SeasonTileVisualPolicy.swift in Sources */,
 				71C13F32C41AB0D41B9E1BC5 /* RivalTabViewModel+SessionLifecycle.swift in Sources */,
 				015946C5C501B37603E066FD /* RivalTabViewModel+SharingAndLeaderboard.swift in Sources */,

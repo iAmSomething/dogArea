@@ -624,6 +624,14 @@ struct HomeView: View {
             return "서버가 일시적으로 불안정해요."
         case .schemaMismatch:
             return "앱/서버 스키마 버전 확인이 필요해요."
+        case .petIdRequired:
+            return "반려견 정보가 비어 있어 이관할 수 없어요."
+        case .sessionInvalidPetReference:
+            return "연결된 반려견 정보를 다시 확인해야 해요."
+        case .sessionTimeRangeInvalid:
+            return "산책 시작/종료 시간이 올바르지 않아요."
+        case .sessionOwnershipConflict:
+            return "계정 소유권 확인이 필요해요."
         case .storageQuota:
             return "서버 저장소 한도를 초과했어요."
         case .conflict:
