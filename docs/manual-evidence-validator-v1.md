@@ -19,13 +19,15 @@
     - action 케이스 로그/스크린샷 필드 완결
     - layout 케이스 budget/스크린샷 필드 완결
 - `auth-smtp`
-  - 입력: 운영 증적 markdown 파일
+  - 입력: 운영 증적 bundle 디렉터리
 
 ## 사용법
 - `bash scripts/render_manual_evidence_pack.sh widget --write`
 - `bash scripts/validate_manual_evidence_pack.sh widget .codex_tmp/widget-real-device-evidence`
 - `bash scripts/render_closure_comment_from_evidence.sh widget .codex_tmp/widget-real-device-evidence --write`
 - `bash scripts/post_closure_comment_from_evidence.sh widget --all-related .codex_tmp/widget-real-device-evidence --post`
+- `bash scripts/render_manual_evidence_pack.sh auth-smtp --write`
+- `bash scripts/validate_manual_evidence_pack.sh auth-smtp .codex_tmp/auth-smtp-evidence`
 
 ## 출력 규칙
 - 성공 시

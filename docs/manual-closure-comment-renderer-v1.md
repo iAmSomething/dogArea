@@ -20,9 +20,9 @@
   - 출력:
     - active blocker `#617`, `#692`, `#731`에 공통으로 붙일 수 있는 closure comment 초안
 - `auth-smtp`
-  - 입력: validated auth smtp evidence 파일 1개
+  - 입력: validated auth smtp evidence bundle 디렉터리
 
 ## 사용법
 - `bash scripts/render_closure_comment_from_evidence.sh widget .codex_tmp/widget-real-device-evidence`
 - `bash scripts/render_closure_comment_from_evidence.sh widget .codex_tmp/widget-real-device-evidence --write`
-- `bash scripts/render_closure_comment_from_evidence.sh auth-smtp .codex_tmp/auth-smtp-evidence-pack.md --negative-guard "SMTP-101: cooldown suppressed with retry_after_seconds=60" --negative-provider-event "SMTP-102: bounce observed in provider dashboard" --write`
+- `bash scripts/render_closure_comment_from_evidence.sh auth-smtp .codex_tmp/auth-smtp-evidence --write`

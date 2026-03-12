@@ -11,7 +11,7 @@
 - provider / DNS / secret checklist: `docs/auth-smtp-provider-selection-dns-secret-checklist-v1.md`
 - rollout evidence runbook: `docs/auth-smtp-rollout-evidence-runbook-v1.md`
 - live-send validation matrix: `docs/auth-smtp-live-send-validation-matrix-v1.md`
-- rollout evidence template: `docs/auth-smtp-rollout-evidence-template-v1.md`
+- rollout evidence bundle template: `docs/auth-smtp-rollout-evidence-template-v1.md`
 
 ## 필수 체크리스트
 - provider 선택이 문서화돼 있다.

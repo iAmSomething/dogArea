@@ -29,6 +29,77 @@ func write(_ url: URL, content: String) {
     }
 }
 
+/// Writes a filled auth smtp evidence bundle into the provided directory.
+/// - Parameter directory: Bundle root directory that will receive the evidence files.
+func writeFilledAuthBundle(at directory: URL) {
+    write(directory.appendingPathComponent("01-dns-verification.md"), content: """
+    # DNS Verification
+
+    - Date: 2026-03-12
+    - Operator: codex
+    - Supabase Project: ttjiknenynbhbpoqoesq
+    - Provider: Resend
+    - Sender Domain: auth.dogarea.app
+    - SPF: pass
+    - DKIM: verified
+    - DMARC: present
+    - Provider Verified Timestamp: 2026-03-12T12:00:00Z
+    - Evidence Screenshot: smtp-domain.png
+    """)
+
+    write(directory.appendingPathComponent("02-supabase-smtp-settings.md"), content: """
+    # Supabase Auth SMTP Settings
+
+    - SMTP Host: smtp.resend.com
+    - SMTP Port: 587
+    - SMTP User Mask: re_***
+    - Sender Name: DogArea Auth
+    - Sender Email: auth@auth.dogarea.app
+    - `email_sent`: 2
+    - `auth.email.max_frequency`: 60
+    - Settings Screenshot: smtp-settings.png
+    """)
+
+    write(directory.appendingPathComponent("03-live-send-results.md"), content: """
+    # Live Send Results
+
+    | Scenario | Recipient Mask | Request Time | Accepted | Mailbox Received | request_id | provider_message_id | Notes |
+    | --- | --- | --- | --- | --- | --- | --- | --- |
+    | signup confirmation | a***@dogarea.test | 2026-03-12 12:00 | yes | yes | req-1 | msg-1 | ok |
+    | password reset | a***@dogarea.test | 2026-03-12 12:05 | yes | yes | req-2 | msg-2 | ok |
+    | email change | a***@dogarea.test | 2026-03-12 12:10 | yes | yes | req-3 | msg-3 | ok |
+    """)
+
+    write(directory.appendingPathComponent("04-negative-evidence.md"), content: """
+    # Negative / Provider Event Evidence
+
+    - SMTP-101 Guard Evidence: cooldown suppressed with retry_after_seconds=60
+    - SMTP-102 Provider Event Evidence: provider dashboard event summary
+    - bounce: none observed
+    - reject: none observed
+    - deferred: none observed
+    - provider_event_id: evt-1
+    - Dashboard / Webhook Evidence: resend-dashboard.png
+    """)
+
+    write(directory.appendingPathComponent("05-rollback-rotation.md"), content: """
+    # Rollback / Rotation Readiness
+
+    - rollback path: revert to previous SMTP config
+    - secret rotation owner: ops@dogarea
+    - tested backup path: staging resend account
+    - notes: ready
+    """)
+
+    write(directory.appendingPathComponent("06-final-decision.md"), content: """
+    # Final Decision
+
+    - Pass / Fail: Pass
+    - Remaining Blockers: none
+    - Linked Issue / PR Comment: issue comment url
+    """)
+}
+
 /// Asserts that a condition holds for the readiness preflight contract.
 /// - Parameters:
 ///   - condition: Condition to validate.
@@ -83,8 +154,7 @@ let doc = load("docs/auth-smtp-rollout-readiness-preflight-v1.md")
 let readme = load("README.md")
 let iosPRCheck = load("scripts/ios_pr_check.sh")
 let backendPRCheck = load("scripts/backend_pr_check.sh")
-let authTemplate = load("docs/auth-smtp-rollout-evidence-template-v1.md")
-let missingEvidenceURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString).appendingPathExtension("md")
+let missingEvidenceURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
 
 assertTrue(script.contains("DOGAREA_AUTH_SMTP_PROVIDER"), "script should require provider env")
 assertTrue(script.contains("DOGAREA_AUTH_SMTP_DNS_SPF"), "script should require DNS SPF env")
@@ -131,42 +201,8 @@ let noEvidenceOutput = runPreflight(environment: [
 assertTrue(noEvidenceOutput.contains("evidence-status: missing"), "missing evidence file should report missing")
 assertTrue(noEvidenceOutput.contains("overall: ready-for-live-send-evidence"), "ready config without evidence should request live-send evidence")
 
-let filledAuth = authTemplate
-    .replacingOccurrences(of: "- Date:", with: "- Date: 2026-03-12")
-    .replacingOccurrences(of: "- Operator:", with: "- Operator: codex")
-    .replacingOccurrences(of: "- Supabase Project:", with: "- Supabase Project: ttjiknenynbhbpoqoesq")
-    .replacingOccurrences(of: "- Provider:", with: "- Provider: Resend")
-    .replacingOccurrences(of: "- Sender Domain:", with: "- Sender Domain: auth.dogarea.app")
-    .replacingOccurrences(of: "- SPF:", with: "- SPF: pass")
-    .replacingOccurrences(of: "- DKIM:", with: "- DKIM: verified")
-    .replacingOccurrences(of: "- DMARC:", with: "- DMARC: present")
-    .replacingOccurrences(of: "- Provider Verified Timestamp:", with: "- Provider Verified Timestamp: 2026-03-12T12:00:00Z")
-    .replacingOccurrences(of: "- Evidence Screenshot:", with: "- Evidence Screenshot: smtp-domain.png")
-    .replacingOccurrences(of: "- SMTP Host:", with: "- SMTP Host: smtp.resend.com")
-    .replacingOccurrences(of: "- SMTP Port:", with: "- SMTP Port: 587")
-    .replacingOccurrences(of: "- SMTP User Mask:", with: "- SMTP User Mask: re_***")
-    .replacingOccurrences(of: "- Sender Name:", with: "- Sender Name: DogArea Auth")
-    .replacingOccurrences(of: "- Sender Email:", with: "- Sender Email: auth@auth.dogarea.app")
-    .replacingOccurrences(of: "- `email_sent`:", with: "- `email_sent`: 2")
-    .replacingOccurrences(of: "- `auth.email.max_frequency`:", with: "- `auth.email.max_frequency`: 60")
-    .replacingOccurrences(of: "- Settings Screenshot:", with: "- Settings Screenshot: smtp-settings.png")
-    .replacingOccurrences(of: "| signup confirmation |  |  |  |  |  |  |  |", with: "| signup confirmation | a***@dogarea.test | 2026-03-12 12:00 | yes | yes | req-1 | msg-1 | ok |")
-    .replacingOccurrences(of: "| password reset |  |  |  |  |  |  |  |", with: "| password reset | a***@dogarea.test | 2026-03-12 12:05 | yes | yes | req-2 | msg-2 | ok |")
-    .replacingOccurrences(of: "| email change |  |  |  |  |  |  |  |", with: "| email change | a***@dogarea.test | 2026-03-12 12:10 | yes | yes | req-3 | msg-3 | ok |")
-    .replacingOccurrences(of: "- bounce:", with: "- bounce: none observed")
-    .replacingOccurrences(of: "- reject:", with: "- reject: none observed")
-    .replacingOccurrences(of: "- deferred:", with: "- deferred: none observed")
-    .replacingOccurrences(of: "- provider_event_id:", with: "- provider_event_id: evt-1")
-    .replacingOccurrences(of: "- Dashboard / Webhook Evidence:", with: "- Dashboard / Webhook Evidence: resend-dashboard.png")
-    .replacingOccurrences(of: "- rollback path:", with: "- rollback path: revert to previous SMTP config")
-    .replacingOccurrences(of: "- secret rotation owner:", with: "- secret rotation owner: ops@dogarea")
-    .replacingOccurrences(of: "- tested backup path:", with: "- tested backup path: staging resend account")
-    .replacingOccurrences(of: "- Pass / Fail:", with: "- Pass / Fail: Pass")
-    .replacingOccurrences(of: "- Remaining Blockers:", with: "- Remaining Blockers: none")
-    .replacingOccurrences(of: "- Linked Issue / PR Comment:", with: "- Linked Issue / PR Comment: issue comment url")
-
-let evidenceURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString).appendingPathExtension("md")
-write(evidenceURL, content: filledAuth)
+let evidenceURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+writeFilledAuthBundle(at: evidenceURL)
 
 let completeOutput = runPreflight(arguments: ["--evidence", evidenceURL.path], environment: [
     "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": missingEvidenceURL.path,

@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
+source "$ROOT_DIR/scripts/lib/auth_smtp_evidence_bundle.sh"
 
 usage() {
   cat <<'USAGE'
@@ -11,7 +12,7 @@ Usage:
 
 Examples:
   bash scripts/validate_manual_evidence_pack.sh widget .codex_tmp/widget-real-device-evidence
-  bash scripts/validate_manual_evidence_pack.sh auth-smtp .codex_tmp/auth-smtp-evidence-pack.md
+  bash scripts/validate_manual_evidence_pack.sh auth-smtp .codex_tmp/auth-smtp-evidence
 USAGE
 }
 
@@ -214,42 +215,81 @@ require_auth_row_filled() {
   ' || add_error "incomplete scenario row: $scenario"
 }
 
-validate_auth_smtp() {
-  local file="$1"
+validate_auth_smtp_bundle() {
+  local dir="$1"
+  local dns_path settings_path live_send_path negative_path ops_path decision_path
 
-  require_nonempty_prefixed_line "- Date:" "$file"
-  require_nonempty_prefixed_line "- Operator:" "$file"
-  require_nonempty_prefixed_line "- Supabase Project:" "$file"
-  require_nonempty_prefixed_line "- Provider:" "$file"
-  require_nonempty_prefixed_line "- Sender Domain:" "$file"
-  require_nonempty_prefixed_line "- SPF:" "$file"
-  require_nonempty_prefixed_line "- DKIM:" "$file"
-  require_nonempty_prefixed_line "- DMARC:" "$file"
-  require_nonempty_prefixed_line "- Provider Verified Timestamp:" "$file"
-  require_nonempty_prefixed_line "- Evidence Screenshot:" "$file"
-  require_nonempty_prefixed_line "- SMTP Host:" "$file"
-  require_nonempty_prefixed_line "- SMTP Port:" "$file"
-  require_nonempty_prefixed_line "- SMTP User Mask:" "$file"
-  require_nonempty_prefixed_line "- Sender Name:" "$file"
-  require_nonempty_prefixed_line "- Sender Email:" "$file"
-  require_nonempty_prefixed_line '- `email_sent`:' "$file"
-  require_nonempty_prefixed_line '- `auth.email.max_frequency`:' "$file"
-  require_nonempty_prefixed_line "- Settings Screenshot:" "$file"
-  require_nonempty_prefixed_line "- bounce:" "$file"
-  require_nonempty_prefixed_line "- reject:" "$file"
-  require_nonempty_prefixed_line "- deferred:" "$file"
-  require_nonempty_prefixed_line "- provider_event_id:" "$file"
-  require_nonempty_prefixed_line "- Dashboard / Webhook Evidence:" "$file"
-  require_nonempty_prefixed_line "- rollback path:" "$file"
-  require_nonempty_prefixed_line "- secret rotation owner:" "$file"
-  require_nonempty_prefixed_line "- tested backup path:" "$file"
-  require_nonempty_prefixed_line "- Pass / Fail:" "$file"
-  require_nonempty_prefixed_line "- Remaining Blockers:" "$file"
-  require_nonempty_prefixed_line "- Linked Issue / PR Comment:" "$file"
+  [[ -d "$dir" ]] || {
+    add_error "auth-smtp evidence must be a directory: $dir"
+    return
+  }
 
-  require_auth_row_filled "signup confirmation" "$file"
-  require_auth_row_filled "password reset" "$file"
-  require_auth_row_filled "email change" "$file"
+  dns_path="$(auth_smtp_bundle_dns_path "$dir")"
+  settings_path="$(auth_smtp_bundle_settings_path "$dir")"
+  live_send_path="$(auth_smtp_bundle_live_send_path "$dir")"
+  negative_path="$(auth_smtp_bundle_negative_path "$dir")"
+  ops_path="$(auth_smtp_bundle_ops_path "$dir")"
+  decision_path="$(auth_smtp_bundle_decision_path "$dir")"
+
+  [[ -f "$dns_path" ]] || add_error "missing file: $dns_path"
+  [[ -f "$settings_path" ]] || add_error "missing file: $settings_path"
+  [[ -f "$live_send_path" ]] || add_error "missing file: $live_send_path"
+  [[ -f "$negative_path" ]] || add_error "missing file: $negative_path"
+  [[ -f "$ops_path" ]] || add_error "missing file: $ops_path"
+  [[ -f "$decision_path" ]] || add_error "missing file: $decision_path"
+
+  if [[ -f "$dns_path" ]]; then
+    require_nonempty_prefixed_line "- Date:" "$dns_path"
+    require_nonempty_prefixed_line "- Operator:" "$dns_path"
+    require_nonempty_prefixed_line "- Supabase Project:" "$dns_path"
+    require_nonempty_prefixed_line "- Provider:" "$dns_path"
+    require_nonempty_prefixed_line "- Sender Domain:" "$dns_path"
+    require_nonempty_prefixed_line "- SPF:" "$dns_path"
+    require_nonempty_prefixed_line "- DKIM:" "$dns_path"
+    require_nonempty_prefixed_line "- DMARC:" "$dns_path"
+    require_nonempty_prefixed_line "- Provider Verified Timestamp:" "$dns_path"
+    require_nonempty_prefixed_line "- Evidence Screenshot:" "$dns_path"
+  fi
+
+  if [[ -f "$settings_path" ]]; then
+    require_nonempty_prefixed_line "- SMTP Host:" "$settings_path"
+    require_nonempty_prefixed_line "- SMTP Port:" "$settings_path"
+    require_nonempty_prefixed_line "- SMTP User Mask:" "$settings_path"
+    require_nonempty_prefixed_line "- Sender Name:" "$settings_path"
+    require_nonempty_prefixed_line "- Sender Email:" "$settings_path"
+    require_nonempty_prefixed_line '- `email_sent`:' "$settings_path"
+    require_nonempty_prefixed_line '- `auth.email.max_frequency`:' "$settings_path"
+    require_nonempty_prefixed_line "- Settings Screenshot:" "$settings_path"
+  fi
+
+  if [[ -f "$live_send_path" ]]; then
+    require_auth_row_filled "signup confirmation" "$live_send_path"
+    require_auth_row_filled "password reset" "$live_send_path"
+    require_auth_row_filled "email change" "$live_send_path"
+  fi
+
+  if [[ -f "$negative_path" ]]; then
+    require_nonempty_prefixed_line "- SMTP-101 Guard Evidence:" "$negative_path"
+    require_nonempty_prefixed_line "- SMTP-102 Provider Event Evidence:" "$negative_path"
+    require_nonempty_prefixed_line "- bounce:" "$negative_path"
+    require_nonempty_prefixed_line "- reject:" "$negative_path"
+    require_nonempty_prefixed_line "- deferred:" "$negative_path"
+    require_nonempty_prefixed_line "- provider_event_id:" "$negative_path"
+    require_nonempty_prefixed_line "- Dashboard / Webhook Evidence:" "$negative_path"
+  fi
+
+  if [[ -f "$ops_path" ]]; then
+    require_nonempty_prefixed_line "- rollback path:" "$ops_path"
+    require_nonempty_prefixed_line "- secret rotation owner:" "$ops_path"
+    require_nonempty_prefixed_line "- tested backup path:" "$ops_path"
+  fi
+
+  if [[ -f "$decision_path" ]]; then
+    require_nonempty_prefixed_line "- Pass / Fail:" "$decision_path"
+    require_nonempty_prefixed_line "- Remaining Blockers:" "$decision_path"
+    require_nonempty_prefixed_line "- Linked Issue / PR Comment:" "$decision_path"
+    require_pass_outcome "$decision_path"
+  fi
 }
 
 kind="${1:-}"
@@ -270,7 +310,7 @@ case "$kind" in
     validate_widget_bundle "$path"
     ;;
   auth-smtp)
-    validate_auth_smtp "$path"
+    validate_auth_smtp_bundle "$path"
     ;;
   *)
     usage

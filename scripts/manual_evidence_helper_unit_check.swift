@@ -87,8 +87,9 @@ assertTrue(widgetOutput.contains("action/WD-001.md"), "widget output should ment
 assertTrue(widgetOutput.contains("layout/WL-001.md"), "widget output should mention layout files")
 
 let authOutput = runHelper(arguments: ["auth-smtp"])
-assertTrue(authOutput.contains("# Auth SMTP Evidence Pack v1"), "auth output should include title")
-assertTrue(authOutput.contains("docs/auth-smtp-rollout-evidence-template-v1.md"), "auth output should include template path")
+assertTrue(authOutput.contains("# Auth SMTP Evidence Bundle v2"), "auth output should include title")
+assertTrue(authOutput.contains("01-dns-verification.md"), "auth output should describe dns bundle file")
+assertTrue(authOutput.contains("06-final-decision.md"), "auth output should describe final decision file")
 
 let tempDirectory = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
 let writeOutput = runHelper(arguments: ["widget", "--output", tempDirectory.path])
@@ -97,5 +98,13 @@ let bundleReadme = (try? String(contentsOf: tempDirectory.appendingPathComponent
 assertTrue(bundleReadme.contains("Widget Real-Device Evidence Pack v2"), "written widget bundle should include readme")
 assertTrue(FileManager.default.fileExists(atPath: tempDirectory.appendingPathComponent("action/WD-001.md").path), "written widget bundle should include WD-001")
 assertTrue(FileManager.default.fileExists(atPath: tempDirectory.appendingPathComponent("layout/WL-008.md").path), "written widget bundle should include WL-008")
+
+let authDirectory = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+let authWriteOutput = runHelper(arguments: ["auth-smtp", "--output", authDirectory.path])
+assertTrue(authWriteOutput.contains("WROTE \(authDirectory.path)"), "auth write mode should report output path")
+let authReadme = (try? String(contentsOf: authDirectory.appendingPathComponent("README.md"), encoding: .utf8)) ?? ""
+assertTrue(authReadme.contains("Auth SMTP Evidence Bundle v2"), "written auth bundle should include readme")
+assertTrue(FileManager.default.fileExists(atPath: authDirectory.appendingPathComponent("01-dns-verification.md").path), "written auth bundle should include dns file")
+assertTrue(FileManager.default.fileExists(atPath: authDirectory.appendingPathComponent("06-final-decision.md").path), "written auth bundle should include final decision file")
 
 print("PASS: manual evidence helper contract checks")

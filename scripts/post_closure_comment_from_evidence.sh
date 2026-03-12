@@ -9,7 +9,7 @@ usage() {
 Usage:
   bash scripts/post_closure_comment_from_evidence.sh widget --issue <408|617|692|731> <evidence-dir> [--post] [--output <path>]
   bash scripts/post_closure_comment_from_evidence.sh widget --all-related <evidence-dir> [--post] [--output <path>]
-  bash scripts/post_closure_comment_from_evidence.sh auth-smtp --issue 482 <evidence-file> --negative-guard <text> --negative-provider-event <text> [--post] [--output <path>]
+  bash scripts/post_closure_comment_from_evidence.sh auth-smtp --issue 482 <evidence-dir> [--post] [--output <path>]
 USAGE
 }
 
@@ -37,8 +37,6 @@ issue_allowed_for_surface() {
 kind=""
 issue_number=""
 evidence_path=""
-negative_guard=""
-negative_provider_event=""
 all_related=0
 post_mode=0
 output_path=""
@@ -59,16 +57,6 @@ while [[ $# -gt 0 ]]; do
     --all-related)
       all_related=1
       shift
-      ;;
-    --negative-guard)
-      [[ $# -ge 2 ]] || die "--negative-guard requires a value"
-      negative_guard="$2"
-      shift 2
-      ;;
-    --negative-provider-event)
-      [[ $# -ge 2 ]] || die "--negative-provider-event requires a value"
-      negative_provider_event="$2"
-      shift 2
       ;;
     --post)
       post_mode=1
@@ -110,11 +98,6 @@ else
   fi
 fi
 
-if [[ "$kind" == "auth-smtp" ]]; then
-  [[ -n "$negative_guard" ]] || die "--negative-guard is required for auth-smtp"
-  [[ -n "$negative_provider_event" ]] || die "--negative-provider-event is required for auth-smtp"
-fi
-
 rendered_output_path="$output_path"
 cleanup_output=0
 if [[ -z "$rendered_output_path" ]]; then
@@ -130,9 +113,6 @@ cleanup() {
 trap cleanup EXIT
 
 renderer_args=("$kind" "$evidence_path")
-if [[ "$kind" == "auth-smtp" ]]; then
-  renderer_args+=(--negative-guard "$negative_guard" --negative-provider-event "$negative_provider_event")
-fi
 renderer_args+=(--output "$rendered_output_path")
 
 bash scripts/render_closure_comment_from_evidence.sh "${renderer_args[@]}" >/dev/null

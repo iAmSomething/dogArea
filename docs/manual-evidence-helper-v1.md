@@ -24,7 +24,7 @@
     - `docs/widget-action-closure-comment-template-v1.md`
 - `auth-smtp`
   - 대상 이슈: `#482`
-  - 출력: 단일 markdown 파일
+  - 출력: 디렉터리 bundle
 
 ## 사용법
 - stdout으로 바로 보기
@@ -35,20 +35,28 @@
   - `bash scripts/render_manual_evidence_pack.sh auth-smtp --write`
 - 원하는 경로로 쓰기
   - `bash scripts/render_manual_evidence_pack.sh widget --output .codex_tmp/widget-real-device-evidence`
-  - `bash scripts/render_manual_evidence_pack.sh auth-smtp --output .codex_tmp/auth-smtp-pack.md`
+  - `bash scripts/render_manual_evidence_pack.sh auth-smtp --output .codex_tmp/auth-smtp-evidence`
 - 채운 뒤 validator 실행
   - `bash scripts/validate_manual_evidence_pack.sh widget .codex_tmp/widget-real-device-evidence`
-  - `bash scripts/validate_manual_evidence_pack.sh auth-smtp .codex_tmp/auth-smtp-evidence-pack.md`
+  - `bash scripts/validate_manual_evidence_pack.sh auth-smtp .codex_tmp/auth-smtp-evidence`
 
 ## 출력 규칙
 - 기본은 stdout 출력이다.
 - `--write` 기본 경로
   - widget: `.codex_tmp/widget-real-device-evidence`
-  - auth-smtp: `.codex_tmp/auth-smtp-evidence-pack.md`
+  - auth-smtp: `.codex_tmp/auth-smtp-evidence`
 - widget bundle에는 아래가 생성된다.
   - `README.md`
   - `action/WD-001.md` ... `action/WD-008.md`
   - `layout/WL-001.md` ... `layout/WL-008.md`
+- auth-smtp bundle에는 아래가 생성된다.
+  - `README.md`
+  - `01-dns-verification.md`
+  - `02-supabase-smtp-settings.md`
+  - `03-live-send-results.md`
+  - `04-negative-evidence.md`
+  - `05-rollback-rotation.md`
+  - `06-final-decision.md`
 
 ## 운영 규칙
 - 이 helper는 evidence를 대신 채우지 않는다.

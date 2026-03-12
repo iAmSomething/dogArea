@@ -29,7 +29,7 @@
 - `--evidence <path>`
 
 기본 evidence 경로:
-- `.codex_tmp/auth-smtp-evidence-pack.md`
+- `.codex_tmp/auth-smtp-evidence`
 
 ## 출력 계약
 - `title`

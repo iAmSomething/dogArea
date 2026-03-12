@@ -25,4 +25,4 @@
 - widget bundle post
   - `bash scripts/post_closure_comment_from_evidence.sh widget --all-related .codex_tmp/widget-real-device-evidence --post`
 - auth-smtp dry-run
-  - `bash scripts/post_closure_comment_from_evidence.sh auth-smtp --issue 482 .codex_tmp/auth-smtp-evidence-pack.md --negative-guard "SMTP-101: cooldown suppressed with retry_after_seconds=60" --negative-provider-event "SMTP-102: bounce observed in provider dashboard"`
+  - `bash scripts/post_closure_comment_from_evidence.sh auth-smtp --issue 482 .codex_tmp/auth-smtp-evidence`
