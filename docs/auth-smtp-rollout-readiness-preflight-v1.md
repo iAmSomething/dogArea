@@ -21,6 +21,12 @@
 - `DOGAREA_AUTH_SMTP_USER_MASK`
 - `DOGAREA_AUTH_SMTP_SENDER_NAME`
 - `DOGAREA_AUTH_SMTP_SENDER_EMAIL`
+- `DOGAREA_AUTH_SMTP_EMAIL_SENT`
+- `DOGAREA_AUTH_SMTP_MAX_FREQUENCY`
+- `DOGAREA_AUTH_SMTP_CONFIRM_EMAIL_POLICY`
+- `DOGAREA_AUTH_SMTP_PASSWORD_RESET_POLICY`
+- `DOGAREA_AUTH_SMTP_EMAIL_CHANGE_POLICY`
+- `DOGAREA_AUTH_SMTP_INVITE_POLICY`
 - `DOGAREA_AUTH_SMTP_DNS_SPF`
 - `DOGAREA_AUTH_SMTP_DNS_DKIM`
 - `DOGAREA_AUTH_SMTP_DNS_DMARC`
@@ -43,6 +49,7 @@
 - `overall`
 - `next-evidence-runbook`
 - `next-live-send-matrix`
+- `next-render-prefilled`
 - `next-validate`
 - `next-render-closure`
 - `next-post-closure`
@@ -69,3 +76,4 @@
 - operator가 입력한 rollout 준비값과 evidence file 상태를 기준으로 readiness를 요약한다.
 - `ready-to-post`는 evidence pack까지 완결된 상태를 뜻한다.
 - secret 평문은 환경 변수나 evidence 파일에 남기지 않는다. `SMTP User Mask` 수준만 남긴다.
+- `next-render-prefilled`는 환경 변수에 들어 있는 운영 메타데이터를 bundle에 먼저 써서 manual transcription 실수를 줄이기 위한 경로다.

@@ -8,12 +8,13 @@ source "$ROOT_DIR/scripts/lib/auth_smtp_evidence_bundle.sh"
 usage() {
   cat <<'USAGE'
 Usage:
-  bash scripts/render_manual_evidence_pack.sh <widget|auth-smtp> [--write] [--output <path>]
+  bash scripts/render_manual_evidence_pack.sh <widget|auth-smtp> [--write] [--output <path>] [--prefill-from-env]
 
 Examples:
   bash scripts/render_manual_evidence_pack.sh widget
   bash scripts/render_manual_evidence_pack.sh widget --write
   bash scripts/render_manual_evidence_pack.sh auth-smtp --output .codex_tmp/auth-smtp-evidence
+  bash scripts/render_manual_evidence_pack.sh auth-smtp --write --prefill-from-env
 USAGE
 }
 
@@ -25,6 +26,7 @@ die() {
 kind=""
 write_mode=0
 output_path=""
+prefill_from_env=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -42,6 +44,10 @@ while [[ $# -gt 0 ]]; do
       output_path="$2"
       shift 2
       ;;
+    --prefill-from-env)
+      prefill_from_env=1
+      shift
+      ;;
     -h|--help)
       usage
       exit 0
@@ -51,6 +57,10 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+if [[ "$prefill_from_env" == "1" && "$kind" != "auth-smtp" ]]; then
+  die "--prefill-from-env is supported only for auth-smtp"
+fi
 
 [[ -n "$kind" ]] || {
   usage
@@ -215,7 +225,11 @@ case "$kind" in
     fi
     if [[ -n "$output_path" ]]; then
       rm -rf "$output_path"
-      auth_smtp_bundle_write "$output_path"
+      if [[ "$prefill_from_env" == "1" ]]; then
+        auth_smtp_bundle_write_prefilled "$output_path"
+      else
+        auth_smtp_bundle_write "$output_path"
+      fi
       printf 'WROTE %s\n' "$output_path"
     else
       auth_smtp_bundle_render_overview

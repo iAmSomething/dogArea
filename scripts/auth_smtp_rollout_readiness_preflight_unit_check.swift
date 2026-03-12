@@ -63,6 +63,10 @@ func writeFilledAuthBundle(at directory: URL) {
     - Sender Email: auth@auth.dogarea.app
     - `email_sent`: 2
     - `auth.email.max_frequency`: 60
+    - Email Confirmation Policy: required
+    - Password Reset Policy: enabled / app deep link
+    - Email Change Policy: double confirmation
+    - Invite Policy: disabled in product
     - Settings Screenshot: assets/supabase-smtp-settings.png
     """)
 
@@ -171,9 +175,14 @@ let missingEvidenceURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingP
 
 assertTrue(script.contains("DOGAREA_AUTH_SMTP_PROVIDER"), "script should require provider env")
 assertTrue(script.contains("DOGAREA_AUTH_SMTP_DNS_SPF"), "script should require DNS SPF env")
+assertTrue(script.contains("DOGAREA_AUTH_SMTP_EMAIL_SENT"), "script should require email sent env")
+assertTrue(script.contains("DOGAREA_AUTH_SMTP_CONFIRM_EMAIL_POLICY"), "script should require confirm email policy env")
 assertTrue(script.contains("ready-to-post"), "script should report ready-to-post state")
+assertTrue(script.contains("next-render-prefilled"), "script should print prefilled render next step")
 assertTrue(doc.contains("# Auth SMTP Rollout Readiness Preflight v1"), "doc title should exist")
 assertTrue(doc.contains("blocked:dns-unverified"), "doc should list dns blocked state")
+assertTrue(doc.contains("DOGAREA_AUTH_SMTP_EMAIL_SENT"), "doc should list auth smtp rate limit env")
+assertTrue(doc.contains("next-render-prefilled"), "doc should describe prefilled render output")
 assertTrue(readme.contains("docs/auth-smtp-rollout-readiness-preflight-v1.md"), "README should link preflight doc")
 assertTrue(iosPRCheck.contains("auth_smtp_rollout_readiness_preflight_unit_check.swift"), "ios_pr_check should run preflight check")
 assertTrue(backendPRCheck.contains("auth_smtp_rollout_readiness_preflight_unit_check.swift"), "backend_pr_check should run preflight check")
@@ -191,7 +200,13 @@ let dnsBlockedOutput = runPreflight(environment: [
     "DOGAREA_AUTH_SMTP_PORT": "587",
     "DOGAREA_AUTH_SMTP_USER_MASK": "re_***",
     "DOGAREA_AUTH_SMTP_SENDER_NAME": "DogArea Auth",
-    "DOGAREA_AUTH_SMTP_SENDER_EMAIL": "auth@auth.dogarea.app"
+    "DOGAREA_AUTH_SMTP_SENDER_EMAIL": "auth@auth.dogarea.app",
+    "DOGAREA_AUTH_SMTP_EMAIL_SENT": "2",
+    "DOGAREA_AUTH_SMTP_MAX_FREQUENCY": "60",
+    "DOGAREA_AUTH_SMTP_CONFIRM_EMAIL_POLICY": "required",
+    "DOGAREA_AUTH_SMTP_PASSWORD_RESET_POLICY": "enabled / app deep link",
+    "DOGAREA_AUTH_SMTP_EMAIL_CHANGE_POLICY": "double confirmation",
+    "DOGAREA_AUTH_SMTP_INVITE_POLICY": "disabled in product"
 ])
 assertTrue(dnsBlockedOutput.contains("config-inputs: ready"), "filled config should report ready config")
 assertTrue(dnsBlockedOutput.contains("dns-claims: missing"), "missing dns claims should report missing")
@@ -207,12 +222,19 @@ let noEvidenceOutput = runPreflight(environment: [
     "DOGAREA_AUTH_SMTP_USER_MASK": "re_***",
     "DOGAREA_AUTH_SMTP_SENDER_NAME": "DogArea Auth",
     "DOGAREA_AUTH_SMTP_SENDER_EMAIL": "auth@auth.dogarea.app",
+    "DOGAREA_AUTH_SMTP_EMAIL_SENT": "2",
+    "DOGAREA_AUTH_SMTP_MAX_FREQUENCY": "60",
+    "DOGAREA_AUTH_SMTP_CONFIRM_EMAIL_POLICY": "required",
+    "DOGAREA_AUTH_SMTP_PASSWORD_RESET_POLICY": "enabled / app deep link",
+    "DOGAREA_AUTH_SMTP_EMAIL_CHANGE_POLICY": "double confirmation",
+    "DOGAREA_AUTH_SMTP_INVITE_POLICY": "disabled in product",
     "DOGAREA_AUTH_SMTP_DNS_SPF": "pass",
     "DOGAREA_AUTH_SMTP_DNS_DKIM": "verified",
     "DOGAREA_AUTH_SMTP_DNS_DMARC": "present"
 ])
 assertTrue(noEvidenceOutput.contains("evidence-status: missing"), "missing evidence file should report missing")
 assertTrue(noEvidenceOutput.contains("overall: ready-for-live-send-evidence"), "ready config without evidence should request live-send evidence")
+assertTrue(noEvidenceOutput.contains("next-render-prefilled: bash scripts/render_manual_evidence_pack.sh auth-smtp"), "preflight should point to prefilled render command")
 
 let evidenceURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
 writeFilledAuthBundle(at: evidenceURL)
@@ -227,6 +249,12 @@ let completeOutput = runPreflight(arguments: ["--evidence", evidenceURL.path], e
     "DOGAREA_AUTH_SMTP_USER_MASK": "re_***",
     "DOGAREA_AUTH_SMTP_SENDER_NAME": "DogArea Auth",
     "DOGAREA_AUTH_SMTP_SENDER_EMAIL": "auth@auth.dogarea.app",
+    "DOGAREA_AUTH_SMTP_EMAIL_SENT": "2",
+    "DOGAREA_AUTH_SMTP_MAX_FREQUENCY": "60",
+    "DOGAREA_AUTH_SMTP_CONFIRM_EMAIL_POLICY": "required",
+    "DOGAREA_AUTH_SMTP_PASSWORD_RESET_POLICY": "enabled / app deep link",
+    "DOGAREA_AUTH_SMTP_EMAIL_CHANGE_POLICY": "double confirmation",
+    "DOGAREA_AUTH_SMTP_INVITE_POLICY": "disabled in product",
     "DOGAREA_AUTH_SMTP_DNS_SPF": "pass",
     "DOGAREA_AUTH_SMTP_DNS_DKIM": "verified",
     "DOGAREA_AUTH_SMTP_DNS_DMARC": "present"

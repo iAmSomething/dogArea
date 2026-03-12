@@ -19,6 +19,12 @@ Environment inputs:
   DOGAREA_AUTH_SMTP_USER_MASK
   DOGAREA_AUTH_SMTP_SENDER_NAME
   DOGAREA_AUTH_SMTP_SENDER_EMAIL
+  DOGAREA_AUTH_SMTP_EMAIL_SENT
+  DOGAREA_AUTH_SMTP_MAX_FREQUENCY
+  DOGAREA_AUTH_SMTP_CONFIRM_EMAIL_POLICY
+  DOGAREA_AUTH_SMTP_PASSWORD_RESET_POLICY
+  DOGAREA_AUTH_SMTP_EMAIL_CHANGE_POLICY
+  DOGAREA_AUTH_SMTP_INVITE_POLICY
   DOGAREA_AUTH_SMTP_DNS_SPF
   DOGAREA_AUTH_SMTP_DNS_DKIM
   DOGAREA_AUTH_SMTP_DNS_DMARC
@@ -77,6 +83,12 @@ required_config_vars=(
   DOGAREA_AUTH_SMTP_USER_MASK
   DOGAREA_AUTH_SMTP_SENDER_NAME
   DOGAREA_AUTH_SMTP_SENDER_EMAIL
+  DOGAREA_AUTH_SMTP_EMAIL_SENT
+  DOGAREA_AUTH_SMTP_MAX_FREQUENCY
+  DOGAREA_AUTH_SMTP_CONFIRM_EMAIL_POLICY
+  DOGAREA_AUTH_SMTP_PASSWORD_RESET_POLICY
+  DOGAREA_AUTH_SMTP_EMAIL_CHANGE_POLICY
+  DOGAREA_AUTH_SMTP_INVITE_POLICY
 )
 
 declare -a missing_config_vars=()
@@ -136,6 +148,7 @@ printf 'evidence-status: %s\n' "$evidence_status"
 printf 'overall: %s\n' "$overall_status"
 printf 'next-evidence-runbook: docs/auth-smtp-rollout-evidence-runbook-v1.md\n'
 printf 'next-live-send-matrix: docs/auth-smtp-live-send-validation-matrix-v1.md\n'
+printf 'next-render-prefilled: bash scripts/render_manual_evidence_pack.sh auth-smtp --output %q --prefill-from-env\n' "$evidence_path"
 printf 'next-validate: bash scripts/validate_manual_evidence_pack.sh auth-smtp %q\n' "$evidence_path"
 printf 'next-render-closure: bash scripts/render_closure_comment_from_evidence.sh auth-smtp %q --write\n' "$evidence_path"
 printf 'next-post-closure: bash scripts/post_closure_comment_from_evidence.sh auth-smtp --issue 482 %q --post\n' "$evidence_path"
