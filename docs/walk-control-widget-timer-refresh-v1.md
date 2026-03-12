@@ -22,8 +22,8 @@ Issue: #615
 ## Timeline Policy
 
 - active walk: next refresh after `60s`
-- pending action: next refresh after `30s`
-- requires app open: next refresh after `120s`
+- action overlay: next refresh immediately after `expiresAt`
+- pending / requiresAppOpen / failed / succeeded fallback cadence follows each overlay TTL
 - idle state: next refresh after `15m`
 
 ## Surface Contract

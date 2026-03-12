@@ -1798,17 +1798,24 @@ final class FeatureRegressionUITests: XCTestCase {
         )
     }
 
-    /// 위젯 종료 액션이 지도 런타임 준비 이후에도 한 번만 소비되어 종료 상태로 수렴하는지 검증합니다.
-    func testFeatureRegression_WidgetEndRouteConvergesMapPrimaryAction() throws {
+    /// 위젯 종료 액션이 지도 런타임 준비 이후에도 한 번만 소비되어 저장 직후 결과 카드 surface로 수렴하는지 검증합니다.
+    func testFeatureRegression_WidgetEndRouteSurfacesSavedOutcomeCard() throws {
         let app = launchAppForFeatureRegression(
             extraArguments: ["-UITest.MapForceWalkingState", "-UITest.WidgetRoute", "end_walk"]
         )
-        let primaryAction = screenElement(identifier: "map.walk.primaryAction", in: app)
+        let savedOutcomeCard = screenElement(identifier: "map.walk.savedOutcome.card", in: app)
         XCTAssertTrue(
-            waitUntilExists(primaryAction, timeout: 10),
-            "위젯 종료 라우트 후 지도 주행동 버튼을 찾지 못했습니다."
+            waitUntilExists(savedOutcomeCard, timeout: 10),
+            "위젯 종료 라우트 후 저장 결과 카드를 찾지 못했습니다."
         )
-        XCTAssertEqual(primaryAction.label, "산책 시작", "위젯 종료 라우트가 산책 종료 상태로 수렴하지 않았습니다.")
+        XCTAssertFalse(
+            screenElement(identifier: "map.walk.primaryAction", in: app).exists,
+            "저장 결과 카드가 떠 있는 동안 지도 주행동 버튼은 숨겨져야 합니다."
+        )
+        XCTAssertTrue(
+            app.buttons["map.walk.savedOutcome.openHistory"].exists,
+            "저장 결과 카드의 목록 이동 CTA가 노출되지 않았습니다."
+        )
     }
 
     /// 위젯 시작 액션이 cold start 경로에서도 지도 런타임으로 전달되어 산책 중 상태로 수렴하는지 검증합니다.

@@ -13,10 +13,11 @@ Issue: #614
 - Keep exactly one supporting pet line.
 - Keep exactly one compact support line with widget-only short copy.
 - Keep exactly one primary CTA.
+- Do not reserve a separate badge row in `systemSmall`; status meaning must collapse into the compact copy itself.
 - Do not show raw `statusMessage` or pet detail prose directly.
 - Do not show both pet detail and multi-line status message at the same time.
 - CTA uses a compact height budget.
-- Compact badge strip is limited to one badge.
+- Compact family may omit badges entirely when the headline/support copy already carries the state.
 
 ### systemMedium
 - Keep the walk state headline and pet name block.
@@ -32,6 +33,7 @@ Issue: #614
 - `systemMedium` CTA title: `lineLimit(2)`
 - `systemSmall` support text: `lineLimit(1)`
 - `systemMedium` detail/status text: `lineLimit(2)`
+- `systemSmall` body spacing must stay at `4pt` so headline/support/detail/CTA can converge without clipping.
 - `systemSmall` must never render badge + pet detail + status message as separate stacked text blocks.
 - Widget surface must use short family/state-specific copy so the user never sees UI truncation as `...`.
 

@@ -136,12 +136,10 @@ struct dogAreaApp: App {
             .environmentObject(CustomAlertViewModel())
             .environmentObject(authFlow)
             .onAppear {
-                authFlow.refresh()
                 if shouldAutoGuestForUITest {
-                    DispatchQueue.main.async {
-                        authFlow.signOut()
-                        authFlow.continueAsGuest()
-                    }
+                    authFlow.configureUITestAutoGuestEntry()
+                } else {
+                    authFlow.refresh()
                 }
             }
 

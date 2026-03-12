@@ -87,6 +87,26 @@ final class AuthFlowCoordinator: ObservableObject {
         shouldShowEntryChoice = false
     }
 
+    /// UI 테스트 자동 게스트 진입 시 인증 오버레이가 잠깐이라도 보이지 않도록 상태를 원자적으로 정리합니다.
+    /// - Returns: 없음. 기존 세션/프로필/선택 상태를 지우고 곧바로 게스트 진입 상태를 확정합니다.
+    func configureUITestAutoGuestEntry() {
+        authSessionStore.clear()
+        profileStore.removeAll()
+        petSelectionStore.clearSelectionState()
+        walkSessionMetadataStore.clearPreferences()
+        pendingUpgradeRequest = nil
+        pendingGuestDataUpgradePrompt = nil
+        guestDataUpgradeInProgress = false
+        guestDataUpgradeResult = nil
+        onAuthenticated = nil
+        shouldPresentDeferredSignIn = false
+        shouldShowSignIn = false
+        shouldShowEntryChoice = false
+        UserDefaults.standard.set(true, forKey: guestModeKey)
+        UserDefaults.standard.set(true, forKey: entryChoiceCompletedKey)
+        syncSessionStateSnapshot()
+    }
+
     func chooseSignInFromEntry() {
         UserDefaults.standard.set(true, forKey: entryChoiceCompletedKey)
         shouldPresentDeferredSignIn = true

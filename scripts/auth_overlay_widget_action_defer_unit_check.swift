@@ -16,6 +16,8 @@ func load(_ relativePath: String) -> String {
 }
 
 let rootView = load("dogArea/Views/GlobalViews/BaseView/RootView.swift")
+let app = load("dogArea/dogAreaApp.swift")
+let authFlow = load("dogArea/Source/AppSession/AuthFlowCoordinator.swift")
 
 assertTrue(
     rootView.contains("@State private var pendingWalkWidgetRoute: WalkWidgetActionRoute? = nil"),
@@ -36,6 +38,14 @@ assertTrue(
 assertTrue(
     rootView.contains("private func dispatchPendingWalkWidgetActionIfNeeded()"),
     "RootView should define explicit pending widget action replay helper"
+)
+assertTrue(
+    authFlow.contains("func configureUITestAutoGuestEntry()"),
+    "AuthFlowCoordinator should expose an atomic UI-test auto-guest bootstrap helper"
+)
+assertTrue(
+    app.contains("authFlow.configureUITestAutoGuestEntry()"),
+    "dogAreaApp should use the atomic auto-guest bootstrap helper to avoid transient auth overlay"
 )
 
 print("PASS: auth overlay widget action defer unit checks")

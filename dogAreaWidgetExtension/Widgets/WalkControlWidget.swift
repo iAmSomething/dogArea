@@ -68,16 +68,47 @@ struct WalkControlTimelineProvider: TimelineProvider {
     ///   - now: 타임라인 계산 기준 시각입니다.
     /// - Returns: 시스템에 요청할 다음 타임라인 갱신 시각입니다.
     private func nextRefreshDate(for snapshot: WalkWidgetSnapshot, from now: Date) -> Date {
+        if let actionRefreshDate = nextRefreshDateForActionState(
+            snapshot.normalizedActionState,
+            from: now
+        ) {
+            return actionRefreshDate
+        }
         if snapshot.isWalking {
             return now.addingTimeInterval(60)
         }
-        if snapshot.normalizedActionState?.phase == .pending {
-            return now.addingTimeInterval(30)
-        }
-        if snapshot.normalizedActionState?.phase == .requiresAppOpen {
-            return now.addingTimeInterval(120)
-        }
         return now.addingTimeInterval(15 * 60)
+    }
+
+    /// 액션 오버레이 상태가 만료되거나 다음 단계로 전환될 시점에 맞는 타임라인 갱신 시각을 계산합니다.
+    /// - Parameters:
+    ///   - actionState: 현재 위젯에 표시 중인 액션 오버레이 상태입니다.
+    ///   - now: 타임라인 계산 기준 시각입니다.
+    /// - Returns: 액션 상태가 있으면 만료 직후 갱신 시각을, 없으면 `nil`을 반환합니다.
+    private func nextRefreshDateForActionState(
+        _ actionState: WalkWidgetActionState?,
+        from now: Date
+    ) -> Date? {
+        guard let actionState else { return nil }
+
+        if let expiresAt = actionState.expiresAt {
+            let expiryRefresh = Date(
+                timeIntervalSince1970: max(
+                    now.addingTimeInterval(1).timeIntervalSince1970,
+                    expiresAt + 0.5
+                )
+            )
+            return expiryRefresh
+        }
+
+        switch actionState.phase {
+        case .pending:
+            return now.addingTimeInterval(20)
+        case .requiresAppOpen, .failed:
+            return now.addingTimeInterval(30)
+        case .succeeded:
+            return now.addingTimeInterval(12)
+        }
     }
 }
 
@@ -236,42 +267,42 @@ struct WalkControlWidgetEntryView: View {
             return .init(
                 headline: "산책 준비",
                 supportingLine: petContext.petName,
-                detailLine: "바로 시작할 수 있어요",
+                detailLine: "바로 시작해요",
                 showsElapsed: false
             )
         case .noActivePet:
             return .init(
                 headline: "앱에서 확인",
                 supportingLine: nil,
-                detailLine: "반려견 선택이 필요해요",
+                detailLine: "반려견을 선택해요",
                 showsElapsed: false
             )
         case .pending:
             return .init(
                 headline: "처리 중",
                 supportingLine: petContext.petName,
-                detailLine: "앱으로 전환 중이에요",
+                detailLine: "앱이 열리면 이어져요",
                 showsElapsed: false
             )
         case .requiresAppOpen:
             return .init(
                 headline: "앱에서 확인",
                 supportingLine: nil,
-                detailLine: "상태 확인이 필요해요",
+                detailLine: "앱에서 이어서 확인",
                 showsElapsed: false
             )
         case .failedRetry:
             return .init(
                 headline: "다시 시도",
                 supportingLine: petContext.petName,
-                detailLine: "위젯에서 다시 시도해요",
+                detailLine: "한 번 더 시도해요",
                 showsElapsed: false
             )
         case .failedOpenApp:
             return .init(
                 headline: "앱에서 확인",
                 supportingLine: nil,
-                detailLine: "상태 확인이 필요해요",
+                detailLine: "앱에서 이어서 확인",
                 showsElapsed: false
             )
         }
@@ -339,35 +370,37 @@ struct WalkControlWidgetEntryView: View {
     private var smallLayout: some View {
         let presentation = makeCompactPresentation()
         WidgetSurfacePage(budget: layoutBudget) {
-            badgeRow
+            EmptyView()
         } body: {
-            Text(presentation.headline)
-                .font(.headline)
-                .lineLimit(layoutBudget.headlineLineLimit)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(presentation.headline)
+                    .font(.headline)
+                    .lineLimit(layoutBudget.headlineLineLimit)
 
-            if let supportingLine = presentation.supportingLine {
-                Text(supportingLine)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.86)
-            }
-
-            if presentation.showsElapsed {
-                HStack(spacing: 6) {
-                    Image(systemName: "clock")
+                if let supportingLine = presentation.supportingLine {
+                    Text(supportingLine)
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
-                    WalkControlElapsedTextView(displayMode: elapsedDisplayMode)
-                        .font(.system(.caption, design: .rounded).monospacedDigit().weight(.semibold))
-                    Spacer(minLength: 0)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.86)
                 }
-            } else if let detailLine = presentation.detailLine {
-                Text(detailLine)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(layoutBudget.detailLineLimit)
-                    .minimumScaleFactor(0.88)
+
+                if presentation.showsElapsed {
+                    HStack(spacing: 6) {
+                        Image(systemName: "clock")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        WalkControlElapsedTextView(displayMode: elapsedDisplayMode)
+                            .font(.system(.caption, design: .rounded).monospacedDigit().weight(.semibold))
+                        Spacer(minLength: 0)
+                    }
+                } else if let detailLine = presentation.detailLine {
+                    Text(detailLine)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(layoutBudget.detailLineLimit)
+                        .minimumScaleFactor(0.88)
+                }
             }
         } footer: {
             primaryActionButton(compact: true)

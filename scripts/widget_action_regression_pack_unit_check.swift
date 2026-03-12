@@ -34,7 +34,7 @@ let iosPRCheck = load("scripts/ios_pr_check.sh")
 
 let expectedTests = [
     "testFeatureRegression_WidgetRouteOpensRivalTab",
-    "testFeatureRegression_WidgetEndRouteConvergesMapPrimaryAction",
+    "testFeatureRegression_WidgetEndRouteSurfacesSavedOutcomeCard",
     "testFeatureRegression_HotspotWidgetRouteOpensRivalWithMatchingRadiusPreset",
     "testFeatureRegression_QuestWidgetRouteOpensQuestMissionBoard",
     "testFeatureRegression_QuestWidgetRecoveryRouteOpensQuestMissionBoard",
