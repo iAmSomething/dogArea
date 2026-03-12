@@ -1,10 +1,10 @@
 # Widget Action Closure Checklist v1
 
 - Issue: #668
-- Relates to: #408, #617, #692, #731
+- Relates to: #408 (closed umbrella), #617, #692, #731
 
 ## 목적
-- `#408`을 닫기 전에 실제로 채워져야 하는 증적 항목을 한 문서에 고정한다.
+- active widget blocker `#617`, `#692`, `#731`을 닫기 전에 실제로 채워져야 하는 증적 항목을 한 문서에 고정한다.
 - action convergence와 layout/clipping evidence가 분리돼 누락되는 일을 막는다.
 
 ## 선행 문서
@@ -62,5 +62,5 @@
 - 남은 실패 케이스가 있으면 blocker와 owner가 적혀 있다.
 
 ## 종료 판정
-- 위 항목이 모두 채워졌고 실패 케이스가 없다면 `#408`, `#617`, `#692`, `#731`을 닫아도 된다.
+- 위 항목이 모두 채워졌고 실패 케이스가 없다면 active blocker `#617`, `#692`, `#731`을 닫아도 된다.
 - 실패 케이스가 남아 있으면 blocker를 닫지 않는다.

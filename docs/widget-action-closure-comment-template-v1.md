@@ -1,7 +1,7 @@
 # Widget Action Closure Comment Template v1
 
 - Issue: #668
-- Relates to: #408, #617, #692, #731
+- Relates to: #408 (closed umbrella), #617, #692, #731
 
 ```md
 실기기 위젯 blocker 검증을 완료했습니다.
@@ -47,5 +47,5 @@ layout / clipping 케이스
 - 없음
 
 결론
-- `#408`, `#617`, `#692`, `#731` DoD를 충족했으므로 종료합니다.
+- active widget blocker `#617`, `#692`, `#731` DoD를 충족했으므로 종료합니다.
 ```

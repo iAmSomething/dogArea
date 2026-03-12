@@ -50,7 +50,7 @@ surface_pack_path() {
 
 surface_issue_number() {
   case "$1" in
-    widget) printf '408' ;;
+    widget) printf '731' ;;
     auth-smtp) printf '482' ;;
     *) die "unsupported surface: $1" ;;
   esac
@@ -58,7 +58,7 @@ surface_issue_number() {
 
 surface_related_issues() {
   case "$1" in
-    widget) printf '#617 #692 #731' ;;
+    widget) printf '#617 #692' ;;
     auth-smtp) printf 'none' ;;
     *) die "unsupported surface: $1" ;;
   esac

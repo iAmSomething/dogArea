@@ -164,12 +164,13 @@ HEADER
 - `#617` start/end 액션 후 위젯·Live Activity·앱 상태 수렴 규칙
 - `#692` 홈 화면 위젯 family별 clipping zero-base 정리
 - `#731` WalkControlWidget 실기기 clipping과 start/end 액션 불능 회귀
+- `#408` umbrella epic은 이미 종료되어, 이번 closure comment는 active blocker 기준으로만 게시합니다.
 
 남은 blocker
 - 없음
 
 결론
-- `#408`, `#617`, `#692`, `#731` DoD를 충족했으므로 종료합니다.
+- active widget blocker `#617`, `#692`, `#731` DoD를 충족했으므로 종료합니다.
 FOOTER
 }
 

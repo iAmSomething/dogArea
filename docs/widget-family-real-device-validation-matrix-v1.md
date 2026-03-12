@@ -1,7 +1,7 @@
 # Widget Family Real-Device Validation Matrix v1
 
 - Issue: #751
-- Relates to: #692, #731, #408
+- Relates to: #692, #731, #408 (closed umbrella)
 
 ## 목적
 - 홈 화면 위젯 4종의 `systemSmall`, `systemMedium` family를 실기기 기준으로 전수 조사한다.
@@ -55,4 +55,4 @@
 ## 완료 규칙
 - `WL-001` ... `WL-008`이 모두 채워져야 `#692`, `#731` 실기기 layout 증적이 충족된다.
 - `Pass`가 아닌 케이스가 하나라도 있으면 blocker를 닫지 않는다.
-- action 수렴 케이스 `WD-001` ... `WD-008`과 layout 케이스 `WL-001` ... `WL-008`을 함께 봐야 `#408` 종료 판단이 가능하다.
+- action 수렴 케이스 `WD-001` ... `WD-008`과 layout 케이스 `WL-001` ... `WL-008`을 함께 봐야 active blocker 종료 판단이 가능하다.

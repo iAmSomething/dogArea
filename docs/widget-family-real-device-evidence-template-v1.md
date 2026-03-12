@@ -1,7 +1,7 @@
 # Widget Family Real-Device Evidence Template v1
 
 - Issue: #751
-- Relates to: #692, #731, #408
+- Relates to: #692, #731, #408 (closed umbrella)
 
 ## 기록 메타
 - Date:

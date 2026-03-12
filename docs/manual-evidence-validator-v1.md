@@ -1,7 +1,7 @@
 # Manual Evidence Validator v1
 
 - Issue: #674
-- Relates to: #408, #482
+- Relates to: #408 (closed umbrella), #482
 
 ## 목적
 - helper로 만든 evidence pack이 실제 closure 용도로 충분히 채워졌는지 빠르게 확인한다.
@@ -25,7 +25,7 @@
 - `bash scripts/render_manual_evidence_pack.sh widget --write`
 - `bash scripts/validate_manual_evidence_pack.sh widget .codex_tmp/widget-real-device-evidence`
 - `bash scripts/render_closure_comment_from_evidence.sh widget .codex_tmp/widget-real-device-evidence --write`
-- `bash scripts/post_closure_comment_from_evidence.sh widget --issue 408 .codex_tmp/widget-real-device-evidence --post`
+- `bash scripts/post_closure_comment_from_evidence.sh widget --all-related .codex_tmp/widget-real-device-evidence --post`
 
 ## 출력 규칙
 - 성공 시

@@ -1,10 +1,10 @@
 # Manual Blocker Evidence Status Runner v1
 
 ## 목적
-- `#408` widget blocker bundle과 `#482` Auth SMTP blocker의 현재 evidence 상태를 한 번에 점검한다.
+- active widget blocker bundle과 `#482` Auth SMTP blocker의 현재 evidence 상태를 한 번에 점검한다.
 
 ## 대상 surface
-- `widget` -> primary `#408`, related `#617`, `#692`, `#731`
+- `widget` -> primary `#731`, related `#617`, `#692`
 - `auth-smtp` -> `#482`
 
 ## 명령
