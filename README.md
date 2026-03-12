@@ -248,6 +248,7 @@
 - 문서/유닛만 빠르게 체크: `DOGAREA_SKIP_BUILD=1 bash scripts/ios_pr_check.sh`
 - 위젯 액션 기능 회귀 UI: `bash scripts/run_widget_action_regression_ui_tests.sh`
 - blocker evidence helper: `bash scripts/render_manual_evidence_pack.sh <widget|auth-smtp> --write`
+- blocker evidence prefill: `bash scripts/prefill_manual_evidence_pack.sh <widget|auth-smtp> <path>`
 - blocker evidence status runner: `bash scripts/manual_blocker_evidence_status.sh [widget|auth-smtp] [--write-missing]`
 - blocker evidence validator: `bash scripts/validate_manual_evidence_pack.sh <widget|auth-smtp> <evidence-path>`
 - blocker closure renderer: `bash scripts/render_closure_comment_from_evidence.sh <widget|auth-smtp> ...`
