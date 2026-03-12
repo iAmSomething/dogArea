@@ -4,10 +4,7 @@ struct WatchControlSurfaceView: View {
     let isWalking: Bool
     let isReachable: Bool
     let walkingTime: TimeInterval
-    let walkingArea: Double
     let pointCount: Int
-    let petContext: WatchSelectedPetContextState
-    let feedbackBanner: WatchActionFeedbackBanner?
     let startWalkPresentation: WatchActionControlPresentation
     let addPointPresentation: WatchActionControlPresentation
     let endWalkPresentation: WatchActionControlPresentation
@@ -52,17 +49,8 @@ struct WatchControlSurfaceView: View {
                 isWalking: isWalking,
                 isReachable: isReachable,
                 walkingTime: walkingTime,
-                walkingArea: walkingArea,
-                pointCount: pointCount,
-                petContext: petContext
+                pointCount: pointCount
             )
-
-            if let feedbackBanner {
-                WatchActionBannerView(
-                    banner: feedbackBanner,
-                    style: .inline
-                )
-            }
 
             WatchPrimaryActionDockView(
                 isWalking: isWalking,
@@ -91,12 +79,12 @@ struct WatchControlSurfaceView: View {
     }
 
     private var controlHeadline: String {
-        isWalking ? "포인트와 종료를 바로 조작합니다." : "산책 시작에만 집중합니다."
+        isWalking ? "지금 필요한 조작만 바로 실행합니다." : "산책 시작에만 집중합니다."
     }
 
     private var controlDetail: String {
         isWalking
-            ? "지금 필요한 조작만 이 화면에 남겨 둡니다."
+            ? "시간, 포인트, 연결 상태만 확인하고 바로 조작합니다."
             : "상태 확인은 옆 정보 화면으로 분리했습니다."
     }
 }

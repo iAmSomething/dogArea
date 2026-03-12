@@ -23,17 +23,17 @@
 - 판정: `PASS`
 
 ### 2. 조작 화면이 overlay가 아니라 독립 surface처럼 읽힌다
-- `WatchControlSurfaceView`는 `조작 화면` header, 현재 상태 badge, 최소 상태 요약, inline feedback, action section을 하나의 surface 안에 통합한다.
+- `WatchControlSurfaceView`는 `조작 화면` header, 현재 상태 badge, 최소 상태 요약, action section만 남긴다.
 - `WatchPrimaryActionDockView`는 더 이상 dock 설명 카드를 따로 만들지 않고 action section으로 읽히게 정리됐다.
 - 판정: `PASS`
 
 ### 3. control page 안에서도 작은 카드 층이 다시 생기지 않는다
 - `WatchMainStatusSummaryView`의 메트릭은 `single metrics strip`으로 통합됐다.
-- inline feedback는 stroke 중심의 얇은 상태 strip로 내려 separate card 인상을 줄였다.
+- 반려견 문맥과 feedback banner는 info page로 이동해 control page와 경쟁하지 않는다.
 - 판정: `PASS`
 
 ### 4. 정보 화면은 secondary information만 담당한다
-- 반려견 문맥과 오프라인 큐 상태는 정보 화면에만 남고, control page에는 복귀하지 않는다.
+- 반려견 문맥, feedback banner, 오프라인 큐 상태는 정보 화면에만 남고, control page에는 복귀하지 않는다.
 - paging hint는 첫 방문 전까지만 노출된다.
 - 판정: `PASS`
 

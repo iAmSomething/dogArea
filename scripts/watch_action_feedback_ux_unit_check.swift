@@ -54,7 +54,8 @@ assertTrue(viewModel.contains(".addPointQueued"), "view model should differentia
 assertTrue(viewModel.contains(".addPointCompleted"), "view model should differentiate completed addPoint haptics")
 
 assertTrue(view.contains("WatchControlSurfaceView"), "watch content should render the unified control surface")
-assertTrue(controlSurfaceView.contains("WatchActionBannerView"), "control surface should render banner view")
+assertTrue(!controlSurfaceView.contains("WatchActionBannerView"), "control surface should no longer render banner view")
+assertTrue(view.contains("WatchActionBannerView"), "information surface should render banner view")
 assertTrue(controlSurfaceView.contains("WatchPrimaryActionDockView"), "control surface should render a dedicated action dock")
 assertTrue(actionDockView.contains("WatchActionButtonView"), "watch action dock should render action button view")
 assertTrue(view.contains("WatchOfflineQueueStatusCardView"), "watch content should render queue status card")
@@ -63,6 +64,7 @@ assertTrue(queueCardView.contains("큐 \\(queueStatus.pendingCount)건"), "queue
 
 assertTrue(buttonView.contains("showsProgress"), "button view should support progress state")
 assertTrue(bannerView.contains("WatchActionFeedbackBanner"), "banner view should render typed banner model")
+assertTrue(doc.contains("info page"), "feedback doc should record that banner lives on the info page")
 assertTrue(hapticService.contains("WKInterfaceDevice.current().play"), "haptic service should trigger watch haptics")
 assertTrue(hapticService.contains("func playActionEvent"), "haptic service should expose dedicated action-event playback")
 
