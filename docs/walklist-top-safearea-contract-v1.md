@@ -12,8 +12,8 @@
 
 ## 계약
 - 루트 상단 예약 자체는 `AppTabScaffold.appTabRootScrollLayout`의 `safeAreaInset(edge: .top)` 계약을 공유한다.
-- 산책 기록 화면은 `.appTabRootScrollLayout(extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding, topSafeAreaPadding: 0)`을 사용한다.
-- 산책 기록의 루트 타이틀 블록은 `nonMapRootPinnedHeaderLayout(bottomSpacing: 18)`으로 scroll content 밖 상단에 고정한다.
+- 산책 기록 화면은 `.appTabRootScrollLayout(extraBottomPadding: AppTabLayoutMetrics.defaultScrollExtraBottomPadding, topSafeAreaPadding: 0)`을 사용한다.
+- 산책 기록의 루트 타이틀 블록은 `nonMapRootPinnedHeaderLayout()`으로 scroll content 밖 상단에 고정한다.
 - `WalkListDashboardHeaderView`가 렌더링하는 요약/컨텍스트/캘린더 카드는 scroll content 안에 위치해야 한다.
 - `WalkListSectionHeaderView`는 sticky pin 상태에서도 `walklist.header.section` 루트 chrome 바로 아래에 머물러야 한다.
 - 대표 sticky QA 대상 식별자는 `walklist.section.thisWeek`다.

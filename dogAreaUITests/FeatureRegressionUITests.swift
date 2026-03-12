@@ -617,6 +617,25 @@ final class FeatureRegressionUITests: XCTestCase {
         )
     }
 
+    /// 하단 탭바가 전체 밴드가 아니라 compact card surface로 유지되는지 검증합니다.
+    func testFeatureRegression_TabBarUsesCompactCardSurfaceWithoutHeavyBand() throws {
+        let app = launchAppForFeatureRegression()
+        XCTAssertTrue(waitUntilExists(app.buttons["tab.0"], timeout: 12), "탭바가 렌더링되지 않았습니다.")
+
+        let surface = screenElement(identifier: "tabBar.surface", in: app)
+        let visualBand = screenElement(identifier: "tabBar.visualBand", in: app)
+        XCTAssertTrue(waitUntilExists(surface, timeout: 3), "탭바 surface 식별자를 찾지 못했습니다.")
+        XCTAssertTrue(waitUntilExists(visualBand, timeout: 3), "탭바 visual band 식별자를 찾지 못했습니다.")
+
+        let window = app.windows.element(boundBy: 0)
+        XCTAssertTrue(waitUntilExists(window, timeout: 2), "탭바 geometry 비교용 윈도우를 찾지 못했습니다.")
+
+        XCTAssertGreaterThan(surface.frame.minX, 6, "탭바 surface는 좌우 inset이 있는 카드여야 합니다.")
+        XCTAssertLessThan(surface.frame.maxX, window.frame.maxX - 6, "탭바 surface가 화면 전체 폭을 먹으면 안 됩니다.")
+        XCTAssertLessThan(surface.frame.height, 84, "탭바 surface 높이는 compact card budget 안에 있어야 합니다.")
+        XCTAssertGreaterThan(visualBand.frame.maxY, window.frame.maxY - 120, "탭바 visual band는 하단 anchored budget 안에 있어야 합니다.")
+    }
+
     /// 월별 산책 캘린더에서 날짜를 탭하면 그날 기록만 바로 좁혀 보고 다시 해제할 수 있는지 검증합니다.
     func testFeatureRegression_WalkListCalendarSelectionFiltersToChosenDate() throws {
         let app = launchAppForFeatureRegression(extraArguments: ["-UITest.WalkListCalendarPreview"])

@@ -6,10 +6,10 @@ enum AppTabBarVisibility: Equatable {
 }
 
 enum AppTabLayoutMetrics {
-    static let defaultTabBarReservedHeight: CGFloat = 124
-    static let nonMapRootTopSafeAreaPadding: CGFloat = 18
-    static let nonMapRootHeaderTopSpacing: CGFloat = 12
-    static let nonMapRootChromeBottomSpacing: CGFloat = 16
+    static let defaultTabBarReservedHeight: CGFloat = 110
+    static let nonMapRootTopSafeAreaPadding: CGFloat = 12
+    static let nonMapRootHeaderTopSpacing: CGFloat = 8
+    static let nonMapRootChromeBottomSpacing: CGFloat = 12
     static let mapOverlayTopExtraSpacing: CGFloat = 8
     static let minimumBottomPadding: CGFloat = 12
     static let defaultScrollExtraBottomPadding: CGFloat = 12

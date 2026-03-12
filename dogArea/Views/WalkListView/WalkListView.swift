@@ -85,17 +85,16 @@ struct WalkListView: View {
                     }
                 }
             }
-            .padding(.bottom, 12)
         }
         .refreshable {
             viewModel.fetchModel()
         }
         .appTabRootScrollLayout(
-            extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding,
+            extraBottomPadding: AppTabLayoutMetrics.defaultScrollExtraBottomPadding,
             topSafeAreaPadding: 0
         )
         .accessibilityIdentifier("screen.walkList.content")
-        .nonMapRootPinnedHeaderLayout(bottomSpacing: 18) {
+        .nonMapRootPinnedHeaderLayout {
             TitleTextView(
                 title: topChromeTitle,
                 type: .MediumTitle,

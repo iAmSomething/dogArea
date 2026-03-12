@@ -47,16 +47,24 @@ assertTrue(
     "RootView should render CustomTabBar inside bottom safe area inset"
 )
 assertTrue(
-    customTabBar.contains("LinearGradient("),
-    "CustomTabBar should use a lighter bottom backdrop instead of a heavy card background"
+    customTabBar.contains("RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)"),
+    "CustomTabBar should restore the rounded card surface"
 )
 assertTrue(
-    !customTabBar.contains("RoundedRectangle(cornerRadius: 26, style: .continuous)"),
-    "CustomTabBar should no longer render the full-width rounded card background"
+    !customTabBar.contains("LinearGradient("),
+    "CustomTabBar should remove the full-width gradient band"
 )
 assertTrue(
     customTabBar.contains("Capsule(style: .continuous)"),
     "CustomTabBar should move selection emphasis to per-item chrome"
+)
+assertTrue(
+    customTabBar.contains("identifier: \"tabBar.surface\""),
+    "CustomTabBar should expose a compact surface probe for geometry regressions"
+)
+assertTrue(
+    customTabBar.contains("identifier: \"tabBar.visualBand\""),
+    "CustomTabBar should expose a compact visual-band probe for geometry regressions"
 )
 assertTrue(
     !rootView.contains("NavigationView"),

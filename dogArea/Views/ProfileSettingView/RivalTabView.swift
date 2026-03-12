@@ -39,10 +39,10 @@ struct RivalTabView: View {
             }
         }
         .appTabRootScrollLayout(
-            extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding,
+            extraBottomPadding: AppTabLayoutMetrics.defaultScrollExtraBottomPadding,
             topSafeAreaPadding: 0
         )
-        .nonMapRootTopChrome(bottomSpacing: 12) {
+        .nonMapRootTopChrome {
             VStack(spacing: 8) {
                 rivalHeaderSection
                 statusBadgeRow

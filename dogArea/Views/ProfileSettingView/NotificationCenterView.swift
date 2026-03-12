@@ -160,7 +160,7 @@ struct NotificationCenterView: View {
             .padding(.horizontal, 16)
         }
         .appTabRootScrollLayout(
-            extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding,
+            extraBottomPadding: AppTabLayoutMetrics.defaultScrollExtraBottomPadding,
             topSafeAreaPadding: 0
         )
         .nonMapRootTopChrome {
@@ -194,7 +194,7 @@ struct NotificationCenterView: View {
             .padding(.horizontal, 16)
         }
         .appTabRootScrollLayout(
-            extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding,
+            extraBottomPadding: AppTabLayoutMetrics.defaultScrollExtraBottomPadding,
             topSafeAreaPadding: 0
         )
         .nonMapRootTopChrome {

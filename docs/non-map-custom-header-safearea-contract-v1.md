@@ -17,11 +17,11 @@
   - 일반 화면은 `nonMapRootTopChrome`, pinned section header 화면은 `nonMapRootPinnedHeaderLayout`으로 실제 헤더 chrome을 scroll content 밖 상단에 고정한다.
 
 ## 코드 계약
-- `AppTabLayoutMetrics.nonMapRootTopSafeAreaPadding = 18`
+- `AppTabLayoutMetrics.nonMapRootTopSafeAreaPadding = 12`
   - 루트 safe area 예약은 여기서만 소유한다.
-- `AppTabLayoutMetrics.nonMapRootHeaderTopSpacing = 12`
+- `AppTabLayoutMetrics.nonMapRootHeaderTopSpacing = 8`
   - 첫 커스텀 헤더 블록이 safe area 예약 뒤에 시작하는 기본 간격이다.
-- `AppTabLayoutMetrics.nonMapRootChromeBottomSpacing = 16`
+- `AppTabLayoutMetrics.nonMapRootChromeBottomSpacing = 12`
   - 고정 헤더 chrome과 스크롤 본문 사이의 기본 리듬이다.
 - `nonMapRootTopChrome`
   - 홈 첫 인사 헤더
