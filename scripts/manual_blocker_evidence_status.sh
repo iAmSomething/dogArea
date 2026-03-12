@@ -10,6 +10,7 @@ usage() {
 Usage:
   bash scripts/manual_blocker_evidence_status.sh [widget|auth-smtp] [--write-missing]
   bash scripts/manual_blocker_evidence_status.sh [widget|auth-smtp] --markdown [--output <path>] [--write-missing]
+  bash scripts/manual_blocker_evidence_status.sh [widget|auth-smtp] [--raw-errors]
 USAGE
 }
 
@@ -22,6 +23,7 @@ kind_filter=""
 write_missing=0
 markdown_mode=0
 output_path=""
+raw_errors=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -42,6 +44,10 @@ while [[ $# -gt 0 ]]; do
       [[ $# -ge 2 ]] || die "--output requires a path"
       output_path="$2"
       shift 2
+      ;;
+    --raw-errors)
+      raw_errors=1
+      shift
       ;;
     -h|--help)
       usage
@@ -167,23 +173,252 @@ render_missing_pack_if_needed() {
   fi
 }
 
-surface_status() {
+surface_status_and_capture() {
   local surface="$1"
   local pack_path="$2"
+  local capture_path="$3"
   if [[ ! -e "$pack_path" ]]; then
     printf 'missing'
     return
   fi
 
-  if bash scripts/validate_manual_evidence_pack.sh "$surface" "$pack_path" >/tmp/dogarea_manual_blocker_status.$$ 2>&1; then
-    rm -f /tmp/dogarea_manual_blocker_status.$$
+  if bash scripts/validate_manual_evidence_pack.sh "$surface" "$pack_path" >"$capture_path" 2>&1; then
     printf 'complete'
     return
   fi
 
-  cat /tmp/dogarea_manual_blocker_status.$$ >&2
-  rm -f /tmp/dogarea_manual_blocker_status.$$
+  if [[ "$raw_errors" == "1" ]]; then
+    cat "$capture_path" >&2
+  fi
   printf 'incomplete'
+}
+
+surface_gap_summary_plain() {
+  local surface="$1"
+  local capture_path="$2"
+  case "$surface" in
+    widget)
+      awk '
+        function append_bucket(key, value, composite, current) {
+          composite = key SUBSEP value
+          if (seenBuckets[composite]) return
+          seenBuckets[composite] = 1
+          current = categories[key]
+          if (current == "") {
+            categories[key] = value
+          } else {
+            categories[key] = current ", " value
+          }
+        }
+        /^ - / {
+          errorCount++
+          line = substr($0, 4)
+          split(line, headParts, ": ")
+          kind = headParts[1]
+          remainder = substr(line, length(kind) + 3)
+
+          split(remainder, detailParts, " :: ")
+          filePath = detailParts[1]
+          if (filePath == "") next
+
+          caseRef = filePath
+          sub(/^.*\//, "", caseRef)
+          sub(/\.md$/, "", caseRef)
+          if (caseRef !~ /^(WD|WL)-[0-9][0-9][0-9]$/) next
+
+          if (!(caseRef in seen)) {
+            seen[caseRef] = 1
+            order[++orderCount] = caseRef
+            if (caseRef ~ /^WD-/) {
+              actionCount++
+            } else {
+              layoutCount++
+            }
+          }
+
+          bucket = "other"
+          if (kind == "empty value" || kind == "missing line") {
+            field = detailParts[2]
+            if (field ~ /Date|Tester|Device \/ OS|App Build/) {
+              bucket = "metadata"
+            } else if (field ~ /Summary|Final Screen|Pass \/ Fail/) {
+              bucket = "result"
+            } else {
+              bucket = "fields"
+            }
+          } else if (kind == "missing asset file") {
+            bucket = "assets"
+          } else if (kind == "placeholder literal remains") {
+            bucket = "placeholder logs"
+          } else if (kind == "non-pass outcome") {
+            bucket = "result"
+          }
+          append_bucket(caseRef, bucket)
+        }
+        END {
+          if (orderCount == 0) exit
+          printf "gap-summary: %d incomplete cases (action %d, layout %d, total-errors %d)\n", orderCount, actionCount, layoutCount, errorCount
+          nextFill = order[1]
+          if (nextFill ~ /^WD-/) {
+            printf "next-fill: action/%s.md\n", nextFill
+          } else {
+            printf "next-fill: layout/%s.md\n", nextFill
+          }
+          printf "gap-cases:\n"
+          for (i = 1; i <= orderCount; i++) {
+            current = order[i]
+            printf "  - %s: %s\n", current, categories[current]
+          }
+        }
+      ' "$capture_path"
+      ;;
+    auth-smtp)
+      awk '
+        /^ - / {
+          errorCount++
+          line = substr($0, 4)
+          split(line, headParts, ": ")
+          remainder = substr(line, length(headParts[1]) + 3)
+          split(remainder, detailParts, " :: ")
+          filePath = detailParts[1]
+          if (filePath == "") next
+
+          fileRef = filePath
+          sub(/^.*\//, "", fileRef)
+          fileErrors[fileRef]++
+          if (!(fileRef in seen)) {
+            seen[fileRef] = 1
+            order[++orderCount] = fileRef
+          }
+        }
+        END {
+          if (orderCount == 0) exit
+          printf "gap-summary: %d incomplete files (total-errors %d)\n", orderCount, errorCount
+          printf "next-fill: %s\n", order[1]
+          printf "gap-files:\n"
+          for (i = 1; i <= orderCount; i++) {
+            current = order[i]
+            printf "  - %s: %d gaps\n", current, fileErrors[current]
+          }
+        }
+      ' "$capture_path"
+      ;;
+  esac
+}
+
+surface_gap_summary_markdown() {
+  local surface="$1"
+  local capture_path="$2"
+  case "$surface" in
+    widget)
+      awk '
+        function append_bucket(key, value, composite, current) {
+          composite = key SUBSEP value
+          if (seenBuckets[composite]) return
+          seenBuckets[composite] = 1
+          current = categories[key]
+          if (current == "") {
+            categories[key] = value
+          } else {
+            categories[key] = current ", " value
+          }
+        }
+        /^ - / {
+          errorCount++
+          line = substr($0, 4)
+          split(line, headParts, ": ")
+          kind = headParts[1]
+          remainder = substr(line, length(kind) + 3)
+
+          split(remainder, detailParts, " :: ")
+          filePath = detailParts[1]
+          if (filePath == "") next
+
+          caseRef = filePath
+          sub(/^.*\//, "", caseRef)
+          sub(/\.md$/, "", caseRef)
+          if (caseRef !~ /^(WD|WL)-[0-9][0-9][0-9]$/) next
+
+          if (!(caseRef in seen)) {
+            seen[caseRef] = 1
+            order[++orderCount] = caseRef
+            if (caseRef ~ /^WD-/) {
+              actionCount++
+            } else {
+              layoutCount++
+            }
+          }
+
+          bucket = "other"
+          if (kind == "empty value" || kind == "missing line") {
+            field = detailParts[2]
+            if (field ~ /Date|Tester|Device \/ OS|App Build/) {
+              bucket = "metadata"
+            } else if (field ~ /Summary|Final Screen|Pass \/ Fail/) {
+              bucket = "result"
+            } else {
+              bucket = "fields"
+            }
+          } else if (kind == "missing asset file") {
+            bucket = "assets"
+          } else if (kind == "placeholder literal remains") {
+            bucket = "placeholder logs"
+          } else if (kind == "non-pass outcome") {
+            bucket = "result"
+          }
+          append_bucket(caseRef, bucket)
+        }
+        END {
+          if (orderCount == 0) exit
+          printf "### Gap Summary\n"
+          printf "- Incomplete Cases: `%d` (`action %d`, `layout %d`, `errors %d`)\n", orderCount, actionCount, layoutCount, errorCount
+          nextFill = order[1]
+          if (nextFill ~ /^WD-/) {
+            printf "- Next Fill: `action/%s.md`\n", nextFill
+          } else {
+            printf "- Next Fill: `layout/%s.md`\n", nextFill
+          }
+          printf "- Case Buckets:\n"
+          for (i = 1; i <= orderCount; i++) {
+            current = order[i]
+            printf "  - `%s`: %s\n", current, categories[current]
+          }
+        }
+      ' "$capture_path"
+      ;;
+    auth-smtp)
+      awk '
+        /^ - / {
+          errorCount++
+          line = substr($0, 4)
+          split(line, headParts, ": ")
+          remainder = substr(line, length(headParts[1]) + 3)
+          split(remainder, detailParts, " :: ")
+          filePath = detailParts[1]
+          if (filePath == "") next
+
+          fileRef = filePath
+          sub(/^.*\//, "", fileRef)
+          fileErrors[fileRef]++
+          if (!(fileRef in seen)) {
+            seen[fileRef] = 1
+            order[++orderCount] = fileRef
+          }
+        }
+        END {
+          if (orderCount == 0) exit
+          printf "### Gap Summary\n"
+          printf "- Incomplete Files: `%d` (`errors %d`)\n", orderCount, errorCount
+          printf "- Next Fill: `%s`\n", order[1]
+          printf "- File Buckets:\n"
+          for (i = 1; i <= orderCount; i++) {
+            current = order[i]
+            printf "  - `%s`: %d gaps\n", current, fileErrors[current]
+          }
+        }
+      ' "$capture_path"
+      ;;
+  esac
 }
 
 print_surface_status() {
@@ -191,8 +426,9 @@ print_surface_status() {
   local issue_number="$(surface_issue_number "$surface")"
   local issue_state="$(surface_issue_state "$issue_number")"
   local pack_path="$(surface_pack_path "$surface")"
+  local capture_path="/tmp/dogarea_manual_blocker_status_${surface}_$$"
   render_missing_pack_if_needed "$surface" "$pack_path"
-  local status="$(surface_status "$surface" "$pack_path")"
+  local status="$(surface_status_and_capture "$surface" "$pack_path" "$capture_path")"
 
   printf '== %s ==\n' "$surface"
   printf 'title: %s\n' "$(surface_title "$surface")"
@@ -208,7 +444,11 @@ print_surface_status() {
   if [[ "$surface" == "widget" ]]; then
     printf 'next-post-closure-bundle: %s\n' "$(surface_bundle_post_command "$surface" "$pack_path")"
   fi
+  if [[ "$status" == "incomplete" ]]; then
+    surface_gap_summary_plain "$surface" "$capture_path"
+  fi
   printf '\n'
+  rm -f "$capture_path"
 }
 
 print_surface_status_markdown() {
@@ -216,8 +456,9 @@ print_surface_status_markdown() {
   local issue_number="$(surface_issue_number "$surface")"
   local issue_state="$(surface_issue_state "$issue_number")"
   local pack_path="$(surface_pack_path "$surface")"
+  local capture_path="/tmp/dogarea_manual_blocker_status_${surface}_$$"
   render_missing_pack_if_needed "$surface" "$pack_path"
-  local status="$(surface_status "$surface" "$pack_path")"
+  local status="$(surface_status_and_capture "$surface" "$pack_path" "$capture_path")"
 
   printf '## %s\n' "$surface"
   printf -- '- Title: %s\n' "$(surface_title "$surface")"
@@ -239,6 +480,11 @@ print_surface_status_markdown() {
     printf -- '- Post Closure Bundle: `%s`\n' "$(surface_bundle_post_command "$surface" "$pack_path")"
   fi
   printf '\n'
+  if [[ "$status" == "incomplete" ]]; then
+    surface_gap_summary_markdown "$surface" "$capture_path"
+  fi
+  printf '\n'
+  rm -f "$capture_path"
 }
 
 surfaces=(widget auth-smtp)
