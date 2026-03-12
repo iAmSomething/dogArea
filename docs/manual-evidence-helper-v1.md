@@ -53,6 +53,9 @@
 - 이미 만든 bundle의 빈 메타만 채우기
   - `bash scripts/prefill_manual_evidence_pack.sh widget .codex_tmp/widget-real-device-evidence`
   - `bash scripts/prefill_manual_evidence_pack.sh auth-smtp .codex_tmp/auth-smtp-evidence`
+- prefill용 env export template 출력
+  - `bash scripts/print_manual_evidence_prefill_env.sh widget`
+  - `bash scripts/print_manual_evidence_prefill_env.sh auth-smtp`
 - validator 통과 후 reviewer 전달용 archive 생성
   - `bash scripts/archive_manual_evidence_pack.sh widget .codex_tmp/widget-real-device-evidence`
   - `bash scripts/archive_manual_evidence_pack.sh auth-smtp .codex_tmp/auth-smtp-evidence`

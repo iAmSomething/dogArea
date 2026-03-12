@@ -32,6 +32,7 @@
 - 위젯 액션 종료 체크리스트 v1: `docs/widget-action-closure-checklist-v1.md`
 - 위젯 액션 종료 코멘트 템플릿 v1: `docs/widget-action-closure-comment-template-v1.md`
 - Manual evidence helper v1: `docs/manual-evidence-helper-v1.md`
+- Manual evidence prefill v1: `docs/manual-evidence-prefill-v1.md`
 - Manual blocker evidence status runner v1: `docs/manual-blocker-evidence-status-runner-v1.md`
 - Manual evidence validator v1: `docs/manual-evidence-validator-v1.md`
 - Manual evidence archive export v1: `docs/manual-evidence-archive-export-v1.md`

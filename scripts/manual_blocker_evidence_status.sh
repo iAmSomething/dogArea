@@ -123,6 +123,10 @@ surface_apply_prefill_status_command() {
   printf 'bash scripts/manual_blocker_evidence_status.sh %s --apply-prefill' "$1"
 }
 
+surface_prefill_env_command() {
+  printf 'bash scripts/print_manual_evidence_prefill_env.sh %s' "$1"
+}
+
 surface_closure_render_command() {
   case "$1" in
     widget) printf 'bash scripts/render_closure_comment_from_evidence.sh widget %q --write' "$2" ;;
@@ -211,6 +215,68 @@ surface_has_prefill_gaps() {
       return 1
       ;;
   esac
+}
+
+surface_missing_prefill_envs() {
+  local surface="$1"
+  case "$surface" in
+    widget)
+      local missing=()
+      [[ -n "${DOGAREA_WIDGET_EVIDENCE_DEVICE_OS:-}" ]] || missing+=("DOGAREA_WIDGET_EVIDENCE_DEVICE_OS")
+      [[ -n "${DOGAREA_WIDGET_EVIDENCE_APP_BUILD:-}" ]] || missing+=("DOGAREA_WIDGET_EVIDENCE_APP_BUILD")
+      printf '%s\n' "${missing[@]:-}" | sed '/^$/d'
+      ;;
+    auth-smtp)
+      local keys=(
+        DOGAREA_AUTH_SMTP_PROJECT
+        DOGAREA_AUTH_SMTP_PROVIDER
+        DOGAREA_AUTH_SMTP_SENDER_DOMAIN
+        DOGAREA_AUTH_SMTP_DNS_SPF
+        DOGAREA_AUTH_SMTP_DNS_DKIM
+        DOGAREA_AUTH_SMTP_DNS_DMARC
+        DOGAREA_AUTH_SMTP_PROVIDER_VERIFIED_AT
+        DOGAREA_AUTH_SMTP_HOST
+        DOGAREA_AUTH_SMTP_PORT
+        DOGAREA_AUTH_SMTP_USER_MASK
+        DOGAREA_AUTH_SMTP_SENDER_NAME
+        DOGAREA_AUTH_SMTP_SENDER_EMAIL
+        DOGAREA_AUTH_SMTP_EMAIL_SENT
+        DOGAREA_AUTH_SMTP_MAX_FREQUENCY
+        DOGAREA_AUTH_SMTP_CONFIRM_EMAIL_POLICY
+        DOGAREA_AUTH_SMTP_PASSWORD_RESET_POLICY
+        DOGAREA_AUTH_SMTP_EMAIL_CHANGE_POLICY
+        DOGAREA_AUTH_SMTP_INVITE_POLICY
+      )
+      local key
+      for key in "${keys[@]}"; do
+        [[ -n "${!key:-}" ]] || printf '%s\n' "$key"
+      done
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+surface_has_missing_prefill_envs() {
+  local surface="$1"
+  [[ -n "$(surface_missing_prefill_envs "$surface")" ]]
+}
+
+surface_missing_prefill_env_summary_plain() {
+  local surface="$1"
+  local missing
+  missing="$(surface_missing_prefill_envs "$surface" | awk 'BEGIN { first = 1 } { if (!first) printf ", "; printf "%s", $0; first = 0 }')"
+  [[ -n "$missing" ]] || return
+  printf 'missing-prefill-env: %s\n' "$missing"
+}
+
+surface_missing_prefill_env_summary_markdown() {
+  local surface="$1"
+  local missing
+  missing="$(surface_missing_prefill_envs "$surface" | awk 'BEGIN { first = 1 } { if (!first) printf ", "; printf "%s", $0; first = 0 }')"
+  [[ -n "$missing" ]] || return
+  printf -- '- Missing Prefill Env: `%s`\n' "$missing"
 }
 
 surface_prefill_gap_summary_plain() {
@@ -689,6 +755,9 @@ print_surface_status() {
   printf 'status: %s\n' "$status"
   printf 'next-render: %s\n' "$(surface_render_command "$surface" "$pack_path")"
   printf 'next-prefill-existing: %s\n' "$(surface_prefill_command "$surface" "$pack_path")"
+  if [[ "$status" == "incomplete" && "$apply_prefill" != "1" ]] && surface_has_prefill_gaps "$surface" "$capture_path" && surface_has_missing_prefill_envs "$surface"; then
+    printf 'next-prefill-env: %s\n' "$(surface_prefill_env_command "$surface")"
+  fi
   if [[ "$status" == "incomplete" && "$apply_prefill" != "1" ]] && surface_has_prefill_gaps "$surface" "$capture_path"; then
     printf 'next-apply-prefill: %s\n' "$(surface_apply_prefill_status_command "$surface")"
   fi
@@ -701,6 +770,9 @@ print_surface_status() {
   fi
   if [[ "$status" == "incomplete" ]]; then
     surface_prefill_gap_summary_plain "$surface" "$capture_path"
+    if surface_has_prefill_gaps "$surface" "$capture_path"; then
+      surface_missing_prefill_env_summary_plain "$surface"
+    fi
     surface_gap_summary_plain "$surface" "$capture_path"
   fi
   printf '\n'
@@ -730,6 +802,9 @@ print_surface_status_markdown() {
   printf '### Next Commands\n'
   printf -- '- Render: `%s`\n' "$(surface_render_command "$surface" "$pack_path")"
   printf -- '- Prefill Existing: `%s`\n' "$(surface_prefill_command "$surface" "$pack_path")"
+  if [[ "$status" == "incomplete" && "$apply_prefill" != "1" ]] && surface_has_prefill_gaps "$surface" "$capture_path" && surface_has_missing_prefill_envs "$surface"; then
+    printf -- '- Print Prefill Env Template: `%s`\n' "$(surface_prefill_env_command "$surface")"
+  fi
   if [[ "$status" == "incomplete" && "$apply_prefill" != "1" ]] && surface_has_prefill_gaps "$surface" "$capture_path"; then
     printf -- '- Apply Prefill Then Refresh: `%s`\n' "$(surface_apply_prefill_status_command "$surface")"
   fi
@@ -744,6 +819,9 @@ print_surface_status_markdown() {
   if [[ "$status" == "incomplete" ]]; then
     surface_gap_summary_markdown "$surface" "$capture_path"
     surface_prefill_gap_summary_markdown "$surface" "$capture_path"
+    if surface_has_prefill_gaps "$surface" "$capture_path"; then
+      surface_missing_prefill_env_summary_markdown "$surface"
+    fi
   fi
   printf '\n'
   rm -f "$capture_path"
