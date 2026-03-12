@@ -6,12 +6,16 @@
 
 ## 엔트리포인트
 - 스크립트: `bash scripts/prefill_manual_evidence_pack.sh`
+- env template printer: `bash scripts/print_manual_evidence_prefill_env.sh`
 
 ## 지원 surface
 - `widget`
 - `auth-smtp`
 
 ## 사용법
+- prefill용 env export template 보기
+  - `bash scripts/print_manual_evidence_prefill_env.sh widget`
+  - `bash scripts/print_manual_evidence_prefill_env.sh auth-smtp`
 - widget existing bundle prefill
   - `bash scripts/prefill_manual_evidence_pack.sh widget .codex_tmp/widget-real-device-evidence`
 - auth-smtp existing bundle prefill
@@ -52,4 +56,5 @@
 
 ## 연결 규칙
 - `manual_blocker_evidence_status.sh`는 `next-prefill-existing`를 함께 출력한다.
+- `manual_blocker_evidence_status.sh`는 env가 비어 있으면 `next-prefill-env`도 함께 출력한다.
 - bundle이 이미 존재하면 `render`보다 `prefill-existing -> validate`가 더 안전한 기본 경로다.

@@ -108,6 +108,7 @@ swift scripts/widget_action_real_device_evidence_unit_check.swift
 swift scripts/widget_action_closure_pack_unit_check.swift
 swift scripts/manual_evidence_helper_unit_check.swift
 swift scripts/manual_evidence_prefill_unit_check.swift
+swift scripts/manual_evidence_prefill_env_printer_unit_check.swift
 swift scripts/manual_blocker_evidence_status_unit_check.swift
 swift scripts/manual_evidence_validator_unit_check.swift
 swift scripts/manual_evidence_archive_export_unit_check.swift

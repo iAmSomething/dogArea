@@ -171,8 +171,11 @@ assertTrue(runnerScript.contains("--output"), "runner should support output path
 assertTrue(runnerScript.contains("--raw-errors"), "runner should support raw error output mode")
 assertTrue(runnerScript.contains("--apply-prefill"), "runner should support one-shot prefill application")
 assertTrue(runnerScript.contains("next-apply-prefill"), "runner should print status-runner prefill guidance")
+assertTrue(runnerScript.contains("next-prefill-env"), "runner should print env template guidance")
 assertTrue(runnerScript.contains("Apply Prefill Then Refresh"), "runner should print markdown prefill guidance")
+assertTrue(runnerScript.contains("Print Prefill Env Template"), "runner should print markdown env template guidance")
 assertTrue(runnerScript.contains("prefill-opportunity:"), "runner should summarize metadata-prefill opportunities")
+assertTrue(runnerScript.contains("missing-prefill-env:"), "runner should summarize missing prefill env vars")
 assertTrue(runnerScript.contains("gap-summary:"), "runner should print plain gap summaries for incomplete packs")
 assertTrue(runnerScript.contains("next-fill:"), "runner should print next-fill guidance")
 assertTrue(runnerScript.contains("### Gap Summary"), "runner should print markdown gap summaries for incomplete packs")
@@ -189,6 +192,7 @@ assertTrue(doc.contains("--output"), "doc should describe output export")
 assertTrue(doc.contains("--raw-errors"), "doc should describe raw error output mode")
 assertTrue(doc.contains("--apply-prefill"), "doc should describe one-shot prefill application")
 assertTrue(doc.contains("next-apply-prefill"), "doc should describe status-runner prefill guidance")
+assertTrue(doc.contains("next-prefill-env"), "doc should describe env template guidance")
 assertTrue(doc.contains("gap-summary"), "doc should describe plain gap summary output")
 assertTrue(doc.contains("next-fill"), "doc should describe next-fill guidance")
 assertTrue(doc.contains("### Gap Summary"), "doc should describe markdown gap summary heading")
@@ -241,7 +245,9 @@ let widgetUnappliedExistingOutput = runStatus(arguments: ["widget"], environment
     "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
 ])
 assertTrue(widgetUnappliedExistingOutput.contains("next-apply-prefill: bash scripts/manual_blocker_evidence_status.sh widget --apply-prefill"), "existing widget bundles with metadata gaps should prioritize apply-prefill guidance")
+assertTrue(widgetUnappliedExistingOutput.contains("next-prefill-env: bash scripts/print_manual_evidence_prefill_env.sh widget"), "existing widget bundles should advertise env template guidance")
 assertTrue(widgetUnappliedExistingOutput.contains("prefill-opportunity: metadata gaps detected in 16 cases"), "existing widget bundles should summarize metadata prefill opportunity")
+assertTrue(widgetUnappliedExistingOutput.contains("missing-prefill-env: DOGAREA_WIDGET_EVIDENCE_DEVICE_OS, DOGAREA_WIDGET_EVIDENCE_APP_BUILD"), "existing widget bundles should summarize missing widget prefill env vars")
 
 let widgetAppliedPath = tempRoot.appendingPathComponent("widget-applied")
 _ = runStatus(arguments: ["widget", "--write-missing"], environment: [
@@ -318,7 +324,9 @@ let widgetExistingMarkdownOutput = runStatus(arguments: ["widget", "--markdown"]
     "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
 ])
 assertTrue(widgetExistingMarkdownOutput.contains("- Apply Prefill Then Refresh: `bash scripts/manual_blocker_evidence_status.sh widget --apply-prefill`"), "existing widget markdown should suggest apply-prefill first")
+assertTrue(widgetExistingMarkdownOutput.contains("- Print Prefill Env Template: `bash scripts/print_manual_evidence_prefill_env.sh widget`"), "existing widget markdown should suggest env template first")
 assertTrue(widgetExistingMarkdownOutput.contains("- Prefill Opportunity: metadata gaps in `16` cases"), "existing widget markdown should summarize metadata-prefill opportunity")
+assertTrue(widgetExistingMarkdownOutput.contains("- Missing Prefill Env: `DOGAREA_WIDGET_EVIDENCE_DEVICE_OS, DOGAREA_WIDGET_EVIDENCE_APP_BUILD`"), "existing widget markdown should summarize missing widget prefill env vars")
 
 let markdownPath = tempRoot.appendingPathComponent("manual-blocker-status.md")
 let markdownWriteOutput = runStatus(arguments: ["auth-smtp", "--markdown", "--output", markdownPath.path], environment: [
@@ -349,8 +357,10 @@ let authGeneratedOutput = runStatus(arguments: ["auth-smtp", "--write-missing"],
 ])
 assertTrue(authGeneratedOutput.contains("gap-summary: 6 incomplete files"), "auth runner should summarize auth evidence by file count")
 assertTrue(authGeneratedOutput.contains("next-fill: 01-dns-verification.md"), "auth runner should point to the first auth file to fill")
+assertTrue(authGeneratedOutput.contains("next-prefill-env: bash scripts/print_manual_evidence_prefill_env.sh auth-smtp"), "auth runner should suggest env template when write-missing leaves env-backed gaps")
 assertTrue(authGeneratedOutput.contains("next-apply-prefill: bash scripts/manual_blocker_evidence_status.sh auth-smtp --apply-prefill"), "auth runner should suggest apply-prefill when write-missing leaves env-backed metadata gaps")
 assertTrue(authGeneratedOutput.contains("prefill-opportunity: metadata gaps detected in 2 files"), "auth runner should summarize auth metadata prefill opportunity")
+assertTrue(authGeneratedOutput.contains("missing-prefill-env: DOGAREA_AUTH_SMTP_PROJECT, DOGAREA_AUTH_SMTP_PROVIDER, DOGAREA_AUTH_SMTP_SENDER_DOMAIN, DOGAREA_AUTH_SMTP_DNS_SPF, DOGAREA_AUTH_SMTP_DNS_DKIM, DOGAREA_AUTH_SMTP_DNS_DMARC, DOGAREA_AUTH_SMTP_PROVIDER_VERIFIED_AT, DOGAREA_AUTH_SMTP_HOST, DOGAREA_AUTH_SMTP_PORT, DOGAREA_AUTH_SMTP_USER_MASK, DOGAREA_AUTH_SMTP_SENDER_NAME, DOGAREA_AUTH_SMTP_SENDER_EMAIL, DOGAREA_AUTH_SMTP_EMAIL_SENT, DOGAREA_AUTH_SMTP_MAX_FREQUENCY, DOGAREA_AUTH_SMTP_CONFIRM_EMAIL_POLICY, DOGAREA_AUTH_SMTP_PASSWORD_RESET_POLICY, DOGAREA_AUTH_SMTP_EMAIL_CHANGE_POLICY, DOGAREA_AUTH_SMTP_INVITE_POLICY"), "auth runner should summarize missing auth prefill env vars")
 assertTrue(authGeneratedOutput.contains("03-live-send-results.md: scenario rows, mailbox assets"), "auth runner should fold live-send scenario row errors into the live-send file")
 assertTrue(!authGeneratedOutput.contains("signup confirmation: 1 gaps"), "auth runner should avoid scenario-only pseudo-file output")
 
@@ -364,7 +374,9 @@ let authUnappliedExistingOutput = runStatus(arguments: ["auth-smtp"], environmen
     "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authExistingPath.path,
 ])
 assertTrue(authUnappliedExistingOutput.contains("next-apply-prefill: bash scripts/manual_blocker_evidence_status.sh auth-smtp --apply-prefill"), "existing auth bundles with metadata gaps should prioritize apply-prefill guidance")
+assertTrue(authUnappliedExistingOutput.contains("next-prefill-env: bash scripts/print_manual_evidence_prefill_env.sh auth-smtp"), "existing auth bundles should advertise auth env template guidance")
 assertTrue(authUnappliedExistingOutput.contains("prefill-opportunity: metadata gaps detected in 2 files"), "existing auth bundles should summarize metadata prefill opportunity")
+assertTrue(authUnappliedExistingOutput.contains("missing-prefill-env: DOGAREA_AUTH_SMTP_PROJECT, DOGAREA_AUTH_SMTP_PROVIDER, DOGAREA_AUTH_SMTP_SENDER_DOMAIN, DOGAREA_AUTH_SMTP_DNS_SPF, DOGAREA_AUTH_SMTP_DNS_DKIM, DOGAREA_AUTH_SMTP_DNS_DMARC, DOGAREA_AUTH_SMTP_PROVIDER_VERIFIED_AT, DOGAREA_AUTH_SMTP_HOST, DOGAREA_AUTH_SMTP_PORT, DOGAREA_AUTH_SMTP_USER_MASK, DOGAREA_AUTH_SMTP_SENDER_NAME, DOGAREA_AUTH_SMTP_SENDER_EMAIL, DOGAREA_AUTH_SMTP_EMAIL_SENT, DOGAREA_AUTH_SMTP_MAX_FREQUENCY, DOGAREA_AUTH_SMTP_CONFIRM_EMAIL_POLICY, DOGAREA_AUTH_SMTP_PASSWORD_RESET_POLICY, DOGAREA_AUTH_SMTP_EMAIL_CHANGE_POLICY, DOGAREA_AUTH_SMTP_INVITE_POLICY"), "existing auth bundles should summarize missing auth prefill env vars")
 
 let authAppliedPath = tempRoot.appendingPathComponent("auth-applied")
 _ = runStatus(arguments: ["auth-smtp", "--write-missing"], environment: [
@@ -402,7 +414,9 @@ let authExistingMarkdownOutput = runStatus(arguments: ["auth-smtp", "--markdown"
     "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authExistingPath.path,
 ])
 assertTrue(authExistingMarkdownOutput.contains("- Apply Prefill Then Refresh: `bash scripts/manual_blocker_evidence_status.sh auth-smtp --apply-prefill`"), "existing auth markdown should suggest apply-prefill first")
+assertTrue(authExistingMarkdownOutput.contains("- Print Prefill Env Template: `bash scripts/print_manual_evidence_prefill_env.sh auth-smtp`"), "existing auth markdown should suggest env template first")
 assertTrue(authExistingMarkdownOutput.contains("- Prefill Opportunity: metadata gaps in `2` files"), "existing auth markdown should summarize metadata-prefill opportunity")
+assertTrue(authExistingMarkdownOutput.contains("- Missing Prefill Env: `DOGAREA_AUTH_SMTP_PROJECT, DOGAREA_AUTH_SMTP_PROVIDER, DOGAREA_AUTH_SMTP_SENDER_DOMAIN, DOGAREA_AUTH_SMTP_DNS_SPF, DOGAREA_AUTH_SMTP_DNS_DKIM, DOGAREA_AUTH_SMTP_DNS_DMARC, DOGAREA_AUTH_SMTP_PROVIDER_VERIFIED_AT, DOGAREA_AUTH_SMTP_HOST, DOGAREA_AUTH_SMTP_PORT, DOGAREA_AUTH_SMTP_USER_MASK, DOGAREA_AUTH_SMTP_SENDER_NAME, DOGAREA_AUTH_SMTP_SENDER_EMAIL, DOGAREA_AUTH_SMTP_EMAIL_SENT, DOGAREA_AUTH_SMTP_MAX_FREQUENCY, DOGAREA_AUTH_SMTP_CONFIRM_EMAIL_POLICY, DOGAREA_AUTH_SMTP_PASSWORD_RESET_POLICY, DOGAREA_AUTH_SMTP_EMAIL_CHANGE_POLICY, DOGAREA_AUTH_SMTP_INVITE_POLICY`"), "existing auth markdown should summarize missing auth prefill env vars")
 assertTrue(!authOutput.contains("--negative-provider-event"), "auth next command should not require provider event flag")
 
 print("PASS: manual blocker evidence status runner contract checks")
