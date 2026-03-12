@@ -119,6 +119,10 @@ surface_prefill_command() {
   printf 'bash scripts/prefill_manual_evidence_pack.sh %s %q' "$1" "$2"
 }
 
+surface_apply_prefill_status_command() {
+  printf 'bash scripts/manual_blocker_evidence_status.sh %s --apply-prefill' "$1"
+}
+
 surface_closure_render_command() {
   case "$1" in
     widget) printf 'bash scripts/render_closure_comment_from_evidence.sh widget %q --write' "$2" ;;
@@ -190,6 +194,121 @@ apply_prefill_if_requested() {
     return
   fi
   bash scripts/prefill_manual_evidence_pack.sh "$surface" "$pack_path" >/dev/null
+}
+
+surface_has_prefill_gaps() {
+  local surface="$1"
+  local capture_path="$2"
+  case "$surface" in
+    widget)
+      grep -Eq '^ - (empty value|missing line): .* :: - (Date|Tester|Device / OS|App Build):$' "$capture_path"
+      ;;
+    auth-smtp)
+      grep -Eq '^ - (empty value|missing line): .*01-dns-verification\.md :: ' "$capture_path" ||
+      grep -Eq '^ - (empty value|missing line): .*02-supabase-smtp-settings\.md :: ' "$capture_path"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+surface_prefill_gap_summary_plain() {
+  local surface="$1"
+  local capture_path="$2"
+  case "$surface" in
+    widget)
+      awk '
+        /^ - (empty value|missing line): / {
+          split($0, detailParts, " :: ")
+          filePath = detailParts[1]
+          field = detailParts[2]
+          if (field !~ /Date|Tester|Device \/ OS|App Build/) next
+          caseRef = filePath
+          sub(/^.*\//, "", caseRef)
+          sub(/\.md$/, "", caseRef)
+          if (!(caseRef in seen)) {
+            seen[caseRef] = 1
+            count++
+          }
+        }
+        END {
+          if (count > 0) {
+            printf "prefill-opportunity: metadata gaps detected in %d cases\n", count
+          }
+        }
+      ' "$capture_path"
+      ;;
+    auth-smtp)
+      awk '
+        /^ - (empty value|missing line): / {
+          split($0, detailParts, " :: ")
+          filePath = detailParts[1]
+          fileRef = filePath
+          sub(/^.*\//, "", fileRef)
+          if (fileRef != "01-dns-verification.md" && fileRef != "02-supabase-smtp-settings.md") next
+          if (!(fileRef in seen)) {
+            seen[fileRef] = 1
+            count++
+          }
+        }
+        END {
+          if (count > 0) {
+            printf "prefill-opportunity: metadata gaps detected in %d files\n", count
+          }
+        }
+      ' "$capture_path"
+      ;;
+  esac
+}
+
+surface_prefill_gap_summary_markdown() {
+  local surface="$1"
+  local capture_path="$2"
+  case "$surface" in
+    widget)
+      awk '
+        /^ - (empty value|missing line): / {
+          split($0, detailParts, " :: ")
+          filePath = detailParts[1]
+          field = detailParts[2]
+          if (field !~ /Date|Tester|Device \/ OS|App Build/) next
+          caseRef = filePath
+          sub(/^.*\//, "", caseRef)
+          sub(/\.md$/, "", caseRef)
+          if (!(caseRef in seen)) {
+            seen[caseRef] = 1
+            count++
+          }
+        }
+        END {
+          if (count > 0) {
+            printf "- Prefill Opportunity: metadata gaps in `%d` cases\n", count
+          }
+        }
+      ' "$capture_path"
+      ;;
+    auth-smtp)
+      awk '
+        /^ - (empty value|missing line): / {
+          split($0, detailParts, " :: ")
+          filePath = detailParts[1]
+          fileRef = filePath
+          sub(/^.*\//, "", fileRef)
+          if (fileRef != "01-dns-verification.md" && fileRef != "02-supabase-smtp-settings.md") next
+          if (!(fileRef in seen)) {
+            seen[fileRef] = 1
+            count++
+          }
+        }
+        END {
+          if (count > 0) {
+            printf "- Prefill Opportunity: metadata gaps in `%d` files\n", count
+          }
+        }
+      ' "$capture_path"
+      ;;
+  esac
 }
 
 surface_status_and_capture() {
@@ -570,6 +689,9 @@ print_surface_status() {
   printf 'status: %s\n' "$status"
   printf 'next-render: %s\n' "$(surface_render_command "$surface" "$pack_path")"
   printf 'next-prefill-existing: %s\n' "$(surface_prefill_command "$surface" "$pack_path")"
+  if [[ "$status" == "incomplete" && "$apply_prefill" != "1" ]] && surface_has_prefill_gaps "$surface" "$capture_path"; then
+    printf 'next-apply-prefill: %s\n' "$(surface_apply_prefill_status_command "$surface")"
+  fi
   printf 'next-validate: %s\n' "$(surface_validate_command "$surface" "$pack_path")"
   printf 'next-render-closure: %s\n' "$(surface_closure_render_command "$surface" "$pack_path")"
   printf 'next-archive: %s\n' "$(surface_archive_command "$surface" "$pack_path")"
@@ -578,6 +700,7 @@ print_surface_status() {
     printf 'next-post-closure-bundle: %s\n' "$(surface_bundle_post_command "$surface" "$pack_path")"
   fi
   if [[ "$status" == "incomplete" ]]; then
+    surface_prefill_gap_summary_plain "$surface" "$capture_path"
     surface_gap_summary_plain "$surface" "$capture_path"
   fi
   printf '\n'
@@ -607,6 +730,9 @@ print_surface_status_markdown() {
   printf '### Next Commands\n'
   printf -- '- Render: `%s`\n' "$(surface_render_command "$surface" "$pack_path")"
   printf -- '- Prefill Existing: `%s`\n' "$(surface_prefill_command "$surface" "$pack_path")"
+  if [[ "$status" == "incomplete" && "$apply_prefill" != "1" ]] && surface_has_prefill_gaps "$surface" "$capture_path"; then
+    printf -- '- Apply Prefill Then Refresh: `%s`\n' "$(surface_apply_prefill_status_command "$surface")"
+  fi
   printf -- '- Validate: `%s`\n' "$(surface_validate_command "$surface" "$pack_path")"
   printf -- '- Render Closure: `%s`\n' "$(surface_closure_render_command "$surface" "$pack_path")"
   printf -- '- Archive: `%s`\n' "$(surface_archive_command "$surface" "$pack_path")"
@@ -617,6 +743,7 @@ print_surface_status_markdown() {
   printf '\n'
   if [[ "$status" == "incomplete" ]]; then
     surface_gap_summary_markdown "$surface" "$capture_path"
+    surface_prefill_gap_summary_markdown "$surface" "$capture_path"
   fi
   printf '\n'
   rm -f "$capture_path"
