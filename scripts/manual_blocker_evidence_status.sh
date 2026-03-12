@@ -11,6 +11,7 @@ Usage:
   bash scripts/manual_blocker_evidence_status.sh [widget|auth-smtp] [--write-missing]
   bash scripts/manual_blocker_evidence_status.sh [widget|auth-smtp] --markdown [--output <path>] [--write-missing]
   bash scripts/manual_blocker_evidence_status.sh [widget|auth-smtp] [--raw-errors]
+  bash scripts/manual_blocker_evidence_status.sh [widget|auth-smtp] [--apply-prefill]
 USAGE
 }
 
@@ -24,6 +25,7 @@ write_missing=0
 markdown_mode=0
 output_path=""
 raw_errors=0
+apply_prefill=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -47,6 +49,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --raw-errors)
       raw_errors=1
+      shift
+      ;;
+    --apply-prefill)
+      apply_prefill=1
       shift
       ;;
     -h|--help)
@@ -175,6 +181,15 @@ render_missing_pack_if_needed() {
   else
     bash scripts/render_manual_evidence_pack.sh "$surface" --output "$pack_path" --prefill-from-env >/dev/null
   fi
+}
+
+apply_prefill_if_requested() {
+  local surface="$1"
+  local pack_path="$2"
+  if [[ "$apply_prefill" != "1" || ! -e "$pack_path" ]]; then
+    return
+  fi
+  bash scripts/prefill_manual_evidence_pack.sh "$surface" "$pack_path" >/dev/null
 }
 
 surface_status_and_capture() {
@@ -544,6 +559,7 @@ print_surface_status() {
   local pack_path="$(surface_pack_path "$surface")"
   local capture_path="/tmp/dogarea_manual_blocker_status_${surface}_$$"
   render_missing_pack_if_needed "$surface" "$pack_path"
+  apply_prefill_if_requested "$surface" "$pack_path"
   local status="$(surface_status_and_capture "$surface" "$pack_path" "$capture_path")"
 
   printf '== %s ==\n' "$surface"
@@ -575,6 +591,7 @@ print_surface_status_markdown() {
   local pack_path="$(surface_pack_path "$surface")"
   local capture_path="/tmp/dogarea_manual_blocker_status_${surface}_$$"
   render_missing_pack_if_needed "$surface" "$pack_path"
+  apply_prefill_if_requested "$surface" "$pack_path"
   local status="$(surface_status_and_capture "$surface" "$pack_path" "$capture_path")"
 
   printf '## %s\n' "$surface"
