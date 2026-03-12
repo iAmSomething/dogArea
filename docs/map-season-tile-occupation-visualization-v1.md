@@ -38,13 +38,13 @@
   - hit target / hotspot
 - 시즌 타일 + 과거 polygon 모드
   - 시즌 fill
-  - 저장 polygon surface
+  - 저장 polygon stroke
   - 시즌 stroke
   - 선택 halo
   - polygon marker / hotspot
 - 시즌 타일 + 현재 산책 route 모드
   - 시즌 fill
-  - 저장 polygon surface
+  - 저장 polygon stroke
   - 시즌 stroke
   - 선택 halo
   - 현재 산책 route
@@ -54,6 +54,7 @@
 - 시즌 fill은 `seasonOnly / seasonWithStoredPolygonSurface / seasonWithActiveWalkRoute` 3개 시나리오별로 더 옅게 보정한다.
 - active route가 같이 보일 때는 fill을 가장 약하게 내린다.
 - 날씨 tint가 켜진 상태에서도 검게 눌리지 않도록 fill opacity를 추가로 보정한다.
+- 시즌 점령 지도가 켜진 동안에는 저장 polygon fill을 끄고, 얇은 stroke만 보조 outline으로 남긴다.
 
 ### 2. 상태 시그널
 - `점령`
