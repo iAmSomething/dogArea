@@ -23,7 +23,8 @@
 - 판정: `PASS`
 
 ### 2. active walk와 idle 두 상태에서 모든 텍스트와 버튼 접근이 가능하다
-- `control surface`는 조작 전용이고, `WatchControlSurfaceView` 안에서 상태·배너·CTA를 하나의 surface로 통합한다.
+- `control surface`는 조작 전용이고, `WatchControlSurfaceView` 안에서 상태와 CTA만 남긴다.
+- 반려견 문맥과 feedback banner는 `information surface`로 이동해 스크롤 밀도를 줄였다.
 - 작은 화면에서도 `산책 시작`, `영역 표시하기`, `산책 종료`가 정보 카드와 경쟁하지 않고 접근 가능하다.
 - 판정: `PASS`
 

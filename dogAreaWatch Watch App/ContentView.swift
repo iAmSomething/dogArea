@@ -28,10 +28,7 @@ struct ContentView: View {
                         isWalking: viewModel.isWalking,
                         isReachable: viewModel.isReachable,
                         walkingTime: viewModel.walkingTime,
-                        walkingArea: viewModel.walkingArea,
                         pointCount: viewModel.currentPointCount,
-                        petContext: viewModel.petContext,
-                        feedbackBanner: viewModel.feedbackBanner,
                         startWalkPresentation: viewModel.controlPresentation(for: .startWalk),
                         addPointPresentation: viewModel.controlPresentation(for: .addPoint),
                         endWalkPresentation: viewModel.controlPresentation(for: .endWalk),
@@ -68,6 +65,13 @@ struct ContentView: View {
                     }
                     .accessibilityElement(children: .combine)
                     .accessibilityIdentifier("watch.main.info.header")
+
+                    if let feedbackBanner = viewModel.feedbackBanner {
+                        WatchActionBannerView(
+                            banner: feedbackBanner,
+                            style: .card
+                        )
+                    }
 
                     WatchSelectedPetContextCardView(
                         petContext: viewModel.petContext,

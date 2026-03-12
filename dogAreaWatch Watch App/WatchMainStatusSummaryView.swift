@@ -4,9 +4,7 @@ struct WatchMainStatusSummaryView: View {
     let isWalking: Bool
     let isReachable: Bool
     let walkingTime: TimeInterval
-    let walkingArea: Double
     let pointCount: Int
-    let petContext: WatchSelectedPetContextState
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -29,10 +27,6 @@ struct WatchMainStatusSummaryView: View {
                         Capsule(style: .continuous)
                             .fill((isReachable ? Color.green : Color.orange).opacity(0.18))
                     )
-            }
-
-            if isWalking == false {
-                compactPetContext
             }
 
             ViewThatFits(in: .horizontal) {
@@ -91,31 +85,9 @@ struct WatchMainStatusSummaryView: View {
     /// - Returns: 반려견 문맥과 산책 진행 상태를 반영한 짧은 안내 문구입니다.
     private var summarySubtitle: String {
         if isWalking {
-            return "\(petContext.petName)와의 산책 상태와 연결만 짧게 보여 줍니다."
+            return "시간, 포인트, 연결 상태만 짧게 보여 줍니다."
         }
-        if petContext.blocksInlineStart {
-            return "지금은 iPhone 확인이 먼저 필요합니다."
-        }
-        return "\(petContext.petName) 기준으로 바로 시작할 수 있습니다."
-    }
-
-    /// 비산책 상태에서 현재 반려견 문맥을 짧게 요약해 표시합니다.
-    /// - Returns: 시작 전 반려견 이름과 선택 상태를 설명하는 보조 문맥 뷰입니다.
-    private var compactPetContext: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("현재 반려견")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-            Text(petContext.petName)
-                .font(.callout.weight(.semibold))
-                .foregroundStyle(.primary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-            Text(petContext.detail)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
-        }
+        return "반려견 문맥과 큐 상태는 옆 정보 화면에서 확인합니다."
     }
 
     /// 상단 요약 메트릭 한 칸을 수평 스트립용 컬럼으로 렌더링합니다.

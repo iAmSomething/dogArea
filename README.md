@@ -57,6 +57,7 @@
 - Watch 메인 overflow scroll UX v1: `docs/watch-main-scroll-overflow-ux-v1.md`
 - Watch control surface density v1: `docs/watch-control-surface-density-v1.md`
 - Issue #698 closure evidence v1: `docs/issue-698-closure-evidence-v1.md`
+- Issue #738 closure evidence v1: `docs/issue-738-closure-evidence-v1.md`
 - Watch AppIcon asset fix v1: `docs/watch-appicon-asset-fix-v1.md`
 - Walk widget pet context policy v1: `docs/walk-widget-pet-context-policy-v1.md`
 - Territory widget goal deeplink v1: `docs/territory-widget-goal-deeplink-v1.md`

@@ -40,7 +40,8 @@
 - 판정: `PASS`
 
 ### 5. watch 화면 크기를 고려해 피드백 정보량이 제한됨
-- control page는 `WatchControlSurfaceView` 하나의 primary surface 안에 상단 상태, 최근 배너 1개, 메트릭 2개, 액션 섹션을 통합한다.
+- control page는 `WatchControlSurfaceView` 하나의 primary surface 안에 상단 상태, 메트릭 3개, 액션 섹션만 남긴다.
+- 최근 배너 1개는 information surface에서 보여 사용자의 조작 흐름과 분리한다.
 - `WatchPrimaryActionDockView`는 더 이상 `safeAreaInset(edge: .bottom)` overlay로 분리하지 않고 동일 surface 안에서 동작한다.
 - `WatchActionButtonView`와 `WatchActionBannerView`로 역할을 분리해 작은 화면에서 정보 밀도를 통제한다.
 - 판정: `PASS`

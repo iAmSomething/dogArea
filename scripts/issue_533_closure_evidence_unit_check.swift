@@ -45,6 +45,8 @@ assertTrue(!contentView.contains(".safeAreaInset(edge: .bottom"), "watch content
 assertTrue(contentView.contains("WatchControlSurfaceView"), "watch content should render the integrated control surface view")
 assertTrue(controlSurfaceView.contains("WatchMainStatusSummaryView"), "control surface should render the status summary view")
 assertTrue(controlSurfaceView.contains("WatchPrimaryActionDockView"), "control surface should render the action block view")
+assertTrue(!controlSurfaceView.contains("WatchActionBannerView"), "control surface should not keep the banner in the overflow-safe structure")
+assertTrue(contentView.contains("WatchActionBannerView"), "information surface should host the banner in the overflow-safe structure")
 assertTrue(statusSummaryView.contains("watch.main.statusSummary"), "status summary should expose a stable accessibility identifier")
 assertTrue(actionDockView.contains("watch.main.actionsDock"), "action dock should expose a stable accessibility identifier")
 assertTrue(readme.contains("docs/issue-533-closure-evidence-v1.md"), "README should index the issue #533 closure evidence doc")
