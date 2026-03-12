@@ -248,6 +248,7 @@
 - blocker evidence validator: `bash scripts/validate_manual_evidence_pack.sh <widget|auth-smtp> <filled-markdown>`
 - blocker closure renderer: `bash scripts/render_closure_comment_from_evidence.sh <widget|auth-smtp> ...`
 - blocker closure poster: `bash scripts/post_closure_comment_from_evidence.sh <widget|auth-smtp> --issue <number> ... [--post]`
+- widget blocker bundle poster: `bash scripts/post_closure_comment_from_evidence.sh widget --all-related .codex_tmp/widget-real-device-evidence --post`
 - Backend drift / RPC contract 전용 체크: `bash scripts/backend_migration_drift_check.sh`
 - Backend smoke entrypoint: `bash scripts/backend_pr_check.sh`
 - Live Supabase smoke matrix: `DOGAREA_RUN_SUPABASE_SMOKE=1 DOGAREA_TEST_EMAIL=... DOGAREA_TEST_PASSWORD=... bash scripts/backend_pr_check.sh`

@@ -8,6 +8,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   bash scripts/post_closure_comment_from_evidence.sh widget --issue <408|617|692|731> <evidence-dir> [--post] [--output <path>]
+  bash scripts/post_closure_comment_from_evidence.sh widget --all-related <evidence-dir> [--post] [--output <path>]
   bash scripts/post_closure_comment_from_evidence.sh auth-smtp --issue 482 <evidence-file> --negative-guard <text> --negative-provider-event <text> [--post] [--output <path>]
 USAGE
 }
@@ -38,6 +39,7 @@ issue_number=""
 evidence_path=""
 negative_guard=""
 negative_provider_event=""
+all_related=0
 post_mode=0
 output_path=""
 gh_bin="${DOGAREA_GH_BIN:-gh}"
@@ -53,6 +55,10 @@ while [[ $# -gt 0 ]]; do
       [[ $# -ge 2 ]] || die "--issue requires a value"
       issue_number="${2#\#}"
       shift 2
+      ;;
+    --all-related)
+      all_related=1
+      shift
       ;;
     --negative-guard)
       [[ $# -ge 2 ]] || die "--negative-guard requires a value"
@@ -89,14 +95,19 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ -n "$kind" ]] || { usage; exit 1; }
-[[ -n "$issue_number" ]] || die "--issue is required"
 [[ -n "$evidence_path" ]] || die "evidence path is required"
 
-if ! issue_allowed_for_surface "$kind" "$issue_number"; then
-  case "$kind" in
-    widget) die "surface widget must target one of #408, #617, #692, #731 (got #$issue_number)" ;;
-    auth-smtp) die "surface auth-smtp must target issue #482 (got #$issue_number)" ;;
-  esac
+if [[ "$all_related" == "1" ]]; then
+  [[ "$kind" == "widget" ]] || die "--all-related is only supported for widget"
+  [[ -z "$issue_number" ]] || die "--issue and --all-related cannot be used together"
+else
+  [[ -n "$issue_number" ]] || die "--issue is required"
+  if ! issue_allowed_for_surface "$kind" "$issue_number"; then
+    case "$kind" in
+      widget) die "surface widget must target one of #408, #617, #692, #731 (got #$issue_number)" ;;
+      auth-smtp) die "surface auth-smtp must target issue #482 (got #$issue_number)" ;;
+    esac
+  fi
 fi
 
 if [[ "$kind" == "auth-smtp" ]]; then
@@ -129,10 +140,22 @@ bash scripts/render_closure_comment_from_evidence.sh "${renderer_args[@]}" >/dev
 if [[ "$post_mode" != "1" ]]; then
   cat "$rendered_output_path"
   printf '\n'
-  printf 'DRY RUN: no GitHub comment was posted. Re-run with --post to publish to issue #%s.\n' "$issue_number" >&2
+  if [[ "$all_related" == "1" ]]; then
+    printf 'DRY RUN: no GitHub comment was posted. Re-run with --post to publish to issues #408, #617, #692, and #731.\n' >&2
+  else
+    printf 'DRY RUN: no GitHub comment was posted. Re-run with --post to publish to issue #%s.\n' "$issue_number" >&2
+  fi
   exit 0
 fi
 
 command -v "$gh_bin" >/dev/null 2>&1 || die "gh binary not found: $gh_bin"
-"$gh_bin" issue comment "$issue_number" --body-file "$rendered_output_path"
-printf 'POSTED issue #%s using %s\n' "$issue_number" "$gh_bin"
+if [[ "$all_related" == "1" ]]; then
+  posted_issues=(408 617 692 731)
+  for posted_issue in "${posted_issues[@]}"; do
+    "$gh_bin" issue comment "$posted_issue" --body-file "$rendered_output_path"
+  done
+  printf 'POSTED issues #408, #617, #692, and #731 using %s\n' "$gh_bin"
+else
+  "$gh_bin" issue comment "$issue_number" --body-file "$rendered_output_path"
+  printf 'POSTED issue #%s using %s\n' "$issue_number" "$gh_bin"
+fi
