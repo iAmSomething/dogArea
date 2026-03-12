@@ -12,6 +12,7 @@
 - `bash scripts/manual_blocker_evidence_status.sh widget`
 - `bash scripts/manual_blocker_evidence_status.sh auth-smtp --write-missing`
 - `bash scripts/manual_blocker_evidence_status.sh widget --raw-errors`
+- `bash scripts/manual_blocker_evidence_status.sh widget --apply-prefill`
 - `bash scripts/manual_blocker_evidence_status.sh --markdown`
 - `bash scripts/manual_blocker_evidence_status.sh --markdown --output .codex_tmp/manual-blocker-evidence-status.md`
 
@@ -37,6 +38,7 @@
   - `next-post-closure-bundle` (`widget`만 제공)
 - `--markdown` 모드에서는 위 내용을 reviewer 공유용 markdown report로 출력한다.
 - `--output`을 같이 주면 report를 파일로 export하고 `WROTE <path>`를 출력한다.
+- `--apply-prefill`를 주면 existing bundle에 대해 `prefill_manual_evidence_pack.sh`를 먼저 적용한 뒤 status를 계산한다.
 - `auth-smtp`의 `next-render`는 `--prefill-from-env`를 포함해 운영 메타데이터 transcription 비용을 줄인다.
 - `widget`의 `next-render`도 `--prefill-from-env`를 포함해 공통 기록 메타 transcription 비용을 줄인다.
 - 기존 bundle이 이미 있으면 `next-prefill-existing` -> `next-validate` 순서가 더 안전한 기본 경로다.

@@ -169,6 +169,7 @@ assertTrue(runnerScript.contains("next-post-closure-bundle"), "runner should pri
 assertTrue(runnerScript.contains("--markdown"), "runner should support markdown mode")
 assertTrue(runnerScript.contains("--output"), "runner should support output path")
 assertTrue(runnerScript.contains("--raw-errors"), "runner should support raw error output mode")
+assertTrue(runnerScript.contains("--apply-prefill"), "runner should support one-shot prefill application")
 assertTrue(runnerScript.contains("gap-summary:"), "runner should print plain gap summaries for incomplete packs")
 assertTrue(runnerScript.contains("next-fill:"), "runner should print next-fill guidance")
 assertTrue(runnerScript.contains("### Gap Summary"), "runner should print markdown gap summaries for incomplete packs")
@@ -183,6 +184,7 @@ assertTrue(doc.contains("Manual Blocker Evidence Status Report"), "doc should de
 assertTrue(doc.contains("--markdown"), "doc should describe markdown mode")
 assertTrue(doc.contains("--output"), "doc should describe output export")
 assertTrue(doc.contains("--raw-errors"), "doc should describe raw error output mode")
+assertTrue(doc.contains("--apply-prefill"), "doc should describe one-shot prefill application")
 assertTrue(doc.contains("gap-summary"), "doc should describe plain gap summary output")
 assertTrue(doc.contains("next-fill"), "doc should describe next-fill guidance")
 assertTrue(doc.contains("### Gap Summary"), "doc should describe markdown gap summary heading")
@@ -223,6 +225,22 @@ assertTrue(generatedOutput.contains("gap-cases:"), "generated widget bundle shou
 assertTrue(generatedOutput.contains("WD-001: result, assets, placeholder logs"), "generated widget bundle should dedupe case buckets after metadata prefill")
 assertTrue(generatedOutput.contains("WL-001: result, assets"), "generated widget bundle should reduce layout gaps after metadata prefill")
 assertTrue(!generatedOutput.contains("empty value:"), "generated widget bundle should hide raw validator errors by default")
+
+let widgetExistingPath = tempRoot.appendingPathComponent("widget-existing")
+_ = runStatus(arguments: ["widget", "--write-missing"], environment: [
+    "DOGAREA_WIDGET_EVIDENCE_PATH": widgetExistingPath.path,
+    "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
+])
+let widgetAppliedPrefillOutput = runStatus(arguments: ["widget", "--apply-prefill"], environment: [
+    "DOGAREA_WIDGET_EVIDENCE_PATH": widgetExistingPath.path,
+    "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
+    "DOGAREA_WIDGET_EVIDENCE_DATE": "2026-03-12",
+    "DOGAREA_WIDGET_EVIDENCE_TESTER": "codex",
+    "DOGAREA_WIDGET_EVIDENCE_DEVICE_OS": "iPhone 16 / iOS 18.5",
+    "DOGAREA_WIDGET_EVIDENCE_APP_BUILD": "2026.03.12.1",
+])
+assertTrue(widgetAppliedPrefillOutput.contains("gap-summary: 16 incomplete cases (action 8, layout 8, total-errors 120)"), "apply-prefill should reduce widget error counts for existing bundles")
+assertTrue(widgetAppliedPrefillOutput.contains("WD-001: result, assets, placeholder logs"), "apply-prefill should remove metadata gaps from widget bundles")
 
 for caseID in ["WD-001", "WD-002", "WD-003", "WD-004", "WD-005", "WD-006", "WD-007", "WD-008"] {
     write(widgetPath.appendingPathComponent("action/\(caseID).md"), content: filledWidgetAction(caseID: caseID, summary: "\(caseID) converged"))
@@ -307,6 +325,37 @@ assertTrue(authGeneratedOutput.contains("gap-summary: 6 incomplete files"), "aut
 assertTrue(authGeneratedOutput.contains("next-fill: 01-dns-verification.md"), "auth runner should point to the first auth file to fill")
 assertTrue(authGeneratedOutput.contains("03-live-send-results.md: scenario rows, mailbox assets"), "auth runner should fold live-send scenario row errors into the live-send file")
 assertTrue(!authGeneratedOutput.contains("signup confirmation: 1 gaps"), "auth runner should avoid scenario-only pseudo-file output")
+
+let authExistingPath = tempRoot.appendingPathComponent("auth-existing")
+_ = runStatus(arguments: ["auth-smtp", "--write-missing"], environment: [
+    "DOGAREA_WIDGET_EVIDENCE_PATH": widgetPath.path,
+    "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authExistingPath.path,
+])
+let authAppliedPrefillOutput = runStatus(arguments: ["auth-smtp", "--apply-prefill"], environment: [
+    "DOGAREA_WIDGET_EVIDENCE_PATH": widgetPath.path,
+    "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authExistingPath.path,
+    "DOGAREA_AUTH_SMTP_PROJECT": "ttjiknenynbhbpoqoesq",
+    "DOGAREA_AUTH_SMTP_PROVIDER": "Resend",
+    "DOGAREA_AUTH_SMTP_SENDER_DOMAIN": "auth.dogarea.app",
+    "DOGAREA_AUTH_SMTP_DNS_SPF": "pass",
+    "DOGAREA_AUTH_SMTP_DNS_DKIM": "verified",
+    "DOGAREA_AUTH_SMTP_DNS_DMARC": "present",
+    "DOGAREA_AUTH_SMTP_PROVIDER_VERIFIED_AT": "2026-03-12T08:00:00Z",
+    "DOGAREA_AUTH_SMTP_HOST": "smtp.resend.com",
+    "DOGAREA_AUTH_SMTP_PORT": "587",
+    "DOGAREA_AUTH_SMTP_USER_MASK": "re_***",
+    "DOGAREA_AUTH_SMTP_SENDER_NAME": "DogArea Auth",
+    "DOGAREA_AUTH_SMTP_SENDER_EMAIL": "auth@auth.dogarea.app",
+    "DOGAREA_AUTH_SMTP_EMAIL_SENT": "12",
+    "DOGAREA_AUTH_SMTP_MAX_FREQUENCY": "90",
+    "DOGAREA_AUTH_SMTP_CONFIRM_EMAIL_POLICY": "required",
+    "DOGAREA_AUTH_SMTP_PASSWORD_RESET_POLICY": "enabled / app deep link",
+    "DOGAREA_AUTH_SMTP_EMAIL_CHANGE_POLICY": "double confirmation",
+    "DOGAREA_AUTH_SMTP_INVITE_POLICY": "disabled in product",
+])
+assertTrue(authAppliedPrefillOutput.contains("01-dns-verification.md: asset"), "apply-prefill should reduce auth metadata gaps for existing bundles")
+assertTrue(authAppliedPrefillOutput.contains("02-supabase-smtp-settings.md: asset"), "apply-prefill should reduce auth smtp settings gaps for existing bundles")
+assertTrue(!authAppliedPrefillOutput.contains("01-dns-verification.md: dns metadata, asset"), "apply-prefill should remove auth dns metadata gaps for existing bundles")
 assertTrue(!authOutput.contains("--negative-provider-event"), "auth next command should not require provider event flag")
 
 print("PASS: manual blocker evidence status runner contract checks")
