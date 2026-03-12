@@ -31,9 +31,9 @@
 - Pass / Fail:
 
 ## Screenshot Evidence
-- `step-1`:
-- `step-2`:
-- `step-fail`:
+- `step-1`: assets/layout/<case-id>-step-1.png
+- `step-2`: assets/layout/<case-id>-step-2.png
+- `step-fail`: n/a
 
 ## Notes
 - clipping 여부:

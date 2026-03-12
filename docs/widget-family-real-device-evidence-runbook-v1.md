@@ -27,6 +27,7 @@
   - `step-1`: 위젯 홈 화면 캡처
   - `step-2`: 길이가 긴 상태 또는 fallback 상태 캡처
   - `step-fail`: 실패 시 추가 캡처
+  - asset 경로는 bundle root 기준 `assets/layout/*.png`
 - budget 판정
   - headline 정책
   - detail 정책
@@ -42,8 +43,9 @@
 4. 첫 화면을 `step-1`로 저장한다.
 5. 상태 전환 또는 worst-case 문구를 만들어 `step-2`를 저장한다.
 6. 위젯 프레임 경계, CTA, badge, metric strip이 깨지지 않는지 확인한다.
-7. `docs/widget-family-real-device-evidence-template-v1.md` 형식으로 기록한다.
-8. `bash scripts/validate_manual_evidence_pack.sh widget <widget-evidence-dir>`로 전체 bundle 완결성을 검사한다.
+7. 캡처한 이미지를 `assets/layout/`에 같은 파일명으로 저장한다.
+8. `docs/widget-family-real-device-evidence-template-v1.md` 형식으로 기록한다.
+9. `bash scripts/validate_manual_evidence_pack.sh widget <widget-evidence-dir>`로 전체 bundle 완결성과 asset 존재를 검사한다.
 
 ## Pass 기준
 - 상단/하단 clipping이 없다.

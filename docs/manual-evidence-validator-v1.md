@@ -18,8 +18,12 @@
     - `layout/WL-001.md` ... `layout/WL-008.md` 존재 및 완결
     - action 케이스 로그/스크린샷 필드 완결
     - layout 케이스 budget/스크린샷 필드 완결
+    - `assets/action/*`, `assets/layout/*` 참조 경로 실제 존재
 - `auth-smtp`
   - 입력: 운영 증적 bundle 디렉터리
+  - 검사:
+    - `assets/*` 참조 경로 실제 존재
+    - live send `evidence_asset` 열 완결
 
 ## 사용법
 - `bash scripts/render_manual_evidence_pack.sh widget --write`
@@ -35,4 +39,4 @@
   - `PASS: auth-smtp evidence is complete`
 - 실패 시
   - non-zero exit
-  - 누락된 필드/파일/placeholder를 항목별로 출력
+  - 누락된 필드/파일/placeholder/asset 경로를 항목별로 출력

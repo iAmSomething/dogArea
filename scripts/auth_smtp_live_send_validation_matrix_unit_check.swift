@@ -52,6 +52,8 @@ assertTrue(runbook.contains("docs/auth-smtp-live-send-validation-matrix-v1.md"),
 assertTrue(template.contains("signup confirmation"), "template should still include signup confirmation scenario")
 assertTrue(template.contains("password reset"), "template should still include password reset scenario")
 assertTrue(template.contains("email change"), "template should still include email change scenario")
+assertTrue(template.contains("evidence_asset"), "template should include mailbox evidence asset column")
+assertTrue(template.contains("assets/signup-mailbox.png"), "template should include signup mailbox asset path")
 assertTrue(readme.contains("docs/auth-smtp-live-send-validation-matrix-v1.md"), "README should link live-send validation matrix")
 assertTrue(backendPRCheck.contains("auth_smtp_live_send_validation_matrix_unit_check.swift"), "backend_pr_check should run live-send validation matrix check")
 assertTrue(iosPRCheck.contains("auth_smtp_live_send_validation_matrix_unit_check.swift"), "ios_pr_check should run live-send validation matrix check")

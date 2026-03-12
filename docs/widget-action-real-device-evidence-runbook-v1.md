@@ -33,6 +33,7 @@
   - 위젯 탭 직후 화면
   - 최종 도착 화면
   - 실패 시 에러/오버레이 상태
+  - asset 경로는 bundle root 기준 `assets/action/*.png`
 
 ## 실행 절차
 1. `docs/widget-action-real-device-validation-matrix-v1.md`에서 대상 케이스를 고른다.
@@ -45,7 +46,8 @@
 8. Xcode console에서 `WidgetAction`, `onOpenURL received`, `consumePendingWidgetActionIfNeeded` 로그를 캡처한다.
 9. 최종 도착 화면에서 `step-2`를 저장한다.
 10. 결과를 `action/WD-*.md`에 기록한다.
-11. 모든 action/layout 케이스를 채운 뒤 `bash scripts/validate_manual_evidence_pack.sh widget <bundle-dir>`로 완결성을 검사한다.
+11. `step-1` / `step-2` / 필요 시 `step-fail` asset을 `assets/action/`에 같은 파일명으로 저장한다.
+12. 모든 action/layout 케이스를 채운 뒤 `bash scripts/validate_manual_evidence_pack.sh widget <bundle-dir>`로 완결성과 asset 존재를 검사한다.
 
 ## Pass 기준
 - 기대한 탭/상세 화면에 도착한다.

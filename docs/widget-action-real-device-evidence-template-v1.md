@@ -31,9 +31,9 @@ request_id=...
 ```
 
 ## Screenshot Evidence
-- `step-1`:
-- `step-2`:
-- `step-fail`:
+- `step-1`: assets/action/<case-id>-step-1.png
+- `step-2`: assets/action/<case-id>-step-2.png
+- `step-fail`: n/a
 
 ## Notes
 - defer/replay 여부:

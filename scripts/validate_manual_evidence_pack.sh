@@ -53,6 +53,43 @@ require_nonempty_prefixed_line() {
   fi
 }
 
+extract_prefixed_value() {
+  local prefix="$1"
+  local file="$2"
+  local line value
+
+  line="$(line_by_prefix "$prefix" "$file")"
+  [[ -n "$line" ]] || return 1
+  value="${line#"$prefix"}"
+  trim "$value"
+}
+
+require_existing_relative_asset() {
+  local base_dir="$1"
+  local relative_path="$2"
+  local source_label="$3"
+  local normalized
+
+  normalized="$(trim "$relative_path")"
+  if [[ -z "$normalized" ]]; then
+    add_error "empty asset path: $source_label"
+    return
+  fi
+
+  if [[ "$normalized" == "n/a" || "$normalized" == "N/A" ]]; then
+    return
+  fi
+
+  if [[ "$normalized" = /* ]]; then
+    add_error "asset path must be relative: $source_label :: $normalized"
+    return
+  fi
+
+  if [[ ! -e "$base_dir/$normalized" ]]; then
+    add_error "missing asset file: $source_label :: $normalized"
+  fi
+}
+
 require_contains() {
   local literal="$1"
   local file="$2"
@@ -83,6 +120,8 @@ require_pass_outcome() {
 validate_widget_action_case() {
   local file="$1"
   local expected_case="$2"
+  local bundle_root="$3"
+  local step1_path step2_path step_fail_path
 
   [[ -f "$file" ]] || {
     add_error "missing action file: $file"
@@ -106,6 +145,16 @@ validate_widget_action_case() {
   require_nonempty_prefixed_line '- `step-2`:' "$file"
   require_pass_outcome "$file"
 
+  step1_path="$(extract_prefixed_value '- `step-1`:' "$file" || true)"
+  step2_path="$(extract_prefixed_value '- `step-2`:' "$file" || true)"
+  step_fail_path="$(extract_prefixed_value '- `step-fail`:' "$file" || true)"
+
+  [[ -n "$step1_path" ]] && require_existing_relative_asset "$bundle_root" "$step1_path" "$file :: step-1"
+  [[ -n "$step2_path" ]] && require_existing_relative_asset "$bundle_root" "$step2_path" "$file :: step-2"
+  if [[ -n "$step_fail_path" && "$step_fail_path" != "n/a" && "$step_fail_path" != "N/A" ]]; then
+    require_existing_relative_asset "$bundle_root" "$step_fail_path" "$file :: step-fail"
+  fi
+
   require_contains "[WidgetAction]" "$file"
   require_contains "onOpenURL received" "$file"
   require_contains "consumePendingWidgetActionIfNeeded" "$file"
@@ -124,6 +173,8 @@ validate_widget_action_case() {
 validate_widget_layout_case() {
   local file="$1"
   local expected_case="$2"
+  local bundle_root="$3"
+  local step1_path step2_path step_fail_path
 
   [[ -f "$file" ]] || {
     add_error "missing layout file: $file"
@@ -151,6 +202,16 @@ validate_widget_layout_case() {
   require_nonempty_prefixed_line '- `step-2`:' "$file"
   require_pass_outcome "$file"
 
+  step1_path="$(extract_prefixed_value '- `step-1`:' "$file" || true)"
+  step2_path="$(extract_prefixed_value '- `step-2`:' "$file" || true)"
+  step_fail_path="$(extract_prefixed_value '- `step-fail`:' "$file" || true)"
+
+  [[ -n "$step1_path" ]] && require_existing_relative_asset "$bundle_root" "$step1_path" "$file :: step-1"
+  [[ -n "$step2_path" ]] && require_existing_relative_asset "$bundle_root" "$step2_path" "$file :: step-2"
+  if [[ -n "$step_fail_path" && "$step_fail_path" != "n/a" && "$step_fail_path" != "N/A" ]]; then
+    require_existing_relative_asset "$bundle_root" "$step_fail_path" "$file :: step-fail"
+  fi
+
   if ! grep -Fq -- "- Case ID: ${expected_case}" "$file"; then
     add_error "unexpected layout case id: $file :: expected ${expected_case}"
   fi
@@ -168,11 +229,11 @@ validate_widget_bundle() {
   }
 
   for id in "${action_ids[@]}"; do
-    validate_widget_action_case "$dir/action/${id}.md" "$id"
+    validate_widget_action_case "$dir/action/${id}.md" "$id" "$dir"
   done
 
   for id in "${layout_ids[@]}"; do
-    validate_widget_layout_case "$dir/layout/${id}.md" "$id"
+    validate_widget_layout_case "$dir/layout/${id}.md" "$id" "$dir"
   done
 }
 
@@ -201,7 +262,7 @@ require_auth_row_filled() {
     BEGIN {
       split(row, cells, "|")
       fail = 0
-      for (i = 3; i <= 9; i++) {
+      for (i = 3; i <= 10; i++) {
         value = cells[i]
         gsub(/^[ \t]+|[ \t]+$/, "", value)
         if (value == "") {
@@ -215,9 +276,29 @@ require_auth_row_filled() {
   ' || add_error "incomplete scenario row: $scenario"
 }
 
+auth_row_cell() {
+  local scenario="$1"
+  local file="$2"
+  local column="$3"
+
+  awk -F'|' -v scenario="$scenario" -v column="$column" '
+    {
+      first = $2
+      gsub(/^[ \t]+|[ \t]+$/, "", first)
+      if (first == scenario) {
+        value = $column
+        gsub(/^[ \t]+|[ \t]+$/, "", value)
+        print value
+        exit
+      }
+    }
+  ' "$file"
+}
+
 validate_auth_smtp_bundle() {
   local dir="$1"
   local dns_path settings_path live_send_path negative_path ops_path decision_path
+  local dns_asset settings_asset negative_asset live_signup_asset live_reset_asset live_change_asset
 
   [[ -d "$dir" ]] || {
     add_error "auth-smtp evidence must be a directory: $dir"
@@ -249,6 +330,8 @@ validate_auth_smtp_bundle() {
     require_nonempty_prefixed_line "- DMARC:" "$dns_path"
     require_nonempty_prefixed_line "- Provider Verified Timestamp:" "$dns_path"
     require_nonempty_prefixed_line "- Evidence Screenshot:" "$dns_path"
+    dns_asset="$(extract_prefixed_value "- Evidence Screenshot:" "$dns_path" || true)"
+    [[ -n "$dns_asset" ]] && require_existing_relative_asset "$dir" "$dns_asset" "$dns_path :: Evidence Screenshot"
   fi
 
   if [[ -f "$settings_path" ]]; then
@@ -260,12 +343,22 @@ validate_auth_smtp_bundle() {
     require_nonempty_prefixed_line '- `email_sent`:' "$settings_path"
     require_nonempty_prefixed_line '- `auth.email.max_frequency`:' "$settings_path"
     require_nonempty_prefixed_line "- Settings Screenshot:" "$settings_path"
+    settings_asset="$(extract_prefixed_value "- Settings Screenshot:" "$settings_path" || true)"
+    [[ -n "$settings_asset" ]] && require_existing_relative_asset "$dir" "$settings_asset" "$settings_path :: Settings Screenshot"
   fi
 
   if [[ -f "$live_send_path" ]]; then
     require_auth_row_filled "signup confirmation" "$live_send_path"
     require_auth_row_filled "password reset" "$live_send_path"
     require_auth_row_filled "email change" "$live_send_path"
+
+    live_signup_asset="$(auth_row_cell "signup confirmation" "$live_send_path" 9)"
+    live_reset_asset="$(auth_row_cell "password reset" "$live_send_path" 9)"
+    live_change_asset="$(auth_row_cell "email change" "$live_send_path" 9)"
+
+    [[ -n "$live_signup_asset" ]] && require_existing_relative_asset "$dir" "$live_signup_asset" "$live_send_path :: signup confirmation evidence_asset"
+    [[ -n "$live_reset_asset" ]] && require_existing_relative_asset "$dir" "$live_reset_asset" "$live_send_path :: password reset evidence_asset"
+    [[ -n "$live_change_asset" ]] && require_existing_relative_asset "$dir" "$live_change_asset" "$live_send_path :: email change evidence_asset"
   fi
 
   if [[ -f "$negative_path" ]]; then
@@ -276,6 +369,8 @@ validate_auth_smtp_bundle() {
     require_nonempty_prefixed_line "- deferred:" "$negative_path"
     require_nonempty_prefixed_line "- provider_event_id:" "$negative_path"
     require_nonempty_prefixed_line "- Dashboard / Webhook Evidence:" "$negative_path"
+    negative_asset="$(extract_prefixed_value "- Dashboard / Webhook Evidence:" "$negative_path" || true)"
+    [[ -n "$negative_asset" ]] && require_existing_relative_asset "$dir" "$negative_asset" "$negative_path :: Dashboard / Webhook Evidence"
   fi
 
   if [[ -f "$ops_path" ]]; then

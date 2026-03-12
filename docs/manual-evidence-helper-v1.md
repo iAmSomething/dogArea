@@ -47,10 +47,13 @@
   - auth-smtp: `.codex_tmp/auth-smtp-evidence`
 - widget bundle에는 아래가 생성된다.
   - `README.md`
+  - `assets/action/`
+  - `assets/layout/`
   - `action/WD-001.md` ... `action/WD-008.md`
   - `layout/WL-001.md` ... `layout/WL-008.md`
 - auth-smtp bundle에는 아래가 생성된다.
   - `README.md`
+  - `assets/`
   - `01-dns-verification.md`
   - `02-supabase-smtp-settings.md`
   - `03-live-send-results.md`
