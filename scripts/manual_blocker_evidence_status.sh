@@ -109,6 +109,10 @@ surface_validate_command() {
   printf 'bash scripts/validate_manual_evidence_pack.sh %s %q' "$1" "$2"
 }
 
+surface_prefill_command() {
+  printf 'bash scripts/prefill_manual_evidence_pack.sh %s %q' "$1" "$2"
+}
+
 surface_closure_render_command() {
   case "$1" in
     widget) printf 'bash scripts/render_closure_comment_from_evidence.sh widget %q --write' "$2" ;;
@@ -549,6 +553,7 @@ print_surface_status() {
   printf 'pack: %s\n' "$pack_path"
   printf 'status: %s\n' "$status"
   printf 'next-render: %s\n' "$(surface_render_command "$surface" "$pack_path")"
+  printf 'next-prefill-existing: %s\n' "$(surface_prefill_command "$surface" "$pack_path")"
   printf 'next-validate: %s\n' "$(surface_validate_command "$surface" "$pack_path")"
   printf 'next-render-closure: %s\n' "$(surface_closure_render_command "$surface" "$pack_path")"
   printf 'next-archive: %s\n' "$(surface_archive_command "$surface" "$pack_path")"
@@ -584,6 +589,7 @@ print_surface_status_markdown() {
   printf -- '- Status: `%s`\n\n' "$status"
   printf '### Next Commands\n'
   printf -- '- Render: `%s`\n' "$(surface_render_command "$surface" "$pack_path")"
+  printf -- '- Prefill Existing: `%s`\n' "$(surface_prefill_command "$surface" "$pack_path")"
   printf -- '- Validate: `%s`\n' "$(surface_validate_command "$surface" "$pack_path")"
   printf -- '- Render Closure: `%s`\n' "$(surface_closure_render_command "$surface" "$pack_path")"
   printf -- '- Archive: `%s`\n' "$(surface_archive_command "$surface" "$pack_path")"

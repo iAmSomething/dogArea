@@ -50,6 +50,9 @@
 - 채운 뒤 validator 실행
   - `bash scripts/validate_manual_evidence_pack.sh widget .codex_tmp/widget-real-device-evidence`
   - `bash scripts/validate_manual_evidence_pack.sh auth-smtp .codex_tmp/auth-smtp-evidence`
+- 이미 만든 bundle의 빈 메타만 채우기
+  - `bash scripts/prefill_manual_evidence_pack.sh widget .codex_tmp/widget-real-device-evidence`
+  - `bash scripts/prefill_manual_evidence_pack.sh auth-smtp .codex_tmp/auth-smtp-evidence`
 - validator 통과 후 reviewer 전달용 archive 생성
   - `bash scripts/archive_manual_evidence_pack.sh widget .codex_tmp/widget-real-device-evidence`
   - `bash scripts/archive_manual_evidence_pack.sh auth-smtp .codex_tmp/auth-smtp-evidence`
