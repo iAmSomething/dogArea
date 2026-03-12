@@ -14,11 +14,12 @@
 
 1. `pending(startWalk)` 상태에서 앱 canonical 산책 상태가 `isWalking == true`가 되면 즉시 `succeeded(startWalk)`로 수렴한다.
 2. `pending(endWalk)` 상태에서 앱 canonical 산책 상태가 `isWalking == false`가 되면 즉시 `succeeded(endWalk)`로 수렴한다.
-3. `pending` TTL이 끝났는데 canonical 상태가 아직 맞지 않으면:
+3. `endWalk`가 성공해 산책이 저장되면 앱 내부 primary surface는 즉시 `map.walk.savedOutcome.card`로 전환하고, `map.walk.primaryAction`은 카드가 내려갈 때까지 숨긴다.
+4. `pending` TTL이 끝났는데 canonical 상태가 아직 맞지 않으면:
    - `ready`면 `requiresAppOpen`
    - `locationDenied / sessionConflict / error`면 `failed + openApp`
-4. `requiresAppOpen` TTL이 끝났는데도 canonical 상태가 맞지 않으면 `failed + openApp`으로 내린다.
-5. `succeeded` / `failed`는 각 TTL이 끝나면 제거한다.
+5. `requiresAppOpen` TTL이 끝났는데도 canonical 상태가 맞지 않으면 `failed + openApp`으로 내린다.
+6. `succeeded` / `failed`는 각 TTL이 끝나면 제거한다.
 
 ## 3. 딥링크와 pending 요청 중복 소비 규칙
 
@@ -46,7 +47,7 @@
 ## 6. QA 체크포인트
 
 1. 위젯 `startWalk` 후 앱이 이미 산책 중 상태가 되면 widget overlay가 `succeeded`로 수렴하는지 확인
-2. 위젯 `endWalk` 후 앱 canonical 상태가 종료로 바뀌면 Live Activity도 함께 종료되는지 확인
+2. 위젯 `endWalk` 후 앱 canonical 상태가 종료로 바뀌면 Live Activity가 함께 종료되고, 앱은 `map.walk.savedOutcome.card` surface로 수렴하는지 확인
 3. 딥링크로 앱이 열린 뒤 `didBecomeActive`에서 같은 actionId가 재소비되지 않는지 확인
 4. 위치 권한 거부/세션 충돌 시 pending 만료 후 `failed + openApp`으로 올바르게 상승하는지 확인
 5. 인증 오버레이가 열린 상태에서 요청이 들어오면 overlay 해제 후 재처리되고, 그 사이 위젯은 `requiresAppOpen`으로 보이는지 확인

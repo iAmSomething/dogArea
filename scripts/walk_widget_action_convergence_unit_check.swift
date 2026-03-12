@@ -48,6 +48,7 @@ for heading in [
 assertTrue(doc.contains("#617"), "doc should reference issue #617")
 assertTrue(doc.contains("MapViewModel.isWalking"), "doc should define canonical app session source")
 assertTrue(doc.contains("Live Activity"), "doc should define live activity convergence behavior")
+assertTrue(doc.contains("map.walk.savedOutcome.card"), "doc should define the saved outcome card as the post-end app surface")
 assertTrue(doc.contains("widget_action_pending_discarded"), "doc should define discard metric")
 assertTrue(doc.contains("widget_action_converged"), "doc should define convergence metric")
 assertTrue(doc.contains("widget_action_escalated"), "doc should define escalation metric")
