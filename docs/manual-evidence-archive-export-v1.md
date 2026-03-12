@@ -1,6 +1,6 @@
 # Manual Evidence Archive Export v1
 
-- Issue: #762
+- Issue: #764
 - Relates to: #731, #692, #617, #482
 
 ## 목적
@@ -34,6 +34,8 @@
 3. 아래 구조를 staging 디렉터리에 만든다.
    - `README.md`
    - `widget-closure-comment.md` 또는 `auth-smtp-closure-comment.md`
+   - `MANIFEST.md`
+   - `SHA256SUMS`
    - `bundle/`
 4. staging 내용을 zip archive로 묶는다.
 
@@ -41,7 +43,11 @@
 - archive에는 아래만 포함한다.
   - export `README.md`
   - closure comment preview
+  - `MANIFEST.md`
+  - `SHA256SUMS`
   - 원본 evidence bundle 전체 복사본
+- `MANIFEST.md`에는 surface, issue, source bundle, export file 목록, bundle file listing을 기록한다.
+- `SHA256SUMS`에는 `README.md`, closure preview, `MANIFEST.md`, `bundle/` 하위 모든 파일의 sha256을 기록한다.
 - validator 실패 시 archive를 만들지 않는다.
 
 ## 운영 규칙
