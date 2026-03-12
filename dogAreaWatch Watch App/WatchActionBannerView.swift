@@ -37,7 +37,7 @@ struct WatchActionBannerView: View {
         .background(backgroundShape)
         .overlay(alignment: .leading) {
             if style == .inline {
-                Capsule(style: .continuous)
+                RoundedRectangle(cornerRadius: 2, style: .continuous)
                     .fill(banner.tone.tintColor)
                     .frame(width: 3)
                     .padding(.vertical, 6)
@@ -56,7 +56,11 @@ struct WatchActionBannerView: View {
                 .fill(banner.tone.backgroundColor)
         case .inline:
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(banner.tone.backgroundColor.opacity(0.55))
+                .fill(Color.white.opacity(0.02))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(banner.tone.tintColor.opacity(0.22), lineWidth: 1)
+                )
         }
     }
 }

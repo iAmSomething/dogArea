@@ -12,7 +12,7 @@ struct WatchMainStatusSummaryView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 6) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(isWalking ? "산책 조작" : "산책 시작")
+                    Text(isWalking ? "지금 산책 중입니다" : "산책을 시작할 수 있습니다")
                         .font(.headline.weight(.semibold))
                     Text(summarySubtitle)
                         .font(.caption2)
@@ -36,35 +36,51 @@ struct WatchMainStatusSummaryView: View {
             }
 
             ViewThatFits(in: .horizontal) {
-                HStack(spacing: 6) {
-                    metricTile(
+                HStack(spacing: 10) {
+                    metricColumn(
                         title: "시간",
                         value: formatTime(walkingTime)
                     )
-                    metricTile(
+                    metricDivider
+                    metricColumn(
                         title: "포인트",
                         value: "\(pointCount)개"
                     )
-                    metricTile(
+                    metricDivider
+                    metricColumn(
                         title: "연결",
                         value: isReachable ? "바로 전송" : "큐 저장"
                     )
                 }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color.white.opacity(0.04))
+                )
+                .accessibilityIdentifier("watch.main.statusSummary.metrics")
 
                 VStack(alignment: .leading, spacing: 6) {
-                    metricTile(
+                    metricRow(
                         title: "시간",
                         value: formatTime(walkingTime)
                     )
-                    metricTile(
+                    metricRow(
                         title: "포인트",
                         value: "\(pointCount)개"
                     )
-                    metricTile(
+                    metricRow(
                         title: "연결",
                         value: isReachable ? "바로 전송" : "큐 저장"
                     )
                 }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color.white.opacity(0.04))
+                )
+                .accessibilityIdentifier("watch.main.statusSummary.metrics")
             }
         }
         .accessibilityElement(children: .contain)
@@ -75,18 +91,21 @@ struct WatchMainStatusSummaryView: View {
     /// - Returns: 반려견 문맥과 산책 진행 상태를 반영한 짧은 안내 문구입니다.
     private var summarySubtitle: String {
         if isWalking {
-            return "\(petContext.petName)와 산책을 이어가며 포인트와 종료를 바로 조작할 수 있어요."
+            return "\(petContext.petName)와의 산책 상태와 연결만 짧게 보여 줍니다."
         }
         if petContext.blocksInlineStart {
-            return "watch에서는 바로 시작하지 않고 iPhone 확인이 먼저 필요해요."
+            return "지금은 iPhone 확인이 먼저 필요합니다."
         }
-        return "\(petContext.petName) 기준으로 바로 산책을 시작할 수 있어요."
+        return "\(petContext.petName) 기준으로 바로 시작할 수 있습니다."
     }
 
     /// 비산책 상태에서 현재 반려견 문맥을 짧게 요약해 표시합니다.
     /// - Returns: 시작 전 반려견 이름과 선택 상태를 설명하는 보조 문맥 뷰입니다.
     private var compactPetContext: some View {
         VStack(alignment: .leading, spacing: 4) {
+            Text("현재 반려견")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
             Text(petContext.petName)
                 .font(.callout.weight(.semibold))
                 .foregroundStyle(.primary)
@@ -99,12 +118,12 @@ struct WatchMainStatusSummaryView: View {
         }
     }
 
-    /// 상단 요약 메트릭 한 칸을 렌더링합니다.
+    /// 상단 요약 메트릭 한 칸을 수평 스트립용 컬럼으로 렌더링합니다.
     /// - Parameters:
     ///   - title: 메트릭의 짧은 제목입니다.
     ///   - value: watch 폭에 맞춰 포맷된 값 문자열입니다.
-    /// - Returns: 제목과 값을 담은 요약 타일 뷰입니다.
-    private func metricTile(title: String, value: String) -> some View {
+    /// - Returns: 제목과 값을 담은 요약 컬럼 뷰입니다.
+    private func metricColumn(title: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title)
                 .font(.caption2)
@@ -115,12 +134,31 @@ struct WatchMainStatusSummaryView: View {
                 .minimumScaleFactor(0.75)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.white.opacity(0.08))
-        )
+    }
+
+    /// 상단 요약 메트릭 한 줄을 세로 fallback 레이아웃으로 렌더링합니다.
+    /// - Parameters:
+    ///   - title: 메트릭의 짧은 제목입니다.
+    ///   - value: watch 폭에 맞춰 포맷된 값 문자열입니다.
+    /// - Returns: 제목과 값을 양 끝 정렬한 메트릭 행 뷰입니다.
+    private func metricRow(title: String, value: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(title)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            Spacer(minLength: 0)
+            Text(value)
+                .font(.callout.weight(.semibold))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+    }
+
+    private var metricDivider: some View {
+        Rectangle()
+            .fill(Color.white.opacity(0.10))
+            .frame(width: 1, height: 28)
     }
 
     /// 누적 산책 시간을 watch 화면용 문자열로 포맷합니다.

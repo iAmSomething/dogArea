@@ -38,7 +38,7 @@ assertTrue(contentView.contains("syncLandingSurface"), "watch content should act
 assertTrue(contentView.contains("hasVisitedInfoSurface"), "watch content should track whether users discovered the information surface")
 assertTrue(contentView.contains("WatchSurfacePagingHintView"), "watch content should provide a lightweight paging affordance")
 assertTrue(contentView.contains("shouldShowPagingHint"), "watch content should gate the paging affordance after first discovery")
-assertTrue(statusSummaryView.contains("산책 조작"), "control surface status summary should describe itself as a control page")
+assertTrue(statusSummaryView.contains("지금 산책 중입니다"), "control surface status summary should describe the active control page state")
 assertTrue(actionDockView.contains("지금 할 수 있는 조작"), "action block should explicitly explain the control surface purpose")
 assertTrue(controlSurfaceView.contains("WatchMainStatusSummaryView"), "control surface should embed the status summary section")
 assertTrue(controlSurfaceView.contains("WatchPrimaryActionDockView"), "control surface should embed the action section")

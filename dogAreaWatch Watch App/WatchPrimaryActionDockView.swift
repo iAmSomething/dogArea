@@ -11,10 +11,16 @@ struct WatchPrimaryActionDockView: View {
     var showsBackground: Bool = true
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(isWalking ? "지금 할 수 있는 조작" : "바로 시작할 수 있어요")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(isWalking ? "지금 할 수 있는 조작" : "먼저 할 일")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Text(sectionDetail)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
 
             actionButtons
         }
@@ -45,16 +51,16 @@ struct WatchPrimaryActionDockView: View {
                 )
             }
         } else {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("불필요한 정보 없이 시작 버튼을 먼저 보여줍니다.")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
+            VStack(alignment: .leading, spacing: 8) {
                 WatchActionButtonView(
                     presentation: startWalkPresentation,
                     action: onStartWalk
                 )
             }
         }
+    }
+
+    private var sectionDetail: String {
+        isWalking ? "포인트 추가와 종료만 빠르게 남겨 둡니다." : "지금 이 화면에서는 산책 시작만 보여 줍니다."
     }
 }
