@@ -11,6 +11,7 @@
 - `bash scripts/manual_blocker_evidence_status.sh`
 - `bash scripts/manual_blocker_evidence_status.sh widget`
 - `bash scripts/manual_blocker_evidence_status.sh auth-smtp --write-missing`
+- `bash scripts/manual_blocker_evidence_status.sh widget --raw-errors`
 - `bash scripts/manual_blocker_evidence_status.sh --markdown`
 - `bash scripts/manual_blocker_evidence_status.sh --markdown --output .codex_tmp/manual-blocker-evidence-status.md`
 
@@ -22,6 +23,9 @@
   - `missing`
   - `incomplete`
   - `complete`
+- `incomplete`일 때 gap summary
+  - plain text: `gap-summary`, `next-fill`, `gap-cases`/`gap-files`
+  - markdown: `### Gap Summary`
 - 다음 액션 명령
   - `next-render`
   - `next-validate`
@@ -32,6 +36,8 @@
 - `--markdown` 모드에서는 위 내용을 reviewer 공유용 markdown report로 출력한다.
 - `--output`을 같이 주면 report를 파일로 export하고 `WROTE <path>`를 출력한다.
 - `auth-smtp`의 `next-render`는 `--prefill-from-env`를 포함해 운영 메타데이터 transcription 비용을 줄인다.
+- 기본 출력은 validator raw dump를 숨기고 요약만 보여준다.
+- `--raw-errors`를 주면 validator raw dump도 stderr로 그대로 출력한다.
 
 ## 기본 경로
 - widget: `.codex_tmp/widget-real-device-evidence`
@@ -46,4 +52,5 @@
   - primary issue / related issues
   - evidence pack 경로
   - status
+  - gap summary (`incomplete`일 때만)
   - render / validate / archive / closure post 명령

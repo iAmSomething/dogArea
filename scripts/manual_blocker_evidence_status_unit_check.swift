@@ -167,6 +167,10 @@ assertTrue(runnerScript.contains("next-archive"), "runner should print archive c
 assertTrue(runnerScript.contains("next-post-closure-bundle"), "runner should print bundled widget post command")
 assertTrue(runnerScript.contains("--markdown"), "runner should support markdown mode")
 assertTrue(runnerScript.contains("--output"), "runner should support output path")
+assertTrue(runnerScript.contains("--raw-errors"), "runner should support raw error output mode")
+assertTrue(runnerScript.contains("gap-summary:"), "runner should print plain gap summaries for incomplete packs")
+assertTrue(runnerScript.contains("next-fill:"), "runner should print next-fill guidance")
+assertTrue(runnerScript.contains("### Gap Summary"), "runner should print markdown gap summaries for incomplete packs")
 assertTrue(runnerScript.contains("--prefill-from-env"), "runner should use auth smtp env prefill render path")
 assertTrue(doc.contains("primary `#731`, related `#617`, `#692`"), "doc should describe active widget blocker routing")
 assertTrue(doc.contains("widget-real-device-evidence"), "doc should mention widget directory path")
@@ -175,6 +179,10 @@ assertTrue(doc.contains("next-post-closure-bundle"), "doc should describe bundle
 assertTrue(doc.contains("Manual Blocker Evidence Status Report"), "doc should describe markdown report title")
 assertTrue(doc.contains("--markdown"), "doc should describe markdown mode")
 assertTrue(doc.contains("--output"), "doc should describe output export")
+assertTrue(doc.contains("--raw-errors"), "doc should describe raw error output mode")
+assertTrue(doc.contains("gap-summary"), "doc should describe plain gap summary output")
+assertTrue(doc.contains("next-fill"), "doc should describe next-fill guidance")
+assertTrue(doc.contains("### Gap Summary"), "doc should describe markdown gap summary heading")
 assertTrue(doc.contains("--prefill-from-env"), "doc should describe auth smtp prefill render command")
 assertTrue(readme.contains("docs/manual-blocker-evidence-status-runner-v1.md"), "README should link runner doc")
 assertTrue(iosPRCheck.contains("manual_blocker_evidence_status_unit_check.swift"), "ios_pr_check should run blocker runner check")
@@ -199,6 +207,11 @@ let generatedOutput = runStatus(arguments: ["widget", "--write-missing"], enviro
 ])
 assertTrue(FileManager.default.fileExists(atPath: widgetPath.appendingPathComponent("action/WD-001.md").path), "write-missing should create widget action cases")
 assertTrue(generatedOutput.contains("status: incomplete"), "generated widget bundle should still be incomplete until filled")
+assertTrue(generatedOutput.contains("gap-summary: 16 incomplete cases"), "generated widget bundle should summarize incomplete case counts")
+assertTrue(generatedOutput.contains("next-fill: action/WD-001.md"), "generated widget bundle should point at the first case to fill")
+assertTrue(generatedOutput.contains("gap-cases:"), "generated widget bundle should print case bucket list")
+assertTrue(generatedOutput.contains("WD-001: metadata, result, assets, placeholder logs"), "generated widget bundle should dedupe case buckets")
+assertTrue(!generatedOutput.contains("empty value:"), "generated widget bundle should hide raw validator errors by default")
 
 for caseID in ["WD-001", "WD-002", "WD-003", "WD-004", "WD-005", "WD-006", "WD-007", "WD-008"] {
     write(widgetPath.appendingPathComponent("action/\(caseID).md"), content: filledWidgetAction(caseID: caseID, summary: "\(caseID) converged"))
@@ -228,6 +241,7 @@ assertTrue(completeOutput.contains("status: complete"), "filled widget evidence 
 assertTrue(completeOutput.contains("render_closure_comment_from_evidence.sh widget"), "runner should print widget closure render command")
 assertTrue(completeOutput.contains("archive_manual_evidence_pack.sh widget"), "runner should print widget archive command")
 assertTrue(completeOutput.contains("next-post-closure-bundle: bash scripts/post_closure_comment_from_evidence.sh widget --all-related"), "runner should print bundled widget post command")
+assertTrue(!completeOutput.contains("gap-summary:"), "complete widget evidence should not print a gap summary")
 
 let markdownOutput = runStatus(arguments: ["widget", "--markdown"], environment: [
     "DOGAREA_WIDGET_EVIDENCE_PATH": widgetPath.path,
@@ -237,6 +251,14 @@ assertTrue(markdownOutput.contains("# Manual Blocker Evidence Status Report"), "
 assertTrue(markdownOutput.contains("## widget"), "markdown mode should render widget section")
 assertTrue(markdownOutput.contains("- Primary Issue: [#731]"), "markdown mode should render primary issue link")
 assertTrue(markdownOutput.contains("- Post Closure Bundle: `bash scripts/post_closure_comment_from_evidence.sh widget --all-related"), "markdown mode should render bundled post command")
+assertTrue(!markdownOutput.contains("### Gap Summary"), "complete widget markdown should not print a gap summary")
+
+let incompleteMarkdownOutput = runStatus(arguments: ["widget", "--markdown", "--write-missing"], environment: [
+    "DOGAREA_WIDGET_EVIDENCE_PATH": tempRoot.appendingPathComponent("widget-incomplete").path,
+    "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
+])
+assertTrue(incompleteMarkdownOutput.contains("### Gap Summary"), "incomplete widget markdown should print a gap summary")
+assertTrue(incompleteMarkdownOutput.contains("- Next Fill: `action/WD-001.md`"), "incomplete widget markdown should print next-fill guidance")
 
 let markdownPath = tempRoot.appendingPathComponent("manual-blocker-status.md")
 let markdownWriteOutput = runStatus(arguments: ["auth-smtp", "--markdown", "--output", markdownPath.path], environment: [
