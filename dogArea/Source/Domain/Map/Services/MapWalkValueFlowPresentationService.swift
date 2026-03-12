@@ -527,8 +527,8 @@ struct MapWalkTopHUDPresentationService: MapWalkTopHUDPresenting {
                 .init(id: "points", title: "포인트", value: "\(routePointCount)개")
             ],
             displayMode: hasCompetingTopChrome ? .compact : .regular,
-            disclosureTitle: hasCompetingTopChrome ? "설명 보기" : "자세히",
-            disclosureMode: hasCompetingTopChrome ? .openGuideSheet : .expandInline
+            disclosureTitle: "자세히",
+            disclosureMode: .expandInline
         )
     }
 }
