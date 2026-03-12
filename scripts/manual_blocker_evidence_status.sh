@@ -127,6 +127,10 @@ surface_prefill_env_command() {
   printf 'bash scripts/print_manual_evidence_prefill_env.sh %s' "$1"
 }
 
+surface_prefill_bootstrap_command() {
+  printf 'source <(bash scripts/print_manual_evidence_prefill_env.sh %s) && bash scripts/manual_blocker_evidence_status.sh %s --apply-prefill' "$1" "$1"
+}
+
 surface_closure_render_command() {
   case "$1" in
     widget) printf 'bash scripts/render_closure_comment_from_evidence.sh widget %q --write' "$2" ;;
@@ -757,6 +761,7 @@ print_surface_status() {
   printf 'next-prefill-existing: %s\n' "$(surface_prefill_command "$surface" "$pack_path")"
   if [[ "$status" == "incomplete" && "$apply_prefill" != "1" ]] && surface_has_prefill_gaps "$surface" "$capture_path" && surface_has_missing_prefill_envs "$surface"; then
     printf 'next-prefill-env: %s\n' "$(surface_prefill_env_command "$surface")"
+    printf 'next-prefill-bootstrap: %s\n' "$(surface_prefill_bootstrap_command "$surface")"
   fi
   if [[ "$status" == "incomplete" && "$apply_prefill" != "1" ]] && surface_has_prefill_gaps "$surface" "$capture_path"; then
     printf 'next-apply-prefill: %s\n' "$(surface_apply_prefill_status_command "$surface")"
@@ -804,6 +809,7 @@ print_surface_status_markdown() {
   printf -- '- Prefill Existing: `%s`\n' "$(surface_prefill_command "$surface" "$pack_path")"
   if [[ "$status" == "incomplete" && "$apply_prefill" != "1" ]] && surface_has_prefill_gaps "$surface" "$capture_path" && surface_has_missing_prefill_envs "$surface"; then
     printf -- '- Print Prefill Env Template: `%s`\n' "$(surface_prefill_env_command "$surface")"
+    printf -- '- Bootstrap Prefill In One Shot: `%s`\n' "$(surface_prefill_bootstrap_command "$surface")"
   fi
   if [[ "$status" == "incomplete" && "$apply_prefill" != "1" ]] && surface_has_prefill_gaps "$surface" "$capture_path"; then
     printf -- '- Apply Prefill Then Refresh: `%s`\n' "$(surface_apply_prefill_status_command "$surface")"
