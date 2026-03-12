@@ -25,6 +25,7 @@
   - `next-validate`
   - `next-render-closure`
   - `next-post-closure`
+  - `next-post-closure-bundle` (`widget`만 제공)
 
 ## 기본 경로
 - widget: `.codex_tmp/widget-real-device-evidence`

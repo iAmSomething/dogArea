@@ -97,6 +97,15 @@ surface_closure_post_command() {
   esac
 }
 
+surface_bundle_post_command() {
+  local surface="$1"
+  local pack_path="$2"
+  case "$surface" in
+    widget) printf 'bash scripts/post_closure_comment_from_evidence.sh widget --all-related %q --post' "$pack_path" ;;
+    auth-smtp) printf 'n/a' ;;
+  esac
+}
+
 surface_issue_state() {
   local issue_number="$1"
   if [[ "${DOGAREA_SKIP_ISSUE_STATE:-0}" == "1" ]]; then
@@ -164,6 +173,9 @@ print_surface_status() {
   printf 'next-validate: %s\n' "$(surface_validate_command "$surface" "$pack_path")"
   printf 'next-render-closure: %s\n' "$(surface_closure_render_command "$surface" "$pack_path")"
   printf 'next-post-closure: %s\n' "$(surface_closure_post_command "$surface" "$issue_number" "$pack_path")"
+  if [[ "$surface" == "widget" ]]; then
+    printf 'next-post-closure-bundle: %s\n' "$(surface_bundle_post_command "$surface" "$pack_path")"
+  fi
   printf '\n'
 }
 

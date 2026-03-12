@@ -184,7 +184,9 @@ let backendPRCheck = load("scripts/backend_pr_check.sh")
 let authTemplate = load("docs/auth-smtp-rollout-evidence-template-v1.md")
 
 assertTrue(posterScript.contains("surface widget must target one of #408, #617, #692, #731"), "poster should allow widget blocker issue bundle")
+assertTrue(posterScript.contains("--all-related"), "poster should support widget bundle posting")
 assertTrue(posterDoc.contains("#617"), "poster doc should mention related widget issues")
+assertTrue(posterDoc.contains("--all-related"), "poster doc should document bundled widget posting")
 assertTrue(rendererDoc.contains("widget-real-device-evidence"), "renderer doc should reference widget bundle path")
 assertTrue(readme.contains("docs/manual-closure-comment-poster-v1.md"), "README should link poster doc")
 assertTrue(iosPRCheck.contains("manual_closure_comment_poster_unit_check.swift"), "ios_pr_check should run poster check")
@@ -222,14 +224,30 @@ let widgetDryRunOutput = runPoster(arguments: ["widget", "--issue", "617", widge
 assertTrue(widgetDryRunOutput.contains("실기기 위젯 blocker 검증을 완료했습니다."), "widget dry-run should print closure comment")
 assertTrue(widgetDryRunOutput.contains("DRY RUN: no GitHub comment was posted."), "widget dry-run should explain posting did not happen")
 
+let widgetBundleDryRunOutput = runPoster(arguments: ["widget", "--all-related", widgetTempDir.path], expectSuccess: true)
+assertTrue(widgetBundleDryRunOutput.contains("실기기 위젯 blocker 검증을 완료했습니다."), "widget bundle dry-run should print closure comment")
+assertTrue(widgetBundleDryRunOutput.contains("issues #408, #617, #692, and #731"), "widget bundle dry-run should mention all target issues")
+
 let widgetMismatchOutput = runPoster(arguments: ["widget", "--issue", "482", widgetTempDir.path], expectSuccess: false)
 assertTrue(widgetMismatchOutput.contains("surface widget must target one of #408, #617, #692, #731"), "widget poster should reject mismatched issue")
+
+let widgetBundleConflictOutput = runPoster(arguments: ["widget", "--issue", "617", "--all-related", widgetTempDir.path], expectSuccess: false)
+assertTrue(widgetBundleConflictOutput.contains("--issue and --all-related cannot be used together"), "widget poster should reject mixed single and bundled modes")
 
 let fakeWidgetGH = makeFakeGH(in: URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString))
 let widgetPostOutput = runPoster(arguments: ["widget", "--issue", "731", widgetTempDir.path, "--post"], environment: ["DOGAREA_GH_BIN": fakeWidgetGH.binary.path], expectSuccess: true)
 let widgetGHLog = loadAbsolute(fakeWidgetGH.log)
 assertTrue(widgetGHLog.contains("issue comment 731 --body-file"), "widget post should call gh issue comment with issue 731")
 assertTrue(widgetPostOutput.contains("POSTED issue #731"), "widget post should report successful post")
+
+let fakeWidgetBundleGH = makeFakeGH(in: URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString))
+let widgetBundlePostOutput = runPoster(arguments: ["widget", "--all-related", widgetTempDir.path, "--post"], environment: ["DOGAREA_GH_BIN": fakeWidgetBundleGH.binary.path], expectSuccess: true)
+let widgetBundleGHLog = loadAbsolute(fakeWidgetBundleGH.log)
+assertTrue(widgetBundleGHLog.contains("issue comment 408 --body-file"), "widget bundle post should comment on issue 408")
+assertTrue(widgetBundleGHLog.contains("issue comment 617 --body-file"), "widget bundle post should comment on issue 617")
+assertTrue(widgetBundleGHLog.contains("issue comment 692 --body-file"), "widget bundle post should comment on issue 692")
+assertTrue(widgetBundleGHLog.contains("issue comment 731 --body-file"), "widget bundle post should comment on issue 731")
+assertTrue(widgetBundlePostOutput.contains("POSTED issues #408, #617, #692, and #731"), "widget bundle post should report bundled post")
 
 let filledAuth = authTemplate
     .replacingOccurrences(of: "- Date:", with: "- Date: 2026-03-12")

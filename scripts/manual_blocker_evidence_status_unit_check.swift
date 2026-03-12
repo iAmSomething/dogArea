@@ -145,8 +145,10 @@ let backendPRCheck = load("scripts/backend_pr_check.sh")
 
 assertTrue(runnerScript.contains("widget-real-device-evidence"), "runner should support widget evidence directory")
 assertTrue(runnerScript.contains("related-issues"), "runner should print related widget issues")
+assertTrue(runnerScript.contains("next-post-closure-bundle"), "runner should print bundled widget post command")
 assertTrue(doc.contains("#617"), "doc should mention related widget issues")
 assertTrue(doc.contains("widget-real-device-evidence"), "doc should mention widget directory path")
+assertTrue(doc.contains("next-post-closure-bundle"), "doc should describe bundled widget post command")
 assertTrue(readme.contains("docs/manual-blocker-evidence-status-runner-v1.md"), "README should link runner doc")
 assertTrue(iosPRCheck.contains("manual_blocker_evidence_status_unit_check.swift"), "ios_pr_check should run blocker runner check")
 assertTrue(backendPRCheck.contains("manual_blocker_evidence_status_unit_check.swift"), "backend_pr_check should run blocker runner check")
@@ -192,6 +194,7 @@ let completeOutput = runStatus(arguments: ["widget"], environment: [
 ])
 assertTrue(completeOutput.contains("status: complete"), "filled widget evidence should be reported as complete")
 assertTrue(completeOutput.contains("render_closure_comment_from_evidence.sh widget"), "runner should print widget closure render command")
+assertTrue(completeOutput.contains("next-post-closure-bundle: bash scripts/post_closure_comment_from_evidence.sh widget --all-related"), "runner should print bundled widget post command")
 
 let authOutput = runStatus(arguments: ["auth-smtp"], environment: [
     "DOGAREA_WIDGET_EVIDENCE_PATH": widgetPath.path,
