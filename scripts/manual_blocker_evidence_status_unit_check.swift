@@ -79,6 +79,12 @@ func write(_ url: URL, content: String) {
     }
 }
 
+/// Writes a placeholder asset file for status-runner-backed evidence tests.
+/// - Parameter url: Asset file URL to create.
+func writeAsset(_ url: URL) {
+    write(url, content: "placeholder-asset")
+}
+
 /// Builds a filled widget action case from the shared template.
 /// - Parameters:
 ///   - caseID: Canonical action case identifier.
@@ -104,8 +110,8 @@ func filledWidgetAction(caseID: String, summary: String) -> String {
         .replacingOccurrences(of: "onOpenURL received: ...", with: "onOpenURL received: widget://\(caseID.lowercased())")
         .replacingOccurrences(of: "consumePendingWidgetActionIfNeeded ...", with: "consumePendingWidgetActionIfNeeded consumed=\(caseID)")
         .replacingOccurrences(of: "request_id=...", with: "request_id=req-\(caseID)")
-        .replacingOccurrences(of: "- `step-1`:", with: "- `step-1`: \(caseID)-step-1.png")
-        .replacingOccurrences(of: "- `step-2`:", with: "- `step-2`: \(caseID)-step-2.png")
+        .replacingOccurrences(of: "- `step-1`: assets/action/<case-id>-step-1.png", with: "- `step-1`: assets/action/\(caseID)-step-1.png")
+        .replacingOccurrences(of: "- `step-2`: assets/action/<case-id>-step-2.png", with: "- `step-2`: assets/action/\(caseID)-step-2.png")
 }
 
 /// Builds a filled widget layout case from the shared template.
@@ -133,8 +139,8 @@ func filledWidgetLayout(caseID: String, surface: String) -> String {
         .replacingOccurrences(of: "- Expected Result:", with: "- Expected Result: no clipping")
         .replacingOccurrences(of: "- Summary:", with: "- Summary: \(surface) layout stayed within bounds")
         .replacingOccurrences(of: "- Pass / Fail:", with: "- Pass / Fail: Pass")
-        .replacingOccurrences(of: "- `step-1`:", with: "- `step-1`: \(caseID)-step-1.png")
-        .replacingOccurrences(of: "- `step-2`:", with: "- `step-2`: \(caseID)-step-2.png")
+        .replacingOccurrences(of: "- `step-1`: assets/layout/<case-id>-step-1.png", with: "- `step-1`: assets/layout/\(caseID)-step-1.png")
+        .replacingOccurrences(of: "- `step-2`: assets/layout/<case-id>-step-2.png", with: "- `step-2`: assets/layout/\(caseID)-step-2.png")
 }
 
 let runnerScript = load("scripts/manual_blocker_evidence_status.sh")
@@ -175,6 +181,8 @@ assertTrue(generatedOutput.contains("status: incomplete"), "generated widget bun
 
 for caseID in ["WD-001", "WD-002", "WD-003", "WD-004", "WD-005", "WD-006", "WD-007", "WD-008"] {
     write(widgetPath.appendingPathComponent("action/\(caseID).md"), content: filledWidgetAction(caseID: caseID, summary: "\(caseID) converged"))
+    writeAsset(widgetPath.appendingPathComponent("assets/action/\(caseID)-step-1.png"))
+    writeAsset(widgetPath.appendingPathComponent("assets/action/\(caseID)-step-2.png"))
 }
 let layoutSurfaces = [
     "WL-001": "WalkControlWidget",
@@ -188,6 +196,8 @@ let layoutSurfaces = [
 ]
 for (caseID, surface) in layoutSurfaces {
     write(widgetPath.appendingPathComponent("layout/\(caseID).md"), content: filledWidgetLayout(caseID: caseID, surface: surface))
+    writeAsset(widgetPath.appendingPathComponent("assets/layout/\(caseID)-step-1.png"))
+    writeAsset(widgetPath.appendingPathComponent("assets/layout/\(caseID)-step-2.png"))
 }
 let completeOutput = runStatus(arguments: ["widget"], environment: [
     "DOGAREA_WIDGET_EVIDENCE_PATH": widgetPath.path,

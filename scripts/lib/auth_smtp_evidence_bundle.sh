@@ -39,6 +39,10 @@ auth_smtp_bundle_decision_path() {
   printf '%s/06-final-decision.md' "$1"
 }
 
+auth_smtp_bundle_assets_dir() {
+  printf '%s/assets' "$1"
+}
+
 auth_smtp_bundle_render_overview() {
   cat <<'EOF'
 # Auth SMTP Evidence Bundle v2
@@ -51,6 +55,7 @@ auth_smtp_bundle_render_overview() {
 - Closure comment template: `docs/auth-smtp-closure-comment-template-v1.md`
 - Generated directory layout:
   - `README.md`
+  - `assets/`
   - `01-dns-verification.md`
   - `02-supabase-smtp-settings.md`
   - `03-live-send-results.md`
@@ -64,7 +69,7 @@ EOF
 
 auth_smtp_bundle_write() {
   local dir="$1"
-  mkdir -p "$dir"
+  mkdir -p "$dir" "$(auth_smtp_bundle_assets_dir "$dir")"
 
   cat > "$(auth_smtp_bundle_readme_path "$dir")" <<'EOF'
 # Auth SMTP Evidence Bundle v2
@@ -77,12 +82,24 @@ auth_smtp_bundle_write() {
 - Closure comment template: `docs/auth-smtp-closure-comment-template-v1.md`
 
 ## Files
+- `assets/`
 - `01-dns-verification.md`
 - `02-supabase-smtp-settings.md`
 - `03-live-send-results.md`
 - `04-negative-evidence.md`
 - `05-rollback-rotation.md`
 - `06-final-decision.md`
+EOF
+
+  cat > "$(auth_smtp_bundle_assets_dir "$dir")/README.md" <<'EOF'
+# Auth SMTP Evidence Assets
+
+- `provider-domain.png`
+- `supabase-smtp-settings.png`
+- `signup-mailbox.png`
+- `password-reset-mailbox.png`
+- `email-change-mailbox.png`
+- `provider-dashboard-event.png`
 EOF
 
   cat > "$(auth_smtp_bundle_dns_path "$dir")" <<'EOF'
@@ -97,7 +114,7 @@ EOF
 - DKIM:
 - DMARC:
 - Provider Verified Timestamp:
-- Evidence Screenshot:
+- Evidence Screenshot: assets/provider-domain.png
 EOF
 
   cat > "$(auth_smtp_bundle_settings_path "$dir")" <<'EOF'
@@ -110,17 +127,17 @@ EOF
 - Sender Email:
 - `email_sent`:
 - `auth.email.max_frequency`:
-- Settings Screenshot:
+- Settings Screenshot: assets/supabase-smtp-settings.png
 EOF
 
   cat > "$(auth_smtp_bundle_live_send_path "$dir")" <<'EOF'
 # Live Send Results
 
-| Scenario | Recipient Mask | Request Time | Accepted | Mailbox Received | request_id | provider_message_id | Notes |
+| Scenario | Recipient Mask | Request Time | Accepted | Mailbox Received | request_id | provider_message_id | evidence_asset | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| signup confirmation |  |  |  |  |  |  |  |
-| password reset |  |  |  |  |  |  |  |
-| email change |  |  |  |  |  |  |  |
+| signup confirmation |  |  |  |  |  |  | assets/signup-mailbox.png |  |
+| password reset |  |  |  |  |  |  | assets/password-reset-mailbox.png |  |
+| email change |  |  |  |  |  |  | assets/email-change-mailbox.png |  |
 EOF
 
   cat > "$(auth_smtp_bundle_negative_path "$dir")" <<'EOF'
@@ -132,7 +149,7 @@ EOF
 - reject:
 - deferred:
 - provider_event_id:
-- Dashboard / Webhook Evidence:
+- Dashboard / Webhook Evidence: assets/provider-dashboard-event.png
 EOF
 
   cat > "$(auth_smtp_bundle_ops_path "$dir")" <<'EOF'

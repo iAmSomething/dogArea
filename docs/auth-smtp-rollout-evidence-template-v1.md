@@ -4,6 +4,7 @@
 - Relates to: #482
 
 ## canonical bundle layout
+- `assets/`
 - `01-dns-verification.md`
 - `02-supabase-smtp-settings.md`
 - `03-live-send-results.md`
@@ -24,7 +25,7 @@
 - DKIM:
 - DMARC:
 - Provider Verified Timestamp:
-- Evidence Screenshot:
+- Evidence Screenshot: assets/provider-domain.png
 ```
 
 ## 02-supabase-smtp-settings.md
@@ -38,18 +39,18 @@
 - Sender Email:
 - `email_sent`:
 - `auth.email.max_frequency`:
-- Settings Screenshot:
+- Settings Screenshot: assets/supabase-smtp-settings.png
 ```
 
 ## 03-live-send-results.md
 ```md
 # Live Send Results
 
-| Scenario | Recipient Mask | Request Time | Accepted | Mailbox Received | request_id | provider_message_id | Notes |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| signup confirmation |  |  |  |  |  |  |  |
-| password reset |  |  |  |  |  |  |  |
-| email change |  |  |  |  |  |  |  |
+| Scenario | Recipient Mask | Request Time | Accepted | Mailbox Received | request_id | provider_message_id | evidence_asset | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| signup confirmation |  |  |  |  |  |  | assets/signup-mailbox.png |  |
+| password reset |  |  |  |  |  |  | assets/password-reset-mailbox.png |  |
+| email change |  |  |  |  |  |  | assets/email-change-mailbox.png |  |
 ```
 
 ## 04-negative-evidence.md
@@ -62,7 +63,7 @@
 - reject:
 - deferred:
 - provider_event_id:
-- Dashboard / Webhook Evidence:
+- Dashboard / Webhook Evidence: assets/provider-dashboard-event.png
 ```
 
 ## 05-rollback-rotation.md

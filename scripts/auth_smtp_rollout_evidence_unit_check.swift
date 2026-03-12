@@ -54,12 +54,17 @@ assertTrue(runbook.contains("01-dns-verification.md"), "runbook should define dn
 assertTrue(runbook.contains("06-final-decision.md"), "runbook should define final decision bundle file")
 
 assertTrue(template.contains("# Auth SMTP Rollout Evidence Template v1"), "template title should exist")
+assertTrue(template.contains("assets/"), "template should include assets directory")
 assertTrue(template.contains("01-dns-verification.md"), "template should include dns file")
 assertTrue(template.contains("02-supabase-smtp-settings.md"), "template should include settings file")
 assertTrue(template.contains("03-live-send-results.md"), "template should include live send file")
 assertTrue(template.contains("04-negative-evidence.md"), "template should include negative evidence file")
 assertTrue(template.contains("05-rollback-rotation.md"), "template should include rollback file")
 assertTrue(template.contains("06-final-decision.md"), "template should include final decision file")
+assertTrue(template.contains("assets/provider-domain.png"), "template should include dns asset path")
+assertTrue(template.contains("assets/supabase-smtp-settings.png"), "template should include settings asset path")
+assertTrue(template.contains("evidence_asset"), "template should include mailbox asset column")
+assertTrue(template.contains("assets/provider-dashboard-event.png"), "template should include provider event asset path")
 
 assertTrue(checklist.contains("## DNS 체크리스트"), "existing provider checklist should still define DNS checklist")
 assertTrue(observability.contains("provider_message_id"), "observability doc should still define provider message id")

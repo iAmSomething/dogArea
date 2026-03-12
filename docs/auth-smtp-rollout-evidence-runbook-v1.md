@@ -84,14 +84,16 @@
 9. bounce/reject/deferred가 있으면 provider event 캡처를 남긴다.
 10. rollback readiness와 secret rotation 담당자를 기록한다.
 11. `.codex_tmp/auth-smtp-evidence/` bundle 파일을 모두 채운다.
+    - `assets/`
     - `01-dns-verification.md`
     - `02-supabase-smtp-settings.md`
     - `03-live-send-results.md`
     - `04-negative-evidence.md`
     - `05-rollback-rotation.md`
     - `06-final-decision.md`
-12. 코멘트로 올리기 전 `bash scripts/validate_manual_evidence_pack.sh auth-smtp <bundle-dir>` 으로 완결성을 검사한다.
-13. closure comment를 바로 게시하려면 `bash scripts/post_closure_comment_from_evidence.sh auth-smtp --issue 482 <bundle-dir> --post`를 사용한다.
+12. 캡처한 dashboard/mailbox 이미지를 `assets/`에 같은 파일명으로 저장한다.
+13. 코멘트로 올리기 전 `bash scripts/validate_manual_evidence_pack.sh auth-smtp <bundle-dir>` 으로 완결성과 asset 존재를 검사한다.
+14. closure comment를 바로 게시하려면 `bash scripts/post_closure_comment_from_evidence.sh auth-smtp --issue 482 <bundle-dir> --post`를 사용한다.
 
 ## 실수신 시나리오 규칙
 ### Signup confirmation
@@ -119,14 +121,20 @@
 - bounce/reject/deferred가 발생했다면 reason과 retry 여부를 적는다.
 
 ## 스크린샷 규칙
-- 최소 3장
+- 최소 6장
   - provider domain verification
   - Supabase SMTP settings
-  - mailbox 수신 화면
+  - signup mailbox 수신 화면
+  - password reset mailbox 수신 화면
+  - email change mailbox 수신 화면
+  - provider event 또는 dashboard 화면
 - 파일명 예시
-  - `SMTP-001-provider-domain.png`
-  - `SMTP-001-supabase-settings.png`
-  - `SMTP-001-signup-mailbox.png`
+  - `assets/provider-domain.png`
+  - `assets/supabase-smtp-settings.png`
+  - `assets/signup-mailbox.png`
+  - `assets/password-reset-mailbox.png`
+  - `assets/email-change-mailbox.png`
+  - `assets/provider-dashboard-event.png`
 
 ## Pass 기준
 - custom SMTP provider가 production 또는 rollout 대상 project에 실제로 연결돼 있다.

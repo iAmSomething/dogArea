@@ -29,6 +29,12 @@ func write(_ url: URL, content: String) {
     }
 }
 
+/// Writes a placeholder asset file for auth SMTP evidence tests.
+/// - Parameter url: Asset file URL to create.
+func writeAsset(_ url: URL) {
+    write(url, content: "placeholder-asset")
+}
+
 /// Writes a filled auth smtp evidence bundle into the provided directory.
 /// - Parameter directory: Bundle root directory that will receive the evidence files.
 func writeFilledAuthBundle(at directory: URL) {
@@ -44,7 +50,7 @@ func writeFilledAuthBundle(at directory: URL) {
     - DKIM: verified
     - DMARC: present
     - Provider Verified Timestamp: 2026-03-12T12:00:00Z
-    - Evidence Screenshot: smtp-domain.png
+    - Evidence Screenshot: assets/provider-domain.png
     """)
 
     write(directory.appendingPathComponent("02-supabase-smtp-settings.md"), content: """
@@ -57,17 +63,17 @@ func writeFilledAuthBundle(at directory: URL) {
     - Sender Email: auth@auth.dogarea.app
     - `email_sent`: 2
     - `auth.email.max_frequency`: 60
-    - Settings Screenshot: smtp-settings.png
+    - Settings Screenshot: assets/supabase-smtp-settings.png
     """)
 
     write(directory.appendingPathComponent("03-live-send-results.md"), content: """
     # Live Send Results
 
-    | Scenario | Recipient Mask | Request Time | Accepted | Mailbox Received | request_id | provider_message_id | Notes |
-    | --- | --- | --- | --- | --- | --- | --- | --- |
-    | signup confirmation | a***@dogarea.test | 2026-03-12 12:00 | yes | yes | req-1 | msg-1 | ok |
-    | password reset | a***@dogarea.test | 2026-03-12 12:05 | yes | yes | req-2 | msg-2 | ok |
-    | email change | a***@dogarea.test | 2026-03-12 12:10 | yes | yes | req-3 | msg-3 | ok |
+    | Scenario | Recipient Mask | Request Time | Accepted | Mailbox Received | request_id | provider_message_id | evidence_asset | Notes |
+    | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+    | signup confirmation | a***@dogarea.test | 2026-03-12 12:00 | yes | yes | req-1 | msg-1 | assets/signup-mailbox.png | ok |
+    | password reset | a***@dogarea.test | 2026-03-12 12:05 | yes | yes | req-2 | msg-2 | assets/password-reset-mailbox.png | ok |
+    | email change | a***@dogarea.test | 2026-03-12 12:10 | yes | yes | req-3 | msg-3 | assets/email-change-mailbox.png | ok |
     """)
 
     write(directory.appendingPathComponent("04-negative-evidence.md"), content: """
@@ -79,7 +85,7 @@ func writeFilledAuthBundle(at directory: URL) {
     - reject: none observed
     - deferred: none observed
     - provider_event_id: evt-1
-    - Dashboard / Webhook Evidence: resend-dashboard.png
+    - Dashboard / Webhook Evidence: assets/provider-dashboard-event.png
     """)
 
     write(directory.appendingPathComponent("05-rollback-rotation.md"), content: """
@@ -98,6 +104,13 @@ func writeFilledAuthBundle(at directory: URL) {
     - Remaining Blockers: none
     - Linked Issue / PR Comment: issue comment url
     """)
+
+    writeAsset(directory.appendingPathComponent("assets/provider-domain.png"))
+    writeAsset(directory.appendingPathComponent("assets/supabase-smtp-settings.png"))
+    writeAsset(directory.appendingPathComponent("assets/signup-mailbox.png"))
+    writeAsset(directory.appendingPathComponent("assets/password-reset-mailbox.png"))
+    writeAsset(directory.appendingPathComponent("assets/email-change-mailbox.png"))
+    writeAsset(directory.appendingPathComponent("assets/provider-dashboard-event.png"))
 }
 
 /// Asserts that a condition holds for the readiness preflight contract.

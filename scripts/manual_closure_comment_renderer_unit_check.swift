@@ -77,6 +77,12 @@ func write(_ url: URL, content: String) {
     }
 }
 
+/// Writes a placeholder asset file for renderer-backed evidence tests.
+/// - Parameter url: Asset file URL to create.
+func writeAsset(_ url: URL) {
+    write(url, content: "placeholder-asset")
+}
+
 /// Builds a filled widget action case from the shared template.
 /// - Parameters:
 ///   - caseID: Canonical action case identifier.
@@ -98,8 +104,8 @@ func filledWidgetAction(caseID: String, summary: String) -> String {
         .replacingOccurrences(of: "- Summary:", with: "- Summary: \(summary)")
         .replacingOccurrences(of: "- Final Screen:", with: "- Final Screen: expected destination")
         .replacingOccurrences(of: "- Pass / Fail:", with: "- Pass / Fail: Pass")
-        .replacingOccurrences(of: "- `step-1`:", with: "- `step-1`: \(caseID)-step-1.png")
-        .replacingOccurrences(of: "- `step-2`:", with: "- `step-2`: \(caseID)-step-2.png")
+        .replacingOccurrences(of: "- `step-1`: assets/action/<case-id>-step-1.png", with: "- `step-1`: assets/action/\(caseID)-step-1.png")
+        .replacingOccurrences(of: "- `step-2`: assets/action/<case-id>-step-2.png", with: "- `step-2`: assets/action/\(caseID)-step-2.png")
         .replacingOccurrences(of: "[WidgetAction] ...", with: "[WidgetAction] route=\(caseID.lowercased())")
         .replacingOccurrences(of: "onOpenURL received: ...", with: "onOpenURL received: widget://\(caseID.lowercased())")
         .replacingOccurrences(of: "consumePendingWidgetActionIfNeeded ...", with: "consumePendingWidgetActionIfNeeded action=\(caseID.lowercased())")
@@ -131,8 +137,8 @@ func filledWidgetLayout(caseID: String, surface: String) -> String {
         .replacingOccurrences(of: "- Expected Result:", with: "- Expected Result: no clipping")
         .replacingOccurrences(of: "- Summary:", with: "- Summary: \(surface) layout stayed within bounds")
         .replacingOccurrences(of: "- Pass / Fail:", with: "- Pass / Fail: Pass")
-        .replacingOccurrences(of: "- `step-1`:", with: "- `step-1`: \(caseID)-step-1.png")
-        .replacingOccurrences(of: "- `step-2`:", with: "- `step-2`: \(caseID)-step-2.png")
+        .replacingOccurrences(of: "- `step-1`: assets/layout/<case-id>-step-1.png", with: "- `step-1`: assets/layout/\(caseID)-step-1.png")
+        .replacingOccurrences(of: "- `step-2`: assets/layout/<case-id>-step-2.png", with: "- `step-2`: assets/layout/\(caseID)-step-2.png")
 }
 
 /// Writes a filled auth smtp evidence bundle into the provided directory.
@@ -150,7 +156,7 @@ func writeFilledAuthBundle(at directory: URL) {
     - DKIM: verified
     - DMARC: present
     - Provider Verified Timestamp: 2026-03-12T12:00:00Z
-    - Evidence Screenshot: smtp-domain.png
+    - Evidence Screenshot: assets/provider-domain.png
     """)
 
     write(directory.appendingPathComponent("02-supabase-smtp-settings.md"), content: """
@@ -163,17 +169,17 @@ func writeFilledAuthBundle(at directory: URL) {
     - Sender Email: auth@auth.dogarea.app
     - `email_sent`: true
     - `auth.email.max_frequency`: 60
-    - Settings Screenshot: smtp-settings.png
+    - Settings Screenshot: assets/supabase-smtp-settings.png
     """)
 
     write(directory.appendingPathComponent("03-live-send-results.md"), content: """
     # Live Send Results
 
-    | Scenario | Recipient Mask | Request Time | Accepted | Mailbox Received | request_id | provider_message_id | Notes |
-    | --- | --- | --- | --- | --- | --- | --- | --- |
-    | signup confirmation | a***@dogarea.test | 2026-03-12 12:00 | yes | yes | req-1 | msg-1 | ok |
-    | password reset | a***@dogarea.test | 2026-03-12 12:05 | yes | yes | req-2 | msg-2 | ok |
-    | email change | a***@dogarea.test | 2026-03-12 12:10 | yes | yes | req-3 | msg-3 | ok |
+    | Scenario | Recipient Mask | Request Time | Accepted | Mailbox Received | request_id | provider_message_id | evidence_asset | Notes |
+    | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+    | signup confirmation | a***@dogarea.test | 2026-03-12 12:00 | yes | yes | req-1 | msg-1 | assets/signup-mailbox.png | ok |
+    | password reset | a***@dogarea.test | 2026-03-12 12:05 | yes | yes | req-2 | msg-2 | assets/password-reset-mailbox.png | ok |
+    | email change | a***@dogarea.test | 2026-03-12 12:10 | yes | yes | req-3 | msg-3 | assets/email-change-mailbox.png | ok |
     """)
 
     write(directory.appendingPathComponent("04-negative-evidence.md"), content: """
@@ -185,7 +191,7 @@ func writeFilledAuthBundle(at directory: URL) {
     - reject: none observed
     - deferred: none observed
     - provider_event_id: evt-1
-    - Dashboard / Webhook Evidence: resend-dashboard.png
+    - Dashboard / Webhook Evidence: assets/provider-dashboard-event.png
     """)
 
     write(directory.appendingPathComponent("05-rollback-rotation.md"), content: """
@@ -204,6 +210,13 @@ func writeFilledAuthBundle(at directory: URL) {
     - Remaining Blockers: none
     - Linked Issue / PR Comment: issue comment url
     """)
+
+    writeAsset(directory.appendingPathComponent("assets/provider-domain.png"))
+    writeAsset(directory.appendingPathComponent("assets/supabase-smtp-settings.png"))
+    writeAsset(directory.appendingPathComponent("assets/signup-mailbox.png"))
+    writeAsset(directory.appendingPathComponent("assets/password-reset-mailbox.png"))
+    writeAsset(directory.appendingPathComponent("assets/email-change-mailbox.png"))
+    writeAsset(directory.appendingPathComponent("assets/provider-dashboard-event.png"))
 }
 
 let rendererScript = load("scripts/render_closure_comment_from_evidence.sh")
@@ -232,6 +245,8 @@ let widgetCases = [
 ]
 for (caseID, summary) in widgetCases {
     write(widgetDirectory.appendingPathComponent("action/\(caseID).md"), content: filledWidgetAction(caseID: caseID, summary: summary))
+    writeAsset(widgetDirectory.appendingPathComponent("assets/action/\(caseID)-step-1.png"))
+    writeAsset(widgetDirectory.appendingPathComponent("assets/action/\(caseID)-step-2.png"))
 }
 let layoutCases = [
     "WL-001": "WalkControlWidget",
@@ -245,6 +260,8 @@ let layoutCases = [
 ]
 for (caseID, surface) in layoutCases {
     write(widgetDirectory.appendingPathComponent("layout/\(caseID).md"), content: filledWidgetLayout(caseID: caseID, surface: surface))
+    writeAsset(widgetDirectory.appendingPathComponent("assets/layout/\(caseID)-step-1.png"))
+    writeAsset(widgetDirectory.appendingPathComponent("assets/layout/\(caseID)-step-2.png"))
 }
 
 let widgetOutput = runRenderer(arguments: ["widget", widgetDirectory.path], expectSuccess: true)

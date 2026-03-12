@@ -71,6 +71,8 @@ render_widget_overview() {
 - Closure checklist:
   - `docs/widget-action-closure-checklist-v1.md`
 - Generated directory layout:
+  - `assets/action/`
+  - `assets/layout/`
   - `action/WD-001.md` ... `action/WD-008.md`
   - `layout/WL-001.md` ... `layout/WL-008.md`
   - `README.md`
@@ -94,7 +96,9 @@ widget_action_file_content() {
     | sed "s#^- 앱 상태:#- 앱 상태: ${app_state}#" \
     | sed "s#^- 인증 상태:#- 인증 상태: ${auth_state}#" \
     | sed "s#^- Action Route:#- Action Route: ${route}#" \
-    | sed "s#^- Expected Result:#- Expected Result: ${expected}#"
+    | sed "s#^- Expected Result:#- Expected Result: ${expected}#" \
+    | sed "s#^- \`step-1\`: assets/action/<case-id>-step-1.png#- \`step-1\`: assets/action/${case_id}-step-1.png#" \
+    | sed "s#^- \`step-2\`: assets/action/<case-id>-step-2.png#- \`step-2\`: assets/action/${case_id}-step-2.png#"
 }
 
 widget_layout_file_content() {
@@ -122,12 +126,14 @@ widget_layout_file_content() {
     | sed "s#^- CTA Height Rule:#- CTA Height Rule: ${cta_rule}#" \
     | sed "s#^- Metric Tile Rule:#- Metric Tile Rule: ${metric_rule}#" \
     | sed "s#^- Compact Formatting Rule:#- Compact Formatting Rule: ${compact_rule}#" \
-    | sed "s#^- Expected Result:#- Expected Result: ${expected}#"
+    | sed "s#^- Expected Result:#- Expected Result: ${expected}#" \
+    | sed "s#^- \`step-1\`: assets/layout/<case-id>-step-1.png#- \`step-1\`: assets/layout/${case_id}-step-1.png#" \
+    | sed "s#^- \`step-2\`: assets/layout/<case-id>-step-2.png#- \`step-2\`: assets/layout/${case_id}-step-2.png#"
 }
 
 write_widget_bundle() {
   local dir="$1"
-  mkdir -p "$dir/action" "$dir/layout"
+  mkdir -p "$dir/action" "$dir/layout" "$dir/assets/action" "$dir/assets/layout"
 
   cat > "$dir/README.md" <<'README'
 # Widget Real-Device Evidence Pack v2
@@ -140,6 +146,7 @@ write_widget_bundle() {
 - Closure checklist: `docs/widget-action-closure-checklist-v1.md`
 
 ## Action Cases
+- assets/action/
 - action/WD-001.md
 - action/WD-002.md
 - action/WD-003.md
@@ -150,6 +157,7 @@ write_widget_bundle() {
 - action/WD-008.md
 
 ## Layout Cases
+- assets/layout/
 - layout/WL-001.md
 - layout/WL-002.md
 - layout/WL-003.md
@@ -158,6 +166,13 @@ write_widget_bundle() {
 - layout/WL-006.md
 - layout/WL-007.md
 - layout/WL-008.md
+README
+
+  cat > "$dir/assets/README.md" <<'README'
+# Widget Real-Device Evidence Assets
+
+- `action/WD-001-step-1.png` ... `action/WD-008-step-2.png`
+- `layout/WL-001-step-1.png` ... `layout/WL-008-step-2.png`
 README
 
   widget_action_file_content "WD-001" "systemSmall" "cold start" "로그인" "open_rival_tab" "라이벌 탭으로 직접 진입하고 기본 상태가 보인다." > "$dir/action/WD-001.md"
