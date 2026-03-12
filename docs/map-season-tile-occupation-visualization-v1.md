@@ -11,7 +11,8 @@
 - 시각 규칙은 다음과 같이 고정한다.
   - `굵은 실선 테두리 = 점령`
   - `점선 테두리 = 유지`
-  - `채움이 진할수록 강도가 높은 칸`
+  - `채움은 보조 신호`, `stroke가 주 신호`
+  - `채움이 진할수록 강도가 높은 칸`이지만 본면을 덮지 않을 정도로만 유지한다.
 - 지도 상단에는 숫자 pill만 두지 않고 compact summary card를 함께 노출한다.
 - 의미 설명, 강도 범례, guide CTA는 기본 chrome이 아니라 overview sheet로 분리한다.
 
@@ -26,6 +27,33 @@
   - 시즌 stroke
   - 선택 halo
   - 현재 산책 route / marker / hotspot
+- route가 보이는 상황에서는 `현재 산책 route`가 항상 시즌 stroke보다 위에서 읽혀야 한다.
+- selection은 fill darkening이 아니라 `halo + stroke`로만 강조한다.
+
+### 1-1. 모드별 우선순위
+- 시즌 타일만 보이는 모드
+  - 시즌 fill
+  - 시즌 stroke
+  - 선택 halo
+  - hit target / hotspot
+- 시즌 타일 + 과거 polygon 모드
+  - 시즌 fill
+  - 저장 polygon surface
+  - 시즌 stroke
+  - 선택 halo
+  - polygon marker / hotspot
+- 시즌 타일 + 현재 산책 route 모드
+  - 시즌 fill
+  - 저장 polygon surface
+  - 시즌 stroke
+  - 선택 halo
+  - 현재 산책 route
+  - current marker / hotspot
+
+### 1-2. 채움 규칙
+- 시즌 fill은 `seasonOnly / seasonWithStoredPolygonSurface / seasonWithActiveWalkRoute` 3개 시나리오별로 더 옅게 보정한다.
+- active route가 같이 보일 때는 fill을 가장 약하게 내린다.
+- 날씨 tint가 켜진 상태에서도 검게 눌리지 않도록 fill opacity를 추가로 보정한다.
 
 ### 2. 상태 시그널
 - `점령`

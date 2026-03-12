@@ -17,44 +17,81 @@ struct MapSubView: View {
         MapRenderBudgetProbe.recordMapSubViewBodyEvaluationIfNeeded()
         let activeWalkSnapshot = viewModel.activeWalkPointSnapshot
         let selectedPolygonSnapshot = viewModel.walkPointSnapshot(for: viewModel.polygon)
+        let hasStoredPolygonSurface = (viewModel.showOnlyOne && viewModel.polygon.polygon != nil)
+            || (viewModel.showOnlyOne == false && viewModel.renderablePolygonOverlays.isEmpty == false)
+        let seasonTileRenderScenario = viewModel.seasonTileRenderScenario(
+            hasStoredPolygonSurface: hasStoredPolygonSurface,
+            hasActiveWalkRoute: activeWalkSnapshot.hasRenderableRoute
+        )
 
         return Map(position: $viewModel.cameraPosition, interactionModes: .all) {
+            // 1. 시즌 점령 fill은 항상 가장 아래의 보조 레이어로 둡니다.
             if viewModel.isSeasonTileMapVisible {
                 ForEach(viewModel.seasonTileMapTiles) { tile in
                     MapPolygon(tile.polygon)
                         .foregroundStyle(
                             viewModel.seasonTileFillColor(for: tile)
-                                .opacity(viewModel.seasonTileFillOpacity(for: tile))
+                                .opacity(
+                                    viewModel.seasonTileFillOpacity(
+                                        for: tile,
+                                        renderScenario: seasonTileRenderScenario
+                                    )
+                                )
                         )
                         .annotationTitles(.hidden)
                 }
             }
+
+            // 2. 저장된 산책 polygon은 시즌 fill 위에 두되, season map이 켜지면 보조 정보로 낮춥니다.
             if let walkArea = viewModel.polygon.polygon {
                 if viewModel.showOnlyOne {
                     MapPolygon(walkArea)
-                        .stroke(Color.appYellow, lineWidth: 0.5)
-                        .foregroundStyle(Color.appYellow.opacity(0.3))
+                        .stroke(
+                            Color.appYellow,
+                            lineWidth: viewModel.storedWalkPolygonStrokeLineWidth(for: seasonTileRenderScenario)
+                        )
+                        .foregroundStyle(
+                            Color.appYellow.opacity(
+                                viewModel.storedWalkPolygonFillOpacity(for: seasonTileRenderScenario)
+                            )
+                        )
                         .annotationTitles(.visible)
                 } else {
                     ForEach(viewModel.renderablePolygonOverlays) { item in
                         if let polygon = item.polygon {
                             MapPolygon(polygon)
-                                .stroke(Color.appYellow, lineWidth: 0.5)
-                                .foregroundStyle(Color.appYellow.opacity(0.3))
+                                .stroke(
+                                    Color.appYellow,
+                                    lineWidth: viewModel.storedWalkPolygonStrokeLineWidth(for: seasonTileRenderScenario)
+                                )
+                                .foregroundStyle(
+                                    Color.appYellow.opacity(
+                                        viewModel.storedWalkPolygonFillOpacity(for: seasonTileRenderScenario)
+                                    )
+                                )
                                 .annotationTitles(.visible)
                         }
                     }
                 }
             }
+
+            // 3. 시즌 상태를 읽게 하는 핵심은 stroke-first 레이어로 유지합니다.
             if viewModel.isSeasonTileMapVisible {
                 ForEach(viewModel.seasonTileMapTiles) { tile in
                     MapPolygon(tile.polygon)
                         .stroke(
-                            viewModel.seasonTileStrokeColor(for: tile),
-                            style: viewModel.seasonTileStrokeStyle(for: tile)
+                            viewModel.seasonTileStrokeColor(
+                                for: tile,
+                                renderScenario: seasonTileRenderScenario
+                            ),
+                            style: viewModel.seasonTileStrokeStyle(
+                                for: tile,
+                                renderScenario: seasonTileRenderScenario
+                            )
                         )
                         .annotationTitles(.hidden)
                 }
+                // 4. 선택 강조는 fill이 아니라 halo와 outline으로만 올립니다.
                 ForEach(viewModel.seasonTileMapTiles.filter(viewModel.isSeasonTileSelected)) { tile in
                     MapPolygon(tile.polygon)
                         .stroke(
@@ -63,22 +100,26 @@ struct MapSubView: View {
                         )
                         .annotationTitles(.hidden)
                 }
-                ForEach(viewModel.seasonTileMapTiles) { tile in
-                    Annotation("", coordinate: tile.centerCoordinate) {
-                        seasonTileSelectionHitTarget(for: tile)
-                    }
-                    .annotationTitles(.hidden)
-                }
             }
+
+            // 5. 현재 산책 route는 season stroke보다 위에 둬 주 레이어를 명확히 합니다.
             if viewModel.isWalking, activeWalkSnapshot.hasRenderableRoute {
                 MapPolyline(coordinates: activeWalkSnapshot.routeCoordinates)
-                    .stroke(routeStrokeColor, style: routeStrokeStyle)
+                    .stroke(
+                        viewModel.activeWalkRouteStrokeColor(for: seasonTileRenderScenario),
+                        style: routeStrokeStyle
+                    )
             }
+
+            // 6. 선택/상세 drill-down용 route와 marker는 active route 다음에 배치합니다.
             if let walkArea = viewModel.polygon.polygon {
                 if viewModel.showOnlyOne {
                     if selectedPolygonSnapshot.hasRenderableRoute {
                         MapPolyline(coordinates: selectedPolygonSnapshot.routeCoordinates)
-                            .stroke(routeStrokeColor, style: routeStrokeStyle)
+                            .stroke(
+                                viewModel.activeWalkRouteStrokeColor(for: seasonTileRenderScenario),
+                                style: routeStrokeStyle
+                            )
                     }
                     Annotation("", coordinate: walkArea.coordinate) {
                         VStack {
@@ -116,7 +157,10 @@ struct MapSubView: View {
             } else {
                 if viewModel.isWalking == false, activeWalkSnapshot.hasRenderableRoute {
                     MapPolyline(coordinates: activeWalkSnapshot.routeCoordinates)
-                        .stroke(routeStrokeColor, style: routeStrokeStyle)
+                        .stroke(
+                            viewModel.activeWalkRouteStrokeColor(for: seasonTileRenderScenario),
+                            style: routeStrokeStyle
+                        )
                 }
                 ForEach(activeWalkSnapshot.markLocations) { location in
                     Annotation("", coordinate: location.coordinate) {
@@ -126,6 +170,16 @@ struct MapSubView: View {
                                 myAlert.callAlert(type: .annotationSelected(location))
                             }
                     }
+                }
+            }
+
+            // 7. 시즌 타일 hit target은 마지막에 두되, 시각 흔적은 남기지 않습니다.
+            if viewModel.isSeasonTileMapVisible {
+                ForEach(viewModel.seasonTileMapTiles) { tile in
+                    Annotation("", coordinate: tile.centerCoordinate) {
+                        seasonTileSelectionHitTarget(for: tile)
+                    }
+                    .annotationTitles(.hidden)
                 }
             }
             if viewModel.isNearbyHotspotFeatureAvailable && viewModel.nearbyHotspotEnabled {
@@ -173,10 +227,6 @@ struct MapSubView: View {
         StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round, dash: [9, 6])
     }
 
-    private var routeStrokeColor: Color {
-        Color.appGreen.opacity(0.9)
-    }
-
     /// 시즌 타일 선택용 hit target을 렌더링합니다.
     /// - Parameter tile: 상세 패널을 열 시즌 타일 표현입니다.
     /// - Returns: 지도 위에서 탭 가능한 시즌 타일 선택 뷰입니다.
@@ -185,7 +235,7 @@ struct MapSubView: View {
             viewModel.toggleSelectedSeasonTile(tile)
         } label: {
             Circle()
-                .fill(Color.appInk.opacity(0.001))
+                .fill(Color.clear)
                 .frame(width: 44, height: 44)
         }
         .buttonStyle(.plain)
