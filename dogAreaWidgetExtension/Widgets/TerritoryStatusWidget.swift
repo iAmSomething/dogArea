@@ -353,7 +353,7 @@ struct TerritoryStatusWidgetEntryView: View {
         }
         switch goalContext.status {
         case .ready:
-            let remainingText = layoutBudget.areaText(goalContext.remainingAreaM2)
+            let remainingText = layoutBudget.areaText(goalContext.remainingAreaM2 ?? 0.0)
             return "\(goalContext.nextGoalName)까지 \(remainingText) 남았어요."
         case .completed:
             return "현재 비교 구역 기준을 모두 달성했어요."

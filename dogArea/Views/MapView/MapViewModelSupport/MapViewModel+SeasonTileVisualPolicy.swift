@@ -204,6 +204,52 @@ extension MapViewModel {
         }
     }
 
+    /// 저장된 산책 polygon의 surface fill 색을 계산합니다.
+    /// - Parameters:
+    ///   - isSeasonTileMapVisible: 시즌 점령 지도가 현재 켜져 있으면 `true`입니다.
+    ///   - renderScenario: 현재 지도에서 시즌 타일이 경쟁하는 레이어 상황입니다.
+    /// - Returns: 시즌 지도가 켜진 경우 `nil`을 반환해 fill을 제거하고, 그렇지 않으면 저장 polygon fill 색을 반환합니다.
+    func storedWalkPolygonFillColor(
+        isSeasonTileMapVisible: Bool,
+        renderScenario: MapSeasonTileRenderScenario
+    ) -> Color? {
+        guard isSeasonTileMapVisible == false else { return nil }
+        return Color.appYellow.opacity(storedWalkPolygonFillOpacity(for: renderScenario))
+    }
+
+    /// 저장된 산책 polygon outline 색을 계산합니다.
+    /// - Parameters:
+    ///   - isSeasonTileMapVisible: 시즌 점령 지도가 현재 켜져 있으면 `true`입니다.
+    ///   - renderScenario: 현재 지도에서 시즌 타일이 경쟁하는 레이어 상황입니다.
+    /// - Returns: 시즌 점령 지도가 켜진 경우 한 단계 낮춘 outline 색을, 그렇지 않으면 기본 outline 색을 반환합니다.
+    func storedWalkPolygonStrokeColor(
+        isSeasonTileMapVisible: Bool,
+        renderScenario: MapSeasonTileRenderScenario
+    ) -> Color {
+        let opacity: Double
+        if isSeasonTileMapVisible {
+            switch renderScenario {
+            case .seasonOnly:
+                opacity = 0.82
+            case .seasonWithStoredPolygonSurface:
+                opacity = 0.70
+            case .seasonWithActiveWalkRoute:
+                opacity = 0.62
+            }
+        } else {
+            switch renderScenario {
+            case .seasonOnly:
+                opacity = 0.96
+            case .seasonWithStoredPolygonSurface:
+                opacity = 0.90
+            case .seasonWithActiveWalkRoute:
+                opacity = 0.84
+            }
+        }
+
+        return Color.appYellow.opacity(opacity)
+    }
+
     /// 현재 산책 route 색을 계산합니다.
     /// - Parameter renderScenario: 현재 지도에서 시즌 타일이 경쟁하는 레이어 상황입니다.
     /// - Returns: 시즌 타일 위에서도 주 레이어로 읽히는 route stroke 색입니다.
