@@ -31,6 +31,7 @@
 - 다음 액션 명령
   - `next-render`
   - `next-prefill-existing`
+  - `next-apply-prefill`
   - `next-validate`
   - `next-render-closure`
   - `next-archive`
@@ -41,7 +42,8 @@
 - `--apply-prefill`를 주면 existing bundle에 대해 `prefill_manual_evidence_pack.sh`를 먼저 적용한 뒤 status를 계산한다.
 - `auth-smtp`의 `next-render`는 `--prefill-from-env`를 포함해 운영 메타데이터 transcription 비용을 줄인다.
 - `widget`의 `next-render`도 `--prefill-from-env`를 포함해 공통 기록 메타 transcription 비용을 줄인다.
-- 기존 bundle이 이미 있으면 `next-prefill-existing` -> `next-validate` 순서가 더 안전한 기본 경로다.
+- existing bundle에 metadata gap이 남아 있으면 `next-apply-prefill`를 우선 노출한다.
+- 기존 bundle이 이미 있으면 `next-apply-prefill` 또는 `next-prefill-existing` -> `next-validate` 순서가 더 안전한 기본 경로다.
 - 기본 출력은 validator raw dump를 숨기고 요약만 보여준다.
 - `--raw-errors`를 주면 validator raw dump도 stderr로 그대로 출력한다.
 
