@@ -12,6 +12,7 @@
 - 검증 축 정의: `docs/widget-action-real-device-validation-matrix-v1.md`
 - layout 축 정의: `docs/widget-family-real-device-validation-matrix-v1.md`
 - helper: `bash scripts/render_manual_evidence_pack.sh widget --write`
+- helper prefill: `bash scripts/render_manual_evidence_pack.sh widget --write --prefill-from-env`
 - bundle validator: `bash scripts/validate_manual_evidence_pack.sh widget .codex_tmp/widget-real-device-evidence`
 - 종료 체크리스트: `docs/widget-action-closure-checklist-v1.md`
 
@@ -38,6 +39,8 @@
 ## 실행 절차
 1. `docs/widget-action-real-device-validation-matrix-v1.md`에서 대상 케이스를 고른다.
 2. `bash scripts/render_manual_evidence_pack.sh widget --write`로 bundle skeleton을 만든다.
+   - 공통 메타를 먼저 채우려면 `--prefill-from-env`를 같이 쓴다.
+   - 지원 env: `DOGAREA_WIDGET_EVIDENCE_DATE`, `DOGAREA_WIDGET_EVIDENCE_TESTER`, `DOGAREA_WIDGET_EVIDENCE_DEVICE_OS`, `DOGAREA_WIDGET_EVIDENCE_APP_BUILD`
 3. `action/WD-*.md`에서 해당 케이스 파일을 연다.
 4. 앱 상태를 `cold start` / `background` / `foreground` 중 하나로 맞춘다.
 5. 인증 상태를 `로그인` / `로그아웃` / `auth overlay` 중 하나로 맞춘다.
