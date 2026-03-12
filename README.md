@@ -168,6 +168,7 @@
 - Auth SMTP live-send validation matrix v1: `docs/auth-smtp-live-send-validation-matrix-v1.md`
 - Auth SMTP closure checklist v1: `docs/auth-smtp-closure-checklist-v1.md`
 - Auth SMTP closure comment template v1: `docs/auth-smtp-closure-comment-template-v1.md`
+- Auth SMTP rollout readiness preflight v1: `docs/auth-smtp-rollout-readiness-preflight-v1.md`
 - Auth service / 운영 mail 채널 분리 정책 v1: `docs/auth-service-mail-channel-separation-policy-v1.md`
 - Auth mail observability / metric / alert / request key v1: `docs/auth-mail-observability-metric-alert-request-key-v1.md`
 - Backend Edge auth policy v1: `docs/backend-edge-auth-policy-v1.md`
@@ -248,6 +249,7 @@
 - blocker evidence validator: `bash scripts/validate_manual_evidence_pack.sh <widget|auth-smtp> <filled-markdown>`
 - blocker closure renderer: `bash scripts/render_closure_comment_from_evidence.sh <widget|auth-smtp> ...`
 - blocker closure poster: `bash scripts/post_closure_comment_from_evidence.sh <widget|auth-smtp> --issue <number> ... [--post]`
+- auth smtp readiness preflight: `bash scripts/auth_smtp_rollout_readiness_check.sh`
 - widget blocker bundle poster: `bash scripts/post_closure_comment_from_evidence.sh widget --all-related .codex_tmp/widget-real-device-evidence --post`
 - Backend drift / RPC contract 전용 체크: `bash scripts/backend_migration_drift_check.sh`
 - Backend smoke entrypoint: `bash scripts/backend_pr_check.sh`
