@@ -20,7 +20,7 @@ struct MapFloatingControlLayoutContext {
 }
 
 enum MapBottomControlOverlayMetrics {
-    static let visualBandClearanceCompensation: CGFloat = 54
+    static let visualBandClearanceCompensation: CGFloat = 78
     static let primaryActionLiftWhenVisible: CGFloat = 70
     static let floatingControlsBottomSpacingWhenPrimaryVisible: CGFloat = 18
     static let floatingControlsBottomSpacingWhenPrimaryHidden: CGFloat = 24

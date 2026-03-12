@@ -86,11 +86,6 @@ struct MapView : View{
                 isWalkingHUDDetailPresented = false
             }
         })
-        composed = AnyView(composed.onChange(of: hasCompetingTopChrome) { _, hasCompeting in
-            if hasCompeting {
-                isWalkingHUDDetailPresented = false
-            }
-        })
         composed = AnyView(composed.onChange(of: viewModel.runtimeGuardStatusText) { _, newValue in
             guard newValue.isEmpty == false else { return }
             recomputeBannerQueue()
@@ -438,7 +433,7 @@ struct MapView : View{
     }
 
     private var walkingHUDDetailPresentation: MapWalkActiveValuePresentation? {
-        guard viewModel.isWalking, hasCompetingTopChrome == false else {
+        guard viewModel.isWalking else {
             return nil
         }
         return walkValueFlowPresentationService.makeActiveValuePresentation(

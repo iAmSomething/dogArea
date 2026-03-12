@@ -14,16 +14,16 @@
 ## 산책 중 정책
 - 산책 중 설명성 surface의 기본 상태는 `map.walk.activeValue.card` slim HUD다.
 - 기본 상태는 제목, 상태 한 줄, 핵심 metric만 노출한다.
-- top chrome 경쟁 요소가 없을 때만 `map.walk.activeValue.expand`로 inline detail을 펼칠 수 있다.
+- `map.walk.activeValue.expand`는 top chrome 경쟁 요소 유무와 관계없이 항상 유지한다.
 - inline detail 루트 식별자는 `map.walk.activeValue.detail.card`다.
 - inline detail은 `map.walk.activeValue.collapse`로 즉시 닫을 수 있어야 한다.
-- top chrome 경쟁 요소가 있을 때는 inline detail을 허용하지 않고, disclosure는 `guide sheet` 재진입으로 강등한다.
+- inline detail 안에서만 `전체 설명` CTA를 통해 guide sheet로 재진입한다.
 
 ## overlay 우선순위
 - top row: 날씨 pill, 시즌 pill, 설정 버튼
 - 그 아래: walking slim HUD
-- walking inline detail은 `banner / status overlay / season tile summary-detail`이 없을 때만 허용한다.
-- 경쟁 요소가 생기면 walking inline detail은 자동으로 닫고, 설명 재진입은 guide sheet 경로만 유지한다.
+- walking inline detail은 같은 top chrome stack 안에서 `slim HUD` 바로 아래에 배치한다.
+- 경쟁 요소가 생겨도 explicit disclosure로 연 inline detail은 사용자가 직접 닫기 전까지 유지한다.
 - add-point button과 bottom control bar는 disclosure 여부와 관계없이 기존 하단 조작 계약을 유지한다.
 
 ## 닫기/복귀 규칙
