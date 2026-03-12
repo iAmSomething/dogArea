@@ -24,6 +24,7 @@ swift scripts/auth_smtp_provider_checklist_unit_check.swift
 swift scripts/auth_smtp_rollout_evidence_unit_check.swift
 swift scripts/auth_smtp_live_send_validation_matrix_unit_check.swift
 swift scripts/auth_smtp_closure_pack_unit_check.swift
+swift scripts/auth_smtp_rollout_readiness_preflight_unit_check.swift
 swift scripts/manual_evidence_helper_unit_check.swift
 swift scripts/manual_blocker_evidence_status_unit_check.swift
 swift scripts/manual_evidence_validator_unit_check.swift
