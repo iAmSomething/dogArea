@@ -1,12 +1,12 @@
 # Widget Action Real-Device Evidence Runbook v1
 
 - Issue: #662
-- Relates to: #408, #617, #731
+- Relates to: #408 (closed umbrella), #617, #731
 
 ## 목적
 - 실기기 위젯 액션 검증 결과를 저장소 기준으로 일관되게 남긴다.
 - `pass/fail`만 적는 대신 로그, 스크린샷, request_id, 앱 상태를 함께 남긴다.
-- `#408`, `#617`, `#731` 종료에 필요한 manual QA evidence를 재현 가능한 형식으로 고정한다.
+- active blocker `#617`, `#731` 종료에 필요한 manual QA evidence를 재현 가능한 형식으로 고정한다.
 
 ## 선행 문서
 - 검증 축 정의: `docs/widget-action-real-device-validation-matrix-v1.md`
@@ -60,5 +60,5 @@
 - `auth overlay`가 필요한데 요청이 소실되거나 잘못된 상태로 종료된다.
 
 ## 운영 규칙
-- `#408`을 닫을 때는 action evidence만 complete여도 부족하다. layout evidence `WL-*`까지 complete여야 한다.
+- active blocker를 닫을 때는 action evidence만 complete여도 부족하다. layout evidence `WL-*`까지 complete여야 한다.
 - simulator 결과는 참고 자료일 뿐, `real-device evidence` 대체물이 아니다.

@@ -33,7 +33,7 @@ let layoutMatrix = load("docs/widget-family-real-device-validation-matrix-v1.md"
 let readme = load("README.md")
 let iosPRCheck = load("scripts/ios_pr_check.sh")
 
-assertTrue(checklist.contains("#408, #617, #692, #731"), "checklist should reference bundled widget issues")
+assertTrue(checklist.contains("#408 (closed umbrella), #617, #692, #731"), "checklist should reference widget issue set with closed umbrella context")
 for caseID in ["WD-001", "WD-008", "WL-001", "WL-008"] {
     assertTrue(checklist.contains(caseID), "checklist should require \(caseID)")
 }
@@ -45,7 +45,7 @@ assertTrue(template.contains("실기기 위젯 blocker 검증을 완료했습니
 assertTrue(template.contains("layout / clipping 케이스"), "template should include layout section")
 assertTrue(template.contains("#617"), "template should mention #617")
 assertTrue(template.contains("#731"), "template should mention #731")
-assertTrue(template.contains("#408`, `#617`, `#692`, `#731"), "template should close bundled issues")
+assertTrue(template.contains("active widget blocker `#617`, `#692`, `#731`"), "template should close active widget blockers")
 
 assertTrue(actionMatrix.contains("docs/widget-action-closure-checklist-v1.md"), "action matrix should reference closure checklist")
 assertTrue(layoutMatrix.contains("docs/widget-action-closure-checklist-v1.md"), "layout matrix should reference closure checklist")

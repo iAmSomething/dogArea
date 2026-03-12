@@ -181,7 +181,7 @@ let widgetOutput = runRenderer(arguments: ["widget", widgetDirectory.path], expe
 assertTrue(widgetOutput.contains("실기기 위젯 blocker 검증을 완료했습니다."), "widget comment should include intro")
 assertTrue(widgetOutput.contains("`WD-001`: Pass - member rival route converged"), "widget comment should include WD-001 summary")
 assertTrue(widgetOutput.contains("`WL-008`: Pass - HotspotStatusWidget layout stayed within bounds"), "widget comment should include WL-008 summary")
-assertTrue(widgetOutput.contains("`#408`, `#617`, `#692`, `#731` DoD를 충족했으므로 종료합니다."), "widget comment should include bundled closure line")
+assertTrue(widgetOutput.contains("active widget blocker `#617`, `#692`, `#731` DoD를 충족했으므로 종료합니다."), "widget comment should include active blocker closure line")
 
 let incompleteWidgetDirectory = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
 write(incompleteWidgetDirectory.appendingPathComponent("action/WD-001.md"), content: filledWidgetAction(caseID: "WD-001", summary: "only one case"))

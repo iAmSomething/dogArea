@@ -146,7 +146,7 @@ let backendPRCheck = load("scripts/backend_pr_check.sh")
 assertTrue(runnerScript.contains("widget-real-device-evidence"), "runner should support widget evidence directory")
 assertTrue(runnerScript.contains("related-issues"), "runner should print related widget issues")
 assertTrue(runnerScript.contains("next-post-closure-bundle"), "runner should print bundled widget post command")
-assertTrue(doc.contains("#617"), "doc should mention related widget issues")
+assertTrue(doc.contains("primary `#731`, related `#617`, `#692`"), "doc should describe active widget blocker routing")
 assertTrue(doc.contains("widget-real-device-evidence"), "doc should mention widget directory path")
 assertTrue(doc.contains("next-post-closure-bundle"), "doc should describe bundled widget post command")
 assertTrue(readme.contains("docs/manual-blocker-evidence-status-runner-v1.md"), "README should link runner doc")
@@ -163,7 +163,8 @@ let missingOutput = runStatus(arguments: ["widget"], environment: [
 ])
 assertTrue(missingOutput.contains("== widget =="), "runner should print widget header")
 assertTrue(missingOutput.contains("status: missing"), "runner should mark missing widget evidence")
-assertTrue(missingOutput.contains("related-issues: #617 #692 #731"), "runner should print related widget issues")
+assertTrue(missingOutput.contains("issue: #731 (skipped)"), "runner should print active widget primary issue")
+assertTrue(missingOutput.contains("related-issues: #617 #692"), "runner should print related widget issues")
 
 let generatedOutput = runStatus(arguments: ["widget", "--write-missing"], environment: [
     "DOGAREA_WIDGET_EVIDENCE_PATH": widgetPath.path,

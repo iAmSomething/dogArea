@@ -141,7 +141,7 @@ if [[ "$post_mode" != "1" ]]; then
   cat "$rendered_output_path"
   printf '\n'
   if [[ "$all_related" == "1" ]]; then
-    printf 'DRY RUN: no GitHub comment was posted. Re-run with --post to publish to issues #408, #617, #692, and #731.\n' >&2
+    printf 'DRY RUN: no GitHub comment was posted. Re-run with --post to publish to issues #731, #617, and #692.\n' >&2
   else
     printf 'DRY RUN: no GitHub comment was posted. Re-run with --post to publish to issue #%s.\n' "$issue_number" >&2
   fi
@@ -150,11 +150,11 @@ fi
 
 command -v "$gh_bin" >/dev/null 2>&1 || die "gh binary not found: $gh_bin"
 if [[ "$all_related" == "1" ]]; then
-  posted_issues=(408 617 692 731)
+  posted_issues=(731 617 692)
   for posted_issue in "${posted_issues[@]}"; do
     "$gh_bin" issue comment "$posted_issue" --body-file "$rendered_output_path"
   done
-  printf 'POSTED issues #408, #617, #692, and #731 using %s\n' "$gh_bin"
+  printf 'POSTED issues #731, #617, and #692 using %s\n' "$gh_bin"
 else
   "$gh_bin" issue comment "$issue_number" --body-file "$rendered_output_path"
   printf 'POSTED issue #%s using %s\n' "$issue_number" "$gh_bin"

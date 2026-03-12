@@ -226,7 +226,7 @@ assertTrue(widgetDryRunOutput.contains("DRY RUN: no GitHub comment was posted.")
 
 let widgetBundleDryRunOutput = runPoster(arguments: ["widget", "--all-related", widgetTempDir.path], expectSuccess: true)
 assertTrue(widgetBundleDryRunOutput.contains("실기기 위젯 blocker 검증을 완료했습니다."), "widget bundle dry-run should print closure comment")
-assertTrue(widgetBundleDryRunOutput.contains("issues #408, #617, #692, and #731"), "widget bundle dry-run should mention all target issues")
+assertTrue(widgetBundleDryRunOutput.contains("issues #731, #617, and #692"), "widget bundle dry-run should mention active target issues")
 
 let widgetMismatchOutput = runPoster(arguments: ["widget", "--issue", "482", widgetTempDir.path], expectSuccess: false)
 assertTrue(widgetMismatchOutput.contains("surface widget must target one of #408, #617, #692, #731"), "widget poster should reject mismatched issue")
@@ -243,11 +243,11 @@ assertTrue(widgetPostOutput.contains("POSTED issue #731"), "widget post should r
 let fakeWidgetBundleGH = makeFakeGH(in: URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString))
 let widgetBundlePostOutput = runPoster(arguments: ["widget", "--all-related", widgetTempDir.path, "--post"], environment: ["DOGAREA_GH_BIN": fakeWidgetBundleGH.binary.path], expectSuccess: true)
 let widgetBundleGHLog = loadAbsolute(fakeWidgetBundleGH.log)
-assertTrue(widgetBundleGHLog.contains("issue comment 408 --body-file"), "widget bundle post should comment on issue 408")
+assertTrue(!widgetBundleGHLog.contains("issue comment 408 --body-file"), "widget bundle post should skip closed issue 408")
+assertTrue(widgetBundleGHLog.contains("issue comment 731 --body-file"), "widget bundle post should comment on issue 731")
 assertTrue(widgetBundleGHLog.contains("issue comment 617 --body-file"), "widget bundle post should comment on issue 617")
 assertTrue(widgetBundleGHLog.contains("issue comment 692 --body-file"), "widget bundle post should comment on issue 692")
-assertTrue(widgetBundleGHLog.contains("issue comment 731 --body-file"), "widget bundle post should comment on issue 731")
-assertTrue(widgetBundlePostOutput.contains("POSTED issues #408, #617, #692, and #731"), "widget bundle post should report bundled post")
+assertTrue(widgetBundlePostOutput.contains("POSTED issues #731, #617, and #692"), "widget bundle post should report bundled post")
 
 let filledAuth = authTemplate
     .replacingOccurrences(of: "- Date:", with: "- Date: 2026-03-12")

@@ -1,7 +1,7 @@
 # Manual Closure Comment Renderer v1
 
 - Issue: #676
-- Relates to: #408, #482
+- Relates to: #408 (closed umbrella), #482
 
 ## 목적
 - validated evidence를 최종 종료 코멘트 형태로 빠르게 변환한다.
@@ -18,7 +18,7 @@
     - `WL-001` ... `WL-008` complete
     - 모든 케이스가 `Pass`
   - 출력:
-    - `#408`, `#617`, `#692`, `#731`에 공통으로 붙일 수 있는 closure comment 초안
+    - active blocker `#617`, `#692`, `#731`에 공통으로 붙일 수 있는 closure comment 초안
 - `auth-smtp`
   - 입력: validated auth smtp evidence 파일 1개
 

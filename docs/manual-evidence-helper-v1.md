@@ -1,7 +1,7 @@
 # Manual Evidence Helper v1
 
 - Issue: #672
-- Relates to: #408, #482
+- Relates to: #408 (closed umbrella), #482
 
 ## 목적
 - blocker 상태인 manual evidence 이슈를 한 번에 시작할 수 있게 한다.
@@ -13,7 +13,7 @@
 
 ## 지원 모드
 - `widget`
-  - 대상 이슈: `#408`, 관련 blocker `#617`, `#692`, `#731`
+  - 대상 이슈: active blocker `#731`, 관련 blocker `#617`, `#692`
   - 출력: 디렉터리 bundle
   - 포함 문서
     - `docs/widget-action-real-device-evidence-runbook-v1.md`
@@ -52,4 +52,4 @@
 
 ## 운영 규칙
 - 이 helper는 evidence를 대신 채우지 않는다.
-- `#408`, `#617`, `#692`, `#731`, `#482`는 실제 실기기/운영 증적이 들어오기 전까지 닫지 않는다.
+- `#617`, `#692`, `#731`, `#482`는 실제 실기기/운영 증적이 들어오기 전까지 닫지 않는다.

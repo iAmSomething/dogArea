@@ -1,7 +1,7 @@
 # Widget Family Real-Device Evidence Runbook v1
 
 - Issue: #751
-- Relates to: #692, #731, #408
+- Relates to: #692, #731, #408 (closed umbrella)
 
 ## 목적
 - 위젯 family별 실기기 clipping / overflow / CTA 충돌 증적을 일관되게 남긴다.
@@ -60,4 +60,4 @@
 
 ## 운영 규칙
 - `WL-001` ... `WL-008`이 모두 채워져야 `#692`, `#731`의 실기기 layout evidence가 complete로 본다.
-- 이 문서만으로는 충분하지 않고, action 수렴 evidence `WD-001` ... `WD-008`도 함께 complete여야 `#408`을 닫을 수 있다.
+- 이 문서만으로는 충분하지 않고, action 수렴 evidence `WD-001` ... `WD-008`도 함께 complete여야 active blocker를 닫을 수 있다.

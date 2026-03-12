@@ -1,13 +1,13 @@
 # Widget Action Real-Device Validation Matrix v1
 
 - Issue: #660
-- Relates to: #408, #617, #731
+- Relates to: #408 (closed umbrella), #617, #731
 
 ## 목적
 - 위젯 액션 경로의 실기기 검증 결과를 한 문서에 남긴다.
 - simulator 자동 회귀와 분리된 real-device evidence 포맷을 고정한다.
 - cold start / background / foreground / auth state / action 축을 누락 없이 기록한다.
-- `#617`, `#731`에서 요구한 action convergence evidence를 `#408` closure pack으로 연결한다.
+- `#617`, `#731`에서 요구한 action convergence evidence를 active blocker closure pack으로 연결한다.
 
 ## 자동 회귀 진입점
 - 전용 위젯 액션 UI 러너: `bash scripts/run_widget_action_regression_ui_tests.sh`
@@ -61,6 +61,6 @@
 - 필요하면 `request_id` 또는 위젯 action route 문자열을 함께 남긴다.
 
 ## 운영 규칙
-- `#408`을 닫을 때는 `WD-001` ... `WD-008` action evidence와 `WL-001` ... `WL-008` layout evidence가 모두 complete여야 한다.
+- active blocker를 닫을 때는 `WD-001` ... `WD-008` action evidence와 `WL-001` ... `WL-008` layout evidence가 모두 complete여야 한다.
 - simulator 결과만으로는 `real-device validation` DoD를 충족하지 않는다.
 - 새 widget action route를 추가하면 자동 회귀 스크립트와 이 문서, bundle skeleton을 같이 갱신한다.
