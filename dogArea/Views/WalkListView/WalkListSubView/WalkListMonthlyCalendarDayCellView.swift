@@ -8,18 +8,9 @@ struct WalkListMonthlyCalendarDayCellView: View {
         Group {
             if let date = model.date {
                 if model.isInteractive {
-                    Button {
-                        onSelect(date)
-                    } label: {
-                        cellBody
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier(model.accessibilityIdentifier ?? "")
-                    .accessibilityLabel(model.accessibilityLabel)
+                    interactiveDayCell(for: date)
                 } else {
-                    cellBody
-                        .accessibilityIdentifier(model.accessibilityIdentifier ?? "")
-                        .accessibilityLabel(model.accessibilityLabel)
+                    staticDayCell
                 }
             } else {
                 Color.clear
@@ -27,6 +18,31 @@ struct WalkListMonthlyCalendarDayCellView: View {
                     .accessibilityHidden(true)
             }
         }
+    }
+
+    /// 선택 가능한 날짜 셀을 명시적인 접근성 버튼 요소로 렌더링합니다.
+    /// - Parameter date: 사용자가 탭했을 때 전달할 날짜의 `startOfDay` 값입니다.
+    /// - Returns: UI 테스트와 VoiceOver가 같은 식별자/라벨을 읽는 날짜 버튼 뷰입니다.
+    private func interactiveDayCell(for date: Date) -> some View {
+        Button {
+            onSelect(date)
+        } label: {
+            cellBody
+                .accessibilityHidden(true)
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityIdentifier(model.accessibilityIdentifier ?? "")
+        .accessibilityLabel(model.accessibilityLabel)
+    }
+
+    /// 선택 불가능한 날짜 셀을 명시적인 정적 접근성 요소로 렌더링합니다.
+    /// - Returns: UI 테스트와 VoiceOver가 직접 찾을 수 있는 날짜 셀 뷰입니다.
+    private var staticDayCell: some View {
+        cellBody
+            .accessibilityElement(children: .ignore)
+            .accessibilityIdentifier(model.accessibilityIdentifier ?? "")
+            .accessibilityLabel(model.accessibilityLabel)
     }
 
     private var cellBody: some View {

@@ -25,6 +25,7 @@ struct GuestDataUpgradePromptSheetView: View {
                 Button("나중에") {
                     onLater()
                 }
+                .accessibilityIdentifier("sheet.guestDataUpgrade.later")
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
                 .background(Color.appYellowPale)
@@ -34,6 +35,7 @@ struct GuestDataUpgradePromptSheetView: View {
                 Button(prompt.shouldEmphasizeRetry ? "다시 가져오기" : "가져오기") {
                     onImport()
                 }
+                .accessibilityIdentifier("sheet.guestDataUpgrade.import")
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
                 .background(Color.appGreen)
@@ -43,5 +45,6 @@ struct GuestDataUpgradePromptSheetView: View {
         }
         .padding(20)
         .background(Color.white)
+        .accessibilityIdentifier("sheet.guestDataUpgrade")
     }
 }

@@ -2,6 +2,12 @@ import Foundation
 import CoreLocation
 
 extension RivalTabViewModel {
+    /// UI 테스트에서 위치 권한 상태를 허용으로 고정해야 하는지 반환합니다.
+    /// - Returns: `-UITest.RivalForceAuthorizedLocation` 인자가 포함되면 `true`를 반환합니다.
+    private var shouldForceAuthorizedLocationForUITest: Bool {
+        ProcessInfo.processInfo.arguments.contains("-UITest.RivalForceAuthorizedLocation")
+    }
+
     /// 탭 진입 시 권한/공유 상태를 불러오고 폴링을 시작합니다.
     func start() {
         locationManager.delegate = self
@@ -55,6 +61,11 @@ extension RivalTabViewModel {
 
     /// 위치 권한 요청을 수행합니다.
     func requestLocationPermission() {
+        if shouldForceAuthorizedLocationForUITest {
+            permissionState = .authorized
+            refreshViewState()
+            return
+        }
         RivalCoreLocationCallTracer.record(
             "requestWhenInUseAuthorization",
             detail: "source=requestLocationPermission"
@@ -64,6 +75,10 @@ extension RivalTabViewModel {
 
     /// 권한 상태를 iOS 시스템 값에서 앱 상태로 변환합니다.
     func updatePermissionState() {
+        if shouldForceAuthorizedLocationForUITest {
+            permissionState = .authorized
+            return
+        }
         RivalCoreLocationCallTracer.record(
             "authorizationStatus.read",
             detail: "source=updatePermissionState status=\(locationManager.authorizationStatus.rawValue)"

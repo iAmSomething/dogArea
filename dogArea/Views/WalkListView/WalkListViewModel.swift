@@ -58,7 +58,7 @@ final class WalkListViewModel: ObservableObject {
         self.calendarPresentationService = calendarPresentationService
         self.displayedCalendarMonth = calendarPresentationService.recommendedDisplayedMonth(
             records: [],
-            reference: Date(),
+            reference: Self.makeUITestCalendarPreviewDisplayedMonthIfNeeded() ?? Date(),
             calendar: Self.currentCalendar
         )
         bindSelectedPetSync()
@@ -132,7 +132,7 @@ final class WalkListViewModel: ObservableObject {
         if hasUserAdjustedCalendarMonth == false {
             displayedCalendarMonth = calendarPresentationService.recommendedDisplayedMonth(
                 records: scopedWalkingDatas,
-                reference: Date(),
+                reference: Self.makeUITestCalendarPreviewDisplayedMonthIfNeeded() ?? Date(),
                 calendar: Self.currentCalendar
             )
         }
@@ -282,21 +282,13 @@ final class WalkListViewModel: ObservableObject {
             return nil
         }
 
-        let referenceDate = Date()
-        let currentWeekStart = currentCalendar.dateInterval(of: .weekOfYear, for: referenceDate)?.start
-            ?? currentCalendar.startOfDay(for: referenceDate)
         let usesLongMetricPreview = shouldUseUITestLongMetricPreview()
         let previewPetId = usesLongMetricPreview ? makeUITestPreviewPetInfo().petId : nil
 
         return [
             makePreviewRecord(
                 id: "11111111-aaaa-bbbb-cccc-111111111111",
-                start: makeUITestPreviewRecordDate(
-                    fromWeekAnchor: currentWeekStart,
-                    dayOffset: 0,
-                    hour: 9,
-                    minute: 20
-                ),
+                start: makeUITestCalendarPreviewDate(year: 2026, month: 3, day: 8, hour: 9, minute: 20),
                 duration: usesLongMetricPreview ? 54_060 : 1_260,
                 area: usesLongMetricPreview ? 123_456.78 : 7_420,
                 coordinateSeed: (37.5665, 126.9780),
@@ -305,12 +297,7 @@ final class WalkListViewModel: ObservableObject {
             ),
             makePreviewRecord(
                 id: "22222222-aaaa-bbbb-cccc-222222222222",
-                start: makeUITestPreviewRecordDate(
-                    fromWeekAnchor: currentWeekStart,
-                    dayOffset: -2,
-                    hour: 18,
-                    minute: 10
-                ),
+                start: makeUITestCalendarPreviewDate(year: 2026, month: 3, day: 7, hour: 23, minute: 40),
                 duration: 1_800,
                 area: 5_860,
                 coordinateSeed: (37.5658, 126.9771),
@@ -319,12 +306,7 @@ final class WalkListViewModel: ObservableObject {
             ),
             makePreviewRecord(
                 id: "33333333-aaaa-bbbb-cccc-333333333333",
-                start: makeUITestPreviewRecordDate(
-                    fromWeekAnchor: currentWeekStart,
-                    dayOffset: -5,
-                    hour: 7,
-                    minute: 40
-                ),
+                start: makeUITestCalendarPreviewDate(year: 2026, month: 3, day: 6, hour: 7, minute: 40),
                 duration: 980,
                 area: 4_240,
                 coordinateSeed: (37.5649, 126.9761),
@@ -334,29 +316,38 @@ final class WalkListViewModel: ObservableObject {
         ]
     }
 
-    /// UI 테스트용 산책 기록 샘플 날짜를 현재 주차 기준으로 계산합니다.
+    /// UI 테스트용 월별 캘린더 프리뷰가 항상 동일한 월을 보도록 기준 월을 반환합니다.
+    /// - Returns: `-UITest.WalkListCalendarPreview` 인자가 있으면 2026년 3월 1일, 아니면 `nil`을 반환합니다.
+    private static func makeUITestCalendarPreviewDisplayedMonthIfNeeded() -> Date? {
+        guard ProcessInfo.processInfo.arguments.contains("-UITest.WalkListCalendarPreview") else {
+            return nil
+        }
+        return makeUITestCalendarPreviewDate(year: 2026, month: 3, day: 1, hour: 0, minute: 0)
+    }
+
+    /// UI 테스트용 고정 샘플 날짜를 생성합니다.
     /// - Parameters:
-    ///   - weekAnchor: 현재 주차의 시작 시각입니다.
-    ///   - dayOffset: 주 시작 기준으로 이동할 일 수입니다. 음수면 이전 주 기록을 만듭니다.
-    ///   - hour: 생성할 샘플 시각의 시(hour) 값입니다.
-    ///   - minute: 생성할 샘플 시각의 분(minute) 값입니다.
-    /// - Returns: 현재 달력 기준으로 안정적인 주차 섹션을 만들 수 있는 샘플 날짜입니다.
-    private static func makeUITestPreviewRecordDate(
-        fromWeekAnchor weekAnchor: Date,
-        dayOffset: Int,
+    ///   - year: 생성할 날짜의 연도 값입니다.
+    ///   - month: 생성할 날짜의 월 값입니다.
+    ///   - day: 생성할 날짜의 일 값입니다.
+    ///   - hour: 생성할 날짜의 시(hour) 값입니다.
+    ///   - minute: 생성할 날짜의 분(minute) 값입니다.
+    /// - Returns: 캘린더/필터 회귀에서 재현 가능한 고정 샘플 날짜입니다.
+    private static func makeUITestCalendarPreviewDate(
+        year: Int,
+        month: Int,
+        day: Int,
         hour: Int,
         minute: Int
     ) -> Date {
-        let shiftedDay = currentCalendar.date(byAdding: .day, value: dayOffset, to: weekAnchor) ?? weekAnchor
-        let components = currentCalendar.dateComponents([.year, .month, .day], from: shiftedDay)
         return DateComponents(
             calendar: currentCalendar,
-            year: components.year,
-            month: components.month,
-            day: components.day,
+            year: year,
+            month: month,
+            day: day,
             hour: hour,
             minute: minute
-        ).date ?? shiftedDay
+        ).date ?? Date(timeIntervalSince1970: 1_773_014_400)
     }
 
     /// UI 테스트용 샘플 산책 기록 한 건을 생성합니다.

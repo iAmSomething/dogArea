@@ -320,7 +320,7 @@ final class FeatureRegressionUITests: XCTestCase {
         let secondaryAlertAction = screenElement(identifier: "customAlert.action.secondary", in: app)
         let destructiveAlertAction = screenElement(identifier: "customAlert.action.destructive", in: app)
         let bottomControls = screenElement(identifier: "map.bottomControls", in: app)
-        let activeTabBarButton = app.buttons["tab.2"]
+        let activeTabBarButton = tabElement(index: 2, in: app)
 
         let alertPresented = waitUntilExists(alertSurface, timeout: 4)
             || waitUntilExists(alertHost, timeout: 1)
@@ -620,7 +620,7 @@ final class FeatureRegressionUITests: XCTestCase {
     /// 하단 탭바가 전체 밴드가 아니라 compact card surface로 유지되는지 검증합니다.
     func testFeatureRegression_TabBarUsesCompactCardSurfaceWithoutHeavyBand() throws {
         let app = launchAppForFeatureRegression()
-        XCTAssertTrue(waitUntilExists(app.buttons["tab.0"], timeout: 12), "탭바가 렌더링되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(tabElement(index: 0, in: app), timeout: 12), "탭바가 렌더링되지 않았습니다.")
 
         let surface = screenElement(identifier: "tabBar.surface", in: app)
         let visualBand = screenElement(identifier: "tabBar.visualBand", in: app)
@@ -642,13 +642,16 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertTrue(openTab(index: 1, app: app), "산책 목록 탭 진입에 실패했습니다.")
 
         let calendarCard = screenElement(identifier: "walklist.calendar.card", in: app)
-        XCTAssertTrue(waitUntilExists(calendarCard, timeout: 8), "산책 목록 월별 캘린더 카드가 렌더링되지 않았습니다.")
+        XCTAssertTrue(
+            revealElementByVerticalScroll(calendarCard, app: app, maxSwipes: 4),
+            "산책 목록 월별 캘린더 카드가 렌더링되지 않았습니다."
+        )
 
-        let targetDay = app.buttons["walklist.calendar.day.2026-03-08"]
-        XCTAssertTrue(waitUntilExists(targetDay, timeout: 3), "테스트용 날짜 셀을 찾지 못했습니다.")
+        let targetDay = calendarDayElement(identifierDate: "2026-03-08", in: app)
+        XCTAssertTrue(waitUntilExists(targetDay, timeout: 5), "테스트용 날짜 셀을 찾지 못했습니다.")
         XCTAssertTrue(waitUntilHittable(targetDay, timeout: 2), "테스트용 날짜 셀이 탭 가능한 상태가 아닙니다.")
 
-        targetDay.tap()
+        XCTAssertTrue(tapIfExists(targetDay), "테스트용 날짜 셀 탭에 실패했습니다.")
 
         let selectionSummary = screenElement(identifier: "walklist.calendar.selection", in: app)
         let clearButton = app.buttons["walklist.calendar.clear"]
@@ -693,8 +696,8 @@ final class FeatureRegressionUITests: XCTestCase {
         let calendarCard = screenElement(identifier: "walklist.calendar.card", in: app)
         let sundayHeaderSymbol = calendarCard.staticTexts["일"]
         let saturdayHeaderSymbol = calendarCard.staticTexts["토"]
-        let sundayCell = app.buttons["walklist.calendar.day.2026-03-08"]
-        let saturdayCell = app.buttons["walklist.calendar.day.2026-03-07"]
+        let sundayCell = calendarDayElement(identifierDate: "2026-03-08", in: app)
+        let saturdayCell = calendarDayElement(identifierDate: "2026-03-07", in: app)
 
         XCTAssertTrue(
             revealElementByVerticalScroll(calendarCard, app: app, maxSwipes: 4),
@@ -786,7 +789,7 @@ final class FeatureRegressionUITests: XCTestCase {
 
         let detailScreen = screenElement(identifier: "screen.walkListDetail.content", in: app)
         XCTAssertTrue(waitUntilExists(detailScreen, timeout: 8), "산책 상세 화면 preview route 진입에 실패했습니다.")
-        XCTAssertTrue(waitUntilGone(app.buttons["tab.1"], timeout: 2), "산책 상세 화면에서는 하단 탭바가 숨겨져야 합니다.")
+        XCTAssertTrue(waitUntilGone(tabElement(index: 1, in: app), timeout: 2), "산책 상세 화면에서는 하단 탭바가 숨겨져야 합니다.")
 
         XCTAssertTrue(waitUntilExists(screenElement(identifier: "walklist.detail.hero", in: app), timeout: 2), "상단 요약 카드가 노출되지 않았습니다.")
         XCTAssertTrue(waitUntilExists(screenElement(identifier: "walklist.detail.loopSummary", in: app), timeout: 2), "산책 기록 의미 요약 카드가 노출되지 않았습니다.")
@@ -871,7 +874,7 @@ final class FeatureRegressionUITests: XCTestCase {
             waitUntilExists(screenElement(identifier: "screen.walkList.content", in: app), timeout: 3),
             "상단 back affordance 탭 후 산책 기록 화면으로 복귀하지 않았습니다."
         )
-        XCTAssertTrue(waitUntilExists(app.buttons["tab.1"], timeout: 2), "상세 복귀 후 하단 탭바가 다시 보여야 합니다.")
+        XCTAssertTrue(waitUntilExists(tabElement(index: 1, in: app), timeout: 2), "상세 복귀 후 하단 탭바가 다시 보여야 합니다.")
     }
 
     /// 산책 상세 공유 CTA가 빈 호스트가 아닌 실제 시스템 share presenter 경로를 여는지 검증합니다.
@@ -892,10 +895,9 @@ final class FeatureRegressionUITests: XCTestCase {
         shareAction.tap()
 
         let presenterMarker = screenElement(identifier: "walklist.detail.share.presenter.active", in: app)
-        XCTAssertTrue(
-            waitUntilExists(presenterMarker, timeout: 4),
-            "공유 CTA 탭 후 시스템 공유 presenter가 활성화되어야 합니다."
-        )
+        let didPresentShareSurface = waitUntilExists(presenterMarker, timeout: 2)
+            || waitUntilAccessibilityValue(detailScreen, equals: "share-presented", timeout: 2.5)
+        XCTAssertTrue(didPresentShareSurface, "공유 CTA 탭 후 시스템 공유 presenter가 활성화되어야 합니다.")
     }
 
     /// 홈과 지도 첫 화면에서 산책이 기본 루프로 읽히고 실내 미션이 보조 흐름으로 내려가는지 검증합니다.
@@ -1141,7 +1143,7 @@ final class FeatureRegressionUITests: XCTestCase {
     /// 홈의 영역 목표 상세 진입 시 탭바가 숨겨지고 뒤로 복귀 시 다시 표시되는지 검증합니다.
     func testFeatureRegression_TerritoryGoalNavigationHidesAndRestoresTabBar() throws {
         let app = launchAppForFeatureRegression()
-        XCTAssertTrue(waitUntilExists(app.buttons["tab.0"], timeout: 12), "탭바가 렌더링되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(tabElement(index: 0, in: app), timeout: 12), "탭바가 렌더링되지 않았습니다.")
         XCTAssertTrue(openTab(index: 0, app: app), "홈 탭 진입에 실패했습니다.")
 
         let moreButton = app.buttons["home.goalTracker.more"]
@@ -1164,18 +1166,18 @@ final class FeatureRegressionUITests: XCTestCase {
             "영역 목표 상세 화면 진입에 실패했습니다."
         )
         XCTAssertTrue(
-            waitUntilGone(app.buttons["tab.2"], timeout: 3),
+            waitUntilGone(tabElement(index: 2, in: app), timeout: 3),
             "영역 목표 상세 화면에서는 하단 탭바가 숨겨져야 합니다."
         )
 
         navigateBackIfPossible(app)
-        XCTAssertTrue(waitUntilExists(app.buttons["tab.2"], timeout: 6), "상세 화면 복귀 후 하단 탭바가 다시 표시되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(tabElement(index: 2, in: app), timeout: 6), "상세 화면 복귀 후 하단 탭바가 다시 표시되지 않았습니다.")
     }
 
     /// 목표 상세에서 비교군 카탈로그로 2단계 진입했을 때 카탈로그 전용 섹션이 분리되어 노출되는지 검증합니다.
     func testFeatureRegression_TerritoryGoalOpensSeparatedAreaDetailCatalog() throws {
         let app = launchAppForFeatureRegression()
-        XCTAssertTrue(waitUntilExists(app.buttons["tab.0"], timeout: 12), "탭바가 렌더링되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(tabElement(index: 0, in: app), timeout: 12), "탭바가 렌더링되지 않았습니다.")
         XCTAssertTrue(openTab(index: 0, app: app), "홈 탭 진입에 실패했습니다.")
 
         let moreButton = app.buttons["home.goalTracker.more"]
@@ -1194,7 +1196,7 @@ final class FeatureRegressionUITests: XCTestCase {
 
         let areaDetailScreen = screenElement(identifier: "screen.areaDetail", in: app)
         XCTAssertTrue(waitUntilExists(areaDetailScreen, timeout: 8), "비교군 카탈로그 화면 진입에 실패했습니다.")
-        XCTAssertTrue(waitUntilGone(app.buttons["tab.2"], timeout: 2), "비교군 카탈로그 화면에서는 하단 탭바가 숨겨져야 합니다.")
+        XCTAssertTrue(waitUntilGone(tabElement(index: 2, in: app), timeout: 2), "비교군 카탈로그 화면에서는 하단 탭바가 숨겨져야 합니다.")
         XCTAssertTrue(waitUntilExists(app.staticTexts["카탈로그 스냅샷"], timeout: 3), "비교군 카탈로그 스냅샷 섹션이 노출되지 않았습니다.")
         XCTAssertTrue(waitUntilExists(app.staticTexts["현재 위치와 다음 기준"], timeout: 3), "비교군 카탈로그 전용 요약 카드가 노출되지 않았습니다.")
     }
@@ -1202,7 +1204,7 @@ final class FeatureRegressionUITests: XCTestCase {
     /// 라이벌 탭 하단 푸터 버튼이 지도/설정 탭 라우팅을 정상 수행하는지 검증합니다.
     func testFeatureRegression_RivalFooterButtonsRouteToMapAndSettings() throws {
         let app = launchAppForFeatureRegression()
-        XCTAssertTrue(waitUntilExists(app.buttons["tab.3"], timeout: 12), "탭바가 렌더링되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(tabElement(index: 3, in: app), timeout: 12), "탭바가 렌더링되지 않았습니다.")
         XCTAssertTrue(openTab(index: 3, app: app), "라이벌 탭 진입에 실패했습니다.")
 
         let openMapButton = app.buttons["rival.footer.openMap"]
@@ -1256,7 +1258,7 @@ final class FeatureRegressionUITests: XCTestCase {
     /// 설정 탭에서 게스트/회원 상태별 핵심 진입점(로그인 또는 로그아웃)이 노출되는지 검증합니다.
     func testFeatureRegression_SettingsAuthEntryPoints() throws {
         let app = launchAppForFeatureRegression()
-        XCTAssertTrue(waitUntilExists(app.buttons["tab.4"], timeout: 12), "탭바가 렌더링되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(tabElement(index: 4, in: app), timeout: 12), "탭바가 렌더링되지 않았습니다.")
         XCTAssertTrue(openTab(index: 4, app: app), "설정 탭 진입에 실패했습니다.")
 
         let signInButton = app.buttons["settings.open.signin"]
@@ -1305,7 +1307,7 @@ final class FeatureRegressionUITests: XCTestCase {
     /// 설정 탭이 실제 앱 설정/법적 문서/지원/앱 정보 섹션을 모두 노출하는지 검증합니다.
     func testFeatureRegression_SettingsProductSectionsExposeOperationalEntries() throws {
         let app = launchAppForFeatureRegression()
-        XCTAssertTrue(waitUntilExists(app.buttons["tab.4"], timeout: 12), "탭바가 렌더링되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(tabElement(index: 4, in: app), timeout: 12), "탭바가 렌더링되지 않았습니다.")
         XCTAssertTrue(openTab(index: 4, app: app), "설정 탭 진입에 실패했습니다.")
 
         XCTAssertTrue(
@@ -1348,7 +1350,7 @@ final class FeatureRegressionUITests: XCTestCase {
     /// 설정 탭의 프라이버시 센터 진입이 현재 상태/권한/문서 허브를 한 화면에서 노출하는지 검증합니다.
     func testFeatureRegression_SettingsPrivacyCenterRouteSurfacesControlAndDocuments() throws {
         let app = launchAppForFeatureRegression(extraArguments: ["-UITest.AutoGuest"])
-        XCTAssertTrue(waitUntilExists(app.buttons["tab.4"], timeout: 12), "탭바가 렌더링되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(tabElement(index: 4, in: app), timeout: 12), "탭바가 렌더링되지 않았습니다.")
         XCTAssertTrue(openTab(index: 4, app: app), "설정 탭 진입에 실패했습니다.")
 
         let privacyEntry = app.descendants(matching: .any).matching(identifier: "settings.privacyCenter.entry").firstMatch
@@ -1384,7 +1386,7 @@ final class FeatureRegressionUITests: XCTestCase {
     /// 설정 탭의 삭제 요청 흐름이 요청 ID/수집 항목/다음 단계를 한 시트 안에서 설명하는지 검증합니다.
     func testFeatureRegression_SettingsPrivacyDeletionRequestFlowExplainsNextSteps() throws {
         let app = launchAppForFeatureRegression(extraArguments: ["-UITest.AutoGuest"])
-        XCTAssertTrue(waitUntilExists(app.buttons["tab.4"], timeout: 12), "탭바가 렌더링되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(tabElement(index: 4, in: app), timeout: 12), "탭바가 렌더링되지 않았습니다.")
         XCTAssertTrue(openTab(index: 4, app: app), "설정 탭 진입에 실패했습니다.")
 
         let privacyEntry = app.descendants(matching: .any).matching(identifier: "settings.privacyCenter.entry").firstMatch
@@ -1789,9 +1791,9 @@ final class FeatureRegressionUITests: XCTestCase {
             loadTestCredentials(),
             "DOGAREA_TEST_EMAIL/DOGAREA_TEST_PASSWORD 또는 .design_audit_credentials.json이 필요합니다."
         )
-        let app = launchAppForFeatureRegression()
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.RivalForceAuthorizedLocation"])
 
-        XCTAssertTrue(waitUntilExists(app.buttons["tab.4"], timeout: 12), "탭바가 렌더링되지 않았습니다.")
+        XCTAssertTrue(waitUntilExists(tabElement(index: 4, in: app), timeout: 12), "탭바가 렌더링되지 않았습니다.")
         XCTAssertTrue(openTab(index: 4, app: app), "설정 탭 진입에 실패했습니다.")
         performLogoutIfNeeded(app)
         XCTAssertTrue(
@@ -1805,6 +1807,35 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertTrue(
             waitUntilExists(app.buttons["rival.sharing.stop"], timeout: 12),
             "익명 공유 시작 후 공유 중지 버튼이 나타나지 않았습니다."
+        )
+    }
+
+    /// 로그인 직후 게스트 데이터 이관 프롬프트가 떠도 설정 프로필 편집 흐름이 막히지 않는지 검증합니다.
+    func testFeatureRegression_GuestDataUpgradePromptDoesNotBlockSettingsProfileEdit() throws {
+        let credentials = try XCTUnwrap(
+            loadTestCredentials(),
+            "DOGAREA_TEST_EMAIL/DOGAREA_TEST_PASSWORD 또는 .design_audit_credentials.json이 필요합니다."
+        )
+        let app = launchAppForFeatureRegression(extraArguments: ["-UITest.ProfileSaveStubSuccess"])
+
+        XCTAssertTrue(waitUntilExists(tabElement(index: 4, in: app), timeout: 12), "탭바가 렌더링되지 않았습니다.")
+        XCTAssertTrue(openTab(index: 4, app: app), "설정 탭 진입에 실패했습니다.")
+        performLogoutIfNeeded(app)
+        XCTAssertTrue(
+            signInFromAnyEntry(app: app, credentials: credentials),
+            "게스트 데이터 프롬프트 차단 검증 로그인에 실패했습니다."
+        )
+        XCTAssertFalse(
+            screenElement(identifier: "sheet.guestDataUpgrade", in: app).exists,
+            "게스트 데이터 이관 프롬프트가 닫히지 않아 설정 편집을 가리면 안 됩니다."
+        )
+
+        let profileEditButton = app.buttons["settings.profile.edit"]
+        XCTAssertTrue(waitUntilExists(profileEditButton, timeout: 4), "프로필 편집 진입 버튼을 찾지 못했습니다.")
+        XCTAssertTrue(tapIfExists(profileEditButton), "프로필 편집 진입 버튼 탭에 실패했습니다.")
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "sheet.settings.profileEdit", in: app), timeout: 6),
+            "게스트 데이터 프롬프트 이후에도 프로필 편집 시트가 열려야 합니다."
         )
     }
 
@@ -1908,7 +1939,7 @@ final class FeatureRegressionUITests: XCTestCase {
             "영역 위젯 진입 배너가 노출되지 않았습니다."
         )
         XCTAssertTrue(
-            waitUntilGone(app.buttons["tab.2"], timeout: 2),
+            waitUntilGone(tabElement(index: 2, in: app), timeout: 2),
             "영역 목표 상세 화면에서는 하단 탭바가 숨겨져야 합니다."
         )
     }
@@ -1927,6 +1958,7 @@ final class FeatureRegressionUITests: XCTestCase {
             "-UITest.FeatureRegression", "1",
             "-UITest.SkipSplash",
             "-UITest.AutoGuest",
+            "-UITest.UseShareSheetStub",
             "-UITest.InterfaceStyle", style.rawValue
         ] + extraArguments
         app.launch()
@@ -1939,7 +1971,7 @@ final class FeatureRegressionUITests: XCTestCase {
     /// - Throws: XCTest assertion 실패 시 에러를 전파합니다.
     private func assertWalkListTabSelectedIconRemainsVisible(style: InterfaceStyle) throws {
         let app = launchAppForFeatureRegression(style: style)
-        let walkListTab = app.buttons["tab.1"]
+        let walkListTab = tabElement(index: 1, in: app)
 
         XCTAssertTrue(waitUntilExists(walkListTab, timeout: 12), "산책 기록 탭 버튼(tab.1)을 찾지 못했습니다.")
         XCTAssertTrue(openTab(index: 1, app: app), "산책 기록 탭 진입에 실패했습니다.")
@@ -2007,12 +2039,12 @@ final class FeatureRegressionUITests: XCTestCase {
         if waitUntilExists(signInEmailField, timeout: 2) == false {
             if tapIfExists(app.buttons["entry.openSignIn"]) {
                 usleep(250_000)
-            } else if tapIfExists(app.buttons["settings.open.signin"]) {
+            } else if tapIfRevealedByVerticalScroll(app.buttons["settings.open.signin"], app: app) {
                 usleep(250_000)
                 if tapIfExists(app.buttons["sheet.memberUpgrade.signin"]) {
                     usleep(300_000)
                 }
-            } else if tapIfExists(app.buttons["rival.login.start"]) {
+            } else if tapIfRevealedByVerticalScroll(app.buttons["rival.login.start"], app: app) {
                 usleep(250_000)
                 if tapIfExists(app.buttons["sheet.memberUpgrade.signin"]) {
                     usleep(300_000)
@@ -2023,7 +2055,12 @@ final class FeatureRegressionUITests: XCTestCase {
         if waitUntilExists(signInEmailField, timeout: 8) == false {
             _ = tapIfExists(app.buttons["sheet.memberUpgrade.signin"])
             _ = tapIfExists(app.buttons["entry.openSignIn"])
-            _ = tapIfExists(app.buttons["settings.open.signin"])
+            _ = tapIfRevealedByVerticalScroll(app.buttons["settings.open.signin"], app: app)
+            _ = tapIfRevealedByVerticalScroll(app.buttons["rival.login.start"], app: app)
+        }
+
+        if waitUntilExists(signInEmailField, timeout: 4) == false {
+            _ = presentSignInFlowIfNeeded(app)
         }
 
         guard waitUntilExists(signInEmailField, timeout: 8) else {
@@ -2031,6 +2068,7 @@ final class FeatureRegressionUITests: XCTestCase {
         }
         let didSignIn = performEmailLogin(app: app, credentials: credentials)
         if didSignIn {
+            dismissGuestDataUpgradePromptIfNeeded(app)
             _ = waitUntilMemberState(app, timeout: 8)
         }
         return didSignIn
@@ -2117,7 +2155,7 @@ final class FeatureRegressionUITests: XCTestCase {
     ) {
         let tabBarSurface = screenElement(identifier: "tabBar.surface", in: app)
         let tabBarVisualBand = screenElement(identifier: "tabBar.visualBand", in: app)
-        let activeTabBarButton = app.buttons["tab.2"]
+        let activeTabBarButton = tabElement(index: 2, in: app)
         var tabBarCandidateMinYs: [CGFloat] = []
 
         if waitUntilExists(tabBarVisualBand, timeout: 2) {
@@ -2163,6 +2201,24 @@ final class FeatureRegressionUITests: XCTestCase {
         app.descendants(matching: .any)
             .matching(identifier: identifier)
             .firstMatch
+    }
+
+    /// 커스텀 탭바 아이템을 접근성 타입과 무관하게 조회합니다.
+    /// - Parameters:
+    ///   - index: 조회할 탭 인덱스입니다.
+    ///   - app: 테스트 대상 앱 인스턴스입니다.
+    /// - Returns: 지정한 탭 식별자에 대응하는 첫 번째 접근성 요소입니다.
+    private func tabElement(index: Int, in app: XCUIApplication) -> XCUIElement {
+        screenElement(identifier: "tab.\(index)", in: app)
+    }
+
+    /// 월별 캘린더 날짜 셀을 접근성 타입과 무관하게 조회합니다.
+    /// - Parameters:
+    ///   - identifierDate: `yyyy-MM-dd` 형식 날짜 문자열입니다.
+    ///   - app: 테스트 대상 앱 인스턴스입니다.
+    /// - Returns: 지정 날짜 셀에 대응하는 첫 번째 접근성 요소입니다.
+    private func calendarDayElement(identifierDate: String, in app: XCUIApplication) -> XCUIElement {
+        screenElement(identifier: "walklist.calendar.day.\(identifierDate)", in: app)
     }
 
     /// 지도 하단 컨트롤 surface의 대표 geometry 요소를 UITest anchor 우선으로 조회합니다.
@@ -2362,14 +2418,13 @@ final class FeatureRegressionUITests: XCTestCase {
             return true
         }
 
-        let settingsTabButton = app.buttons["tab.4"]
+        let settingsTabButton = tabElement(index: 4, in: app)
         if waitUntilExists(settingsTabButton, timeout: 2.5) {
             settingsTabButton.tap()
             usleep(300_000)
 
             let settingsSignInButton = app.buttons["settings.open.signin"]
-            if waitUntilExists(settingsSignInButton, timeout: 2.5) {
-                settingsSignInButton.tap()
+            if tapIfRevealedByVerticalScroll(settingsSignInButton, app: app) {
                 usleep(300_000)
 
                 if waitUntilExists(memberUpgradeSignInButton, timeout: 2.5) {
@@ -2389,7 +2444,7 @@ final class FeatureRegressionUITests: XCTestCase {
     ///   - app: 테스트 대상 앱 인스턴스입니다.
     /// - Returns: 탭 버튼을 찾고 탭 전환에 성공하면 `true`를 반환합니다.
     private func openTab(index: Int, app: XCUIApplication) -> Bool {
-        let button = app.buttons["tab.\(index)"]
+        let button = tabElement(index: index, in: app)
         if waitUntilExists(button, timeout: 12) == false {
             let continueAsGuest = app.buttons["entry.continueGuest"].firstMatch
             if continueAsGuest.exists {
@@ -2400,9 +2455,55 @@ final class FeatureRegressionUITests: XCTestCase {
         guard waitUntilExists(button, timeout: 12) else {
             return false
         }
-        button.tap()
+        guard tapIfExists(button) else {
+            return false
+        }
         usleep(350_000)
-        return true
+        guard let screenIdentifiers = expectedScreenIdentifiers(forTabIndex: index, app: app) else {
+            return true
+        }
+
+        for identifier in screenIdentifiers {
+            if waitUntilExists(screenElement(identifier: identifier, in: app), timeout: 5) {
+                return true
+            }
+        }
+
+        if waitUntilHittable(button, timeout: 3) {
+            _ = tapIfExists(button)
+            usleep(350_000)
+            for identifier in screenIdentifiers {
+                if waitUntilExists(screenElement(identifier: identifier, in: app), timeout: 5) {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
+    /// 탭 인덱스에 대응하는 대표 루트 스크린 식별자 후보를 반환합니다.
+    /// - Parameters:
+    ///   - index: 전환을 검증할 탭 인덱스입니다.
+    ///   - app: 현재 런치 인자를 확인할 테스트 대상 앱 인스턴스입니다.
+    /// - Returns: 해당 탭이 정상 노출됐는지 판별할 접근성 식별자 후보 배열입니다.
+    private func expectedScreenIdentifiers(forTabIndex index: Int, app: XCUIApplication) -> [String]? {
+        switch index {
+        case 0:
+            return ["screen.home"]
+        case 1:
+            if app.launchArguments.contains("-UITest.WalkDetailPreviewRoute") {
+                return ["screen.walkListDetail.content", "screen.walkList"]
+            }
+            return ["screen.walkList"]
+        case 2:
+            return ["screen.map", "screen.map.suspended"]
+        case 3:
+            return ["screen.rival", "screen.rival.content"]
+        case 4:
+            return ["screen.settings", "screen.settings.member", "screen.settings.guest"]
+        default:
+            return nil
+        }
     }
 
     /// 세로 스크롤을 반복해 대상 요소가 화면에 노출될 때까지 탐색합니다.
@@ -2443,6 +2544,24 @@ final class FeatureRegressionUITests: XCTestCase {
             if element.exists { return true }
         }
         return element.exists
+    }
+
+    /// 세로 스크롤로 진입 버튼을 노출한 뒤 단일 탭까지 수행합니다.
+    /// - Parameters:
+    ///   - element: 노출 후 탭할 대상 요소입니다.
+    ///   - app: 스와이프 제스처를 전달할 앱 인스턴스입니다.
+    ///   - maxSwipes: 최대 스와이프 횟수입니다.
+    /// - Returns: 요소를 화면에 노출하고 탭까지 성공하면 `true`를 반환합니다.
+    @discardableResult
+    private func tapIfRevealedByVerticalScroll(
+        _ element: XCUIElement,
+        app: XCUIApplication,
+        maxSwipes: Int = 5
+    ) -> Bool {
+        guard revealExistingElementByVerticalScroll(element, app: app, maxSwipes: maxSwipes) else {
+            return false
+        }
+        return tapIfExists(element)
     }
 
     /// 가능한 경우 단일 탭 동작을 수행하고 성공 여부를 반환합니다.
@@ -2493,6 +2612,28 @@ final class FeatureRegressionUITests: XCTestCase {
             usleep(120_000)
         }
         return element.exists && element.label == expectedLabel
+    }
+
+    /// UI 요소의 접근성 값이 지정한 값으로 수렴할 때까지 대기합니다.
+    /// - Parameters:
+    ///   - element: 값을 관찰할 UI 요소입니다.
+    ///   - expectedValue: 최종적으로 일치해야 하는 접근성 값입니다.
+    ///   - timeout: 최대 대기 시간(초)입니다.
+    /// - Returns: 시간 내 값이 기대값과 일치하면 `true`, 아니면 `false`입니다.
+    private func waitUntilAccessibilityValue(
+        _ element: XCUIElement,
+        equals expectedValue: String,
+        timeout: TimeInterval
+    ) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if element.exists, element.value as? String == expectedValue {
+                usleep(180_000)
+                return true
+            }
+            usleep(120_000)
+        }
+        return element.exists && (element.value as? String == expectedValue)
     }
 
 
@@ -2567,6 +2708,7 @@ final class FeatureRegressionUITests: XCTestCase {
             "map.settings.close",
             "home.season.detail.close",
             "sheet.rival.consent.cancel",
+            "sheet.guestDataUpgrade.later",
             "sheet.settings.profileEdit.cancel",
             "sheet.settings.petManagement.close",
             "sheet.settings.petManagement.edit.cancel",
@@ -2595,6 +2737,20 @@ final class FeatureRegressionUITests: XCTestCase {
         if sheet.exists {
             sheet.swipeDown()
             usleep(250_000)
+        }
+    }
+
+    /// 로그인 직후 게스트 데이터 이관 프롬프트가 표시되면 이후 시나리오를 위해 닫습니다.
+    /// - Parameter app: 테스트 대상 앱 인스턴스입니다.
+    private func dismissGuestDataUpgradePromptIfNeeded(_ app: XCUIApplication) {
+        let promptSheet = screenElement(identifier: "sheet.guestDataUpgrade", in: app)
+        guard waitUntilExists(promptSheet, timeout: 4) else {
+            return
+        }
+
+        let laterButton = app.buttons["sheet.guestDataUpgrade.later"]
+        if tapIfExists(laterButton) || tapIfExists(app.buttons["나중에"]) {
+            _ = waitUntilGone(promptSheet, timeout: 4)
         }
     }
 

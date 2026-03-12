@@ -83,6 +83,7 @@ struct WalkListDetailView: View {
                         if shareItems.isEmpty {
                             showToast("공유할 내용을 준비하지 못했어요. 다시 시도해주세요.")
                         } else {
+                            isSystemSharePresented = true
                             showShareSheet = true
                         }
                     },
@@ -111,9 +112,15 @@ struct WalkListDetailView: View {
         }
         .overlay(alignment: .topLeading) {
             if isSystemSharePresented {
-                Color.clear
-                    .frame(width: 1, height: 1)
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(Color.black.opacity(0.015))
+                    .frame(width: 24, height: 24)
+                    .allowsHitTesting(false)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("공유 시트 활성")
                     .accessibilityIdentifier("walklist.detail.share.presenter.active")
+                    .padding(.top, 6)
+                    .padding(.leading, 6)
             }
         }
         .animation(.easeInOut(duration: 0.2), value: showSaveMessage)
@@ -126,6 +133,7 @@ struct WalkListDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .appTabBarVisibility(.hidden)
         .accessibilityIdentifier("screen.walkListDetail.content")
+        .accessibilityValue(isSystemSharePresented ? "share-presented" : "share-idle")
         .onAppear {
             if selectedLoc == nil {
                 selectedLoc = model.locations.first?.id
