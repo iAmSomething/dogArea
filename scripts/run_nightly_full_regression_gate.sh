@@ -67,7 +67,7 @@ render_summary() {
 ## Artifacts
 - reports/manual-blocker-status.txt
 - evidence/widget-real-device-evidence/
-- evidence/auth-smtp-evidence-pack.md
+- evidence/auth-smtp-evidence/
 - logs/backend-pr-check.log
 - logs/auth-member-401-smoke.log
 EOF_SUMMARY
@@ -87,8 +87,9 @@ if [[ -d ".codex_tmp/widget-real-device-evidence" ]]; then
   rm -rf "$EVIDENCE_DIR/widget-real-device-evidence"
   cp -R ".codex_tmp/widget-real-device-evidence" "$EVIDENCE_DIR/widget-real-device-evidence"
 fi
-if [[ -f ".codex_tmp/auth-smtp-evidence-pack.md" ]]; then
-  cp ".codex_tmp/auth-smtp-evidence-pack.md" "$EVIDENCE_DIR/auth-smtp-evidence-pack.md"
+if [[ -d ".codex_tmp/auth-smtp-evidence" ]]; then
+  rm -rf "$EVIDENCE_DIR/auth-smtp-evidence"
+  cp -R ".codex_tmp/auth-smtp-evidence" "$EVIDENCE_DIR/auth-smtp-evidence"
 fi
 
 widget_status="$(extract_surface_status widget "$MANUAL_STATUS_PATH")"

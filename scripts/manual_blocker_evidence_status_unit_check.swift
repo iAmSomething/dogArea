@@ -155,7 +155,7 @@ assertTrue(backendPRCheck.contains("manual_blocker_evidence_status_unit_check.sw
 
 let tempRoot = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
 let widgetPath = tempRoot.appendingPathComponent("widget")
-let authPath = tempRoot.appendingPathComponent("auth.md")
+let authPath = tempRoot.appendingPathComponent("auth")
 
 let missingOutput = runStatus(arguments: ["widget"], environment: [
     "DOGAREA_WIDGET_EVIDENCE_PATH": widgetPath.path,
@@ -202,7 +202,8 @@ let authOutput = runStatus(arguments: ["auth-smtp"], environment: [
     "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
 ])
 assertTrue(authOutput.contains("== auth-smtp =="), "runner should print auth-smtp header")
-assertTrue(authOutput.contains("--negative-guard"), "auth next command should include negative guard placeholder")
-assertTrue(authOutput.contains("--negative-provider-event"), "auth next command should include provider event placeholder")
+assertTrue(authOutput.contains("pack: \(authPath.path)"), "auth runner should print custom auth bundle path")
+assertTrue(!authOutput.contains("--negative-guard"), "auth next command should not require negative guard flag")
+assertTrue(!authOutput.contains("--negative-provider-event"), "auth next command should not require provider event flag")
 
 print("PASS: manual blocker evidence status runner contract checks")

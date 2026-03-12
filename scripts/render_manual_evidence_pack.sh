@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
+source "$ROOT_DIR/scripts/lib/auth_smtp_evidence_bundle.sh"
 
 usage() {
   cat <<'USAGE'
@@ -12,7 +13,7 @@ Usage:
 Examples:
   bash scripts/render_manual_evidence_pack.sh widget
   bash scripts/render_manual_evidence_pack.sh widget --write
-  bash scripts/render_manual_evidence_pack.sh auth-smtp --output .codex_tmp/auth-smtp-pack.md
+  bash scripts/render_manual_evidence_pack.sh auth-smtp --output .codex_tmp/auth-smtp-evidence
 USAGE
 }
 
@@ -178,28 +179,6 @@ README
   widget_layout_file_content "WL-008" "HotspotStatusWidget" "systemMedium" "memberReady, offlineCached, syncDelayed" "headline 2 lines max" "detail 2 lines max" "badge 2 max" "CTA 44-56pt" "radius + status strip stable" "compact distance formatting" "반경/상태/보조 문구가 family budget 안에서 수렴한다." > "$dir/layout/WL-008.md"
 }
 
-render_auth_pack() {
-  cat <<EOF2
-# Auth SMTP Evidence Pack v1
-
-- Related issue: #482
-- Generated at: $(date '+%Y-%m-%d %H:%M:%S %z')
-- Runbook: `docs/auth-smtp-rollout-evidence-runbook-v1.md`
-- Validation matrix: `docs/auth-smtp-live-send-validation-matrix-v1.md`
-- Closure checklist: `docs/auth-smtp-closure-checklist-v1.md`
-- Evidence template: `docs/auth-smtp-rollout-evidence-template-v1.md`
-- Closure comment template: `docs/auth-smtp-closure-comment-template-v1.md`
-
-## Evidence Template
-
-$(cat docs/auth-smtp-rollout-evidence-template-v1.md)
-
-## Closure Comment Template
-
-$(cat docs/auth-smtp-closure-comment-template-v1.md)
-EOF2
-}
-
 case "$kind" in
   widget)
     default_output_path=".codex_tmp/widget-real-device-evidence"
@@ -215,16 +194,16 @@ case "$kind" in
     fi
     ;;
   auth-smtp)
-    default_output_path=".codex_tmp/auth-smtp-evidence-pack.md"
+    default_output_path="$(auth_smtp_bundle_default_path)"
     if [[ -z "$output_path" && "$write_mode" == "1" ]]; then
       output_path="$default_output_path"
     fi
     if [[ -n "$output_path" ]]; then
-      mkdir -p "$(dirname "$output_path")"
-      render_auth_pack > "$output_path"
+      rm -rf "$output_path"
+      auth_smtp_bundle_write "$output_path"
       printf 'WROTE %s\n' "$output_path"
     else
-      render_auth_pack
+      auth_smtp_bundle_render_overview
     fi
     ;;
 esac

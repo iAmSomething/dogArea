@@ -29,4 +29,4 @@
 
 ## 기본 경로
 - widget: `.codex_tmp/widget-real-device-evidence`
-- auth-smtp: `.codex_tmp/auth-smtp-evidence-pack.md`
+- auth-smtp: `.codex_tmp/auth-smtp-evidence`

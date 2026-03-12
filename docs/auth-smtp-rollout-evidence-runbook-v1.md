@@ -13,9 +13,10 @@
 - auth abuse guard 정책: `docs/auth-abuse-guard-policy-v1.md`
 - auth observability 기준: `docs/auth-mail-observability-metric-alert-request-key-v1.md`
 - live-send validation matrix: `docs/auth-smtp-live-send-validation-matrix-v1.md`
-- 복붙용 기록 템플릿: `docs/auth-smtp-rollout-evidence-template-v1.md`
+- bundle 템플릿: `docs/auth-smtp-rollout-evidence-template-v1.md`
 - 종료 체크리스트: `docs/auth-smtp-closure-checklist-v1.md`
 - helper: `bash scripts/render_manual_evidence_pack.sh auth-smtp --write`
+  - 기본 출력: `.codex_tmp/auth-smtp-evidence/`
 
 ## 최소 증적 세트
 - provider 선택 정보
@@ -82,9 +83,15 @@
    - mailbox 수신 여부
 9. bounce/reject/deferred가 있으면 provider event 캡처를 남긴다.
 10. rollback readiness와 secret rotation 담당자를 기록한다.
-11. `docs/auth-smtp-rollout-evidence-template-v1.md` 형식으로 issue 또는 PR 코멘트에 남긴다.
-12. 코멘트로 올리기 전 `bash scripts/validate_manual_evidence_pack.sh auth-smtp <filled-markdown>` 으로 완결성을 검사한다.
-13. closure comment를 바로 게시하려면 `bash scripts/post_closure_comment_from_evidence.sh auth-smtp --issue 482 <filled-markdown> --negative-guard "..." --negative-provider-event "..." --post`를 사용한다.
+11. `.codex_tmp/auth-smtp-evidence/` bundle 파일을 모두 채운다.
+    - `01-dns-verification.md`
+    - `02-supabase-smtp-settings.md`
+    - `03-live-send-results.md`
+    - `04-negative-evidence.md`
+    - `05-rollback-rotation.md`
+    - `06-final-decision.md`
+12. 코멘트로 올리기 전 `bash scripts/validate_manual_evidence_pack.sh auth-smtp <bundle-dir>` 으로 완결성을 검사한다.
+13. closure comment를 바로 게시하려면 `bash scripts/post_closure_comment_from_evidence.sh auth-smtp --issue 482 <bundle-dir> --post`를 사용한다.
 
 ## 실수신 시나리오 규칙
 ### Signup confirmation

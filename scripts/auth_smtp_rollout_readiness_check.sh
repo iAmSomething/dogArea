@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
+source "$ROOT_DIR/scripts/lib/auth_smtp_evidence_bundle.sh"
 
 usage() {
   cat <<'USAGE'
@@ -29,7 +30,7 @@ die() {
   exit 1
 }
 
-evidence_path="${DOGAREA_AUTH_SMTP_EVIDENCE_PATH:-.codex_tmp/auth-smtp-evidence-pack.md}"
+evidence_path="$(auth_smtp_bundle_default_path)"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -136,5 +137,5 @@ printf 'overall: %s\n' "$overall_status"
 printf 'next-evidence-runbook: docs/auth-smtp-rollout-evidence-runbook-v1.md\n'
 printf 'next-live-send-matrix: docs/auth-smtp-live-send-validation-matrix-v1.md\n'
 printf 'next-validate: bash scripts/validate_manual_evidence_pack.sh auth-smtp %q\n' "$evidence_path"
-printf "next-render-closure: bash scripts/render_closure_comment_from_evidence.sh auth-smtp %q --negative-guard %q --negative-provider-event %q --write\n" "$evidence_path" "SMTP-101: cooldown suppressed with retry_after_seconds=60" "SMTP-102: provider dashboard event summary"
-printf "next-post-closure: bash scripts/post_closure_comment_from_evidence.sh auth-smtp --issue 482 %q --negative-guard %q --negative-provider-event %q --post\n" "$evidence_path" "SMTP-101: cooldown suppressed with retry_after_seconds=60" "SMTP-102: provider dashboard event summary"
+printf 'next-render-closure: bash scripts/render_closure_comment_from_evidence.sh auth-smtp %q --write\n' "$evidence_path"
+printf 'next-post-closure: bash scripts/post_closure_comment_from_evidence.sh auth-smtp --issue 482 %q --post\n' "$evidence_path"

@@ -3,12 +3,13 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
+source "$ROOT_DIR/scripts/lib/auth_smtp_evidence_bundle.sh"
 
 usage() {
   cat <<'USAGE'
 Usage:
   bash scripts/render_closure_comment_from_evidence.sh widget <evidence-dir> [--write] [--output <path>]
-  bash scripts/render_closure_comment_from_evidence.sh auth-smtp <evidence-file> --negative-guard <text> --negative-provider-event <text> [--write] [--output <path>]
+  bash scripts/render_closure_comment_from_evidence.sh auth-smtp <evidence-dir> [--write] [--output <path>]
 USAGE
 }
 
@@ -70,21 +71,11 @@ shift $(( $# >= 2 ? 2 : $# ))
   exit 1
 }
 
-negative_guard=""
-negative_provider_event=""
 write_mode=0
 output_path=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --negative-guard)
-      negative_guard="${2:-}"
-      shift 2
-      ;;
-    --negative-provider-event)
-      negative_provider_event="${2:-}"
-      shift 2
-      ;;
     --write)
       write_mode=1
       shift
@@ -175,30 +166,28 @@ FOOTER
 }
 
 render_auth_comment() {
-  local file="$1"
-  [[ -n "$negative_guard" ]] || {
-    printf 'render_closure_comment_from_evidence.sh: --negative-guard is required for auth-smtp\n' >&2
-    exit 1
-  }
-  [[ -n "$negative_provider_event" ]] || {
-    printf 'render_closure_comment_from_evidence.sh: --negative-provider-event is required for auth-smtp\n' >&2
-    exit 1
-  }
+  local dir="$1"
+  local dns_path settings_path live_send_path negative_path ops_path
+  dns_path="$(auth_smtp_bundle_dns_path "$dir")"
+  settings_path="$(auth_smtp_bundle_settings_path "$dir")"
+  live_send_path="$(auth_smtp_bundle_live_send_path "$dir")"
+  negative_path="$(auth_smtp_bundle_negative_path "$dir")"
+  ops_path="$(auth_smtp_bundle_ops_path "$dir")"
 
-  bash scripts/validate_manual_evidence_pack.sh auth-smtp "$file" >/dev/null || return 1
+  bash scripts/validate_manual_evidence_pack.sh auth-smtp "$dir" >/dev/null || return 1
 
   local provider sender project spf dkim dmarc
-  provider="$(extract_prefixed_value "- Provider:" "$file")"
-  sender="$(extract_prefixed_value "- Sender Domain:" "$file")"
-  project="$(extract_prefixed_value "- Supabase Project:" "$file")"
-  spf="$(extract_prefixed_value "- SPF:" "$file")"
-  dkim="$(extract_prefixed_value "- DKIM:" "$file")"
-  dmarc="$(extract_prefixed_value "- DMARC:" "$file")"
+  provider="$(extract_prefixed_value "- Provider:" "$dns_path")"
+  sender="$(extract_prefixed_value "- Sender Domain:" "$dns_path")"
+  project="$(extract_prefixed_value "- Supabase Project:" "$dns_path")"
+  spf="$(extract_prefixed_value "- SPF:" "$dns_path")"
+  dkim="$(extract_prefixed_value "- DKIM:" "$dns_path")"
+  dmarc="$(extract_prefixed_value "- DMARC:" "$dns_path")"
 
   local signup_summary reset_summary change_summary
-  signup_summary="$(collect_row_message "signup confirmation" "$file")"
-  reset_summary="$(collect_row_message "password reset" "$file")"
-  change_summary="$(collect_row_message "email change" "$file")"
+  signup_summary="$(collect_row_message "signup confirmation" "$live_send_path")"
+  reset_summary="$(collect_row_message "password reset" "$live_send_path")"
+  change_summary="$(collect_row_message "email change" "$live_send_path")"
 
   cat <<EOF2
 custom SMTP rollout 운영 증적을 확인했습니다.
@@ -225,12 +214,12 @@ Positive cases
 - \`SMTP-003\`: $change_summary
 
 Negative / guard evidence
-- \`SMTP-101\`: $negative_guard
-- \`SMTP-102\` or \`SMTP-103\`: $negative_provider_event
+- \`SMTP-101\`: $(extract_prefixed_value "- SMTP-101 Guard Evidence:" "$negative_path")
+- \`SMTP-102\` or \`SMTP-103\`: $(extract_prefixed_value "- SMTP-102 Provider Event Evidence:" "$negative_path")
 
 Rollback / rotation
-- rollback path: $(extract_prefixed_value "- rollback path:" "$file")
-- secret rotation owner: $(extract_prefixed_value "- secret rotation owner:" "$file")
+- rollback path: $(extract_prefixed_value "- rollback path:" "$ops_path")
+- secret rotation owner: $(extract_prefixed_value "- secret rotation owner:" "$ops_path")
 
 남은 blocker
 - 없음
@@ -241,7 +230,7 @@ EOF2
 }
 
 if [[ "$kind" == "widget" ]]; then
-  rendered="$(render_widget_comment "$input_path")"
+rendered="$(render_widget_comment "$input_path")"
 else
   rendered="$(render_auth_comment "$input_path")"
 fi

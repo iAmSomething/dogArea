@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
+source "$ROOT_DIR/scripts/lib/auth_smtp_evidence_bundle.sh"
 
 usage() {
   cat <<'USAGE'
@@ -43,7 +44,7 @@ done
 surface_pack_path() {
   case "$1" in
     widget) printf '%s' "${DOGAREA_WIDGET_EVIDENCE_PATH:-.codex_tmp/widget-real-device-evidence}" ;;
-    auth-smtp) printf '%s' "${DOGAREA_AUTH_SMTP_EVIDENCE_PATH:-.codex_tmp/auth-smtp-evidence-pack.md}" ;;
+    auth-smtp) auth_smtp_bundle_default_path ;;
     *) die "unsupported surface: $1" ;;
   esac
 }
@@ -83,7 +84,7 @@ surface_validate_command() {
 surface_closure_render_command() {
   case "$1" in
     widget) printf 'bash scripts/render_closure_comment_from_evidence.sh widget %q --write' "$2" ;;
-    auth-smtp) printf "bash scripts/render_closure_comment_from_evidence.sh auth-smtp %q --negative-guard %q --negative-provider-event %q --write" "$2" "SMTP-101: cooldown suppressed with retry_after_seconds=60" "SMTP-102: provider dashboard event summary" ;;
+    auth-smtp) printf 'bash scripts/render_closure_comment_from_evidence.sh auth-smtp %q --write' "$2" ;;
   esac
 }
 
@@ -93,7 +94,7 @@ surface_closure_post_command() {
   local pack_path="$3"
   case "$surface" in
     widget) printf 'bash scripts/post_closure_comment_from_evidence.sh widget --issue %s %q --post' "$issue_number" "$pack_path" ;;
-    auth-smtp) printf "bash scripts/post_closure_comment_from_evidence.sh auth-smtp --issue %s %q --negative-guard %q --negative-provider-event %q --post" "$issue_number" "$pack_path" "SMTP-101: cooldown suppressed with retry_after_seconds=60" "SMTP-102: provider dashboard event summary" ;;
+    auth-smtp) printf 'bash scripts/post_closure_comment_from_evidence.sh auth-smtp --issue %s %q --post' "$issue_number" "$pack_path" ;;
   esac
 }
 
