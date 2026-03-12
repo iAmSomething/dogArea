@@ -103,6 +103,7 @@
 - 맵 HUD disclosure 정책 v1: `docs/map-hud-disclosure-policy-v1.md`
 - 맵 시작 설명 카드 compact v1: `docs/map-start-meaning-card-compact-v1.md`
 - 맵 시즌 점령 지도 시각화 v1: `docs/map-season-tile-occupation-visualization-v1.md`
+- Issue #690 closure evidence v1: `docs/issue-690-closure-evidence-v1.md`
 - 맵 시즌 타일 상세 패널 v1: `docs/map-season-tile-detail-panel-v1.md`
 - 맵 heatmap trigger gating v1: `docs/map-heatmap-trigger-gating-v1.md`
 - 맵 route/mark snapshot cache v1: `docs/map-walk-point-snapshot-cache-v1.md`
