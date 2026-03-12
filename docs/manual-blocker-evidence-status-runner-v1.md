@@ -37,6 +37,7 @@
 - `--markdown` 모드에서는 위 내용을 reviewer 공유용 markdown report로 출력한다.
 - `--output`을 같이 주면 report를 파일로 export하고 `WROTE <path>`를 출력한다.
 - `auth-smtp`의 `next-render`는 `--prefill-from-env`를 포함해 운영 메타데이터 transcription 비용을 줄인다.
+- `widget`의 `next-render`도 `--prefill-from-env`를 포함해 공통 기록 메타 transcription 비용을 줄인다.
 - 기본 출력은 validator raw dump를 숨기고 요약만 보여준다.
 - `--raw-errors`를 주면 validator raw dump도 stderr로 그대로 출력한다.
 

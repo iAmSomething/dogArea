@@ -36,6 +36,14 @@
 - 원하는 경로로 쓰기
   - `bash scripts/render_manual_evidence_pack.sh widget --output .codex_tmp/widget-real-device-evidence`
   - `bash scripts/render_manual_evidence_pack.sh auth-smtp --output .codex_tmp/auth-smtp-evidence`
+- widget 공통 메타데이터 prefill 쓰기
+  - `bash scripts/render_manual_evidence_pack.sh widget --write --prefill-from-env`
+  - `bash scripts/render_manual_evidence_pack.sh widget --output .codex_tmp/widget-real-device-evidence --prefill-from-env`
+  - 지원 env
+    - `DOGAREA_WIDGET_EVIDENCE_DATE`
+    - `DOGAREA_WIDGET_EVIDENCE_TESTER`
+    - `DOGAREA_WIDGET_EVIDENCE_DEVICE_OS`
+    - `DOGAREA_WIDGET_EVIDENCE_APP_BUILD`
 - auth-smtp 운영 메타데이터 prefill 쓰기
   - `bash scripts/render_manual_evidence_pack.sh auth-smtp --write --prefill-from-env`
   - `bash scripts/render_manual_evidence_pack.sh auth-smtp --output .codex_tmp/auth-smtp-evidence --prefill-from-env`
@@ -69,6 +77,7 @@
 
 ## 운영 규칙
 - 이 helper는 evidence를 대신 채우지 않는다.
+- 단, `widget --prefill-from-env`는 공통 기록 메타(`Date`, `Tester`, `Device / OS`, `App Build`)를 환경 변수에서 먼저 채운다.
 - 단, `auth-smtp --prefill-from-env`는 SMTP/DNS 운영 메타데이터를 환경 변수에서 먼저 채워 넣을 수 있다.
 - live send 결과, mailbox screenshot, provider event, final decision은 여전히 사람이 채워야 한다.
 - `#617`, `#692`, `#731`, `#482`는 실제 실기기/운영 증적이 들어오기 전까지 닫지 않는다.

@@ -13,6 +13,7 @@ Usage:
 Examples:
   bash scripts/render_manual_evidence_pack.sh widget
   bash scripts/render_manual_evidence_pack.sh widget --write
+  bash scripts/render_manual_evidence_pack.sh widget --write --prefill-from-env
   bash scripts/render_manual_evidence_pack.sh auth-smtp --output .codex_tmp/auth-smtp-evidence
   bash scripts/render_manual_evidence_pack.sh auth-smtp --write --prefill-from-env
 USAGE
@@ -58,13 +59,40 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ "$prefill_from_env" == "1" && "$kind" != "auth-smtp" ]]; then
-  die "--prefill-from-env is supported only for auth-smtp"
-fi
-
 [[ -n "$kind" ]] || {
   usage
   exit 1
+}
+
+widget_prefill_date() {
+  printf '%s' "${DOGAREA_WIDGET_EVIDENCE_DATE:-$(date '+%F')}"
+}
+
+widget_prefill_tester() {
+  printf '%s' "${DOGAREA_WIDGET_EVIDENCE_TESTER:-${USER:-}}"
+}
+
+widget_prefill_device_os() {
+  printf '%s' "${DOGAREA_WIDGET_EVIDENCE_DEVICE_OS:-}"
+}
+
+widget_prefill_app_build() {
+  printf '%s' "${DOGAREA_WIDGET_EVIDENCE_APP_BUILD:-}"
+}
+
+apply_widget_prefill_metadata() {
+  local text="$1"
+  local date_value tester_value device_os_value app_build_value
+  date_value="$(widget_prefill_date)"
+  tester_value="$(widget_prefill_tester)"
+  device_os_value="$(widget_prefill_device_os)"
+  app_build_value="$(widget_prefill_app_build)"
+
+  printf '%s' "$text" \
+    | sed "s#^- Date:#- Date: ${date_value}#" \
+    | sed "s#^- Tester:#- Tester: ${tester_value}#" \
+    | sed "s#^- Device / OS:#- Device / OS: ${device_os_value}#" \
+    | sed "s#^- App Build:#- App Build: ${app_build_value}#"
 }
 
 render_widget_overview() {
@@ -100,6 +128,9 @@ widget_action_file_content() {
   local expected="$6"
   local template
   template="$(cat docs/widget-action-real-device-evidence-template-v1.md)"
+  if [[ "$prefill_from_env" == "1" ]]; then
+    template="$(apply_widget_prefill_metadata "$template")"
+  fi
   printf '%s' "$template" \
     | sed "s#^- Widget Family:#- Widget Family: ${family}#" \
     | sed "s#^- Case ID:#- Case ID: ${case_id}#" \
@@ -125,6 +156,9 @@ widget_layout_file_content() {
   local expected="${11}"
   local template
   template="$(cat docs/widget-family-real-device-evidence-template-v1.md)"
+  if [[ "$prefill_from_env" == "1" ]]; then
+    template="$(apply_widget_prefill_metadata "$template")"
+  fi
   printf '%s' "$template" \
     | sed "s#^- Widget Surface:#- Widget Surface: ${surface}#" \
     | sed "s#^- Widget Family:#- Widget Family: ${family}#" \

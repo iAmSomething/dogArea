@@ -171,6 +171,7 @@ assertTrue(runnerScript.contains("--raw-errors"), "runner should support raw err
 assertTrue(runnerScript.contains("gap-summary:"), "runner should print plain gap summaries for incomplete packs")
 assertTrue(runnerScript.contains("next-fill:"), "runner should print next-fill guidance")
 assertTrue(runnerScript.contains("### Gap Summary"), "runner should print markdown gap summaries for incomplete packs")
+assertTrue(runnerScript.contains("widget --output %q --prefill-from-env"), "runner should prefer prefilled widget render commands")
 assertTrue(runnerScript.contains("--prefill-from-env"), "runner should use auth smtp env prefill render path")
 assertTrue(doc.contains("primary `#731`, related `#617`, `#692`"), "doc should describe active widget blocker routing")
 assertTrue(doc.contains("widget-real-device-evidence"), "doc should mention widget directory path")
@@ -205,13 +206,19 @@ assertTrue(missingOutput.contains("related-issues: #617 #692"), "runner should p
 let generatedOutput = runStatus(arguments: ["widget", "--write-missing"], environment: [
     "DOGAREA_WIDGET_EVIDENCE_PATH": widgetPath.path,
     "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
+    "DOGAREA_WIDGET_EVIDENCE_DATE": "2026-03-12",
+    "DOGAREA_WIDGET_EVIDENCE_TESTER": "codex",
+    "DOGAREA_WIDGET_EVIDENCE_DEVICE_OS": "iPhone 16 / iOS 18.5",
+    "DOGAREA_WIDGET_EVIDENCE_APP_BUILD": "2026.03.12.1",
 ])
 assertTrue(FileManager.default.fileExists(atPath: widgetPath.appendingPathComponent("action/WD-001.md").path), "write-missing should create widget action cases")
 assertTrue(generatedOutput.contains("status: incomplete"), "generated widget bundle should still be incomplete until filled")
-assertTrue(generatedOutput.contains("gap-summary: 16 incomplete cases"), "generated widget bundle should summarize incomplete case counts")
+assertTrue(generatedOutput.contains("next-render: bash scripts/render_manual_evidence_pack.sh widget --output \(widgetPath.path) --prefill-from-env"), "generated widget bundle should advertise prefilled widget render command")
+assertTrue(generatedOutput.contains("gap-summary: 16 incomplete cases (action 8, layout 8, total-errors 120)"), "generated widget bundle should summarize reduced incomplete case counts after metadata prefill")
 assertTrue(generatedOutput.contains("next-fill: action/WD-001.md"), "generated widget bundle should point at the first case to fill")
 assertTrue(generatedOutput.contains("gap-cases:"), "generated widget bundle should print case bucket list")
-assertTrue(generatedOutput.contains("WD-001: metadata, result, assets, placeholder logs"), "generated widget bundle should dedupe case buckets")
+assertTrue(generatedOutput.contains("WD-001: result, assets, placeholder logs"), "generated widget bundle should dedupe case buckets after metadata prefill")
+assertTrue(generatedOutput.contains("WL-001: result, assets"), "generated widget bundle should reduce layout gaps after metadata prefill")
 assertTrue(!generatedOutput.contains("empty value:"), "generated widget bundle should hide raw validator errors by default")
 
 for caseID in ["WD-001", "WD-002", "WD-003", "WD-004", "WD-005", "WD-006", "WD-007", "WD-008"] {
@@ -257,9 +264,14 @@ assertTrue(!markdownOutput.contains("### Gap Summary"), "complete widget markdow
 let incompleteMarkdownOutput = runStatus(arguments: ["widget", "--markdown", "--write-missing"], environment: [
     "DOGAREA_WIDGET_EVIDENCE_PATH": tempRoot.appendingPathComponent("widget-incomplete").path,
     "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
+    "DOGAREA_WIDGET_EVIDENCE_DATE": "2026-03-12",
+    "DOGAREA_WIDGET_EVIDENCE_TESTER": "codex",
+    "DOGAREA_WIDGET_EVIDENCE_DEVICE_OS": "iPhone 16 / iOS 18.5",
+    "DOGAREA_WIDGET_EVIDENCE_APP_BUILD": "2026.03.12.1",
 ])
 assertTrue(incompleteMarkdownOutput.contains("### Gap Summary"), "incomplete widget markdown should print a gap summary")
 assertTrue(incompleteMarkdownOutput.contains("- Next Fill: `action/WD-001.md`"), "incomplete widget markdown should print next-fill guidance")
+assertTrue(incompleteMarkdownOutput.contains("- Incomplete Cases: `16` (`action 8`, `layout 8`, `errors 120`)"), "incomplete widget markdown should reflect reduced error count after metadata prefill")
 
 let markdownPath = tempRoot.appendingPathComponent("manual-blocker-status.md")
 let markdownWriteOutput = runStatus(arguments: ["auth-smtp", "--markdown", "--output", markdownPath.path], environment: [

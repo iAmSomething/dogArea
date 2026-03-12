@@ -12,6 +12,7 @@
 - 복붙 템플릿: `docs/widget-family-real-device-evidence-template-v1.md`
 - 공통 family budget: `docs/home-widget-family-layout-budget-v1.md`
 - helper: `bash scripts/render_manual_evidence_pack.sh widget --write`
+- helper prefill: `bash scripts/render_manual_evidence_pack.sh widget --write --prefill-from-env`
 - 종료 체크리스트: `docs/widget-action-closure-checklist-v1.md`
 
 ## 최소 증적 세트
@@ -38,14 +39,16 @@
 
 ## 실행 절차
 1. `docs/widget-family-real-device-validation-matrix-v1.md`에서 대상 `WL-*` 케이스를 고른다.
-2. 홈 화면에 대상 위젯과 family를 배치한다.
-3. matrix에 적힌 covered states 중 가장 긴 문구가 나오는 상태를 우선 만든다.
-4. 첫 화면을 `step-1`로 저장한다.
-5. 상태 전환 또는 worst-case 문구를 만들어 `step-2`를 저장한다.
-6. 위젯 프레임 경계, CTA, badge, metric strip이 깨지지 않는지 확인한다.
-7. 캡처한 이미지를 `assets/layout/`에 같은 파일명으로 저장한다.
-8. `docs/widget-family-real-device-evidence-template-v1.md` 형식으로 기록한다.
-9. `bash scripts/validate_manual_evidence_pack.sh widget <widget-evidence-dir>`로 전체 bundle 완결성과 asset 존재를 검사한다.
+2. 공통 메타를 먼저 채우고 시작하려면 `bash scripts/render_manual_evidence_pack.sh widget --write --prefill-from-env`를 사용한다.
+   - 지원 env: `DOGAREA_WIDGET_EVIDENCE_DATE`, `DOGAREA_WIDGET_EVIDENCE_TESTER`, `DOGAREA_WIDGET_EVIDENCE_DEVICE_OS`, `DOGAREA_WIDGET_EVIDENCE_APP_BUILD`
+3. 홈 화면에 대상 위젯과 family를 배치한다.
+4. matrix에 적힌 covered states 중 가장 긴 문구가 나오는 상태를 우선 만든다.
+5. 첫 화면을 `step-1`로 저장한다.
+6. 상태 전환 또는 worst-case 문구를 만들어 `step-2`를 저장한다.
+7. 위젯 프레임 경계, CTA, badge, metric strip이 깨지지 않는지 확인한다.
+8. 캡처한 이미지를 `assets/layout/`에 같은 파일명으로 저장한다.
+9. `docs/widget-family-real-device-evidence-template-v1.md` 형식으로 기록한다.
+10. `bash scripts/validate_manual_evidence_pack.sh widget <widget-evidence-dir>`로 전체 bundle 완결성과 asset 존재를 검사한다.
 
 ## Pass 기준
 - 상단/하단 clipping이 없다.

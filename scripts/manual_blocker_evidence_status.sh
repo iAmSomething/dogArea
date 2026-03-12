@@ -99,7 +99,7 @@ surface_title() {
 
 surface_render_command() {
   case "$1" in
-    widget) printf 'bash scripts/render_manual_evidence_pack.sh widget --output %q' "$2" ;;
+    widget) printf 'bash scripts/render_manual_evidence_pack.sh widget --output %q --prefill-from-env' "$2" ;;
     auth-smtp) printf 'bash scripts/render_manual_evidence_pack.sh auth-smtp --output %q --prefill-from-env' "$2" ;;
     *) die "unsupported surface: $1" ;;
   esac
@@ -169,7 +169,7 @@ render_missing_pack_if_needed() {
   if [[ "$surface" == "auth-smtp" ]]; then
     bash scripts/render_manual_evidence_pack.sh auth-smtp --output "$pack_path" --prefill-from-env >/dev/null
   else
-    bash scripts/render_manual_evidence_pack.sh "$surface" --output "$pack_path" >/dev/null
+    bash scripts/render_manual_evidence_pack.sh "$surface" --output "$pack_path" --prefill-from-env >/dev/null
   fi
 }
 
