@@ -29,6 +29,15 @@ struct NotificationCenterView: View {
     @State private var isLogoutAlertPresented: Bool = false
     @State private var isAccountDeleteAlertPresented: Bool = false
 
+    /// 설정 화면에서 시트 전환을 현재 이벤트 루프와 분리해 안정적으로 프레젠테이션합니다.
+    /// - Parameter sheet: 다음으로 표시할 시트 종류입니다.
+    private func presentSheet(_ sheet: ActiveSheet) {
+        pendingSheet = nil
+        DispatchQueue.main.async {
+            activeSheet = sheet
+        }
+    }
+
     var body: some View {
         Group {
             if authFlow.isLoggedIn {
@@ -299,8 +308,7 @@ struct NotificationCenterView: View {
                     #if DEBUG
                     print("[SettingsSheet] user image tapped -> profileEdit")
                     #endif
-                    viewModel.reloadUserInfo()
-                    activeSheet = .profileEdit
+                    presentSheet(.profileEdit)
                 } content: {
                     UserProfileImageView()
                         .environmentObject(viewModel)
@@ -342,8 +350,7 @@ struct NotificationCenterView: View {
                     #if DEBUG
                     print("[SettingsSheet] profile edit tapped")
                     #endif
-                    viewModel.reloadUserInfo()
-                    activeSheet = .profileEdit
+                    presentSheet(.profileEdit)
                 }, label: {
                     Text("정보 편집")
                 })
@@ -367,6 +374,15 @@ struct NotificationCenterView: View {
                         .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .caption))
                         .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
                 }
+                Button("반려견 관리") {
+                    #if DEBUG
+                    print("[SettingsSheet] pet management tapped")
+                    #endif
+                    presentSheet(.petManagement)
+                }
+                .accessibilityIdentifier("settings.pet.manage")
+                .buttonStyle(AppFilledButtonStyle(role: .neutral, fillsWidth: false))
+                .frame(minHeight: 44)
             }
 
             if viewModel.pets.isEmpty == false {
@@ -397,8 +413,7 @@ struct NotificationCenterView: View {
                     #if DEBUG
                     print("[SettingsSheet] pet image tapped -> profileEdit")
                     #endif
-                    viewModel.reloadUserInfo()
-                    activeSheet = .profileEdit
+                    presentSheet(.profileEdit)
                 } content: {
                     PetProfileImageView()
                         .environmentObject(viewModel)
@@ -455,20 +470,8 @@ struct NotificationCenterView: View {
                     #if DEBUG
                     print("[SettingsSheet] selected pet edit tapped")
                     #endif
-                    viewModel.reloadUserInfo()
-                    activeSheet = .profileEdit
+                    presentSheet(.profileEdit)
                 }
-                .buttonStyle(AppFilledButtonStyle(role: .neutral, fillsWidth: false))
-                .frame(minHeight: 44)
-
-                Button("반려견 관리") {
-                    #if DEBUG
-                    print("[SettingsSheet] pet management tapped")
-                    #endif
-                    viewModel.reloadUserInfo()
-                    activeSheet = .petManagement
-                }
-                .accessibilityIdentifier("settings.pet.manage")
                 .buttonStyle(AppFilledButtonStyle(role: .neutral, fillsWidth: false))
                 .frame(minHeight: 44)
             }

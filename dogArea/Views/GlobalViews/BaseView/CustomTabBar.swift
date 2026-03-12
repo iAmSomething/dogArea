@@ -115,7 +115,7 @@ struct CustomTabBar: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
-            .frame(maxWidth: .infinity, minHeight: 48)
+            .frame(maxWidth: .infinity, minHeight: 56)
             .background {
                 if isSelected {
                     Capsule(style: .continuous)
@@ -129,6 +129,7 @@ struct CustomTabBar: View {
             .padding(.vertical, 4)
         }
         .buttonStyle(.plain)
+        .frame(maxWidth: .infinity, minHeight: 56)
         .contentShape(Rectangle())
         .accessibilityIdentifier("tab.\(item.id)")
         .accessibilityLabel(item.title)
@@ -170,7 +171,8 @@ struct CustomTabBar: View {
         }
         .buttonStyle(.plain)
         .frame(maxWidth: .infinity)
-        .frame(minHeight: 48)
+        .frame(minHeight: 60)
+        .contentShape(Rectangle())
         .accessibilityIdentifier("tab.2")
         .accessibilityLabel("지도")
     }

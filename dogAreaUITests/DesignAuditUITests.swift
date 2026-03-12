@@ -45,7 +45,7 @@ final class DesignAuditUITests: XCTestCase {
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 12), "앱이 foreground 상태로 실행되지 않았습니다.")
         XCTAssertTrue(waitUntilExists(app.buttons["tab.0"], timeout: 12), "초기 탭 버튼(tab.0) 렌더링 실패")
         capture(name: "000_Launch", outputDirectory: outputDirectory)
-        guard openTab(index: 0, app: app) else {
+        guard openTabEnsuringScreen(index: 0, expectedScreenIdentifier: "screen.home", app: app) else {
             capture(name: "000_TabUnavailable", outputDirectory: outputDirectory)
             XCTFail("탭 버튼(tab.0)을 찾지 못했습니다.")
             return
@@ -74,7 +74,7 @@ final class DesignAuditUITests: XCTestCase {
             dismissTopModalIfNeeded(app)
         }
 
-        guard openTab(index: 1, app: app) else {
+        guard openTabEnsuringScreen(index: 1, expectedScreenIdentifier: "screen.walkList", app: app) else {
             XCTFail("탭 버튼(tab.1)을 찾지 못했습니다.")
             return
         }
@@ -85,7 +85,7 @@ final class DesignAuditUITests: XCTestCase {
             navigateBackIfPossible(app)
         }
 
-        guard openTab(index: 2, app: app) else {
+        guard openTabEnsuringScreen(index: 2, expectedScreenIdentifier: "screen.map", app: app) else {
             XCTFail("탭 버튼(tab.2)을 찾지 못했습니다.")
             return
         }
@@ -99,7 +99,7 @@ final class DesignAuditUITests: XCTestCase {
             }
         }
 
-        guard openTab(index: 3, app: app) else {
+        guard openTabEnsuringScreen(index: 3, expectedScreenIdentifier: "screen.rival", app: app) else {
             XCTFail("탭 버튼(tab.3)을 찾지 못했습니다.")
             return
         }
@@ -140,7 +140,9 @@ final class DesignAuditUITests: XCTestCase {
             }
         }
 
-        guard openTab(index: 4, app: app) else {
+        dismissGuestDataUpgradePromptIfNeeded(app)
+
+        guard openTabEnsuringScreen(index: 4, expectedScreenIdentifier: "screen.settings", app: app) else {
             XCTFail("탭 버튼(tab.4)을 찾지 못했습니다.")
             return
         }
@@ -528,6 +530,24 @@ final class DesignAuditUITests: XCTestCase {
         return true
     }
 
+    /// 탭 전환 뒤 기대하는 루트 화면 식별자가 나타날 때까지 재시도합니다.
+    /// - Parameters:
+    ///   - index: 열고 싶은 탭 인덱스입니다.
+    ///   - expectedScreenIdentifier: 탭 전환 뒤 확인할 화면 접근성 식별자입니다.
+    ///   - app: 테스트 대상 앱 인스턴스입니다.
+    /// - Returns: 지정한 루트 화면까지 안정적으로 전환되면 `true`, 아니면 `false`입니다.
+    private func openTabEnsuringScreen(index: Int, expectedScreenIdentifier: String, app: XCUIApplication) -> Bool {
+        let screen = screenElement(identifier: expectedScreenIdentifier, in: app)
+        for _ in 0..<3 {
+            guard openTab(index: index, app: app) else { return false }
+            dismissGuestDataUpgradePromptIfNeeded(app)
+            if screen.waitForExistence(timeout: 3) {
+                return true
+            }
+        }
+        return screen.waitForExistence(timeout: 1.5)
+    }
+
     /// 첫 번째 산책 셀을 열 수 있으면 true를 반환합니다.
     private func openFirstWalkListCellIfPossible(_ app: XCUIApplication) -> Bool {
         let firstCell = app.descendants(matching: .any).matching(identifier: "walklist.cell").firstMatch
@@ -650,6 +670,24 @@ final class DesignAuditUITests: XCTestCase {
         if sheet.exists {
             sheet.swipeDown()
             usleep(250_000)
+        }
+    }
+
+    /// 로그인 직후 뜰 수 있는 게스트 데이터 이관 프롬프트를 닫아 후속 화면 전환을 복구합니다.
+    /// - Parameter app: 프롬프트를 닫을 테스트 대상 앱 인스턴스입니다.
+    private func dismissGuestDataUpgradePromptIfNeeded(_ app: XCUIApplication) {
+        let prompt = screenElement(identifier: "sheet.guestDataUpgrade", in: app)
+        guard prompt.exists || prompt.waitForExistence(timeout: 1.2) else { return }
+
+        let laterButton = app.buttons["sheet.guestDataUpgrade.later"]
+        if tapIfExists(laterButton) {
+            _ = waitUntilGone(prompt, timeout: 2)
+            return
+        }
+
+        let fallbackButton = app.buttons.matching(NSPredicate(format: "label == %@", "나중에")).firstMatch
+        if tapIfExists(fallbackButton) {
+            _ = waitUntilGone(prompt, timeout: 2)
         }
     }
 

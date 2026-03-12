@@ -194,6 +194,11 @@ struct ActivityShareSheet: UIViewControllerRepresentable {
                 finish(with: .failed(reason: ActivitySharePresentationError.emptyItems.localizedDescription))
                 return
             }
+            if ProcessInfo.processInfo.arguments.contains("-UITest.UseShareSheetStub") {
+                isPresentingController = true
+                onEvent(.presented)
+                return
+            }
             attemptPresentation(from: host, items: items, attempt: 0)
         }
 
@@ -207,7 +212,11 @@ struct ActivityShareSheet: UIViewControllerRepresentable {
                 finish(with: .failed(reason: ActivitySharePresentationError.hostUnavailable.localizedDescription))
                 return
             }
-            guard host.viewIfLoaded?.window != nil else {
+            guard let presenter = resolvedPresentationHost(from: host) else {
+                finish(with: .failed(reason: ActivitySharePresentationError.hostUnavailable.localizedDescription))
+                return
+            }
+            guard presenter.viewIfLoaded?.window != nil else {
                 guard attempt < 3 else {
                     finish(with: .failed(reason: ActivitySharePresentationError.hostUnavailable.localizedDescription))
                     return
@@ -217,14 +226,14 @@ struct ActivityShareSheet: UIViewControllerRepresentable {
                 }
                 return
             }
-            guard host.presentedViewController == nil else {
+            guard presenter.presentedViewController == nil else {
                 finish(with: .failed(reason: ActivitySharePresentationError.hostBusy.localizedDescription))
                 return
             }
 
             let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
-            controller.popoverPresentationController?.sourceView = host.view
-            controller.popoverPresentationController?.sourceRect = host.view.bounds
+            controller.popoverPresentationController?.sourceView = presenter.view
+            controller.popoverPresentationController?.sourceRect = presenter.view.bounds
             controller.completionWithItemsHandler = { [weak self] _, completed, _, error in
                 DispatchQueue.main.async {
                     if let error {
@@ -239,7 +248,47 @@ struct ActivityShareSheet: UIViewControllerRepresentable {
 
             isPresentingController = true
             onEvent(.presented)
-            host.present(controller, animated: true)
+            presenter.present(controller, animated: true)
+        }
+
+        /// 현재 foreground window에 연결된 최상단 presenter를 찾아 시스템 공유 시트 기준점으로 사용합니다.
+        /// - Parameter host: representable이 제공한 기본 호스트 컨트롤러입니다.
+        /// - Returns: 공유 시트를 올릴 수 있는 최상단 UIKit presenter입니다.
+        private func resolvedPresentationHost(from host: UIViewController) -> UIViewController? {
+            if let window = host.viewIfLoaded?.window,
+               let root = window.rootViewController {
+                return topMostPresenter(startingFrom: root)
+            }
+
+            let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+            let candidateWindows = scenes.flatMap(\.windows)
+            if let keyWindow = candidateWindows.first(where: \.isKeyWindow),
+               let root = keyWindow.rootViewController {
+                return topMostPresenter(startingFrom: root)
+            }
+            if let visibleWindow = candidateWindows.first(where: { $0.isHidden == false }),
+               let root = visibleWindow.rootViewController {
+                return topMostPresenter(startingFrom: root)
+            }
+            return nil
+        }
+
+        /// 네비게이션/탭/모달을 따라 실제 프레젠테이션이 가능한 최상단 컨트롤러를 탐색합니다.
+        /// - Parameter controller: 탐색 시작 기준 컨트롤러입니다.
+        /// - Returns: 현재 화면 계층에서 가장 위에 있는 presenter 후보입니다.
+        private func topMostPresenter(startingFrom controller: UIViewController) -> UIViewController {
+            if let navigationController = controller as? UINavigationController,
+               let visible = navigationController.visibleViewController {
+                return topMostPresenter(startingFrom: visible)
+            }
+            if let tabBarController = controller as? UITabBarController,
+               let selected = tabBarController.selectedViewController {
+                return topMostPresenter(startingFrom: selected)
+            }
+            if let presented = controller.presentedViewController {
+                return topMostPresenter(startingFrom: presented)
+            }
+            return controller
         }
 
         /// 공유 플로우 종료 이벤트를 상태 바인딩과 사용자 피드백 이벤트로 정리합니다.

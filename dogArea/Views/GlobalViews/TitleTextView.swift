@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct TitleTextView: View {
+    @Environment(\.colorScheme) private var colorScheme
     var title: String
     var type: titleType = .LargeTitle
     var subTitle: String?
@@ -23,7 +24,7 @@ struct TitleTextView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(titleFont)
-                    .foregroundStyle(Color.appInk)
+                    .foregroundStyle(Color.appColor(type: .appTextBlack, scheme: colorScheme))
                     .lineLimit(type == .LargeTitle ? 2 : 2)
                     .minimumScaleFactor(type == .LargeTitle ? 0.82 : 0.9)
                     .fixedSize(horizontal: false, vertical: true)
@@ -31,7 +32,7 @@ struct TitleTextView: View {
                 if let subTitle, subTitle.isEmpty == false {
                     Text(subTitle)
                         .font(subTitleFont)
-                        .foregroundStyle(Color.appTextDarkGray)
+                        .foregroundStyle(Color.appColor(type: .appTextDarkGray, scheme: colorScheme))
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier(accessibilityIdentifierPrefix.map { "\($0).subtitle" } ?? "")
