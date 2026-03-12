@@ -79,8 +79,9 @@ struct TerritoryStatusWidgetEntryView: View {
             for: .guest,
             surface: .territory
         )
-        return VStack(alignment: .leading, spacing: 8) {
+        return WidgetSurfacePage(budget: layoutBudget) {
             WidgetStatusBadge(title: guide.badgeTitle, color: guide.badgeColor, budget: layoutBudget)
+        } body: {
             Text(guide.headline)
                 .font(.headline)
                 .lineLimit(layoutBudget.headlineLineLimit)
@@ -88,7 +89,7 @@ struct TerritoryStatusWidgetEntryView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(layoutBudget.detailLineLimit)
-            Spacer(minLength: 2)
+        } footer: {
             WidgetStateCTAView(cta: guide.cta, budget: layoutBudget)
         }
     }
@@ -98,8 +99,9 @@ struct TerritoryStatusWidgetEntryView: View {
             for: .empty,
             surface: .territory
         )
-        return VStack(alignment: .leading, spacing: 8) {
+        return WidgetSurfacePage(budget: layoutBudget) {
             WidgetStatusBadge(title: guide.badgeTitle, color: guide.badgeColor, budget: layoutBudget)
+        } body: {
             Text(guide.headline)
                 .font(.headline)
                 .lineLimit(layoutBudget.headlineLineLimit)
@@ -107,40 +109,38 @@ struct TerritoryStatusWidgetEntryView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(layoutBudget.detailLineLimit)
-            Spacer(minLength: 2)
+        } footer: {
             WidgetStateCTAView(cta: guide.cta, budget: layoutBudget, tint: .blue)
         }
     }
 
     private var dataContent: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        WidgetSurfacePage(budget: layoutBudget) {
             HStack(alignment: .top, spacing: 8) {
                 WidgetStatusBadge(title: statusBadgeText, color: statusBadgeColor, budget: layoutBudget)
-                Spacer(minLength: 0)
-                Text(updatedAtText)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                if layoutBudget.prefersCompactFormatting == false {
+                    Spacer(minLength: 0)
+                    Text(updatedAtText)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
             }
-
+        } body: {
             if family == .systemSmall {
                 smallMetricContent
             } else {
-                mediumMetricContent
-            }
-
-            if let guide = nonReadyStateGuide {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(guide.detail)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(layoutBudget.detailLineLimit)
-                    WidgetStateCTAView(
-                        cta: guide.cta,
-                        budget: layoutBudget,
-                        tint: entry.snapshot.status == .syncDelayed ? .red : .orange
-                    )
+                ViewThatFits(in: .vertical) {
+                    mediumMetricContent
+                    mediumMetricCompactContent
                 }
+            }
+        } footer: {
+            if let guide = nonReadyStateGuide {
+                stateGuideFooterView(
+                    guide,
+                    tint: entry.snapshot.status == .syncDelayed ? .red : .orange
+                )
             }
         }
     }
@@ -199,6 +199,26 @@ struct TerritoryStatusWidgetEntryView: View {
                 metricTile(title: "주간", value: summary.weeklyTileCount, tint: .blue)
                 metricTile(title: "방어 예정", value: summary.defenseScheduledTileCount, tint: .orange)
             }
+        }
+    }
+
+    private var mediumMetricCompactContent: some View {
+        let summary = entry.snapshot.summary ?? .zero
+        return VStack(alignment: .leading, spacing: 6) {
+            Text("영역 현황")
+                .font(.headline)
+            Text(summary.goalContext?.contextLabel ?? "앱에서 목표 기준을 다시 동기화해 주세요.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            HStack(spacing: 8) {
+                metricTile(title: "오늘", value: summary.todayTileCount, tint: .green)
+                metricTile(title: "주간", value: summary.weeklyTileCount, tint: .blue)
+            }
+            Text(compactGoalSummaryText(summary.goalContext))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(layoutBudget.detailLineLimit)
         }
     }
 
@@ -300,6 +320,48 @@ struct TerritoryStatusWidgetEntryView: View {
             tint: tint,
             budget: layoutBudget
         )
+    }
+
+    /// 지연/오프라인 상태에서 사용할 footer 안내와 CTA를 family 공통 예산으로 렌더링합니다.
+    /// - Parameters:
+    ///   - guide: 상태 taxonomy에서 계산한 안내/CTA 정보입니다.
+    ///   - tint: CTA 강조 색상입니다.
+    /// - Returns: 보조 설명과 CTA가 묶인 footer 뷰입니다.
+    private func stateGuideFooterView(
+        _ guide: WidgetStatePresentationContent,
+        tint: Color
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(guide.detail)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(layoutBudget.detailLineLimit)
+            WidgetStateCTAView(
+                cta: guide.cta,
+                budget: layoutBudget,
+                tint: tint
+            )
+        }
+    }
+
+    /// 중형 위젯 compact fallback에서 목표 요약을 한 줄 설명으로 압축합니다.
+    /// - Parameter goalContext: 선택 반려견 기준으로 계산된 목표 문맥 스냅샷입니다.
+    /// - Returns: 세로 예산이 부족할 때 사용할 축약 목표 요약 문자열입니다.
+    private func compactGoalSummaryText(_ goalContext: TerritoryWidgetGoalContextSnapshot?) -> String {
+        guard let goalContext else {
+            return "앱에서 목표 기준을 다시 확인해 주세요."
+        }
+        switch goalContext.status {
+        case .ready:
+            let remainingText = layoutBudget.areaText(goalContext.remainingAreaM2)
+            return "\(goalContext.nextGoalName)까지 \(remainingText) 남았어요."
+        case .completed:
+            return "현재 비교 구역 기준을 모두 달성했어요."
+        case .emptyData:
+            return "첫 산책이 기록되면 다음 목표를 바로 계산해 드릴게요."
+        case .unavailable:
+            return goalContext.message ?? "목표 기준을 다시 불러와 주세요."
+        }
     }
 
     private var updatedAtText: String {

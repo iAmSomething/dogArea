@@ -294,24 +294,56 @@ protocol WalkWidgetActionRequestStoring {
     func discardPending(matching actionId: String) -> Bool
 }
 
+enum WalkWidgetBridgeStorageMode: String {
+    case appGroupSuite = "app_group_suite"
+    case standardFallback = "standard_fallback"
+}
+
+enum WalkWidgetBridgeDiagnostics {
+    /// DEBUG 빌드에서 위젯 브리지 진단 로그를 공통 prefix로 출력합니다.
+    /// - Parameter message: 로그 본문 문자열입니다.
+    static func log(_ message: String) {
+        #if DEBUG
+        print("[WidgetAction] \(message)")
+        #endif
+    }
+}
+
 final class DefaultWalkWidgetActionRequestStore: WalkWidgetActionRequestStoring {
     static let shared = DefaultWalkWidgetActionRequestStore()
 
     private let storage: UserDefaults
+    private let storageMode: WalkWidgetBridgeStorageMode
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
 
     /// 위젯 액션 요청 저장소를 초기화합니다.
     /// - Parameter storage: 요청 데이터를 직렬화할 UserDefaults입니다.
-    init(storage: UserDefaults = DefaultWalkWidgetActionRequestStore.resolveStorage()) {
-        self.storage = storage
+    init(
+        storage: UserDefaults? = nil,
+        storageMode: WalkWidgetBridgeStorageMode? = nil
+    ) {
+        let resolved = Self.resolveStorage()
+        self.storage = storage ?? resolved.storage
+        self.storageMode = storageMode ?? resolved.mode
+        WalkWidgetBridgeDiagnostics.log(
+            "action request store ready storage=\(self.storageMode.rawValue)"
+        )
     }
 
     /// 위젯 액션 요청을 공유 저장소에 기록합니다.
     /// - Parameter request: 앱 실행 후 소비할 액션 요청 모델입니다.
     func setPending(_ request: WalkWidgetActionRequest) {
-        guard let data = try? encoder.encode(request) else { return }
+        guard let data = try? encoder.encode(request) else {
+            WalkWidgetBridgeDiagnostics.log(
+                "setPending encode_failed kind=\(request.kind.rawValue) actionId=\(request.actionId)"
+            )
+            return
+        }
         storage.set(data, forKey: WalkWidgetBridgeContract.actionRequestStorageKey)
+        WalkWidgetBridgeDiagnostics.log(
+            "setPending success storage=\(storageMode.rawValue) kind=\(request.kind.rawValue) actionId=\(request.actionId) source=\(request.source)"
+        )
     }
 
     /// 현재 대기 중인 위젯 액션 요청을 제거하지 않고 복원합니다.
@@ -320,7 +352,16 @@ final class DefaultWalkWidgetActionRequestStore: WalkWidgetActionRequestStoring 
         guard let data = storage.data(forKey: WalkWidgetBridgeContract.actionRequestStorageKey) else {
             return nil
         }
-        return try? decoder.decode(WalkWidgetActionRequest.self, from: data)
+        guard let decoded = try? decoder.decode(WalkWidgetActionRequest.self, from: data) else {
+            WalkWidgetBridgeDiagnostics.log(
+                "pendingRequest decode_failed storage=\(storageMode.rawValue)"
+            )
+            return nil
+        }
+        WalkWidgetBridgeDiagnostics.log(
+            "pendingRequest loaded storage=\(storageMode.rawValue) kind=\(decoded.kind.rawValue) actionId=\(decoded.actionId)"
+        )
+        return decoded
     }
 
     /// 현재 대기 중인 위젯 액션 요청을 읽고 즉시 제거합니다.
@@ -330,6 +371,9 @@ final class DefaultWalkWidgetActionRequestStore: WalkWidgetActionRequestStoring 
             return nil
         }
         storage.removeObject(forKey: WalkWidgetBridgeContract.actionRequestStorageKey)
+        WalkWidgetBridgeDiagnostics.log(
+            "consumePending removed storage=\(storageMode.rawValue) actionId=\(request.actionId)"
+        )
         return request
     }
 
@@ -343,21 +387,36 @@ final class DefaultWalkWidgetActionRequestStore: WalkWidgetActionRequestStoring 
               let request = try? decoder.decode(WalkWidgetActionRequest.self, from: data),
               request.actionId.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == normalized
         else {
+            WalkWidgetBridgeDiagnostics.log(
+                "discardPending skipped storage=\(storageMode.rawValue) actionId=\(normalized)"
+            )
             return false
         }
         storage.removeObject(forKey: WalkWidgetBridgeContract.actionRequestStorageKey)
+        WalkWidgetBridgeDiagnostics.log(
+            "discardPending removed storage=\(storageMode.rawValue) actionId=\(normalized)"
+        )
         return true
     }
 
     /// App Group 저장소를 우선 사용하고, 실패 시 표준 저장소를 반환합니다.
-    /// - Returns: 위젯과 앱 간 공유 가능한 UserDefaults 인스턴스입니다.
-    private static func resolveStorage() -> UserDefaults {
+    /// - Returns: 위젯과 앱 간 공유 가능한 UserDefaults와 선택된 저장 모드입니다.
+    private static func resolveStorage() -> (storage: UserDefaults, mode: WalkWidgetBridgeStorageMode) {
         guard FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: WalkWidgetBridgeContract.appGroupIdentifier
         ) != nil else {
-            return .standard
+            WalkWidgetBridgeDiagnostics.log(
+                "App Group unavailable fallback=standard identifier=\(WalkWidgetBridgeContract.appGroupIdentifier)"
+            )
+            return (.standard, .standardFallback)
         }
-        return UserDefaults(suiteName: WalkWidgetBridgeContract.appGroupIdentifier) ?? .standard
+        guard let shared = UserDefaults(suiteName: WalkWidgetBridgeContract.appGroupIdentifier) else {
+            WalkWidgetBridgeDiagnostics.log(
+                "App Group suite unavailable fallback=standard identifier=\(WalkWidgetBridgeContract.appGroupIdentifier)"
+            )
+            return (.standard, .standardFallback)
+        }
+        return (shared, .appGroupSuite)
     }
 }
 

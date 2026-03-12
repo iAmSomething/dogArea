@@ -33,6 +33,7 @@ let readme = read("README.md")
 let prCheck = read("scripts/ios_pr_check.sh")
 
 require(support.contains("struct WidgetSurfaceLayoutBudget"), "공통 family layout budget 타입이 없습니다.")
+require(support.contains("struct WidgetSurfacePage"), "공통 surface shell 타입이 없습니다.")
 require(support.contains("static let compact = WidgetSurfaceLayoutBudget("), "compact family 예산이 없습니다.")
 require(support.contains("static let standard = WidgetSurfaceLayoutBudget("), "standard family 예산이 없습니다.")
 require(support.contains("maxBadgeCount"), "badge 최대 개수 예산이 없습니다.")
@@ -46,20 +47,26 @@ require(support.contains("struct WidgetMetricTileView"), "metric tile 공통 뷰
 
 for widget in [walk, territory, hotspot, quest] {
     require(widget.contains("private var layoutBudget: WidgetSurfaceLayoutBudget"), "각 홈 위젯은 layout budget을 가져야 합니다.")
+    require(widget.contains("WidgetSurfacePage(budget: layoutBudget)"), "각 홈 위젯은 WidgetSurfacePage 공통 shell을 사용해야 합니다.")
 }
 
 require(walk.contains("layoutBudget.elapsedText(entry.snapshot.elapsedSeconds)"), "WalkControlWidget은 compact/full 시간 fallback을 budget으로 결정해야 합니다.")
 require(walk.contains("WidgetBadgeStripView("), "WalkControlWidget은 badge strip 공통 뷰를 사용해야 합니다.")
+require(walk.contains("ViewThatFits(in: .vertical)"), "WalkControlWidget은 medium compact fallback을 가져야 합니다.")
 require(territory.contains("WidgetMetricTileView("), "TerritoryStatusWidget은 metric tile 공통 뷰를 사용해야 합니다.")
 require(territory.contains("WidgetStateCTAView(cta: guide.cta, budget: layoutBudget"), "TerritoryStatusWidget은 CTA budget을 사용해야 합니다.")
+require(territory.contains("mediumMetricCompactContent"), "TerritoryStatusWidget은 medium compact fallback 본문을 가져야 합니다.")
 require(hotspot.contains("badgeStrip(primaryTitle:"), "HotspotStatusWidget은 상태/preset 배지를 공통 strip으로 구성해야 합니다.")
 require(hotspot.contains("lineLimit(layoutBudget.detailLineLimit)"), "HotspotStatusWidget은 detail line budget을 사용해야 합니다.")
+require(hotspot.contains("mediumBodyCompact(summary: summary)"), "HotspotStatusWidget은 medium compact fallback 본문을 가져야 합니다.")
 require(quest.contains("actionButtonLabel(title:"), "QuestRivalStatusWidget은 CTA 라벨을 공통 budget으로 렌더링해야 합니다.")
 require(quest.contains("lineLimit(layoutBudget.detailLineLimit)"), "QuestRivalStatusWidget은 detail line budget을 사용해야 합니다.")
+require(quest.contains("mediumBodyCompact(summary: summary)"), "QuestRivalStatusWidget은 medium compact fallback 본문을 가져야 합니다.")
 
 for heading in [
     "# Home Widget Family Layout Budget v1",
     "## Shared family budget",
+    "### Common surface shell",
     "### systemSmall",
     "### systemMedium",
     "## Surface-specific policy",

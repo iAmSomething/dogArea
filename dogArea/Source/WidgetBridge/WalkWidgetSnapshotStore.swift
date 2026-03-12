@@ -788,22 +788,34 @@ final class DefaultWalkWidgetSnapshotStore: WalkWidgetSnapshotStoring {
     static let shared = DefaultWalkWidgetSnapshotStore()
 
     private let storage: UserDefaults
+    private let storageMode: WalkWidgetBridgeStorageMode
     private let decoder = JSONDecoder()
     private let encoder = JSONEncoder()
 
     /// 위젯 스냅샷 저장소를 초기화합니다.
     /// - Parameter storage: 스냅샷 직렬화 데이터를 저장할 UserDefaults입니다.
-    init(storage: UserDefaults = DefaultWalkWidgetSnapshotStore.resolveStorage()) {
-        self.storage = storage
+    init(
+        storage: UserDefaults? = nil,
+        storageMode: WalkWidgetBridgeStorageMode? = nil
+    ) {
+        let resolved = Self.resolveStorage()
+        self.storage = storage ?? resolved.storage
+        self.storageMode = storageMode ?? resolved.mode
+        WalkWidgetBridgeDiagnostics.log(
+            "walk snapshot store ready storage=\(self.storageMode.rawValue)"
+        )
     }
 
     /// 위젯 스냅샷을 조회합니다.
     /// - Returns: 저장된 스냅샷이 있으면 해당 값, 없으면 기본 스냅샷을 반환합니다.
     func load() -> WalkWidgetSnapshot {
-        guard
-            let data = storage.data(forKey: WalkWidgetBridgeContract.snapshotStorageKey),
-            let decoded = try? decoder.decode(WalkWidgetSnapshot.self, from: data)
-        else {
+        guard let data = storage.data(forKey: WalkWidgetBridgeContract.snapshotStorageKey) else {
+            return .initial
+        }
+        guard let decoded = try? decoder.decode(WalkWidgetSnapshot.self, from: data) else {
+            WalkWidgetBridgeDiagnostics.log(
+                "walk snapshot decode_failed storage=\(storageMode.rawValue)"
+            )
             return .initial
         }
         return WalkWidgetSnapshot(
@@ -834,24 +846,42 @@ final class DefaultWalkWidgetSnapshotStore: WalkWidgetSnapshotStoring {
             actionState: snapshot.normalizedActionState,
             updatedAt: snapshot.updatedAt
         )
-        guard let data = try? encoder.encode(normalizedSnapshot) else { return }
+        guard let data = try? encoder.encode(normalizedSnapshot) else {
+            WalkWidgetBridgeDiagnostics.log(
+                "walk snapshot encode_failed storage=\(storageMode.rawValue)"
+            )
+            return
+        }
         storage.set(data, forKey: WalkWidgetBridgeContract.snapshotStorageKey)
+        WalkWidgetBridgeDiagnostics.log(
+            "walk snapshot save storage=\(storageMode.rawValue) status=\(normalizedSnapshot.status.rawValue) walking=\(normalizedSnapshot.isWalking)"
+        )
         #if canImport(WidgetKit)
         if previous.timelineReloadSignature != normalizedSnapshot.timelineReloadSignature {
             WidgetCenter.shared.reloadTimelines(ofKind: WalkWidgetBridgeContract.walkWidgetKind)
+            WalkWidgetBridgeDiagnostics.log("walk snapshot reloadTimelines kind=\(WalkWidgetBridgeContract.walkWidgetKind)")
         }
         #endif
     }
 
     /// App Group 저장소를 우선 사용하고, 실패 시 표준 저장소를 반환합니다.
-    /// - Returns: 위젯과 앱 간 공유 가능한 UserDefaults 인스턴스입니다.
-    private static func resolveStorage() -> UserDefaults {
+    /// - Returns: 위젯과 앱 간 공유 가능한 UserDefaults와 선택된 저장 모드입니다.
+    private static func resolveStorage() -> (storage: UserDefaults, mode: WalkWidgetBridgeStorageMode) {
         guard FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: WalkWidgetBridgeContract.appGroupIdentifier
         ) != nil else {
-            return .standard
+            WalkWidgetBridgeDiagnostics.log(
+                "walk snapshot App Group unavailable fallback=standard identifier=\(WalkWidgetBridgeContract.appGroupIdentifier)"
+            )
+            return (.standard, .standardFallback)
         }
-        return UserDefaults(suiteName: WalkWidgetBridgeContract.appGroupIdentifier) ?? .standard
+        guard let shared = UserDefaults(suiteName: WalkWidgetBridgeContract.appGroupIdentifier) else {
+            WalkWidgetBridgeDiagnostics.log(
+                "walk snapshot App Group suite unavailable fallback=standard identifier=\(WalkWidgetBridgeContract.appGroupIdentifier)"
+            )
+            return (.standard, .standardFallback)
+        }
+        return (shared, .appGroupSuite)
     }
 }
 

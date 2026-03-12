@@ -381,6 +381,43 @@ struct WidgetMetricTileView: View {
     }
 }
 
+struct WidgetSurfacePage<Header: View, BodyContent: View, Footer: View>: View {
+    let budget: WidgetSurfaceLayoutBudget
+    private let header: Header
+    private let bodyContent: BodyContent
+    private let footer: Footer
+
+    /// 위젯 표면을 header/body/footer 3단 구조로 고정해 clipping 위험을 줄입니다.
+    /// - Parameters:
+    ///   - budget: family별 spacing/height budget입니다.
+    ///   - header: 상단 배지/상태 정보를 렌더링하는 헤더 뷰 빌더입니다.
+    ///   - body: 핵심 지표와 설명을 담는 본문 뷰 빌더입니다.
+    ///   - footer: CTA 또는 보조 안내를 담는 하단 뷰 빌더입니다.
+    init(
+        budget: WidgetSurfaceLayoutBudget,
+        @ViewBuilder header: () -> Header,
+        @ViewBuilder body: () -> BodyContent,
+        @ViewBuilder footer: () -> Footer
+    ) {
+        self.budget = budget
+        self.header = header()
+        self.bodyContent = body()
+        self.footer = footer()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: budget.verticalSpacing) {
+            header
+            bodyContent
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+                .layoutPriority(1)
+            Spacer(minLength: 0)
+            footer
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+}
+
 enum WidgetFormatting {
     /// 경과 시간을 `HH:MM:SS` 형식으로 변환합니다.
     /// - Parameter elapsedSeconds: 변환할 경과 시간(초)입니다.
