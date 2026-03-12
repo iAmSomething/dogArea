@@ -229,6 +229,15 @@ func listArchive(_ archiveURL: URL) -> String {
     runProcess("/usr/bin/unzip", arguments: ["-l", archiveURL.path], expectSuccess: true)
 }
 
+/// Reads a UTF-8 file entry from a zip archive.
+/// - Parameters:
+///   - archiveURL: Zip archive file URL.
+///   - entryPath: Relative entry path inside the archive.
+/// - Returns: Decoded archive entry contents.
+func readArchiveEntry(_ archiveURL: URL, entryPath: String) -> String {
+    runProcess("/usr/bin/unzip", arguments: ["-p", archiveURL.path, entryPath], expectSuccess: true)
+}
+
 let script = load("scripts/archive_manual_evidence_pack.sh")
 let doc = load("docs/manual-evidence-archive-export-v1.md")
 let readme = load("README.md")
@@ -239,8 +248,12 @@ assertTrue(script.contains("validate_manual_evidence_pack.sh"), "archive script 
 assertTrue(script.contains("render_closure_comment_from_evidence.sh"), "archive script should render closure preview")
 assertTrue(script.contains("widget-real-device-evidence-export.zip"), "archive script should define widget default export path")
 assertTrue(script.contains("auth-smtp-evidence-export.zip"), "archive script should define auth default export path")
+assertTrue(script.contains("MANIFEST.md"), "archive script should export manifest")
+assertTrue(script.contains("SHA256SUMS"), "archive script should export checksums")
 assertTrue(doc.contains("# Manual Evidence Archive Export v1"), "archive export doc title should exist")
 assertTrue(doc.contains("closure comment preview"), "archive export doc should describe closure preview")
+assertTrue(doc.contains("MANIFEST.md"), "archive export doc should describe manifest")
+assertTrue(doc.contains("SHA256SUMS"), "archive export doc should describe checksums")
 assertTrue(readme.contains("docs/manual-evidence-archive-export-v1.md"), "README should link archive export doc")
 assertTrue(iosPRCheck.contains("manual_evidence_archive_export_unit_check.swift"), "ios_pr_check should run archive export check")
 assertTrue(backendPRCheck.contains("manual_evidence_archive_export_unit_check.swift"), "backend_pr_check should run archive export check")
@@ -273,8 +286,17 @@ assertTrue(widgetArchiveOutput.contains("WROTE"), "widget archive export should 
 assertTrue(FileManager.default.fileExists(atPath: widgetArchiveURL.path), "widget archive should exist")
 let widgetArchiveListing = listArchive(widgetArchiveURL)
 assertTrue(widgetArchiveListing.contains("widget-closure-comment.md"), "widget archive should include closure preview")
+assertTrue(widgetArchiveListing.contains("MANIFEST.md"), "widget archive should include manifest")
+assertTrue(widgetArchiveListing.contains("SHA256SUMS"), "widget archive should include checksums")
 assertTrue(widgetArchiveListing.contains("bundle/action/WD-001.md"), "widget archive should include evidence bundle files")
 assertTrue(widgetArchiveListing.contains("bundle/assets/action/WD-001-step-1.png"), "widget archive should include action assets")
+let widgetManifest = readArchiveEntry(widgetArchiveURL, entryPath: "MANIFEST.md")
+assertTrue(widgetManifest.contains("- Surface: widget"), "widget manifest should describe the widget surface")
+assertTrue(widgetManifest.contains("- Bundle File Count:"), "widget manifest should include bundle file count")
+let widgetChecksums = readArchiveEntry(widgetArchiveURL, entryPath: "SHA256SUMS")
+assertTrue(widgetChecksums.contains(" README.md"), "widget checksums should include README")
+assertTrue(widgetChecksums.contains(" MANIFEST.md"), "widget checksums should include manifest")
+assertTrue(widgetChecksums.contains(" bundle/action/WD-001.md"), "widget checksums should include bundle files")
 
 let authBundleURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
 writeFilledAuthBundle(at: authBundleURL)
@@ -284,7 +306,15 @@ assertTrue(authArchiveOutput.contains("WROTE"), "auth archive export should repo
 assertTrue(FileManager.default.fileExists(atPath: authArchiveURL.path), "auth archive should exist")
 let authArchiveListing = listArchive(authArchiveURL)
 assertTrue(authArchiveListing.contains("auth-smtp-closure-comment.md"), "auth archive should include closure preview")
+assertTrue(authArchiveListing.contains("MANIFEST.md"), "auth archive should include manifest")
+assertTrue(authArchiveListing.contains("SHA256SUMS"), "auth archive should include checksums")
 assertTrue(authArchiveListing.contains("bundle/03-live-send-results.md"), "auth archive should include evidence bundle files")
 assertTrue(authArchiveListing.contains("bundle/assets/provider-dashboard-event.png"), "auth archive should include evidence assets")
+let authManifest = readArchiveEntry(authArchiveURL, entryPath: "MANIFEST.md")
+assertTrue(authManifest.contains("- Surface: auth-smtp"), "auth manifest should describe the auth smtp surface")
+assertTrue(authManifest.contains("- Bundle Asset Count:"), "auth manifest should include asset count")
+let authChecksums = readArchiveEntry(authArchiveURL, entryPath: "SHA256SUMS")
+assertTrue(authChecksums.contains(" auth-smtp-closure-comment.md"), "auth checksums should include closure preview")
+assertTrue(authChecksums.contains(" bundle/assets/provider-dashboard-event.png"), "auth checksums should include bundle assets")
 
 print("PASS: manual evidence archive export checks")

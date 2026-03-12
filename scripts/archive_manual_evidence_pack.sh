@@ -58,6 +58,14 @@ surface_closure_output_name() {
   esac
 }
 
+surface_manifest_name() {
+  printf 'MANIFEST.md'
+}
+
+surface_checksum_name() {
+  printf 'SHA256SUMS'
+}
+
 write_export_readme() {
   local surface="$1"
   local bundle_path="$2"
@@ -81,6 +89,55 @@ write_export_readme() {
 - $closure_name
 - bundle/
 EOF
+}
+
+write_manifest() {
+  local surface="$1"
+  local bundle_path="$2"
+  local export_root="$3"
+  local closure_name="$4"
+  local manifest_path="$export_root/$(surface_manifest_name)"
+  local file_count asset_count
+
+  file_count="$(find "$export_root/bundle" -type f | wc -l | tr -d ' ')"
+  asset_count="$(find "$export_root/bundle/assets" -type f 2>/dev/null | wc -l | tr -d ' ')"
+
+  {
+    printf '# Manual Evidence Export Manifest\n\n'
+    printf -- '- Surface: %s\n' "$surface"
+    printf -- '- Bundle Label: %s\n' "$(surface_bundle_label "$surface")"
+    printf -- '- Primary Issue: %s\n' "$(surface_primary_issue "$surface")"
+    printf -- '- Related Issues: %s\n' "$(surface_related_issues "$surface")"
+    printf -- '- Source Bundle: %s\n' "$bundle_path"
+    printf -- '- Closure Preview: %s\n' "$closure_name"
+    printf -- '- Bundle File Count: %s\n' "$file_count"
+    printf -- '- Bundle Asset Count: %s\n\n' "$asset_count"
+    printf '## Export Files\n'
+    printf -- '- README.md\n'
+    printf -- '- %s\n' "$closure_name"
+    printf -- '- %s\n\n' "$(surface_manifest_name)"
+    printf '## Bundle Files\n'
+    (
+      cd "$export_root/bundle"
+      find . -type f | sort | sed 's#^\./#- #'
+    )
+  } > "$manifest_path"
+}
+
+write_checksums() {
+  local export_root="$1"
+  local closure_name="$2"
+  local checksum_path="$export_root/$(surface_checksum_name)"
+
+  (
+    cd "$export_root"
+    shasum -a 256 "README.md"
+    shasum -a 256 "$closure_name"
+    shasum -a 256 "$(surface_manifest_name)"
+    find bundle -type f | sort | while IFS= read -r file; do
+      shasum -a 256 "$file"
+    done
+  ) > "$checksum_path"
 }
 
 surface="${1:-}"
@@ -152,8 +209,10 @@ cp -R "$bundle_dir"/. "$export_root/bundle/"
 closure_name="$(surface_closure_output_name "$surface")"
 bash scripts/render_closure_comment_from_evidence.sh "$surface" "$bundle_dir" --output "$export_root/$closure_name" >/dev/null
 write_export_readme "$surface" "$bundle_dir" "$archive_abs" "$export_root" "$closure_name"
+write_manifest "$surface" "$bundle_dir" "$export_root" "$closure_name"
+write_checksums "$export_root" "$closure_name"
 
 rm -f "$archive_abs"
-(cd "$export_root" && zip -qr "$archive_abs" README.md "$closure_name" bundle)
+(cd "$export_root" && zip -qr "$archive_abs" README.md "$closure_name" "$(surface_manifest_name)" "$(surface_checksum_name)" bundle)
 
 printf 'WROTE %s\n' "$archive_abs"
