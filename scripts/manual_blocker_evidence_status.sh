@@ -274,22 +274,78 @@ surface_gap_summary_plain() {
       ;;
     auth-smtp)
       awk '
+        function append_bucket(key, value, composite, current) {
+          composite = key SUBSEP value
+          if (seenBuckets[composite]) return
+          seenBuckets[composite] = 1
+          current = categories[key]
+          if (current == "") {
+            categories[key] = value
+          } else {
+            categories[key] = current ", " value
+          }
+        }
         /^ - / {
           errorCount++
           line = substr($0, 4)
           split(line, headParts, ": ")
-          remainder = substr(line, length(headParts[1]) + 3)
-          split(remainder, detailParts, " :: ")
-          filePath = detailParts[1]
-          if (filePath == "") next
+          kind = headParts[1]
+          remainder = substr(line, length(kind) + 3)
+          fileRef = ""
+          bucket = "other"
 
-          fileRef = filePath
-          sub(/^.*\//, "", fileRef)
-          fileErrors[fileRef]++
+          if (kind == "incomplete scenario row") {
+            fileRef = "03-live-send-results.md"
+            bucket = "scenario rows"
+          } else {
+            split(remainder, detailParts, " :: ")
+            filePath = detailParts[1]
+            if (filePath == "") next
+
+            fileRef = filePath
+            sub(/^.*\//, "", fileRef)
+
+            field = detailParts[2]
+            if (fileRef == "01-dns-verification.md") {
+              if (kind == "missing asset file") {
+                bucket = "asset"
+              } else {
+                bucket = "dns metadata"
+              }
+            } else if (fileRef == "02-supabase-smtp-settings.md") {
+              if (kind == "missing asset file") {
+                bucket = "asset"
+              } else {
+                bucket = "smtp settings"
+              }
+            } else if (fileRef == "03-live-send-results.md") {
+              if (kind == "missing asset file") {
+                bucket = "mailbox assets"
+              } else {
+                bucket = "scenario rows"
+              }
+            } else if (fileRef == "04-negative-evidence.md") {
+              if (kind == "missing asset file") {
+                bucket = "asset"
+              } else {
+                bucket = "negative evidence"
+              }
+            } else if (fileRef == "05-rollback-rotation.md") {
+              bucket = "rollback readiness"
+            } else if (fileRef == "06-final-decision.md") {
+              if (kind == "non-pass outcome") {
+                bucket = "final decision"
+              } else {
+                bucket = "closure fields"
+              }
+            }
+          }
+
           if (!(fileRef in seen)) {
             seen[fileRef] = 1
             order[++orderCount] = fileRef
           }
+          append_bucket(fileRef, bucket)
         }
         END {
           if (orderCount == 0) exit
@@ -298,7 +354,7 @@ surface_gap_summary_plain() {
           printf "gap-files:\n"
           for (i = 1; i <= orderCount; i++) {
             current = order[i]
-            printf "  - %s: %d gaps\n", current, fileErrors[current]
+            printf "  - %s: %s\n", current, categories[current]
           }
         }
       ' "$capture_path"
@@ -388,22 +444,78 @@ surface_gap_summary_markdown() {
       ;;
     auth-smtp)
       awk '
+        function append_bucket(key, value, composite, current) {
+          composite = key SUBSEP value
+          if (seenBuckets[composite]) return
+          seenBuckets[composite] = 1
+          current = categories[key]
+          if (current == "") {
+            categories[key] = value
+          } else {
+            categories[key] = current ", " value
+          }
+        }
         /^ - / {
           errorCount++
           line = substr($0, 4)
           split(line, headParts, ": ")
-          remainder = substr(line, length(headParts[1]) + 3)
-          split(remainder, detailParts, " :: ")
-          filePath = detailParts[1]
-          if (filePath == "") next
+          kind = headParts[1]
+          remainder = substr(line, length(kind) + 3)
+          fileRef = ""
+          bucket = "other"
 
-          fileRef = filePath
-          sub(/^.*\//, "", fileRef)
-          fileErrors[fileRef]++
+          if (kind == "incomplete scenario row") {
+            fileRef = "03-live-send-results.md"
+            bucket = "scenario rows"
+          } else {
+            split(remainder, detailParts, " :: ")
+            filePath = detailParts[1]
+            if (filePath == "") next
+
+            fileRef = filePath
+            sub(/^.*\//, "", fileRef)
+
+            field = detailParts[2]
+            if (fileRef == "01-dns-verification.md") {
+              if (kind == "missing asset file") {
+                bucket = "asset"
+              } else {
+                bucket = "dns metadata"
+              }
+            } else if (fileRef == "02-supabase-smtp-settings.md") {
+              if (kind == "missing asset file") {
+                bucket = "asset"
+              } else {
+                bucket = "smtp settings"
+              }
+            } else if (fileRef == "03-live-send-results.md") {
+              if (kind == "missing asset file") {
+                bucket = "mailbox assets"
+              } else {
+                bucket = "scenario rows"
+              }
+            } else if (fileRef == "04-negative-evidence.md") {
+              if (kind == "missing asset file") {
+                bucket = "asset"
+              } else {
+                bucket = "negative evidence"
+              }
+            } else if (fileRef == "05-rollback-rotation.md") {
+              bucket = "rollback readiness"
+            } else if (fileRef == "06-final-decision.md") {
+              if (kind == "non-pass outcome") {
+                bucket = "final decision"
+              } else {
+                bucket = "closure fields"
+              }
+            }
+          }
+
           if (!(fileRef in seen)) {
             seen[fileRef] = 1
             order[++orderCount] = fileRef
           }
+          append_bucket(fileRef, bucket)
         }
         END {
           if (orderCount == 0) exit
@@ -413,7 +525,7 @@ surface_gap_summary_markdown() {
           printf "- File Buckets:\n"
           for (i = 1; i <= orderCount; i++) {
             current = order[i]
-            printf "  - `%s`: %d gaps\n", current, fileErrors[current]
+            printf "  - `%s`: %s\n", current, categories[current]
           }
         }
       ' "$capture_path"

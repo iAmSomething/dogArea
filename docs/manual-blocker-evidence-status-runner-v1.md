@@ -26,6 +26,7 @@
 - `incomplete`일 때 gap summary
   - plain text: `gap-summary`, `next-fill`, `gap-cases`/`gap-files`
   - markdown: `### Gap Summary`
+  - `auth-smtp`는 scenario row 오류를 `03-live-send-results.md`로 접어서 실제 작성 파일 기준으로 보여준다.
 - 다음 액션 명령
   - `next-render`
   - `next-validate`
