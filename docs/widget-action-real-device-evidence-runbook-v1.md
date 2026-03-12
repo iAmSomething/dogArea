@@ -1,19 +1,19 @@
 # Widget Action Real-Device Evidence Runbook v1
 
 - Issue: #662
-- Relates to: #408
+- Relates to: #408, #617, #731
 
 ## 목적
 - 실기기 위젯 액션 검증 결과를 저장소 기준으로 일관되게 남긴다.
 - `pass/fail`만 적는 대신 로그, 스크린샷, request_id, 앱 상태를 함께 남긴다.
-- `#408` 종료에 필요한 manual QA evidence를 재현 가능한 형식으로 고정한다.
+- `#408`, `#617`, `#731` 종료에 필요한 manual QA evidence를 재현 가능한 형식으로 고정한다.
 
 ## 선행 문서
 - 검증 축 정의: `docs/widget-action-real-device-validation-matrix-v1.md`
-- 복붙용 기록 템플릿: `docs/widget-action-real-device-evidence-template-v1.md`
-- 종료 체크리스트: `docs/widget-action-closure-checklist-v1.md`
+- layout 축 정의: `docs/widget-family-real-device-validation-matrix-v1.md`
 - helper: `bash scripts/render_manual_evidence_pack.sh widget --write`
-- 자동 회귀 러너: `bash scripts/run_widget_action_regression_ui_tests.sh`
+- bundle validator: `bash scripts/validate_manual_evidence_pack.sh widget .codex_tmp/widget-real-device-evidence`
+- 종료 체크리스트: `docs/widget-action-closure-checklist-v1.md`
 
 ## 최소 증적 세트
 - 실제 기기 정보
@@ -34,41 +34,18 @@
   - 최종 도착 화면
   - 실패 시 에러/오버레이 상태
 
-## 로그 캡처 규칙
-- 디버그 빌드 기준으로 Xcode console 또는 Devices log를 사용한다.
-- 아래 문자열이 그대로 보여야 한다.
-  - `WidgetAction`
-  - `onOpenURL received`
-  - `consumePendingWidgetActionIfNeeded`
-- request correlation이 가능한 경우 `request_id`를 함께 기록한다.
-- 로그는 최소 3줄 이상 남긴다.
-  - 위젯 액션 수신
-  - pending action consume 또는 defer
-  - 최종 라우트/상태 수렴
-
-## 스크린샷 규칙
-- 각 케이스마다 최소 2장
-  - `step-1`: 위젯 액션 직후
-  - `step-2`: 최종 도착 화면
-- 실패 케이스는 추가 1장
-  - `step-fail`: 오버레이/잘못된 탭/미수렴 상태
-- 파일명 규칙
-  - `WD-001-step-1.png`
-  - `WD-001-step-2.png`
-  - `WD-001-step-fail.png`
-
 ## 실행 절차
 1. `docs/widget-action-real-device-validation-matrix-v1.md`에서 대상 케이스를 고른다.
-2. 앱 상태를 `cold start` / `background` / `foreground` 중 하나로 맞춘다.
-3. 인증 상태를 `로그인` / `로그아웃` / `auth overlay` 중 하나로 맞춘다.
-4. 위젯을 탭하거나 위젯 액션을 실행한다.
-5. 즉시 스크린샷 `step-1`을 저장한다.
-6. Xcode console에서 `WidgetAction` 로그와 `onOpenURL received` 로그를 캡처한다.
-7. 최종 도착 화면에서 `step-2`를 저장한다.
-8. `docs/widget-action-real-device-evidence-template-v1.md` 형식으로 결과를 기록한다.
-9. 이슈 또는 PR 코멘트에 템플릿 본문과 스크린샷/로그를 함께 남긴다.
-10. 코멘트로 올리기 전 `bash scripts/validate_manual_evidence_pack.sh widget <filled-markdown>` 으로 완결성을 검사한다.
-11. closure comment를 바로 게시하려면 `bash scripts/post_closure_comment_from_evidence.sh widget --issue 408 <evidence-dir> --post`를 사용한다.
+2. `bash scripts/render_manual_evidence_pack.sh widget --write`로 bundle skeleton을 만든다.
+3. `action/WD-*.md`에서 해당 케이스 파일을 연다.
+4. 앱 상태를 `cold start` / `background` / `foreground` 중 하나로 맞춘다.
+5. 인증 상태를 `로그인` / `로그아웃` / `auth overlay` 중 하나로 맞춘다.
+6. 위젯을 탭하거나 위젯 액션을 실행한다.
+7. 즉시 스크린샷 `step-1`을 저장한다.
+8. Xcode console에서 `WidgetAction`, `onOpenURL received`, `consumePendingWidgetActionIfNeeded` 로그를 캡처한다.
+9. 최종 도착 화면에서 `step-2`를 저장한다.
+10. 결과를 `action/WD-*.md`에 기록한다.
+11. 모든 action/layout 케이스를 채운 뒤 `bash scripts/validate_manual_evidence_pack.sh widget <bundle-dir>`로 완결성을 검사한다.
 
 ## Pass 기준
 - 기대한 탭/상세 화면에 도착한다.
@@ -83,6 +60,5 @@
 - `auth overlay`가 필요한데 요청이 소실되거나 잘못된 상태로 종료된다.
 
 ## 운영 규칙
-- `#408`을 닫을 때는 이 런북 형식으로 남은 실기기 evidence가 있어야 한다.
+- `#408`을 닫을 때는 action evidence만 complete여도 부족하다. layout evidence `WL-*`까지 complete여야 한다.
 - simulator 결과는 참고 자료일 뿐, `real-device evidence` 대체물이 아니다.
-- 새 widget action route를 추가하면 매트릭스와 템플릿을 같이 갱신한다.

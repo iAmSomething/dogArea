@@ -1,18 +1,19 @@
 # Widget Action Real-Device Validation Matrix v1
 
 - Issue: #660
-- Relates to: #408
+- Relates to: #408, #617, #731
 
 ## 목적
 - 위젯 액션 경로의 실기기 검증 결과를 한 문서에 남긴다.
 - simulator 자동 회귀와 분리된 real-device evidence 포맷을 고정한다.
 - cold start / background / foreground / auth state / action 축을 누락 없이 기록한다.
+- `#617`, `#731`에서 요구한 action convergence evidence를 `#408` closure pack으로 연결한다.
 
 ## 자동 회귀 진입점
 - 전용 위젯 액션 UI 러너: `bash scripts/run_widget_action_regression_ui_tests.sh`
 - 정적 게이트: `swift scripts/widget_action_regression_pack_unit_check.swift`
-- 실기기 증적 런북: `docs/widget-action-real-device-evidence-runbook-v1.md`
-- 복붙용 증적 템플릿: `docs/widget-action-real-device-evidence-template-v1.md`
+- 실기기 action 런북: `docs/widget-action-real-device-evidence-runbook-v1.md`
+- 실기기 layout 런북: `docs/widget-family-real-device-evidence-runbook-v1.md`
 - 종료 체크리스트: `docs/widget-action-closure-checklist-v1.md`
 
 ## 축 정의
@@ -50,10 +51,8 @@
 | `WD-008` | iPhone 실제 기기 | `systemSmall` | `cold start` | `로그아웃` | `walk_start` | 즉시 시작하지 않고 `auth overlay` 또는 로그인 진입으로 defer 된다. |
 
 ## 기록 템플릿
-
-| Date | Device / OS | Widget Family | 앱 상태 | 인증 상태 | 액션 | Expected | Actual | Debug Log / request_id | Pass/Fail |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| YYYY-MM-DD | iPhone 16 Pro / iOS 18.x | `systemSmall` | `cold start` | `로그인` | `open_rival_tab` | 라이벌 탭 진입 | 실제 결과 기입 | `[WidgetAction] onOpenURL received:` / `consumePendingWidgetActionIfNeeded` | PASS / FAIL |
+- helper가 생성한 bundle 디렉터리의 `action/WD-001.md` ... `action/WD-008.md`를 사용한다.
+- 수동 기록이 필요하면 `docs/widget-action-real-device-evidence-template-v1.md` 형식을 따른다.
 
 ## 로그 확인 기준
 - `WidgetAction` 디버그 로그가 남아야 한다.
@@ -62,6 +61,6 @@
 - 필요하면 `request_id` 또는 위젯 action route 문자열을 함께 남긴다.
 
 ## 운영 규칙
-- `#408`을 닫을 때는 이 문서에 최소 실기기 검증 세트 결과가 채워져 있어야 한다.
+- `#408`을 닫을 때는 `WD-001` ... `WD-008` action evidence와 `WL-001` ... `WL-008` layout evidence가 모두 complete여야 한다.
 - simulator 결과만으로는 `real-device validation` DoD를 충족하지 않는다.
-- 새 widget action route를 추가하면 자동 회귀 스크립트와 이 문서의 최소 실기기 검증 세트를 같이 갱신한다.
+- 새 widget action route를 추가하면 자동 회귀 스크립트와 이 문서, bundle skeleton을 같이 갱신한다.

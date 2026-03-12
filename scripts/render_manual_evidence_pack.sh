@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 usage() {
-  cat <<'EOF'
+  cat <<'USAGE'
 Usage:
   bash scripts/render_manual_evidence_pack.sh <widget|auth-smtp> [--write] [--output <path>]
 
@@ -13,12 +13,7 @@ Examples:
   bash scripts/render_manual_evidence_pack.sh widget
   bash scripts/render_manual_evidence_pack.sh widget --write
   bash scripts/render_manual_evidence_pack.sh auth-smtp --output .codex_tmp/auth-smtp-pack.md
-
-Options:
-  --write         Write to default path under .codex_tmp/
-  --output PATH   Write to a specific output path
-  -h, --help      Print usage
-EOF
+USAGE
 }
 
 die() {
@@ -61,65 +56,175 @@ done
   exit 1
 }
 
-case "$kind" in
-  widget)
-    pack_title="Widget Action Evidence Pack v1"
-    related_issue="#408"
-    runbook_path="docs/widget-action-real-device-evidence-runbook-v1.md"
-    matrix_path="docs/widget-action-real-device-validation-matrix-v1.md"
-    checklist_path="docs/widget-action-closure-checklist-v1.md"
-    evidence_template_path="docs/widget-action-real-device-evidence-template-v1.md"
-    closure_template_path="docs/widget-action-closure-comment-template-v1.md"
-    default_output_path=".codex_tmp/widget-action-evidence-pack.md"
-    ;;
-  auth-smtp)
-    pack_title="Auth SMTP Evidence Pack v1"
-    related_issue="#482"
-    runbook_path="docs/auth-smtp-rollout-evidence-runbook-v1.md"
-    matrix_path="docs/auth-smtp-live-send-validation-matrix-v1.md"
-    checklist_path="docs/auth-smtp-closure-checklist-v1.md"
-    evidence_template_path="docs/auth-smtp-rollout-evidence-template-v1.md"
-    closure_template_path="docs/auth-smtp-closure-comment-template-v1.md"
-    default_output_path=".codex_tmp/auth-smtp-evidence-pack.md"
-    ;;
-esac
+render_widget_overview() {
+  cat <<'OVERVIEW'
+# Widget Real-Device Evidence Pack v2
 
-[[ -f "$runbook_path" ]] || die "missing runbook: $runbook_path"
-[[ -f "$matrix_path" ]] || die "missing matrix: $matrix_path"
-[[ -f "$checklist_path" ]] || die "missing checklist: $checklist_path"
-[[ -f "$evidence_template_path" ]] || die "missing evidence template: $evidence_template_path"
-[[ -f "$closure_template_path" ]] || die "missing closure template: $closure_template_path"
+- Related issues: #408, #617, #692, #731
+- Runbooks:
+  - `docs/widget-action-real-device-evidence-runbook-v1.md`
+  - `docs/widget-family-real-device-evidence-runbook-v1.md`
+- Validation matrices:
+  - `docs/widget-action-real-device-validation-matrix-v1.md`
+  - `docs/widget-family-real-device-validation-matrix-v1.md`
+- Closure checklist:
+  - `docs/widget-action-closure-checklist-v1.md`
+- Generated directory layout:
+  - `action/WD-001.md` ... `action/WD-008.md`
+  - `layout/WL-001.md` ... `layout/WL-008.md`
+  - `README.md`
 
-if [[ -z "$output_path" && "$write_mode" == "1" ]]; then
-  output_path="$default_output_path"
-fi
+Use `--write` or `--output <dir>` to materialize the bundle skeleton.
+OVERVIEW
+}
 
-render_pack() {
-  cat <<EOF
-# $pack_title
+widget_action_file_content() {
+  local case_id="$1"
+  local family="$2"
+  local app_state="$3"
+  local auth_state="$4"
+  local route="$5"
+  local expected="$6"
+  local template
+  template="$(cat docs/widget-action-real-device-evidence-template-v1.md)"
+  printf '%s' "$template" \
+    | sed "s#^- Widget Family:#- Widget Family: ${family}#" \
+    | sed "s#^- Case ID:#- Case ID: ${case_id}#" \
+    | sed "s#^- 앱 상태:#- 앱 상태: ${app_state}#" \
+    | sed "s#^- 인증 상태:#- 인증 상태: ${auth_state}#" \
+    | sed "s#^- Action Route:#- Action Route: ${route}#" \
+    | sed "s#^- Expected Result:#- Expected Result: ${expected}#"
+}
 
-- Related issue: $related_issue
+widget_layout_file_content() {
+  local case_id="$1"
+  local surface="$2"
+  local family="$3"
+  local covered_states="$4"
+  local headline_policy="$5"
+  local detail_policy="$6"
+  local badge_budget="$7"
+  local cta_rule="$8"
+  local metric_rule="$9"
+  local compact_rule="${10}"
+  local expected="${11}"
+  local template
+  template="$(cat docs/widget-family-real-device-evidence-template-v1.md)"
+  printf '%s' "$template" \
+    | sed "s#^- Widget Surface:#- Widget Surface: ${surface}#" \
+    | sed "s#^- Widget Family:#- Widget Family: ${family}#" \
+    | sed "s#^- Case ID:#- Case ID: ${case_id}#" \
+    | sed "s#^- Covered States:#- Covered States: ${covered_states}#" \
+    | sed "s#^- Headline Policy:#- Headline Policy: ${headline_policy}#" \
+    | sed "s#^- Detail Policy:#- Detail Policy: ${detail_policy}#" \
+    | sed "s#^- Badge Budget:#- Badge Budget: ${badge_budget}#" \
+    | sed "s#^- CTA Height Rule:#- CTA Height Rule: ${cta_rule}#" \
+    | sed "s#^- Metric Tile Rule:#- Metric Tile Rule: ${metric_rule}#" \
+    | sed "s#^- Compact Formatting Rule:#- Compact Formatting Rule: ${compact_rule}#" \
+    | sed "s#^- Expected Result:#- Expected Result: ${expected}#"
+}
+
+write_widget_bundle() {
+  local dir="$1"
+  mkdir -p "$dir/action" "$dir/layout"
+
+  cat > "$dir/README.md" <<'README'
+# Widget Real-Device Evidence Pack v2
+
+- Related issues: #408, #617, #692, #731
+- Action matrix: `docs/widget-action-real-device-validation-matrix-v1.md`
+- Layout matrix: `docs/widget-family-real-device-validation-matrix-v1.md`
+- Action runbook: `docs/widget-action-real-device-evidence-runbook-v1.md`
+- Layout runbook: `docs/widget-family-real-device-evidence-runbook-v1.md`
+- Closure checklist: `docs/widget-action-closure-checklist-v1.md`
+
+## Action Cases
+- action/WD-001.md
+- action/WD-002.md
+- action/WD-003.md
+- action/WD-004.md
+- action/WD-005.md
+- action/WD-006.md
+- action/WD-007.md
+- action/WD-008.md
+
+## Layout Cases
+- layout/WL-001.md
+- layout/WL-002.md
+- layout/WL-003.md
+- layout/WL-004.md
+- layout/WL-005.md
+- layout/WL-006.md
+- layout/WL-007.md
+- layout/WL-008.md
+README
+
+  widget_action_file_content "WD-001" "systemSmall" "cold start" "로그인" "open_rival_tab" "라이벌 탭으로 직접 진입하고 기본 상태가 보인다." > "$dir/action/WD-001.md"
+  widget_action_file_content "WD-002" "systemSmall" "cold start" "로그인" "open_hotspot_broad" "라이벌 탭이 3km preset 문맥으로 열린다." > "$dir/action/WD-002.md"
+  widget_action_file_content "WD-003" "systemMedium" "background" "로그인" "open_quest_detail" "홈 퀘스트 카드 위치로 이동하고 상세 배너가 보인다." > "$dir/action/WD-003.md"
+  widget_action_file_content "WD-004" "systemMedium" "foreground" "로그인" "open_quest_recovery" "홈 퀘스트 카드 위치로 이동하고 recovery 배너가 보인다." > "$dir/action/WD-004.md"
+  widget_action_file_content "WD-005" "systemMedium" "cold start" "로그인" "open_territory_goal" "목표 상세 화면으로 직접 진입하고 탭바는 숨겨진다." > "$dir/action/WD-005.md"
+  widget_action_file_content "WD-006" "systemSmall" "cold start" "로그인" "walk_start" "앱 세션이 위젯 start 요청을 소비하고 walking 상태로 수렴한다." > "$dir/action/WD-006.md"
+  widget_action_file_content "WD-007" "systemSmall" "foreground" "로그인" "walk_end" "앱 세션이 종료 요청을 소비하고 위젯/Live Activity 상태가 종료로 수렴한다." > "$dir/action/WD-007.md"
+  widget_action_file_content "WD-008" "systemSmall" "cold start" "로그아웃" "walk_start" "즉시 시작하지 않고 auth overlay 또는 로그인 진입으로 defer 된다." > "$dir/action/WD-008.md"
+
+  widget_layout_file_content "WL-001" "WalkControlWidget" "systemSmall" "idle, pending, failed, requiresAppOpen" "headline 2 lines max" "detail 1 line max" "badge 1 + state chip 1" "CTA 44-52pt" "single metric strip" "compact CTA copy on overflow" "CTA와 상태 문구가 위젯 경계 안에서 수렴한다." > "$dir/layout/WL-001.md"
+  widget_layout_file_content "WL-002" "WalkControlWidget" "systemMedium" "walking, ended, succeeded" "headline 2 lines max" "detail 2 lines max" "badge 2 max" "CTA 44-56pt" "metric strip with stable height" "compact status copy on overflow" "진행 상태와 종료 상태가 CTA와 metric strip을 밀어내지 않는다." > "$dir/layout/WL-002.md"
+  widget_layout_file_content "WL-003" "TerritoryStatusWidget" "systemSmall" "guestLocked, emptyData" "headline 2 lines max" "detail 1 line max" "badge 1 max" "CTA hidden or 44pt" "no metric tile in small" "compact goal summary fallback" "headline/detail/badge가 2단 정보 구조 안에서 잘리지 않는다." > "$dir/layout/WL-003.md"
+  widget_layout_file_content "WL-004" "TerritoryStatusWidget" "systemMedium" "memberReady, offlineCached, syncDelayed" "headline 2 lines max" "detail 2 lines max" "badge 2 max" "CTA 44-52pt" "two-column metric tile stable" "compact area/unit formatting" "다음 목표/현재 목표/보조 문구가 compact fallback으로 수렴한다." > "$dir/layout/WL-004.md"
+  widget_layout_file_content "WL-005" "QuestRivalStatusWidget" "systemSmall" "guestLocked, claimFailed" "headline 2 lines max" "detail 1 line max" "badge 1 max" "CTA 44-52pt" "single metric emphasis" "compact result label fallback" "headline과 CTA가 겹치지 않고 실패 문구가 의미를 유지한다." > "$dir/layout/WL-005.md"
+  widget_layout_file_content "WL-006" "QuestRivalStatusWidget" "systemMedium" "memberReady, claimInFlight, claimSucceeded" "headline 2 lines max" "detail 2 lines max" "badge 2 max" "CTA 44-56pt" "metric tile + reward summary stable" "compact reward text fallback" "보상/라이벌 문맥이 metric tile과 충돌하지 않는다." > "$dir/layout/WL-006.md"
+  widget_layout_file_content "WL-007" "HotspotStatusWidget" "systemSmall" "guestLocked, privacyGuarded" "headline 2 lines max" "detail 1 line max" "badge 1 max" "CTA 44-52pt" "single metric emphasis" "compact privacy note fallback" "privacy 가드 문구와 CTA가 프레임 밖으로 나가지 않는다." > "$dir/layout/WL-007.md"
+  widget_layout_file_content "WL-008" "HotspotStatusWidget" "systemMedium" "memberReady, offlineCached, syncDelayed" "headline 2 lines max" "detail 2 lines max" "badge 2 max" "CTA 44-56pt" "radius + status strip stable" "compact distance formatting" "반경/상태/보조 문구가 family budget 안에서 수렴한다." > "$dir/layout/WL-008.md"
+}
+
+render_auth_pack() {
+  cat <<EOF2
+# Auth SMTP Evidence Pack v1
+
+- Related issue: #482
 - Generated at: $(date '+%Y-%m-%d %H:%M:%S %z')
-- Runbook: \`$runbook_path\`
-- Validation matrix: \`$matrix_path\`
-- Closure checklist: \`$checklist_path\`
-- Evidence template: \`$evidence_template_path\`
-- Closure comment template: \`$closure_template_path\`
+- Runbook: `docs/auth-smtp-rollout-evidence-runbook-v1.md`
+- Validation matrix: `docs/auth-smtp-live-send-validation-matrix-v1.md`
+- Closure checklist: `docs/auth-smtp-closure-checklist-v1.md`
+- Evidence template: `docs/auth-smtp-rollout-evidence-template-v1.md`
+- Closure comment template: `docs/auth-smtp-closure-comment-template-v1.md`
 
 ## Evidence Template
 
-$(cat "$evidence_template_path")
+$(cat docs/auth-smtp-rollout-evidence-template-v1.md)
 
 ## Closure Comment Template
 
-$(cat "$closure_template_path")
-EOF
+$(cat docs/auth-smtp-closure-comment-template-v1.md)
+EOF2
 }
 
-if [[ -n "$output_path" ]]; then
-  mkdir -p "$(dirname "$output_path")"
-  render_pack > "$output_path"
-  printf 'WROTE %s\n' "$output_path"
-else
-  render_pack
-fi
+case "$kind" in
+  widget)
+    default_output_path=".codex_tmp/widget-real-device-evidence"
+    if [[ -z "$output_path" && "$write_mode" == "1" ]]; then
+      output_path="$default_output_path"
+    fi
+    if [[ -n "$output_path" ]]; then
+      rm -rf "$output_path"
+      write_widget_bundle "$output_path"
+      printf 'WROTE %s\n' "$output_path"
+    else
+      render_widget_overview
+    fi
+    ;;
+  auth-smtp)
+    default_output_path=".codex_tmp/auth-smtp-evidence-pack.md"
+    if [[ -z "$output_path" && "$write_mode" == "1" ]]; then
+      output_path="$default_output_path"
+    fi
+    if [[ -n "$output_path" ]]; then
+      mkdir -p "$(dirname "$output_path")"
+      render_auth_pack > "$output_path"
+      printf 'WROTE %s\n' "$output_path"
+    else
+      render_auth_pack
+    fi
+    ;;
+esac

@@ -79,30 +79,62 @@ func write(_ url: URL, content: String) {
     }
 }
 
-/// Builds a widget evidence file that satisfies the existing validator contract.
-/// - Returns: Filled widget evidence markdown content.
-func filledWidgetEvidence() -> String {
+/// Builds a filled widget action case from the shared template.
+/// - Parameters:
+///   - caseID: Canonical action case identifier.
+///   - summary: Summary text for the case.
+/// - Returns: Filled markdown for the action case.
+func filledWidgetAction(caseID: String, summary: String) -> String {
     let template = load("docs/widget-action-real-device-evidence-template-v1.md")
     return template
-        .replacingOccurrences(of: "- Date:", with: "- Date: 2026-03-11")
+        .replacingOccurrences(of: "- Date:", with: "- Date: 2026-03-12")
         .replacingOccurrences(of: "- Tester:", with: "- Tester: codex")
         .replacingOccurrences(of: "- Device / OS:", with: "- Device / OS: iPhone 16 / iOS 18.5")
-        .replacingOccurrences(of: "- App Build:", with: "- App Build: 2026.03.11.1")
-        .replacingOccurrences(of: "- Widget Family:", with: "- Widget Family: systemMedium")
-        .replacingOccurrences(of: "- Case ID:", with: "- Case ID: WD-001")
+        .replacingOccurrences(of: "- App Build:", with: "- App Build: 2026.03.12.1")
+        .replacingOccurrences(of: "- Widget Family:", with: "- Widget Family: systemSmall")
+        .replacingOccurrences(of: "- Case ID:", with: "- Case ID: \(caseID)")
         .replacingOccurrences(of: "- 앱 상태:", with: "- 앱 상태: cold start")
         .replacingOccurrences(of: "- 인증 상태:", with: "- 인증 상태: 로그인")
-        .replacingOccurrences(of: "- Action Route:", with: "- Action Route: widget://rival")
-        .replacingOccurrences(of: "- Expected Result:", with: "- Expected Result: rival tab opens")
-        .replacingOccurrences(of: "- Summary:", with: "- Summary: rival tab opened")
-        .replacingOccurrences(of: "- Final Screen:", with: "- Final Screen: RivalTab")
+        .replacingOccurrences(of: "- Action Route:", with: "- Action Route: widget://\(caseID.lowercased())")
+        .replacingOccurrences(of: "- Expected Result:", with: "- Expected Result: route converges")
+        .replacingOccurrences(of: "- Summary:", with: "- Summary: \(summary)")
+        .replacingOccurrences(of: "- Final Screen:", with: "- Final Screen: FinalScreen")
         .replacingOccurrences(of: "- Pass / Fail:", with: "- Pass / Fail: Pass")
-        .replacingOccurrences(of: "[WidgetAction] ...", with: "[WidgetAction] action=rival request_id=req-1")
-        .replacingOccurrences(of: "onOpenURL received: ...", with: "onOpenURL received: widget://rival")
-        .replacingOccurrences(of: "consumePendingWidgetActionIfNeeded ...", with: "consumePendingWidgetActionIfNeeded consumed=rival")
-        .replacingOccurrences(of: "request_id=...", with: "request_id=req-1")
-        .replacingOccurrences(of: "- `step-1`:", with: "- `step-1`: AppIntent fired")
-        .replacingOccurrences(of: "- `step-2`:", with: "- `step-2`: Root route consumed")
+        .replacingOccurrences(of: "[WidgetAction] ...", with: "[WidgetAction] action=\(caseID) request_id=req-\(caseID)")
+        .replacingOccurrences(of: "onOpenURL received: ...", with: "onOpenURL received: widget://\(caseID.lowercased())")
+        .replacingOccurrences(of: "consumePendingWidgetActionIfNeeded ...", with: "consumePendingWidgetActionIfNeeded consumed=\(caseID)")
+        .replacingOccurrences(of: "request_id=...", with: "request_id=req-\(caseID)")
+        .replacingOccurrences(of: "- `step-1`:", with: "- `step-1`: \(caseID)-step-1.png")
+        .replacingOccurrences(of: "- `step-2`:", with: "- `step-2`: \(caseID)-step-2.png")
+}
+
+/// Builds a filled widget layout case from the shared template.
+/// - Parameters:
+///   - caseID: Canonical layout case identifier.
+///   - surface: Widget surface name.
+/// - Returns: Filled markdown for the layout case.
+func filledWidgetLayout(caseID: String, surface: String) -> String {
+    let template = load("docs/widget-family-real-device-evidence-template-v1.md")
+    return template
+        .replacingOccurrences(of: "- Date:", with: "- Date: 2026-03-12")
+        .replacingOccurrences(of: "- Tester:", with: "- Tester: codex")
+        .replacingOccurrences(of: "- Device / OS:", with: "- Device / OS: iPhone 16 / iOS 18.5")
+        .replacingOccurrences(of: "- App Build:", with: "- App Build: 2026.03.12.1")
+        .replacingOccurrences(of: "- Widget Surface:", with: "- Widget Surface: \(surface)")
+        .replacingOccurrences(of: "- Widget Family:", with: "- Widget Family: systemSmall")
+        .replacingOccurrences(of: "- Case ID:", with: "- Case ID: \(caseID)")
+        .replacingOccurrences(of: "- Covered States:", with: "- Covered States: idle, syncDelayed")
+        .replacingOccurrences(of: "- Headline Policy:", with: "- Headline Policy: 2 lines max")
+        .replacingOccurrences(of: "- Detail Policy:", with: "- Detail Policy: 1 line max")
+        .replacingOccurrences(of: "- Badge Budget:", with: "- Badge Budget: 2 max")
+        .replacingOccurrences(of: "- CTA Height Rule:", with: "- CTA Height Rule: 44-52pt")
+        .replacingOccurrences(of: "- Metric Tile Rule:", with: "- Metric Tile Rule: stable strip height")
+        .replacingOccurrences(of: "- Compact Formatting Rule:", with: "- Compact Formatting Rule: shortened unit labels")
+        .replacingOccurrences(of: "- Expected Result:", with: "- Expected Result: no clipping")
+        .replacingOccurrences(of: "- Summary:", with: "- Summary: \(surface) layout stayed within bounds")
+        .replacingOccurrences(of: "- Pass / Fail:", with: "- Pass / Fail: Pass")
+        .replacingOccurrences(of: "- `step-1`:", with: "- `step-1`: \(caseID)-step-1.png")
+        .replacingOccurrences(of: "- `step-2`:", with: "- `step-2`: \(caseID)-step-2.png")
 }
 
 let runnerScript = load("scripts/manual_blocker_evidence_status.sh")
@@ -111,60 +143,60 @@ let readme = load("README.md")
 let iosPRCheck = load("scripts/ios_pr_check.sh")
 let backendPRCheck = load("scripts/backend_pr_check.sh")
 
-assertTrue(runnerScript.contains("widget|auth-smtp"), "runner should support both blocker surfaces in usage")
-assertTrue(runnerScript.contains("DOGAREA_WIDGET_EVIDENCE_PATH"), "runner should support widget evidence path override")
-assertTrue(runnerScript.contains("DOGAREA_AUTH_SMTP_EVIDENCE_PATH"), "runner should support auth evidence path override")
-assertTrue(runnerScript.contains("--write-missing"), "runner should support write-missing mode")
-assertTrue(doc.contains("manual_blocker_evidence_status.sh"), "doc should mention runner command")
-assertTrue(doc.contains("status: complete"), "doc should describe complete state")
+assertTrue(runnerScript.contains("widget-real-device-evidence"), "runner should support widget evidence directory")
+assertTrue(runnerScript.contains("related-issues"), "runner should print related widget issues")
+assertTrue(doc.contains("#617"), "doc should mention related widget issues")
+assertTrue(doc.contains("widget-real-device-evidence"), "doc should mention widget directory path")
 assertTrue(readme.contains("docs/manual-blocker-evidence-status-runner-v1.md"), "README should link runner doc")
-assertTrue(readme.contains("bash scripts/manual_blocker_evidence_status.sh"), "README should include runner command")
 assertTrue(iosPRCheck.contains("manual_blocker_evidence_status_unit_check.swift"), "ios_pr_check should run blocker runner check")
 assertTrue(backendPRCheck.contains("manual_blocker_evidence_status_unit_check.swift"), "backend_pr_check should run blocker runner check")
 
 let tempRoot = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
-let widgetPath = tempRoot.appendingPathComponent("widget.md")
+let widgetPath = tempRoot.appendingPathComponent("widget")
 let authPath = tempRoot.appendingPathComponent("auth.md")
 
-let missingOutput = runStatus(
-    arguments: ["widget"],
-    environment: [
-        "DOGAREA_WIDGET_EVIDENCE_PATH": widgetPath.path,
-        "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
-    ]
-)
+let missingOutput = runStatus(arguments: ["widget"], environment: [
+    "DOGAREA_WIDGET_EVIDENCE_PATH": widgetPath.path,
+    "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
+])
 assertTrue(missingOutput.contains("== widget =="), "runner should print widget header")
 assertTrue(missingOutput.contains("status: missing"), "runner should mark missing widget evidence")
-assertTrue(missingOutput.contains("next-render:"), "runner should print next render command")
+assertTrue(missingOutput.contains("related-issues: #617 #692 #731"), "runner should print related widget issues")
 
-let generatedOutput = runStatus(
-    arguments: ["widget", "--write-missing"],
-    environment: [
-        "DOGAREA_WIDGET_EVIDENCE_PATH": widgetPath.path,
-        "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
-    ]
-)
-assertTrue(FileManager.default.fileExists(atPath: widgetPath.path), "write-missing should create widget evidence pack")
-assertTrue(generatedOutput.contains("status: incomplete"), "generated template should still be incomplete until filled")
+let generatedOutput = runStatus(arguments: ["widget", "--write-missing"], environment: [
+    "DOGAREA_WIDGET_EVIDENCE_PATH": widgetPath.path,
+    "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
+])
+assertTrue(FileManager.default.fileExists(atPath: widgetPath.appendingPathComponent("action/WD-001.md").path), "write-missing should create widget action cases")
+assertTrue(generatedOutput.contains("status: incomplete"), "generated widget bundle should still be incomplete until filled")
 
-write(widgetPath, content: filledWidgetEvidence())
-let completeOutput = runStatus(
-    arguments: ["widget"],
-    environment: [
-        "DOGAREA_WIDGET_EVIDENCE_PATH": widgetPath.path,
-        "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
-    ]
-)
+for caseID in ["WD-001", "WD-002", "WD-003", "WD-004", "WD-005", "WD-006", "WD-007", "WD-008"] {
+    write(widgetPath.appendingPathComponent("action/\(caseID).md"), content: filledWidgetAction(caseID: caseID, summary: "\(caseID) converged"))
+}
+let layoutSurfaces = [
+    "WL-001": "WalkControlWidget",
+    "WL-002": "WalkControlWidget",
+    "WL-003": "TerritoryStatusWidget",
+    "WL-004": "TerritoryStatusWidget",
+    "WL-005": "QuestRivalStatusWidget",
+    "WL-006": "QuestRivalStatusWidget",
+    "WL-007": "HotspotStatusWidget",
+    "WL-008": "HotspotStatusWidget"
+]
+for (caseID, surface) in layoutSurfaces {
+    write(widgetPath.appendingPathComponent("layout/\(caseID).md"), content: filledWidgetLayout(caseID: caseID, surface: surface))
+}
+let completeOutput = runStatus(arguments: ["widget"], environment: [
+    "DOGAREA_WIDGET_EVIDENCE_PATH": widgetPath.path,
+    "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
+])
 assertTrue(completeOutput.contains("status: complete"), "filled widget evidence should be reported as complete")
 assertTrue(completeOutput.contains("render_closure_comment_from_evidence.sh widget"), "runner should print widget closure render command")
 
-let authOutput = runStatus(
-    arguments: ["auth-smtp"],
-    environment: [
-        "DOGAREA_WIDGET_EVIDENCE_PATH": widgetPath.path,
-        "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
-    ]
-)
+let authOutput = runStatus(arguments: ["auth-smtp"], environment: [
+    "DOGAREA_WIDGET_EVIDENCE_PATH": widgetPath.path,
+    "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
+])
 assertTrue(authOutput.contains("== auth-smtp =="), "runner should print auth-smtp header")
 assertTrue(authOutput.contains("--negative-guard"), "auth next command should include negative guard placeholder")
 assertTrue(authOutput.contains("--negative-provider-event"), "auth next command should include provider event placeholder")

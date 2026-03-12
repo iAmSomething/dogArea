@@ -5,18 +5,11 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 usage() {
-  cat <<'EOF'
+  cat <<'USAGE'
 Usage:
-  bash scripts/post_closure_comment_from_evidence.sh widget --issue 408 <evidence-dir-or-file> [--post] [--output <path>]
+  bash scripts/post_closure_comment_from_evidence.sh widget --issue <408|617|692|731> <evidence-dir> [--post] [--output <path>]
   bash scripts/post_closure_comment_from_evidence.sh auth-smtp --issue 482 <evidence-file> --negative-guard <text> --negative-provider-event <text> [--post] [--output <path>]
-
-Notes:
-  - Default mode is dry-run. The rendered closure comment is printed to stdout.
-  - Use --post to actually publish the rendered comment with gh issue comment.
-  - Surface and issue must match the canonical pair:
-      widget -> #408
-      auth-smtp -> #482
-EOF
+USAGE
 }
 
 die() {
@@ -24,17 +17,18 @@ die() {
   exit 1
 }
 
-canonical_issue_for_surface() {
+issue_allowed_for_surface() {
   local surface="$1"
+  local issue="$2"
   case "$surface" in
     widget)
-      printf '408'
+      [[ "$issue" == "408" || "$issue" == "617" || "$issue" == "692" || "$issue" == "731" ]]
       ;;
     auth-smtp)
-      printf '482'
+      [[ "$issue" == "482" ]]
       ;;
     *)
-      die "unsupported surface: $surface"
+      return 1
       ;;
   esac
 }
@@ -94,16 +88,15 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-[[ -n "$kind" ]] || {
-  usage
-  exit 1
-}
+[[ -n "$kind" ]] || { usage; exit 1; }
 [[ -n "$issue_number" ]] || die "--issue is required"
 [[ -n "$evidence_path" ]] || die "evidence path is required"
 
-expected_issue="$(canonical_issue_for_surface "$kind")"
-if [[ "$issue_number" != "$expected_issue" ]]; then
-  die "surface $kind must target issue #$expected_issue (got #$issue_number)"
+if ! issue_allowed_for_surface "$kind" "$issue_number"; then
+  case "$kind" in
+    widget) die "surface widget must target one of #408, #617, #692, #731 (got #$issue_number)" ;;
+    auth-smtp) die "surface auth-smtp must target issue #482 (got #$issue_number)" ;;
+  esac
 fi
 
 if [[ "$kind" == "auth-smtp" ]]; then
@@ -125,18 +118,10 @@ cleanup() {
 }
 trap cleanup EXIT
 
-renderer_args=(
-  "$kind"
-  "$evidence_path"
-)
-
+renderer_args=("$kind" "$evidence_path")
 if [[ "$kind" == "auth-smtp" ]]; then
-  renderer_args+=(
-    --negative-guard "$negative_guard"
-    --negative-provider-event "$negative_provider_event"
-  )
+  renderer_args+=(--negative-guard "$negative_guard" --negative-provider-event "$negative_provider_event")
 fi
-
 renderer_args+=(--output "$rendered_output_path")
 
 bash scripts/render_closure_comment_from_evidence.sh "${renderer_args[@]}" >/dev/null

@@ -31,7 +31,7 @@ render_summary() {
   local nf003_note="$3"
   local widget_status="$4"
   local widget_axis_status="HOLD"
-  local widget_evidence='RD-004 + evidence/widget-action-evidence-pack.md'
+  local widget_evidence='RD-004 + evidence/widget-real-device-evidence/'
   local widget_note='Real-device widget transition evidence pending'
 
   if [[ "$widget_status" == "complete" ]]; then
@@ -66,7 +66,7 @@ render_summary() {
 
 ## Artifacts
 - reports/manual-blocker-status.txt
-- evidence/widget-action-evidence-pack.md
+- evidence/widget-real-device-evidence/
 - evidence/auth-smtp-evidence-pack.md
 - logs/backend-pr-check.log
 - logs/auth-member-401-smoke.log
@@ -83,8 +83,9 @@ echo "[NightlyGate] Validate docs/contracts"
 echo "[NightlyGate] Render blocker evidence status"
 bash scripts/manual_blocker_evidence_status.sh --write-missing | tee "$MANUAL_STATUS_PATH"
 
-if [[ -f ".codex_tmp/widget-action-evidence-pack.md" ]]; then
-  cp ".codex_tmp/widget-action-evidence-pack.md" "$EVIDENCE_DIR/widget-action-evidence-pack.md"
+if [[ -d ".codex_tmp/widget-real-device-evidence" ]]; then
+  rm -rf "$EVIDENCE_DIR/widget-real-device-evidence"
+  cp -R ".codex_tmp/widget-real-device-evidence" "$EVIDENCE_DIR/widget-real-device-evidence"
 fi
 if [[ -f ".codex_tmp/auth-smtp-evidence-pack.md" ]]; then
   cp ".codex_tmp/auth-smtp-evidence-pack.md" "$EVIDENCE_DIR/auth-smtp-evidence-pack.md"

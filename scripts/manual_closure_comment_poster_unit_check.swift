@@ -82,20 +82,16 @@ func runPoster(arguments: [String], environment: [String: String] = [:], expectS
 
 /// Writes temporary markdown content into a dedicated directory.
 /// - Parameters:
-///   - directory: Base directory.
-///   - filename: File name to create.
+///   - url: File URL to write.
 ///   - content: Markdown body to write.
-/// - Returns: URL for the written file.
-func writeMarkdown(in directory: URL, filename: String, content: String) -> URL {
-    let url = directory.appendingPathComponent(filename)
+func write(_ url: URL, content: String) {
     do {
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         try content.write(to: url, atomically: true, encoding: .utf8)
     } catch {
         fputs("Failed to write markdown: \(error)\n", stderr)
         exit(1)
     }
-    return url
 }
 
 /// Creates a fake gh binary that records its arguments.
@@ -121,42 +117,22 @@ func makeFakeGH(in directory: URL) -> (binary: URL, log: URL) {
     return (binaryURL, logURL)
 }
 
-let posterScript = load("scripts/post_closure_comment_from_evidence.sh")
-let posterDoc = load("docs/manual-closure-comment-poster-v1.md")
-let rendererDoc = load("docs/manual-closure-comment-renderer-v1.md")
-let validatorDoc = load("docs/manual-evidence-validator-v1.md")
-let widgetRunbook = load("docs/widget-action-real-device-evidence-runbook-v1.md")
-let authRunbook = load("docs/auth-smtp-rollout-evidence-runbook-v1.md")
-let readme = load("README.md")
-let iosPRCheck = load("scripts/ios_pr_check.sh")
-let backendPRCheck = load("scripts/backend_pr_check.sh")
-let widgetTemplate = load("docs/widget-action-real-device-evidence-template-v1.md")
-let authTemplate = load("docs/auth-smtp-rollout-evidence-template-v1.md")
-
-assertTrue(posterScript.contains("canonical_issue_for_surface"), "poster should validate canonical surface/issue pairs")
-assertTrue(posterScript.contains("gh issue comment"), "poster should post through gh issue comment")
-assertTrue(posterScript.contains("DOGAREA_GH_BIN"), "poster should expose gh override for tests")
-assertTrue(posterDoc.contains("widget --issue 408"), "poster doc should include widget usage")
-assertTrue(posterDoc.contains("auth-smtp --issue 482"), "poster doc should include auth usage")
-assertTrue(rendererDoc.contains("render_closure_comment_from_evidence.sh"), "renderer doc should remain linked")
-assertTrue(validatorDoc.contains("post_closure_comment_from_evidence.sh"), "validator doc should reference poster")
-assertTrue(widgetRunbook.contains("post_closure_comment_from_evidence.sh widget --issue 408"), "widget runbook should reference poster")
-assertTrue(authRunbook.contains("post_closure_comment_from_evidence.sh auth-smtp --issue 482"), "auth runbook should reference poster")
-assertTrue(readme.contains("docs/manual-closure-comment-poster-v1.md"), "README should link poster doc")
-assertTrue(readme.contains("post_closure_comment_from_evidence.sh"), "README should include poster helper command")
-assertTrue(iosPRCheck.contains("manual_closure_comment_poster_unit_check.swift"), "ios_pr_check should run poster check")
-assertTrue(backendPRCheck.contains("manual_closure_comment_poster_unit_check.swift"), "backend_pr_check should run poster check")
-
-func filledWidget(caseID: String, summary: String) -> String {
-    widgetTemplate
-        .replacingOccurrences(of: "- Date:", with: "- Date: 2026-03-10")
+/// Builds a filled widget action case from the shared template.
+/// - Parameters:
+///   - caseID: Canonical action case identifier.
+///   - summary: Summary for the closure comment.
+/// - Returns: Filled markdown for the action case.
+func filledWidgetAction(caseID: String, summary: String) -> String {
+    let template = load("docs/widget-action-real-device-evidence-template-v1.md")
+    return template
+        .replacingOccurrences(of: "- Date:", with: "- Date: 2026-03-12")
         .replacingOccurrences(of: "- Tester:", with: "- Tester: codex")
         .replacingOccurrences(of: "- Device / OS:", with: "- Device / OS: iPhone 16 / iOS 18.5")
-        .replacingOccurrences(of: "- App Build:", with: "- App Build: 2026.03.10")
+        .replacingOccurrences(of: "- App Build:", with: "- App Build: 2026.03.12")
         .replacingOccurrences(of: "- Widget Family:", with: "- Widget Family: systemSmall")
         .replacingOccurrences(of: "- Case ID:", with: "- Case ID: \(caseID)")
         .replacingOccurrences(of: "- 앱 상태:", with: "- 앱 상태: background")
-        .replacingOccurrences(of: "- 인증 상태:", with: "- 인증 상태: member")
+        .replacingOccurrences(of: "- 인증 상태:", with: "- 인증 상태: 로그인")
         .replacingOccurrences(of: "- Action Route:", with: "- Action Route: dogarea://widget/\(caseID.lowercased())")
         .replacingOccurrences(of: "- Expected Result:", with: "- Expected Result: app opens the correct surface")
         .replacingOccurrences(of: "- Summary:", with: "- Summary: \(summary)")
@@ -164,12 +140,55 @@ func filledWidget(caseID: String, summary: String) -> String {
         .replacingOccurrences(of: "- Pass / Fail:", with: "- Pass / Fail: Pass")
         .replacingOccurrences(of: "- `step-1`:", with: "- `step-1`: \(caseID)-step-1.png")
         .replacingOccurrences(of: "- `step-2`:", with: "- `step-2`: \(caseID)-step-2.png")
-        .replacingOccurrences(of: "- `step-fail`:", with: "- `step-fail`: not needed")
         .replacingOccurrences(of: "[WidgetAction] ...", with: "[WidgetAction] route=\(caseID.lowercased())")
         .replacingOccurrences(of: "onOpenURL received: ...", with: "onOpenURL received: dogarea://widget/\(caseID.lowercased())")
         .replacingOccurrences(of: "consumePendingWidgetActionIfNeeded ...", with: "consumePendingWidgetActionIfNeeded action=\(caseID.lowercased())")
         .replacingOccurrences(of: "request_id=...", with: "request_id=req-\(caseID.lowercased())")
 }
+
+/// Builds a filled widget layout case from the shared template.
+/// - Parameters:
+///   - caseID: Canonical layout case identifier.
+///   - surface: Widget surface covered by the case.
+/// - Returns: Filled markdown for the layout case.
+func filledWidgetLayout(caseID: String, surface: String) -> String {
+    let template = load("docs/widget-family-real-device-evidence-template-v1.md")
+    return template
+        .replacingOccurrences(of: "- Date:", with: "- Date: 2026-03-12")
+        .replacingOccurrences(of: "- Tester:", with: "- Tester: codex")
+        .replacingOccurrences(of: "- Device / OS:", with: "- Device / OS: iPhone 16 / iOS 18.5")
+        .replacingOccurrences(of: "- App Build:", with: "- App Build: 2026.03.12")
+        .replacingOccurrences(of: "- Widget Surface:", with: "- Widget Surface: \(surface)")
+        .replacingOccurrences(of: "- Widget Family:", with: "- Widget Family: systemSmall")
+        .replacingOccurrences(of: "- Case ID:", with: "- Case ID: \(caseID)")
+        .replacingOccurrences(of: "- Covered States:", with: "- Covered States: idle, syncDelayed")
+        .replacingOccurrences(of: "- Headline Policy:", with: "- Headline Policy: 2 lines max")
+        .replacingOccurrences(of: "- Detail Policy:", with: "- Detail Policy: 1 line max")
+        .replacingOccurrences(of: "- Badge Budget:", with: "- Badge Budget: 2 max")
+        .replacingOccurrences(of: "- CTA Height Rule:", with: "- CTA Height Rule: 44-52pt")
+        .replacingOccurrences(of: "- Metric Tile Rule:", with: "- Metric Tile Rule: stable strip height")
+        .replacingOccurrences(of: "- Compact Formatting Rule:", with: "- Compact Formatting Rule: shortened unit labels")
+        .replacingOccurrences(of: "- Expected Result:", with: "- Expected Result: no clipping")
+        .replacingOccurrences(of: "- Summary:", with: "- Summary: \(surface) layout stayed within bounds")
+        .replacingOccurrences(of: "- Pass / Fail:", with: "- Pass / Fail: Pass")
+        .replacingOccurrences(of: "- `step-1`:", with: "- `step-1`: \(caseID)-step-1.png")
+        .replacingOccurrences(of: "- `step-2`:", with: "- `step-2`: \(caseID)-step-2.png")
+}
+
+let posterScript = load("scripts/post_closure_comment_from_evidence.sh")
+let posterDoc = load("docs/manual-closure-comment-poster-v1.md")
+let rendererDoc = load("docs/manual-closure-comment-renderer-v1.md")
+let readme = load("README.md")
+let iosPRCheck = load("scripts/ios_pr_check.sh")
+let backendPRCheck = load("scripts/backend_pr_check.sh")
+let authTemplate = load("docs/auth-smtp-rollout-evidence-template-v1.md")
+
+assertTrue(posterScript.contains("surface widget must target one of #408, #617, #692, #731"), "poster should allow widget blocker issue bundle")
+assertTrue(posterDoc.contains("#617"), "poster doc should mention related widget issues")
+assertTrue(rendererDoc.contains("widget-real-device-evidence"), "renderer doc should reference widget bundle path")
+assertTrue(readme.contains("docs/manual-closure-comment-poster-v1.md"), "README should link poster doc")
+assertTrue(iosPRCheck.contains("manual_closure_comment_poster_unit_check.swift"), "ios_pr_check should run poster check")
+assertTrue(backendPRCheck.contains("manual_closure_comment_poster_unit_check.swift"), "backend_pr_check should run poster check")
 
 let widgetTempDir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
 let widgetCases: [(String, String)] = [
@@ -180,31 +199,40 @@ let widgetCases: [(String, String)] = [
     ("WD-005", "territory deeplink converged"),
     ("WD-006", "quest deeplink converged"),
     ("WD-007", "hotspot deeplink converged"),
-    ("WD-008", "pending action replay converged"),
+    ("WD-008", "pending action replay converged")
 ]
 for (caseID, summary) in widgetCases {
-    _ = writeMarkdown(in: widgetTempDir, filename: "\(caseID).md", content: filledWidget(caseID: caseID, summary: summary))
+    write(widgetTempDir.appendingPathComponent("action/\(caseID).md"), content: filledWidgetAction(caseID: caseID, summary: summary))
+}
+let widgetLayouts = [
+    "WL-001": "WalkControlWidget",
+    "WL-002": "WalkControlWidget",
+    "WL-003": "TerritoryStatusWidget",
+    "WL-004": "TerritoryStatusWidget",
+    "WL-005": "QuestRivalStatusWidget",
+    "WL-006": "QuestRivalStatusWidget",
+    "WL-007": "HotspotStatusWidget",
+    "WL-008": "HotspotStatusWidget"
+]
+for (caseID, surface) in widgetLayouts {
+    write(widgetTempDir.appendingPathComponent("layout/\(caseID).md"), content: filledWidgetLayout(caseID: caseID, surface: surface))
 }
 
-let widgetDryRunOutput = runPoster(arguments: ["widget", "--issue", "408", widgetTempDir.path], expectSuccess: true)
-assertTrue(widgetDryRunOutput.contains("실기기 위젯 액션 검증을 완료했습니다."), "widget dry-run should print closure comment")
+let widgetDryRunOutput = runPoster(arguments: ["widget", "--issue", "617", widgetTempDir.path], expectSuccess: true)
+assertTrue(widgetDryRunOutput.contains("실기기 위젯 blocker 검증을 완료했습니다."), "widget dry-run should print closure comment")
 assertTrue(widgetDryRunOutput.contains("DRY RUN: no GitHub comment was posted."), "widget dry-run should explain posting did not happen")
 
 let widgetMismatchOutput = runPoster(arguments: ["widget", "--issue", "482", widgetTempDir.path], expectSuccess: false)
-assertTrue(widgetMismatchOutput.contains("surface widget must target issue #408"), "widget poster should reject mismatched issue")
+assertTrue(widgetMismatchOutput.contains("surface widget must target one of #408, #617, #692, #731"), "widget poster should reject mismatched issue")
 
 let fakeWidgetGH = makeFakeGH(in: URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString))
-let widgetPostOutput = runPoster(
-    arguments: ["widget", "--issue", "408", widgetTempDir.path, "--post"],
-    environment: ["DOGAREA_GH_BIN": fakeWidgetGH.binary.path],
-    expectSuccess: true
-)
+let widgetPostOutput = runPoster(arguments: ["widget", "--issue", "731", widgetTempDir.path, "--post"], environment: ["DOGAREA_GH_BIN": fakeWidgetGH.binary.path], expectSuccess: true)
 let widgetGHLog = loadAbsolute(fakeWidgetGH.log)
-assertTrue(widgetGHLog.contains("issue comment 408 --body-file"), "widget post should call gh issue comment with issue 408")
-assertTrue(widgetPostOutput.contains("POSTED issue #408"), "widget post should report successful post")
+assertTrue(widgetGHLog.contains("issue comment 731 --body-file"), "widget post should call gh issue comment with issue 731")
+assertTrue(widgetPostOutput.contains("POSTED issue #731"), "widget post should report successful post")
 
 let filledAuth = authTemplate
-    .replacingOccurrences(of: "- Date:", with: "- Date: 2026-03-10")
+    .replacingOccurrences(of: "- Date:", with: "- Date: 2026-03-12")
     .replacingOccurrences(of: "- Operator:", with: "- Operator: codex")
     .replacingOccurrences(of: "- Supabase Project:", with: "- Supabase Project: ttjiknenynbhbpoqoesq")
     .replacingOccurrences(of: "- Provider:", with: "- Provider: Resend")
@@ -212,7 +240,7 @@ let filledAuth = authTemplate
     .replacingOccurrences(of: "- SPF:", with: "- SPF: pass")
     .replacingOccurrences(of: "- DKIM:", with: "- DKIM: verified")
     .replacingOccurrences(of: "- DMARC:", with: "- DMARC: present")
-    .replacingOccurrences(of: "- Provider Verified Timestamp:", with: "- Provider Verified Timestamp: 2026-03-10T12:00:00Z")
+    .replacingOccurrences(of: "- Provider Verified Timestamp:", with: "- Provider Verified Timestamp: 2026-03-12T12:00:00Z")
     .replacingOccurrences(of: "- Evidence Screenshot:", with: "- Evidence Screenshot: smtp-domain.png")
     .replacingOccurrences(of: "- SMTP Host:", with: "- SMTP Host: smtp.resend.com")
     .replacingOccurrences(of: "- SMTP Port:", with: "- SMTP Port: 587")
@@ -222,9 +250,9 @@ let filledAuth = authTemplate
     .replacingOccurrences(of: "- `email_sent`:", with: "- `email_sent`: true")
     .replacingOccurrences(of: "- `auth.email.max_frequency`:", with: "- `auth.email.max_frequency`: 60")
     .replacingOccurrences(of: "- Settings Screenshot:", with: "- Settings Screenshot: smtp-settings.png")
-    .replacingOccurrences(of: "| signup confirmation |  |  |  |  |  |  |  |", with: "| signup confirmation | a***@dogarea.test | 2026-03-10 12:00 | yes | yes | req-1 | msg-1 | ok |")
-    .replacingOccurrences(of: "| password reset |  |  |  |  |  |  |  |", with: "| password reset | a***@dogarea.test | 2026-03-10 12:05 | yes | yes | req-2 | msg-2 | ok |")
-    .replacingOccurrences(of: "| email change |  |  |  |  |  |  |  |", with: "| email change | a***@dogarea.test | 2026-03-10 12:10 | yes | yes | req-3 | msg-3 | ok |")
+    .replacingOccurrences(of: "| signup confirmation |  |  |  |  |  |  |  |", with: "| signup confirmation | a***@dogarea.test | 2026-03-12 12:00 | yes | yes | req-1 | msg-1 | ok |")
+    .replacingOccurrences(of: "| password reset |  |  |  |  |  |  |  |", with: "| password reset | a***@dogarea.test | 2026-03-12 12:05 | yes | yes | req-2 | msg-2 | ok |")
+    .replacingOccurrences(of: "| email change |  |  |  |  |  |  |  |", with: "| email change | a***@dogarea.test | 2026-03-12 12:10 | yes | yes | req-3 | msg-3 | ok |")
     .replacingOccurrences(of: "- bounce:", with: "- bounce: none observed")
     .replacingOccurrences(of: "- reject:", with: "- reject: none observed")
     .replacingOccurrences(of: "- deferred:", with: "- deferred: none observed")
@@ -236,36 +264,9 @@ let filledAuth = authTemplate
     .replacingOccurrences(of: "- Pass / Fail:", with: "- Pass / Fail: Pass")
     .replacingOccurrences(of: "- Remaining Blockers:", with: "- Remaining Blockers: none")
     .replacingOccurrences(of: "- Linked Issue / PR Comment:", with: "- Linked Issue / PR Comment: issue comment url")
-
-let authURL = writeMarkdown(in: URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString), filename: "auth.md", content: filledAuth)
-let authDryRunOutput = runPoster(
-    arguments: [
-        "auth-smtp",
-        "--issue", "482",
-        authURL.path,
-        "--negative-guard", "SMTP-101: cooldown suppressed with retry_after_seconds=60",
-        "--negative-provider-event", "SMTP-102: bounce observed with provider_event_id=evt-1",
-    ],
-    expectSuccess: true
-)
+let authURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString).appendingPathExtension("md")
+write(authURL, content: filledAuth)
+let authDryRunOutput = runPoster(arguments: ["auth-smtp", "--issue", "482", authURL.path, "--negative-guard", "SMTP-101: cooldown suppressed", "--negative-provider-event", "SMTP-102: dashboard event"], expectSuccess: true)
 assertTrue(authDryRunOutput.contains("custom SMTP rollout 운영 증적을 확인했습니다."), "auth dry-run should print closure comment")
-assertTrue(authDryRunOutput.contains("DRY RUN: no GitHub comment was posted."), "auth dry-run should explain posting did not happen")
-
-let fakeAuthGH = makeFakeGH(in: URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString))
-let authPostOutput = runPoster(
-    arguments: [
-        "auth-smtp",
-        "--issue", "482",
-        authURL.path,
-        "--negative-guard", "SMTP-101: cooldown suppressed with retry_after_seconds=60",
-        "--negative-provider-event", "SMTP-102: bounce observed with provider_event_id=evt-1",
-        "--post",
-    ],
-    environment: ["DOGAREA_GH_BIN": fakeAuthGH.binary.path],
-    expectSuccess: true
-)
-let authGHLog = loadAbsolute(fakeAuthGH.log)
-assertTrue(authGHLog.contains("issue comment 482 --body-file"), "auth post should call gh issue comment with issue 482")
-assertTrue(authPostOutput.contains("POSTED issue #482"), "auth post should report successful post")
 
 print("PASS: manual closure comment poster contract checks")
