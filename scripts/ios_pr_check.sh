@@ -108,6 +108,7 @@ swift scripts/widget_action_closure_pack_unit_check.swift
 swift scripts/manual_evidence_helper_unit_check.swift
 swift scripts/manual_blocker_evidence_status_unit_check.swift
 swift scripts/manual_evidence_validator_unit_check.swift
+swift scripts/manual_evidence_archive_export_unit_check.swift
 swift scripts/manual_closure_comment_renderer_unit_check.swift
 swift scripts/manual_closure_comment_poster_unit_check.swift
 swift scripts/watch_smart_stack_glance_plan_unit_check.swift

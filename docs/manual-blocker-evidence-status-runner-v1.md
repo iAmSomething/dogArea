@@ -24,6 +24,7 @@
   - `next-render`
   - `next-validate`
   - `next-render-closure`
+  - `next-archive`
   - `next-post-closure`
   - `next-post-closure-bundle` (`widget`만 제공)
 
