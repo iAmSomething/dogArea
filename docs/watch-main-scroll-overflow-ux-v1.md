@@ -25,16 +25,20 @@
 7. CTA 버튼은 `minHeight 52pt` 이상을 유지하고, 제목/설명은 multiline 허용으로 Dynamic Type 증가에 대응한다.
 8. 큐 상태 카드의 chip/action row는 `ViewThatFits`로 horizontal 우선, 실패 시 vertical fallback 한다.
 9. 최초 진입 시에는 `WatchSurfacePagingHintView`로 다른 page 존재를 알려 주되, 정보 페이지를 한 번 방문하면 hint를 내린다.
+10. control surface 메트릭은 작은 카드 여러 개가 아니라 하나의 strip 안에서 읽히게 정리한다.
+11. information surface는 첫 줄부터 `정보 화면` heading을 보여 control page와 목적을 구분한다.
 
 ## 우선순위
 
 ### control surface
 - 단일 card surface 안에서 현재 산책 상태와 최소 메트릭
+- 메트릭은 `single metrics strip` 하나로 묶고 작은 타일 카드 여러 개로 분리하지 않는다.
 - 같은 surface 안에서 최근 액션 배너 1개를 inline 상태로 축약
 - 같은 surface 안에서 핵심 CTA를 바로 이어서 노출
 
 ### information surface
 - 상단: 반려견 문맥
+- heading: `정보 화면`
 - 중단: 큐/동기화 상태
 - 하단: 필요 시 페이지 이동 affordance
 - feedback banner는 queue card와 중복 노출하지 않는다.

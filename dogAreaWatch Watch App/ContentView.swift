@@ -57,6 +57,18 @@ struct ContentView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("정보 화면")
+                            .font(.headline.weight(.semibold))
+                            .foregroundStyle(.primary)
+                        Text("반려견 문맥과 동기화 상태를 차분하게 확인합니다.")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityIdentifier("watch.main.info.header")
+
                     WatchSelectedPetContextCardView(
                         petContext: viewModel.petContext,
                         isReachable: viewModel.isReachable,

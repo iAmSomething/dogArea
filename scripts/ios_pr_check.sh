@@ -113,6 +113,7 @@ swift scripts/watch_smart_stack_glance_plan_unit_check.swift
 swift scripts/watch_main_scroll_overflow_unit_check.swift
 swift scripts/watch_control_info_surface_split_unit_check.swift
 swift scripts/watch_control_surface_density_unit_check.swift
+swift scripts/watch_control_surface_rehardening_unit_check.swift
 swift scripts/watch_app_icon_asset_unit_check.swift
 swift scripts/watch_action_feedback_ux_unit_check.swift
 swift scripts/watch_addpoint_haptic_policy_unit_check.swift
