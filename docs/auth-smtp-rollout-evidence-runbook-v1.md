@@ -17,6 +17,8 @@
 - 종료 체크리스트: `docs/auth-smtp-closure-checklist-v1.md`
 - helper: `bash scripts/render_manual_evidence_pack.sh auth-smtp --write`
   - 기본 출력: `.codex_tmp/auth-smtp-evidence/`
+- env prefill helper: `bash scripts/render_manual_evidence_pack.sh auth-smtp --write --prefill-from-env`
+  - 운영값 / DNS claim / sender 메타데이터만 자동 채우고, live send 증적은 비워 둔다.
 
 ## 최소 증적 세트
 - provider 선택 정보
@@ -36,6 +38,10 @@
   - Sender Email
   - `email_sent` 운영값
   - `auth.email.max_frequency` 운영값
+  - Email Confirmation Policy
+  - Password Reset Policy
+  - Email Change Policy
+  - Invite Policy
 - 실수신 증적
   - signup confirmation
   - password reset
@@ -71,6 +77,10 @@
 6. 운영값을 템플릿에 기록한다.
    - `email_sent`
    - `auth.email.max_frequency`
+   - Email Confirmation Policy
+   - Password Reset Policy
+   - Email Change Policy
+   - Invite Policy
 7. 아래 3개 실수신 시나리오를 실제로 실행한다.
    - signup confirmation
    - password reset
@@ -91,6 +101,7 @@
     - `04-negative-evidence.md`
     - `05-rollback-rotation.md`
     - `06-final-decision.md`
+    - 운영 메타데이터는 `bash scripts/render_manual_evidence_pack.sh auth-smtp --write --prefill-from-env`로 선기입해도 된다.
 12. 캡처한 dashboard/mailbox 이미지를 `assets/`에 같은 파일명으로 저장한다.
 13. 코멘트로 올리기 전 `bash scripts/validate_manual_evidence_pack.sh auth-smtp <bundle-dir>` 으로 완결성과 asset 존재를 검사한다.
 14. closure comment를 바로 게시하려면 `bash scripts/post_closure_comment_from_evidence.sh auth-smtp --issue 482 <bundle-dir> --post`를 사용한다.

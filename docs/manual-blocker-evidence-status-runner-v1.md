@@ -31,6 +31,7 @@
   - `next-post-closure-bundle` (`widget`만 제공)
 - `--markdown` 모드에서는 위 내용을 reviewer 공유용 markdown report로 출력한다.
 - `--output`을 같이 주면 report를 파일로 export하고 `WROTE <path>`를 출력한다.
+- `auth-smtp`의 `next-render`는 `--prefill-from-env`를 포함해 운영 메타데이터 transcription 비용을 줄인다.
 
 ## 기본 경로
 - widget: `.codex_tmp/widget-real-device-evidence`

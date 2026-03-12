@@ -167,8 +167,12 @@ func writeFilledAuthBundle(at directory: URL) {
     - SMTP User Mask: re_***
     - Sender Name: DogArea Auth
     - Sender Email: auth@auth.dogarea.app
-    - `email_sent`: true
+    - `email_sent`: 12
     - `auth.email.max_frequency`: 60
+    - Email Confirmation Policy: required
+    - Password Reset Policy: enabled / app deep link
+    - Email Change Policy: double confirmation
+    - Invite Policy: disabled in product
     - Settings Screenshot: assets/supabase-smtp-settings.png
     """)
 

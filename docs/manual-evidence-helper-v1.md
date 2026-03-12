@@ -36,6 +36,9 @@
 - 원하는 경로로 쓰기
   - `bash scripts/render_manual_evidence_pack.sh widget --output .codex_tmp/widget-real-device-evidence`
   - `bash scripts/render_manual_evidence_pack.sh auth-smtp --output .codex_tmp/auth-smtp-evidence`
+- auth-smtp 운영 메타데이터 prefill 쓰기
+  - `bash scripts/render_manual_evidence_pack.sh auth-smtp --write --prefill-from-env`
+  - `bash scripts/render_manual_evidence_pack.sh auth-smtp --output .codex_tmp/auth-smtp-evidence --prefill-from-env`
 - 채운 뒤 validator 실행
   - `bash scripts/validate_manual_evidence_pack.sh widget .codex_tmp/widget-real-device-evidence`
   - `bash scripts/validate_manual_evidence_pack.sh auth-smtp .codex_tmp/auth-smtp-evidence`
@@ -66,4 +69,6 @@
 
 ## 운영 규칙
 - 이 helper는 evidence를 대신 채우지 않는다.
+- 단, `auth-smtp --prefill-from-env`는 SMTP/DNS 운영 메타데이터를 환경 변수에서 먼저 채워 넣을 수 있다.
+- live send 결과, mailbox screenshot, provider event, final decision은 여전히 사람이 채워야 한다.
 - `#617`, `#692`, `#731`, `#482`는 실제 실기기/운영 증적이 들어오기 전까지 닫지 않는다.

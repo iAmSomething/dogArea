@@ -39,6 +39,10 @@
 - Sender Email:
 - `email_sent`:
 - `auth.email.max_frequency`:
+- Email Confirmation Policy:
+- Password Reset Policy:
+- Email Change Policy:
+- Invite Policy:
 - Settings Screenshot: assets/supabase-smtp-settings.png
 ```
 
