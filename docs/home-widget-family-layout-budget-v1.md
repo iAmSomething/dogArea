@@ -18,6 +18,7 @@ Related: #614, #615, #617
 ## Shared family budget
 
 공통 예산 정본은 `WidgetSurfaceLayoutBudget`입니다.
+공통 vertical contract 정본은 `WidgetSurfacePage`입니다.
 
 ### systemSmall
 - headline: `lineLimit(1)`
@@ -43,28 +44,38 @@ Related: #614, #615, #617
 
 ## Surface-specific policy
 
+### Common surface shell
+- guest / empty / data 모두 `WidgetSurfacePage(header/body/footer)` 구조를 사용합니다.
+- CTA 또는 상태 후속 안내는 footer에만 둡니다.
+- 지표 본문이 길어질 수 있는 medium surface는 `ViewThatFits(in: .vertical)`로 compact fallback을 반드시 가집니다.
+- 공통 원칙은 `header는 짧게`, `body는 핵심 지표만`, `footer는 CTA/후속 안내만`입니다.
+
 ### WalkControlWidget
 - small은 `badge -> 상태 제목 -> 반려견명 -> 경과시간 -> support 1줄 -> CTA`만 유지합니다.
 - small은 `pet detail`과 `status message`를 분리해서 둘 다 누적하지 않습니다.
 - medium만 `updatedAt`을 inline으로 보여줍니다.
 - `pending / requiresAppOpen / failed / succeeded`는 `WalkWidgetSnapshot.actionState` overlay로만 표현합니다.
+- medium은 full body가 넘치면 compact fallback으로 `headline -> pet -> elapsed/detail -> CTA`만 남깁니다.
 
 ### TerritoryStatusWidget
 - guest / empty / offline / syncDelayed 모두 공통 CTA budget을 사용합니다.
 - medium의 지표 타일 3개는 동일 min-height와 padding을 공유합니다.
 - small은 숫자 한 축만 강조하고, 목표/남은 면적은 medium에서만 확장해 보여줍니다.
+- medium compact fallback은 큰 목표 카드 대신 `오늘/주간` 타일 2개와 한 줄 목표 요약만 남깁니다.
 
 ### QuestRivalStatusWidget
 - guest / empty CTA도 실제 버튼이지만 공통 CTA height budget을 따릅니다.
 - small은 `quest title / progress / rank / next action / CTA`까지만 유지합니다.
 - status detail은 small에서 1줄, medium에서 2줄까지만 허용합니다.
 - `claimInFlight / claimFailed / claimSucceeded`는 상태 배지와 CTA 우선순위로만 분기합니다.
+- medium compact fallback은 secondary CTA를 제거하고 primary CTA만 유지합니다.
 
 ### HotspotStatusWidget
 - 상단은 `상태 배지 + 반경 배지`만 허용합니다.
 - small은 `활성도 제목 / 반경 설명 / 분포 요약`까지만 유지하고 정책 footnote는 medium 우선입니다.
 - `privacyGuarded / offlineCached / syncDelayed`는 data body 아래 compact footer 규칙을 따릅니다.
 - raw count 대신 단계, 분포 요약, 정책 footnote만 노출합니다.
+- medium compact fallback은 stale priority + 긴 정책 문장을 축약 footnote 한 줄로 압축합니다.
 
 ## State matrix to audit
 

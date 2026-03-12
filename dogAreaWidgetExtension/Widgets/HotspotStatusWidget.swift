@@ -158,8 +158,9 @@ struct HotspotStatusWidgetEntryView: View {
             for: .guest,
             surface: .hotspot(radiusPreset: currentPreset)
         )
-        return VStack(alignment: .leading, spacing: 8) {
+        return WidgetSurfacePage(budget: layoutBudget) {
             badgeStrip(primaryTitle: guide.badgeTitle, primaryColor: guide.badgeColor, preset: currentPreset)
+        } body: {
             Text(guide.headline)
                 .font(.headline)
                 .lineLimit(layoutBudget.headlineLineLimit)
@@ -167,7 +168,7 @@ struct HotspotStatusWidgetEntryView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(layoutBudget.detailLineLimit)
-            Spacer(minLength: 2)
+        } footer: {
             WidgetStateCTAView(cta: guide.cta, budget: layoutBudget)
         }
     }
@@ -178,8 +179,9 @@ struct HotspotStatusWidgetEntryView: View {
             surface: .hotspot(radiusPreset: currentPreset),
             fallbackMessage: entry.snapshot.message
         )
-        return VStack(alignment: .leading, spacing: 8) {
+        return WidgetSurfacePage(budget: layoutBudget) {
             badgeStrip(primaryTitle: guide.badgeTitle, primaryColor: guide.badgeColor, preset: currentPreset)
+        } body: {
             Text(guide.headline)
                 .font(.headline)
                 .lineLimit(layoutBudget.headlineLineLimit)
@@ -187,14 +189,14 @@ struct HotspotStatusWidgetEntryView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(layoutBudget.detailLineLimit)
-            Spacer(minLength: 2)
+        } footer: {
             WidgetStateCTAView(cta: guide.cta, budget: layoutBudget, tint: .blue)
         }
     }
 
     private var dataContent: some View {
         let summary = entry.snapshot.summary ?? .zero(radiusPreset: entry.snapshot.radiusPreset)
-        return VStack(alignment: .leading, spacing: 8) {
+        return WidgetSurfacePage(budget: layoutBudget) {
             HStack(alignment: .top, spacing: 8) {
                 badgeStrip(
                     primaryTitle: statusBadgeTitle(summary),
@@ -209,25 +211,21 @@ struct HotspotStatusWidgetEntryView: View {
                         .lineLimit(1)
                 }
             }
-
+        } body: {
             if family == .systemSmall {
                 smallBody(summary: summary)
             } else {
-                mediumBody(summary: summary)
-            }
-
-            if let guide = nonReadyStateGuide {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(guide.detail)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(layoutBudget.detailLineLimit)
-                    WidgetStateCTAView(
-                        cta: guide.cta,
-                        budget: layoutBudget,
-                        tint: entry.snapshot.status == .syncDelayed ? .red : .orange
-                    )
+                ViewThatFits(in: .vertical) {
+                    mediumBody(summary: summary)
+                    mediumBodyCompact(summary: summary)
                 }
+            }
+        } footer: {
+            if let guide = nonReadyStateGuide {
+                stateGuideFooterView(
+                    guide,
+                    tint: entry.snapshot.status == .syncDelayed ? .red : .orange
+                )
             } else if entry.snapshot.status == .privacyGuarded {
                 Text(entry.snapshot.message)
                     .font(.caption2)
@@ -345,6 +343,29 @@ struct HotspotStatusWidgetEntryView: View {
         }
     }
 
+    /// 중형 위젯 compact fallback에서 핵심 단계와 분포만 남긴 본문을 렌더링합니다.
+    /// - Parameter summary: 익명 핫스팟 요약 스냅샷입니다.
+    /// - Returns: 세로 예산이 부족할 때 사용할 축약 본문 뷰입니다.
+    private func mediumBodyCompact(summary: HotspotWidgetSummarySnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("익명 핫스팟 단계")
+                .font(.headline)
+            HStack(spacing: 8) {
+                stageChip(title: "높음", isActive: summary.highCellCount > 0, tint: .red)
+                stageChip(title: "보통", isActive: summary.mediumCellCount > 0, tint: .orange)
+                stageChip(title: "낮음", isActive: summary.lowCellCount > 0, tint: .green)
+            }
+            Text(signalDistributionSummary(summary))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(layoutBudget.detailLineLimit)
+            Text(compactPolicyFootnote(summary))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(layoutBudget.detailLineLimit)
+        }
+    }
+
     /// 단계 활성 여부를 표시하는 캡슐 배지를 렌더링합니다.
     /// - Parameters:
     ///   - title: 배지에 표시할 단계 텍스트입니다.
@@ -359,6 +380,28 @@ struct HotspotStatusWidgetEntryView: View {
         )
         .foregroundStyle(isActive ? tint : .secondary)
         .accessibilityLabel(isActive ? "\(title) 단계 감지됨" : "\(title) 단계 없음")
+    }
+
+    /// 지연/오프라인 상태에서 사용할 footer 안내와 CTA를 family 공통 예산으로 렌더링합니다.
+    /// - Parameters:
+    ///   - guide: 상태 taxonomy에서 계산한 안내/CTA 정보입니다.
+    ///   - tint: CTA 강조 색상입니다.
+    /// - Returns: 보조 설명과 CTA가 묶인 footer 뷰입니다.
+    private func stateGuideFooterView(
+        _ guide: WidgetStatePresentationContent,
+        tint: Color
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(guide.detail)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(layoutBudget.detailLineLimit)
+            WidgetStateCTAView(
+                cta: guide.cta,
+                budget: layoutBudget,
+                tint: tint
+            )
+        }
     }
 
     /// 익명 단계 분포를 숫자 없이 요약 문구로 변환합니다.
@@ -474,6 +517,27 @@ struct HotspotStatusWidgetEntryView: View {
             return "정책 지연 \(summary.delayMinutes)분 적용 · 개인 좌표 비노출"
         }
         return "개인 좌표/정밀 카운트는 제공하지 않습니다."
+    }
+
+    /// compact fallback에서 사용할 정책 안내 문자열을 계산합니다.
+    /// - Parameter summary: 익명 핫스팟 요약 스냅샷입니다.
+    /// - Returns: 세로 예산이 부족할 때 사용할 축약 정책 안내 문자열입니다.
+    private func compactPolicyFootnote(_ summary: HotspotWidgetSummarySnapshot) -> String {
+        switch summary.suppressionReason {
+        case "k_anon":
+            return "백분위 단계만 보여줘요."
+        case "sensitive_mask":
+            return "민감 지역은 상세 신호를 숨겨요."
+        default:
+            break
+        }
+        if summary.privacyMode == "percentile_only" {
+            return "좌표 없이 단계만 보여줘요."
+        }
+        if summary.delayMinutes > 0 {
+            return "정책 지연 \(summary.delayMinutes)분 반영 중이에요."
+        }
+        return "개인 좌표는 숨기고 단계만 보여줘요."
     }
 
     private var updatedAtText: String {

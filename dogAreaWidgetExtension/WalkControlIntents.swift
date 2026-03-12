@@ -196,6 +196,9 @@ private func preparePendingRoute(kind: WalkWidgetActionKind, contextId: String?)
         contextId: contextId,
         requestedAt: now.timeIntervalSince1970
     )
+    WalkWidgetBridgeDiagnostics.log(
+        "intent preparePendingRoute kind=\(kind.rawValue) actionId=\(route.actionId) contextId=\(contextId ?? "nil")"
+    )
     DefaultWalkWidgetActionRequestStore.shared.setPending(route)
 
     if kind == .startWalk || kind == .endWalk {
@@ -216,5 +219,9 @@ private func preparePendingRoute(kind: WalkWidgetActionKind, contextId: String?)
         )
     }
 
-    return route.asRoute().makeURL() ?? URL(string: "dogarea://widget/walk")!
+    let openURL = route.asRoute().makeURL() ?? URL(string: "dogarea://widget/walk")!
+    WalkWidgetBridgeDiagnostics.log(
+        "intent prepared openURL kind=\(kind.rawValue) url=\(openURL.absoluteString)"
+    )
+    return openURL
 }

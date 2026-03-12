@@ -338,9 +338,9 @@ struct WalkControlWidgetEntryView: View {
     @ViewBuilder
     private var smallLayout: some View {
         let presentation = makeCompactPresentation()
-        VStack(alignment: .leading, spacing: layoutBudget.verticalSpacing) {
+        WidgetSurfacePage(budget: layoutBudget) {
             badgeRow
-
+        } body: {
             Text(presentation.headline)
                 .font(.headline)
                 .lineLimit(layoutBudget.headlineLineLimit)
@@ -369,9 +369,7 @@ struct WalkControlWidgetEntryView: View {
                     .lineLimit(layoutBudget.detailLineLimit)
                     .minimumScaleFactor(0.88)
             }
-
-            Spacer(minLength: 2)
-
+        } footer: {
             primaryActionButton(compact: true)
         }
     }
@@ -380,10 +378,21 @@ struct WalkControlWidgetEntryView: View {
     /// - Returns: 반려견 문맥과 상태 메시지를 함께 담는 확장 위젯 본문입니다.
     @ViewBuilder
     private var mediumLayout: some View {
-        let presentation = makeStandardPresentation()
-        VStack(alignment: .leading, spacing: layoutBudget.verticalSpacing) {
+        WidgetSurfacePage(budget: layoutBudget) {
             badgeRow
+        } body: {
+            ViewThatFits(in: .vertical) {
+                mediumPrimaryContent
+                mediumCompactContent
+            }
+        } footer: {
+            primaryActionButton(compact: false)
+        }
+    }
 
+    private var mediumPrimaryContent: some View {
+        let presentation = makeStandardPresentation()
+        return VStack(alignment: .leading, spacing: layoutBudget.verticalSpacing) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(presentation.headline)
                     .font(.headline)
@@ -417,10 +426,37 @@ struct WalkControlWidgetEntryView: View {
                         .lineLimit(1)
                 }
             }
+        }
+    }
 
-            Spacer(minLength: 2)
-
-            primaryActionButton(compact: false)
+    private var mediumCompactContent: some View {
+        let presentation = makeStandardPresentation()
+        return VStack(alignment: .leading, spacing: 6) {
+            Text(presentation.headline)
+                .font(.headline)
+                .lineLimit(1)
+            if let supportingLine = presentation.supportingLine {
+                Text(supportingLine)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.86)
+            }
+            if presentation.showsElapsed {
+                HStack(spacing: 6) {
+                    Image(systemName: "clock")
+                        .foregroundStyle(.secondary)
+                    WalkControlElapsedTextView(displayMode: elapsedDisplayMode)
+                        .font(.system(.caption, design: .rounded).monospacedDigit().weight(.semibold))
+                    Spacer(minLength: 0)
+                }
+            } else if let detailLine = presentation.detailLine {
+                Text(detailLine)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.88)
+            }
         }
     }
 

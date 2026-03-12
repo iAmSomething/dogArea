@@ -69,8 +69,9 @@ struct QuestRivalStatusWidgetEntryView: View {
             for: .guest,
             surface: .questRival
         )
-        return VStack(alignment: .leading, spacing: 8) {
+        return WidgetSurfacePage(budget: layoutBudget) {
             WidgetStatusBadge(title: guide.badgeTitle, color: guide.badgeColor, budget: layoutBudget)
+        } body: {
             Text(guide.headline)
                 .font(.headline)
                 .lineLimit(layoutBudget.headlineLineLimit)
@@ -78,7 +79,7 @@ struct QuestRivalStatusWidgetEntryView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(layoutBudget.detailLineLimit)
-            Spacer(minLength: 2)
+        } footer: {
             Button(intent: OpenQuestDetailIntent()) {
                 actionButtonLabel(
                     title: guide.cta.title,
@@ -97,8 +98,9 @@ struct QuestRivalStatusWidgetEntryView: View {
             surface: .questRival,
             fallbackMessage: entry.snapshot.message
         )
-        return VStack(alignment: .leading, spacing: 8) {
+        return WidgetSurfacePage(budget: layoutBudget) {
             WidgetStatusBadge(title: guide.badgeTitle, color: guide.badgeColor, budget: layoutBudget)
+        } body: {
             Text(guide.headline)
                 .font(.headline)
                 .lineLimit(layoutBudget.headlineLineLimit)
@@ -106,7 +108,7 @@ struct QuestRivalStatusWidgetEntryView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(layoutBudget.detailLineLimit)
-            Spacer(minLength: 2)
+        } footer: {
             Button(intent: OpenQuestDetailIntent()) {
                 actionButtonLabel(
                     title: guide.cta.title,
@@ -121,22 +123,27 @@ struct QuestRivalStatusWidgetEntryView: View {
 
     private var dataContent: some View {
         let summary = entry.snapshot.summary ?? .zero
-        return VStack(alignment: .leading, spacing: 8) {
+        return WidgetSurfacePage(budget: layoutBudget) {
             HStack(alignment: .top, spacing: 8) {
                 WidgetStatusBadge(title: statusBadgeTitle, color: statusBadgeColor, budget: layoutBudget)
-                Spacer(minLength: 0)
-                Text(updatedAtText)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                if layoutBudget.prefersCompactFormatting == false {
+                    Spacer(minLength: 0)
+                    Text(updatedAtText)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
             }
-
+        } body: {
             if family == .systemSmall {
                 smallBody(summary: summary)
             } else {
-                mediumBody(summary: summary)
+                ViewThatFits(in: .vertical) {
+                    mediumBody(summary: summary)
+                    mediumBodyCompact(summary: summary)
+                }
             }
-
+        } footer: {
             Text(actionStateGuide?.detail ?? entry.snapshot.message)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
@@ -242,6 +249,36 @@ struct QuestRivalStatusWidgetEntryView: View {
                 primaryActionButton(summary: summary, prominent: true)
                 secondaryActionButton(summary: summary)
             }
+        }
+    }
+
+    /// 중형 위젯 compact fallback에서 핵심 진행/순위/primary CTA만 남긴 본문을 렌더링합니다.
+    /// - Parameter summary: 퀘스트/라이벌 요약 스냅샷입니다.
+    /// - Returns: 세로 예산이 부족할 때 사용할 축약 본문 뷰입니다.
+    private func mediumBodyCompact(summary: QuestRivalWidgetSummarySnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .top, spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("오늘의 퀘스트")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Text(summary.questTitle)
+                        .font(.headline)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 8)
+                Text(rivalRankText(summary))
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            ProgressView(value: summary.questProgressRatio)
+                .tint(.orange)
+            Text(questProgressText(summary))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            primaryActionButton(summary: summary, prominent: true)
         }
     }
 
