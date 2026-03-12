@@ -25,16 +25,16 @@
 - 다른 `TitleTextView` 기반 화면도 같은 줄바꿈 계약을 공유한다.
 
 ## 구현 계약
-- `RivalTabView`의 첫 커스텀 헤더와 첫 상태 배지 행은 `nonMapRootTopChrome(bottomSpacing: 12)`으로 scroll content 밖 상단에 고정한다.
+- `RivalTabView`의 첫 커스텀 헤더와 첫 상태 배지 행은 `nonMapRootTopChrome()`으로 scroll content 밖 상단에 고정한다.
 - 라이벌 화면은 전용 `contentTopPadding` enum을 다시 두지 않는다.
 - 라이벌 루트 scroll layout은 아래 형태를 유지한다.
 
 ```swift
 .appTabRootScrollLayout(
-    extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding,
+    extraBottomPadding: AppTabLayoutMetrics.defaultScrollExtraBottomPadding,
     topSafeAreaPadding: 0
 )
-.nonMapRootTopChrome(bottomSpacing: 12) { ... }
+.nonMapRootTopChrome { ... }
 ```
 
 - 헤더 텍스트는 다음을 유지한다.

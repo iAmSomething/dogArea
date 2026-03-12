@@ -6,12 +6,12 @@
 - `#628`, `#622`, `#629`, `#678`처럼 화면별로 반복되던 safe area 버그를 공통 scaffold 계약으로 흡수한다.
 
 ## 계약
-- `appTabRootScrollLayout`을 사용하는 루트 화면의 기본 상단 inset은 `AppTabLayoutMetrics.nonMapRootTopSafeAreaPadding = 18`을 따른다.
+- `appTabRootScrollLayout`을 사용하는 루트 화면의 기본 상단 inset은 `AppTabLayoutMetrics.nonMapRootTopSafeAreaPadding = 12`를 따른다.
 - 공통 상단 예약은 `safeAreaPadding(.top)`이 아니라 `safeAreaInset(edge: .top)`으로 확보한다.
 - `LazyVStack(... pinnedViews: [.sectionHeaders])`를 쓰는 화면도 같은 상단 예약 공간을 따라야 한다.
 - 비지도 탭 루트의 실제 헤더 chrome은 일반 화면에서는 `nonMapRootTopChrome`, pinned section header 화면에서는 `nonMapRootPinnedHeaderLayout`으로 scroll content 밖 상단에 고정한다.
 - 화면별로 `topSafeAreaPadding` override를 다시 넣는 것은 예외 사유가 명확할 때만 허용한다.
-- `홈`, `산책 기록`, `라이벌`, `설정`은 모두 같은 기본 contract를 사용한다.
+- `홈`, `산책 기록`, `라이벌`, `설정`은 모두 같은 기본 contract와 같은 기본 bottom padding(`AppTabLayoutMetrics.defaultScrollExtraBottomPadding`)을 사용한다.
 - 비지도 루트 화면은 `appTabRootScrollLayout(topSafeAreaPadding: 0)` + 고정 top chrome 조합을 기본값으로 사용한다.
 - 지도 탭은 `appTabRootScrollLayout` 공통 inset을 사용하지 않는다.
 - 지도 상단 chrome은 `AppTabLayoutMetrics.topOverlaySpacing`과 `mapOverlayTopExtraSpacing` 계약을 따른다.

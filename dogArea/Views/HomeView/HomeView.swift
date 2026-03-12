@@ -517,7 +517,10 @@ struct HomeView: View {
                     onClose: { homeMissionGuidePresentation = nil }
                 )
             }
-            .appTabRootScrollLayout(extraBottomPadding: 12, topSafeAreaPadding: 0)
+            .appTabRootScrollLayout(
+                extraBottomPadding: AppTabLayoutMetrics.defaultScrollExtraBottomPadding,
+                topSafeAreaPadding: 0
+            )
     }
 
     /// 홈 대시보드 상단 인사말과 레벨 배지를 렌더링합니다.

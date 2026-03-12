@@ -98,6 +98,7 @@
 - 홈 상단 safe area 계약 v1: `docs/home-top-safearea-contract-v1.md`
 - 비지도 탭 루트 top inset 계약 v1: `docs/non-map-tab-root-top-inset-contract-v1.md`
 - 비지도 커스텀 헤더 safe area 계약 v1: `docs/non-map-custom-header-safearea-contract-v1.md`
+- TabBar card surface / viewport density v1: `docs/tabbar-card-surface-viewport-density-v1.md`
 - 산책 기록 상단 safe area 계약 v1: `docs/walklist-top-safearea-contract-v1.md`
 - 라이벌 상단 safe area 계약 v1: `docs/rival-top-safearea-contract-v1.md`
 - 홈 refresh 중복 제거 umbrella v1: `docs/home-refresh-dedup-lightweight-v1.md`

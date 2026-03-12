@@ -14,6 +14,14 @@ import UIKit
 struct CustomTabBar: View {
     @Binding var selectedTab: Int
 
+    private let cardCornerRadius: CGFloat = 26
+    private let cardHeight: CGFloat = 72
+    private let cardHorizontalInset: CGFloat = 10
+    private let cardBottomInset: CGFloat = 8
+    private let visualBandHeight: CGFloat = 88
+    private let centerButtonSize: CGFloat = 70
+    private let centerButtonLift: CGFloat = 10
+
     private let sideItems: [TabVisualItem] = [
         .init(id: 0, title: "홈", defaultSymbolName: "house", selectedSymbolName: "house.fill"),
         .init(id: 1, title: "산책 기록", defaultSymbolName: "list.bullet", selectedSymbolName: "list.bullet.circle.fill"),
@@ -23,7 +31,8 @@ struct CustomTabBar: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            bottomBackdrop
+            tabBarCardSurface
+            tabBarVisualBandProbe
 
             HStack(spacing: 8) {
                 tabItemButton(for: sideItems[0])
@@ -36,52 +45,47 @@ struct CustomTabBar: View {
             }
             .padding(.horizontal, 12)
             .padding(.top, 6)
-            .padding(.bottom, 10)
-            .padding(.horizontal, 10)
-            .padding(.bottom, 6)
-        }
-        .overlay {
-            if ProcessInfo.processInfo.arguments.contains("-UITest.FeatureRegression") {
-                Color.clear
-                    .allowsHitTesting(false)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel("하단 탭바 영역")
-                    .accessibilityIdentifier("tabBar.surface")
-            }
-        }
-        .overlay(alignment: .bottom) {
-            if ProcessInfo.processInfo.arguments.contains("-UITest.FeatureRegression") {
-                Color.clear
-                    .frame(height: 76)
-                    .allowsHitTesting(false)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel("하단 탭바 시각 영역")
-                    .accessibilityIdentifier("tabBar.visualBand")
-            }
+            .padding(.bottom, 8)
+            .padding(.horizontal, cardHorizontalInset)
+            .padding(.bottom, cardBottomInset)
         }
         .frame(maxWidth: .infinity)
         .frame(height: AppTabLayoutMetrics.defaultTabBarReservedHeight, alignment: .bottom)
     }
 
-    private var bottomBackdrop: some View {
-        LinearGradient(
-            colors: [
-                Color.appDynamicHex(light: 0xFFFFFF, dark: 0x020617, alpha: 0.0),
-                Color.appDynamicHex(light: 0xFFFFFF, dark: 0x020617, alpha: 0.86)
-            ],
-            startPoint: .top,
-            endPoint: .bottom
-        )
-        .frame(maxWidth: .infinity)
-        .frame(height: 76)
-        .overlay(alignment: .top) {
-            Rectangle()
-                .fill(Color.appDynamicHex(light: 0xE2E8F0, dark: 0x334155, alpha: 0.72))
-                .frame(height: 1)
-                .padding(.horizontal, 18)
+    private var tabBarCardSurface: some View {
+        RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)
+            .fill(Color.appDynamicHex(light: 0xFFFFFF, dark: 0x1E293B, alpha: 0.98))
+            .overlay(
+                RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)
+                    .stroke(Color.appDynamicHex(light: 0xE2E8F0, dark: 0x334155), lineWidth: 1)
+            )
+            .shadow(color: Color.black.opacity(0.09), radius: 18, x: 0, y: -6)
+            .frame(height: cardHeight)
+            .padding(.horizontal, cardHorizontalInset)
+            .padding(.bottom, cardBottomInset)
+            .allowsHitTesting(false)
+            .modifier(TabBarGeometryProbeModifier(
+                isEnabled: ProcessInfo.processInfo.arguments.contains("-UITest.FeatureRegression"),
+                identifier: "tabBar.surface",
+                label: "하단 탭바 표면"
+            ))
+    }
+
+    private var tabBarVisualBandProbe: some View {
+        GeometryReader { proxy in
+            RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)
+                .fill(Color.clear)
+                .frame(width: max(0, proxy.size.width - (cardHorizontalInset * 2)), height: visualBandHeight)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                .padding(.bottom, cardBottomInset)
+                .allowsHitTesting(false)
+                .modifier(TabBarGeometryProbeModifier(
+                    isEnabled: ProcessInfo.processInfo.arguments.contains("-UITest.FeatureRegression"),
+                    identifier: "tabBar.visualBand",
+                    label: "하단 탭바 시각 영역"
+                ))
         }
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
     }
 
     /// 일반 탭 아이템 버튼을 렌더링합니다.
@@ -111,7 +115,7 @@ struct CustomTabBar: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
-            .frame(maxWidth: .infinity, minHeight: 52)
+            .frame(maxWidth: .infinity, minHeight: 48)
             .background {
                 if isSelected {
                     Capsule(style: .continuous)
@@ -148,7 +152,7 @@ struct CustomTabBar: View {
                 ? Color.appDynamicHex(light: 0xFFFFFF, dark: 0x0F172A)
                 : Color.appDynamicHex(light: 0x334155, dark: 0xCBD5E1)
             )
-            .frame(width: 72, height: 72)
+            .frame(width: centerButtonSize, height: centerButtonSize)
             .background(
                 Circle()
                     .fill(
@@ -162,11 +166,11 @@ struct CustomTabBar: View {
                     .stroke(Color.appDynamicHex(light: 0xFFFFFF, dark: 0x0F172A), lineWidth: 4)
             )
             .shadow(color: Color.black.opacity(0.14), radius: 14, x: 0, y: 8)
-            .offset(y: -14)
+            .offset(y: -centerButtonLift)
         }
         .buttonStyle(.plain)
         .frame(maxWidth: .infinity)
-        .frame(minHeight: 52)
+        .frame(minHeight: 48)
         .accessibilityIdentifier("tab.2")
         .accessibilityLabel("지도")
     }
@@ -197,6 +201,23 @@ private struct TabVisualItem: Equatable {
 #else
         return primary
 #endif
+    }
+}
+
+private struct TabBarGeometryProbeModifier: ViewModifier {
+    let isEnabled: Bool
+    let identifier: String
+    let label: String
+
+    func body(content: Content) -> some View {
+        if isEnabled {
+            content
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(label)
+                .accessibilityIdentifier(identifier)
+        } else {
+            content.accessibilityHidden(true)
+        }
     }
 }
 

@@ -37,7 +37,7 @@ assertTrue(
     "AppTabScaffold should expose the shared non-map root top inset"
 )
 assertTrue(
-    rivalView.contains(".nonMapRootTopChrome(bottomSpacing: 12)") &&
+    rivalView.contains(".nonMapRootTopChrome {") &&
     rivalView.contains("rivalHeaderSection"),
     "RivalTabView should move the first custom header into fixed nonMapRootTopChrome"
 )
@@ -46,8 +46,10 @@ assertTrue(
     "RivalTabView should not keep a screen-specific root header top padding enum"
 )
 assertTrue(
-    rivalView.contains(".appTabRootScrollLayout(\n            extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding,\n            topSafeAreaPadding: 0\n        )"),
-    "RivalTabView should use fixed top chrome and zero the blank top inset"
+    rivalView.contains(".appTabRootScrollLayout(") &&
+    rivalView.contains("extraBottomPadding: AppTabLayoutMetrics.defaultScrollExtraBottomPadding") &&
+    rivalView.contains("topSafeAreaPadding: 0"),
+    "RivalTabView should use the shared compact bottom padding contract"
 )
 assertTrue(
     !rivalView.contains("topSafeAreaPadding: RivalRootLayoutMetrics.rootTopSafeAreaPadding"),

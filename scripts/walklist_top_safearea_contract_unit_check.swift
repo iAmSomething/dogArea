@@ -40,7 +40,7 @@ assertTrue(
 )
 assertTrue(
     scaffold.contains("func nonMapRootPinnedHeaderLayout<Chrome: View>(") &&
-    walkList.contains(".nonMapRootPinnedHeaderLayout(bottomSpacing: 18)") &&
+    walkList.contains(".nonMapRootPinnedHeaderLayout {") &&
     walkList.contains("TitleTextView(") &&
     walkList.contains("WalkListDashboardHeaderView("),
     "WalkListView should keep only the root title chrome fixed through the pinned-header layout and render dashboard cards in scroll content"
@@ -50,8 +50,10 @@ assertTrue(
     "WalkListView should not keep a per-screen root header top padding enum"
 )
 assertTrue(
-    walkList.contains(".appTabRootScrollLayout(\n            extraBottomPadding: AppTabLayoutMetrics.comfortableScrollExtraBottomPadding,\n            topSafeAreaPadding: 0\n        )"),
-    "WalkListView should use fixed top chrome and zero the blank top inset"
+    walkList.contains(".appTabRootScrollLayout(") &&
+    walkList.contains("extraBottomPadding: AppTabLayoutMetrics.defaultScrollExtraBottomPadding") &&
+    walkList.contains("topSafeAreaPadding: 0"),
+    "WalkListView should use the shared compact bottom padding contract"
 )
 assertTrue(
     walkList.contains("pinnedViews: [.sectionHeaders]"),

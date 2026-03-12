@@ -45,8 +45,10 @@ assertTrue(
     "HomeView should not keep a screen-specific root header top padding enum"
 )
 assertTrue(
-    homeView.contains(".appTabRootScrollLayout(extraBottomPadding: 12, topSafeAreaPadding: 0)"),
-    "HomeView should move the root header into fixed top chrome and zero the blank top inset"
+    homeView.contains(".appTabRootScrollLayout(") &&
+    homeView.contains("extraBottomPadding: AppTabLayoutMetrics.defaultScrollExtraBottomPadding") &&
+    homeView.contains("topSafeAreaPadding: 0"),
+    "HomeView should use the shared compact bottom padding contract"
 )
 assertTrue(
     !homeView.contains("topSafeAreaPadding: HomeRootLayoutMetrics.rootTopSafeAreaPadding"),

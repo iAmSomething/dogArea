@@ -30,7 +30,7 @@ let doc = load("docs/non-map-custom-header-safearea-contract-v1.md")
 let readme = load("README.md")
 let iosPRCheck = load("scripts/ios_pr_check.sh")
 
-assertTrue(scaffold.contains("nonMapRootHeaderTopSpacing: CGFloat = 12"), "AppTabScaffold should define the shared non-map root header top spacing")
+assertTrue(scaffold.contains("nonMapRootHeaderTopSpacing: CGFloat = 8"), "AppTabScaffold should define the compact non-map root header top spacing")
 assertTrue(scaffold.contains("struct NonMapRootHeaderContainer<Content: View>"), "AppTabScaffold should define a reusable non-map root header container")
 assertTrue(scaffold.contains("struct NonMapRootTopChromeContainer<Content: View>"), "AppTabScaffold should define a reusable non-map root top chrome container")
 assertTrue(scaffold.contains("func nonMapRootTopChrome<Chrome: View>("), "AppTabScaffold should expose the reusable non-map root top chrome modifier")
@@ -41,10 +41,10 @@ assertTrue(scaffold.contains("bottomSpacing: CGFloat = AppTabLayoutMetrics.nonMa
 assertTrue(home.contains(".nonMapRootTopChrome {") && home.contains("homeHeaderSection"), "Home should render the first custom header through nonMapRootTopChrome")
 assertTrue(!home.contains("HomeRootLayoutMetrics"), "Home should not keep a per-screen root header top padding enum")
 
-assertTrue(walkList.contains(".nonMapRootPinnedHeaderLayout(bottomSpacing: 18)") && walkList.contains("WalkListDashboardHeaderView("), "WalkList should render the pinned-header root chrome through the separated layout")
+assertTrue(walkList.contains(".nonMapRootPinnedHeaderLayout {") && walkList.contains("WalkListDashboardHeaderView("), "WalkList should render the pinned-header root chrome through the separated layout")
 assertTrue(!walkList.contains("WalkListRootLayoutMetrics"), "WalkList should not keep a per-screen root header top padding enum")
 
-assertTrue(rival.contains(".nonMapRootTopChrome(bottomSpacing: 12)") && rival.contains("rivalHeaderSection"), "Rival should render the first custom header through nonMapRootTopChrome")
+assertTrue(rival.contains(".nonMapRootTopChrome {") && rival.contains("rivalHeaderSection"), "Rival should render the first custom header through nonMapRootTopChrome")
 assertTrue(!rival.contains("RivalRootLayoutMetrics"), "Rival should not keep a per-screen root header top padding enum")
 
 assertTrue(settings.contains(".nonMapRootTopChrome {") && settings.contains("settingsHeader("), "Settings should render the first custom header through nonMapRootTopChrome")

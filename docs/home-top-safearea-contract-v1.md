@@ -23,7 +23,10 @@
 - 홈 루트 scroll layout은 빈 상단 inset을 추가로 만들지 않도록 `topSafeAreaPadding: 0`을 사용한다.
 
 ```swift
-.appTabRootScrollLayout(extraBottomPadding: 12, topSafeAreaPadding: 0)
+.appTabRootScrollLayout(
+    extraBottomPadding: AppTabLayoutMetrics.defaultScrollExtraBottomPadding,
+    topSafeAreaPadding: 0
+)
 .nonMapRootTopChrome { ... }
 ```
 
