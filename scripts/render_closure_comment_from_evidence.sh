@@ -5,11 +5,11 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 usage() {
-  cat <<'EOF'
+  cat <<'USAGE'
 Usage:
-  bash scripts/render_closure_comment_from_evidence.sh widget <evidence-dir-or-file> [--write] [--output <path>]
+  bash scripts/render_closure_comment_from_evidence.sh widget <evidence-dir> [--write] [--output <path>]
   bash scripts/render_closure_comment_from_evidence.sh auth-smtp <evidence-file> --negative-guard <text> --negative-provider-event <text> [--write] [--output <path>]
-EOF
+USAGE
 }
 
 trim() {
@@ -105,16 +105,9 @@ while [[ $# -gt 0 ]]; do
 done
 
 case "$kind" in
-  widget)
-    default_output_path=".codex_tmp/widget-action-closure-comment.md"
-    ;;
-  auth-smtp)
-    default_output_path=".codex_tmp/auth-smtp-closure-comment.md"
-    ;;
-  *)
-    usage
-    exit 1
-    ;;
+  widget) default_output_path=".codex_tmp/widget-action-closure-comment.md" ;;
+  auth-smtp) default_output_path=".codex_tmp/auth-smtp-closure-comment.md" ;;
+  *) usage; exit 1 ;;
 esac
 
 if [[ -z "$output_path" && "$write_mode" == "1" ]]; then
@@ -122,80 +115,62 @@ if [[ -z "$output_path" && "$write_mode" == "1" ]]; then
 fi
 
 render_widget_comment() {
-  local path="$1"
-  local -a files
-  local -a expected_ids=(WD-001 WD-002 WD-003 WD-004 WD-005 WD-006 WD-007 WD-008)
-  local summary_map_file
-  summary_map_file="$(mktemp)"
-  trap 'rm -f "$summary_map_file"' RETURN
+  local dir="$1"
+  local action_ids=(WD-001 WD-002 WD-003 WD-004 WD-005 WD-006 WD-007 WD-008)
+  local layout_ids=(WL-001 WL-002 WL-003 WL-004 WL-005 WL-006 WL-007 WL-008)
+  local id file summary
 
-  if [[ -d "$path" ]]; then
-    while IFS= read -r file; do
-      files+=("$file")
-    done < <(find "$path" -maxdepth 1 -type f -name '*.md' | sort)
-  else
-    files=("$path")
-  fi
-
-  [[ "${#files[@]}" -gt 0 ]] || {
-    printf 'render_closure_comment_from_evidence.sh: no widget evidence files found\n' >&2
+  [[ -d "$dir" ]] || {
+    printf 'render_closure_comment_from_evidence.sh: widget evidence must be a directory\n' >&2
     exit 1
   }
 
-  for file in "${files[@]}"; do
-    bash scripts/validate_manual_evidence_pack.sh widget "$file" >/dev/null || return 1
-    local case_id summary pass_fail
-    case_id="$(extract_prefixed_value "- Case ID:" "$file")"
-    summary="$(extract_prefixed_value "- Summary:" "$file")"
-    pass_fail="$(extract_prefixed_value "- Pass / Fail:" "$file")"
-    if [[ "$pass_fail" != "Pass" && "$pass_fail" != "PASS" ]]; then
-      printf 'render_closure_comment_from_evidence.sh: widget case %s is not passing\n' "$case_id" >&2
-      exit 1
-    fi
-    printf '%s\t%s\n' "$case_id" "Pass - $summary" >> "$summary_map_file"
-  done
+  bash scripts/validate_manual_evidence_pack.sh widget "$dir" >/dev/null || return 1
 
-  for case_id in "${expected_ids[@]}"; do
-    if ! awk -F'\t' -v case_id="$case_id" '$1 == case_id { found = 1 } END { exit(found ? 0 : 1) }' "$summary_map_file"; then
-      printf 'render_closure_comment_from_evidence.sh: missing widget case %s\n' "$case_id" >&2
-      exit 1
-    fi
-  done
-
-  summary_for_case() {
-    local case_id="$1"
-    awk -F'\t' -v case_id="$case_id" '$1 == case_id { print $2; exit }' "$summary_map_file"
-  }
-
-  cat <<EOF
-실기기 위젯 액션 검증을 완료했습니다.
+  cat <<'HEADER'
+실기기 위젯 blocker 검증을 완료했습니다.
 
 검증 기준 문서
-- \`docs/widget-action-real-device-validation-matrix-v1.md\`
-- \`docs/widget-action-real-device-evidence-runbook-v1.md\`
-- \`docs/widget-action-closure-checklist-v1.md\`
+- `docs/widget-action-real-device-validation-matrix-v1.md`
+- `docs/widget-family-real-device-validation-matrix-v1.md`
+- `docs/widget-action-real-device-evidence-runbook-v1.md`
+- `docs/widget-family-real-device-evidence-runbook-v1.md`
+- `docs/widget-action-closure-checklist-v1.md`
 
-완료 케이스
-- \`WD-001\`: $(summary_for_case WD-001)
-- \`WD-002\`: $(summary_for_case WD-002)
-- \`WD-003\`: $(summary_for_case WD-003)
-- \`WD-004\`: $(summary_for_case WD-004)
-- \`WD-005\`: $(summary_for_case WD-005)
-- \`WD-006\`: $(summary_for_case WD-006)
-- \`WD-007\`: $(summary_for_case WD-007)
-- \`WD-008\`: $(summary_for_case WD-008)
+액션 수렴 케이스
+HEADER
+
+  for id in "${action_ids[@]}"; do
+    file="$dir/action/${id}.md"
+    summary="$(extract_prefixed_value "- Summary:" "$file")"
+    printf -- '- `%s`: Pass - %s\n' "$id" "$summary"
+  done
+
+  printf '\nlayout / clipping 케이스\n'
+  for id in "${layout_ids[@]}"; do
+    file="$dir/layout/${id}.md"
+    summary="$(extract_prefixed_value "- Summary:" "$file")"
+    printf -- '- `%s`: Pass - %s\n' "$id" "$summary"
+  done
+
+  cat <<'FOOTER'
 
 공통 로그 확인
-- \`WidgetAction\`
-- \`onOpenURL received\`
-- \`consumePendingWidgetActionIfNeeded\`
+- `WidgetAction`
+- `onOpenURL received`
+- `consumePendingWidgetActionIfNeeded`
+
+해결한 blocker
+- `#617` start/end 액션 후 위젯·Live Activity·앱 상태 수렴 규칙
+- `#692` 홈 화면 위젯 family별 clipping zero-base 정리
+- `#731` WalkControlWidget 실기기 clipping과 start/end 액션 불능 회귀
 
 남은 blocker
 - 없음
 
 결론
-- \`#408\` DoD를 충족했으므로 종료합니다.
-EOF
+- `#408`, `#617`, `#692`, `#731` DoD를 충족했으므로 종료합니다.
+FOOTER
 }
 
 render_auth_comment() {
@@ -224,7 +199,7 @@ render_auth_comment() {
   reset_summary="$(collect_row_message "password reset" "$file")"
   change_summary="$(collect_row_message "email change" "$file")"
 
-  cat <<EOF
+  cat <<EOF2
 custom SMTP rollout 운영 증적을 확인했습니다.
 
 검증 기준 문서
@@ -261,7 +236,7 @@ Rollback / rotation
 
 결론
 - \`#482\` DoD를 충족했으므로 종료합니다.
-EOF
+EOF2
 }
 
 if [[ "$kind" == "widget" ]]; then
