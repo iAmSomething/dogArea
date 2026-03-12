@@ -183,6 +183,7 @@ assertTrue(doc.contains("--raw-errors"), "doc should describe raw error output m
 assertTrue(doc.contains("gap-summary"), "doc should describe plain gap summary output")
 assertTrue(doc.contains("next-fill"), "doc should describe next-fill guidance")
 assertTrue(doc.contains("### Gap Summary"), "doc should describe markdown gap summary heading")
+assertTrue(doc.contains("03-live-send-results.md"), "doc should describe auth-smtp file-level scenario row grouping")
 assertTrue(doc.contains("--prefill-from-env"), "doc should describe auth smtp prefill render command")
 assertTrue(readme.contains("docs/manual-blocker-evidence-status-runner-v1.md"), "README should link runner doc")
 assertTrue(iosPRCheck.contains("manual_blocker_evidence_status_unit_check.swift"), "ios_pr_check should run blocker runner check")
@@ -280,6 +281,15 @@ assertTrue(authOutput.contains("pack: \(authPath.path)"), "auth runner should pr
 assertTrue(authOutput.contains("render_manual_evidence_pack.sh auth-smtp --output"), "auth runner should print auth render command")
 assertTrue(authOutput.contains("--prefill-from-env"), "auth runner should prefer prefilled auth render command")
 assertTrue(!authOutput.contains("--negative-guard"), "auth next command should not require negative guard flag")
+
+let authGeneratedOutput = runStatus(arguments: ["auth-smtp", "--write-missing"], environment: [
+    "DOGAREA_WIDGET_EVIDENCE_PATH": widgetPath.path,
+    "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
+])
+assertTrue(authGeneratedOutput.contains("gap-summary: 6 incomplete files"), "auth runner should summarize auth evidence by file count")
+assertTrue(authGeneratedOutput.contains("next-fill: 01-dns-verification.md"), "auth runner should point to the first auth file to fill")
+assertTrue(authGeneratedOutput.contains("03-live-send-results.md: scenario rows, mailbox assets"), "auth runner should fold live-send scenario row errors into the live-send file")
+assertTrue(!authGeneratedOutput.contains("signup confirmation: 1 gaps"), "auth runner should avoid scenario-only pseudo-file output")
 assertTrue(!authOutput.contains("--negative-provider-event"), "auth next command should not require provider event flag")
 
 print("PASS: manual blocker evidence status runner contract checks")
