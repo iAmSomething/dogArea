@@ -34,6 +34,7 @@
 - Manual evidence helper v1: `docs/manual-evidence-helper-v1.md`
 - Manual blocker evidence status runner v1: `docs/manual-blocker-evidence-status-runner-v1.md`
 - Manual evidence validator v1: `docs/manual-evidence-validator-v1.md`
+- Manual evidence archive export v1: `docs/manual-evidence-archive-export-v1.md`
 - Manual closure comment renderer v1: `docs/manual-closure-comment-renderer-v1.md`
 - Manual closure comment poster v1: `docs/manual-closure-comment-poster-v1.md`
 - Issues #680 #681 closure evidence v1: `docs/issues-680-681-closure-evidence-v1.md`
