@@ -85,6 +85,18 @@ func writeAsset(_ url: URL) {
     write(url, content: "placeholder-asset")
 }
 
+/// Loads a UTF-8 text file from an absolute file URL.
+/// - Parameter url: Absolute file URL to read.
+/// - Returns: Decoded file contents.
+func loadFile(_ url: URL) -> String {
+    guard let data = try? Data(contentsOf: url),
+          let text = String(data: data, encoding: .utf8) else {
+        fputs("Failed to load file \(url.path)\n", stderr)
+        exit(1)
+    }
+    return text
+}
+
 /// Builds a filled widget action case from the shared template.
 /// - Parameters:
 ///   - caseID: Canonical action case identifier.
@@ -153,10 +165,15 @@ assertTrue(runnerScript.contains("widget-real-device-evidence"), "runner should 
 assertTrue(runnerScript.contains("related-issues"), "runner should print related widget issues")
 assertTrue(runnerScript.contains("next-archive"), "runner should print archive command")
 assertTrue(runnerScript.contains("next-post-closure-bundle"), "runner should print bundled widget post command")
+assertTrue(runnerScript.contains("--markdown"), "runner should support markdown mode")
+assertTrue(runnerScript.contains("--output"), "runner should support output path")
 assertTrue(doc.contains("primary `#731`, related `#617`, `#692`"), "doc should describe active widget blocker routing")
 assertTrue(doc.contains("widget-real-device-evidence"), "doc should mention widget directory path")
 assertTrue(doc.contains("next-archive"), "doc should describe archive command")
 assertTrue(doc.contains("next-post-closure-bundle"), "doc should describe bundled widget post command")
+assertTrue(doc.contains("Manual Blocker Evidence Status Report"), "doc should describe markdown report title")
+assertTrue(doc.contains("--markdown"), "doc should describe markdown mode")
+assertTrue(doc.contains("--output"), "doc should describe output export")
 assertTrue(readme.contains("docs/manual-blocker-evidence-status-runner-v1.md"), "README should link runner doc")
 assertTrue(iosPRCheck.contains("manual_blocker_evidence_status_unit_check.swift"), "ios_pr_check should run blocker runner check")
 assertTrue(backendPRCheck.contains("manual_blocker_evidence_status_unit_check.swift"), "backend_pr_check should run blocker runner check")
@@ -209,6 +226,26 @@ assertTrue(completeOutput.contains("status: complete"), "filled widget evidence 
 assertTrue(completeOutput.contains("render_closure_comment_from_evidence.sh widget"), "runner should print widget closure render command")
 assertTrue(completeOutput.contains("archive_manual_evidence_pack.sh widget"), "runner should print widget archive command")
 assertTrue(completeOutput.contains("next-post-closure-bundle: bash scripts/post_closure_comment_from_evidence.sh widget --all-related"), "runner should print bundled widget post command")
+
+let markdownOutput = runStatus(arguments: ["widget", "--markdown"], environment: [
+    "DOGAREA_WIDGET_EVIDENCE_PATH": widgetPath.path,
+    "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
+])
+assertTrue(markdownOutput.contains("# Manual Blocker Evidence Status Report"), "markdown mode should print report title")
+assertTrue(markdownOutput.contains("## widget"), "markdown mode should render widget section")
+assertTrue(markdownOutput.contains("- Primary Issue: [#731]"), "markdown mode should render primary issue link")
+assertTrue(markdownOutput.contains("- Post Closure Bundle: `bash scripts/post_closure_comment_from_evidence.sh widget --all-related"), "markdown mode should render bundled post command")
+
+let markdownPath = tempRoot.appendingPathComponent("manual-blocker-status.md")
+let markdownWriteOutput = runStatus(arguments: ["auth-smtp", "--markdown", "--output", markdownPath.path], environment: [
+    "DOGAREA_WIDGET_EVIDENCE_PATH": widgetPath.path,
+    "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
+])
+assertTrue(markdownWriteOutput.contains("WROTE \(markdownPath.path)"), "markdown output mode should report written file")
+let markdownFile = loadFile(markdownPath)
+assertTrue(markdownFile.contains("## auth-smtp"), "written markdown report should render auth surface section")
+assertTrue(markdownFile.contains("- Primary Issue: [#482]"), "written markdown report should render auth primary issue link")
+assertTrue(markdownFile.contains("- Archive: `bash scripts/archive_manual_evidence_pack.sh auth-smtp"), "written markdown report should render archive command")
 
 let authOutput = runStatus(arguments: ["auth-smtp"], environment: [
     "DOGAREA_WIDGET_EVIDENCE_PATH": widgetPath.path,

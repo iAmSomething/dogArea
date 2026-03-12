@@ -11,6 +11,8 @@
 - `bash scripts/manual_blocker_evidence_status.sh`
 - `bash scripts/manual_blocker_evidence_status.sh widget`
 - `bash scripts/manual_blocker_evidence_status.sh auth-smtp --write-missing`
+- `bash scripts/manual_blocker_evidence_status.sh --markdown`
+- `bash scripts/manual_blocker_evidence_status.sh --markdown --output .codex_tmp/manual-blocker-evidence-status.md`
 
 ## 출력 계약
 - canonical issue 번호와 state
@@ -27,7 +29,20 @@
   - `next-archive`
   - `next-post-closure`
   - `next-post-closure-bundle` (`widget`만 제공)
+- `--markdown` 모드에서는 위 내용을 reviewer 공유용 markdown report로 출력한다.
+- `--output`을 같이 주면 report를 파일로 export하고 `WROTE <path>`를 출력한다.
 
 ## 기본 경로
 - widget: `.codex_tmp/widget-real-device-evidence`
 - auth-smtp: `.codex_tmp/auth-smtp-evidence`
+
+## Markdown Report 구조
+- `# Manual Blocker Evidence Status Report`
+- generated timestamp (UTC)
+- scope
+- surface별 섹션
+  - title
+  - primary issue / related issues
+  - evidence pack 경로
+  - status
+  - render / validate / archive / closure post 명령
