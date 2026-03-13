@@ -25,8 +25,9 @@
   - `incomplete`
   - `complete`
 - `incomplete`일 때 gap summary
-  - plain text: `gap-summary`, `next-fill`, `gap-cases`/`gap-files`
+  - plain text: `gap-summary`, `next-fill`, `next-capture-assets`, `gap-cases`/`gap-files`
   - markdown: `### Gap Summary`
+  - `widget`은 첫 incomplete case 기준으로 바로 저장해야 할 screenshot asset 경로를 `next-capture-assets`로 함께 보여준다.
   - `auth-smtp`는 scenario row 오류를 `03-live-send-results.md`로 접어서 실제 작성 파일 기준으로 보여준다.
 - `widget`은 최신 simulator baseline도 함께 보여준다.
   - plain text: `simulator-baseline`

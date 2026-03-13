@@ -49,7 +49,8 @@ for testName in expectedTests {
 }
 
 assertTrue(doc.contains("# Widget Action Real-Device Validation Matrix v1"), "doc title should exist")
-assertTrue(doc.contains("Issue: #660"), "doc should reference issue #660")
+assertTrue(doc.contains("Issue: #731"), "doc should reference current blocker issue #731")
+assertTrue(!doc.contains("Issue: #660"), "doc should not keep stale issue #660")
 assertTrue(doc.contains("Relates to: #408"), "doc should reference #408")
 assertTrue(doc.contains("cold start"), "doc should define cold start axis")
 assertTrue(doc.contains("background"), "doc should define background axis")

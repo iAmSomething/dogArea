@@ -632,6 +632,18 @@ surface_gap_summary_plain() {
             }
           } else if (kind == "missing asset file") {
             bucket = "assets"
+            assetPath = detailParts[3]
+            if (assetPath != "") {
+              composite = caseRef SUBSEP assetPath
+              if (!seenCaptureAssets[composite]) {
+                seenCaptureAssets[composite] = 1
+                if (captureAssets[caseRef] == "") {
+                  captureAssets[caseRef] = assetPath
+                } else {
+                  captureAssets[caseRef] = captureAssets[caseRef] ", " assetPath
+                }
+              }
+            }
           } else if (kind == "placeholder literal remains") {
             bucket = "placeholder logs"
           } else if (kind == "non-pass outcome") {
@@ -647,6 +659,9 @@ surface_gap_summary_plain() {
             printf "next-fill: action/%s.md\n", nextFill
           } else {
             printf "next-fill: layout/%s.md\n", nextFill
+          }
+          if (captureAssets[nextFill] != "") {
+            printf "next-capture-assets: %s\n", captureAssets[nextFill]
           }
           printf "gap-cases:\n"
           for (i = 1; i <= orderCount; i++) {
@@ -667,6 +682,17 @@ surface_gap_summary_plain() {
             categories[key] = value
           } else {
             categories[key] = current ", " value
+          }
+        }
+        function append_capture_asset(key, value, composite, current) {
+          composite = key SUBSEP value
+          if (seenCaptureAssets[composite]) return
+          seenCaptureAssets[composite] = 1
+          current = captureAssets[key]
+          if (current == "") {
+            captureAssets[key] = value
+          } else {
+            captureAssets[key] = current ", " value
           }
         }
         /^ - / {
@@ -801,6 +827,18 @@ surface_gap_summary_markdown() {
             }
           } else if (kind == "missing asset file") {
             bucket = "assets"
+            assetPath = detailParts[3]
+            if (assetPath != "") {
+              composite = caseRef SUBSEP assetPath
+              if (!seenCaptureAssets[composite]) {
+                seenCaptureAssets[composite] = 1
+                if (captureAssets[caseRef] == "") {
+                  captureAssets[caseRef] = assetPath
+                } else {
+                  captureAssets[caseRef] = captureAssets[caseRef] ", " assetPath
+                }
+              }
+            }
           } else if (kind == "placeholder literal remains") {
             bucket = "placeholder logs"
           } else if (kind == "non-pass outcome") {
@@ -817,6 +855,21 @@ surface_gap_summary_markdown() {
             printf "- Next Fill: `action/%s.md`\n", nextFill
           } else {
             printf "- Next Fill: `layout/%s.md`\n", nextFill
+          }
+          if (captureAssets[nextFill] != "") {
+            split(captureAssets[nextFill], captureParts, ", ")
+            captureLine = ""
+            for (i = 1; i <= length(captureParts); i++) {
+              if (captureParts[i] == "") continue
+              if (captureLine == "") {
+                captureLine = "`" captureParts[i] "`"
+              } else {
+                captureLine = captureLine ", `" captureParts[i] "`"
+              }
+            }
+            if (captureLine != "") {
+              printf "- Next Capture Assets: %s\n", captureLine
+            }
           }
           printf "- Case Buckets:\n"
           for (i = 1; i <= orderCount; i++) {
