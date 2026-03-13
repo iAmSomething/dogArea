@@ -28,6 +28,12 @@
   - plain text: `gap-summary`, `next-fill`, `gap-cases`/`gap-files`
   - markdown: `### Gap Summary`
   - `auth-smtp`는 scenario row 오류를 `03-live-send-results.md`로 접어서 실제 작성 파일 기준으로 보여준다.
+- `widget`은 최신 simulator baseline도 함께 보여준다.
+  - plain text: `simulator-baseline`
+  - markdown: `### Simulator Baseline`
+  - action regression 마지막 결과
+  - layout fast smoke 마지막 결과
+  - baseline refresh 명령
 - 다음 액션 명령
   - `next-render`
   - `next-prefill-existing`
@@ -46,6 +52,9 @@
 - env가 비어 있으면 `next-prefill-bootstrap`으로 env template source + `--apply-prefill` one-shot 명령도 함께 안내한다.
 - `auth-smtp`의 `next-render`는 `--prefill-from-env`를 포함해 운영 메타데이터 transcription 비용을 줄인다.
 - `widget`의 `next-render`도 `--prefill-from-env`를 포함해 공통 기록 메타 transcription 비용을 줄인다.
+- `widget` simulator baseline은 아래 스크립트들이 마지막 실행 결과를 `.codex_tmp/widget-simulator-baseline/`에 남긴 값을 읽는다.
+  - `bash scripts/run_widget_action_regression_ui_tests.sh`
+  - `bash scripts/run_pr_fast_smoke_widget_layout_checks.sh`
 - existing bundle에 metadata gap이 남아 있으면 `next-apply-prefill`를 우선 노출한다.
 - existing bundle에 metadata gap이 남아 있고 env도 비어 있으면 `next-prefill-env -> next-apply-prefill -> next-validate`가 기본 경로다.
 - 기존 bundle이 이미 있으면 `next-apply-prefill` 또는 `next-prefill-existing` -> `next-validate` 순서가 더 안전한 기본 경로다.
@@ -65,5 +74,6 @@
   - primary issue / related issues
   - evidence pack 경로
   - status
+  - simulator baseline (`widget`만)
   - gap summary (`incomplete`일 때만)
   - render / validate / archive / closure post 명령

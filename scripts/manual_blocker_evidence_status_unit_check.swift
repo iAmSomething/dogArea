@@ -85,6 +85,23 @@ func writeAsset(_ url: URL) {
     write(url, content: "placeholder-asset")
 }
 
+/// Writes a simulator baseline status file consumed by the blocker evidence runner.
+/// - Parameters:
+///   - directory: Directory that stores baseline status files.
+///   - suite: Baseline suite identifier.
+///   - status: Baseline outcome such as `pass` or `fail`.
+///   - ranAt: UTC timestamp string recorded for the suite.
+func writeSimulatorBaseline(_ directory: URL, suite: String, status: String, ranAt: String) {
+    let content = """
+    suite=\(suite)
+    status=\(status)
+    ran_at_utc=\(ranAt)
+    destination=simulator
+    command=bash scripts/\(suite)
+    """
+    write(directory.appendingPathComponent("\(suite).status"), content: content)
+}
+
 /// Loads a UTF-8 text file from an absolute file URL.
 /// - Parameter url: Absolute file URL to read.
 /// - Returns: Decoded file contents.
@@ -156,6 +173,7 @@ func filledWidgetLayout(caseID: String, surface: String) -> String {
 }
 
 let runnerScript = load("scripts/manual_blocker_evidence_status.sh")
+let widgetBaselineScript = load("scripts/lib/widget_simulator_baseline_status.sh")
 let doc = load("docs/manual-blocker-evidence-status-runner-v1.md")
 let readme = load("README.md")
 let iosPRCheck = load("scripts/ios_pr_check.sh")
@@ -173,6 +191,10 @@ assertTrue(runnerScript.contains("--apply-prefill"), "runner should support one-
 assertTrue(runnerScript.contains("next-apply-prefill"), "runner should print status-runner prefill guidance")
 assertTrue(runnerScript.contains("next-prefill-env"), "runner should print env template guidance")
 assertTrue(runnerScript.contains("next-prefill-bootstrap"), "runner should print one-shot prefill bootstrap guidance")
+assertTrue(runnerScript.contains("simulator-baseline:"), "runner should print plain simulator baseline summaries")
+assertTrue(runnerScript.contains("### Simulator Baseline"), "runner should print markdown simulator baseline summaries")
+assertTrue(runnerScript.contains("next-refresh-widget-action-baseline"), "runner should print action baseline refresh guidance")
+assertTrue(runnerScript.contains("next-refresh-widget-layout-baseline"), "runner should print layout baseline refresh guidance")
 assertTrue(runnerScript.contains("Apply Prefill Then Refresh"), "runner should print markdown prefill guidance")
 assertTrue(runnerScript.contains("Print Prefill Env Template"), "runner should print markdown env template guidance")
 assertTrue(runnerScript.contains("Bootstrap Prefill In One Shot"), "runner should print markdown bootstrap guidance")
@@ -183,8 +205,12 @@ assertTrue(runnerScript.contains("next-fill:"), "runner should print next-fill g
 assertTrue(runnerScript.contains("### Gap Summary"), "runner should print markdown gap summaries for incomplete packs")
 assertTrue(runnerScript.contains("widget --output %q --prefill-from-env"), "runner should prefer prefilled widget render commands")
 assertTrue(runnerScript.contains("--prefill-from-env"), "runner should use auth smtp env prefill render path")
+assertTrue(widgetBaselineScript.contains("write_widget_simulator_baseline_status"), "widget simulator baseline helper should expose a status writer")
 assertTrue(doc.contains("primary `#731`, related `#617`, `#692`"), "doc should describe active widget blocker routing")
 assertTrue(doc.contains("widget-real-device-evidence"), "doc should mention widget directory path")
+assertTrue(doc.contains("simulator-baseline"), "doc should describe simulator baseline output")
+assertTrue(doc.contains("run_widget_action_regression_ui_tests.sh"), "doc should mention widget action baseline source")
+assertTrue(doc.contains("run_pr_fast_smoke_widget_layout_checks.sh"), "doc should mention widget layout baseline source")
 assertTrue(doc.contains("next-archive"), "doc should describe archive command")
 assertTrue(doc.contains("next-prefill-existing"), "doc should describe prefill-existing command")
 assertTrue(doc.contains("next-post-closure-bundle"), "doc should describe bundled widget post command")
@@ -202,25 +228,35 @@ assertTrue(doc.contains("### Gap Summary"), "doc should describe markdown gap su
 assertTrue(doc.contains("03-live-send-results.md"), "doc should describe auth-smtp file-level scenario row grouping")
 assertTrue(doc.contains("--prefill-from-env"), "doc should describe auth smtp prefill render command")
 assertTrue(readme.contains("docs/manual-blocker-evidence-status-runner-v1.md"), "README should link runner doc")
+assertTrue(readme.contains("run_pr_fast_smoke_widget_layout_checks.sh"), "README should list the widget layout fast smoke command")
 assertTrue(iosPRCheck.contains("manual_blocker_evidence_status_unit_check.swift"), "ios_pr_check should run blocker runner check")
 assertTrue(backendPRCheck.contains("manual_blocker_evidence_status_unit_check.swift"), "backend_pr_check should run blocker runner check")
 
 let tempRoot = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
 let widgetPath = tempRoot.appendingPathComponent("widget")
 let authPath = tempRoot.appendingPathComponent("auth")
+let widgetBaselinePath = tempRoot.appendingPathComponent("widget-sim-baseline")
 
 let missingOutput = runStatus(arguments: ["widget"], environment: [
     "DOGAREA_WIDGET_EVIDENCE_PATH": widgetPath.path,
     "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
+    "DOGAREA_WIDGET_SIM_BASELINE_DIR": widgetBaselinePath.path,
 ])
 assertTrue(missingOutput.contains("== widget =="), "runner should print widget header")
 assertTrue(missingOutput.contains("status: missing"), "runner should mark missing widget evidence")
 assertTrue(missingOutput.contains("issue: #731 (skipped)"), "runner should print active widget primary issue")
 assertTrue(missingOutput.contains("related-issues: #617 #692"), "runner should print related widget issues")
+assertTrue(missingOutput.contains("simulator-baseline:"), "widget status should include simulator baseline summary")
+assertTrue(missingOutput.contains("action-regression: missing"), "widget status should show missing action baseline when no stamp exists")
+assertTrue(missingOutput.contains("layout-fast-smoke: missing"), "widget status should show missing layout baseline when no stamp exists")
+
+writeSimulatorBaseline(widgetBaselinePath, suite: "action-regression", status: "pass", ranAt: "2026-03-13T10:25:00Z")
+writeSimulatorBaseline(widgetBaselinePath, suite: "layout-fast-smoke", status: "pass", ranAt: "2026-03-13T10:26:00Z")
 
 let generatedOutput = runStatus(arguments: ["widget", "--write-missing"], environment: [
     "DOGAREA_WIDGET_EVIDENCE_PATH": widgetPath.path,
     "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
+    "DOGAREA_WIDGET_SIM_BASELINE_DIR": widgetBaselinePath.path,
     "DOGAREA_WIDGET_EVIDENCE_DATE": "2026-03-12",
     "DOGAREA_WIDGET_EVIDENCE_TESTER": "codex",
     "DOGAREA_WIDGET_EVIDENCE_DEVICE_OS": "iPhone 16 / iOS 18.5",
@@ -236,6 +272,10 @@ assertTrue(generatedOutput.contains("next-fill: action/WD-001.md"), "generated w
 assertTrue(generatedOutput.contains("gap-cases:"), "generated widget bundle should print case bucket list")
 assertTrue(generatedOutput.contains("WD-001: result, assets, placeholder logs"), "generated widget bundle should dedupe case buckets after metadata prefill")
 assertTrue(generatedOutput.contains("WL-001: result, assets"), "generated widget bundle should reduce layout gaps after metadata prefill")
+assertTrue(generatedOutput.contains("action-regression: pass (2026-03-13T10:25:00Z)"), "widget status should show the latest action baseline stamp")
+assertTrue(generatedOutput.contains("layout-fast-smoke: pass (2026-03-13T10:26:00Z)"), "widget status should show the latest layout baseline stamp")
+assertTrue(generatedOutput.contains("next-refresh-widget-action-baseline: bash scripts/run_widget_action_regression_ui_tests.sh"), "widget status should advertise the action baseline refresh command")
+assertTrue(generatedOutput.contains("next-refresh-widget-layout-baseline: bash scripts/run_pr_fast_smoke_widget_layout_checks.sh"), "widget status should advertise the layout baseline refresh command")
 assertTrue(!generatedOutput.contains("empty value:"), "generated widget bundle should hide raw validator errors by default")
 
 let widgetExistingPath = tempRoot.appendingPathComponent("widget-existing")
@@ -246,6 +286,7 @@ _ = runStatus(arguments: ["widget", "--write-missing"], environment: [
 let widgetUnappliedExistingOutput = runStatus(arguments: ["widget"], environment: [
     "DOGAREA_WIDGET_EVIDENCE_PATH": widgetExistingPath.path,
     "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
+    "DOGAREA_WIDGET_SIM_BASELINE_DIR": widgetBaselinePath.path,
 ])
 assertTrue(widgetUnappliedExistingOutput.contains("next-apply-prefill: bash scripts/manual_blocker_evidence_status.sh widget --apply-prefill"), "existing widget bundles with metadata gaps should prioritize apply-prefill guidance")
 assertTrue(widgetUnappliedExistingOutput.contains("next-prefill-env: bash scripts/print_manual_evidence_prefill_env.sh widget"), "existing widget bundles should advertise env template guidance")
@@ -261,6 +302,7 @@ _ = runStatus(arguments: ["widget", "--write-missing"], environment: [
 let widgetAppliedPrefillOutput = runStatus(arguments: ["widget", "--apply-prefill"], environment: [
     "DOGAREA_WIDGET_EVIDENCE_PATH": widgetAppliedPath.path,
     "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
+    "DOGAREA_WIDGET_SIM_BASELINE_DIR": widgetBaselinePath.path,
     "DOGAREA_WIDGET_EVIDENCE_DATE": "2026-03-12",
     "DOGAREA_WIDGET_EVIDENCE_TESTER": "codex",
     "DOGAREA_WIDGET_EVIDENCE_DEVICE_OS": "iPhone 16 / iOS 18.5",
@@ -292,6 +334,7 @@ for (caseID, surface) in layoutSurfaces {
 let completeOutput = runStatus(arguments: ["widget"], environment: [
     "DOGAREA_WIDGET_EVIDENCE_PATH": widgetPath.path,
     "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
+    "DOGAREA_WIDGET_SIM_BASELINE_DIR": widgetBaselinePath.path,
 ])
 assertTrue(completeOutput.contains("status: complete"), "filled widget evidence should be reported as complete")
 assertTrue(completeOutput.contains("render_closure_comment_from_evidence.sh widget"), "runner should print widget closure render command")
@@ -302,10 +345,14 @@ assertTrue(!completeOutput.contains("gap-summary:"), "complete widget evidence s
 let markdownOutput = runStatus(arguments: ["widget", "--markdown"], environment: [
     "DOGAREA_WIDGET_EVIDENCE_PATH": widgetPath.path,
     "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
+    "DOGAREA_WIDGET_SIM_BASELINE_DIR": widgetBaselinePath.path,
 ])
 assertTrue(markdownOutput.contains("# Manual Blocker Evidence Status Report"), "markdown mode should print report title")
 assertTrue(markdownOutput.contains("## widget"), "markdown mode should render widget section")
 assertTrue(markdownOutput.contains("- Primary Issue: [#731]"), "markdown mode should render primary issue link")
+assertTrue(markdownOutput.contains("### Simulator Baseline"), "markdown mode should render simulator baseline section")
+assertTrue(markdownOutput.contains("- Action Regression: `pass` (`2026-03-13T10:25:00Z`)"), "markdown mode should print the action baseline stamp")
+assertTrue(markdownOutput.contains("- Layout Fast Smoke: `pass` (`2026-03-13T10:26:00Z`)"), "markdown mode should print the layout baseline stamp")
 assertTrue(markdownOutput.contains("- Prefill Existing: `bash scripts/prefill_manual_evidence_pack.sh widget"), "markdown mode should render widget prefill-existing command")
 assertTrue(markdownOutput.contains("- Post Closure Bundle: `bash scripts/post_closure_comment_from_evidence.sh widget --all-related"), "markdown mode should render bundled post command")
 assertTrue(!markdownOutput.contains("### Gap Summary"), "complete widget markdown should not print a gap summary")
@@ -313,6 +360,7 @@ assertTrue(!markdownOutput.contains("### Gap Summary"), "complete widget markdow
 let incompleteMarkdownOutput = runStatus(arguments: ["widget", "--markdown", "--write-missing"], environment: [
     "DOGAREA_WIDGET_EVIDENCE_PATH": tempRoot.appendingPathComponent("widget-incomplete").path,
     "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
+    "DOGAREA_WIDGET_SIM_BASELINE_DIR": widgetBaselinePath.path,
     "DOGAREA_WIDGET_EVIDENCE_DATE": "2026-03-12",
     "DOGAREA_WIDGET_EVIDENCE_TESTER": "codex",
     "DOGAREA_WIDGET_EVIDENCE_DEVICE_OS": "iPhone 16 / iOS 18.5",
@@ -326,6 +374,7 @@ assertTrue(!incompleteMarkdownOutput.contains("Apply Prefill Then Refresh"), "wr
 let widgetExistingMarkdownOutput = runStatus(arguments: ["widget", "--markdown"], environment: [
     "DOGAREA_WIDGET_EVIDENCE_PATH": widgetExistingPath.path,
     "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
+    "DOGAREA_WIDGET_SIM_BASELINE_DIR": widgetBaselinePath.path,
 ])
 assertTrue(widgetExistingMarkdownOutput.contains("- Apply Prefill Then Refresh: `bash scripts/manual_blocker_evidence_status.sh widget --apply-prefill`"), "existing widget markdown should suggest apply-prefill first")
 assertTrue(widgetExistingMarkdownOutput.contains("- Print Prefill Env Template: `bash scripts/print_manual_evidence_prefill_env.sh widget`"), "existing widget markdown should suggest env template first")

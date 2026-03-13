@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 source "$ROOT_DIR/scripts/lib/auth_smtp_evidence_bundle.sh"
+source "$ROOT_DIR/scripts/lib/widget_simulator_baseline_status.sh"
 
 usage() {
   cat <<'USAGE'
@@ -159,6 +160,73 @@ surface_bundle_post_command() {
 
 surface_archive_command() {
   printf 'bash scripts/archive_manual_evidence_pack.sh %s %q' "$1" "$2"
+}
+
+surface_widget_action_baseline_refresh_command() {
+  printf "bash scripts/run_widget_action_regression_ui_tests.sh 'platform=iOS Simulator,name=iPhone 17'"
+}
+
+surface_widget_layout_baseline_refresh_command() {
+  printf 'bash scripts/run_pr_fast_smoke_widget_layout_checks.sh'
+}
+
+widget_simulator_baseline_value() {
+  local suite="$1"
+  local key="$2"
+  local status_path
+  status_path="$(widget_simulator_baseline_path "$suite")"
+  [[ -f "$status_path" ]] || return 1
+  awk -F= -v key="$key" '$1 == key { sub($1 FS, ""); print; exit }' "$status_path"
+}
+
+surface_simulator_baseline_plain() {
+  local surface="$1"
+  [[ "$surface" == "widget" ]] || return
+
+  local action_status action_ran_at layout_status layout_ran_at
+  action_status="$(widget_simulator_baseline_value "action-regression" "status" 2>/dev/null || true)"
+  action_ran_at="$(widget_simulator_baseline_value "action-regression" "ran_at_utc" 2>/dev/null || true)"
+  layout_status="$(widget_simulator_baseline_value "layout-fast-smoke" "status" 2>/dev/null || true)"
+  layout_ran_at="$(widget_simulator_baseline_value "layout-fast-smoke" "ran_at_utc" 2>/dev/null || true)"
+
+  printf 'simulator-baseline:\n'
+  if [[ -n "$action_status" ]]; then
+    printf '  - action-regression: %s (%s)\n' "$action_status" "$action_ran_at"
+  else
+    printf '  - action-regression: missing\n'
+  fi
+  if [[ -n "$layout_status" ]]; then
+    printf '  - layout-fast-smoke: %s (%s)\n' "$layout_status" "$layout_ran_at"
+  else
+    printf '  - layout-fast-smoke: missing\n'
+  fi
+  printf 'next-refresh-widget-action-baseline: %s\n' "$(surface_widget_action_baseline_refresh_command)"
+  printf 'next-refresh-widget-layout-baseline: %s\n' "$(surface_widget_layout_baseline_refresh_command)"
+}
+
+surface_simulator_baseline_markdown() {
+  local surface="$1"
+  [[ "$surface" == "widget" ]] || return
+
+  local action_status action_ran_at layout_status layout_ran_at
+  action_status="$(widget_simulator_baseline_value "action-regression" "status" 2>/dev/null || true)"
+  action_ran_at="$(widget_simulator_baseline_value "action-regression" "ran_at_utc" 2>/dev/null || true)"
+  layout_status="$(widget_simulator_baseline_value "layout-fast-smoke" "status" 2>/dev/null || true)"
+  layout_ran_at="$(widget_simulator_baseline_value "layout-fast-smoke" "ran_at_utc" 2>/dev/null || true)"
+
+  printf '### Simulator Baseline\n'
+  if [[ -n "$action_status" ]]; then
+    printf -- '- Action Regression: `%s` (`%s`)\n' "$action_status" "$action_ran_at"
+  else
+    printf -- '- Action Regression: `missing`\n'
+  fi
+  if [[ -n "$layout_status" ]]; then
+    printf -- '- Layout Fast Smoke: `%s` (`%s`)\n' "$layout_status" "$layout_ran_at"
+  else
+    printf -- '- Layout Fast Smoke: `missing`\n'
+  fi
+  printf -- '- Refresh Action Baseline: `%s`\n' "$(surface_widget_action_baseline_refresh_command)"
+  printf -- '- Refresh Layout Baseline: `%s`\n' "$(surface_widget_layout_baseline_refresh_command)"
 }
 
 surface_issue_state() {
@@ -772,6 +840,7 @@ print_surface_status() {
   printf 'next-post-closure: %s\n' "$(surface_closure_post_command "$surface" "$issue_number" "$pack_path")"
   if [[ "$surface" == "widget" ]]; then
     printf 'next-post-closure-bundle: %s\n' "$(surface_bundle_post_command "$surface" "$pack_path")"
+    surface_simulator_baseline_plain "$surface"
   fi
   if [[ "$status" == "incomplete" ]]; then
     surface_prefill_gap_summary_plain "$surface" "$capture_path"
@@ -822,6 +891,10 @@ print_surface_status_markdown() {
     printf -- '- Post Closure Bundle: `%s`\n' "$(surface_bundle_post_command "$surface" "$pack_path")"
   fi
   printf '\n'
+  if [[ "$surface" == "widget" ]]; then
+    surface_simulator_baseline_markdown "$surface"
+    printf '\n'
+  fi
   if [[ "$status" == "incomplete" ]]; then
     surface_gap_summary_markdown "$surface" "$capture_path"
     surface_prefill_gap_summary_markdown "$surface" "$capture_path"
