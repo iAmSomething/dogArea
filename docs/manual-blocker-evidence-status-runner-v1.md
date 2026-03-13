@@ -33,6 +33,8 @@
   - markdown: `### Simulator Baseline`
   - action regression 마지막 결과
   - layout fast smoke 마지막 결과
+  - suite별 `coverage`
+  - `simulator-coverage-summary`
   - baseline refresh 명령
 - 다음 액션 명령
   - `next-render`
@@ -55,6 +57,7 @@
 - `widget` simulator baseline은 아래 스크립트들이 마지막 실행 결과를 `.codex_tmp/widget-simulator-baseline/`에 남긴 값을 읽는다.
   - `bash scripts/run_widget_action_regression_ui_tests.sh`
   - `bash scripts/run_pr_fast_smoke_widget_layout_checks.sh`
+- widget suite와 `WD-*`, `WL-*` 케이스 매핑은 `docs/widget-simulator-baseline-coverage-matrix-v1.md`를 정본으로 사용한다.
 - existing bundle에 metadata gap이 남아 있으면 `next-apply-prefill`를 우선 노출한다.
 - existing bundle에 metadata gap이 남아 있고 env도 비어 있으면 `next-prefill-env -> next-apply-prefill -> next-validate`가 기본 경로다.
 - 기존 bundle이 이미 있으면 `next-apply-prefill` 또는 `next-prefill-existing` -> `next-validate` 순서가 더 안전한 기본 경로다.

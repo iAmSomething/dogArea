@@ -7,9 +7,15 @@ source "$ROOT_DIR/scripts/lib/widget_simulator_baseline_status.sh"
 
 BASELINE_STATUS="fail"
 BASELINE_COMMAND="bash scripts/run_pr_fast_smoke_widget_layout_checks.sh"
+BASELINE_COVERAGE="WL-001,WL-002,WL-003,WL-004,WL-005,WL-006,WL-007,WL-008"
 
 record_baseline_status() {
-  write_widget_simulator_baseline_status "layout-fast-smoke" "$BASELINE_STATUS" "static-checks" "$BASELINE_COMMAND"
+  write_widget_simulator_baseline_status \
+    "layout-fast-smoke" \
+    "$BASELINE_STATUS" \
+    "static-checks" \
+    "$BASELINE_COMMAND" \
+    "$BASELINE_COVERAGE"
 }
 
 trap record_baseline_status EXIT

@@ -35,6 +35,7 @@ let iosPRCheck = load("scripts/ios_pr_check.sh")
 let expectedTests = [
     "testFeatureRegression_WidgetRouteOpensRivalTab",
     "testFeatureRegression_WidgetEndRouteSurfacesSavedOutcomeCard",
+    "testFeatureRegression_WidgetStartRouteDefersIntoAuthEntryWhenSessionMissing",
     "testFeatureRegression_HotspotWidgetRouteOpensRivalWithMatchingRadiusPreset",
     "testFeatureRegression_QuestWidgetRouteOpensQuestMissionBoard",
     "testFeatureRegression_QuestWidgetRecoveryRouteOpensQuestMissionBoard",
@@ -60,8 +61,10 @@ assertTrue(doc.contains("walk_start"), "doc should include walk_start action")
 assertTrue(doc.contains("walk_end"), "doc should include walk_end action")
 assertTrue(doc.contains("WidgetAction"), "doc should require WidgetAction log evidence")
 assertTrue(doc.contains("consumePendingWidgetActionIfNeeded"), "doc should require pending-action consumption evidence")
+assertTrue(doc.contains("docs/widget-simulator-baseline-coverage-matrix-v1.md"), "doc should link the simulator coverage matrix")
 
 assertTrue(readme.contains("docs/widget-action-real-device-validation-matrix-v1.md"), "README should link the widget action validation matrix")
+assertTrue(readme.contains("docs/widget-simulator-baseline-coverage-matrix-v1.md"), "README should link the simulator coverage matrix")
 assertTrue(readme.contains("bash scripts/run_widget_action_regression_ui_tests.sh"), "README should expose the widget action regression runner")
 assertTrue(uiRegressionMatrix.contains("bash scripts/run_widget_action_regression_ui_tests.sh"), "UI regression matrix should list the widget action runner")
 assertTrue(uiRegressionMatrix.contains("FR-WIDGET-005"), "UI regression matrix should map dedicated widget cases")

@@ -28,6 +28,14 @@ assertTrue(
     "RootView should guard walk widget dispatch when auth overlay is active"
 )
 assertTrue(
+    rootView.contains("private var isAuthenticationBootstrapPending: Bool"),
+    "RootView should define an auth bootstrap pending gate for widget actions"
+)
+assertTrue(
+    rootView.contains("if isAuthenticationBootstrapPending {"),
+    "RootView should defer walk widget dispatch while auth bootstrap is unresolved"
+)
+assertTrue(
     rootView.contains("pendingWalkWidgetRoute = route"),
     "RootView should enqueue walk widget action during auth overlay"
 )
@@ -42,6 +50,10 @@ assertTrue(
 assertTrue(
     authFlow.contains("func configureUITestAutoGuestEntry()"),
     "AuthFlowCoordinator should expose an atomic UI-test auto-guest bootstrap helper"
+)
+assertTrue(
+    authFlow.contains("@Published private(set) var hasResolvedInitialEntryState: Bool = false"),
+    "AuthFlowCoordinator should publish when the initial auth entry bootstrap is resolved"
 )
 assertTrue(
     app.contains("authFlow.configureUITestAutoGuestEntry()"),

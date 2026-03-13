@@ -12,6 +12,7 @@
 ## 자동 회귀 진입점
 - 전용 위젯 액션 UI 러너: `bash scripts/run_widget_action_regression_ui_tests.sh`
 - 정적 게이트: `swift scripts/widget_action_regression_pack_unit_check.swift`
+- simulator baseline coverage 정본: `docs/widget-simulator-baseline-coverage-matrix-v1.md`
 - 실기기 action 런북: `docs/widget-action-real-device-evidence-runbook-v1.md`
 - 실기기 layout 런북: `docs/widget-family-real-device-evidence-runbook-v1.md`
 - 종료 체크리스트: `docs/widget-action-closure-checklist-v1.md`

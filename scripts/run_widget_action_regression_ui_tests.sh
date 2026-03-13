@@ -7,9 +7,15 @@ DESTINATION="${1:-platform=iOS Simulator,name=iPhone 16,OS=18.5}"
 DERIVED_DATA_PATH="${DERIVED_DATA_PATH:-$HOME/Library/Developer/Xcode/DerivedData/dogArea-widget-action-regression}"
 BASELINE_STATUS="fail"
 BASELINE_COMMAND="bash scripts/run_widget_action_regression_ui_tests.sh '$DESTINATION'"
+BASELINE_COVERAGE="WD-001,WD-002,WD-003,WD-004,WD-005,WD-006,WD-007,WD-008"
 
 record_baseline_status() {
-  write_widget_simulator_baseline_status "action-regression" "$BASELINE_STATUS" "$DESTINATION" "$BASELINE_COMMAND"
+  write_widget_simulator_baseline_status \
+    "action-regression" \
+    "$BASELINE_STATUS" \
+    "$DESTINATION" \
+    "$BASELINE_COMMAND" \
+    "$BASELINE_COVERAGE"
 }
 
 trap record_baseline_status EXIT
@@ -42,6 +48,7 @@ xcodebuild -scheme dogArea \
 run_ui_test "testFeatureRegression_WidgetRouteOpensRivalTab"
 run_ui_test "testFeatureRegression_WidgetEndRouteSurfacesSavedOutcomeCard"
 run_ui_test "testFeatureRegression_WidgetStartRouteConvergesMapWalkingState"
+run_ui_test "testFeatureRegression_WidgetStartRouteDefersIntoAuthEntryWhenSessionMissing"
 run_ui_test "testFeatureRegression_HotspotWidgetRouteOpensRivalWithMatchingRadiusPreset"
 run_ui_test "testFeatureRegression_QuestWidgetRouteOpensQuestMissionBoard"
 run_ui_test "testFeatureRegression_QuestWidgetRecoveryRouteOpensQuestMissionBoard"

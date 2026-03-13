@@ -16,6 +16,7 @@ final class AuthFlowCoordinator: ObservableObject {
     @Published var guestDataUpgradeInProgress: Bool = false
     @Published var guestDataUpgradeResult: GuestDataUpgradeReport? = nil
     @Published private(set) var sessionStateSnapshot: AppSessionState = AppFeatureGate.currentSession()
+    @Published private(set) var hasResolvedInitialEntryState: Bool = false
 
     private let guestModeKey = "auth.guest_mode.v1"
     private let entryChoiceCompletedKey = "auth.entry_choice_completed.v1"
@@ -72,6 +73,7 @@ final class AuthFlowCoordinator: ObservableObject {
             shouldShowEntryChoice = false
             shouldShowSignIn = false
             pendingUpgradeRequest = nil
+            hasResolvedInitialEntryState = true
             return
         }
         pendingGuestDataUpgradePrompt = nil
@@ -79,6 +81,7 @@ final class AuthFlowCoordinator: ObservableObject {
         guestDataUpgradeResult = nil
         let didChooseEntryPath = UserDefaults.standard.bool(forKey: entryChoiceCompletedKey)
         shouldShowEntryChoice = !didChooseEntryPath
+        hasResolvedInitialEntryState = true
     }
 
     func continueAsGuest() {
@@ -105,6 +108,28 @@ final class AuthFlowCoordinator: ObservableObject {
         UserDefaults.standard.set(true, forKey: guestModeKey)
         UserDefaults.standard.set(true, forKey: entryChoiceCompletedKey)
         syncSessionStateSnapshot()
+        hasResolvedInitialEntryState = true
+    }
+
+    /// UI 테스트에서 로그인 세션이 없는 첫 진입 상태를 재현하도록 인증/로컬 선택 상태를 초기화합니다.
+    /// - Returns: 없음. 기존 세션/프로필/선택 상태를 지우고 엔트리 선택 시트를 다시 노출할 수 있는 상태로 정리합니다.
+    func configureUITestUnauthenticatedEntry() {
+        authSessionStore.clear()
+        profileStore.removeAll()
+        petSelectionStore.clearSelectionState()
+        walkSessionMetadataStore.clearPreferences()
+        pendingUpgradeRequest = nil
+        pendingGuestDataUpgradePrompt = nil
+        guestDataUpgradeInProgress = false
+        guestDataUpgradeResult = nil
+        onAuthenticated = nil
+        shouldPresentDeferredSignIn = false
+        shouldShowSignIn = false
+        UserDefaults.standard.set(false, forKey: guestModeKey)
+        UserDefaults.standard.set(false, forKey: entryChoiceCompletedKey)
+        syncSessionStateSnapshot()
+        shouldShowEntryChoice = true
+        hasResolvedInitialEntryState = true
     }
 
     func chooseSignInFromEntry() {

@@ -2021,6 +2021,37 @@ final class FeatureRegressionUITests: XCTestCase {
         )
     }
 
+    /// 로그인 세션이 없는 cold start 경로에서는 위젯 시작 액션이 즉시 산책으로 가지 않고 인증 진입으로 defer 되는지 검증합니다.
+    func testFeatureRegression_WidgetStartRouteDefersIntoAuthEntryWhenSessionMissing() throws {
+        let app = launchAppForFeatureRegression(
+            includeAutoGuest: false,
+            extraArguments: [
+                "-UITest.ResetUnauthenticatedEntry",
+                "-UITest.MapForceWidgetActionEligible",
+                "-UITest.WidgetRoute", "start_walk"
+            ]
+        )
+
+        let signInScreen = screenElement(identifier: "screen.signin", in: app)
+        let entrySignInButton = app.buttons["entry.openSignIn"]
+        let entryContinueButton = app.buttons["entry.continueGuest"]
+        XCTAssertTrue(
+            waitUntilExists(signInScreen, timeout: 4) ||
+                waitUntilExists(entrySignInButton, timeout: 4) ||
+                waitUntilExists(entryContinueButton, timeout: 4),
+            "로그인 세션이 없는 상태에서는 위젯 시작 액션이 인증 진입 또는 엔트리 선택으로 defer 되어야 합니다."
+        )
+
+        let primaryAction = screenElement(identifier: "map.walk.primaryAction", in: app)
+        if primaryAction.exists {
+            XCTAssertNotEqual(
+                primaryAction.label,
+                "산책 종료",
+                "로그인 세션이 없으면 위젯 시작 액션이 즉시 walking 상태로 수렴하면 안 됩니다."
+            )
+        }
+    }
+
     /// 퀘스트 위젯 상세 CTA가 홈 퀘스트 카드 위치로 바로 이동하는지 검증합니다.
     func testFeatureRegression_QuestWidgetRouteOpensQuestMissionBoard() throws {
         let app = launchAppForFeatureRegression(extraArguments: ["-UITest.WidgetRoute", "open_quest_detail"])
@@ -2088,16 +2119,20 @@ final class FeatureRegressionUITests: XCTestCase {
     /// - Returns: 실행 완료 후 포그라운드 상태로 진입한 `XCUIApplication` 인스턴스입니다.
     private func launchAppForFeatureRegression(
         style: InterfaceStyle = .light,
+        includeAutoGuest: Bool = true,
         extraArguments: [String] = []
     ) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments += [
+        var launchArguments = [
             "-UITest.FeatureRegression", "1",
             "-UITest.SkipSplash",
-            "-UITest.AutoGuest",
             "-UITest.UseShareSheetStub",
             "-UITest.InterfaceStyle", style.rawValue
-        ] + extraArguments
+        ]
+        if includeAutoGuest {
+            launchArguments += ["-UITest.AutoGuest"]
+        }
+        app.launchArguments += launchArguments + extraArguments
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 12), "앱이 foreground 상태로 실행되지 않았습니다.")
         return app
