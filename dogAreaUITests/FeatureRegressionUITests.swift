@@ -482,6 +482,43 @@ final class FeatureRegressionUITests: XCTestCase {
         )
     }
 
+    /// 산책 종료 상세 시트가 작은 화면에서도 스크롤 가능하고 하단 핵심 CTA가 잘리지 않는지 검증합니다.
+    func testFeatureRegression_MapWalkDetailSheetScrollsAndKeepsBottomActionsVisible() throws {
+        let app = launchAppForFeatureRegression(extraArguments: [
+            "-UITest.MapForceWalkingState",
+            "-UITest.MapWalkDetailPreviewRoute"
+        ])
+
+        let detailSheet = screenElement(identifier: "screen.walkDetail.sheet", in: app)
+        if waitUntilExists(detailSheet, timeout: 4) == false {
+            XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.")
+            XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
+            XCTAssertTrue(waitUntilExists(detailSheet, timeout: 6), "산책 종료 상세 시트가 열리지 않았습니다.")
+        }
+
+        let confirmButton = app.buttons["walk.detail.confirm"]
+        let saveButton = app.buttons["walk.detail.saveToPhotos"]
+        XCTAssertTrue(waitUntilExists(confirmButton, timeout: 3), "산책 종료 상세 시트의 저장하고 종료 CTA가 접근성 트리에 존재해야 합니다.")
+        XCTAssertTrue(waitUntilExists(saveButton, timeout: 3), "산책 종료 상세 시트의 저장 CTA가 접근성 트리에 존재해야 합니다.")
+
+        if waitUntilHittable(confirmButton, timeout: 3) == false {
+            attachElementSnapshot(app: app, name: "walk-detail-sheet-initial", elements: [
+                ("sheet", detailSheet),
+                ("save", saveButton),
+                ("confirm", confirmButton)
+            ])
+            XCTFail("산책 종료 상세 시트의 저장하고 종료 CTA가 기본 상태에서 보여야 합니다.")
+        }
+
+        let shareButton = app.buttons["walk.detail.openShareSheet"]
+        XCTAssertTrue(
+            revealElementByVerticalScroll(shareButton, app: app, maxSwipes: 4),
+            "작은 화면에서도 공유 액션 영역까지 세로 스크롤로 도달할 수 있어야 합니다."
+        )
+        XCTAssertTrue(waitUntilHittable(confirmButton, timeout: 2), "세로 스크롤 후에도 하단 종료 CTA가 계속 보여야 합니다.")
+        XCTAssertTrue(waitUntilHittable(saveButton, timeout: 2), "저장 CTA가 하단 고정 영역에서 잘리지 않아야 합니다.")
+    }
+
     /// 지도 시작 전 의미 카드는 기본 축약 상태로 노출되고, 명시적 disclosure 후에만 상세 본문을 펼치는지 검증합니다.
     func testFeatureRegression_MapStartMeaningDisclosureExpandsOnlyWhenRequested() throws {
         let app = launchAppForFeatureRegression()
@@ -2856,6 +2893,32 @@ final class FeatureRegressionUITests: XCTestCase {
         let predicate = NSPredicate(format: "exists == false")
         let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
         return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed
+    }
+
+    /// 실패 시점의 앱 스냅샷과 핵심 요소 frame/existence/hittable 상태를 함께 남깁니다.
+    /// - Parameters:
+    ///   - app: 현재 앱 인스턴스입니다.
+    ///   - name: 첨부 이름 접두사입니다.
+    ///   - elements: 상태를 함께 기록할 요소 이름/객체 목록입니다.
+    private func attachElementSnapshot(
+        app: XCUIApplication,
+        name: String,
+        elements: [(String, XCUIElement)]
+    ) {
+        let screenshotAttachment = XCTAttachment(screenshot: app.screenshot())
+        screenshotAttachment.name = "\(name)-screenshot"
+        screenshotAttachment.lifetime = .keepAlways
+        add(screenshotAttachment)
+
+        let summary = elements
+            .map { label, element in
+                "\(label): exists=\(element.exists) hittable=\(element.isHittable) frame=\(NSCoder.string(for: element.frame)) identifier=\(element.identifier)"
+            }
+            .joined(separator: "\n")
+        let textAttachment = XCTAttachment(string: summary)
+        textAttachment.name = "\(name)-elements"
+        textAttachment.lifetime = .keepAlways
+        add(textAttachment)
     }
 
     /// 로그인 성공 후 회원 상태 UI 표식이 등장하는지 대기합니다.
