@@ -109,6 +109,12 @@ struct dogAreaApp: App {
     private var shouldAutoGuestForUITest: Bool {
         launchArguments.contains("-UITest.AutoGuest")
     }
+
+    /// UI 테스트에서 이전 진입 선택을 제거한 무세션 첫 진입 상태를 강제할지 여부를 반환합니다.
+    /// - Returns: `-UITest.ResetUnauthenticatedEntry` 인자가 포함되면 `true`를 반환합니다.
+    private var shouldResetUnauthenticatedEntryForUITest: Bool {
+        launchArguments.contains("-UITest.ResetUnauthenticatedEntry")
+    }
     
     var body: some Scene {
         WindowGroup {
@@ -138,6 +144,8 @@ struct dogAreaApp: App {
             .onAppear {
                 if shouldAutoGuestForUITest {
                     authFlow.configureUITestAutoGuestEntry()
+                } else if shouldResetUnauthenticatedEntryForUITest {
+                    authFlow.configureUITestUnauthenticatedEntry()
                 } else {
                     authFlow.refresh()
                 }

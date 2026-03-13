@@ -15,6 +15,7 @@ write_widget_simulator_baseline_status() {
   local status="${2:?status is required}"
   local destination="${3:-n/a}"
   local command_line="${4:-n/a}"
+  local coverage="${5:-}"
   local status_path
 
   status_path="$(widget_simulator_baseline_path "$suite")"
@@ -26,5 +27,6 @@ status=$status
 ran_at_utc=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
 destination=$destination
 command=$command_line
+coverage=$coverage
 EOF
 }

@@ -91,13 +91,15 @@ func writeAsset(_ url: URL) {
 ///   - suite: Baseline suite identifier.
 ///   - status: Baseline outcome such as `pass` or `fail`.
 ///   - ranAt: UTC timestamp string recorded for the suite.
-func writeSimulatorBaseline(_ directory: URL, suite: String, status: String, ranAt: String) {
+///   - coverage: Comma-separated case identifiers covered by the baseline suite.
+func writeSimulatorBaseline(_ directory: URL, suite: String, status: String, ranAt: String, coverage: String? = nil) {
     let content = """
     suite=\(suite)
     status=\(status)
     ran_at_utc=\(ranAt)
     destination=simulator
     command=bash scripts/\(suite)
+    coverage=\(coverage ?? "")
     """
     write(directory.appendingPathComponent("\(suite).status"), content: content)
 }
@@ -193,6 +195,7 @@ assertTrue(runnerScript.contains("next-prefill-env"), "runner should print env t
 assertTrue(runnerScript.contains("next-prefill-bootstrap"), "runner should print one-shot prefill bootstrap guidance")
 assertTrue(runnerScript.contains("simulator-baseline:"), "runner should print plain simulator baseline summaries")
 assertTrue(runnerScript.contains("### Simulator Baseline"), "runner should print markdown simulator baseline summaries")
+assertTrue(runnerScript.contains("simulator-coverage-summary"), "runner should print simulator coverage summaries")
 assertTrue(runnerScript.contains("next-refresh-widget-action-baseline"), "runner should print action baseline refresh guidance")
 assertTrue(runnerScript.contains("next-refresh-widget-layout-baseline"), "runner should print layout baseline refresh guidance")
 assertTrue(runnerScript.contains("Apply Prefill Then Refresh"), "runner should print markdown prefill guidance")
@@ -209,6 +212,7 @@ assertTrue(widgetBaselineScript.contains("write_widget_simulator_baseline_status
 assertTrue(doc.contains("primary `#731`, related `#617`, `#692`"), "doc should describe active widget blocker routing")
 assertTrue(doc.contains("widget-real-device-evidence"), "doc should mention widget directory path")
 assertTrue(doc.contains("simulator-baseline"), "doc should describe simulator baseline output")
+assertTrue(doc.contains("simulator-coverage-summary"), "doc should describe simulator coverage summary output")
 assertTrue(doc.contains("run_widget_action_regression_ui_tests.sh"), "doc should mention widget action baseline source")
 assertTrue(doc.contains("run_pr_fast_smoke_widget_layout_checks.sh"), "doc should mention widget layout baseline source")
 assertTrue(doc.contains("next-archive"), "doc should describe archive command")
@@ -249,9 +253,24 @@ assertTrue(missingOutput.contains("related-issues: #617 #692"), "runner should p
 assertTrue(missingOutput.contains("simulator-baseline:"), "widget status should include simulator baseline summary")
 assertTrue(missingOutput.contains("action-regression: missing"), "widget status should show missing action baseline when no stamp exists")
 assertTrue(missingOutput.contains("layout-fast-smoke: missing"), "widget status should show missing layout baseline when no stamp exists")
+assertTrue(missingOutput.contains("coverage: WD-001,WD-002,WD-003,WD-004,WD-005,WD-006,WD-007,WD-008"), "widget status should show action coverage defaults")
+assertTrue(missingOutput.contains("coverage: WL-001,WL-002,WL-003,WL-004,WL-005,WL-006,WL-007,WL-008"), "widget status should show layout coverage defaults")
+assertTrue(missingOutput.contains("simulator-coverage-summary: action 8/8, layout 8/8"), "widget status should summarize simulator coverage counts")
 
-writeSimulatorBaseline(widgetBaselinePath, suite: "action-regression", status: "pass", ranAt: "2026-03-13T10:25:00Z")
-writeSimulatorBaseline(widgetBaselinePath, suite: "layout-fast-smoke", status: "pass", ranAt: "2026-03-13T10:26:00Z")
+writeSimulatorBaseline(
+    widgetBaselinePath,
+    suite: "action-regression",
+    status: "pass",
+    ranAt: "2026-03-13T10:25:00Z",
+    coverage: "WD-001,WD-002,WD-003,WD-004,WD-005,WD-006,WD-007,WD-008"
+)
+writeSimulatorBaseline(
+    widgetBaselinePath,
+    suite: "layout-fast-smoke",
+    status: "pass",
+    ranAt: "2026-03-13T10:26:00Z",
+    coverage: "WL-001,WL-002,WL-003,WL-004,WL-005,WL-006,WL-007,WL-008"
+)
 
 let generatedOutput = runStatus(arguments: ["widget", "--write-missing"], environment: [
     "DOGAREA_WIDGET_EVIDENCE_PATH": widgetPath.path,
@@ -274,6 +293,9 @@ assertTrue(generatedOutput.contains("WD-001: result, assets, placeholder logs"),
 assertTrue(generatedOutput.contains("WL-001: result, assets"), "generated widget bundle should reduce layout gaps after metadata prefill")
 assertTrue(generatedOutput.contains("action-regression: pass (2026-03-13T10:25:00Z)"), "widget status should show the latest action baseline stamp")
 assertTrue(generatedOutput.contains("layout-fast-smoke: pass (2026-03-13T10:26:00Z)"), "widget status should show the latest layout baseline stamp")
+assertTrue(generatedOutput.contains("coverage: WD-001,WD-002,WD-003,WD-004,WD-005,WD-006,WD-007,WD-008"), "widget status should print stamped action coverage")
+assertTrue(generatedOutput.contains("coverage: WL-001,WL-002,WL-003,WL-004,WL-005,WL-006,WL-007,WL-008"), "widget status should print stamped layout coverage")
+assertTrue(generatedOutput.contains("simulator-coverage-summary: action 8/8, layout 8/8"), "widget status should print simulator coverage summary")
 assertTrue(generatedOutput.contains("next-refresh-widget-action-baseline: bash scripts/run_widget_action_regression_ui_tests.sh"), "widget status should advertise the action baseline refresh command")
 assertTrue(generatedOutput.contains("next-refresh-widget-layout-baseline: bash scripts/run_pr_fast_smoke_widget_layout_checks.sh"), "widget status should advertise the layout baseline refresh command")
 assertTrue(!generatedOutput.contains("empty value:"), "generated widget bundle should hide raw validator errors by default")
@@ -353,6 +375,9 @@ assertTrue(markdownOutput.contains("- Primary Issue: [#731]"), "markdown mode sh
 assertTrue(markdownOutput.contains("### Simulator Baseline"), "markdown mode should render simulator baseline section")
 assertTrue(markdownOutput.contains("- Action Regression: `pass` (`2026-03-13T10:25:00Z`)"), "markdown mode should print the action baseline stamp")
 assertTrue(markdownOutput.contains("- Layout Fast Smoke: `pass` (`2026-03-13T10:26:00Z`)"), "markdown mode should print the layout baseline stamp")
+assertTrue(markdownOutput.contains("- Coverage: `WD-001,WD-002,WD-003,WD-004,WD-005,WD-006,WD-007,WD-008`"), "markdown mode should print action coverage")
+assertTrue(markdownOutput.contains("- Coverage: `WL-001,WL-002,WL-003,WL-004,WL-005,WL-006,WL-007,WL-008`"), "markdown mode should print layout coverage")
+assertTrue(markdownOutput.contains("- Coverage Summary: `action 8/8`, `layout 8/8`"), "markdown mode should print simulator coverage summary")
 assertTrue(markdownOutput.contains("- Prefill Existing: `bash scripts/prefill_manual_evidence_pack.sh widget"), "markdown mode should render widget prefill-existing command")
 assertTrue(markdownOutput.contains("- Post Closure Bundle: `bash scripts/post_closure_comment_from_evidence.sh widget --all-related"), "markdown mode should render bundled post command")
 assertTrue(!markdownOutput.contains("### Gap Summary"), "complete widget markdown should not print a gap summary")

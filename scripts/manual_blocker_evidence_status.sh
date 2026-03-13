@@ -170,6 +170,14 @@ surface_widget_layout_baseline_refresh_command() {
   printf 'bash scripts/run_pr_fast_smoke_widget_layout_checks.sh'
 }
 
+widget_expected_baseline_coverage() {
+  case "$1" in
+    action-regression) printf 'WD-001,WD-002,WD-003,WD-004,WD-005,WD-006,WD-007,WD-008' ;;
+    layout-fast-smoke) printf 'WL-001,WL-002,WL-003,WL-004,WL-005,WL-006,WL-007,WL-008' ;;
+    *) return 1 ;;
+  esac
+}
+
 widget_simulator_baseline_value() {
   local suite="$1"
   local key="$2"
@@ -177,6 +185,60 @@ widget_simulator_baseline_value() {
   status_path="$(widget_simulator_baseline_path "$suite")"
   [[ -f "$status_path" ]] || return 1
   awk -F= -v key="$key" '$1 == key { sub($1 FS, ""); print; exit }' "$status_path"
+}
+
+widget_case_count_from_csv() {
+  local csv="${1:-}"
+  [[ -n "$csv" ]] || {
+    printf '0'
+    return
+  }
+  awk -F',' '{ print NF }' <<<"$csv"
+}
+
+widget_baseline_coverage_csv() {
+  local suite="$1"
+  local coverage
+  coverage="$(widget_simulator_baseline_value "$suite" "coverage" 2>/dev/null || true)"
+  if [[ -n "$coverage" ]]; then
+    printf '%s' "$coverage"
+    return
+  fi
+  widget_expected_baseline_coverage "$suite" 2>/dev/null || true
+}
+
+widget_baseline_coverage_plain() {
+  local suite="$1"
+  local coverage
+  coverage="$(widget_baseline_coverage_csv "$suite")"
+  [[ -n "$coverage" ]] || return
+  printf '    coverage: %s\n' "$coverage"
+}
+
+widget_baseline_coverage_markdown() {
+  local suite="$1"
+  local coverage
+  coverage="$(widget_baseline_coverage_csv "$suite")"
+  [[ -n "$coverage" ]] || return
+  printf -- '  - Coverage: `%s`\n' "$coverage"
+}
+
+widget_simulator_coverage_summary_plain() {
+  local action_coverage layout_coverage action_count layout_count
+  action_coverage="$(widget_baseline_coverage_csv "action-regression")"
+  layout_coverage="$(widget_baseline_coverage_csv "layout-fast-smoke")"
+  action_count="$(widget_case_count_from_csv "$action_coverage")"
+  layout_count="$(widget_case_count_from_csv "$layout_coverage")"
+  printf 'simulator-coverage-summary: action %s/8, layout %s/8\n' "$action_count" "$layout_count"
+}
+
+widget_simulator_coverage_summary_markdown() {
+  local action_coverage layout_coverage action_count layout_count
+  action_coverage="$(widget_baseline_coverage_csv "action-regression")"
+  layout_coverage="$(widget_baseline_coverage_csv "layout-fast-smoke")"
+  action_count="$(widget_case_count_from_csv "$action_coverage")"
+  layout_count="$(widget_case_count_from_csv "$layout_coverage")"
+  printf -- '- Coverage Summary: `action %s/8`, `layout %s/8`\n' "$action_count" "$layout_count"
 }
 
 surface_simulator_baseline_plain() {
@@ -192,14 +254,19 @@ surface_simulator_baseline_plain() {
   printf 'simulator-baseline:\n'
   if [[ -n "$action_status" ]]; then
     printf '  - action-regression: %s (%s)\n' "$action_status" "$action_ran_at"
+    widget_baseline_coverage_plain "action-regression"
   else
     printf '  - action-regression: missing\n'
+    widget_baseline_coverage_plain "action-regression"
   fi
   if [[ -n "$layout_status" ]]; then
     printf '  - layout-fast-smoke: %s (%s)\n' "$layout_status" "$layout_ran_at"
+    widget_baseline_coverage_plain "layout-fast-smoke"
   else
     printf '  - layout-fast-smoke: missing\n'
+    widget_baseline_coverage_plain "layout-fast-smoke"
   fi
+  widget_simulator_coverage_summary_plain
   printf 'next-refresh-widget-action-baseline: %s\n' "$(surface_widget_action_baseline_refresh_command)"
   printf 'next-refresh-widget-layout-baseline: %s\n' "$(surface_widget_layout_baseline_refresh_command)"
 }
@@ -217,14 +284,19 @@ surface_simulator_baseline_markdown() {
   printf '### Simulator Baseline\n'
   if [[ -n "$action_status" ]]; then
     printf -- '- Action Regression: `%s` (`%s`)\n' "$action_status" "$action_ran_at"
+    widget_baseline_coverage_markdown "action-regression"
   else
     printf -- '- Action Regression: `missing`\n'
+    widget_baseline_coverage_markdown "action-regression"
   fi
   if [[ -n "$layout_status" ]]; then
     printf -- '- Layout Fast Smoke: `%s` (`%s`)\n' "$layout_status" "$layout_ran_at"
+    widget_baseline_coverage_markdown "layout-fast-smoke"
   else
     printf -- '- Layout Fast Smoke: `missing`\n'
+    widget_baseline_coverage_markdown "layout-fast-smoke"
   fi
+  widget_simulator_coverage_summary_markdown
   printf -- '- Refresh Action Baseline: `%s`\n' "$(surface_widget_action_baseline_refresh_command)"
   printf -- '- Refresh Layout Baseline: `%s`\n' "$(surface_widget_layout_baseline_refresh_command)"
 }

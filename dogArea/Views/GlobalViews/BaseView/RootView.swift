@@ -44,6 +44,10 @@ struct RootView: View {
         authFlow.shouldShowSignIn || authFlow.shouldShowEntryChoice
     }
 
+    private var isAuthenticationBootstrapPending: Bool {
+        authFlow.hasResolvedInitialEntryState == false
+    }
+
     /// UI 테스트 디자인 감사 모드에서는 기본 진입 탭을 홈으로 고정해 초기 렌더링 안정성을 높입니다.
     private static func initialSelectedTabForRuntime() -> Int {
         let arguments = ProcessInfo.processInfo.arguments
@@ -221,6 +225,10 @@ struct RootView: View {
                 dispatchPendingWalkWidgetActionIfNeeded()
                 dispatchDeferredTerritoryWidgetRouteIfNeeded()
                 reconcileWalkWidgetActionSurfacesIfPossible()
+            }
+            .onChange(of: authFlow.hasResolvedInitialEntryState) { _, didResolve in
+                guard didResolve else { return }
+                dispatchPendingWalkWidgetActionIfNeeded()
             }
 
     }
@@ -483,6 +491,20 @@ struct RootView: View {
     /// 산책 관련 위젯 액션을 지도 탭으로 전달합니다.
     /// - Parameter route: 지도 화면에서 처리할 위젯 액션 라우트입니다.
     private func dispatchWalkWidgetAction(_ route: WalkWidgetActionRoute) {
+        if isAuthenticationBootstrapPending {
+            pendingWalkWidgetRoute = route
+            updateWalkWidgetActionState(
+                .requiresAppOpen(
+                    kind: route.kind,
+                    message: "앱 진입 상태를 확인한 뒤 이어서 처리할게요."
+                )
+            )
+            selectedTab = 2
+            #if DEBUG
+            print("[WidgetAction] deferred walk action during auth bootstrap actionId=\(route.actionId)")
+            #endif
+            return
+        }
         if isAuthenticationOverlayActive {
             pendingWalkWidgetRoute = route
             updateWalkWidgetActionState(
