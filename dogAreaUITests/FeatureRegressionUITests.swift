@@ -489,34 +489,17 @@ final class FeatureRegressionUITests: XCTestCase {
             "-UITest.MapWalkDetailPreviewRoute"
         ])
 
-        let detailSheet = screenElement(identifier: "screen.walkDetail.sheet", in: app)
-        if waitUntilExists(detailSheet, timeout: 4) == false {
-            XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.")
-            XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.")
-            XCTAssertTrue(waitUntilExists(detailSheet, timeout: 6), "산책 종료 상세 시트가 열리지 않았습니다.")
-        }
+        assertWalkDetailSheetScrollAndBottomActionsVisible(app: app, shareRevealSwipes: 4)
+    }
 
-        let confirmButton = app.buttons["walk.detail.confirm"]
-        let saveButton = app.buttons["walk.detail.saveToPhotos"]
-        XCTAssertTrue(waitUntilExists(confirmButton, timeout: 3), "산책 종료 상세 시트의 저장하고 종료 CTA가 접근성 트리에 존재해야 합니다.")
-        XCTAssertTrue(waitUntilExists(saveButton, timeout: 3), "산책 종료 상세 시트의 저장 CTA가 접근성 트리에 존재해야 합니다.")
+    /// compact viewport에서도 산책 종료 상세 시트가 스크롤과 하단 CTA를 동시에 유지하는지 검증합니다.
+    func testFeatureRegression_MapWalkDetailSheetKeepsBottomActionsVisibleOnCompactViewport() throws {
+        let app = launchAppForFeatureRegression(extraArguments: [
+            "-UITest.MapForceWalkingState",
+            "-UITest.MapWalkDetailPreviewRoute"
+        ])
 
-        if waitUntilHittable(confirmButton, timeout: 3) == false {
-            attachElementSnapshot(app: app, name: "walk-detail-sheet-initial", elements: [
-                ("sheet", detailSheet),
-                ("save", saveButton),
-                ("confirm", confirmButton)
-            ])
-            XCTFail("산책 종료 상세 시트의 저장하고 종료 CTA가 기본 상태에서 보여야 합니다.")
-        }
-
-        let shareButton = app.buttons["walk.detail.openShareSheet"]
-        XCTAssertTrue(
-            revealElementByVerticalScroll(shareButton, app: app, maxSwipes: 4),
-            "작은 화면에서도 공유 액션 영역까지 세로 스크롤로 도달할 수 있어야 합니다."
-        )
-        XCTAssertTrue(waitUntilHittable(confirmButton, timeout: 2), "세로 스크롤 후에도 하단 종료 CTA가 계속 보여야 합니다.")
-        XCTAssertTrue(waitUntilHittable(saveButton, timeout: 2), "저장 CTA가 하단 고정 영역에서 잘리지 않아야 합니다.")
+        assertWalkDetailSheetScrollAndBottomActionsVisible(app: app, shareRevealSwipes: 5)
     }
 
     /// 지도 시작 전 의미 카드는 기본 축약 상태로 노출되고, 명시적 disclosure 후에만 상세 본문을 펼치는지 검증합니다.
@@ -580,13 +563,16 @@ final class FeatureRegressionUITests: XCTestCase {
 
         let renderCount = screenElement(identifier: "map.debug.renderCount", in: app)
         let renderReset = app.buttons["map.debug.renderCount.reset"]
+        let renderSample = app.buttons["map.debug.renderCount.sample"]
         XCTAssertTrue(waitUntilExists(renderCount, timeout: 4), "지도 render budget probe를 찾지 못했습니다.")
         XCTAssertTrue(waitUntilExists(renderReset, timeout: 2), "지도 render budget reset probe를 찾지 못했습니다.")
+        XCTAssertTrue(waitUntilExists(renderSample, timeout: 2), "지도 render budget sample probe를 찾지 못했습니다.")
 
         usleep(800_000)
         renderReset.tap()
 
         usleep(3_200_000)
+        renderSample.tap()
 
         let measured = parseInteger(from: renderCount.label) ?? parseInteger(from: renderCount.value as? String)
         XCTAssertNotNil(measured, "지도 render budget probe 값을 읽지 못했습니다.")
@@ -2893,6 +2879,75 @@ final class FeatureRegressionUITests: XCTestCase {
         let predicate = NSPredicate(format: "exists == false")
         let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
         return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed
+    }
+
+    /// 산책 종료 상세 시트가 노출된 상태에서 스크롤과 하단 CTA 가시성을 공통 검증합니다.
+    /// - Parameters:
+    ///   - app: 산책 종료 상세 시트를 띄운 앱 인스턴스입니다.
+    ///   - shareRevealSwipes: 공유 섹션까지 도달하기 위해 허용할 최대 세로 스와이프 횟수입니다.
+    ///   - file: 실패 위치를 기록할 파일 경로입니다.
+    ///   - line: 실패 위치를 기록할 줄 번호입니다.
+    private func assertWalkDetailSheetScrollAndBottomActionsVisible(
+        app: XCUIApplication,
+        shareRevealSwipes: Int,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let detailSheet = screenElement(identifier: "screen.walkDetail.sheet", in: app)
+        if waitUntilExists(detailSheet, timeout: 4) == false {
+            XCTAssertTrue(openTab(index: 2, app: app), "지도 탭 진입에 실패했습니다.", file: file, line: line)
+            XCTAssertTrue(waitUntilMapReady(app), "지도 탭 준비가 완료되지 않았습니다.", file: file, line: line)
+            XCTAssertTrue(
+                waitUntilExists(detailSheet, timeout: 6),
+                "산책 종료 상세 시트가 열리지 않았습니다.",
+                file: file,
+                line: line
+            )
+        }
+
+        let confirmButton = app.buttons["walk.detail.confirm"]
+        let saveButton = app.buttons["walk.detail.saveToPhotos"]
+        XCTAssertTrue(
+            waitUntilExists(confirmButton, timeout: 3),
+            "산책 종료 상세 시트의 저장하고 종료 CTA가 접근성 트리에 존재해야 합니다.",
+            file: file,
+            line: line
+        )
+        XCTAssertTrue(
+            waitUntilExists(saveButton, timeout: 3),
+            "산책 종료 상세 시트의 저장 CTA가 접근성 트리에 존재해야 합니다.",
+            file: file,
+            line: line
+        )
+
+        if waitUntilHittable(confirmButton, timeout: 3) == false {
+            attachElementSnapshot(app: app, name: "walk-detail-sheet-initial", elements: [
+                ("sheet", detailSheet),
+                ("save", saveButton),
+                ("confirm", confirmButton)
+            ])
+            XCTFail("산책 종료 상세 시트의 저장하고 종료 CTA가 기본 상태에서 보여야 합니다.", file: file, line: line)
+        }
+
+        let shareButton = app.buttons["walk.detail.openShareSheet"]
+        XCTAssertTrue(
+            revealElementByVerticalScroll(shareButton, app: app, maxSwipes: shareRevealSwipes),
+            "작은 화면에서도 공유 액션 영역까지 세로 스크롤로 도달할 수 있어야 합니다.",
+            file: file,
+            line: line
+        )
+        XCTAssertTrue(
+            waitUntilHittable(confirmButton, timeout: 2),
+            "세로 스크롤 후에도 하단 종료 CTA가 계속 보여야 합니다.",
+            file: file,
+            line: line
+        )
+        XCTAssertTrue(
+            waitUntilHittable(saveButton, timeout: 2),
+            "저장 CTA가 하단 고정 영역에서 잘리지 않아야 합니다.",
+            file: file,
+            line: line
+        )
     }
 
     /// 실패 시점의 앱 스냅샷과 핵심 요소 frame/existence/hittable 상태를 함께 남깁니다.

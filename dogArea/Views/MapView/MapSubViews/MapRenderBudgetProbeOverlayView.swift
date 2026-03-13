@@ -9,21 +9,22 @@ import Foundation
 import SwiftUI
 
 struct MapRenderBudgetProbeOverlayView: View {
+    @State private var sampledCountText: String = MapRenderBudgetProbe.currentCountText()
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            TimelineView(.periodic(from: .now, by: 0.5)) { _ in
-                Text(MapRenderBudgetProbe.currentCountText())
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(Color.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.black.opacity(0.72))
-                    .clipShape(Capsule())
-                    .accessibilityIdentifier("map.debug.renderCount")
-            }
+            Text(sampledCountText)
+                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .foregroundStyle(Color.white)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.black.opacity(0.72))
+                .clipShape(Capsule())
+                .accessibilityIdentifier("map.debug.renderCount")
 
             Button("reset") {
                 MapRenderBudgetProbe.reset()
+                sampledCountText = MapRenderBudgetProbe.currentCountText()
             }
             .font(.system(size: 10, weight: .semibold, design: .monospaced))
             .foregroundStyle(Color.white)
@@ -33,6 +34,18 @@ struct MapRenderBudgetProbeOverlayView: View {
             .clipShape(Capsule())
             .buttonStyle(.plain)
             .accessibilityIdentifier("map.debug.renderCount.reset")
+
+            Button("sample") {
+                sampledCountText = MapRenderBudgetProbe.currentCountText()
+            }
+            .font(.system(size: 10, weight: .semibold, design: .monospaced))
+            .foregroundStyle(Color.white)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Color.black.opacity(0.72))
+            .clipShape(Capsule())
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("map.debug.renderCount.sample")
         }
         .padding(.top, 12)
         .padding(.leading, 12)

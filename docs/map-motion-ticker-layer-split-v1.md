@@ -12,6 +12,7 @@
 - cluster pulse UI는 `MapClusterPulseAnnotationView` leaf view로 옮겼습니다.
 - trail marker 시각 효과는 `MapTrailMarkerAnnotationView`에서 `onAppear` 기반 lifetime animation으로 바꿨습니다.
 - render budget HUD는 `MapRenderBudgetProbeOverlayView`로 분리하고 `MapView` 루트 overlay로 올렸습니다.
+- render budget HUD는 `TimelineView` polling 대신 테스트가 명시적으로 샘플링하는 manual probe로 바꿨습니다.
 
 ## Before / After
 ### Before
@@ -24,6 +25,7 @@
 - `MapSubView.swift` 내부 로컬 pulse 상태: `0`
 - cluster motion 이벤트는 `MapClusterMotionState` leaf observer만 구독
 - render budget HUD는 지도 본체 바깥 overlay 계층으로 분리
+- render budget HUD는 `sample` 버튼으로만 값을 갱신해 probe 자체가 root invalidation을 유발하지 않음
 
 ## 유지한 동작
 - 지도 카메라 이동/추적
@@ -41,4 +43,4 @@
   - `testFeatureRegression_MapWalkingRuntimeKeepsRootRenderCountBelowThreshold`
 
 ## 측정 메모
-- 변경 후 동일 budget 테스트에서 `mapSubViewBodyCount`는 `2`로 측정됐고, 지도 root tree 재평가가 ticker/HUD 분리 이후에도 기준치 이하임을 확인했습니다.
+- 변경 후 동일 budget 테스트에서 `mapSubViewBodyCount`는 `1`로 측정됐고, 지도 root tree 재평가가 ticker/HUD 분리 이후에도 기준치 이하임을 확인했습니다.
