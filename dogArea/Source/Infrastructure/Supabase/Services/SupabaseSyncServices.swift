@@ -772,7 +772,7 @@ struct SupabaseProfileSyncTransport: ProfileSyncServiceProtocol {
         } catch let error as SupabaseHTTPError {
             switch error {
             case .notConfigured:
-                return .retryable(.notConfigured)
+                return .permanent(.notConfigured)
             case .unexpectedStatusCode(let statusCode):
                 switch statusCode {
                 case 401, 403:
@@ -780,7 +780,7 @@ struct SupabaseProfileSyncTransport: ProfileSyncServiceProtocol {
                 case 429, 500..<600:
                     return .retryable(.serverError)
                 case 404:
-                    return .retryable(.notConfigured)
+                    return .permanent(.notConfigured)
                 case 400, 422:
                     return .permanent(.schemaMismatch)
                 case 507:
