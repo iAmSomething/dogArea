@@ -50,12 +50,15 @@ assertTrue(clusterPulseView.contains("runPulseAnimationIfNeeded()"), "cluster pu
 assertTrue(!trailMarkerView.contains("TimelineView("), "trail marker view should not depend on TimelineView anymore")
 assertTrue(trailMarkerView.contains("startLifecycleAnimation()"), "trail marker view should animate from lifecycle state")
 
-assertTrue(renderBudgetOverlay.contains("TimelineView(.periodic"), "render budget overlay should retain its own isolated ticker")
+assertTrue(!renderBudgetOverlay.contains("TimelineView("), "render budget overlay should avoid its own ticker-driven invalidation")
+assertTrue(renderBudgetOverlay.contains("@State private var sampledCountText"), "render budget overlay should keep a sampled display state")
+assertTrue(renderBudgetOverlay.contains("Button(\"sample\")"), "render budget overlay should expose an explicit sample action")
+assertTrue(renderBudgetOverlay.contains("accessibilityIdentifier(\"map.debug.renderCount.sample\")"), "render budget overlay sample action should be exposed to UI tests")
 
 assertTrue(doc.contains("#501"), "doc should reference issue #501")
 assertTrue(doc.contains("TimelineView` 개수: `2"), "doc should capture the before ticker count")
 assertTrue(doc.contains("TimelineView` 개수: `0"), "doc should capture the after ticker count")
-assertTrue(doc.contains("mapSubViewBodyCount`는 `2"), "doc should record the measured render budget result")
+assertTrue(doc.contains("mapSubViewBodyCount`는 `1"), "doc should record the latest render budget measurement result")
 
 assertTrue(readme.contains("docs/map-motion-ticker-layer-split-v1.md"), "README should index the ticker layer split doc")
 assertTrue(iosCheck.contains("swift scripts/map_motion_ticker_layer_split_unit_check.swift"), "ios_pr_check should run the ticker layer split check")
