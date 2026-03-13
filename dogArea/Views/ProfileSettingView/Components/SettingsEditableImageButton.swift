@@ -36,16 +36,19 @@ struct SettingsEditableImageButton<Content: View>: View {
 
                     Label("사진 변경", systemImage: "photo.on.rectangle.angled")
                         .font(.appScaledFont(for: .SemiBold, size: 10, relativeTo: .caption2))
-                        .foregroundStyle(Color.appInk)
+                        .foregroundStyle(Color.appOnSurfacePrimary)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 5)
-                        .background(Color.appSurface.opacity(0.96))
+                        .background(Color.appSurfaceRaised.opacity(0.96))
                         .overlay(
                             Capsule()
-                                .stroke(Color.appTextLightGray.opacity(0.72), lineWidth: 1)
+                                .stroke(Color.appSurfaceStroke.opacity(0.72), lineWidth: 1)
                         )
                         .clipShape(Capsule())
                         .padding(10)
+                        .accessibilityIdentifier(accessibilityIdentifier)
+                        .accessibilityLabel(accessibilityLabel)
+                        .accessibilityHint("탭하면 편집 화면으로 이동합니다.")
                 }
 
                 Text(title)
@@ -56,8 +59,14 @@ struct SettingsEditableImageButton<Content: View>: View {
             .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(.plain)
-        .accessibilityIdentifier(accessibilityIdentifier)
-        .accessibilityLabel(accessibilityLabel)
-        .accessibilityHint("탭하면 편집 화면으로 이동합니다.")
+        .accessibilityRepresentation {
+            Button(action: action) {
+                Text(accessibilityLabel)
+            }
+            .accessibilityIdentifier(accessibilityIdentifier)
+            .accessibilityLabel(accessibilityLabel)
+            .accessibilityValue(title)
+            .accessibilityHint("탭하면 편집 화면으로 이동합니다.")
+        }
     }
 }

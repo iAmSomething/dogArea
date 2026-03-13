@@ -679,16 +679,23 @@ final class DesignAuditUITests: XCTestCase {
         let prompt = screenElement(identifier: "sheet.guestDataUpgrade", in: app)
         guard prompt.exists || prompt.waitForExistence(timeout: 1.2) else { return }
 
-        let laterButton = app.buttons["sheet.guestDataUpgrade.later"]
-        if tapIfExists(laterButton) {
-            _ = waitUntilGone(prompt, timeout: 2)
-            return
+        let titledLaterButton = app.buttons.matching(NSPredicate(format: "label == %@", "나중에")).firstMatch
+        let laterButton = screenElement(identifier: "sheet.guestDataUpgrade.later", in: app)
+        if tapIfExists(titledLaterButton) || tapIfExists(laterButton) {
+            if waitUntilGone(prompt, timeout: 2) {
+                return
+            }
         }
 
         let fallbackButton = app.buttons.matching(NSPredicate(format: "label == %@", "나중에")).firstMatch
         if tapIfExists(fallbackButton) {
-            _ = waitUntilGone(prompt, timeout: 2)
+            if waitUntilGone(prompt, timeout: 2) {
+                return
+            }
         }
+
+        prompt.swipeDown()
+        _ = waitUntilGone(prompt, timeout: 2)
     }
 
     /// 네비게이션 스택이 존재하면 뒤로 이동을 시도합니다.

@@ -152,12 +152,11 @@ struct NotificationCenterView: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
                 memberProfileCard
+                petInfoCard
 
                 if let season = viewModel.seasonProfileSummary {
                     seasonSummaryCard(summary: season)
                 }
-
-                petInfoCard
                 walkGuideCard
                 privacyCenterCard
                 appSettingsCard
@@ -299,7 +298,7 @@ struct NotificationCenterView: View {
 
     var memberProfileCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .center, spacing: 14) {
+            HStack(alignment: .top, spacing: 14) {
                 SettingsEditableImageButton(
                     title: "사진을 탭해 프로필 사진을 바꿔요.",
                     accessibilityIdentifier: "settings.profile.image",
@@ -314,18 +313,48 @@ struct NotificationCenterView: View {
                         .environmentObject(viewModel)
                 }
 
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(viewModel.userInfo?.name ?? "산책꾼")
-                        .font(.appScaledFont(for: .SemiBold, size: 24, relativeTo: .title2))
-                        .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .top, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(viewModel.userInfo?.name ?? "산책꾼")
+                                .font(.appScaledFont(for: .SemiBold, size: 24, relativeTo: .title2))
+                                .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
 
-                    if let season = viewModel.seasonProfileSummary {
-                        Text("Season \(season.rankTier.title)")
-                            .font(.appScaledFont(for: .SemiBold, size: 11, relativeTo: .caption))
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(SeasonProfileFrameStyle.style(for: season.rankTier).fill.opacity(0.24))
-                            .cornerRadius(8)
+                            if let season = viewModel.seasonProfileSummary {
+                                Text("Season \(season.rankTier.title)")
+                                    .font(.appScaledFont(for: .SemiBold, size: 11, relativeTo: .caption))
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(SeasonProfileFrameStyle.style(for: season.rankTier).fill.opacity(0.24))
+                                    .cornerRadius(8)
+                            }
+                        }
+
+                        Spacer(minLength: 0)
+
+                        Button(action: {
+                            #if DEBUG
+                            print("[SettingsSheet] profile edit tapped")
+                            #endif
+                            presentSheet(.profileEdit)
+                        }, label: {
+                            Text("정보 편집")
+                                .font(.appScaledFont(for: .SemiBold, size: 15, relativeTo: .body))
+                                .foregroundStyle(AppButtonRole.neutral.foregroundColor)
+                                .padding(.vertical, 12)
+                                .padding(.horizontal, 12)
+                                .background(AppButtonRole.neutral.backgroundColor)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .stroke(AppButtonRole.neutral.borderColor, lineWidth: 1)
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        })
+                        .buttonStyle(.plain)
+                        .frame(minHeight: 44)
+                        .accessibilityLabel("정보 편집")
+                        .accessibilityHint("프로필 편집 시트를 엽니다.")
+                        .accessibilityIdentifier("settings.profile.edit")
                     }
 
                     if let profileMessage = viewModel.userInfo?.profileMessage,
@@ -343,47 +372,65 @@ struct NotificationCenterView: View {
 
                 Spacer(minLength: 0)
             }
-
-            HStack {
-                Spacer()
-                Button(action: {
-                    #if DEBUG
-                    print("[SettingsSheet] profile edit tapped")
-                    #endif
-                    presentSheet(.profileEdit)
-                }, label: {
-                    Text("정보 편집")
-                })
-                .accessibilityIdentifier("settings.profile.edit")
-                .buttonStyle(AppFilledButtonStyle(role: .neutral, fillsWidth: false))
-                .frame(minHeight: 44)
-            }
         }
         .appCardSurface()
+        .accessibilityIdentifier("settings.profile.card")
     }
 
     var petInfoCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("반려견 정보")
-                    .font(.appScaledFont(for: .SemiBold, size: 18, relativeTo: .headline))
-                    .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
-                Spacer()
-                if viewModel.pets.isEmpty == false {
-                    Text("활성 \(viewModel.activePets.count) · 전체 \(viewModel.pets.count)")
-                        .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .caption))
-                        .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
+            Button(action: {
+                #if DEBUG
+                print("[SettingsSheet] pet management tapped")
+                #endif
+                presentSheet(.petManagement)
+            }, label: {
+                HStack(alignment: .center, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("반려견 정보")
+                            .font(.appScaledFont(for: .SemiBold, size: 18, relativeTo: .headline))
+                            .foregroundStyle(Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC))
+                        Text("대표 반려견, 프로필 사진, 비활성 반려견 상태를 여기서 정리해요.")
+                            .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .body))
+                            .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    Spacer(minLength: 12)
+
+                    VStack(alignment: .trailing, spacing: 6) {
+                        if viewModel.pets.isEmpty == false {
+                            Text("활성 \(viewModel.activePets.count) · 전체 \(viewModel.pets.count)")
+                                .font(.appScaledFont(for: .Regular, size: 12, relativeTo: .caption))
+                                .foregroundStyle(Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1))
+                        }
+
+                        HStack(spacing: 6) {
+                            Text("관리 열기")
+                                .font(.appScaledFont(for: .SemiBold, size: 13, relativeTo: .body))
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .semibold))
+                        }
+                        .foregroundStyle(AppButtonRole.neutral.foregroundColor)
+                    }
                 }
-                Button("반려견 관리") {
-                    #if DEBUG
-                    print("[SettingsSheet] pet management tapped")
-                    #endif
-                    presentSheet(.petManagement)
-                }
-                .accessibilityIdentifier("settings.pet.manage")
-                .buttonStyle(AppFilledButtonStyle(role: .neutral, fillsWidth: false))
-                .frame(minHeight: 44)
-            }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 14)
+                .contentShape(Rectangle())
+            })
+            .frame(maxWidth: .infinity)
+            .background(AppButtonRole.neutral.backgroundColor)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(AppButtonRole.neutral.borderColor, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .buttonStyle(.plain)
+            .frame(minHeight: 44)
+            .accessibilityLabel("반려견 관리")
+            .accessibilityHint("반려견 목록과 상태를 관리하는 시트를 엽니다.")
+            .accessibilityIdentifier("settings.pet.manage")
 
             if viewModel.pets.isEmpty == false {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -488,6 +535,8 @@ struct NotificationCenterView: View {
             }
         }
         .appCardSurface()
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("settings.pet.card")
     }
 
     var accountActionCard: some View {

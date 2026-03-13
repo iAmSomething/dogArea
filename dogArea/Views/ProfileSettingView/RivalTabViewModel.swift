@@ -203,6 +203,7 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
     var hotspotFailureRetryAt: Date = .distantPast
     var hotspotFailureStreak: Int = 0
     var latestRawLeaderboardEntries: [RivalLeaderboardEntryDTO] = []
+    var sessionRevalidationTask: Task<Void, Never>? = nil
 
     /// 라이벌 탭 상태를 제어하는 뷰모델을 초기화합니다.
     init(
@@ -230,6 +231,7 @@ final class RivalTabViewModel: NSObject, ObservableObject, CLLocationManagerDele
 
     deinit {
         pollingTimer?.invalidate()
+        sessionRevalidationTask?.cancel()
         if let authSessionObserver {
             NotificationCenter.default.removeObserver(authSessionObserver)
         }

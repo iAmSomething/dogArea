@@ -140,7 +140,15 @@ struct RivalTabView: View {
                 .font(.appFont(for: .Regular, size: 13))
                 .foregroundStyle(Color.appTextDarkGray)
 
-            if viewModel.screenState == .guestLocked {
+            if viewModel.isResolvingAuthenticatedSession {
+                HStack(spacing: 8) {
+                    ProgressView()
+                    Text("회원 상태를 확인하는 중이에요")
+                        .font(.appFont(for: .Regular, size: 13))
+                        .foregroundStyle(Color.appTextDarkGray)
+                }
+                .accessibilityIdentifier("rival.auth.syncing")
+            } else if viewModel.screenState == .guestLocked {
                 Button("로그인하고 라이벌 시작") {
                     _ = authFlow.requestAccess(feature: .nearbySocial)
                 }
@@ -171,6 +179,8 @@ struct RivalTabView: View {
         .padding(12)
         .appCardSurface()
         .padding(.horizontal, 16)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("rival.privacy.card")
     }
 
     private var hotspotCard: some View {
@@ -261,6 +271,7 @@ struct RivalTabView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .appCardSurface()
         .padding(.horizontal, 16)
+        .accessibilityIdentifier("rival.hotspot.card")
     }
 
     private var hotspotRadiusContextSection: some View {
@@ -281,16 +292,22 @@ struct RivalTabView: View {
                 Text("현재 반경")
                     .font(.appFont(for: .Regular, size: 12))
                     .foregroundStyle(Color.appTextDarkGray)
+                    .accessibilityHidden(true)
                 Spacer()
-                Text(viewModel.hotspotRadiusPreset.shortLabel)
-                    .font(.appFont(for: .SemiBold, size: 12))
-                    .foregroundStyle(Color.appInk)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(Color.appTextLightGray.opacity(0.18))
-                    .cornerRadius(10)
-                    .accessibilityIdentifier("rival.hotspot.radius.current")
+                ZStack {
+                    Text(viewModel.hotspotRadiusPreset.shortLabel)
+                        .font(.appFont(for: .SemiBold, size: 12))
+                        .foregroundStyle(Color.appInk)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color.appTextLightGray.opacity(0.18))
+                        .cornerRadius(10)
+                        .accessibilityHidden(true)
+                }
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityIdentifier("rival.hotspot.radius.current")
+            .accessibilityLabel("현재 반경 \(viewModel.hotspotRadiusPreset.shortLabel)")
 
             Picker(
                 "핫스팟 반경",
