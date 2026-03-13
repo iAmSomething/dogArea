@@ -191,7 +191,7 @@ struct MapView : View{
             )
             .interactiveDismissDisabled(true)
         })
-        composed = AnyView(composed.sheet(isPresented: $endWalkingViewPresented) {
+        composed = AnyView(composed.fullScreenCover(isPresented: $endWalkingViewPresented) {
             WalkDetailView()
                 .environmentObject(loading)
                 .environmentObject(viewModel)
@@ -222,6 +222,12 @@ struct MapView : View{
         .overlay(alignment: .topLeading) {
             if MapRenderBudgetProbe.isEnabled {
                 MapRenderBudgetProbeOverlayView()
+            }
+        }
+        .onAppear {
+            if ProcessInfo.processInfo.arguments.contains("-UITest.MapWalkDetailPreviewRoute"),
+               endWalkingViewPresented == false {
+                endWalkingViewPresented = true
             }
         }
         .appTabBarVisibility(resolvedTabBarVisibility)
