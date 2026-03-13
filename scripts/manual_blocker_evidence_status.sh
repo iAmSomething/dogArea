@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 source "$ROOT_DIR/scripts/lib/auth_smtp_evidence_bundle.sh"
+source "$ROOT_DIR/scripts/lib/manual_evidence_prefill_sources.sh"
 source "$ROOT_DIR/scripts/lib/widget_simulator_baseline_status.sh"
 
 usage() {
@@ -366,8 +367,11 @@ surface_missing_prefill_envs() {
   case "$surface" in
     widget)
       local missing=()
-      [[ -n "${DOGAREA_WIDGET_EVIDENCE_DEVICE_OS:-}" ]] || missing+=("DOGAREA_WIDGET_EVIDENCE_DEVICE_OS")
-      [[ -n "${DOGAREA_WIDGET_EVIDENCE_APP_BUILD:-}" ]] || missing+=("DOGAREA_WIDGET_EVIDENCE_APP_BUILD")
+      local device_source build_source
+      device_source="$(widget_prefill_device_os_source)"
+      build_source="$(widget_prefill_app_build_source)"
+      [[ "$device_source" == "missing" ]] && missing+=("DOGAREA_WIDGET_EVIDENCE_DEVICE_OS")
+      [[ "$build_source" == "missing" ]] && missing+=("DOGAREA_WIDGET_EVIDENCE_APP_BUILD")
       printf '%s\n' "${missing[@]:-}" | sed '/^$/d'
       ;;
     auth-smtp)
@@ -421,6 +425,38 @@ surface_missing_prefill_env_summary_markdown() {
   missing="$(surface_missing_prefill_envs "$surface" | awk 'BEGIN { first = 1 } { if (!first) printf ", "; printf "%s", $0; first = 0 }')"
   [[ -n "$missing" ]] || return
   printf -- '- Missing Prefill Env: `%s`\n' "$missing"
+}
+
+surface_prefill_resolution_plain() {
+  local surface="$1"
+  case "$surface" in
+    widget)
+      local device_value device_source build_value build_source
+      device_value="$(widget_prefill_device_os)"
+      device_source="$(widget_prefill_device_os_source)"
+      build_value="$(widget_prefill_app_build)"
+      build_source="$(widget_prefill_app_build_source)"
+      [[ -n "$device_value" ]] && printf 'prefill-device-os: %s [source=%s]\n' "$device_value" "$device_source"
+      [[ -n "$build_value" ]] && printf 'prefill-app-build: %s [source=%s]\n' "$build_value" "$build_source"
+      ;;
+  esac
+  return 0
+}
+
+surface_prefill_resolution_markdown() {
+  local surface="$1"
+  case "$surface" in
+    widget)
+      local device_value device_source build_value build_source
+      device_value="$(widget_prefill_device_os)"
+      device_source="$(widget_prefill_device_os_source)"
+      build_value="$(widget_prefill_app_build)"
+      build_source="$(widget_prefill_app_build_source)"
+      [[ -n "$device_value" ]] && printf -- '- Prefill Device / OS: `%s` (source `%s`)\n' "$device_value" "$device_source"
+      [[ -n "$build_value" ]] && printf -- '- Prefill App Build: `%s` (source `%s`)\n' "$build_value" "$build_source"
+      ;;
+  esac
+  return 0
 }
 
 surface_prefill_gap_summary_plain() {
@@ -913,6 +949,7 @@ print_surface_status() {
   if [[ "$surface" == "widget" ]]; then
     printf 'next-post-closure-bundle: %s\n' "$(surface_bundle_post_command "$surface" "$pack_path")"
     surface_simulator_baseline_plain "$surface"
+    surface_prefill_resolution_plain "$surface"
   fi
   if [[ "$status" == "incomplete" ]]; then
     surface_prefill_gap_summary_plain "$surface" "$capture_path"
@@ -965,6 +1002,7 @@ print_surface_status_markdown() {
   printf '\n'
   if [[ "$surface" == "widget" ]]; then
     surface_simulator_baseline_markdown "$surface"
+    surface_prefill_resolution_markdown "$surface"
     printf '\n'
   fi
   if [[ "$status" == "incomplete" ]]; then

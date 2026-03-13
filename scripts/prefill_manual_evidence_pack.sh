@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 source "$ROOT_DIR/scripts/lib/auth_smtp_evidence_bundle.sh"
+source "$ROOT_DIR/scripts/lib/manual_evidence_prefill_sources.sh"
 
 usage() {
   cat <<'USAGE'
@@ -55,22 +56,6 @@ fill_prefixed_value_if_empty() {
     { print }
   ' "$file" > "$tmp_file"
   mv "$tmp_file" "$file"
-}
-
-widget_prefill_date() {
-  printf '%s' "${DOGAREA_WIDGET_EVIDENCE_DATE:-$(date '+%F')}"
-}
-
-widget_prefill_tester() {
-  printf '%s' "${DOGAREA_WIDGET_EVIDENCE_TESTER:-${USER:-}}"
-}
-
-widget_prefill_device_os() {
-  printf '%s' "${DOGAREA_WIDGET_EVIDENCE_DEVICE_OS:-}"
-}
-
-widget_prefill_app_build() {
-  printf '%s' "${DOGAREA_WIDGET_EVIDENCE_APP_BUILD:-}"
 }
 
 prefill_widget_bundle() {

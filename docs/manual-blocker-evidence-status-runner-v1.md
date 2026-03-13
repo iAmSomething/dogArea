@@ -36,6 +36,10 @@
   - suite별 `coverage`
   - `simulator-coverage-summary`
   - baseline refresh 명령
+- `widget`은 prefill 해석 결과도 함께 보여준다.
+  - plain text: `prefill-device-os`, `prefill-app-build`
+  - markdown: `Prefill Device / OS`, `Prefill App Build`
+  - source는 `env`, `stub`, `connected-ios-device`, `xcodebuild-settings`, `missing`
 - 다음 액션 명령
   - `next-render`
   - `next-prefill-existing`
@@ -50,7 +54,8 @@
 - `--markdown` 모드에서는 위 내용을 reviewer 공유용 markdown report로 출력한다.
 - `--output`을 같이 주면 report를 파일로 export하고 `WROTE <path>`를 출력한다.
 - `--apply-prefill`를 주면 existing bundle에 대해 `prefill_manual_evidence_pack.sh`를 먼저 적용한 뒤 status를 계산한다.
-- env가 비어 있으면 `next-prefill-env`로 `print_manual_evidence_prefill_env.sh` 경로를 먼저 안내한다.
+- env가 비어 있어도 자동 감지로 메타를 해석할 수 있으면 `next-prefill-env`를 생략한다.
+- env와 자동 감지 둘 다 비어 있으면 `next-prefill-env`로 `print_manual_evidence_prefill_env.sh` 경로를 먼저 안내한다.
 - env가 비어 있으면 `next-prefill-bootstrap`으로 env template source + `--apply-prefill` one-shot 명령도 함께 안내한다.
 - `auth-smtp`의 `next-render`는 `--prefill-from-env`를 포함해 운영 메타데이터 transcription 비용을 줄인다.
 - `widget`의 `next-render`도 `--prefill-from-env`를 포함해 공통 기록 메타 transcription 비용을 줄인다.

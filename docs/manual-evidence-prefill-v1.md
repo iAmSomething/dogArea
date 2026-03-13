@@ -27,6 +27,12 @@
 - `DOGAREA_WIDGET_EVIDENCE_DEVICE_OS`
 - `DOGAREA_WIDGET_EVIDENCE_APP_BUILD`
 
+## widget 자동 감지 규칙
+- `DOGAREA_WIDGET_EVIDENCE_DEVICE_OS`가 비어 있으면 connected physical iPhone에서 `model / iOS version`을 자동 감지한다.
+- `DOGAREA_WIDGET_EVIDENCE_APP_BUILD`가 비어 있으면 현재 `dogArea` scheme의 `MARKETING_VERSION (CURRENT_PROJECT_VERSION)`을 자동 감지한다.
+- env override가 있으면 자동 감지보다 우선한다.
+- 자동 감지를 끄고 검증하려면 `DOGAREA_DISABLE_WIDGET_PREFILL_AUTODETECT=1`을 사용한다.
+
 ## auth-smtp env
 - `DOGAREA_AUTH_SMTP_DATE`
 - `DOGAREA_AUTH_SMTP_OPERATOR`
@@ -56,5 +62,6 @@
 
 ## 연결 규칙
 - `manual_blocker_evidence_status.sh`는 `next-prefill-existing`를 함께 출력한다.
-- `manual_blocker_evidence_status.sh`는 env가 비어 있으면 `next-prefill-env`도 함께 출력한다.
+- `manual_blocker_evidence_status.sh`는 자동 감지로 메타를 이미 해석했으면 `prefill-device-os`, `prefill-app-build`와 source를 함께 보여준다.
+- `manual_blocker_evidence_status.sh`는 env와 자동 감지 둘 다 비어 있을 때만 `next-prefill-env`를 출력한다.
 - bundle이 이미 존재하면 `render`보다 `prefill-existing -> validate`가 더 안전한 기본 경로다.

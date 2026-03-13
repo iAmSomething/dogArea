@@ -193,6 +193,8 @@ assertTrue(runnerScript.contains("--apply-prefill"), "runner should support one-
 assertTrue(runnerScript.contains("next-apply-prefill"), "runner should print status-runner prefill guidance")
 assertTrue(runnerScript.contains("next-prefill-env"), "runner should print env template guidance")
 assertTrue(runnerScript.contains("next-prefill-bootstrap"), "runner should print one-shot prefill bootstrap guidance")
+assertTrue(runnerScript.contains("prefill-device-os:"), "runner should print widget prefill device resolution")
+assertTrue(runnerScript.contains("prefill-app-build:"), "runner should print widget prefill build resolution")
 assertTrue(runnerScript.contains("simulator-baseline:"), "runner should print plain simulator baseline summaries")
 assertTrue(runnerScript.contains("### Simulator Baseline"), "runner should print markdown simulator baseline summaries")
 assertTrue(runnerScript.contains("simulator-coverage-summary"), "runner should print simulator coverage summaries")
@@ -226,6 +228,9 @@ assertTrue(doc.contains("--apply-prefill"), "doc should describe one-shot prefil
 assertTrue(doc.contains("next-apply-prefill"), "doc should describe status-runner prefill guidance")
 assertTrue(doc.contains("next-prefill-env"), "doc should describe env template guidance")
 assertTrue(doc.contains("next-prefill-bootstrap"), "doc should describe one-shot bootstrap guidance")
+assertTrue(doc.contains("prefill-device-os"), "doc should describe widget prefill device resolution output")
+assertTrue(doc.contains("Prefill App Build"), "doc should describe widget prefill build resolution output")
+assertTrue(doc.contains("connected-ios-device"), "doc should list widget auto-detect sources")
 assertTrue(doc.contains("gap-summary"), "doc should describe plain gap summary output")
 assertTrue(doc.contains("next-fill"), "doc should describe next-fill guidance")
 assertTrue(doc.contains("### Gap Summary"), "doc should describe markdown gap summary heading")
@@ -242,6 +247,7 @@ let authPath = tempRoot.appendingPathComponent("auth")
 let widgetBaselinePath = tempRoot.appendingPathComponent("widget-sim-baseline")
 
 let missingOutput = runStatus(arguments: ["widget"], environment: [
+    "DOGAREA_DISABLE_WIDGET_PREFILL_AUTODETECT": "1",
     "DOGAREA_WIDGET_EVIDENCE_PATH": widgetPath.path,
     "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
     "DOGAREA_WIDGET_SIM_BASELINE_DIR": widgetBaselinePath.path,
@@ -298,14 +304,18 @@ assertTrue(generatedOutput.contains("coverage: WL-001,WL-002,WL-003,WL-004,WL-00
 assertTrue(generatedOutput.contains("simulator-coverage-summary: action 8/8, layout 8/8"), "widget status should print simulator coverage summary")
 assertTrue(generatedOutput.contains("next-refresh-widget-action-baseline: bash scripts/run_widget_action_regression_ui_tests.sh"), "widget status should advertise the action baseline refresh command")
 assertTrue(generatedOutput.contains("next-refresh-widget-layout-baseline: bash scripts/run_pr_fast_smoke_widget_layout_checks.sh"), "widget status should advertise the layout baseline refresh command")
+assertTrue(generatedOutput.contains("prefill-device-os: iPhone 16 / iOS 18.5 [source=env]"), "widget status should print resolved env-backed device metadata")
+assertTrue(generatedOutput.contains("prefill-app-build: 2026.03.12.1 [source=env]"), "widget status should print resolved env-backed build metadata")
 assertTrue(!generatedOutput.contains("empty value:"), "generated widget bundle should hide raw validator errors by default")
 
 let widgetExistingPath = tempRoot.appendingPathComponent("widget-existing")
 _ = runStatus(arguments: ["widget", "--write-missing"], environment: [
+    "DOGAREA_DISABLE_WIDGET_PREFILL_AUTODETECT": "1",
     "DOGAREA_WIDGET_EVIDENCE_PATH": widgetExistingPath.path,
     "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
 ])
 let widgetUnappliedExistingOutput = runStatus(arguments: ["widget"], environment: [
+    "DOGAREA_DISABLE_WIDGET_PREFILL_AUTODETECT": "1",
     "DOGAREA_WIDGET_EVIDENCE_PATH": widgetExistingPath.path,
     "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
     "DOGAREA_WIDGET_SIM_BASELINE_DIR": widgetBaselinePath.path,
@@ -318,6 +328,7 @@ assertTrue(widgetUnappliedExistingOutput.contains("missing-prefill-env: DOGAREA_
 
 let widgetAppliedPath = tempRoot.appendingPathComponent("widget-applied")
 _ = runStatus(arguments: ["widget", "--write-missing"], environment: [
+    "DOGAREA_DISABLE_WIDGET_PREFILL_AUTODETECT": "1",
     "DOGAREA_WIDGET_EVIDENCE_PATH": widgetAppliedPath.path,
     "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
 ])
@@ -332,6 +343,8 @@ let widgetAppliedPrefillOutput = runStatus(arguments: ["widget", "--apply-prefil
 ])
 assertTrue(widgetAppliedPrefillOutput.contains("gap-summary: 16 incomplete cases (action 8, layout 8, total-errors 120)"), "apply-prefill should reduce widget error counts for existing bundles")
 assertTrue(widgetAppliedPrefillOutput.contains("WD-001: result, assets, placeholder logs"), "apply-prefill should remove metadata gaps from widget bundles")
+assertTrue(widgetAppliedPrefillOutput.contains("prefill-device-os: iPhone 16 / iOS 18.5 [source=env]"), "apply-prefill output should print resolved env-backed device metadata")
+assertTrue(widgetAppliedPrefillOutput.contains("prefill-app-build: 2026.03.12.1 [source=env]"), "apply-prefill output should print resolved env-backed build metadata")
 
 for caseID in ["WD-001", "WD-002", "WD-003", "WD-004", "WD-005", "WD-006", "WD-007", "WD-008"] {
     write(widgetPath.appendingPathComponent("action/\(caseID).md"), content: filledWidgetAction(caseID: caseID, summary: "\(caseID) converged"))
@@ -354,6 +367,9 @@ for (caseID, surface) in layoutSurfaces {
     writeAsset(widgetPath.appendingPathComponent("assets/layout/\(caseID)-step-2.png"))
 }
 let completeOutput = runStatus(arguments: ["widget"], environment: [
+    "DOGAREA_WIDGET_PREFILL_DEVICE_OS_STUB": "iPhone 14 / iOS 18.7.3",
+    "DOGAREA_WIDGET_PREFILL_APP_BUILD_STUB": "1.0 (14)",
+    "DOGAREA_DISABLE_WIDGET_PREFILL_AUTODETECT": "1",
     "DOGAREA_WIDGET_EVIDENCE_PATH": widgetPath.path,
     "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
     "DOGAREA_WIDGET_SIM_BASELINE_DIR": widgetBaselinePath.path,
@@ -362,9 +378,14 @@ assertTrue(completeOutput.contains("status: complete"), "filled widget evidence 
 assertTrue(completeOutput.contains("render_closure_comment_from_evidence.sh widget"), "runner should print widget closure render command")
 assertTrue(completeOutput.contains("archive_manual_evidence_pack.sh widget"), "runner should print widget archive command")
 assertTrue(completeOutput.contains("next-post-closure-bundle: bash scripts/post_closure_comment_from_evidence.sh widget --all-related"), "runner should print bundled widget post command")
+assertTrue(completeOutput.contains("prefill-device-os: iPhone 14 / iOS 18.7.3 [source=stub]"), "complete widget output should print stub-resolved device metadata")
+assertTrue(completeOutput.contains("prefill-app-build: 1.0 (14) [source=stub]"), "complete widget output should print stub-resolved build metadata")
 assertTrue(!completeOutput.contains("gap-summary:"), "complete widget evidence should not print a gap summary")
 
 let markdownOutput = runStatus(arguments: ["widget", "--markdown"], environment: [
+    "DOGAREA_WIDGET_PREFILL_DEVICE_OS_STUB": "iPhone 14 / iOS 18.7.3",
+    "DOGAREA_WIDGET_PREFILL_APP_BUILD_STUB": "1.0 (14)",
+    "DOGAREA_DISABLE_WIDGET_PREFILL_AUTODETECT": "1",
     "DOGAREA_WIDGET_EVIDENCE_PATH": widgetPath.path,
     "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
     "DOGAREA_WIDGET_SIM_BASELINE_DIR": widgetBaselinePath.path,
@@ -378,6 +399,8 @@ assertTrue(markdownOutput.contains("- Layout Fast Smoke: `pass` (`2026-03-13T10:
 assertTrue(markdownOutput.contains("- Coverage: `WD-001,WD-002,WD-003,WD-004,WD-005,WD-006,WD-007,WD-008`"), "markdown mode should print action coverage")
 assertTrue(markdownOutput.contains("- Coverage: `WL-001,WL-002,WL-003,WL-004,WL-005,WL-006,WL-007,WL-008`"), "markdown mode should print layout coverage")
 assertTrue(markdownOutput.contains("- Coverage Summary: `action 8/8`, `layout 8/8`"), "markdown mode should print simulator coverage summary")
+assertTrue(markdownOutput.contains("- Prefill Device / OS: `iPhone 14 / iOS 18.7.3` (source `stub`)"), "markdown mode should print resolved widget device metadata")
+assertTrue(markdownOutput.contains("- Prefill App Build: `1.0 (14)` (source `stub`)"), "markdown mode should print resolved widget build metadata")
 assertTrue(markdownOutput.contains("- Prefill Existing: `bash scripts/prefill_manual_evidence_pack.sh widget"), "markdown mode should render widget prefill-existing command")
 assertTrue(markdownOutput.contains("- Post Closure Bundle: `bash scripts/post_closure_comment_from_evidence.sh widget --all-related"), "markdown mode should render bundled post command")
 assertTrue(!markdownOutput.contains("### Gap Summary"), "complete widget markdown should not print a gap summary")
@@ -397,6 +420,7 @@ assertTrue(incompleteMarkdownOutput.contains("- Incomplete Cases: `16` (`action 
 assertTrue(!incompleteMarkdownOutput.contains("Apply Prefill Then Refresh"), "write-missing widget markdown should not suggest apply-prefill after metadata prefill")
 
 let widgetExistingMarkdownOutput = runStatus(arguments: ["widget", "--markdown"], environment: [
+    "DOGAREA_DISABLE_WIDGET_PREFILL_AUTODETECT": "1",
     "DOGAREA_WIDGET_EVIDENCE_PATH": widgetExistingPath.path,
     "DOGAREA_AUTH_SMTP_EVIDENCE_PATH": authPath.path,
     "DOGAREA_WIDGET_SIM_BASELINE_DIR": widgetBaselinePath.path,
