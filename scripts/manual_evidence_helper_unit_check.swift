@@ -27,13 +27,19 @@ func assertTrue(_ condition: @autoclosure () -> Bool, _ message: String) {
 }
 
 /// Runs the evidence helper script and captures stdout/stderr.
-/// - Parameter arguments: Arguments passed to the script.
+/// - Parameters:
+///   - arguments: Arguments passed to the script.
+///   - environment: Extra environment variables for the subprocess.
 /// - Returns: Combined UTF-8 output from the launched process.
-func runHelper(arguments: [String]) -> String {
+func runHelper(arguments: [String], environment: [String: String] = [:]) -> String {
     let process = Process()
     process.currentDirectoryURL = root
     process.executableURL = URL(fileURLWithPath: "/bin/bash")
     process.arguments = ["scripts/render_manual_evidence_pack.sh"] + arguments
+
+    var env = ProcessInfo.processInfo.environment
+    environment.forEach { env[$0.key] = $0.value }
+    process.environment = env
 
     let pipe = Pipe()
     process.standardOutput = pipe
@@ -71,11 +77,13 @@ assertTrue(helperScript.contains("widget|auth-smtp"), "helper usage should defin
 assertTrue(helperScript.contains(".codex_tmp/widget-real-device-evidence"), "helper should define widget directory default output")
 assertTrue(helperScript.contains("write_widget_bundle"), "helper should generate widget bundle")
 assertTrue(helperScript.contains("--prefill-from-env"), "helper should expose auth smtp env prefill option")
-assertTrue(helperScript.contains("DOGAREA_WIDGET_EVIDENCE_TESTER"), "helper should expose widget env prefill metadata")
+assertTrue(helperScript.contains("manual_evidence_prefill_sources.sh"), "helper should source shared widget prefill helpers")
+assertTrue(helperScript.contains("apply_widget_prefill_metadata"), "helper should still apply widget prefill metadata")
 assertTrue(helperDoc.contains("widget-real-device-evidence"), "helper doc should include widget directory path")
 assertTrue(helperDoc.contains("auth-smtp --write --prefill-from-env"), "helper doc should explain auth smtp env prefill path")
 assertTrue(helperDoc.contains("widget --write --prefill-from-env"), "helper doc should explain widget env prefill path")
 assertTrue(helperDoc.contains("DOGAREA_WIDGET_EVIDENCE_DEVICE_OS"), "helper doc should list widget env prefill keys")
+assertTrue(helperDoc.contains("auto-detect fallback"), "helper doc should document widget auto-detect fallback")
 assertTrue(helperDoc.contains("action/WD-001.md"), "helper doc should mention action case files")
 assertTrue(helperDoc.contains("layout/WL-001.md"), "helper doc should mention layout case files")
 assertTrue(widgetRunbook.contains("render_manual_evidence_pack.sh"), "widget action runbook should mention helper")
@@ -111,19 +119,20 @@ assertTrue(FileManager.default.fileExists(atPath: tempDirectory.appendingPathCom
 assertTrue(FileManager.default.fileExists(atPath: tempDirectory.appendingPathComponent("assets/layout").path), "written widget bundle should include layout assets directory")
 
 let prefilledWidgetDirectory = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
-setenv("DOGAREA_WIDGET_EVIDENCE_DATE", "2026-03-12", 1)
-setenv("DOGAREA_WIDGET_EVIDENCE_TESTER", "codex", 1)
-setenv("DOGAREA_WIDGET_EVIDENCE_DEVICE_OS", "iPhone 16 / iOS 18.5", 1)
-setenv("DOGAREA_WIDGET_EVIDENCE_APP_BUILD", "2026.03.12.1", 1)
-
-let prefilledWidgetOutput = runHelper(arguments: ["widget", "--output", prefilledWidgetDirectory.path, "--prefill-from-env"])
+let prefilledWidgetOutput = runHelper(arguments: ["widget", "--output", prefilledWidgetDirectory.path, "--prefill-from-env"], environment: [
+    "DOGAREA_DISABLE_WIDGET_PREFILL_AUTODETECT": "1",
+    "DOGAREA_WIDGET_EVIDENCE_DATE": "2026-03-12",
+    "DOGAREA_WIDGET_EVIDENCE_TESTER": "codex",
+    "DOGAREA_WIDGET_PREFILL_DEVICE_OS_STUB": "iPhone 14 / iOS 18.7.3",
+    "DOGAREA_WIDGET_PREFILL_APP_BUILD_STUB": "1.0 (14)",
+])
 assertTrue(prefilledWidgetOutput.contains("WROTE \(prefilledWidgetDirectory.path)"), "prefilled widget write mode should report output path")
 let prefilledAction = (try? String(contentsOf: prefilledWidgetDirectory.appendingPathComponent("action/WD-001.md"), encoding: .utf8)) ?? ""
 let prefilledLayout = (try? String(contentsOf: prefilledWidgetDirectory.appendingPathComponent("layout/WL-001.md"), encoding: .utf8)) ?? ""
 assertTrue(prefilledAction.contains("- Date: 2026-03-12"), "prefilled widget bundle should include date metadata")
 assertTrue(prefilledAction.contains("- Tester: codex"), "prefilled widget bundle should include tester metadata")
-assertTrue(prefilledAction.contains("- Device / OS: iPhone 16 / iOS 18.5"), "prefilled widget bundle should include device metadata")
-assertTrue(prefilledAction.contains("- App Build: 2026.03.12.1"), "prefilled widget bundle should include app build metadata")
+assertTrue(prefilledAction.contains("- Device / OS: iPhone 14 / iOS 18.7.3"), "prefilled widget bundle should include device metadata from stub/autodetect source")
+assertTrue(prefilledAction.contains("- App Build: 1.0 (14)"), "prefilled widget bundle should include app build metadata from stub/autodetect source")
 assertTrue(prefilledLayout.contains("- Tester: codex"), "prefilled widget layout bundle should include tester metadata")
 
 let authDirectory = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)

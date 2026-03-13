@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$ROOT_DIR/scripts/lib/manual_evidence_prefill_sources.sh"
+
 usage() {
   cat <<'USAGE'
 Usage:
@@ -17,9 +20,9 @@ widget_value() {
   local key="$1"
   case "$key" in
     DOGAREA_WIDGET_EVIDENCE_DATE) printf '%s' "${DOGAREA_WIDGET_EVIDENCE_DATE:-$(date '+%F')}" ;;
-    DOGAREA_WIDGET_EVIDENCE_TESTER) printf '%s' "${DOGAREA_WIDGET_EVIDENCE_TESTER:-${USER:-codex}}" ;;
-    DOGAREA_WIDGET_EVIDENCE_DEVICE_OS) printf '%s' "${DOGAREA_WIDGET_EVIDENCE_DEVICE_OS:-iPhone 16 / iOS 18.5}" ;;
-    DOGAREA_WIDGET_EVIDENCE_APP_BUILD) printf '%s' "${DOGAREA_WIDGET_EVIDENCE_APP_BUILD:-2026.03.12.1}" ;;
+    DOGAREA_WIDGET_EVIDENCE_TESTER) widget_prefill_tester ;;
+    DOGAREA_WIDGET_EVIDENCE_DEVICE_OS) widget_prefill_device_os ;;
+    DOGAREA_WIDGET_EVIDENCE_APP_BUILD) widget_prefill_app_build ;;
   esac
 }
 

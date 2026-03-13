@@ -44,6 +44,9 @@
     - `DOGAREA_WIDGET_EVIDENCE_TESTER`
     - `DOGAREA_WIDGET_EVIDENCE_DEVICE_OS`
     - `DOGAREA_WIDGET_EVIDENCE_APP_BUILD`
+  - auto-detect fallback
+    - `DOGAREA_WIDGET_EVIDENCE_DEVICE_OS`가 비어 있으면 연결된 physical iPhone 기준으로 채운다.
+    - `DOGAREA_WIDGET_EVIDENCE_APP_BUILD`가 비어 있으면 현재 `dogArea` scheme build settings 기준으로 채운다.
 - auth-smtp 운영 메타데이터 prefill 쓰기
   - `bash scripts/render_manual_evidence_pack.sh auth-smtp --write --prefill-from-env`
   - `bash scripts/render_manual_evidence_pack.sh auth-smtp --output .codex_tmp/auth-smtp-evidence --prefill-from-env`
@@ -84,6 +87,7 @@
 ## 운영 규칙
 - 이 helper는 evidence를 대신 채우지 않는다.
 - 단, `widget --prefill-from-env`는 공통 기록 메타(`Date`, `Tester`, `Device / OS`, `App Build`)를 환경 변수에서 먼저 채운다.
+- widget env가 비어 있어도 연결된 iPhone / 현재 앱 빌드를 자동 감지할 수 있으면 그 값을 쓴다.
 - 단, `auth-smtp --prefill-from-env`는 SMTP/DNS 운영 메타데이터를 환경 변수에서 먼저 채워 넣을 수 있다.
 - live send 결과, mailbox screenshot, provider event, final decision은 여전히 사람이 채워야 한다.
 - `#617`, `#692`, `#731`, `#482`는 실제 실기기/운영 증적이 들어오기 전까지 닫지 않는다.

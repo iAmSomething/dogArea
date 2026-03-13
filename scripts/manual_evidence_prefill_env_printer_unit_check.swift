@@ -74,8 +74,14 @@ let iosPRCheck = load("scripts/ios_pr_check.sh")
 let backendPRCheck = load("scripts/backend_pr_check.sh")
 
 assertTrue(printerScript.contains("widget|auth-smtp"), "printer script should support widget and auth-smtp")
+assertTrue(printerScript.contains("manual_evidence_prefill_sources.sh"), "printer script should source shared prefill helpers")
 assertTrue(printerScript.contains("DOGAREA_WIDGET_EVIDENCE_DEVICE_OS"), "printer script should print widget env exports")
 assertTrue(printerScript.contains("DOGAREA_AUTH_SMTP_PROJECT"), "printer script should print auth-smtp env exports")
+assertTrue(prefillDoc.contains("connected physical iPhone"), "prefill doc should describe widget connected device autodetect")
+assertTrue(prefillDoc.contains("MARKETING_VERSION (CURRENT_PROJECT_VERSION)"), "prefill doc should describe app build autodetect")
+assertTrue(helperDoc.contains("auto-detect fallback"), "helper doc should describe widget auto-detect fallback")
+assertTrue(statusDoc.contains("prefill-device-os"), "status doc should mention widget prefill resolution output")
+assertTrue(statusDoc.contains("connected-ios-device"), "status doc should list widget device source variants")
 assertTrue(prefillDoc.contains("print_manual_evidence_prefill_env.sh"), "prefill doc should reference env printer")
 assertTrue(helperDoc.contains("print_manual_evidence_prefill_env.sh"), "helper doc should reference env printer")
 assertTrue(statusDoc.contains("next-prefill-env"), "status doc should mention prefill env guidance")
@@ -88,11 +94,21 @@ assertTrue(defaultWidgetOutput.contains("# widget prefill env"), "widget env pri
 assertTrue(defaultWidgetOutput.contains("export DOGAREA_WIDGET_EVIDENCE_DEVICE_OS="), "widget env printer should include device os export")
 assertTrue(defaultWidgetOutput.contains("export DOGAREA_WIDGET_EVIDENCE_APP_BUILD="), "widget env printer should include app build export")
 
+let stubbedWidgetOutput = runScript("scripts/print_manual_evidence_prefill_env.sh", arguments: ["widget"], environment: [
+    "DOGAREA_DISABLE_WIDGET_PREFILL_AUTODETECT": "1",
+    "DOGAREA_WIDGET_PREFILL_DEVICE_OS_STUB": "iPhone 14 / iOS 18.7.3",
+    "DOGAREA_WIDGET_PREFILL_APP_BUILD_STUB": "1.0 (14)",
+])
+assertTrue(stubbedWidgetOutput.contains("export DOGAREA_WIDGET_EVIDENCE_DEVICE_OS=iPhone\\ 14\\ /\\ iOS\\ 18.7.3"), "widget env printer should support stubbed device autodetect output")
+assertTrue(stubbedWidgetOutput.contains("export DOGAREA_WIDGET_EVIDENCE_APP_BUILD=1.0\\ \\(14\\)"), "widget env printer should support stubbed build autodetect output")
+
 let customWidgetOutput = runScript("scripts/print_manual_evidence_prefill_env.sh", arguments: ["widget"], environment: [
     "DOGAREA_WIDGET_EVIDENCE_DATE": "2026-03-12",
     "DOGAREA_WIDGET_EVIDENCE_TESTER": "codex",
     "DOGAREA_WIDGET_EVIDENCE_DEVICE_OS": "iPhone 17 / iOS 18.6",
     "DOGAREA_WIDGET_EVIDENCE_APP_BUILD": "2026.03.12.9",
+    "DOGAREA_WIDGET_PREFILL_DEVICE_OS_STUB": "iPhone 14 / iOS 18.7.3",
+    "DOGAREA_WIDGET_PREFILL_APP_BUILD_STUB": "1.0 (14)",
 ])
 assertTrue(customWidgetOutput.contains("export DOGAREA_WIDGET_EVIDENCE_DEVICE_OS=iPhone\\ 17\\ /\\ iOS\\ 18.6"), "widget env printer should use current env values")
 assertTrue(customWidgetOutput.contains("export DOGAREA_WIDGET_EVIDENCE_APP_BUILD=2026.03.12.9"), "widget env printer should use current app build env value")
