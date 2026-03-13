@@ -105,6 +105,7 @@ run_ui_test "testFeatureRegression_SettingsImageTapAffordanceOpensProfileEdit"
 run_ui_test "testFeatureRegression_MemberProfileEditPersistsUpdatedPetName"
 run_ui_test "testFeatureRegression_MemberPetManagementEditsExistingPet"
 run_ui_test "testFeatureRegression_RivalAuthRevalidationFlow"
+run_ui_test "testFeatureRegression_DarkModeMajorCardsAdoptDarkSurfaces"
 run_ui_test "testFeatureRegression_WidgetRouteOpensRivalTab"
 
 echo "[FeatureRegressionUI] Done"

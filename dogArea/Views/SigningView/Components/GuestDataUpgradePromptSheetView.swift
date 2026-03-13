@@ -45,6 +45,7 @@ struct GuestDataUpgradePromptSheetView: View {
         }
         .padding(20)
         .background(Color.white)
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("sheet.guestDataUpgrade")
     }
 }

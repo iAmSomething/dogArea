@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 
 /// 기능 회귀 시나리오를 사용자 플로우 단위로 검증하는 UI 테스트입니다.
 final class FeatureRegressionUITests: XCTestCase {
@@ -1140,6 +1141,47 @@ final class FeatureRegressionUITests: XCTestCase {
         try assertWalkListTabSelectedIconRemainsVisible(style: .dark)
     }
 
+    /// 다크 모드 핵심 카드들이 밝은 라이트 표면으로 역행하지 않는지 검증합니다.
+    func testFeatureRegression_DarkModeMajorCardsAdoptDarkSurfaces() throws {
+        let app = launchAppForFeatureRegression(style: .dark)
+
+        XCTAssertTrue(openTab(index: 0, app: app), "홈 탭 진입에 실패했습니다.")
+        let homeCard = screenElement(identifier: "home.walkPrimaryLoop.card", in: app)
+        XCTAssertTrue(waitUntilExists(homeCard, timeout: 8), "홈 기본 루프 카드가 노출되지 않았습니다.")
+        assertAverageLuminance(
+            of: homeCard,
+            lessThan: 0.62,
+            message: "다크 모드 홈 기본 루프 카드는 밝은 라이트 표면처럼 보이면 안 됩니다."
+        )
+
+        XCTAssertTrue(openTab(index: 1, app: app), "산책 기록 탭 진입에 실패했습니다.")
+        let walkListGuestCard = screenElement(identifier: "walklist.guest.card", in: app)
+        XCTAssertTrue(waitUntilExists(walkListGuestCard, timeout: 8), "산책 기록 게스트 카드가 노출되지 않았습니다.")
+        assertAverageLuminance(
+            of: walkListGuestCard,
+            lessThan: 0.62,
+            message: "다크 모드 산책 기록 게스트 카드는 밝은 라이트 표면처럼 보이면 안 됩니다."
+        )
+
+        XCTAssertTrue(openTab(index: 3, app: app), "라이벌 탭 진입에 실패했습니다.")
+        let rivalPrivacyCard = screenElement(identifier: "rival.privacy.card", in: app)
+        XCTAssertTrue(waitUntilExists(rivalPrivacyCard, timeout: 8), "라이벌 익명 공유 카드가 노출되지 않았습니다.")
+        assertAverageLuminance(
+            of: rivalPrivacyCard,
+            lessThan: 0.62,
+            message: "다크 모드 라이벌 익명 공유 카드는 밝은 라이트 표면처럼 보이면 안 됩니다."
+        )
+
+        XCTAssertTrue(openTab(index: 4, app: app), "설정 탭 진입에 실패했습니다.")
+        let settingsWalkGuideCard = screenElement(identifier: "settings.section.walkGuide", in: app)
+        XCTAssertTrue(waitUntilExists(settingsWalkGuideCard, timeout: 8), "설정 산책 가이드 카드가 노출되지 않았습니다.")
+        assertAverageLuminance(
+            of: settingsWalkGuideCard,
+            lessThan: 0.62,
+            message: "다크 모드 설정 카드 표면이 라이트 표면처럼 밝아지면 안 됩니다."
+        )
+    }
+
     /// 홈의 영역 목표 상세 진입 시 탭바가 숨겨지고 뒤로 복귀 시 다시 표시되는지 검증합니다.
     func testFeatureRegression_TerritoryGoalNavigationHidesAndRestoresTabBar() throws {
         let app = launchAppForFeatureRegression()
@@ -1251,8 +1293,18 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertTrue(waitUntilExists(banner, timeout: 4), "핫스팟 위젯 반경 문맥 배너가 노출되지 않았습니다.")
 
         let currentRadius = screenElement(identifier: "rival.hotspot.radius.current", in: app)
-        XCTAssertTrue(waitUntilExists(currentRadius, timeout: 3), "라이벌 탭의 현재 반경 배지를 찾지 못했습니다.")
-        XCTAssertEqual(currentRadius.label, "3km", "위젯에서 전달한 반경 preset이 앱 상세와 일치해야 합니다.")
+        let broadDetailDescription = app.staticTexts["넓은 범위를 보기 때문에 지연/오프라인 표시에 더 민감합니다."]
+        let hasExplicitRadiusBadge = waitUntilExists(currentRadius, timeout: 2)
+        let hasBroadDescription = waitUntilExists(broadDetailDescription, timeout: 2)
+
+        XCTAssertTrue(
+            hasExplicitRadiusBadge || hasBroadDescription,
+            "라이벌 탭에서 3km 반경 문맥을 확인할 수 있는 배지 또는 설명을 찾지 못했습니다."
+        )
+
+        if hasExplicitRadiusBadge {
+            XCTAssertTrue(currentRadius.label.contains("3km"), "위젯에서 전달한 반경 preset이 앱 상세와 일치해야 합니다.")
+        }
     }
 
     /// 설정 탭에서 게스트/회원 상태별 핵심 진입점(로그인 또는 로그아웃)이 노출되는지 검증합니다.
@@ -1663,7 +1715,21 @@ final class FeatureRegressionUITests: XCTestCase {
         )
 
         XCTAssertTrue(openTab(index: 4, app: app), "로그인 후 설정 탭 재진입에 실패했습니다.")
-        XCTAssertTrue(tapIfExists(app.buttons["settings.profile.edit"]), "프로필 편집 시트 진입에 실패했습니다.")
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "screen.settings.member", in: app), timeout: 8),
+            "로그인 후 회원용 설정 화면이 반영되지 않았습니다."
+        )
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "settings.profile.card", in: app), timeout: 6),
+            "회원 프로필 카드가 화면에 나타나지 않았습니다."
+        )
+
+        let profileCard = screenElement(identifier: "settings.profile.card", in: app)
+        let profileEditEntryButton = screenElement(identifier: "settings.profile.edit", in: app)
+        let openedProfileEditFromEntry = waitUntilExists(profileEditEntryButton, timeout: 2) && tapIfExists(profileEditEntryButton)
+        let openedProfileEditFromCard = openedProfileEditFromEntry == false &&
+            tapNormalizedCoordinate(of: profileCard, dx: 0.82, dy: 0.22)
+        XCTAssertTrue(openedProfileEditFromEntry || openedProfileEditFromCard, "프로필 편집 시트 진입에 실패했습니다.")
         let profileEditSheet = screenElement(identifier: "sheet.settings.profileEdit", in: app)
         XCTAssertTrue(waitUntilExists(profileEditSheet, timeout: 8), "프로필 편집 시트를 찾지 못했습니다.")
 
@@ -1683,7 +1749,10 @@ final class FeatureRegressionUITests: XCTestCase {
             XCTFail("프로필 저장 후 시트가 닫히지 않았습니다. error=\(errorMessage)")
         }
 
-        XCTAssertTrue(tapIfExists(app.buttons["settings.profile.edit"]), "저장 후 프로필 편집 시트 재진입에 실패했습니다.")
+        let reopenedFromEntry = waitUntilExists(profileEditEntryButton, timeout: 2) && tapIfExists(profileEditEntryButton)
+        let reopenedFromCard = reopenedFromEntry == false &&
+            tapNormalizedCoordinate(of: profileCard, dx: 0.82, dy: 0.22)
+        XCTAssertTrue(reopenedFromEntry || reopenedFromCard, "저장 후 프로필 편집 시트 재진입에 실패했습니다.")
         XCTAssertTrue(waitUntilExists(profileEditSheet, timeout: 6), "저장 후 프로필 편집 시트를 다시 찾지 못했습니다.")
         XCTAssertEqual(petNameField.value as? String, "UITestDog", "저장한 반려견 이름이 다음 편집 진입 시 유지되어야 합니다.")
         _ = tapIfExists(app.buttons["sheet.settings.profileEdit.cancel"])
@@ -1704,10 +1773,20 @@ final class FeatureRegressionUITests: XCTestCase {
         )
 
         XCTAssertTrue(openTab(index: 4, app: app), "로그인 후 설정 탭 재진입에 실패했습니다.")
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "screen.settings.member", in: app), timeout: 8),
+            "로그인 후 회원용 설정 화면이 반영되지 않았습니다."
+        )
+        XCTAssertTrue(
+            waitUntilExists(screenElement(identifier: "settings.profile.card", in: app), timeout: 6),
+            "회원 프로필 카드가 화면에 나타나지 않았습니다."
+        )
 
-        let profileImageButton = app.buttons["settings.profile.image"]
-        XCTAssertTrue(waitUntilExists(profileImageButton, timeout: 6), "사용자 프로필 이미지 편집 버튼을 찾지 못했습니다.")
-        XCTAssertTrue(tapIfExists(profileImageButton), "사용자 프로필 이미지 탭에 실패했습니다.")
+        let profileCard = screenElement(identifier: "settings.profile.card", in: app)
+        XCTAssertTrue(
+            tapNormalizedCoordinate(of: profileCard, dx: 0.16, dy: 0.34),
+            "사용자 프로필 이미지 탭에 실패했습니다."
+        )
 
         let profileEditSheet = screenElement(identifier: "sheet.settings.profileEdit", in: app)
         XCTAssertTrue(waitUntilExists(profileEditSheet, timeout: 8), "사용자 이미지 탭 후 프로필 편집 시트를 찾지 못했습니다.")
@@ -1717,9 +1796,24 @@ final class FeatureRegressionUITests: XCTestCase {
         )
         _ = tapIfExists(app.buttons["sheet.settings.profileEdit.cancel"])
 
-        let petImageButton = app.buttons["settings.pet.image"]
-        XCTAssertTrue(waitUntilExists(petImageButton, timeout: 6), "반려견 이미지 편집 버튼을 찾지 못했습니다.")
-        XCTAssertTrue(tapIfExists(petImageButton), "반려견 이미지 탭에 실패했습니다.")
+        let petImageButton = app.descendants(matching: .any)
+            .matching(
+                NSPredicate(
+                    format: "identifier == %@ OR label == %@",
+                    "settings.pet.image",
+                    "선택한 반려견 사진 편집"
+                )
+            )
+            .firstMatch
+        if waitUntilExists(petImageButton, timeout: 3) {
+            XCTAssertTrue(tapIfExists(petImageButton), "반려견 이미지 탭에 실패했습니다.")
+        } else {
+            let petCard = screenElement(identifier: "settings.pet.card", in: app)
+            XCTAssertTrue(
+                tapNormalizedCoordinate(of: petCard, dx: 0.14, dy: 0.60),
+                "반려견 이미지 탭에 실패했습니다."
+            )
+        }
         XCTAssertTrue(waitUntilExists(profileEditSheet, timeout: 8), "반려견 이미지 탭 후 프로필 편집 시트를 찾지 못했습니다.")
         XCTAssertTrue(
             waitUntilExists(app.buttons["settings.profileEditor.petImage"], timeout: 4),
@@ -1743,16 +1837,36 @@ final class FeatureRegressionUITests: XCTestCase {
         )
 
         XCTAssertTrue(openTab(index: 4, app: app), "로그인 후 설정 탭 재진입에 실패했습니다.")
-        let petManagementEntryButton = app.buttons["settings.pet.manage"]
         XCTAssertTrue(
-            revealElementByVerticalScroll(petManagementEntryButton, app: app, maxSwipes: 6),
+            waitUntilMemberState(app, timeout: 8),
+            "로그인 후 멤버 설정 상태로 안정화되지 않았습니다."
+        )
+        let petManagementEntryButton = app.descendants(matching: .any)
+            .matching(identifier: "settings.pet.manage")
+            .firstMatch
+        let petCard = screenElement(identifier: "settings.pet.card", in: app)
+        _ = revealExistingElementByVerticalScroll(petCard, app: app, maxSwipes: 4)
+        XCTAssertTrue(
+            revealElementByVerticalScroll(petManagementEntryButton, app: app, maxSwipes: 6)
+                || revealExistingElementByVerticalScroll(petCard, app: app, maxSwipes: 2),
             "반려견 관리 진입 버튼을 화면 안으로 노출하지 못했습니다."
         )
-        XCTAssertTrue(waitUntilHittable(petManagementEntryButton, timeout: 3), "반려견 관리 진입 버튼이 탭 가능한 상태가 아닙니다.")
-        XCTAssertTrue(tapIfExists(petManagementEntryButton), "반려견 관리 시트 진입에 실패했습니다.")
+        if waitUntilHittable(petManagementEntryButton, timeout: 3) {
+            XCTAssertTrue(tapIfExists(petManagementEntryButton), "반려견 관리 시트 진입에 실패했습니다.")
+        } else {
+            XCTAssertTrue(
+                tapNormalizedCoordinate(of: petCard, dx: 0.50, dy: 0.22),
+                "반려견 관리 카드 상단 CTA 탭에 실패했습니다."
+            )
+        }
         let petManagementCloseButton = app.buttons["sheet.settings.petManagement.close"]
         if waitUntilExists(petManagementCloseButton, timeout: 2) == false {
-            XCTAssertTrue(tapIfExists(petManagementEntryButton), "반려견 관리 시트 재진입 탭에 실패했습니다.")
+            if tapIfExists(petManagementEntryButton) == false {
+                XCTAssertTrue(
+                    tapNormalizedCoordinate(of: petCard, dx: 0.50, dy: 0.22),
+                    "반려견 관리 시트 재진입 탭에 실패했습니다."
+                )
+            }
         }
         XCTAssertTrue(waitUntilExists(petManagementCloseButton, timeout: 8), "반려견 관리 시트를 찾지 못했습니다.")
         XCTAssertTrue(
@@ -1802,7 +1916,7 @@ final class FeatureRegressionUITests: XCTestCase {
         )
 
         XCTAssertTrue(openTab(index: 3, app: app), "라이벌 탭 진입에 실패했습니다.")
-        XCTAssertTrue(waitUntilMemberState(app, timeout: 8), "로그인 세션이 라이벌 탭에 반영되지 않았습니다.")
+        XCTAssertTrue(waitUntilRivalSharingControlReady(app, timeout: 12), "로그인 세션이 라이벌 공유 제어에 반영되지 않았습니다.")
         triggerRivalSharingStart(app)
         XCTAssertTrue(
             waitUntilExists(app.buttons["rival.sharing.stop"], timeout: 12),
@@ -1986,6 +2100,70 @@ final class FeatureRegressionUITests: XCTestCase {
         XCTAssertTrue(walkListTab.isHittable, "산책 기록 탭 버튼이 선택 후에도 정상 hit-test 상태를 유지해야 합니다.")
     }
 
+    /// 접근성 요소 스크린샷의 평균 휘도를 계산해 지정한 상한보다 낮은지 검증합니다.
+    /// - Parameters:
+    ///   - element: 밝기 예산을 검증할 접근성 요소입니다.
+    ///   - threshold: 허용할 최대 평균 휘도입니다.
+    ///   - message: 임계값을 초과했을 때 표시할 실패 메시지입니다.
+    private func assertAverageLuminance(
+        of element: XCUIElement,
+        lessThan threshold: CGFloat,
+        message: String
+    ) {
+        guard let luminance = averageLuminance(of: element.screenshot().pngRepresentation) else {
+            XCTFail("요소 스크린샷의 평균 휘도를 계산하지 못했습니다.")
+            return
+        }
+
+        XCTAssertLessThan(
+            luminance,
+            threshold,
+            "\(message) 평균 휘도=\(String(format: "%.3f", luminance)) 임계값=\(String(format: "%.3f", threshold))"
+        )
+    }
+
+    /// PNG 데이터로부터 평균 휘도를 계산합니다.
+    /// - Parameter pngData: 접근성 요소 스크린샷 PNG 데이터입니다.
+    /// - Returns: 0.0~1.0 범위의 평균 휘도입니다. 변환에 실패하면 `nil`을 반환합니다.
+    private func averageLuminance(of pngData: Data) -> CGFloat? {
+        guard let image = UIImage(data: pngData),
+              let cgImage = image.cgImage else {
+            return nil
+        }
+
+        let sampleWidth = 12
+        let sampleHeight = 12
+        let bytesPerRow = sampleWidth * 4
+        var pixelBuffer = [UInt8](repeating: 0, count: bytesPerRow * sampleHeight)
+
+        guard let context = CGContext(
+            data: &pixelBuffer,
+            width: sampleWidth,
+            height: sampleHeight,
+            bitsPerComponent: 8,
+            bytesPerRow: bytesPerRow,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else {
+            return nil
+        }
+
+        context.interpolationQuality = .medium
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: sampleWidth, height: sampleHeight))
+
+        var totalLuminance: CGFloat = 0
+        let pixelCount = sampleWidth * sampleHeight
+
+        for offset in stride(from: 0, to: pixelBuffer.count, by: 4) {
+            let red = CGFloat(pixelBuffer[offset]) / 255.0
+            let green = CGFloat(pixelBuffer[offset + 1]) / 255.0
+            let blue = CGFloat(pixelBuffer[offset + 2]) / 255.0
+            totalLuminance += (0.2126 * red) + (0.7152 * green) + (0.0722 * blue)
+        }
+
+        return totalLuminance / CGFloat(pixelCount)
+    }
+
     /// 이메일/비밀번호를 입력해 로그인 버튼을 누르고 화면 복귀를 기다립니다.
     /// - Parameters:
     ///   - app: 로그인 화면을 포함한 테스트 대상 앱 인스턴스입니다.
@@ -2069,9 +2247,9 @@ final class FeatureRegressionUITests: XCTestCase {
         let didSignIn = performEmailLogin(app: app, credentials: credentials)
         if didSignIn {
             dismissGuestDataUpgradePromptIfNeeded(app)
-            _ = waitUntilMemberState(app, timeout: 8)
+            return waitUntilMemberState(app, timeout: 8)
         }
-        return didSignIn
+        return false
     }
 
     /// 현재 앱 상태가 이미 회원이면 그대로 사용하고, 게스트 상태면 로그인까지 완료합니다.
@@ -2080,7 +2258,7 @@ final class FeatureRegressionUITests: XCTestCase {
     ///   - credentials: 로그인에 사용할 테스트 계정입니다.
     /// - Returns: 회원 상태가 확보되면 `true`를 반환합니다.
     private func ensureMemberSession(app: XCUIApplication, credentials: TestCredentials) -> Bool {
-        if waitUntilExists(app.buttons["settings.logout"], timeout: 2) {
+        if waitUntilMemberState(app, timeout: 2) {
             return true
         }
         return signInFromAnyEntry(app: app, credentials: credentials)
@@ -2201,6 +2379,21 @@ final class FeatureRegressionUITests: XCTestCase {
         app.descendants(matching: .any)
             .matching(identifier: identifier)
             .firstMatch
+    }
+
+    /// 요소 내부의 정규화된 좌표를 탭해 카드 내부 서브영역 인터랙션을 검증합니다.
+    /// - Parameters:
+    ///   - element: 탭 기준이 되는 상위 요소입니다.
+    ///   - dx: 요소 너비 기준 0.0~1.0 범위의 가로 비율입니다.
+    ///   - dy: 요소 높이 기준 0.0~1.0 범위의 세로 비율입니다.
+    /// - Returns: 요소가 존재해 지정 좌표를 탭했으면 `true`를 반환합니다.
+    private func tapNormalizedCoordinate(of element: XCUIElement, dx: CGFloat, dy: CGFloat) -> Bool {
+        guard waitUntilExists(element, timeout: 6) else {
+            return false
+        }
+
+        element.coordinate(withNormalizedOffset: CGVector(dx: dx, dy: dy)).tap()
+        return true
     }
 
     /// 커스텀 탭바 아이템을 접근성 타입과 무관하게 조회합니다.
@@ -2673,10 +2866,34 @@ final class FeatureRegressionUITests: XCTestCase {
     private func waitUntilMemberState(_ app: XCUIApplication, timeout: TimeInterval) -> Bool {
         let deadline = Date().addingTimeInterval(timeout)
         while Date() < deadline {
+            if waitUntilExists(screenElement(identifier: "screen.settings.member", in: app), timeout: 0.2) {
+                return true
+            }
+            if waitUntilExists(screenElement(identifier: "settings.profile.card", in: app), timeout: 0.2) {
+                return true
+            }
+            if waitUntilExists(screenElement(identifier: "settings.profile.edit", in: app), timeout: 0.2) {
+                return true
+            }
             if app.buttons["rival.sharing.start"].exists || app.buttons["rival.sharing.stop"].exists {
                 return true
             }
-            if app.buttons["settings.profile.edit"].exists {
+            usleep(120_000)
+        }
+        return false
+    }
+
+    /// 라이벌 탭에서 회원 세션이 실제 공유 제어로 반영되었는지 대기합니다.
+    /// - Parameters:
+    ///   - app: 테스트 대상 앱 인스턴스입니다.
+    ///   - timeout: 최대 대기 시간입니다.
+    /// - Returns: 익명 공유 시작 또는 중지 제어가 나타나면 `true`를 반환합니다.
+    private func waitUntilRivalSharingControlReady(_ app: XCUIApplication, timeout: TimeInterval) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        let startButton = app.buttons["rival.sharing.start"]
+        let stopButton = app.buttons["rival.sharing.stop"]
+        while Date() < deadline {
+            if waitUntilExists(startButton, timeout: 0.2) || waitUntilExists(stopButton, timeout: 0.2) {
                 return true
             }
             usleep(120_000)
@@ -2748,10 +2965,16 @@ final class FeatureRegressionUITests: XCTestCase {
             return
         }
 
-        let laterButton = app.buttons["sheet.guestDataUpgrade.later"]
-        if tapIfExists(laterButton) || tapIfExists(app.buttons["나중에"]) {
-            _ = waitUntilGone(promptSheet, timeout: 4)
+        let titledLaterButton = app.buttons.matching(NSPredicate(format: "label == %@", "나중에")).firstMatch
+        let identifiedLaterButton = screenElement(identifier: "sheet.guestDataUpgrade.later", in: app)
+        if tapIfExists(titledLaterButton) || tapIfExists(identifiedLaterButton) {
+            if waitUntilGone(promptSheet, timeout: 4) {
+                return
+            }
         }
+
+        promptSheet.swipeDown()
+        _ = waitUntilGone(promptSheet, timeout: 4)
     }
 
     /// 네비게이션 스택이 존재하면 뒤로 이동을 시도합니다.

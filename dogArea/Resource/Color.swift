@@ -15,15 +15,19 @@ extension Color {
     static let appYellow: Color = Color(red: 0.93, green: 0.70, blue: 0.19)
     static let appYellowPale: Color = Color(red: 0.98, green: 0.95, blue: 0.87)
     static let appGreen: Color = Color(red: 0.27, green: 0.67, blue: 0.50)
-    static let appTextLightGray: Color = Color(red: 0.82, green: 0.84, blue: 0.87)
-    static let appTextDarkGray: Color = Color(red: 0.38, green: 0.42, blue: 0.49)
+    static let appTextLightGray: Color = Color.appDynamicHex(light: 0xCBD5E1, dark: 0x475569)
+    static let appTextDarkGray: Color = Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1)
     static let appPinkYello: Color = Color(red: 0.98, green: 0.94, blue: 0.84)
     static let appPeach: Color = Color(red: 0.98, green: 0.87, blue: 0.79)
     static let appPink: Color = Color(red: 0.96, green: 0.81, blue: 0.76)
     static let appHotPink: Color = Color(red: 0.90, green: 0.49, blue: 0.56)
 
     static let appBackground: Color = Color(red: 0.96, green: 0.95, blue: 0.90)
-    static let appSurface: Color = Color.white
+    static let appSurface: Color = Color.appDynamicHex(light: 0xFFFFFF, dark: 0x1C2738)
+    static let appSurfaceRaised: Color = Color.appDynamicHex(light: 0xF8FAFC, dark: 0x243244)
+    static let appOnSurfacePrimary: Color = Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC)
+    static let appOnSurfaceSecondary: Color = Color.appDynamicHex(light: 0x64748B, dark: 0xCBD5E1)
+    static let appSurfaceStroke: Color = Color.appDynamicHex(light: 0xCBD5E1, dark: 0x475569)
     static let appInk: Color = Color(red: 0.11, green: 0.13, blue: 0.17)
     static let appTabScaffoldBackground: Color = Color.appDynamicHex(
         light: 0xFAFAF8,
@@ -85,7 +89,7 @@ extension Color {
             case .appTextDarkGray:
                 Color.appTextDarkGray
             case .appTextBlack:
-                Color.appInk
+                Color.appOnSurfacePrimary
             case .appPinkYello:
                 Color.appPinkYello
             case .appPeach:
@@ -107,11 +111,11 @@ extension Color {
             case .appGreen:
                 Color(red: 0.40, green: 0.74, blue: 0.57)
             case .appTextLightGray:
-                Color(red: 0.70, green: 0.72, blue: 0.76)
+                Color.appTextLightGray
             case .appTextDarkGray:
-                Color(red: 0.85, green: 0.87, blue: 0.90)
+                Color.appTextDarkGray
             case .appTextBlack:
-                Color(red: 0.95, green: 0.96, blue: 0.98)
+                Color.appOnSurfacePrimary
             case .appPinkYello:
                 Color(red: 0.34, green: 0.30, blue: 0.23)
             case .appPeach:
@@ -148,24 +152,25 @@ enum AppButtonRole {
 
     var backgroundColor: Color {
         switch self {
-        case .primary: return Color.appInk
+        case .primary: return Color.appDynamicHex(light: 0x0F172A, dark: 0xF8FAFC)
         case .secondary: return Color.appYellow
-        case .neutral: return Color.appSurface
+        case .neutral: return Color.appSurfaceRaised
         case .destructive: return Color.appRed
         }
     }
 
     var foregroundColor: Color {
         switch self {
-        case .primary, .destructive: return .white
+        case .primary: return Color.appDynamicHex(light: 0xFFFFFF, dark: 0x0F172A)
+        case .destructive: return .white
         case .secondary: return Color.appInk
-        case .neutral: return Color.appInk
+        case .neutral: return Color.appOnSurfacePrimary
         }
     }
 
     var borderColor: Color {
         switch self {
-        case .neutral: return Color.appTextLightGray.opacity(0.85)
+        case .neutral: return Color.appSurfaceStroke.opacity(0.85)
         default: return .clear
         }
     }
@@ -198,13 +203,18 @@ struct AppCardSurface: ViewModifier {
     func body(content: Content) -> some View {
         content
             .padding(14)
-            .background(Color.appSurface)
+            .background(Color.appSurfaceRaised)
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(Color.appTextLightGray.opacity(0.45), lineWidth: 1)
+                    .stroke(Color.appSurfaceStroke.opacity(0.7), lineWidth: 1)
             )
-            .shadow(color: Color.black.opacity(0.05), radius: 16, x: 0, y: 6)
+            .shadow(
+                color: Color.appDynamicHex(light: 0x020617, dark: 0x020617, alpha: 0.18),
+                radius: 16,
+                x: 0,
+                y: 6
+            )
     }
 }
 
@@ -237,7 +247,7 @@ struct AppPillStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
             .font(.appFont(for: .SemiBold, size: 12))
-            .foregroundStyle(isActive ? Color.appInk : Color.appTextDarkGray)
+            .foregroundStyle(isActive ? Color.appInk : Color.appOnSurfaceSecondary)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
             .background(isActive ? Color.appYellow : Color.appYellowPale)

@@ -44,7 +44,7 @@ struct ProfileEditorImageSection: View {
                                     Color.appTextLightGray.opacity(0.18)
                                     Image(systemName: "photo")
                                         .font(.system(size: 18, weight: .semibold))
-                                        .foregroundStyle(Color.appTextDarkGray.opacity(0.6))
+                                        .foregroundStyle(Color.appOnSurfaceSecondary.opacity(0.7))
                                 }
                             }
                         }
@@ -52,18 +52,18 @@ struct ProfileEditorImageSection: View {
                         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                         .overlay(
                             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .stroke(Color.appTextLightGray.opacity(0.6), lineWidth: 1)
+                                .stroke(Color.appSurfaceStroke.opacity(0.72), lineWidth: 1)
                         )
 
                         Label("사진 변경", systemImage: "photo.on.rectangle.angled")
                             .font(.appScaledFont(for: .SemiBold, size: 10, relativeTo: .caption2))
-                            .foregroundStyle(Color.appInk)
+                            .foregroundStyle(Color.appOnSurfacePrimary)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 5)
-                            .background(Color.appSurface.opacity(0.96))
+                            .background(Color.appSurfaceRaised.opacity(0.96))
                             .overlay(
                                 Capsule()
-                                    .stroke(Color.appTextLightGray.opacity(0.72), lineWidth: 1)
+                                    .stroke(Color.appSurfaceStroke.opacity(0.72), lineWidth: 1)
                             )
                             .clipShape(Capsule())
                             .padding(8)
