@@ -163,7 +163,7 @@ final class ProfileSyncOutboxStore {
                     item.lastErrorCode = code
                     item.updatedAt = currentNow
                 }
-                return summary()
+                continue
             }
         }
         return summary()
