@@ -1,6 +1,6 @@
 # Widget Family Real-Device Validation Matrix v1
 
-- Issue: #751
+- Issue: #692
 - Relates to: #692, #731, #408 (closed umbrella)
 
 ## 목적

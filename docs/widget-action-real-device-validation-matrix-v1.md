@@ -1,6 +1,6 @@
 # Widget Action Real-Device Validation Matrix v1
 
-- Issue: #660
+- Issue: #731
 - Relates to: #408 (closed umbrella), #617, #731
 
 ## 목적

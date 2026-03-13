@@ -233,6 +233,7 @@ assertTrue(doc.contains("Prefill App Build"), "doc should describe widget prefil
 assertTrue(doc.contains("connected-ios-device"), "doc should list widget auto-detect sources")
 assertTrue(doc.contains("gap-summary"), "doc should describe plain gap summary output")
 assertTrue(doc.contains("next-fill"), "doc should describe next-fill guidance")
+assertTrue(doc.contains("next-capture-assets"), "doc should describe next-capture-assets output")
 assertTrue(doc.contains("### Gap Summary"), "doc should describe markdown gap summary heading")
 assertTrue(doc.contains("03-live-send-results.md"), "doc should describe auth-smtp file-level scenario row grouping")
 assertTrue(doc.contains("--prefill-from-env"), "doc should describe auth smtp prefill render command")
@@ -294,6 +295,7 @@ assertTrue(generatedOutput.contains("next-prefill-existing: bash scripts/prefill
 assertTrue(!generatedOutput.contains("next-apply-prefill:"), "generated widget bundle should not suggest apply-prefill when metadata gaps are already resolved")
 assertTrue(generatedOutput.contains("gap-summary: 16 incomplete cases (action 8, layout 8, total-errors 120)"), "generated widget bundle should summarize reduced incomplete case counts after metadata prefill")
 assertTrue(generatedOutput.contains("next-fill: action/WD-001.md"), "generated widget bundle should point at the first case to fill")
+assertTrue(generatedOutput.contains("next-capture-assets: assets/action/WD-001-step-1.png, assets/action/WD-001-step-2.png"), "generated widget bundle should print exact next capture asset paths")
 assertTrue(generatedOutput.contains("gap-cases:"), "generated widget bundle should print case bucket list")
 assertTrue(generatedOutput.contains("WD-001: result, assets, placeholder logs"), "generated widget bundle should dedupe case buckets after metadata prefill")
 assertTrue(generatedOutput.contains("WL-001: result, assets"), "generated widget bundle should reduce layout gaps after metadata prefill")
@@ -416,6 +418,7 @@ let incompleteMarkdownOutput = runStatus(arguments: ["widget", "--markdown", "--
 ])
 assertTrue(incompleteMarkdownOutput.contains("### Gap Summary"), "incomplete widget markdown should print a gap summary")
 assertTrue(incompleteMarkdownOutput.contains("- Next Fill: `action/WD-001.md`"), "incomplete widget markdown should print next-fill guidance")
+assertTrue(incompleteMarkdownOutput.contains("- Next Capture Assets: `assets/action/WD-001-step-1.png`, `assets/action/WD-001-step-2.png`"), "incomplete widget markdown should print exact next capture asset paths")
 assertTrue(incompleteMarkdownOutput.contains("- Incomplete Cases: `16` (`action 8`, `layout 8`, `errors 120`)"), "incomplete widget markdown should reflect reduced error count after metadata prefill")
 assertTrue(!incompleteMarkdownOutput.contains("Apply Prefill Then Refresh"), "write-missing widget markdown should not suggest apply-prefill after metadata prefill")
 

@@ -1,6 +1,6 @@
 # Widget Action Real-Device Evidence Template v1
 
-- Issue: #662
+- Issue: #731
 - Relates to: #408 (closed umbrella), #617, #731
 
 ## 기록 메타
